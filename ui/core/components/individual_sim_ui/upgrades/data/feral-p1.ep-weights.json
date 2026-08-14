@@ -1,0 +1,23 @@
+{
+  "source": "wowsims/tbc-new ui/druid/feralcat/presets.ts P1_EP_PRESET",
+  "pin": "8aa378b3",
+  "notes": [
+    "Phase 1, not phase 2. Upstream ships exactly one EP preset for feral cat and it is named P1; there is no P2_EP_PRESET under ui/druid/feralcat/, unlike ui/paladin/retribution/. The filename tracks upstream's own name rather than the phase this repo defaults to, so the mismatch is visible instead of hidden.",
+    "EP only chooses gems here: meta repair (packages/core/src/meta-repair.ts) and empty-socket fill (packages/core/src/candidate-gems.ts). The sim decides the ranking, so a phase-1 gem preference does not rank items.",
+    "Stat 19 (FeralAttackPower) has no ret analogue and 49 items in the pinned db.json carry it. Ret weights score those items 0 on that stat, which is why feral must never borrow data/presets/ret/p2.ep-weights.json.",
+    "Upstream puts PhysicalDamage (41) in the stats map, where ret puts MainHandDps in pseudoWeights. Copied as upstream wrote it; pseudoWeights is empty rather than absent because scripts/assemble_universe.py:590 reads it with `or {}`."
+  ],
+  "weights": {
+    "0": 0.78,
+    "1": 1.16,
+    "17": 0.35,
+    "19": 0.35,
+    "20": 1.02,
+    "21": 0.77,
+    "22": 0.41,
+    "23": 0.16,
+    "24": 1.02,
+    "41": 3.13
+  },
+  "pseudoWeights": {}
+}

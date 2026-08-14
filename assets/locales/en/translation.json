@@ -857,7 +857,30 @@
 		"subtabs": {
 			"shopping_list": "Shopping List"
 		},
-		"placeholder": "Nothing here yet. This tab will rank gear upgrades against the gear on your Gear tab, using your own sim settings."
+		"placeholder": "Nothing here yet. This tab will rank gear upgrades against the gear on your Gear tab, using your own sim settings.",
+		"run": "Run",
+		"status": {
+			"idle": "Ranks upgrades against your current gear and settings on this page.",
+			"unsupported_spec": "This spec has no ranking data yet.",
+			"error": "Ranking failed: {{message}}",
+			"done": "Your current gear: {{dps}} DPS.",
+			"stale": "settings changed since this ranking — results may be out of date"
+		},
+		"progress": {
+			"resolving": "Starting…",
+			"reading_gear": "Reading your gear…",
+			"composing": "Preparing your character…",
+			"building_pool": "Building the candidate pool…",
+			"simming": "Simming {{done}}/{{total}}…",
+			"ranking": "Ranking results…"
+		},
+		"results": {
+			"rank": "Rank",
+			"item": "Item",
+			"slot": "Slot",
+			"delta_dps": "DPS",
+			"empty": "No upgrades found above the cutoff."
+		}
 	},
 	"bulk_tab": {
 		"title": "Batch (<span class=\"text-success\">New</span>)",

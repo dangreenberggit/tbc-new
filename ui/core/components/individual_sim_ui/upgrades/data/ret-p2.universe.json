@@ -1,0 +1,4697 @@
+{
+  "spec": "ret",
+  "maxPhase": 2,
+  "carryoverPolicy": "union",
+  "generatedBy": "scripts/assemble_universe.py",
+  "d7Note": "D7 eligibility implemented in assemble_universe.py.",
+  "entries": [
+    {
+      "itemId": 28672,
+      "name": "Drape of the Dark Reavers",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shade of Aran",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 68.49
+    },
+    {
+      "itemId": 28529,
+      "name": "Royal Cloak of Arathi Kings",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Moroes",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 60.4
+    },
+    {
+      "itemId": 30098,
+      "name": "Razor-Scale Battlecloak",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Morogrim Tidewalker",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 50.25,
+      "curatedSets": [
+        "p2"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 29994,
+      "name": "Thalassian Wildercloak",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Kael'thas Sunstrider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 48.88
+    },
+    {
+      "itemId": 30729,
+      "name": "Black-Iron Battlecloak",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doomwalker",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 47.7
+    },
+    {
+      "itemId": 28777,
+      "name": "Cloak of the Pit Stalker",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Magtheridon's Lair",
+          "boss": "Magtheridon",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 41.44
+    },
+    {
+      "itemId": 24259,
+      "name": "Vengeance Wrap",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Tailoring",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 39.03,
+      "curatedSets": [
+        "p1",
+        "preraid"
+      ]
+    },
+    {
+      "itemId": 28764,
+      "name": "Farstrider Wildercloak",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Prince Malchezaar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 28.7
+    },
+    {
+      "itemId": 29992,
+      "name": "Royal Cloak of the Sunstriders",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Kael'thas Sunstrider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 7.48
+    },
+    {
+      "itemId": 28570,
+      "name": "Shadow-Cloak of Dalaran",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Moroes",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.12
+    },
+    {
+      "itemId": 30735,
+      "name": "Ancient Spellcloak of the Highborne",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doom Lord Kazzak",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 6.12
+    },
+    {
+      "itemId": 28766,
+      "name": "Ruby Drape of the Mysticant",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Prince Malchezaar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.1
+    },
+    {
+      "itemId": 28797,
+      "name": "Brute Cloak of the Ogre-Magi",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "High King Maulgar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.76
+    },
+    {
+      "itemId": 29989,
+      "name": "Sunshower Light Cloak",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Kael'thas Sunstrider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.42
+    },
+    {
+      "itemId": 28765,
+      "name": "Stainless Cloak of the Pure Hearted",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Prince Malchezaar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.06
+    },
+    {
+      "itemId": 28582,
+      "name": "Red Riding Hood's Cloak",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Big Bad Wolf",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.72
+    },
+    {
+      "itemId": 28653,
+      "name": "Shadowvine Cloak of Infusion",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Terestian Illhoof",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 28660,
+      "name": "Gilded Thorium Cloak",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Terestian Illhoof",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 29925,
+      "name": "Phoenix-Wing Cloak",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Al'ar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30642,
+      "name": "Drape of the Righteous",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30102,
+      "name": "Krakken-Heart Breastplate",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Lady Vashj",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 157.75
+    },
+    {
+      "itemId": 28485,
+      "name": "Bulwark of the Ancient Kings",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Blacksmithing",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 125.32
+    },
+    {
+      "itemId": 30101,
+      "name": "Bloodsea Brigand's Vest",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Fathom-Lord Karathress",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 123.49
+    },
+    {
+      "itemId": 30129,
+      "name": "Crystalforge Breastplate",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Tempest Keep",
+          "token": "Chestguard of the Vanquished Champion",
+          "boss": "Kael'thas Sunstrider",
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 121.62,
+      "curatedSets": [
+        "p2"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 28601,
+      "name": "Chestguard of the Conniver",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Nightbane",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 111.95
+    },
+    {
+      "itemId": 30730,
+      "name": "Terrorweave Tunic",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doomwalker",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 103.76
+    },
+    {
+      "itemId": 30054,
+      "name": "Ranger-General's Chestguard",
+      "slot": "chest",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Hydross the Unstable",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 73.86
+    },
+    {
+      "itemId": 23522,
+      "name": "Ragesteel Breastplate",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Blacksmithing",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 72.33,
+      "curatedSets": [
+        "preraid"
+      ]
+    },
+    {
+      "itemId": 29071,
+      "name": "Justicar Breastplate",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Magtheridon's Lair",
+          "token": "Chestguard of the Fallen Champion",
+          "boss": "Magtheridon",
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 61.25,
+      "curatedSets": [
+        "p1"
+      ]
+    },
+    {
+      "itemId": 28599,
+      "name": "Scaled Breastplate of Carnage",
+      "slot": "chest",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Nightbane",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 51.28
+    },
+    {
+      "itemId": 30075,
+      "name": "Gnarled Chestpiece of the Ancients",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Morogrim Tidewalker",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.29
+    },
+    {
+      "itemId": 28662,
+      "name": "Breastplate of the Lightbinder",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Terestian Illhoof",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.1
+    },
+    {
+      "itemId": 28735,
+      "name": "Earthblood Chestguard",
+      "slot": "chest",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Netherspite",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.93
+    },
+    {
+      "itemId": 29921,
+      "name": "Fire Crest Breastplate",
+      "slot": "chest",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Al'ar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.59
+    },
+    {
+      "itemId": 28600,
+      "name": "Stonebough Jerkin",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Nightbane",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.42
+    },
+    {
+      "itemId": 30065,
+      "name": "Glowing Breastplate of Truth",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "The Lurker Below",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.06
+    },
+    {
+      "itemId": 28597,
+      "name": "Panzar'Thar Breastplate",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Nightbane",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 28746,
+      "name": "Fiend Slayer Boots",
+      "slot": "feet",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Chess Event",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 69.99
+    },
+    {
+      "itemId": 30081,
+      "name": "Warboots of Obliteration",
+      "slot": "feet",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Morogrim Tidewalker",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 67.87
+    },
+    {
+      "itemId": 28545,
+      "name": "Edgewalker Longboots",
+      "slot": "feet",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Moroes",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 67.74
+    },
+    {
+      "itemId": 30060,
+      "name": "Boots of Effortless Striking",
+      "slot": "feet",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "The Lurker Below",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 55.28
+    },
+    {
+      "itemId": 30674,
+      "name": "Zierhut's Lost Treads",
+      "slot": "feet",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 55.0
+    },
+    {
+      "itemId": 28669,
+      "name": "Rapscallion Boots",
+      "slot": "feet",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shade of Aran",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 52.1
+    },
+    {
+      "itemId": 29951,
+      "name": "Star-Strider Boots",
+      "slot": "feet",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "High Astromancer Solarian",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 51.81
+    },
+    {
+      "itemId": 30104,
+      "name": "Cobra-Lash Boots",
+      "slot": "feet",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Lady Vashj",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 51.81,
+      "curatedSets": [
+        "p2"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 28608,
+      "name": "Ironstriders of Urgency",
+      "slot": "feet",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Nightbane",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 48.0,
+      "curatedSets": [
+        "p1"
+      ]
+    },
+    {
+      "itemId": 28176,
+      "name": "Sha'tari Wrought Greaves",
+      "slot": "feet",
+      "armorType": 4,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "curated"
+        }
+      ],
+      "curationHint": 39.75,
+      "curatedSets": [
+        "preraid"
+      ]
+    },
+    {
+      "itemId": 28610,
+      "name": "Ferocious Swift-Kickers",
+      "slot": "feet",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Nightbane",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 36.1
+    },
+    {
+      "itemId": 28747,
+      "name": "Battlescar Boots",
+      "slot": "feet",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Chess Event",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 18.0
+    },
+    {
+      "itemId": 28810,
+      "name": "Windshear Boots",
+      "slot": "feet",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "Gruul the Dragonkiller",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.63
+    },
+    {
+      "itemId": 30027,
+      "name": "Boots of Courage Unending",
+      "slot": "feet",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 5.1
+    },
+    {
+      "itemId": 30737,
+      "name": "Gold-Leaf Wildboots",
+      "slot": "feet",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doom Lord Kazzak",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 4.93
+    },
+    {
+      "itemId": 30092,
+      "name": "Orca-Hide Boots",
+      "slot": "feet",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Leotheras the Blind",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.25
+    },
+    {
+      "itemId": 28569,
+      "name": "Boots of Valiance",
+      "slot": "feet",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Moroes",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.23
+    },
+    {
+      "itemId": 28752,
+      "name": "Forestlord Striders",
+      "slot": "feet",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Chess Event",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 3.23
+    },
+    {
+      "itemId": 30066,
+      "name": "Tempest-Strider Boots",
+      "slot": "feet",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "The Lurker Below",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.89
+    },
+    {
+      "itemId": 30641,
+      "name": "Boots of Elusion",
+      "slot": "feet",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30681,
+      "name": "Glider's Boots",
+      "slot": "feet",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shadikith the Glider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30682,
+      "name": "Glider's Sabatons",
+      "slot": "feet",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shadikith the Glider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30683,
+      "name": "Glider's Greaves",
+      "slot": "feet",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shadikith the Glider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 32267,
+      "name": "Boots of the Resilient",
+      "slot": "feet",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "High Astromancer Solarian",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 29997,
+      "name": "Band of the Ranger-General",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Kael'thas Sunstrider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 83.22
+    },
+    {
+      "itemId": 30052,
+      "name": "Ring of Lethality",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Hydross the Unstable",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 79.35
+    },
+    {
+      "itemId": 28757,
+      "name": "Ring of a Thousand Marks",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Prince Malchezaar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 76.6,
+      "curatedSets": [
+        "p1"
+      ]
+    },
+    {
+      "itemId": 30738,
+      "name": "Ring of Reciprocity",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doom Lord Kazzak",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 72.3
+    },
+    {
+      "itemId": 28649,
+      "name": "Garona's Signet Ring",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Curator",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 70.1
+    },
+    {
+      "itemId": 30834,
+      "name": "Shapeshifter's Signet",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "faction": "Lower City",
+          "factionId": 1011,
+          "kind": "rep",
+          "standing": "Exalted",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 61.55,
+      "curatedSets": [
+        "p1",
+        "p2",
+        "preraid"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 30061,
+      "name": "Ancestral Ring of Conquest",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "The Lurker Below",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 47.75,
+      "curatedSets": [
+        "p2"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 28730,
+      "name": "Mithril Band of the Unscarred",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Netherspite",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 42.94
+    },
+    {
+      "itemId": 29177,
+      "name": "A'dal's Command",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "faction": "The Sha'tar",
+          "factionId": 935,
+          "kind": "rep",
+          "standing": "Exalted",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 41.0,
+      "curatedSets": [
+        "preraid"
+      ]
+    },
+    {
+      "itemId": 33055,
+      "name": "Band of Vile Aggression",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Hydross the Unstable",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 20.5
+    },
+    {
+      "itemId": 29922,
+      "name": "Band of Al'ar",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Al'ar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.29
+    },
+    {
+      "itemId": 30109,
+      "name": "Ring of Endless Coils",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Lady Vashj",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.29
+    },
+    {
+      "itemId": 28753,
+      "name": "Ring of Recurrence",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Chess Event",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 5.44
+    },
+    {
+      "itemId": 28510,
+      "name": "Spectral Band of Innervation",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Attumen the Huntsman",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.93
+    },
+    {
+      "itemId": 30110,
+      "name": "Coral Band of the Revived",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Lady Vashj",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.25
+    },
+    {
+      "itemId": 30736,
+      "name": "Ring of Flowing Light",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doom Lord Kazzak",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 4.25
+    },
+    {
+      "itemId": 33054,
+      "name": "The Seal of Danzalar",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "The Lurker Below",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.25
+    },
+    {
+      "itemId": 28763,
+      "name": "Jade Ring of the Everliving",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Prince Malchezaar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.91
+    },
+    {
+      "itemId": 29920,
+      "name": "Phoenix-Ring of Rebirth",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Al'ar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.23
+    },
+    {
+      "itemId": 33058,
+      "name": "Band of the Vigilant",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Morogrim Tidewalker",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.72
+    },
+    {
+      "itemId": 28661,
+      "name": "Mender's Heart-Ring",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Terestian Illhoof",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.55
+    },
+    {
+      "itemId": 28675,
+      "name": "Shermanar Great-Ring",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shade of Aran",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30028,
+      "name": "Seventh Ring of the Tirisfalen",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30083,
+      "name": "Ring of Sundered Souls",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Morogrim Tidewalker",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30667,
+      "name": "Ring of Unrelenting Storms",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 29947,
+      "name": "Gloves of the Searing Grip",
+      "slot": "hands",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Al'ar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 90.33,
+      "curatedSets": [
+        "p2"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 30644,
+      "name": "Grips of Deftness",
+      "slot": "hands",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 78.45,
+      "curatedSets": [
+        "p1"
+      ]
+    },
+    {
+      "itemId": 30130,
+      "name": "Crystalforge Gauntlets",
+      "slot": "hands",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Serpentshrine Cavern",
+          "token": "Gloves of the Vanquished Champion",
+          "boss": "Leotheras the Blind",
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 62.75
+    },
+    {
+      "itemId": 29072,
+      "name": "Justicar Gauntlets",
+      "slot": "hands",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Karazhan",
+          "token": "Gloves of the Fallen Champion",
+          "boss": "The Curator",
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 56.48
+    },
+    {
+      "itemId": 28824,
+      "name": "Gauntlets of Martial Perfection",
+      "slot": "hands",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "Gruul the Dragonkiller",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 53.71
+    },
+    {
+      "itemId": 28776,
+      "name": "Liar's Tongue Gloves",
+      "slot": "hands",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Magtheridon's Lair",
+          "boss": "Magtheridon",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 49.54
+    },
+    {
+      "itemId": 28506,
+      "name": "Gloves of Dexterous Manipulation",
+      "slot": "hands",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Attumen the Huntsman",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 43.47
+    },
+    {
+      "itemId": 28827,
+      "name": "Gauntlets of the Dragonslayer",
+      "slot": "hands",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "Gruul the Dragonkiller",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 37.68
+    },
+    {
+      "itemId": 28519,
+      "name": "Gloves of Quickening",
+      "slot": "hands",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Maiden of Virtue",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 34.41
+    },
+    {
+      "itemId": 30112,
+      "name": "Glorious Gauntlets of Crestfall",
+      "slot": "hands",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Lady Vashj",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.59
+    },
+    {
+      "itemId": 29976,
+      "name": "Worldstorm Gauntlets",
+      "slot": "hands",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "High Astromancer Solarian",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.25
+    },
+    {
+      "itemId": 30029,
+      "name": "Bark-Gloves of Ancient Wisdom",
+      "slot": "hands",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 4.25
+    },
+    {
+      "itemId": 28521,
+      "name": "Mitts of the Treemender",
+      "slot": "hands",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Maiden of Virtue",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.74
+    },
+    {
+      "itemId": 28505,
+      "name": "Gauntlets of Renewed Hope",
+      "slot": "hands",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Attumen the Huntsman",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.57
+    },
+    {
+      "itemId": 28520,
+      "name": "Gloves of Centering",
+      "slot": "hands",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Maiden of Virtue",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.57
+    },
+    {
+      "itemId": 28518,
+      "name": "Iron Gauntlets of the Maiden",
+      "slot": "hands",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Maiden of Virtue",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 29998,
+      "name": "Royal Gauntlets of Silvermoon",
+      "slot": "hands",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Kael'thas Sunstrider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30741,
+      "name": "Topaz-Studded Battlegrips",
+      "slot": "hands",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doom Lord Kazzak",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 29983,
+      "name": "Fel-Steel Warhelm",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Void Reaver",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 144.38
+    },
+    {
+      "itemId": 28796,
+      "name": "Malefic Mask of the Shadows",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "High King Maulgar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 133.43
+    },
+    {
+      "itemId": 28732,
+      "name": "Cowl of Defiance",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Netherspite",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 118.1
+    },
+    {
+      "itemId": 32461,
+      "name": "Furious Gizmatic Goggles",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Engineering",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 105.21,
+      "curatedSets": [
+        "p2"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 32087,
+      "name": "Mask of the Deceiver",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "badge",
+          "cost": 50,
+          "origin": "wowhead"
+        }
+      ],
+      "curationHint": 84.64,
+      "curatedSets": [
+        "preraid"
+      ]
+    },
+    {
+      "itemId": 28775,
+      "name": "Thundering Greathelm",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Magtheridon's Lair",
+          "boss": "Magtheridon",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 82.25
+    },
+    {
+      "itemId": 30131,
+      "name": "Crystalforge War-Helm",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Serpentshrine Cavern",
+          "token": "Helm of the Vanquished Champion",
+          "boss": "Lady Vashj",
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 74.0
+    },
+    {
+      "itemId": 28801,
+      "name": "Maulgar's Warhelm",
+      "slot": "head",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "High King Maulgar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 67.6
+    },
+    {
+      "itemId": 32041,
+      "name": "Merciless Gladiator's Scaled Helm",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "origin": "wowhead"
+        }
+      ],
+      "curationHint": 64.86
+    },
+    {
+      "itemId": 29073,
+      "name": "Justicar Crown",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Karazhan",
+          "token": "Helm of the Fallen Champion",
+          "boss": "Prince Malchezaar",
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 59.5,
+      "curatedSets": [
+        "p1"
+      ]
+    },
+    {
+      "itemId": 28671,
+      "name": "Steelspine Faceguard",
+      "slot": "head",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shade of Aran",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 52.42
+    },
+    {
+      "itemId": 28593,
+      "name": "Eternium Greathelm",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Wizard of Oz",
+          "origin": "db"
+        },
+        {
+          "boss": "The Big Bad Wolf",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        },
+        {
+          "boss": "Romulo and Julianne",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 31.0
+    },
+    {
+      "itemId": 28583,
+      "name": "Big Bad Wolf's Head",
+      "slot": "head",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Big Bad Wolf",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 7.99
+    },
+    {
+      "itemId": 30728,
+      "name": "Fathom-Helm of the Deeps",
+      "slot": "head",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doomwalker",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 6.12
+    },
+    {
+      "itemId": 30048,
+      "name": "Brighthelm of Justice",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Hydross the Unstable",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.78
+    },
+    {
+      "itemId": 28803,
+      "name": "Cowl of Nature's Breath",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "Gruul the Dragonkiller",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.27
+    },
+    {
+      "itemId": 30731,
+      "name": "Faceguard of the Endless Watch",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doomwalker",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30132,
+      "name": "Crystalforge Greaves",
+      "slot": "legs",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Serpentshrine Cavern",
+          "token": "Leggings of the Vanquished Champion",
+          "boss": "Fathom-Lord Karathress",
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 124.4
+    },
+    {
+      "itemId": 29074,
+      "name": "Justicar Greaves",
+      "slot": "legs",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Gruul's Lair",
+          "token": "Leggings of the Fallen Champion",
+          "boss": "Gruul the Dragonkiller",
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 120.45
+    },
+    {
+      "itemId": 28741,
+      "name": "Skulker's Greaves",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Netherspite",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 110.44
+    },
+    {
+      "itemId": 30257,
+      "name": "Shattrath Leggings",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "curated"
+        }
+      ],
+      "curationHint": 100.83,
+      "curatedSets": [
+        "p1",
+        "p2",
+        "preraid"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 29995,
+      "name": "Leggings of Murderous Intent",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Kael'thas Sunstrider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 99.96
+    },
+    {
+      "itemId": 30739,
+      "name": "Scaled Greaves of the Marksman",
+      "slot": "legs",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doom Lord Kazzak",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 93.31
+    },
+    {
+      "itemId": 29950,
+      "name": "Greaves of the Bloodwarder",
+      "slot": "legs",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "High Astromancer Solarian",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 72.87
+    },
+    {
+      "itemId": 29985,
+      "name": "Void Reaver Greaves",
+      "slot": "legs",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Void Reaver",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 63.83
+    },
+    {
+      "itemId": 28740,
+      "name": "Rip-Flayer Leggings",
+      "slot": "legs",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Netherspite",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 44.52
+    },
+    {
+      "itemId": 28621,
+      "name": "Wrynn Dynasty Greaves",
+      "slot": "legs",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Curator",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 24.0
+    },
+    {
+      "itemId": 29991,
+      "name": "Sunhawk Leggings",
+      "slot": "legs",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Kael'thas Sunstrider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.12
+    },
+    {
+      "itemId": 28751,
+      "name": "Heart-Flame Leggings",
+      "slot": "legs",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Chess Event",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 5.1
+    },
+    {
+      "itemId": 28591,
+      "name": "Earthsoul Leggings",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Wizard of Oz",
+          "origin": "db"
+        },
+        {
+          "boss": "The Big Bad Wolf",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        },
+        {
+          "boss": "Romulo and Julianne",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 4.59
+    },
+    {
+      "itemId": 28748,
+      "name": "Legplates of the Innocent",
+      "slot": "legs",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Chess Event",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 3.74
+    },
+    {
+      "itemId": 29381,
+      "name": "Choker of Vile Intent",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "badge",
+          "cost": 25,
+          "origin": "wowhead"
+        }
+      ],
+      "curationHint": 70.92
+    },
+    {
+      "itemId": 28509,
+      "name": "Worgen Claw Necklace",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Attumen the Huntsman",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 68.77
+    },
+    {
+      "itemId": 30022,
+      "name": "Pendant of the Perilous",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 49.71,
+      "curatedSets": [
+        "p2"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 30017,
+      "name": "Telonicus's Pendant of Mayhem",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Kael'thas Sunstrider",
+          "origin": "wowhead"
+        }
+      ],
+      "curationHint": 48.95
+    },
+    {
+      "itemId": 29119,
+      "name": "Haramad's Bargain",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "rep",
+          "faction": "The Consortium",
+          "standing": "Exalted",
+          "factionId": 933,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 44.75,
+      "curatedSets": [
+        "preraid"
+      ]
+    },
+    {
+      "itemId": 28745,
+      "name": "Mithril Chain of Heroism",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Chess Event",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 44.5,
+      "curatedSets": [
+        "p1"
+      ]
+    },
+    {
+      "itemId": 30059,
+      "name": "Choker of Animalistic Fury",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "The Lurker Below",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 43.95
+    },
+    {
+      "itemId": 30099,
+      "name": "Frayed Tether of the Drowned",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Fathom-Lord Karathress",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 38.7
+    },
+    {
+      "itemId": 28674,
+      "name": "Saberclaw Talisman",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shade of Aran",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 34.61
+    },
+    {
+      "itemId": 30008,
+      "name": "Pendant of the Lost Ages",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Morogrim Tidewalker",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.12
+    },
+    {
+      "itemId": 28762,
+      "name": "Adornment of Stolen Souls",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Prince Malchezaar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.76
+    },
+    {
+      "itemId": 28530,
+      "name": "Brooch of Unquenchable Fury",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Moroes",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.42
+    },
+    {
+      "itemId": 30726,
+      "name": "Archaic Charm of Presence",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doomwalker",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 4.25
+    },
+    {
+      "itemId": 28609,
+      "name": "Emberspur Talisman",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Nightbane",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.74
+    },
+    {
+      "itemId": 28731,
+      "name": "Shining Chain of the Afterworld",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Netherspite",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.72
+    },
+    {
+      "itemId": 28822,
+      "name": "Teeth of Gruul",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "Gruul the Dragonkiller",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.72
+    },
+    {
+      "itemId": 28516,
+      "name": "Barbed Choker of Discipline",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Maiden of Virtue",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30666,
+      "name": "Ritssyn's Lost Pendant",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 23203,
+      "name": "Libram of Fervor",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "world",
+          "origin": "wowhead"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 28592,
+      "name": "Libram of Souls Redeemed",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Wizard of Oz",
+          "origin": "db"
+        },
+        {
+          "boss": "The Big Bad Wolf",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        },
+        {
+          "boss": "Romulo and Julianne",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30063,
+      "name": "Libram of Absolute Truth",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "The Lurker Below",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30740,
+      "name": "Ripfiend Shoulderplates",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doom Lord Kazzak",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 83.89
+    },
+    {
+      "itemId": 30055,
+      "name": "Shoulderpads of the Stranger",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Hydross the Unstable",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 83.07,
+      "curatedSets": [
+        "p2"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 29075,
+      "name": "Justicar Shoulderplates",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Gruul's Lair",
+          "token": "Pauldrons of the Fallen Champion",
+          "boss": "High King Maulgar",
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 80.15,
+      "curatedSets": [
+        "p1"
+      ]
+    },
+    {
+      "itemId": 30085,
+      "name": "Mantle of the Tireless Tracker",
+      "slot": "shoulder",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Morogrim Tidewalker",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 68.15
+    },
+    {
+      "itemId": 28755,
+      "name": "Bladed Shoulderpads of the Merciless",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Chess Event",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 67.9
+    },
+    {
+      "itemId": 33173,
+      "name": "Ragesteel Shoulders",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Blacksmithing",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 64.44,
+      "curatedSets": [
+        "preraid"
+      ]
+    },
+    {
+      "itemId": 30053,
+      "name": "Pauldrons of the Wardancer",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Hydross the Unstable",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 60.33
+    },
+    {
+      "itemId": 30133,
+      "name": "Crystalforge Shoulderbraces",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Tempest Keep",
+          "token": "Pauldrons of the Vanquished Champion",
+          "boss": "Void Reaver",
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 57.32
+    },
+    {
+      "itemId": 28589,
+      "name": "Beastmaw Pauldrons",
+      "slot": "shoulder",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Wizard of Oz",
+          "origin": "db"
+        },
+        {
+          "boss": "The Big Bad Wolf",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        },
+        {
+          "boss": "Romulo and Julianne",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 36.86
+    },
+    {
+      "itemId": 28743,
+      "name": "Mantle of Abrahmis",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Netherspite",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 21.0
+    },
+    {
+      "itemId": 30111,
+      "name": "Runetotem's Mantle",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Lady Vashj",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.78
+    },
+    {
+      "itemId": 30084,
+      "name": "Pauldrons of the Argent Sentinel",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Morogrim Tidewalker",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.25
+    },
+    {
+      "itemId": 30097,
+      "name": "Coral-Barbed Shoulderpads",
+      "slot": "shoulder",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Leotheras the Blind",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.25
+    },
+    {
+      "itemId": 28631,
+      "name": "Dragon-Quake Shoulderguards",
+      "slot": "shoulder",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Curator",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.74
+    },
+    {
+      "itemId": 28647,
+      "name": "Forest Wind Shoulderpads",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Curator",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.74
+    },
+    {
+      "itemId": 28666,
+      "name": "Pauldrons of the Justice-Seeker",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shade of Aran",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.23
+    },
+    {
+      "itemId": 28579,
+      "name": "Romulo's Poison Vial",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Romulo and Julianne",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 75.25
+    },
+    {
+      "itemId": 30627,
+      "name": "Tsunami Talisman",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Leotheras the Blind",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 50.76
+    },
+    {
+      "itemId": 29383,
+      "name": "Bloodlust Brooch",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "badge",
+          "cost": 41,
+          "origin": "wowhead"
+        }
+      ],
+      "curationHint": 29.52,
+      "curatedSets": [
+        "p1",
+        "p2",
+        "preraid"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 28830,
+      "name": "Dragonspine Trophy",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "Gruul the Dragonkiller",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 16.4,
+      "curatedSets": [
+        "p1",
+        "p2"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 28789,
+      "name": "Eye of Magtheridon",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Magtheridon's Lair",
+          "boss": "Magtheridon",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 9.18
+    },
+    {
+      "itemId": 28590,
+      "name": "Ribbon of Sacrifice",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Wizard of Oz",
+          "origin": "db"
+        },
+        {
+          "boss": "The Big Bad Wolf",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        },
+        {
+          "boss": "Romulo and Julianne",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 4.25
+    },
+    {
+      "itemId": 28823,
+      "name": "Eye of Gruul",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "Gruul the Dragonkiller",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.55
+    },
+    {
+      "itemId": 28528,
+      "name": "Moroes' Lucky Pocket Watch",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Moroes",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 28727,
+      "name": "Pendant of the Violet Eye",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shade of Aran",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 28785,
+      "name": "The Lightning Capacitor",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Terestian Illhoof",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30447,
+      "name": "Tome of Fiery Redemption",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Al'ar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30619,
+      "name": "Fel Reaver's Piston",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Void Reaver",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30620,
+      "name": "Spyglass of the Hidden Fleet",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30621,
+      "name": "Prism of Inner Calm",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Lady Vashj",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30626,
+      "name": "Sextant of Unstable Currents",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Fathom-Lord Karathress",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30629,
+      "name": "Scarab of Displacement",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Hydross the Unstable",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30106,
+      "name": "Belt of One-Hundred Deaths",
+      "slot": "waist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Lady Vashj",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 105.59,
+      "curatedSets": [
+        "p2"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 30040,
+      "name": "Belt of Deep Shadow",
+      "slot": "waist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Leatherworking",
+          "recipeZone": "Serpentshrine Cavern",
+          "recipeBoss": "Trash",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 89.76
+    },
+    {
+      "itemId": 30032,
+      "name": "Red Belt of Battle",
+      "slot": "waist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Blacksmithing",
+          "recipeZone": "Serpentshrine Cavern",
+          "recipeBoss": "Trash",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 89.58
+    },
+    {
+      "itemId": 28656,
+      "name": "Girdle of the Prowler",
+      "slot": "waist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Terestian Illhoof",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 74.98
+    },
+    {
+      "itemId": 30068,
+      "name": "Girdle of the Tidal Call",
+      "slot": "waist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Morogrim Tidewalker",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 60.41
+    },
+    {
+      "itemId": 28779,
+      "name": "Girdle of the Endless Pit",
+      "slot": "waist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Magtheridon's Lair",
+          "boss": "Magtheridon",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 55.56,
+      "curatedSets": [
+        "p1"
+      ]
+    },
+    {
+      "itemId": 30046,
+      "name": "Belt of the Black Eagle",
+      "slot": "waist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Leatherworking",
+          "recipeZone": "Serpentshrine Cavern",
+          "recipeBoss": "Trash",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 52.9
+    },
+    {
+      "itemId": 28828,
+      "name": "Gronn-Stitched Girdle",
+      "slot": "waist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "Gruul the Dragonkiller",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 48.77
+    },
+    {
+      "itemId": 28750,
+      "name": "Girdle of Treachery",
+      "slot": "waist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Chess Event",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 37.28
+    },
+    {
+      "itemId": 28778,
+      "name": "Terror Pit Girdle",
+      "slot": "waist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Magtheridon's Lair",
+          "boss": "Magtheridon",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 34.21
+    },
+    {
+      "itemId": 30643,
+      "name": "Belt of the Tracker",
+      "slot": "waist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 17.22
+    },
+    {
+      "itemId": 28566,
+      "name": "Crimson Girdle of the Indomitable",
+      "slot": "waist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Moroes",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 16.0
+    },
+    {
+      "itemId": 29965,
+      "name": "Girdle of the Righteous Path",
+      "slot": "waist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "High Astromancer Solarian",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.42
+    },
+    {
+      "itemId": 29984,
+      "name": "Girdle of Zaetar",
+      "slot": "waist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Void Reaver",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.25
+    },
+    {
+      "itemId": 30030,
+      "name": "Girdle of Fallen Stars",
+      "slot": "waist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 4.25
+    },
+    {
+      "itemId": 28655,
+      "name": "Cord of Nature's Sustenance",
+      "slot": "waist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Terestian Illhoof",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.74
+    },
+    {
+      "itemId": 28733,
+      "name": "Girdle of Truth",
+      "slot": "waist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Netherspite",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.74
+    },
+    {
+      "itemId": 28567,
+      "name": "Belt of Gale Force",
+      "slot": "waist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Moroes",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.4
+    },
+    {
+      "itemId": 30096,
+      "name": "Girdle of the Invulnerable",
+      "slot": "waist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Leotheras the Blind",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30676,
+      "name": "Lurker's Grasp",
+      "slot": "waist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Hyakiss the Lurker",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30677,
+      "name": "Lurker's Belt",
+      "slot": "waist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Hyakiss the Lurker",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30678,
+      "name": "Lurker's Girdle",
+      "slot": "waist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Hyakiss the Lurker",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 31984,
+      "name": "Merciless Gladiator's Greatsword",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "origin": "wowhead"
+        }
+      ],
+      "curationHint": 790.923
+    },
+    {
+      "itemId": 29993,
+      "name": "Twinblade of the Phoenix",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Kael'thas Sunstrider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 770.015
+    },
+    {
+      "itemId": 28430,
+      "name": "Lionheart Executioner",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Blacksmithing",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 762.883,
+      "curatedSets": [
+        "p2"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 28773,
+      "name": "Gorehowl",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Prince Malchezaar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 721.308
+    },
+    {
+      "itemId": 30090,
+      "name": "World Breaker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Fathom-Lord Karathress",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 720.386
+    },
+    {
+      "itemId": 28429,
+      "name": "Lionheart Champion",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Blacksmithing",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 715.383,
+      "curatedSets": [
+        "p1",
+        "preraid"
+      ]
+    },
+    {
+      "itemId": 30722,
+      "name": "Ethereum Nexus-Reaver",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doomwalker",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 697.303
+    },
+    {
+      "itemId": 28794,
+      "name": "Axe of the Gronn Lords",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "Gruul the Dragonkiller",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 690.898
+    },
+    {
+      "itemId": 28800,
+      "name": "Hammer of the Naaru",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "High King Maulgar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 684.058
+    },
+    {
+      "itemId": 28587,
+      "name": "Legacy",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Wizard of Oz",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 671.56
+    },
+    {
+      "itemId": 28573,
+      "name": "Despair",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Romulo and Julianne",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 660.76
+    },
+    {
+      "itemId": 28774,
+      "name": "Glaive of the Pit",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Magtheridon's Lair",
+          "boss": "Magtheridon",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 639.357
+    },
+    {
+      "itemId": 30057,
+      "name": "Bracers of Eradication",
+      "slot": "wrist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "The Lurker Below",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 80.03
+    },
+    {
+      "itemId": 30026,
+      "name": "Bands of the Celestial Archer",
+      "slot": "wrist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 45.52
+    },
+    {
+      "itemId": 23537,
+      "name": "Black Felsteel Bracers",
+      "slot": "wrist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Blacksmithing",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 42.94,
+      "curatedSets": [
+        "preraid"
+      ]
+    },
+    {
+      "itemId": 29966,
+      "name": "Vambraces of Ending",
+      "slot": "wrist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "High Astromancer Solarian",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 39.32
+    },
+    {
+      "itemId": 30091,
+      "name": "True-Aim Stalker Bands",
+      "slot": "wrist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Leotheras the Blind",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 38.98
+    },
+    {
+      "itemId": 28795,
+      "name": "Bladespire Warbands",
+      "slot": "wrist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "High King Maulgar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 38.48,
+      "curatedSets": [
+        "p1",
+        "p2"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 28514,
+      "name": "Bracers of Maliciousness",
+      "slot": "wrist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Maiden of Virtue",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 37.44
+    },
+    {
+      "itemId": 28454,
+      "name": "Stalker's War Bands",
+      "slot": "wrist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Attumen the Huntsman",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 33.79
+    },
+    {
+      "itemId": 28453,
+      "name": "Bracers of the White Stag",
+      "slot": "wrist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Attumen the Huntsman",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.42
+    },
+    {
+      "itemId": 30062,
+      "name": "Grove-Bands of Remulos",
+      "slot": "wrist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "The Lurker Below",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.91
+    },
+    {
+      "itemId": 30047,
+      "name": "Blackfathom Warbands",
+      "slot": "wrist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Hydross the Unstable",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.57
+    },
+    {
+      "itemId": 28503,
+      "name": "Whirlwind Bracers",
+      "slot": "wrist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Attumen the Huntsman",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.72
+    },
+    {
+      "itemId": 28512,
+      "name": "Bracers of Justice",
+      "slot": "wrist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Maiden of Virtue",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.72
+    },
+    {
+      "itemId": 28502,
+      "name": "Vambraces of Courage",
+      "slot": "wrist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Attumen the Huntsman",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30685,
+      "name": "Ravager's Wrist-Wraps",
+      "slot": "wrist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Rokad the Ravager",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30686,
+      "name": "Ravager's Bands",
+      "slot": "wrist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Rokad the Ravager",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30687,
+      "name": "Ravager's Bracers",
+      "slot": "wrist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Rokad the Ravager",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 32515,
+      "name": "Wristguards of Determination",
+      "slot": "wrist",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Void Reaver",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    }
+  ]
+}
