@@ -852,6 +852,13 @@
 			}
 		}
 	},
+	"upgrades_tab": {
+		"title": "Upgrades",
+		"subtabs": {
+			"shopping_list": "Shopping List"
+		},
+		"placeholder": "Nothing here yet. This tab will rank gear upgrades against the gear on your Gear tab, using your own sim settings."
+	},
 	"bulk_tab": {
 		"title": "Batch (<span class=\"text-success\">New</span>)",
 		"description": "<span className=\"bold\">Batch Simming</span> is a new feature akin to the <span className=\"bold\">Top Gear</span> sim on <a href=\"https://raidbots.com\" target=\"_blank\">Raidbots.com</a> that allows you to select multiple items and sim them find the best combinations.<br />This is an <span className=\"text-brand\">Alpha</span> feature, so if you have feedback or find a bug, please report it!",
