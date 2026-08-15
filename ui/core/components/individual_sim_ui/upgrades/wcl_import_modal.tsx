@@ -33,13 +33,22 @@ import {
  * plainly rather than attempting a doomed fetch.
  */
 async function loadWclCredentials(): Promise<{ clientId: string; clientSecret: string }> {
+  const missingMessage =
+    "No local WCL credentials found. Copy adapters/local.wcl-credentials.example.ts to adapters/local.wcl-credentials.ts and fill in your own client id/secret.";
   try {
     const mod = await import("./adapters/local.wcl-credentials.js");
+    if (!mod.WCL_CLIENT_ID || !mod.WCL_CLIENT_SECRET) {
+      // The file exists (a fresh checkout that copied the template, or —
+      // this worker's own environment — no credentials were available) but
+      // its values are still blank. Report the same friendly message as a
+      // missing file rather than letting an empty Basic-auth header reach
+      // WCL's /oauth/token and fail with an opaque API error.
+      throw new WclImportError(missingMessage);
+    }
     return { clientId: mod.WCL_CLIENT_ID, clientSecret: mod.WCL_CLIENT_SECRET };
-  } catch {
-    throw new WclImportError(
-      "No local WCL credentials found. Copy adapters/local.wcl-credentials.example.ts to adapters/local.wcl-credentials.ts and fill in your own client id/secret.",
-    );
+  } catch (err) {
+    if (err instanceof WclImportError) throw err;
+    throw new WclImportError(missingMessage);
   }
 }
 
