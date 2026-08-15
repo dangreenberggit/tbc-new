@@ -40,6 +40,26 @@ scenario this file exists to prevent (see the check script's own reminder)
 these two, so a global normalization decision belongs to whoever owns this
 clone's line-ending policy, not to a single porting round.
 
+**The trap also bites freshly-added files, demonstrated live in this same
+round.** `candidate-order.ts` and `promise-pool.ts` were created with LF
+line endings (via a tool that writes files as-is) and hashed correctly at
+that point. After `git commit` + `git checkout feat/upgrades-tab` + `git
+merge` — ordinary operations, no editing — `core.autocrlf=true` silently
+rewrote both to CRLF on disk, and the drift check then reported them as
+drifted too, purely from that checkout. `tr -d '\r'` on each again
+reproduced the exact hash recorded at LF-creation time, confirming
+content was never touched. **This means the hash recorded in this table
+at any given moment reflects whichever line-ending state the file
+happened to be in on disk when the hash was computed, not a stable
+property of the file's content** — the gate as currently specified
+(`sha256_of` on raw disk bytes, `scripts/check_engine_port_drift.py`) is
+unpassable across a `git checkout`/`merge` cycle on this clone regardless
+of what a porting round does, until either this clone sets
+`core.autocrlf=false` (or `.gitattributes` pins `engine/**/*.ts text
+eol=lf`) or the check script normalizes line endings before hashing.
+Recorded here as measured fact, not fixed by this round — the fix is a
+clone/repo-configuration decision outside a single slice's scope.
+
 ## How to read "Adaptation"
 
 - **none** — byte-for-byte port apart from import paths.
