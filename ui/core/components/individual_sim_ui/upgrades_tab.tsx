@@ -11,6 +11,7 @@ import { currentPageSkeleton } from './upgrades/adapters/skeleton';
 import { WasmSimRunner } from './upgrades/adapters/wasm_sim_runner';
 import { epWeightsFor, poolFor } from './upgrades/data/data';
 import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
+import { WclGearImportModal } from './upgrades/wcl_import_modal';
 import type { Assumptions } from './upgrades/engine/disclosure';
 import type { ItemSource } from './upgrades/engine/pool';
 import { simSlotsForPoolSlot } from './upgrades/engine/pool';
@@ -61,6 +62,7 @@ export class UpgradesTab extends SimTab {
 
 	protected shoppingListElem: HTMLElement;
 	protected runButton!: HTMLButtonElement;
+	protected importButton!: HTMLButtonElement;
 	protected iterationsInput!: HTMLInputElement;
 	protected statusElem!: HTMLElement;
 	protected resultsElem!: HTMLElement;
@@ -142,6 +144,7 @@ export class UpgradesTab extends SimTab {
 
 	protected buildTabContent() {
 		const runButtonRef = ref<HTMLButtonElement>();
+		const importButtonRef = ref<HTMLButtonElement>();
 		const iterationsInputRef = ref<HTMLInputElement>();
 		const statusRef = ref<HTMLDivElement>();
 		const resultsRef = ref<HTMLDivElement>();
@@ -152,6 +155,9 @@ export class UpgradesTab extends SimTab {
 				<div className="upgrades-run-row d-flex align-items-center gap-2">
 					<button ref={runButtonRef} className="btn btn-primary upgrades-run-button" type="button">
 						{i18n.t('upgrades_tab.run')}
+					</button>
+					<button ref={importButtonRef} className="btn btn-outline-secondary upgrades-import-button" type="button">
+						{i18n.t('upgrades_tab.import_wcl')}
 					</button>
 					<label className="upgrades-iterations-label d-flex align-items-center gap-1 mb-0">
 						{i18n.t('upgrades_tab.iterations_label')}
@@ -172,6 +178,7 @@ export class UpgradesTab extends SimTab {
 		);
 
 		this.runButton = runButtonRef.value!;
+		this.importButton = importButtonRef.value!;
 		this.iterationsInput = iterationsInputRef.value!;
 		this.statusElem = statusRef.value!;
 		this.resultsElem = resultsRef.value!;
@@ -182,6 +189,15 @@ export class UpgradesTab extends SimTab {
 			this.run().catch((err) => {
 				this.setState({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
 			});
+		});
+
+		// Gear-only import (plan §6, slice 5): opens its own modal rather than
+		// registering as a header import link, because it applies only
+		// `player.equipment` — the header importers (JSON/60U/WoWHead/Addon)
+		// all apply race/talents/professions too, which this deliberately does
+		// not (E-W4 binds the application call to plain `setGear`).
+		this.importButton.addEventListener('click', () => {
+			new WclGearImportModal(this.simUI.rootElem, this.simUI).open();
 		});
 
 		this.render();

@@ -40,6 +40,9 @@ TestAPL.results
 # air tmp dir
 tmp/
 
+# personal dev credentials — never committed (Upgrades tab WCL import, plan §6)
+ui/core/components/individual_sim_ui/upgrades/adapters/local.wcl-credentials.ts
+
 # lib
 wowsimtbc*.so
 wowsimtbc*.dll
