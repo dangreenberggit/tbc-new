@@ -96,7 +96,7 @@ clone/repo-configuration decision outside a single slice's scope.
 | `disclosure.ts` | `disclosure.ts` | none | `0dec2c071c0fe56a7e37d0d07de9672a4fa076d93f30b8f5734dc05835a0a243` |
 | `plausibility.ts` | `plausibility.ts` | none (import paths only) | `182f518ddda01ec9747afba7b3bf90cf1577d62fbf723fda1263b177d1651e9f` |
 | `view.ts` | `view.ts` | adapted — inlines `setPotentialIsConfounded` instead of importing `rank-report-rules.ts` (out of scope) | `bd8833ac761fc4c95c109b2b1ee43188d7ee96d4bf461496f5b7bcbf70c4c45a` |
-| `rank.ts` | `rank.ts` | adapted — drops spec-mismatch check (`spec.ts` not ported); cache key is `canonicalJson(...)` not `contentHashOf(...)` (D4); candidate-pool.md M1 (cap, concurrency, EP ordering, Stop/`complete`, row events) ported unchanged in shape | `0a028ab1b97e73852361b6280cddd3becb8e146649b6314a4631d6654b8dbf34` |
+| `rank.ts` | `rank.ts` | adapted — drops spec-mismatch check (`spec.ts` not ported); cache key is `canonicalJson(...)` not `contentHashOf(...)` (D4); candidate-pool.md M1 (cap, concurrency, EP ordering, Stop/`complete`, row events) ported unchanged in shape | `14f9e40ccb284efa3d339e7214cbbcd64b446b341be24596ac586e7d9ff9868b` |
 | `candidate-order.ts` | `candidate-order.ts` | none (import paths only) | `c0fb93b75f278af0b505d6c426a30aa235716949b57b48da90f9363fa732be64` |
 | `promise-pool.ts` | `promise-pool.ts` | none | `de3ad049ab8b9b56ce99e27550b8e3b21a7931d3d595b0c861eb6cc3c21b2e53` |
 | `seams/gear-source.ts` | `seams/gear-source.ts` | none | `085d3a088a19aa5b8a28db6a2f219df6d0b44ecb39a42568c9788a21e7137cfe` |
