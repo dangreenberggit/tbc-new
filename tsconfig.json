@@ -8,6 +8,7 @@
 		"outDir": "dist/tbc",
 		"pretty": false,
 		"allowJs": true,
+		"allowImportingTsExtensions": true,
 		"resolveJsonModule": true,
 		"types": ["node", "gtag.js", "golang-wasm-exec"],
 		"esModuleInterop": true,
