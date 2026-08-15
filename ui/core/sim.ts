@@ -288,7 +288,12 @@ export class Sim {
 		return raidProto;
 	}
 
-	makeRaidSimRequest(debug: boolean): RaidSimRequest {
+	// `iterations` is optional so every existing caller (debug runs, the
+	// ordinary sim button) keeps reading from global sim settings unchanged;
+	// candidate-pool.md §6.3/F7 needs a per-request override for racing
+	// (screening at a lower iteration count than the page's own setting)
+	// without a parallel request-builder that would drift from this one.
+	makeRaidSimRequest(debug: boolean, iterations?: number): RaidSimRequest {
 		const raid = this.getModifiedRaidProto();
 		const encounter = this.encounter.toProto();
 
@@ -300,7 +305,7 @@ export class Sim {
 			raid: raid,
 			encounter: encounter,
 			simOptions: SimOptions.create({
-				iterations: debug ? 1 : this.getIterations(),
+				iterations: debug ? 1 : (iterations ?? this.getIterations()),
 				randomSeed: BigInt(this.nextRngSeed()),
 				debugFirstIteration: true,
 			}),

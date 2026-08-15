@@ -19,6 +19,27 @@ have not changed since this table was written — nothing about behaviour.**
 Only the parity test (E-W3, `packages/core/test/wowsims-fork-parity.test.ts`)
 proves behaviour is unchanged.
 
+## A CRLF trap in this clone
+
+This fork clone has `core.autocrlf=true` (`git -C vendor/tbc-new-fork config
+core.autocrlf`) while the main `tbc-gear-prio` repo has it `false`, so a
+file's bytes on disk here carry CRLF line endings even though the git blob
+stores LF. `scripts/check_engine_port_drift.py` hashes raw bytes on disk
+(`sha256_of`), so a file that is otherwise byte-identical to its ported
+source still reports "drifted" for line-ending reasons alone.
+
+Confirmed for `disclosure.ts` and `set-value.ts` as of the candidate-pool
+M1 port round (2026-08-15): both are CRLF on disk, and `tr -d '\r' <
+disclosure.ts | sha256sum` (respectively `set-value.ts`) reproduces this
+table's recorded hash exactly — content-identical, drift is line-endings
+only. Neither file was touched by that round. Recorded here rather than
+"fixed" by rewriting their hashes to the CRLF-on-disk value, because a
+hash rewritten without re-running E-W3 first is exactly the silent-drift
+scenario this file exists to prevent (see the check script's own reminder)
+— and the CRLF issue applies to *every* ported file at read time, not just
+these two, so a global normalization decision belongs to whoever owns this
+clone's line-ending policy, not to a single porting round.
+
 ## How to read "Adaptation"
 
 - **none** — byte-for-byte port apart from import paths.
@@ -55,7 +76,9 @@ proves behaviour is unchanged.
 | `disclosure.ts` | `disclosure.ts` | none | `0dec2c071c0fe56a7e37d0d07de9672a4fa076d93f30b8f5734dc05835a0a243` |
 | `plausibility.ts` | `plausibility.ts` | none (import paths only) | `182f518ddda01ec9747afba7b3bf90cf1577d62fbf723fda1263b177d1651e9f` |
 | `view.ts` | `view.ts` | adapted — inlines `setPotentialIsConfounded` instead of importing `rank-report-rules.ts` (out of scope) | `bd8833ac761fc4c95c109b2b1ee43188d7ee96d4bf461496f5b7bcbf70c4c45a` |
-| `rank.ts` | `rank.ts` | adapted — drops spec-mismatch check (`spec.ts` not ported); cache key is `canonicalJson(...)` not `contentHashOf(...)` (D4) | `f684a25def1dff75a58066b5339d1be197310b0acaf3caac307609d8c34c6ac9` |
+| `rank.ts` | `rank.ts` | adapted — drops spec-mismatch check (`spec.ts` not ported); cache key is `canonicalJson(...)` not `contentHashOf(...)` (D4); candidate-pool.md M1 (cap, concurrency, EP ordering, Stop/`complete`, row events) ported unchanged in shape | `0a028ab1b97e73852361b6280cddd3becb8e146649b6314a4631d6654b8dbf34` |
+| `candidate-order.ts` | `candidate-order.ts` | none (import paths only) | `c0fb93b75f278af0b505d6c426a30aa235716949b57b48da90f9363fa732be64` |
+| `promise-pool.ts` | `promise-pool.ts` | none | `de3ad049ab8b9b56ce99e27550b8e3b21a7931d3d595b0c861eb6cc3c21b2e53` |
 | `seams/gear-source.ts` | `seams/gear-source.ts` | none | `085d3a088a19aa5b8a28db6a2f219df6d0b44ecb39a42568c9788a21e7137cfe` |
 | `seams/sim-runner.ts` | `seams/sim-runner.ts` | adapted — cache key is canonical-JSON string, no `node:crypto` (D4) | `7540cbc3d0f03f662d937bac65669b053b1db9cae9f42f1b0a8a99c6cfd39595` |
 | `seams/store.ts` | `seams/store.ts` | adapted — `MemoryStore` only, `SqliteStore` dropped (plan §2.1) | `7e51dcf01e3118691b1e509299763dcb9f06b7ffe18314a9f5d6e6f4734c8518` |

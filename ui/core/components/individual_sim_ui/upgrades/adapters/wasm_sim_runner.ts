@@ -42,12 +42,67 @@ import type {
  * wasm-concurrency auto-sizing, capped at 4 — see that file's constructor). */
 export const DEFAULT_WORKER_COUNT = 4;
 
+/**
+ * E-W5 measured **183.8 MB** peak RSS for one `wowsimcli` process running
+ * 5,000 iterations (candidate-pool.md §3.1) — the Node/CLI sim binary, not
+ * this browser's WASM worker. No in-browser RSS-per-worker measurement
+ * exists yet (that number was explicitly out of scope for E-W5, which ran
+ * against the CLI), so this constant is the CLI figure carried over as the
+ * best available proxy: same Go sim core compiled to WASM instead of a
+ * native binary, running the same fixed-duration encounter loop that
+ * dominates RSS. Treat `memoryCapFromDeviceMemory` below as a
+ * **hypothesis**, not a measured browser number, until a WASM-side RSS
+ * sample replaces it — flagged here so a future change to this constant
+ * updates the reasoning in both places at once.
+ */
+const MEASURED_MB_PER_SIM_PROCESS = 183.8;
+
+/**
+ * `min(workers, memoryCap)` per candidate-pool.md §5.1.2/§5.2. `memoryCap`
+ * comes from `navigator.deviceMemory` (Chrome/Chromium only — the Device
+ * Memory API; Firefox and Safari never expose it and the property is
+ * `undefined` there), read as an approximate device RAM figure in GiB.
+ * Reserves half of reported RAM for everything else already running (the
+ * OS, the tab's own DOM/JS heap, other tabs) rather than assuming this sim
+ * can claim the whole figure, then divides the remainder by the measured
+ * per-process cost above. Falls back to `DEFAULT_WORKER_COUNT` (matching
+ * upstream's own hardcoded default, `ui/core/sim.ts`) when the API is
+ * unavailable, so a Firefox/Safari user is not capped to 1 by a browser
+ * quirk unrelated to their actual RAM.
+ */
+export function memoryCapFromDeviceMemory(
+  deviceMemoryGiB: number | undefined = (
+    navigator as Navigator & { deviceMemory?: number }
+  ).deviceMemory
+): number {
+  if (deviceMemoryGiB === undefined) return DEFAULT_WORKER_COUNT;
+  const usableMb = (deviceMemoryGiB * 1024) / 2;
+  const cap = Math.floor(usableMb / MEASURED_MB_PER_SIM_PROCESS);
+  return Math.max(1, cap);
+}
+
 export class WasmSimRunner implements SimRunner {
   private readonly pool: WorkerPool;
   private readonly signalManager = new SimSignalManager();
 
+  /**
+   * `min(workers, memoryCap)` (candidate-pool.md §5.1.2) — how many
+   * candidate sims `rankUpgrades`'s `promisePool` may dispatch at once.
+   * Distinct from the `WorkerPool`'s own `numWorkers`: that number sizes
+   * how many WASM workers exist to *service* requests; this number caps how
+   * many *requests* are in flight so their combined memory stays under
+   * `memoryCap`. `numWorkers` is itself already `min`-folded in when it is
+   * lower than the memory cap, since dispatching more requests than there
+   * are workers to run them buys nothing.
+   */
+  readonly concurrency: number;
+
   constructor(numWorkers: number = DEFAULT_WORKER_COUNT) {
     this.pool = new WorkerPool(numWorkers);
+    this.concurrency = Math.max(
+      1,
+      Math.min(numWorkers, memoryCapFromDeviceMemory())
+    );
   }
 
   async version(): Promise<string> {

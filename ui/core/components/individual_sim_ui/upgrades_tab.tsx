@@ -10,12 +10,14 @@ import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
 import { currentPageSkeleton } from './upgrades/adapters/skeleton';
 import { WasmSimRunner } from './upgrades/adapters/wasm_sim_runner';
 import { epWeightsFor, poolFor } from './upgrades/data/data';
+import { isKaelTempLegendary } from './upgrades/engine/kael-temp';
+import { filterPoolByPhase } from './upgrades/engine/pool';
 import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
 import { WclGearImportModal } from './upgrades/wcl_import_modal';
 import type { Assumptions } from './upgrades/engine/disclosure';
 import type { ItemSource } from './upgrades/engine/pool';
 import { simSlotsForPoolSlot } from './upgrades/engine/pool';
-import { rankUpgrades, type Progress, type Ranking, type RankInput } from './upgrades/engine/rank';
+import { rankUpgrades, type PartialRanking, type Progress, type Ranking, type RankInput } from './upgrades/engine/rank';
 import { MemoryStore } from './upgrades/engine/seams/store';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { SpecId } from './upgrades/engine/types';
@@ -54,6 +56,16 @@ type RunState =
 	| { kind: 'idle' }
 	| { kind: 'running'; progress: Progress }
 	| { kind: 'done'; ranking: Ranking; stale: boolean }
+	/**
+	 * Stop (candidate-pool.md §5.1.4) cut the run short — `ranking.complete`
+	 * is `false` by construction (`PartialRanking`), kept as its own `RunState`
+	 * branch rather than folded into `'done'` so a renderer cannot forget to
+	 * check `complete` before treating the numbers as final. `applyView`
+	 * (view.ts) only accepts a `complete: true` `Ranking`, so this state's
+	 * own render path builds its own row list from `ranking.items` rather
+	 * than calling `applyView`.
+	 */
+	| { kind: 'stopped'; ranking: PartialRanking }
 	| { kind: 'error'; message: string }
 	| { kind: 'unsupported-spec' };
 
@@ -62,8 +74,10 @@ export class UpgradesTab extends SimTab {
 
 	protected shoppingListElem: HTMLElement;
 	protected runButton!: HTMLButtonElement;
+	protected stopButton!: HTMLButtonElement;
 	protected importButton!: HTMLButtonElement;
 	protected iterationsInput!: HTMLInputElement;
+	protected candidatesInput!: HTMLInputElement;
 	protected statusElem!: HTMLElement;
 	protected resultsElem!: HTMLElement;
 	protected assumptionsElem!: HTMLElement;
@@ -82,6 +96,17 @@ export class UpgradesTab extends SimTab {
 	// runs in the same page session, not just within one.
 	private readonly sim = new WasmSimRunner();
 	private readonly store = new MemoryStore();
+
+	// Rebuilt each run (an AbortController cannot be reused after abort) —
+	// held on the instance so the Stop button's click handler can reach the
+	// signal for whichever run is currently in flight (candidate-pool.md
+	// §5.1.4).
+	private abortController: AbortController | undefined;
+	// Rows land one at a time via the `{ kind: 'row' }` Progress event
+	// (candidate-pool.md §5.1.5); accumulated here so a re-render mid-run can
+	// show a skeleton filling in rather than nothing until the whole run
+	// finishes.
+	private landedRows: Ranking['items'] = [];
 	private state: RunState = { kind: 'idle' };
 
 	constructor(parentElem: HTMLElement, simUI: IndividualSimUI<any>) {
@@ -144,8 +169,10 @@ export class UpgradesTab extends SimTab {
 
 	protected buildTabContent() {
 		const runButtonRef = ref<HTMLButtonElement>();
+		const stopButtonRef = ref<HTMLButtonElement>();
 		const importButtonRef = ref<HTMLButtonElement>();
 		const iterationsInputRef = ref<HTMLInputElement>();
+		const candidatesInputRef = ref<HTMLInputElement>();
 		const statusRef = ref<HTMLDivElement>();
 		const resultsRef = ref<HTMLDivElement>();
 		const assumptionsRef = ref<HTMLDivElement>();
@@ -155,6 +182,9 @@ export class UpgradesTab extends SimTab {
 				<div className="upgrades-run-row d-flex align-items-center gap-2">
 					<button ref={runButtonRef} className="btn btn-primary upgrades-run-button" type="button">
 						{i18n.t('upgrades_tab.run')}
+					</button>
+					<button ref={stopButtonRef} className="btn btn-outline-danger upgrades-stop-button" type="button" disabled>
+						{i18n.t('upgrades_tab.stop')}
 					</button>
 					<button ref={importButtonRef} className="btn btn-outline-secondary upgrades-import-button" type="button">
 						{i18n.t('upgrades_tab.import_wcl')}
@@ -170,6 +200,23 @@ export class UpgradesTab extends SimTab {
 							value={String(DEFAULT_ITERATIONS)}
 						/>
 					</label>
+					<label className="upgrades-candidates-label d-flex align-items-center gap-1 mb-0">
+						{i18n.t('upgrades_tab.candidates_label')}
+						<input
+							ref={candidatesInputRef}
+							type="number"
+							min="1"
+							step="1"
+							className="upgrades-candidates-input form-control form-control-sm"
+							// Placeholder, not a value: the real default is "every
+							// eligible candidate", which depends on the selected
+							// spec/maxPhase and is not known until Run is clicked
+							// (readCandidateCap() below re-derives it then). An empty
+							// input reads as "no cap" — matching RankInput.candidateCap's
+							// own `undefined` meaning (candidate-pool.md §5.1.1).
+							placeholder={i18n.t('upgrades_tab.candidates_placeholder')}
+						/>
+					</label>
 					<div ref={statusRef} className="upgrades-status text-muted" />
 				</div>
 				<div ref={resultsRef} className="upgrades-results mt-gap" />
@@ -178,8 +225,10 @@ export class UpgradesTab extends SimTab {
 		);
 
 		this.runButton = runButtonRef.value!;
+		this.stopButton = stopButtonRef.value!;
 		this.importButton = importButtonRef.value!;
 		this.iterationsInput = iterationsInputRef.value!;
+		this.candidatesInput = candidatesInputRef.value!;
 		this.statusElem = statusRef.value!;
 		this.resultsElem = resultsRef.value!;
 		this.assumptionsElem = assumptionsRef.value!;
@@ -189,6 +238,14 @@ export class UpgradesTab extends SimTab {
 			this.run().catch((err) => {
 				this.setState({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
 			});
+		});
+
+		// Stop's contract (candidate-pool.md §5.1.4) is "finish in-flight work,
+		// dispatch nothing new" — signalling the abort is all this button does;
+		// rankUpgrades itself decides what "in-flight" means and returns the
+		// PartialRanking, so there is nothing else for the click handler to do.
+		this.stopButton.addEventListener('click', () => {
+			this.abortController?.abort();
 		});
 
 		// Gear-only import (plan §6, slice 5): opens its own modal rather than
@@ -238,6 +295,36 @@ export class UpgradesTab extends SimTab {
 		return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_ITERATIONS;
 	}
 
+	/**
+	 * Eligible-candidate count for the current spec/maxPhase — the same
+	 * phase + Kael-legendary filter `rank.ts` itself applies before EP
+	 * ordering (candidate-pool.md F1), so the placeholder's denominator
+	 * ("246 / 246") always matches what an uncapped run would actually sim.
+	 * Recomputed per call rather than cached: it depends on the page's
+	 * current spec and phase, both of which can change between runs.
+	 */
+	private eligibleCount(specId: SpecId, maxPhase: RankInput['maxPhase']): number {
+		return filterPoolByPhase(poolFor(specId, maxPhase), maxPhase).filter((e) => !isKaelTempLegendary(e.itemId)).length;
+	}
+
+	/**
+	 * Reads the Candidates control (candidate-pool.md §5.1.1) at click-time,
+	 * same idiom as `readIterations`. An empty field means "no cap" —
+	 * `RankInput.candidateCap: undefined`, sim every eligible candidate —
+	 * matching the field's own placeholder text rather than silently
+	 * defaulting to some other number the user never typed. A non-positive
+	 * or non-finite value is treated the same way: refusing to rank rather
+	 * than guessing is wrong here, but there is no error channel before
+	 * `rankUpgrades` starts, so "no cap" is the safe fallback (never simming
+	 * fewer candidates than the user could see was intended).
+	 */
+	private readCandidateCap(): number | undefined {
+		const raw = this.candidatesInput.value.trim();
+		if (raw === '') return undefined;
+		const parsed = Number(raw);
+		return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined;
+	}
+
 	private async run(): Promise<void> {
 		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
 		if (!specId) {
@@ -251,6 +338,12 @@ export class UpgradesTab extends SimTab {
 		const skeleton = currentPageSkeleton(this.simUI);
 		const gearSource = new PlayerGearSource(this.simUI);
 
+		this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder', {
+			count: this.eligibleCount(specId, maxPhase),
+		});
+
+		this.abortController = new AbortController();
+		this.landedRows = [];
 		this.setState({ kind: 'running', progress: { stage: 'resolving' } });
 
 		const input: RankInput = {
@@ -261,32 +354,65 @@ export class UpgradesTab extends SimTab {
 			spec: specId,
 			maxPhase,
 			iterations: this.readIterations(),
+			candidateCap: this.readCandidateCap(),
 		};
 
-		const ranking = await rankUpgrades(
-			input,
-			{
-				gear: gearSource,
-				sim: this.sim,
-				store: this.store,
-				clock: () => new Date(),
-				raidSimSkeleton: skeleton,
-				epWeights: epWeightsFor(specId),
-				pool: poolFor(specId, maxPhase),
-			},
-			(progress) => {
-				// Only overwrite a still-running state — a late progress tick
-				// racing a state read is possible but not a completion, so it
-				// must never clobber a 'done'/'error' state set after it fired.
-				if (this.state.kind === 'running') this.setState({ kind: 'running', progress });
-			},
-		);
+		this.stopButton.disabled = false;
+		let ranking: Ranking | PartialRanking;
+		try {
+			ranking = await rankUpgrades(
+				input,
+				{
+					gear: gearSource,
+					sim: this.sim,
+					store: this.store,
+					clock: () => new Date(),
+					raidSimSkeleton: skeleton,
+					epWeights: epWeightsFor(specId),
+					pool: poolFor(specId, maxPhase),
+					// `min(workers, memoryCap)` — WasmSimRunner derives this once at
+					// construction from the measured per-process memory cost
+					// (candidate-pool.md §5.1.2, wasm_sim_runner.ts).
+					concurrency: this.sim.concurrency,
+					signal: this.abortController.signal,
+				},
+				(progress) => {
+					// Row-landed events (candidate-pool.md §5.1.5) are a side
+					// channel alongside the stage sequence, not a stage of their
+					// own — accumulate them for the skeleton fill and keep
+					// rendering the current 'running' stage/progress underneath.
+					if ('kind' in progress && progress.kind === 'row') {
+						this.landedRows.push(progress.row);
+						if (this.state.kind === 'running') this.render();
+						return;
+					}
+					// Only overwrite a still-running state — a late progress tick
+					// racing a state read is possible but not a completion, so it
+					// must never clobber a 'done'/'error'/'stopped' state set
+					// after it fired.
+					if (this.state.kind === 'running') this.setState({ kind: 'running', progress });
+				},
+			);
+		} finally {
+			this.stopButton.disabled = true;
+			this.abortController = undefined;
+		}
 
-		this.setState({ kind: 'done', ranking, stale: false });
+		if (ranking.complete) {
+			this.setState({ kind: 'done', ranking, stale: false });
+		} else {
+			// Stop cut the run short — `ranking.complete` narrows to `false`
+			// here, so this is a `PartialRanking` by the type, not by
+			// convention. Never reaches the ranking cache (rank.ts's own
+			// `complete: true`-only cache write), so a later re-run recomputes
+			// rather than replaying the partial result.
+			this.setState({ kind: 'stopped', ranking });
+		}
 	}
 
 	private render() {
 		this.runButton.disabled = this.state.kind === 'running';
+		this.stopButton.disabled = this.state.kind !== 'running';
 		this.statusElem.replaceChildren(this.statusContent());
 		this.renderSubTabs();
 		this.assumptionsElem.replaceChildren(this.assumptionsContent());
@@ -299,9 +425,21 @@ export class UpgradesTab extends SimTab {
 			case 'unsupported-spec':
 				return <span>{i18n.t('upgrades_tab.status.unsupported_spec')}</span>;
 			case 'running':
-				return <span>{progressLabel(this.state.progress)}</span>;
+				// Row-landed count (candidate-pool.md §5.1.5), not just the stage
+				// label — "Simming 12/246" is more useful mid-run than the stage
+				// name alone, and `landedRows` is exactly the rows that fired a
+				// `{ kind: 'row' }` event so far.
+				return <span>{`${progressLabel(this.state.progress)} (${this.landedRows.length} rows landed)`}</span>;
 			case 'error':
 				return <span className="text-danger">{i18n.t('upgrades_tab.status.error', { message: this.state.message })}</span>;
+			case 'stopped': {
+				const label = i18n.t('upgrades_tab.status.stopped', { dps: this.state.ranking.baseline.dps.toFixed(1) });
+				return (
+					<div className="upgrades-stopped-banner alert alert-warning py-1 px-2 mb-2 d-inline-flex align-items-center gap-2">
+						<span>{label}</span>
+					</div>
+				);
+			}
 			case 'done': {
 				const label = i18n.t('upgrades_tab.status.done', { dps: this.state.ranking.baseline.dps.toFixed(1) });
 				return this.state.stale ? (
@@ -401,9 +539,61 @@ export class UpgradesTab extends SimTab {
 	}
 
 	private resultsContent(): Node {
+		if (this.state.kind === 'running') {
+			// Skeleton fill (candidate-pool.md §5.1.5): show rows as they land
+			// rather than nothing until the whole run finishes. Not run through
+			// applyView — there is no complete Ranking yet to view, only the
+			// individual rows the row-landed Progress event has delivered.
+			return this.landedRowsTable(this.landedRows);
+		}
+		if (this.state.kind === 'stopped') {
+			// PartialRanking is not a Ranking (`complete: false` vs the `true`
+			// literal applyView's parameter requires), so this renders directly
+			// from `ranking.items` rather than going through applyView/the slot
+			// tab strip — a stopped run gets the plain list its own state
+			// deserves, not a pretend-complete view (candidate-pool.md §5.1.4).
+			return this.landedRowsTable(this.state.ranking.items);
+		}
 		if (this.state.kind !== 'done') return <></>;
 		const view = applyView(this.state.ranking, this.currentViewOptions());
 		return this.rowsTable(view.shortlist, view.belowCutoffCount, view.rows);
+	}
+
+	/**
+	 * Plain row list for states with no complete `Ranking` to run through
+	 * `applyView` — mid-run skeleton fill and the Stop-truncated result
+	 * (candidate-pool.md §5.1.4, §5.1.5). Rows Stop never reached
+	 * (`simmed: false`) are filtered out here rather than shown with a
+	 * placeholder 0 delta, which would misread as "no upgrade" instead of
+	 * "not simmed".
+	 */
+	private landedRowsTable(rows: readonly Ranking['items'][number][]): Node {
+		const simmedRows = rows.filter((r) => r.simmed !== false);
+		if (simmedRows.length === 0) {
+			return <div className="text-muted">{i18n.t('upgrades_tab.results.empty')}</div>;
+		}
+		return (
+			<table className="upgrades-results-table table table-sm">
+				<thead>
+					<tr>
+						<th>{i18n.t('upgrades_tab.results.item')}</th>
+						<th>{i18n.t('upgrades_tab.results.slot')}</th>
+						<th>{i18n.t('upgrades_tab.results.delta_dps')}</th>
+						<th>{i18n.t('upgrades_tab.results.source')}</th>
+					</tr>
+				</thead>
+				<tbody>
+					{simmedRows.map((row) => (
+						<tr className={row.owned ? 'upgrades-row-owned text-muted' : ''}>
+							<td>{row.name}</td>
+							<td>{slotLabel(row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0])}</td>
+							<td>{`+${row.deltaDps.toFixed(1)}`}</td>
+							<td>{sourceLabel(row.source)}</td>
+						</tr>
+					))}
+				</tbody>
+			</table>
+		);
 	}
 
 	private slotPaneContent(slot: SimOrderName, view: ViewResult): Node {
@@ -497,8 +687,9 @@ export class UpgradesTab extends SimTab {
 	}
 
 	private assumptionsContent(): Node {
-		if (this.state.kind !== 'done') return <></>;
+		if (this.state.kind !== 'done' && this.state.kind !== 'stopped') return <></>;
 		const a: Assumptions = this.state.ranking.assumptions;
+		const cap = this.readCandidateCap();
 		const detailsRef = ref<HTMLDetailsElement>();
 		return (
 			<details ref={detailsRef} className="upgrades-assumptions-drawer">
@@ -510,6 +701,16 @@ export class UpgradesTab extends SimTab {
 					<dd className="col-sm-8">{a.iterations}</dd>
 					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.max_phase')}</dt>
 					<dd className="col-sm-8">{a.maxPhase}</dd>
+					{cap !== undefined ? (
+						<>
+							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.candidate_cap')}</dt>
+							{/* M2/racing was not shipped (candidate-pool.md §3.3 E-W5 no-go)
+							    — a cap below "all eligible" is an EP-order preselection, not
+							    a second, cheaper ranking pass. Said here in the reader's own
+							    words rather than left implicit in the number alone. */}
+							<dd className="col-sm-8">{i18n.t('upgrades_tab.assumptions.candidate_cap_note', { cap })}</dd>
+						</>
+					) : null}
 					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.engine_provenance')}</dt>
 					<dd className="col-sm-8">{ENGINE_FORK_COMMIT}</dd>
 					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.sim_version')}</dt>
@@ -585,7 +786,20 @@ function sourceLabel(source: ItemSource): string {
 	return SOURCE_LABELS[source.kind] ?? source.kind;
 }
 
+/** Narrows away the `{ kind: 'row' }` side channel, which carries no `stage`. */
+type StageProgress = Exclude<Progress, { kind: 'row' }>;
+
+function isStageProgress(p: Progress): p is StageProgress {
+	return !('kind' in p);
+}
+
 function progressLabel(p: Progress): string {
+	// The `{ kind: 'row' }` side channel (candidate-pool.md §5.1.5) never
+	// reaches `RunState.running.progress` — `run()`'s onProgress callback
+	// intercepts it and updates `landedRows` instead of calling `setState`
+	// — but `Progress`'s type still includes it, so this branch exists for
+	// exhaustiveness rather than because it is ever rendered.
+	if (!isStageProgress(p)) return i18n.t('upgrades_tab.progress.resolving');
 	switch (p.stage) {
 		case 'resolving':
 			return i18n.t('upgrades_tab.progress.resolving');

@@ -859,14 +859,18 @@
 		},
 		"placeholder": "Nothing here yet. This tab will rank gear upgrades against the gear on your Gear tab, using your own sim settings.",
 		"run": "Run",
+		"stop": "Stop",
 		"import_wcl": "Import gear from log",
 		"iterations_label": "Iterations",
+		"candidates_label": "Candidates",
+		"candidates_placeholder": "{{count}} / {{count}}",
 		"status": {
 			"idle": "Ranks upgrades against your current gear and settings on this page.",
 			"unsupported_spec": "This spec has no ranking data yet.",
 			"error": "Ranking failed: {{message}}",
 			"done": "Your current gear: {{dps}} DPS.",
-			"stale": "settings changed since this ranking — results may be out of date"
+			"stale": "settings changed since this ranking — results may be out of date",
+			"stopped": "Stopped early. Your current gear: {{dps}} DPS. Rows still simming were skipped — replication and set-completion packages were not run."
 		},
 		"progress": {
 			"resolving": "Starting…",
@@ -892,6 +896,8 @@
 			"seeds": "Seeds",
 			"iterations": "Iterations",
 			"max_phase": "Max phase",
+			"candidate_cap": "Candidate cap",
+			"candidate_cap_note": "top {{cap}} by EP order — a preselection, not a ranking",
 			"engine_provenance": "Engine (fork commit)",
 			"sim_version": "Sim version"
 		}
