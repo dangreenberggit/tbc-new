@@ -13,6 +13,7 @@ import { epWeightsFor, poolFor } from './upgrades/data/data';
 import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
 import type { Assumptions } from './upgrades/engine/disclosure';
 import type { ItemSource } from './upgrades/engine/pool';
+import { simSlotsForPoolSlot } from './upgrades/engine/pool';
 import { rankUpgrades, type Progress, type Ranking, type RankInput } from './upgrades/engine/rank';
 import { MemoryStore } from './upgrades/engine/seams/store';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
@@ -40,6 +41,14 @@ const SPEC_ID_BY_PROTO_SPEC: Partial<Record<Spec, SpecId>> = {
  */
 type SubTabId = 'shopping-list' | SimOrderName;
 
+/**
+ * Mirrors `rank.ts`'s own `DEFAULT_ITERATIONS` (not exported — engine code,
+ * out of scope per plan §1). D7 asks for "3,000 with a visible control";
+ * this is only the control's default display value, not a fallback used
+ * when the field is empty (see `run()`, which always sends a parsed number).
+ */
+const DEFAULT_ITERATIONS = 3000;
+
 type RunState =
 	| { kind: 'idle' }
 	| { kind: 'running'; progress: Progress }
@@ -52,6 +61,7 @@ export class UpgradesTab extends SimTab {
 
 	protected shoppingListElem: HTMLElement;
 	protected runButton!: HTMLButtonElement;
+	protected iterationsInput!: HTMLInputElement;
 	protected statusElem!: HTMLElement;
 	protected resultsElem!: HTMLElement;
 	protected assumptionsElem!: HTMLElement;
@@ -63,8 +73,6 @@ export class UpgradesTab extends SimTab {
 	private tabContentElem!: HTMLDivElement;
 	private readonly paneContentElems = new Map<SubTabId, HTMLElement>();
 	private activeSubTab: SubTabId = 'shopping-list';
-
-	private hideOwned = false;
 
 	// One runner/store per tab instance, not per run: the pool's workers are
 	// expensive to spin up (each is a WASM instantiation), and MemoryStore's
@@ -134,6 +142,7 @@ export class UpgradesTab extends SimTab {
 
 	protected buildTabContent() {
 		const runButtonRef = ref<HTMLButtonElement>();
+		const iterationsInputRef = ref<HTMLInputElement>();
 		const statusRef = ref<HTMLDivElement>();
 		const resultsRef = ref<HTMLDivElement>();
 		const assumptionsRef = ref<HTMLDivElement>();
@@ -144,6 +153,17 @@ export class UpgradesTab extends SimTab {
 					<button ref={runButtonRef} className="btn btn-primary upgrades-run-button" type="button">
 						{i18n.t('upgrades_tab.run')}
 					</button>
+					<label className="upgrades-iterations-label d-flex align-items-center gap-1 mb-0">
+						{i18n.t('upgrades_tab.iterations_label')}
+						<input
+							ref={iterationsInputRef}
+							type="number"
+							min="1"
+							step="1"
+							className="upgrades-iterations-input form-control form-control-sm"
+							value={String(DEFAULT_ITERATIONS)}
+						/>
+					</label>
 					<div ref={statusRef} className="upgrades-status text-muted" />
 				</div>
 				<div ref={resultsRef} className="upgrades-results mt-gap" />
@@ -152,6 +172,7 @@ export class UpgradesTab extends SimTab {
 		);
 
 		this.runButton = runButtonRef.value!;
+		this.iterationsInput = iterationsInputRef.value!;
 		this.statusElem = statusRef.value!;
 		this.resultsElem = resultsRef.value!;
 		this.assumptionsElem = assumptionsRef.value!;
@@ -189,6 +210,18 @@ export class UpgradesTab extends SimTab {
 		this.render();
 	}
 
+	/**
+	 * Reads the visible iterations control (D7) at click-time only — the
+	 * field itself is a plain number input with no change listener, so
+	 * editing it never triggers a sim or touches `this.state`; it only
+	 * changes what the *next* `run()` sends. Falls back to the same default
+	 * the engine uses when the field is empty or not a positive integer.
+	 */
+	private readIterations(): number {
+		const parsed = Number(this.iterationsInput.value);
+		return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_ITERATIONS;
+	}
+
 	private async run(): Promise<void> {
 		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
 		if (!specId) {
@@ -211,6 +244,7 @@ export class UpgradesTab extends SimTab {
 			character: { region: 'US', realm: 'current-page', name: this.simUI.player.getName() || 'player' },
 			spec: specId,
 			maxPhase,
+			iterations: this.readIterations(),
 		};
 
 		const ranking = await rankUpgrades(
@@ -298,6 +332,8 @@ export class UpgradesTab extends SimTab {
 		const slotsPresent = slotsInView(view);
 		if (slotsPresent.length === 0) return;
 
+		const buttonById = new Map<SubTabId, HTMLButtonElement>();
+
 		for (const slot of slotsPresent) {
 			const id: SubTabId = slot;
 			const btnRef = ref<HTMLButtonElement>();
@@ -322,6 +358,7 @@ export class UpgradesTab extends SimTab {
 				</li>,
 			);
 			new Tab(btnRef.value!);
+			buttonById.set(id, btnRef.value!);
 
 			const paneRef = ref<HTMLDivElement>();
 			this.tabContentElem.appendChild(<div id={paneId(id)} className="tab-pane fade" ref={paneRef} />);
@@ -329,10 +366,22 @@ export class UpgradesTab extends SimTab {
 			this.paneContentElems.set(id, paneElem);
 			paneElem.replaceChildren(this.slotPaneContent(slot, view));
 		}
+
+		// Re-select whichever sub-tab the user was last on, so a
+		// staleness-driven rebuild (F2, .scratch/handoffs/wowsims-tab/
+		// slice-3-4-review.md) doesn't bounce them back to Shopping List.
+		// Falls back to Shopping List when the remembered slot no longer has
+		// candidates (e.g. it was greyed out of the ranking entirely).
+		const restoreId: SubTabId = this.activeSubTab !== 'shopping-list' && buttonById.has(this.activeSubTab) ? this.activeSubTab : 'shopping-list';
+		if (restoreId !== 'shopping-list') {
+			new Tab(buttonById.get(restoreId)!).show();
+		}
 	}
 
 	private currentViewOptions(): ViewOptions {
-		return { hideOwned: this.hideOwned };
+		// Owned rows are greyed, not hidden — plan §4's sub-tab 1 list does not
+		// ask for a hide toggle, so this is fixed rather than user-controlled.
+		return { hideOwned: false };
 	}
 
 	private resultsContent(): Node {
@@ -342,7 +391,7 @@ export class UpgradesTab extends SimTab {
 	}
 
 	private slotPaneContent(slot: SimOrderName, view: ViewResult): Node {
-		const rowsForSlot = view.rows.filter((r) => (r.slotChoice ?? r.slot) === slot);
+		const rowsForSlot = view.rows.filter((r) => effectiveSlot(r) === slot);
 		const shortlistForSlot = rowsForSlot.filter((r) => !r.belowCutoffInView);
 		const belowCutoffForSlot = rowsForSlot.length - shortlistForSlot.length;
 		return <div className="p-gap">{this.rowsTable(shortlistForSlot, belowCutoffForSlot, rowsForSlot)}</div>;
@@ -424,7 +473,7 @@ export class UpgradesTab extends SimTab {
 					{bisLabel}
 					{row.owned ? ` (${i18n.t('upgrades_tab.results.owned')})` : ''}
 				</td>
-				<td>{row.slotChoice ?? row.slot}</td>
+				<td>{slotLabel(effectiveSlot(row))}</td>
 				<td>{`+${row.deltaDps.toFixed(1)}`}</td>
 				<td>{sourceLabel(row.source)}</td>
 			</tr>
@@ -483,10 +532,25 @@ const SLOT_LABELS: Record<SimOrderName, string> = {
 	ranged: 'Ranged',
 };
 
+/**
+ * A row's effective sim-order slot, for tab-strip grouping. `row.slotChoice`
+ * wins when the engine set it (finger/trinket, which fan out to two sim
+ * slots); otherwise resolve through `simSlotsForPoolSlot`, which always
+ * returns at least one slot name — including for `weapon`, whose single
+ * mapped slot (`mainhand`) `slotChoice` never carries because `rank.ts` only
+ * sets it when the mapped list has more than one entry (F1,
+ * .scratch/handoffs/wowsims-tab/slice-3-4-review.md). Casting `row.slot`
+ * itself to `SimOrderName` is unsound: it is a pool `ItemSlot`, and
+ * `weapon`/`finger`/`trinket` are not `SIM_ORDER` members.
+ */
+function effectiveSlot(row: ViewRow): SimOrderName {
+	return row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0];
+}
+
 /** Slots with at least one ranked candidate, in SIM_ORDER (stable, matches the page's own gear ordering). */
 function slotsInView(view: ViewResult): SimOrderName[] {
 	const present = new Set<SimOrderName>();
-	for (const row of view.rows) present.add((row.slotChoice ?? row.slot) as SimOrderName);
+	for (const row of view.rows) present.add(effectiveSlot(row));
 	return SIM_ORDER.filter((s) => present.has(s));
 }
 

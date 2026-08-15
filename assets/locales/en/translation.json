@@ -859,6 +859,7 @@
 		},
 		"placeholder": "Nothing here yet. This tab will rank gear upgrades against the gear on your Gear tab, using your own sim settings.",
 		"run": "Run",
+		"iterations_label": "Iterations",
 		"status": {
 			"idle": "Ranks upgrades against your current gear and settings on this page.",
 			"unsupported_spec": "This spec has no ranking data yet.",
