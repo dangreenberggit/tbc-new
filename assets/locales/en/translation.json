@@ -879,7 +879,19 @@
 			"item": "Item",
 			"slot": "Slot",
 			"delta_dps": "DPS",
-			"empty": "No upgrades found above the cutoff."
+			"source": "Source",
+			"owned": "Owned",
+			"empty": "No upgrades found above the cutoff.",
+			"below_cutoff_toggle_show": "Show {{count}} item(s) below the cutoff",
+			"below_cutoff_toggle_hide": "Hide items below the cutoff"
+		},
+		"assumptions": {
+			"title": "Assumptions",
+			"seeds": "Seeds",
+			"iterations": "Iterations",
+			"max_phase": "Max phase",
+			"engine_provenance": "Engine (fork commit)",
+			"sim_version": "Sim version"
 		}
 	},
 	"bulk_tab": {
