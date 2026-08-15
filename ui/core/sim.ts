@@ -289,10 +289,12 @@ export class Sim {
 	}
 
 	// `iterations` is optional so every existing caller (debug runs, the
-	// ordinary sim button) keeps reading from global sim settings unchanged;
-	// candidate-pool.md §6.3/F7 needs a per-request override for racing
-	// (screening at a lower iteration count than the page's own setting)
-	// without a parallel request-builder that would drift from this one.
+	// ordinary sim button) keeps reading from global sim settings unchanged.
+	// candidate-pool.md §6.3/F7 wanted a per-request override as one optional
+	// parameter rather than a parallel request-builder that would drift from
+	// this one. Its original consumer (M2 racing) was cancelled by E-W5's
+	// no-go, so nothing overrides this today; the parameter stays because the
+	// override is the shape any future per-request iteration control needs.
 	makeRaidSimRequest(debug: boolean, iterations?: number): RaidSimRequest {
 		const raid = this.getModifiedRaidProto();
 		const encounter = this.encounter.toProto();
