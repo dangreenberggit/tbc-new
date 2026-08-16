@@ -863,7 +863,8 @@
 		"import_wcl": "Import gear from log",
 		"iterations_label": "Iterations",
 		"candidates_label": "Candidates",
-		"candidates_placeholder": "{{count}} / {{count}}",
+		"candidates_placeholder": "all {{count}} eligible",
+		"candidates_placeholder_uncapped": "all eligible",
 		"status": {
 			"idle": "Ranks upgrades against your current gear and settings on this page.",
 			"unsupported_spec": "This spec has no ranking data yet.",
@@ -902,7 +903,7 @@
 			"iterations": "Iterations",
 			"max_phase": "Max phase",
 			"candidate_cap": "Candidate cap",
-			"candidate_cap_note": "top {{cap}} by EP order — a preselection, not a ranking",
+			"candidate_cap_note": "top {{cap}} of the candidates that survived screening— every eligible item is screened first, then the best are simmed in full",
 			"substitutions_title": "Dropped candidates and substitutions ({{count}})",
 			"engine_provenance": "Engine (fork commit)",
 			"sim_version": "Sim version"

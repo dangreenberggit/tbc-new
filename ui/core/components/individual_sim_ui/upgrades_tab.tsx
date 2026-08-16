@@ -257,6 +257,9 @@ export class UpgradesTab extends SimTab {
 			new WclGearImportModal(this.simUI.rootElem, this.simUI).open();
 		});
 
+		// Before this, the field showed its raw `{{count}}` template until a
+		// run finished (ticket 210).
+		this.refreshCandidatesPlaceholder();
 		this.render();
 	}
 
@@ -272,10 +275,42 @@ export class UpgradesTab extends SimTab {
 			if (this.state.kind === 'done') {
 				this.setState({ ...this.state, stale: true });
 			}
+			// The Candidates placeholder describes the pool the *next* run will
+			// use, so it has to follow the phase/spec selection rather than the
+			// last finished run (ticket 210). Refreshed here as well as at
+			// construction because the phase picker lives in the gear-slot item
+			// modal, and changing it fires through this same emitter.
+			this.refreshCandidatesPlaceholder();
 		};
 		this.simUI.player.gearChangeEmitter.on(markStale);
 		this.simUI.player.talentsChangeEmitter.on(markStale);
 		this.simUI.sim.changeEmitter.on(markStale);
+	}
+
+	/**
+	 * Writes the eligible-candidate count into the Candidates placeholder.
+	 *
+	 * Two defects this fixes (ticket 210). The placeholder was interpolated
+	 * only inside `run()`, so before the first run the field rendered its raw
+	 * i18n template — a literal `{{count}}` on screen — and afterwards it
+	 * showed the pool of the run that had just *finished*, lagging a run
+	 * behind the selection it appears to describe. `eligibleCount` is a pure
+	 * synchronous filter over the bundled pool, so there was never a reason to
+	 * wait for a run: the count is knowable the moment a spec and phase are.
+	 *
+	 * Unsupported specs have no pool to count, so the field keeps a plain
+	 * "no cap" placeholder rather than showing a misleading zero.
+	 */
+	private refreshCandidatesPlaceholder() {
+		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
+		if (!specId) {
+			this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder_uncapped');
+			return;
+		}
+		const maxPhase = this.simUI.sim.getPhase() as RankInput['maxPhase'];
+		this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder', {
+			count: this.eligibleCount(specId, maxPhase),
+		});
 	}
 
 	private setState(next: RunState) {
@@ -338,10 +373,9 @@ export class UpgradesTab extends SimTab {
 		const skeleton = currentPageSkeleton(this.simUI);
 		const gearSource = new PlayerGearSource(this.simUI);
 
-		this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder', {
-			count: this.eligibleCount(specId, maxPhase),
-		});
-
+		// Kept in step with the selection by `refreshCandidatesPlaceholder`
+		// (construction + every settings change), not written here — a value
+		// set at run time could only ever describe the run just started.
 		this.abortController = new AbortController();
 		this.landedRows = [];
 		this.setState({ kind: 'running', progress: { stage: 'resolving' } });
@@ -736,10 +770,16 @@ export class UpgradesTab extends SimTab {
 					{cap !== undefined ? (
 						<>
 							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.candidate_cap')}</dt>
-							{/* M2/racing was not shipped (candidate-pool.md §3.3 E-W5 no-go)
-							    — a cap below "all eligible" is an EP-order preselection, not
-							    a second, cheaper ranking pass. Said here in the reader's own
-							    words rather than left implicit in the number alone. */}
+							{/* Racing IS shipped and is always on here: the tab never sets
+							    `fullPool`, so `rank.ts`'s `input.fullPool !== true` is true
+							    on every browser run. The whole eligible pool is screened at
+							    DEFAULT_SCREEN_ITERATIONS, the promotion rule runs, and the
+							    cap applies to the promoted set. The CLI is the surface that
+							    never races (`cli.ts` hardcodes `fullPool: true`), which is
+							    why this note survived saying the opposite (ticket 209).
+							    Which order the cap slices within the promoted set is
+							    ticket 208 — stated as EP here because that is what the code
+							    does today, not as an endorsement of it. */}
 							<dd className="col-sm-8">{i18n.t('upgrades_tab.assumptions.candidate_cap_note', { cap })}</dd>
 						</>
 					) : null}
