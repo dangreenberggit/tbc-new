@@ -75,6 +75,13 @@ export function promotionRule(input: PromotionInputs): PromotionResult[] {
   for (const s of screened) {
     const slot = slotByItemId.get(s.itemId);
     if (slot === undefined) continue;
+    // A candidate whose every slot attempt panicked screens at -Infinity.
+    // The floor exists so no slot goes unrepresented, but a slot where
+    // nothing produced a number has nothing to represent: promoting the
+    // argmax of two failures spends a full-iteration sim on a candidate that
+    // panics again, and -Infinity serializes to JSON `null`, so a promoted
+    // one would break the sort comparator on any rehydrated `Ranking`.
+    if (!Number.isFinite(s.deltaDps)) continue;
     const current = bestDeltaBySlot.get(slot);
     if (
       !current ||

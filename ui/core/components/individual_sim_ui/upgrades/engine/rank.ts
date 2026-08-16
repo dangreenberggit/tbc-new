@@ -643,7 +643,9 @@ export async function rankUpgrades(
      * disclosure bookkeeping (hit caps, gem substitution notes, set-bonus
      * context) a screened candidate never carries: only promoted candidates
      * get a `RankedItem`'s full shape. A candidate whose every slot attempt
-     * panics screens at `-Infinity` rather than being silently promoted —
+     * panics screens at `-Infinity`, a refusal the promotion rule honours by
+     * skipping non-finite screens, and which the screened-row builder clamps
+     * to 0 so the JSON `null` it would serialize to never reaches a row —
      * the same "never let a sim failure look like a win" rule the
      * full-iteration loop encodes by skipping the attempt entirely, except
      * here there is no disclosure row to skip it *into*, so the delta itself
@@ -904,7 +906,13 @@ export async function rankUpgrades(
           name: entry.name,
           slot: entry.slot,
           source: entry.source,
-          deltaDps: deltaByItemId.get(entry.itemId) ?? 0,
+          deltaDps: (() => {
+            // -Infinity (every slot attempt panicked) serializes to JSON
+            // `null`, which poisons `b.deltaDps - a.deltaDps` on a rehydrated
+            // ranking. The promotion rule still sees the refusal.
+            const d = deltaByItemId.get(entry.itemId);
+            return d !== undefined && Number.isFinite(d) ? d : 0;
+          })(),
           deltaPct: 0,
           se: 0,
           seMethod: "independent",
