@@ -217,6 +217,14 @@ export type Progress =
   | { stage: "reading-gear" }
   | { stage: "composing" }
   | { stage: "building-pool" }
+  /**
+   * M2 racing's screening pass, which dispatches one sim per eligible
+   * candidate before any full-iteration work begins. `failed` is the running
+   * count of candidates whose every slot attempt threw — without it a status
+   * line cannot tell a screening pass that lost everything from one that
+   * found no upgrade (ticket 156).
+   */
+  | { stage: "screening"; done: number; total: number; failed: number }
   | { stage: "simming"; done: number; total: number }
   /**
    * A single candidate's row finished — fired as each sim lands, ahead of
@@ -293,6 +301,10 @@ export type RankedItem = {
    * rows (view.ts), never interleaved with full-iteration deltas, and
    * never deleted — a screened row keeps its screening delta rather than
    * being dropped from `items`.
+   *
+   * Every screened row carries a real screening measurement: a candidate
+   * whose every slot attempt threw is dropped and disclosed instead (ticket
+   * 156), so `deltaDps` here is never a sentinel standing in for one.
    *
    * `promoted: true` never appears here: a promoted candidate goes on to a
    * full sim and this field is absent from its finished row, exactly like
@@ -627,6 +639,18 @@ export async function rankUpgrades(
       slot: string;
       reason: string;
     }[] = [];
+    /**
+     * Screening-stage failures (ticket 156), kept apart from `candidateSkips`
+     * rather than folded into it with a `stage` field: these describe a
+     * candidate that never reached the full-iteration pass at all.
+     */
+    const screeningSkips: {
+      kind: "sim" | "repair";
+      itemId: number;
+      name: string;
+      slot: string;
+      reason: string;
+    }[] = [];
     const individualDeltasByItemId = new Map<number, IndividualDelta>();
 
     const talentsString = talentsStringFromRequest(request);
@@ -644,12 +668,14 @@ export async function rankUpgrades(
      * context) a screened candidate never carries: only promoted candidates
      * get a `RankedItem`'s full shape. A candidate whose every slot attempt
      * panics screens at `-Infinity`, a refusal the promotion rule honours by
-     * skipping non-finite screens, and which the screened-row builder clamps
-     * to 0 so the JSON `null` it would serialize to never reaches a row —
-     * the same "never let a sim failure look like a win" rule the
-     * full-iteration loop encodes by skipping the attempt entirely, except
-     * here there is no disclosure row to skip it *into*, so the delta itself
-     * carries the refusal.
+     * skipping non-finite screens, and which never reaches a row because such
+     * a candidate is dropped and disclosed instead.
+     *
+     * A failing slot attempt also records a `screeningSkips` row (ticket 156).
+     * The sentinel alone was not disclosure: it stops a failure counting as a
+     * *win*, but it rendered as `~0.0` and read as "measured, and no better",
+     * so a run that lost every candidate to engine panics exited green as "no
+     * upgrades found above the cutoff".
      */
     async function screenCandidate(entry: PoolEntry): Promise<number> {
       const slotNames = simSlotsForPoolSlot(entry.slot);
@@ -669,7 +695,17 @@ export async function rankUpgrades(
             gems
           ).equipment;
         } catch (err) {
+          // Recorded for the same reason the sim failure below is: a repair
+          // that cannot activate the meta drops the candidate, and screening
+          // must disclose that as loudly as the full-iteration stage does.
           if (!(err instanceof MetaRepairError)) throw err;
+          screeningSkips.push({
+            kind: "repair",
+            itemId: entry.itemId,
+            name: entry.name,
+            slot: slotName,
+            reason: err.message,
+          });
           continue;
         }
         const candReq = compose(deps.raidSimSkeleton, {
@@ -686,7 +722,17 @@ export async function rankUpgrades(
         if (!candObs) {
           try {
             candObs = await deps.sim.run(candReq, screenOpts);
-          } catch {
+          } catch (err) {
+            // Recorded, not swallowed — see this function's doc comment. Only
+            // the *sim* call sits inside this catch: a failing store read
+            // above would otherwise be disclosed as an engine panic.
+            screeningSkips.push({
+              kind: "sim",
+              itemId: entry.itemId,
+              name: entry.name,
+              slot: slotName,
+              reason: err instanceof Error ? err.message : String(err),
+            });
             continue;
           }
           await cacheSimResult(deps, candReq, simVersion, screenOpts, candObs);
@@ -852,16 +898,56 @@ export async function rankUpgrades(
     const screenedRows: RankedItem[] = [];
     if (racing) {
       const screenSignal = deps.signal;
+      // Screening's own progress channel (ticket 156). Counted here rather
+      // than from `screeningSkips.length` because that counts slot
+      // *attempts* — a ring or trinket contributes two — while this counts
+      // candidates that ended with no finite screen at all.
+      let screensDone = 0;
+      let screensFailed = 0;
+      /**
+       * Candidates that ran a screen and came back with nothing usable — as
+       * opposed to ones a Stop meant never ran at all. Both return the
+       * `-Infinity` sentinel, so the delta cannot tell them apart, and the
+       * difference decides whether a row is dropped as failed or kept as
+       * unsimmed (Stop's contract, §5.1.4).
+       */
+      const screenFailedIds = new Set<number>();
       const screenTasks = ordered.map((entry) => async () => {
         if (screenSignal?.aborted)
           return { itemId: entry.itemId, deltaDps: Number.NEGATIVE_INFINITY };
         const deltaDps = await screenCandidate(entry);
+        screensDone += 1;
+        if (!Number.isFinite(deltaDps)) {
+          screensFailed += 1;
+          screenFailedIds.add(entry.itemId);
+        }
+        onProgress?.({
+          stage: "screening",
+          done: screensDone,
+          total: ordered.length,
+          failed: screensFailed,
+        });
         return { itemId: entry.itemId, deltaDps };
       });
       const screenResults: ScreeningResult[] = await promisePool(
         screenTasks,
         deps.concurrency ?? 1
       );
+      // Zero real signal must never render as "nothing is an upgrade" (ticket
+      // 156). Gated on an abort because a Stop that lands before the first
+      // screen completes is a user decision, not an engine failure.
+      const screenedAnything = screenResults.some((r) =>
+        Number.isFinite(r.deltaDps)
+      );
+      if (!screenedAnything && !screenSignal?.aborted && ordered.length > 0) {
+        const first = screeningSkips[0]?.reason ?? "no slot attempt succeeded";
+        throw new RankError(
+          "sim-failed",
+          `every screening sim failed: ${screensFailed} of ${ordered.length} ` +
+            `candidates lost every slot attempt at ${screenIterations} ` +
+            `iterations. First failure: ${first}`
+        );
+      }
       // Set-package membership at screening time is judged the same way the
       // full-iteration pass judges it (buildSetBonuses below): any set with
       // a candidate present in the *eligible* pool is a set the promotion
@@ -879,9 +965,21 @@ export async function rankUpgrades(
         ownedItemIds: equippedIds,
         setPackageItemIds,
       });
-      const promotedIds = new Set(
-        promotion.filter((p) => p.promoted).map((p) => p.itemId)
-      );
+      // A Stop during screening leaves every unscreened candidate on the
+      // `-Infinity` sentinel, which the promotion rule correctly refuses to
+      // promote. But Stop's contract (§5.1.4) is that unreached candidates
+      // come back as honest `simmed: false` rows, and only a *promoted*
+      // candidate ever becomes one. Candidates that did screen and failed
+      // stay excluded either way: they are drop-and-disclose rows, and
+      // re-admitting one would have the ranking both disclose it as dropped
+      // and show it as unsimmed.
+      const promotedIds = screenSignal?.aborted
+        ? new Set(
+            ordered
+              .map((e) => e.itemId)
+              .filter((itemId) => !screenFailedIds.has(itemId))
+          )
+        : new Set(promotion.filter((p) => p.promoted).map((p) => p.itemId));
       const deltaByItemId = new Map(
         screenResults.map((r) => [r.itemId, r.deltaDps])
       );
@@ -896,6 +994,13 @@ export async function rankUpgrades(
       const simCandidateIds = new Set(simCandidates.map((e) => e.itemId));
       for (const entry of ordered) {
         if (simCandidateIds.has(entry.itemId)) continue;
+        // A candidate whose every screening attempt threw is dropped from the
+        // ranking and disclosed in `substitutions`, exactly as one that
+        // crashes at full iterations is (ticket 122's accepted drop-and-
+        // disclose). One rule, not two: which iteration count the engine
+        // happened to panic at is not a distinction a reader should have to
+        // reason about, and a row with no measurement has nothing to show.
+        if (screenFailedIds.has(entry.itemId)) continue;
         // Screened out: either the rule never promoted it, or the post-
         // promotion cap dropped it — either way it keeps its screening
         // delta and renders as the third view state (view.ts), never
@@ -1020,6 +1125,13 @@ export async function rankUpgrades(
     // Deterministic regardless of completion order, so `substitutions`
     // below reads the same on every run at every `concurrency` (7.3).
     candidateSkips.sort((a, b) => a.itemId - b.itemId);
+    // Same determinism guarantee for the screening rows, which the racing
+    // path fills from a `promisePool` whose completion order is not the pool
+    // order. Tie-broken on slot so a paired-slot candidate's two attempts
+    // keep a fixed order.
+    screeningSkips.sort(
+      (a, b) => a.itemId - b.itemId || a.slot.localeCompare(b.slot)
+    );
 
     const packageSimSkips: {
       setId: number;
@@ -1143,6 +1255,19 @@ export async function rankUpgrades(
             `${s.name} was dropped from the ranking: ` +
             (s.kind === "sim"
               ? `the sim failed on this swap — ${s.reason}`
+              : `gem repair could not activate its meta — ${s.reason}`),
+        })),
+        // Same `candidate <id> (<slot>)` field and same "dropped from the
+        // ranking" sentence as the full-iteration skips above: a reader
+        // should not have to know which iteration count the engine panicked
+        // at to understand that the item is gone and why (ticket 156).
+        ...screeningSkips.map((s) => ({
+          field: `candidate ${s.itemId} (${s.slot})`,
+          detail:
+            `${s.name} was dropped from the ranking: ` +
+            (s.kind === "sim"
+              ? `the sim failed on this swap during screening at ` +
+                `${screenIterations} iterations — ${s.reason}`
               : `gem repair could not activate its meta — ${s.reason}`),
         })),
         ...packageSimSkips.map((s) => ({

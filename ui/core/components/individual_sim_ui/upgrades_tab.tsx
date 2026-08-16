@@ -748,7 +748,38 @@ export class UpgradesTab extends SimTab {
 					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.sim_version')}</dt>
 					<dd className="col-sm-8">{`api-v${CURRENT_API_VERSION}`}</dd>
 				</dl>
+				{this.substitutionsContent()}
 			</details>
+		);
+	}
+
+	/**
+	 * Every candidate the run dropped, and why. Nothing rendered these before
+	 * (ticket 156): the engine has always recorded dropped candidates in
+	 * `substitutions`, but the drawer showed only the run's settings, so a run
+	 * that lost candidates to sim panics looked identical on the page to one
+	 * where every candidate simmed cleanly. That is what let a fully failed
+	 * screening pass read as "no upgrades found above the cutoff".
+	 */
+	private substitutionsContent(): Node {
+		if (this.state.kind !== 'done' && this.state.kind !== 'stopped') return <></>;
+		const subs = this.state.ranking.substitutions;
+		if (subs.length === 0) return <></>;
+		return (
+			<>
+				<hr />
+				<p className="mb-1">
+					<strong>{i18n.t('upgrades_tab.assumptions.substitutions_title', { count: subs.length })}</strong>
+				</p>
+				<dl className="row mb-0 upgrades-substitutions">
+					{subs.map(s => (
+						<>
+							<dt className="col-sm-4">{s.field}</dt>
+							<dd className="col-sm-8">{s.detail}</dd>
+						</>
+					))}
+				</dl>
+			</>
 		);
 	}
 }
@@ -841,6 +872,14 @@ function progressLabel(p: Progress): string {
 			return i18n.t('upgrades_tab.progress.composing');
 		case 'building-pool':
 			return i18n.t('upgrades_tab.progress.building_pool');
+		// Failures are named in the status line as they happen, not just
+		// counted at the end (ticket 156): a screening pass that is losing
+		// every candidate used to look identical to one finding no upgrade,
+		// and the run took minutes before saying anything at all.
+		case 'screening':
+			return p.failed > 0
+				? i18n.t('upgrades_tab.progress.screening_with_failures', { done: p.done, total: p.total, failed: p.failed })
+				: i18n.t('upgrades_tab.progress.screening', { done: p.done, total: p.total });
 		case 'simming':
 			return i18n.t('upgrades_tab.progress.simming', { done: p.done, total: p.total });
 		case 'ranking':

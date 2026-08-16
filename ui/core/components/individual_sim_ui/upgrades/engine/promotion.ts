@@ -59,10 +59,19 @@ export function promotionRule(input: PromotionInputs): PromotionResult[] {
     input;
   const slotByItemId = new Map(candidates.map((c) => [c.itemId, c.slot]));
 
-  const ordered = [...screened].sort((a, b) => {
-    if (a.deltaDps !== b.deltaDps) return b.deltaDps - a.deltaDps;
-    return a.itemId - b.itemId;
-  });
+  // Failed screens are excluded before the slice, not sorted to the bottom of
+  // it (ticket 156): `slice(0, K)` at the shipped K of 150 takes every row of
+  // any pool smaller than 150, so ordering alone still promotes a candidate
+  // whose every slot attempt panicked. Promoting one spends a full-iteration
+  // sim on a swap already known to crash, and then reports it as "dropped
+  // from the ranking" on top of the screening failure already recorded — the
+  // same reasoning the best-in-slot floor below already applies.
+  const ordered = [...screened]
+    .filter((s) => Number.isFinite(s.deltaDps))
+    .sort((a, b) => {
+      if (a.deltaDps !== b.deltaDps) return b.deltaDps - a.deltaDps;
+      return a.itemId - b.itemId;
+    });
   const topK = new Set(
     ordered.slice(0, Math.max(0, promoteTopK)).map((s) => s.itemId)
   );

@@ -877,6 +877,8 @@
 			"reading_gear": "Reading your gear…",
 			"composing": "Preparing your character…",
 			"building_pool": "Building the candidate pool…",
+			"screening": "Screening {{done}}/{{total}}…",
+			"screening_with_failures": "Screening {{done}}/{{total}}… ({{failed}} failed)",
 			"simming": "Simming {{done}}/{{total}}…",
 			"ranking": "Ranking results…"
 		},
@@ -901,6 +903,7 @@
 			"max_phase": "Max phase",
 			"candidate_cap": "Candidate cap",
 			"candidate_cap_note": "top {{cap}} by EP order — a preselection, not a ranking",
+			"substitutions_title": "Dropped candidates and substitutions ({{count}})",
 			"engine_provenance": "Engine (fork commit)",
 			"sim_version": "Sim version"
 		}
