@@ -4,6 +4,10 @@
   "carryoverPolicy": "union",
   "generatedBy": "scripts/assemble_universe.py",
   "d7Note": "D7 eligibility implemented in assemble_universe.py.",
+  "epWeights": {
+    "path": "data/presets/ret/p2.ep-weights.json",
+    "pin": "8aa378b3"
+  },
   "entries": [
     {
       "itemId": 28672,
@@ -103,6 +107,29 @@
         }
       ],
       "curationHint": 47.7
+    },
+    {
+      "itemId": 33122,
+      "name": "Cloak of Darkness",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Leatherworking",
+          "recipeFaction": "The Violet Eye",
+          "recipeStanding": "Exalted",
+          "recipeFactionId": 967,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 41.48,
+      "curatedSets": [
+        "p3"
+      ]
     },
     {
       "itemId": 28777,
@@ -1292,6 +1319,7 @@
       "curatedSets": [
         "p1",
         "p2",
+        "p3",
         "preraid"
       ],
       "bisTags": [
@@ -1689,7 +1717,8 @@
       ],
       "curationHint": 90.33,
       "curatedSets": [
-        "p2"
+        "p2",
+        "p3"
       ],
       "bisTags": [
         "BiS"
@@ -2694,7 +2723,8 @@
       ],
       "curationHint": 49.71,
       "curatedSets": [
-        "p2"
+        "p2",
+        "p3"
       ],
       "bisTags": [
         "BiS"
@@ -2822,24 +2852,6 @@
         }
       ],
       "curationHint": 34.61
-    },
-    {
-      "itemId": 30008,
-      "name": "Pendant of the Lost Ages",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Serpentshrine Cavern",
-          "boss": "Morogrim Tidewalker",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 6.12
     },
     {
       "itemId": 28762,
@@ -2991,6 +3003,22 @@
       "curationHint": 0.0
     },
     {
+      "itemId": 22401,
+      "name": "Libram of Hope",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "curated"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
       "itemId": 23203,
       "name": "Libram of Fervor",
       "slot": "ranged",
@@ -3007,49 +3035,45 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 28592,
-      "name": "Libram of Souls Redeemed",
+      "itemId": 27484,
+      "name": "Libram of Avengement",
       "slot": "ranged",
       "armorType": null,
       "handType": null,
-      "quality": 4,
+      "quality": 3,
       "phase": 1,
       "sources": [
         {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "The Wizard of Oz",
-          "origin": "db"
-        },
-        {
-          "boss": "The Big Bad Wolf",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
-        },
-        {
-          "boss": "Romulo and Julianne",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
+          "kind": "unknown",
+          "origin": "curated"
         }
       ],
-      "curationHint": 0.0
+      "curationHint": 0.0,
+      "curatedSets": [
+        "p1",
+        "p2",
+        "p3",
+        "preraid"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p2"
+      ]
     },
     {
-      "itemId": 30063,
-      "name": "Libram of Absolute Truth",
+      "itemId": 31033,
+      "name": "Libram of Righteous Power",
       "slot": "ranged",
       "armorType": null,
       "handType": null,
-      "quality": 4,
-      "phase": 2,
+      "quality": 3,
+      "phase": 1,
       "sources": [
         {
-          "kind": "raid",
-          "zone": "Serpentshrine Cavern",
-          "boss": "The Lurker Below",
-          "origin": "db"
+          "kind": "unknown",
+          "origin": "curated"
         }
       ],
       "curationHint": 0.0
@@ -3090,7 +3114,8 @@
       ],
       "curationHint": 83.07,
       "curatedSets": [
-        "p2"
+        "p2",
+        "p3"
       ],
       "bisTags": [
         "BiS"
@@ -3430,6 +3455,7 @@
       "curatedSets": [
         "p1",
         "p2",
+        "p3",
         "preraid"
       ],
       "bisTags": [
@@ -3438,6 +3464,41 @@
       "bisSets": [
         "p2"
       ]
+    },
+    {
+      "itemId": 28288,
+      "name": "Abacus of Violent Odds",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "curated"
+        }
+      ],
+      "curationHint": 26.24,
+      "curatedSets": [
+        "preraid"
+      ]
+    },
+    {
+      "itemId": 28034,
+      "name": "Hourglass of the Unraveller",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "curated"
+        }
+      ],
+      "curationHint": 24.64
     },
     {
       "itemId": 28830,
@@ -3458,7 +3519,8 @@
       "curationHint": 16.4,
       "curatedSets": [
         "p1",
-        "p2"
+        "p2",
+        "p3"
       ],
       "bisTags": [
         "BiS"
@@ -3484,54 +3546,6 @@
         }
       ],
       "curationHint": 9.18
-    },
-    {
-      "itemId": 28590,
-      "name": "Ribbon of Sacrifice",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "The Wizard of Oz",
-          "origin": "db"
-        },
-        {
-          "boss": "The Big Bad Wolf",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
-        },
-        {
-          "boss": "Romulo and Julianne",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
-        }
-      ],
-      "curationHint": 4.25
-    },
-    {
-      "itemId": 28823,
-      "name": "Eye of Gruul",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Gruul's Lair",
-          "boss": "Gruul the Dragonkiller",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 2.55
     },
     {
       "itemId": 28528,
@@ -3600,24 +3614,6 @@
           "kind": "raid",
           "zone": "Tempest Keep",
           "boss": "Al'ar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 30619,
-      "name": "Fel Reaver's Piston",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Tempest Keep",
-          "boss": "Void Reaver",
           "origin": "db"
         }
       ],
@@ -3701,6 +3697,22 @@
       "curationHint": 0.0
     },
     {
+      "itemId": 31856,
+      "name": "Darkmoon Card: Crusade",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "curated"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
       "itemId": 30106,
       "name": "Belt of One-Hundred Deaths",
       "slot": "waist",
@@ -3718,7 +3730,8 @@
       ],
       "curationHint": 105.59,
       "curatedSets": [
-        "p2"
+        "p2",
+        "p3"
       ],
       "bisTags": [
         "BiS"
@@ -4333,24 +4346,6 @@
         }
       ],
       "curationHint": 660.76
-    },
-    {
-      "itemId": 28774,
-      "name": "Glaive of the Pit",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Magtheridon's Lair",
-          "boss": "Magtheridon",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 639.357
     },
     {
       "itemId": 30057,

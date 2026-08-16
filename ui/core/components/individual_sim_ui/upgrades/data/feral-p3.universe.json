@@ -4,6 +4,10 @@
   "carryoverPolicy": "union",
   "generatedBy": "scripts/assemble_universe.py",
   "d7Note": "D7 eligibility implemented in assemble_universe.py.",
+  "epWeights": {
+    "path": "data/presets/feral/p1.ep-weights.json",
+    "pin": "8aa378b3"
+  },
   "entries": [
     {
       "itemId": 32323,
@@ -2141,25 +2145,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 29297,
-      "name": "Band of the Eternal Defender",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "faction": "The Scale of the Sands",
-          "factionId": 990,
-          "kind": "rep",
-          "standing": "Exalted",
-          "origin": "atlasloot"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 29302,
       "name": "Band of Eternity",
       "slot": "finger",
@@ -4130,24 +4115,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 30008,
-      "name": "Pendant of the Lost Ages",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Serpentshrine Cavern",
-          "boss": "Morogrim Tidewalker",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 30666,
       "name": "Ritssyn's Lost Pendant",
       "slot": "neck",
@@ -4254,24 +4221,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 28568,
-      "name": "Idol of the Avian Heart",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Moroes",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 29390,
       "name": "Everbloom Idol",
       "slot": "ranged",
@@ -4290,24 +4239,6 @@
       "curatedSets": [
         "preraid"
       ]
-    },
-    {
-      "itemId": 30051,
-      "name": "Idol of the Crescent Goddess",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Serpentshrine Cavern",
-          "boss": "Hydross the Unstable",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
     },
     {
       "itemId": 32257,
@@ -4777,6 +4708,25 @@
       ]
     },
     {
+      "itemId": 28034,
+      "name": "Hourglass of the Unraveller",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "curated"
+        }
+      ],
+      "curationHint": 24.64,
+      "curatedSets": [
+        "preraid"
+      ]
+    },
+    {
       "itemId": 32654,
       "name": "Crystalforged Trinket",
       "slot": "trinket",
@@ -4832,36 +4782,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 28590,
-      "name": "Ribbon of Sacrifice",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "The Wizard of Oz",
-          "origin": "db"
-        },
-        {
-          "boss": "The Big Bad Wolf",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
-        },
-        {
-          "boss": "Romulo and Julianne",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 28727,
       "name": "Pendant of the Violet Eye",
       "slot": "trinket",
@@ -4910,42 +4830,6 @@
           "kind": "raid",
           "zone": "Magtheridon's Lair",
           "boss": "Magtheridon",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28823,
-      "name": "Eye of Gruul",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Gruul's Lair",
-          "boss": "Gruul the Dragonkiller",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 30619,
-      "name": "Fel Reaver's Piston",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Tempest Keep",
-          "boss": "Void Reaver",
           "origin": "db"
         }
       ],
@@ -6467,24 +6351,6 @@
       "curationHint": 21.42
     },
     {
-      "itemId": 28767,
-      "name": "The Decapitator",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Prince Malchezaar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 20.79
-    },
-    {
       "itemId": 29996,
       "name": "Rod of the Sun King",
       "slot": "weapon",
@@ -6813,24 +6679,6 @@
           "kind": "raid",
           "zone": "Karazhan",
           "boss": "Prince Malchezaar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28774,
-      "name": "Glaive of the Pit",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Magtheridon's Lair",
-          "boss": "Magtheridon",
           "origin": "db"
         }
       ],
@@ -7310,24 +7158,6 @@
       "slot": "weapon",
       "armorType": null,
       "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Black Temple",
-          "boss": "Illidan Stormrage",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32500,
-      "name": "Crystal Spire of Karabor",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
       "quality": 4,
       "phase": 3,
       "sources": [

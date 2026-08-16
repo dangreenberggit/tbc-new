@@ -4,6 +4,10 @@
   "carryoverPolicy": "union",
   "generatedBy": "scripts/assemble_universe.py",
   "d7Note": "D7 eligibility implemented in assemble_universe.py.",
+  "epWeights": {
+    "path": "data/presets/feral/p1.ep-weights.json",
+    "pin": "8aa378b3"
+  },
   "entries": [
     {
       "itemId": 28672,
@@ -50,7 +54,8 @@
       ],
       "curationHint": 56.28,
       "curatedSets": [
-        "p2_6p"
+        "p2_6p",
+        "p3_6p"
       ],
       "bisTags": [
         "BiS"
@@ -1919,6 +1924,8 @@
       "curatedSets": [
         "p2_6p",
         "p2_9p",
+        "p3_6p",
+        "p3_9p",
         "preraid"
       ],
       "bisTags": [
@@ -2629,24 +2636,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 30008,
-      "name": "Pendant of the Lost Ages",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Serpentshrine Cavern",
-          "boss": "Morogrim Tidewalker",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 30666,
       "name": "Ritssyn's Lost Pendant",
       "slot": "neck",
@@ -2688,24 +2677,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 28568,
-      "name": "Idol of the Avian Heart",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Moroes",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 29390,
       "name": "Everbloom Idol",
       "slot": "ranged",
@@ -2724,24 +2695,6 @@
       "curatedSets": [
         "preraid"
       ]
-    },
-    {
-      "itemId": 30051,
-      "name": "Idol of the Crescent Goddess",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Serpentshrine Cavern",
-          "boss": "Hydross the Unstable",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
     },
     {
       "itemId": 30055,
@@ -2965,7 +2918,9 @@
       "curationHint": 39.46,
       "curatedSets": [
         "p2_6p",
-        "p2_9p"
+        "p2_9p",
+        "p3_6p",
+        "p3_9p"
       ],
       "bisTags": [
         "BiS"
@@ -3012,6 +2967,8 @@
       "curatedSets": [
         "p2_6p",
         "p2_9p",
+        "p3_6p",
+        "p3_9p",
         "preraid"
       ],
       "bisTags": [
@@ -3020,6 +2977,25 @@
       "bisSets": [
         "p2_6p",
         "p2_9p"
+      ]
+    },
+    {
+      "itemId": 28034,
+      "name": "Hourglass of the Unraveller",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "curated"
+        }
+      ],
+      "curationHint": 24.64,
+      "curatedSets": [
+        "preraid"
       ]
     },
     {
@@ -3078,36 +3054,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 28590,
-      "name": "Ribbon of Sacrifice",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "The Wizard of Oz",
-          "origin": "db"
-        },
-        {
-          "boss": "The Big Bad Wolf",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
-        },
-        {
-          "boss": "Romulo and Julianne",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 28727,
       "name": "Pendant of the Violet Eye",
       "slot": "trinket",
@@ -3156,42 +3102,6 @@
           "kind": "raid",
           "zone": "Magtheridon's Lair",
           "boss": "Magtheridon",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28823,
-      "name": "Eye of Gruul",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Gruul's Lair",
-          "boss": "Gruul the Dragonkiller",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 30619,
-      "name": "Fel Reaver's Piston",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Tempest Keep",
-          "boss": "Void Reaver",
           "origin": "db"
         }
       ],
@@ -3311,7 +3221,9 @@
       "curationHint": 85.04,
       "curatedSets": [
         "p2_6p",
-        "p2_9p"
+        "p2_9p",
+        "p3_6p",
+        "p3_9p"
       ],
       "bisTags": [
         "BiS"
@@ -4090,24 +4002,6 @@
       "curationHint": 23.2
     },
     {
-      "itemId": 28767,
-      "name": "The Decapitator",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Prince Malchezaar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 20.79
-    },
-    {
       "itemId": 29996,
       "name": "Rod of the Sun King",
       "slot": "weapon",
@@ -4418,24 +4312,6 @@
           "kind": "raid",
           "zone": "Karazhan",
           "boss": "Prince Malchezaar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28774,
-      "name": "Glaive of the Pit",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Magtheridon's Lair",
-          "boss": "Magtheridon",
           "origin": "db"
         }
       ],

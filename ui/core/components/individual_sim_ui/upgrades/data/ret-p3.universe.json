@@ -4,6 +4,10 @@
   "carryoverPolicy": "union",
   "generatedBy": "scripts/assemble_universe.py",
   "d7Note": "D7 eligibility implemented in assemble_universe.py.",
+  "epWeights": {
+    "path": "data/presets/ret/p3.ep-weights.json",
+    "pin": "ac0ed034b (master, 2026-08-13) -- not yet at this repo's 8aa378b3 pin; P3_EP_PRESET does not exist at 8aa378b3. Note the matching p3.gear.json is NOT in ac0ed034b; it landed 26 min later in 5c7491899 ('missed jsons'), so a curated-set pin bump must reach 5c7491899 or later."
+  },
   "entries": [
     {
       "itemId": 32323,
@@ -21,7 +25,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 84.55
+      "curationHint": 85.99
     },
     {
       "itemId": 28672,
@@ -39,7 +43,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 68.49
+      "curationHint": 68.35
     },
     {
       "itemId": 28529,
@@ -98,34 +102,10 @@
           "origin": "db"
         }
       ],
-      "curationHint": 50.25,
+      "curationHint": 49.79,
       "curatedSets": [
         "p2"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p2"
       ]
-    },
-    {
-      "itemId": 29994,
-      "name": "Thalassian Wildercloak",
-      "slot": "back",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Tempest Keep",
-          "boss": "Kael'thas Sunstrider",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 48.88
     },
     {
       "itemId": 30729,
@@ -143,7 +123,43 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 47.7
+      "curationHint": 49.2
+    },
+    {
+      "itemId": 29994,
+      "name": "Thalassian Wildercloak",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Kael'thas Sunstrider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 49.0
+    },
+    {
+      "itemId": 28777,
+      "name": "Cloak of the Pit Stalker",
+      "slot": "back",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Magtheridon's Lair",
+          "boss": "Magtheridon",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 42.72
     },
     {
       "itemId": 33122,
@@ -163,25 +179,16 @@
           "origin": "db"
         }
       ],
-      "curationHint": 41.48
-    },
-    {
-      "itemId": 28777,
-      "name": "Cloak of the Pit Stalker",
-      "slot": "back",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Magtheridon's Lair",
-          "boss": "Magtheridon",
-          "origin": "db"
-        }
+      "curationHint": 42.2,
+      "curatedSets": [
+        "p3"
       ],
-      "curationHint": 41.44
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3"
+      ]
     },
     {
       "itemId": 24259,
@@ -198,7 +205,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 39.03,
+      "curationHint": 40.24,
       "curatedSets": [
         "p1",
         "preraid"
@@ -220,7 +227,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 28.7
+      "curationHint": 29.4
     },
     {
       "itemId": 29992,
@@ -238,7 +245,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 7.48
+      "curationHint": 7.04
     },
     {
       "itemId": 32331,
@@ -256,7 +263,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 7.14
+      "curationHint": 6.72
     },
     {
       "itemId": 28570,
@@ -274,7 +281,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.12
+      "curationHint": 5.76
     },
     {
       "itemId": 30735,
@@ -292,7 +299,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 6.12
+      "curationHint": 5.76
     },
     {
       "itemId": 28766,
@@ -310,7 +317,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 5.1
+      "curationHint": 4.8
     },
     {
       "itemId": 28797,
@@ -328,7 +335,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.76
+      "curationHint": 4.48
     },
     {
       "itemId": 32337,
@@ -346,7 +353,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.59
+      "curationHint": 4.32
     },
     {
       "itemId": 29989,
@@ -364,7 +371,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.42
+      "curationHint": 4.16
     },
     {
       "itemId": 32524,
@@ -382,7 +389,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.91
+      "curationHint": 3.68
     },
     {
       "itemId": 34012,
@@ -405,7 +412,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 3.74
+      "curationHint": 3.52
     },
     {
       "itemId": 28765,
@@ -423,7 +430,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.06
+      "curationHint": 2.88
     },
     {
       "itemId": 28582,
@@ -441,7 +448,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 2.72
+      "curationHint": 2.56
     },
     {
       "itemId": 28653,
@@ -585,7 +592,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 161.38
+      "curationHint": 162.7
     },
     {
       "itemId": 30102,
@@ -603,7 +610,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 157.75
+      "curationHint": 156.89
     },
     {
       "itemId": 30905,
@@ -621,7 +628,16 @@
           "origin": "db"
         }
       ],
-      "curationHint": 141.23
+      "curationHint": 143.67,
+      "curatedSets": [
+        "p3"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3"
+      ]
     },
     {
       "itemId": 32252,
@@ -639,7 +655,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 137.51
+      "curationHint": 137.65
     },
     {
       "itemId": 28485,
@@ -656,7 +672,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 125.32
+      "curationHint": 126.55
     },
     {
       "itemId": 30990,
@@ -675,7 +691,7 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 125.02
+      "curationHint": 125.95
     },
     {
       "itemId": 30101,
@@ -693,7 +709,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 123.49
+      "curationHint": 125.49
     },
     {
       "itemId": 30129,
@@ -712,14 +728,8 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 121.62,
+      "curationHint": 122.25,
       "curatedSets": [
-        "p2"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
         "p2"
       ]
     },
@@ -739,7 +749,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 111.95
+      "curationHint": 112.11
     },
     {
       "itemId": 30730,
@@ -757,7 +767,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 103.76
+      "curationHint": 105.47
     },
     {
       "itemId": 30907,
@@ -775,7 +785,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 103.36
+      "curationHint": 104.33
     },
     {
       "itemId": 33749,
@@ -792,7 +802,7 @@
           "origin": "wowhead"
         }
       ],
-      "curationHint": 94.52
+      "curationHint": 95.6
     },
     {
       "itemId": 32334,
@@ -828,7 +838,27 @@
           "origin": "db"
         }
       ],
-      "curationHint": 73.86
+      "curationHint": 74.44
+    },
+    {
+      "itemId": 23522,
+      "name": "Ragesteel Breastplate",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Blacksmithing",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 73.2,
+      "curatedSets": [
+        "preraid"
+      ]
     },
     {
       "itemId": 30896,
@@ -849,26 +879,6 @@
       "curationHint": 73.1
     },
     {
-      "itemId": 23522,
-      "name": "Ragesteel Breastplate",
-      "slot": "chest",
-      "armorType": 4,
-      "handType": null,
-      "quality": 3,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "crafted",
-          "profession": "Blacksmithing",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 72.33,
-      "curatedSets": [
-        "preraid"
-      ]
-    },
-    {
       "itemId": 29071,
       "name": "Justicar Breastplate",
       "slot": "chest",
@@ -885,7 +895,7 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 61.25,
+      "curationHint": 62.0,
       "curatedSets": [
         "p1"
       ]
@@ -906,7 +916,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 51.28
+      "curationHint": 52.8
     },
     {
       "itemId": 32592,
@@ -935,7 +945,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 12.58
+      "curationHint": 11.84
     },
     {
       "itemId": 30075,
@@ -953,7 +963,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.29
+      "curationHint": 5.92
     },
     {
       "itemId": 30887,
@@ -971,7 +981,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.29
+      "curationHint": 5.92
     },
     {
       "itemId": 30899,
@@ -989,7 +999,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.29
+      "curationHint": 5.92
     },
     {
       "itemId": 30904,
@@ -1007,7 +1017,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.12
+      "curationHint": 5.76
     },
     {
       "itemId": 28662,
@@ -1025,7 +1035,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 5.1
+      "curationHint": 4.8
     },
     {
       "itemId": 28735,
@@ -1043,7 +1053,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.93
+      "curationHint": 4.64
     },
     {
       "itemId": 29921,
@@ -1061,7 +1071,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.59
+      "curationHint": 4.32
     },
     {
       "itemId": 28600,
@@ -1079,7 +1089,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.42
+      "curationHint": 4.16
     },
     {
       "itemId": 30065,
@@ -1097,7 +1107,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.06
+      "curationHint": 2.88
     },
     {
       "itemId": 28597,
@@ -1133,7 +1143,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 113.28
+      "curationHint": 114.26
     },
     {
       "itemId": 32510,
@@ -1151,7 +1161,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 107.98
+      "curationHint": 108.98
     },
     {
       "itemId": 32345,
@@ -1169,7 +1179,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 99.8
+      "curationHint": 100.7
     },
     {
       "itemId": 30880,
@@ -1187,7 +1197,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 77.03
+      "curationHint": 77.05
     },
     {
       "itemId": 28746,
@@ -1210,7 +1220,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 69.99
+      "curationHint": 69.81
     },
     {
       "itemId": 30081,
@@ -1228,7 +1238,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 67.87
+      "curationHint": 68.8
     },
     {
       "itemId": 28545,
@@ -1246,7 +1256,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 67.74
+      "curationHint": 67.6
     },
     {
       "itemId": 32366,
@@ -1264,7 +1274,16 @@
           "origin": "db"
         }
       ],
-      "curationHint": 66.75
+      "curationHint": 67.42,
+      "curatedSets": [
+        "p3"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3"
+      ]
     },
     {
       "itemId": 32593,
@@ -1287,7 +1306,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 62.0
+      "curationHint": 61.36
     },
     {
       "itemId": 30060,
@@ -1305,7 +1324,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 55.28
+      "curationHint": 55.02
     },
     {
       "itemId": 30674,
@@ -1328,7 +1347,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 55.0
+      "curationHint": 54.44
     },
     {
       "itemId": 28669,
@@ -1346,7 +1365,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 52.1
+      "curationHint": 53.64
     },
     {
       "itemId": 29951,
@@ -1385,12 +1404,6 @@
       "curationHint": 51.81,
       "curatedSets": [
         "p2"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p2"
       ]
     },
     {
@@ -1409,7 +1422,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 48.0,
+      "curationHint": 47.6,
       "curatedSets": [
         "p1"
       ]
@@ -1428,10 +1441,28 @@
           "origin": "curated"
         }
       ],
-      "curationHint": 39.75,
+      "curationHint": 39.33,
       "curatedSets": [
         "preraid"
       ]
+    },
+    {
+      "itemId": 28610,
+      "name": "Ferocious Swift-Kickers",
+      "slot": "feet",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Nightbane",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 37.16
     },
     {
       "itemId": 32268,
@@ -1450,24 +1481,6 @@
         }
       ],
       "curationHint": 36.55
-    },
-    {
-      "itemId": 28610,
-      "name": "Ferocious Swift-Kickers",
-      "slot": "feet",
-      "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Nightbane",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 36.1
     },
     {
       "itemId": 28747,
@@ -1508,7 +1521,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 9.35
+      "curationHint": 8.8
     },
     {
       "itemId": 32352,
@@ -1526,7 +1539,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 7.48
+      "curationHint": 7.04
     },
     {
       "itemId": 28810,
@@ -1544,7 +1557,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.63
+      "curationHint": 6.24
     },
     {
       "itemId": 30027,
@@ -1567,7 +1580,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 5.1
+      "curationHint": 4.8
     },
     {
       "itemId": 32245,
@@ -1585,7 +1598,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 5.1
+      "curationHint": 4.8
     },
     {
       "itemId": 30737,
@@ -1603,7 +1616,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 4.93
+      "curationHint": 4.64
     },
     {
       "itemId": 30873,
@@ -1621,7 +1634,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.76
+      "curationHint": 4.48
     },
     {
       "itemId": 30886,
@@ -1639,7 +1652,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.76
+      "curationHint": 4.48
     },
     {
       "itemId": 32243,
@@ -1657,7 +1670,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.76
+      "curationHint": 4.48
     },
     {
       "itemId": 30092,
@@ -1675,7 +1688,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.25
+      "curationHint": 4.0
     },
     {
       "itemId": 28569,
@@ -1693,7 +1706,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.23
+      "curationHint": 3.04
     },
     {
       "itemId": 28752,
@@ -1716,7 +1729,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 3.23
+      "curationHint": 3.04
     },
     {
       "itemId": 30066,
@@ -1734,7 +1747,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 2.89
+      "curationHint": 2.72
     },
     {
       "itemId": 30641,
@@ -1907,7 +1920,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 104.16
+      "curationHint": 104.82
     },
     {
       "itemId": 29997,
@@ -1925,7 +1938,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 83.22
+      "curationHint": 84.62
     },
     {
       "itemId": 32266,
@@ -1943,7 +1956,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 80.38
+      "curationHint": 80.54
     },
     {
       "itemId": 30052,
@@ -1961,7 +1974,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 79.35
+      "curationHint": 79.37
     },
     {
       "itemId": 28757,
@@ -1979,7 +1992,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 76.6,
+      "curationHint": 77.73,
       "curatedSets": [
         "p1"
       ]
@@ -2000,7 +2013,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 72.3
+      "curationHint": 73.49
     },
     {
       "itemId": 28649,
@@ -2041,7 +2054,16 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 63.33
+      "curationHint": 65.54,
+      "curatedSets": [
+        "p3"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3"
+      ]
     },
     {
       "itemId": 30834,
@@ -2060,17 +2082,18 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 61.55,
+      "curationHint": 61.25,
       "curatedSets": [
         "p1",
         "p2",
+        "p3",
         "preraid"
       ],
       "bisTags": [
         "BiS"
       ],
       "bisSets": [
-        "p2"
+        "p3"
       ]
     },
     {
@@ -2089,7 +2112,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 59.1
+      "curationHint": 60.0
     },
     {
       "itemId": 30061,
@@ -2107,14 +2130,8 @@
           "origin": "db"
         }
       ],
-      "curationHint": 47.75,
+      "curationHint": 47.33,
       "curatedSets": [
-        "p2"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
         "p2"
       ]
     },
@@ -2135,7 +2152,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 46.35
+      "curationHint": 46.37
     },
     {
       "itemId": 29301,
@@ -2154,7 +2171,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 46.35
+      "curationHint": 46.37
     },
     {
       "itemId": 32261,
@@ -2175,6 +2192,24 @@
       "curationHint": 45.15
     },
     {
+      "itemId": 28730,
+      "name": "Mithril Band of the Unscarred",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Netherspite",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 43.6
+    },
+    {
       "itemId": 29299,
       "name": "Band of Eternity",
       "slot": "finger",
@@ -2191,25 +2226,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 43.21
-    },
-    {
-      "itemId": 28730,
-      "name": "Mithril Band of the Unscarred",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Netherspite",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 42.94
+      "curationHint": 43.23
     },
     {
       "itemId": 29177,
@@ -2228,7 +2245,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 41.0,
+      "curationHint": 40.68,
       "curatedSets": [
         "preraid"
       ]
@@ -2268,7 +2285,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 20.5
+      "curationHint": 21.0
     },
     {
       "itemId": 32247,
@@ -2286,7 +2303,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 7.14
+      "curationHint": 6.72
     },
     {
       "itemId": 32527,
@@ -2309,7 +2326,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 6.63
+      "curationHint": 6.24
     },
     {
       "itemId": 29922,
@@ -2327,7 +2344,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.29
+      "curationHint": 5.92
     },
     {
       "itemId": 30109,
@@ -2345,7 +2362,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.29
+      "curationHint": 5.92
     },
     {
       "itemId": 29304,
@@ -2364,7 +2381,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 5.78
+      "curationHint": 5.44
     },
     {
       "itemId": 29305,
@@ -2383,7 +2400,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 5.78
+      "curationHint": 5.44
     },
     {
       "itemId": 28753,
@@ -2406,7 +2423,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 5.44
+      "curationHint": 5.12
     },
     {
       "itemId": 29303,
@@ -2425,7 +2442,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 5.44
+      "curationHint": 5.12
     },
     {
       "itemId": 28510,
@@ -2443,7 +2460,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.93
+      "curationHint": 4.64
     },
     {
       "itemId": 29302,
@@ -2462,7 +2479,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 4.93
+      "curationHint": 4.64
     },
     {
       "itemId": 30110,
@@ -2480,7 +2497,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.25
+      "curationHint": 4.0
     },
     {
       "itemId": 30736,
@@ -2498,7 +2515,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 4.25
+      "curationHint": 4.0
     },
     {
       "itemId": 32528,
@@ -2521,7 +2538,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 4.25
+      "curationHint": 4.0
     },
     {
       "itemId": 33054,
@@ -2539,7 +2556,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.25
+      "curationHint": 4.0
     },
     {
       "itemId": 28763,
@@ -2557,7 +2574,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.91
+      "curationHint": 3.68
     },
     {
       "itemId": 29308,
@@ -2576,7 +2593,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 3.74
+      "curationHint": 3.52
     },
     {
       "itemId": 29309,
@@ -2595,7 +2612,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 3.74
+      "curationHint": 3.52
     },
     {
       "itemId": 32238,
@@ -2613,7 +2630,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.74
+      "curationHint": 3.52
     },
     {
       "itemId": 29306,
@@ -2632,7 +2649,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 3.4
+      "curationHint": 3.2
     },
     {
       "itemId": 29307,
@@ -2651,7 +2668,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 3.23
+      "curationHint": 3.04
     },
     {
       "itemId": 29920,
@@ -2669,7 +2686,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.23
+      "curationHint": 3.04
     },
     {
       "itemId": 33058,
@@ -2687,7 +2704,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 2.72
+      "curationHint": 2.56
     },
     {
       "itemId": 28661,
@@ -2705,7 +2722,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 2.55
+      "curationHint": 2.4
     },
     {
       "itemId": 28675,
@@ -2777,25 +2794,6 @@
           "factionId": 990,
           "kind": "rep",
           "standing": "Revered",
-          "origin": "atlasloot"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 29297,
-      "name": "Band of the Eternal Defender",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "faction": "The Scale of the Sands",
-          "factionId": 990,
-          "kind": "rep",
-          "standing": "Exalted",
           "origin": "atlasloot"
         }
       ],
@@ -2886,7 +2884,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 121.16
+      "curationHint": 123.06
     },
     {
       "itemId": 32347,
@@ -2904,7 +2902,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 94.7
+      "curationHint": 96.77
     },
     {
       "itemId": 32234,
@@ -2922,7 +2920,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 93.2
+      "curationHint": 95.31
     },
     {
       "itemId": 29947,
@@ -2940,15 +2938,16 @@
           "origin": "db"
         }
       ],
-      "curationHint": 90.33,
+      "curationHint": 90.51,
       "curatedSets": [
-        "p2"
+        "p2",
+        "p3"
       ],
       "bisTags": [
         "BiS"
       ],
       "bisSets": [
-        "p2"
+        "p3"
       ]
     },
     {
@@ -2990,7 +2989,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 78.45,
+      "curationHint": 78.62,
       "curatedSets": [
         "p1"
       ]
@@ -3012,7 +3011,7 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 65.63
+      "curationHint": 66.2
     },
     {
       "itemId": 30130,
@@ -3031,7 +3030,7 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 62.75
+      "curationHint": 62.25
     },
     {
       "itemId": 29072,
@@ -3050,7 +3049,7 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 56.48
+      "curationHint": 57.2
     },
     {
       "itemId": 28824,
@@ -3068,7 +3067,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 53.71
+      "curationHint": 54.4
     },
     {
       "itemId": 28776,
@@ -3086,7 +3085,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 49.54
+      "curationHint": 51.04
     },
     {
       "itemId": 32280,
@@ -3104,7 +3103,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 44.94
+      "curationHint": 45.15
     },
     {
       "itemId": 28506,
@@ -3122,7 +3121,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 43.47
+      "curationHint": 43.19
     },
     {
       "itemId": 28827,
@@ -3158,7 +3157,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 34.41
+      "curationHint": 35.44
     },
     {
       "itemId": 32275,
@@ -3176,7 +3175,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.76
+      "curationHint": 4.48
     },
     {
       "itemId": 32328,
@@ -3194,7 +3193,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.76
+      "curationHint": 4.48
     },
     {
       "itemId": 30112,
@@ -3212,7 +3211,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.59
+      "curationHint": 4.32
     },
     {
       "itemId": 29976,
@@ -3230,7 +3229,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.25
+      "curationHint": 4.0
     },
     {
       "itemId": 30029,
@@ -3253,7 +3252,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 4.25
+      "curationHint": 4.0
     },
     {
       "itemId": 28521,
@@ -3271,7 +3270,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.74
+      "curationHint": 3.52
     },
     {
       "itemId": 28505,
@@ -3289,7 +3288,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.57
+      "curationHint": 3.36
     },
     {
       "itemId": 28520,
@@ -3307,7 +3306,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.57
+      "curationHint": 3.36
     },
     {
       "itemId": 28518,
@@ -3379,7 +3378,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 156.44
+      "curationHint": 157.7
     },
     {
       "itemId": 32235,
@@ -3397,7 +3396,16 @@
           "origin": "db"
         }
       ],
-      "curationHint": 147.94
+      "curationHint": 149.38,
+      "curatedSets": [
+        "p3"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3"
+      ]
     },
     {
       "itemId": 29983,
@@ -3415,7 +3423,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 144.38
+      "curationHint": 145.7
     },
     {
       "itemId": 28796,
@@ -3433,7 +3441,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 133.43
+      "curationHint": 135.53
     },
     {
       "itemId": 28732,
@@ -3451,7 +3459,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 118.1
+      "curationHint": 118.42
     },
     {
       "itemId": 32461,
@@ -3468,14 +3476,8 @@
           "origin": "db"
         }
       ],
-      "curationHint": 105.21,
+      "curationHint": 106.35,
       "curatedSets": [
-        "p2"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
         "p2"
       ]
     },
@@ -3495,7 +3497,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 87.9
+      "curationHint": 88.66
     },
     {
       "itemId": 32087,
@@ -3533,7 +3535,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 82.25
+      "curationHint": 81.39
     },
     {
       "itemId": 30989,
@@ -3552,7 +3554,7 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 78.71
+      "curationHint": 79.4
     },
     {
       "itemId": 30131,
@@ -3571,7 +3573,7 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 74.0
+      "curationHint": 73.52
     },
     {
       "itemId": 28801,
@@ -3589,7 +3591,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 67.6
+      "curationHint": 69.72
     },
     {
       "itemId": 32041,
@@ -3606,7 +3608,7 @@
           "origin": "wowhead"
         }
       ],
-      "curationHint": 64.86
+      "curationHint": 65.4
     },
     {
       "itemId": 29073,
@@ -3625,7 +3627,7 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 59.5,
+      "curationHint": 59.06,
       "curatedSets": [
         "p1"
       ]
@@ -3646,7 +3648,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 52.42
+      "curationHint": 52.32
     },
     {
       "itemId": 28593,
@@ -3694,7 +3696,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 7.99
+      "curationHint": 7.52
     },
     {
       "itemId": 32241,
@@ -3712,7 +3714,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.29
+      "curationHint": 5.92
     },
     {
       "itemId": 32354,
@@ -3730,7 +3732,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.29
+      "curationHint": 5.92
     },
     {
       "itemId": 30728,
@@ -3748,7 +3750,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 6.12
+      "curationHint": 5.76
     },
     {
       "itemId": 32240,
@@ -3766,7 +3768,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 5.95
+      "curationHint": 5.6
     },
     {
       "itemId": 30048,
@@ -3784,7 +3786,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 5.78
+      "curationHint": 5.44
     },
     {
       "itemId": 28803,
@@ -3802,7 +3804,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 5.27
+      "curationHint": 4.96
     },
     {
       "itemId": 30731,
@@ -3856,7 +3858,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 146.27
+      "curationHint": 147.65
     },
     {
       "itemId": 30132,
@@ -3875,7 +3877,7 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 124.4
+      "curationHint": 123.86
     },
     {
       "itemId": 29074,
@@ -3894,7 +3896,7 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 120.45
+      "curationHint": 119.97
     },
     {
       "itemId": 32341,
@@ -3912,7 +3914,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 112.95
+      "curationHint": 114.0
     },
     {
       "itemId": 28741,
@@ -3933,33 +3935,6 @@
       "curationHint": 110.44
     },
     {
-      "itemId": 30257,
-      "name": "Shattrath Leggings",
-      "slot": "legs",
-      "armorType": 2,
-      "handType": null,
-      "quality": 3,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "curated"
-        }
-      ],
-      "curationHint": 100.83,
-      "curatedSets": [
-        "p1",
-        "p2",
-        "preraid"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p2"
-      ]
-    },
-    {
       "itemId": 29995,
       "name": "Leggings of Murderous Intent",
       "slot": "legs",
@@ -3975,7 +3950,28 @@
           "origin": "db"
         }
       ],
-      "curationHint": 99.96
+      "curationHint": 101.09
+    },
+    {
+      "itemId": 30257,
+      "name": "Shattrath Leggings",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "curated"
+        }
+      ],
+      "curationHint": 100.55,
+      "curatedSets": [
+        "p1",
+        "p2",
+        "preraid"
+      ]
     },
     {
       "itemId": 30993,
@@ -3994,7 +3990,7 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 97.26
+      "curationHint": 98.4
     },
     {
       "itemId": 30898,
@@ -4012,7 +4008,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 96.82
+      "curationHint": 96.84
     },
     {
       "itemId": 30739,
@@ -4030,7 +4026,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 93.31
+      "curationHint": 93.33
     },
     {
       "itemId": 30900,
@@ -4048,7 +4044,16 @@
           "origin": "db"
         }
       ],
-      "curationHint": 87.9
+      "curationHint": 88.66,
+      "curatedSets": [
+        "p3"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3"
+      ]
     },
     {
       "itemId": 29950,
@@ -4066,7 +4071,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 72.87
+      "curationHint": 73.8
     },
     {
       "itemId": 29985,
@@ -4084,7 +4089,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 63.83
+      "curationHint": 63.97
     },
     {
       "itemId": 28740,
@@ -4102,7 +4107,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 44.52
+      "curationHint": 45.92
     },
     {
       "itemId": 32263,
@@ -4156,7 +4161,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.29
+      "curationHint": 5.92
     },
     {
       "itemId": 32271,
@@ -4174,7 +4179,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.29
+      "curationHint": 5.92
     },
     {
       "itemId": 29991,
@@ -4192,7 +4197,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.12
+      "curationHint": 5.76
     },
     {
       "itemId": 28751,
@@ -4215,7 +4220,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 5.1
+      "curationHint": 4.8
     },
     {
       "itemId": 28591,
@@ -4245,7 +4250,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 4.59
+      "curationHint": 4.32
     },
     {
       "itemId": 28748,
@@ -4268,7 +4273,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 3.74
+      "curationHint": 3.52
     },
     {
       "itemId": 32396,
@@ -4346,7 +4351,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 95.46
+      "curationHint": 96.99
     },
     {
       "itemId": 29381,
@@ -4363,7 +4368,7 @@
           "origin": "wowhead"
         }
       ],
-      "curationHint": 70.92
+      "curationHint": 70.94
     },
     {
       "itemId": 28509,
@@ -4381,7 +4386,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 68.77
+      "curationHint": 68.79
     },
     {
       "itemId": 31275,
@@ -4397,7 +4402,7 @@
           "origin": "wowhead"
         }
       ],
-      "curationHint": 63.35
+      "curationHint": 63.05
     },
     {
       "itemId": 30022,
@@ -4420,15 +4425,16 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 49.71,
+      "curationHint": 50.4,
       "curatedSets": [
-        "p2"
+        "p2",
+        "p3"
       ],
       "bisTags": [
         "BiS"
       ],
       "bisSets": [
-        "p2"
+        "p3"
       ]
     },
     {
@@ -4447,7 +4453,7 @@
           "origin": "wowhead"
         }
       ],
-      "curationHint": 48.95
+      "curationHint": 49.11
     },
     {
       "itemId": 32591,
@@ -4476,7 +4482,25 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 46.2
+      "curationHint": 46.9
+    },
+    {
+      "itemId": 30059,
+      "name": "Choker of Animalistic Fury",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "The Lurker Below",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 45.28
     },
     {
       "itemId": 29119,
@@ -4495,7 +4519,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 44.75,
+      "curationHint": 44.25,
       "curatedSets": [
         "preraid"
       ]
@@ -4521,28 +4545,10 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 44.5,
+      "curationHint": 44.06,
       "curatedSets": [
         "p1"
       ]
-    },
-    {
-      "itemId": 30059,
-      "name": "Choker of Animalistic Fury",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Serpentshrine Cavern",
-          "boss": "The Lurker Below",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 43.95
     },
     {
       "itemId": 32362,
@@ -4596,7 +4602,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 34.61
+      "curationHint": 34.65
     },
     {
       "itemId": 32349,
@@ -4614,25 +4620,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 7.82
-    },
-    {
-      "itemId": 30008,
-      "name": "Pendant of the Lost Ages",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Serpentshrine Cavern",
-          "boss": "Morogrim Tidewalker",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 6.12
+      "curationHint": 7.36
     },
     {
       "itemId": 28762,
@@ -4650,7 +4638,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.76
+      "curationHint": 4.48
     },
     {
       "itemId": 32370,
@@ -4668,7 +4656,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.59
+      "curationHint": 4.32
     },
     {
       "itemId": 28530,
@@ -4686,7 +4674,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.42
+      "curationHint": 4.16
     },
     {
       "itemId": 30726,
@@ -4704,7 +4692,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 4.25
+      "curationHint": 4.0
     },
     {
       "itemId": 28609,
@@ -4722,7 +4710,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.74
+      "curationHint": 3.52
     },
     {
       "itemId": 28731,
@@ -4740,7 +4728,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 2.72
+      "curationHint": 2.56
     },
     {
       "itemId": 28822,
@@ -4758,7 +4746,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 2.72
+      "curationHint": 2.56
     },
     {
       "itemId": 28516,
@@ -4831,6 +4819,22 @@
       "curationHint": 0.0
     },
     {
+      "itemId": 22401,
+      "name": "Libram of Hope",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "curated"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
       "itemId": 23203,
       "name": "Libram of Fervor",
       "slot": "ranged",
@@ -4847,67 +4851,45 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 28592,
-      "name": "Libram of Souls Redeemed",
+      "itemId": 27484,
+      "name": "Libram of Avengement",
       "slot": "ranged",
       "armorType": null,
       "handType": null,
-      "quality": 4,
+      "quality": 3,
       "phase": 1,
       "sources": [
         {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "The Wizard of Oz",
-          "origin": "db"
-        },
-        {
-          "boss": "The Big Bad Wolf",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
-        },
-        {
-          "boss": "Romulo and Julianne",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
+          "kind": "unknown",
+          "origin": "curated"
         }
       ],
-      "curationHint": 0.0
+      "curationHint": 0.0,
+      "curatedSets": [
+        "p1",
+        "p2",
+        "p3",
+        "preraid"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3"
+      ]
     },
     {
-      "itemId": 30063,
-      "name": "Libram of Absolute Truth",
+      "itemId": 31033,
+      "name": "Libram of Righteous Power",
       "slot": "ranged",
       "armorType": null,
       "handType": null,
-      "quality": 4,
-      "phase": 2,
+      "quality": 3,
+      "phase": 1,
       "sources": [
         {
-          "kind": "raid",
-          "zone": "Serpentshrine Cavern",
-          "boss": "The Lurker Below",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32368,
-      "name": "Tome of the Lightbringer",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Black Temple",
-          "boss": "Mother Shahraz",
-          "origin": "db"
+          "kind": "unknown",
+          "origin": "curated"
         }
       ],
       "curationHint": 0.0
@@ -4928,7 +4910,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 121.09
+      "curationHint": 122.05
     },
     {
       "itemId": 32377,
@@ -4946,7 +4928,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 111.25
+      "curationHint": 113.18
     },
     {
       "itemId": 32581,
@@ -4965,7 +4947,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 96.55
+      "curationHint": 98.61
     },
     {
       "itemId": 30740,
@@ -4983,7 +4965,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 83.89
+      "curationHint": 84.55
     },
     {
       "itemId": 30055,
@@ -5001,37 +4983,16 @@
           "origin": "db"
         }
       ],
-      "curationHint": 83.07,
+      "curationHint": 83.59,
       "curatedSets": [
-        "p2"
+        "p2",
+        "p3"
       ],
       "bisTags": [
         "BiS"
       ],
       "bisSets": [
-        "p2"
-      ]
-    },
-    {
-      "itemId": 29075,
-      "name": "Justicar Shoulderplates",
-      "slot": "shoulder",
-      "armorType": 4,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "token",
-          "zone": "Gruul's Lair",
-          "token": "Pauldrons of the Fallen Champion",
-          "boss": "High King Maulgar",
-          "origin": "two-hop"
-        }
-      ],
-      "curationHint": 80.15,
-      "curatedSets": [
-        "p1"
+        "p3"
       ]
     },
     {
@@ -5050,7 +5011,29 @@
           "origin": "db"
         }
       ],
-      "curationHint": 79.68
+      "curationHint": 80.46
+    },
+    {
+      "itemId": 29075,
+      "name": "Justicar Shoulderplates",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Gruul's Lair",
+          "token": "Pauldrons of the Fallen Champion",
+          "boss": "High King Maulgar",
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 79.89,
+      "curatedSets": [
+        "p1"
+      ]
     },
     {
       "itemId": 30917,
@@ -5068,7 +5051,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 69.87
+      "curationHint": 70.76
     },
     {
       "itemId": 30085,
@@ -5086,7 +5069,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 68.15
+      "curationHint": 69.34
     },
     {
       "itemId": 28755,
@@ -5109,7 +5092,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 67.9
+      "curationHint": 69.11
     },
     {
       "itemId": 30997,
@@ -5128,7 +5111,7 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 64.63
+      "curationHint": 65.2
     },
     {
       "itemId": 33173,
@@ -5145,7 +5128,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 64.44,
+      "curationHint": 64.95,
       "curatedSets": [
         "preraid"
       ]
@@ -5184,7 +5167,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 60.33
+      "curationHint": 61.2
     },
     {
       "itemId": 30133,
@@ -5203,7 +5186,7 @@
           "origin": "two-hop"
         }
       ],
-      "curationHint": 57.32
+      "curationHint": 57.8
     },
     {
       "itemId": 28589,
@@ -5233,7 +5216,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 36.86
+      "curationHint": 36.84
     },
     {
       "itemId": 28743,
@@ -5269,7 +5252,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 5.78
+      "curationHint": 5.44
     },
     {
       "itemId": 30878,
@@ -5287,7 +5270,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.76
+      "curationHint": 4.48
     },
     {
       "itemId": 32517,
@@ -5305,7 +5288,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.76
+      "curationHint": 4.48
     },
     {
       "itemId": 32518,
@@ -5323,7 +5306,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.76
+      "curationHint": 4.48
     },
     {
       "itemId": 30084,
@@ -5341,7 +5324,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.25
+      "curationHint": 4.0
     },
     {
       "itemId": 30097,
@@ -5359,7 +5342,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.25
+      "curationHint": 4.0
     },
     {
       "itemId": 28631,
@@ -5377,7 +5360,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.74
+      "curationHint": 3.52
     },
     {
       "itemId": 28647,
@@ -5395,7 +5378,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.74
+      "curationHint": 3.52
     },
     {
       "itemId": 28666,
@@ -5413,7 +5396,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.23
+      "curationHint": 3.04
     },
     {
       "itemId": 32250,
@@ -5449,7 +5432,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 77.44
+      "curationHint": 78.28
     },
     {
       "itemId": 28579,
@@ -5485,7 +5468,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 50.76
+      "curationHint": 51.9
     },
     {
       "itemId": 29383,
@@ -5502,18 +5485,54 @@
           "origin": "wowhead"
         }
       ],
-      "curationHint": 29.52,
+      "curationHint": 30.24,
       "curatedSets": [
         "p1",
         "p2",
+        "p3",
         "preraid"
       ],
       "bisTags": [
         "BiS"
       ],
       "bisSets": [
-        "p2"
+        "p3"
       ]
+    },
+    {
+      "itemId": 28288,
+      "name": "Abacus of Violent Odds",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "curated"
+        }
+      ],
+      "curationHint": 26.88,
+      "curatedSets": [
+        "preraid"
+      ]
+    },
+    {
+      "itemId": 28034,
+      "name": "Hourglass of the Unraveller",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 3,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "curated"
+        }
+      ],
+      "curationHint": 25.6
     },
     {
       "itemId": 28830,
@@ -5531,16 +5550,17 @@
           "origin": "db"
         }
       ],
-      "curationHint": 16.4,
+      "curationHint": 16.8,
       "curatedSets": [
         "p1",
-        "p2"
+        "p2",
+        "p3"
       ],
       "bisTags": [
         "BiS"
       ],
       "bisSets": [
-        "p2"
+        "p3"
       ]
     },
     {
@@ -5559,7 +5579,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 9.35
+      "curationHint": 8.8
     },
     {
       "itemId": 28789,
@@ -5577,7 +5597,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 9.18
+      "curationHint": 8.64
     },
     {
       "itemId": 32496,
@@ -5595,55 +5615,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 6.29
-    },
-    {
-      "itemId": 28590,
-      "name": "Ribbon of Sacrifice",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "The Wizard of Oz",
-          "origin": "db"
-        },
-        {
-          "boss": "The Big Bad Wolf",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
-        },
-        {
-          "boss": "Romulo and Julianne",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
-        }
-      ],
-      "curationHint": 4.25
-    },
-    {
-      "itemId": 28823,
-      "name": "Eye of Gruul",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Gruul's Lair",
-          "boss": "Gruul the Dragonkiller",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 2.55
+      "curationHint": 5.92
     },
     {
       "itemId": 28528,
@@ -5712,24 +5684,6 @@
           "kind": "raid",
           "zone": "Tempest Keep",
           "boss": "Al'ar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 30619,
-      "name": "Fel Reaver's Piston",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Tempest Keep",
-          "boss": "Void Reaver",
           "origin": "db"
         }
       ],
@@ -5813,20 +5767,17 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 32489,
-      "name": "Ashtongue Talisman of Zeal",
+      "itemId": 31856,
+      "name": "Darkmoon Card: Crusade",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 3,
+      "phase": 1,
       "sources": [
         {
-          "kind": "rep",
-          "faction": "Ashtongue Deathsworn",
-          "standing": "Exalted",
-          "factionId": 1012,
-          "origin": "db"
+          "kind": "unknown",
+          "origin": "curated"
         }
       ],
       "curationHint": 0.0
@@ -5865,7 +5816,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 114.69
+      "curationHint": 115.41
     },
     {
       "itemId": 30106,
@@ -5883,15 +5834,16 @@
           "origin": "db"
         }
       ],
-      "curationHint": 105.59,
+      "curationHint": 106.0,
       "curatedSets": [
-        "p2"
+        "p2",
+        "p3"
       ],
       "bisTags": [
         "BiS"
       ],
       "bisSets": [
-        "p2"
+        "p3"
       ]
     },
     {
@@ -5910,7 +5862,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 94.7
+      "curationHint": 96.77
     },
     {
       "itemId": 30919,
@@ -5928,7 +5880,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 93.53
+      "curationHint": 95.55
     },
     {
       "itemId": 30915,
@@ -5946,26 +5898,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 92.46
-    },
-    {
-      "itemId": 30040,
-      "name": "Belt of Deep Shadow",
-      "slot": "waist",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "crafted",
-          "profession": "Leatherworking",
-          "recipeZone": "Serpentshrine Cavern",
-          "recipeBoss": "Trash",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 89.76
+      "curationHint": 94.36
     },
     {
       "itemId": 30032,
@@ -5984,7 +5917,26 @@
           "origin": "db"
         }
       ],
-      "curationHint": 89.58
+      "curationHint": 90.3
+    },
+    {
+      "itemId": 30040,
+      "name": "Belt of Deep Shadow",
+      "slot": "waist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Leatherworking",
+          "recipeZone": "Serpentshrine Cavern",
+          "recipeBoss": "Trash",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 89.78
     },
     {
       "itemId": 32606,
@@ -6007,7 +5959,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 86.44
+      "curationHint": 88.04
     },
     {
       "itemId": 28656,
@@ -6025,7 +5977,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 74.98
+      "curationHint": 74.96
     },
     {
       "itemId": 30879,
@@ -6043,7 +5995,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 67.54
+      "curationHint": 68.29
     },
     {
       "itemId": 30068,
@@ -6061,7 +6013,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 60.41
+      "curationHint": 61.4
     },
     {
       "itemId": 28779,
@@ -6079,7 +6031,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 55.56,
+      "curationHint": 56.4,
       "curatedSets": [
         "p1"
       ]
@@ -6101,7 +6053,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 52.9
+      "curationHint": 53.73
     },
     {
       "itemId": 28828,
@@ -6119,7 +6071,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 48.77
+      "curationHint": 50.24
     },
     {
       "itemId": 28750,
@@ -6142,7 +6094,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 37.28
+      "curationHint": 37.5
     },
     {
       "itemId": 28778,
@@ -6160,7 +6112,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 34.21
+      "curationHint": 35.28
     },
     {
       "itemId": 30643,
@@ -6183,7 +6135,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 17.22
+      "curationHint": 17.64
     },
     {
       "itemId": 28566,
@@ -6219,7 +6171,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 7.48
+      "curationHint": 7.04
     },
     {
       "itemId": 32276,
@@ -6237,7 +6189,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 7.48
+      "curationHint": 7.04
     },
     {
       "itemId": 32342,
@@ -6255,7 +6207,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 5.1
+      "curationHint": 4.8
     },
     {
       "itemId": 30897,
@@ -6273,7 +6225,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.76
+      "curationHint": 4.48
     },
     {
       "itemId": 32258,
@@ -6291,7 +6243,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.76
+      "curationHint": 4.48
     },
     {
       "itemId": 32339,
@@ -6309,7 +6261,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.76
+      "curationHint": 4.48
     },
     {
       "itemId": 29965,
@@ -6327,7 +6279,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.42
+      "curationHint": 4.16
     },
     {
       "itemId": 29984,
@@ -6345,7 +6297,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.25
+      "curationHint": 4.0
     },
     {
       "itemId": 30030,
@@ -6368,7 +6320,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 4.25
+      "curationHint": 4.0
     },
     {
       "itemId": 32512,
@@ -6386,7 +6338,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.08
+      "curationHint": 3.84
     },
     {
       "itemId": 28655,
@@ -6404,7 +6356,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.74
+      "curationHint": 3.52
     },
     {
       "itemId": 28733,
@@ -6422,7 +6374,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.74
+      "curationHint": 3.52
     },
     {
       "itemId": 28567,
@@ -6440,7 +6392,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.4
+      "curationHint": 3.2
     },
     {
       "itemId": 30096,
@@ -6608,7 +6560,24 @@
           "origin": "db"
         }
       ],
-      "curationHint": 845.42
+      "curationHint": 857.84
+    },
+    {
+      "itemId": 33688,
+      "name": "Vengeful Gladiator's Greatsword",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "origin": "wowhead"
+        }
+      ],
+      "curationHint": 853.375
     },
     {
       "itemId": 32248,
@@ -6626,24 +6595,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 840.239
-    },
-    {
-      "itemId": 33688,
-      "name": "Vengeful Gladiator's Greatsword",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "pvp",
-          "via": "arena",
-          "origin": "wowhead"
-        }
-      ],
-      "curationHint": 839.92
+      "curationHint": 851.957
     },
     {
       "itemId": 32332,
@@ -6661,7 +6613,16 @@
           "origin": "db"
         }
       ],
-      "curationHint": 835.068
+      "curationHint": 850.443,
+      "curatedSets": [
+        "p3"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3"
+      ]
     },
     {
       "itemId": 32348,
@@ -6679,7 +6640,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 792.865
+      "curationHint": 804.601
     },
     {
       "itemId": 31984,
@@ -6701,7 +6662,7 @@
           "origin": "wowhead"
         }
       ],
-      "curationHint": 790.923
+      "curationHint": 803.608
     },
     {
       "itemId": 29993,
@@ -6719,7 +6680,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 770.015
+      "curationHint": 783.962
     },
     {
       "itemId": 28430,
@@ -6736,14 +6697,8 @@
           "origin": "db"
         }
       ],
-      "curationHint": 762.883,
+      "curationHint": 773.428,
       "curatedSets": [
-        "p2"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
         "p2"
       ]
     },
@@ -6762,25 +6717,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 751.539
-    },
-    {
-      "itemId": 28773,
-      "name": "Gorehowl",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Prince Malchezaar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 721.308
+      "curationHint": 762.127
     },
     {
       "itemId": 30090,
@@ -6798,7 +6735,25 @@
           "origin": "db"
         }
       ],
-      "curationHint": 720.386
+      "curationHint": 731.685
+    },
+    {
+      "itemId": 28773,
+      "name": "Gorehowl",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Prince Malchezaar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 731.236
     },
     {
       "itemId": 28429,
@@ -6815,7 +6770,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 715.383,
+      "curationHint": 725.178,
       "curatedSets": [
         "p1",
         "preraid"
@@ -6837,7 +6792,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 697.303
+      "curationHint": 708.723
     },
     {
       "itemId": 28794,
@@ -6855,7 +6810,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 690.898
+      "curationHint": 702.926
     },
     {
       "itemId": 28800,
@@ -6873,7 +6828,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 684.058
+      "curationHint": 694.846
     },
     {
       "itemId": 28587,
@@ -6891,7 +6846,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 671.56
+      "curationHint": 681.82
     },
     {
       "itemId": 28573,
@@ -6909,25 +6864,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 660.76
-    },
-    {
-      "itemId": 28774,
-      "name": "Glaive of the Pit",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Magtheridon's Lair",
-          "boss": "Magtheridon",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 639.357
+      "curationHint": 671.02
     },
     {
       "itemId": 30057,
@@ -6945,7 +6882,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 80.03
+      "curationHint": 80.75
     },
     {
       "itemId": 30863,
@@ -6963,25 +6900,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 71.14
-    },
-    {
-      "itemId": 32324,
-      "name": "Insidious Bands",
-      "slot": "wrist",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Black Temple",
-          "boss": "Teron Gorefiend",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 70.58
+      "curationHint": 72.56
     },
     {
       "itemId": 32574,
@@ -7000,7 +6919,34 @@
           "origin": "db"
         }
       ],
-      "curationHint": 70.3
+      "curationHint": 71.79,
+      "curatedSets": [
+        "p3"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3"
+      ]
+    },
+    {
+      "itemId": 32324,
+      "name": "Insidious Bands",
+      "slot": "wrist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "Teron Gorefiend",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 70.6
     },
     {
       "itemId": 32568,
@@ -7019,7 +6965,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 66.59
+      "curationHint": 67.94
     },
     {
       "itemId": 32251,
@@ -7037,7 +6983,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 51.91
+      "curationHint": 52.7
     },
     {
       "itemId": 30861,
@@ -7055,7 +7001,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 49.63
+      "curationHint": 50.2
     },
     {
       "itemId": 30026,
@@ -7078,7 +7024,7 @@
           "origin": "atlasloot"
         }
       ],
-      "curationHint": 45.52
+      "curationHint": 46.17
     },
     {
       "itemId": 23537,
@@ -7095,7 +7041,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 42.94,
+      "curationHint": 43.6,
       "curatedSets": [
         "preraid"
       ]
@@ -7115,25 +7061,7 @@
           "origin": "wowhead"
         }
       ],
-      "curationHint": 40.55
-    },
-    {
-      "itemId": 29966,
-      "name": "Vambraces of Ending",
-      "slot": "wrist",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Tempest Keep",
-          "boss": "High Astromancer Solarian",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 39.32
+      "curationHint": 41.0
     },
     {
       "itemId": 30091,
@@ -7151,7 +7079,25 @@
           "origin": "db"
         }
       ],
-      "curationHint": 38.98
+      "curationHint": 40.2
+    },
+    {
+      "itemId": 29966,
+      "name": "Vambraces of Ending",
+      "slot": "wrist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "High Astromancer Solarian",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 39.36
     },
     {
       "itemId": 28795,
@@ -7169,35 +7115,11 @@
           "origin": "db"
         }
       ],
-      "curationHint": 38.48,
+      "curationHint": 39.2,
       "curatedSets": [
         "p1",
         "p2"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p2"
       ]
-    },
-    {
-      "itemId": 30864,
-      "name": "Bracers of the Pathfinder",
-      "slot": "wrist",
-      "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Hyjal Summit",
-          "boss": "Rage Winterchill",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 38.43
     },
     {
       "itemId": 28514,
@@ -7215,7 +7137,25 @@
           "origin": "db"
         }
       ],
-      "curationHint": 37.44
+      "curationHint": 38.6
+    },
+    {
+      "itemId": 30864,
+      "name": "Bracers of the Pathfinder",
+      "slot": "wrist",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Hyjal Summit",
+          "boss": "Rage Winterchill",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 38.41
     },
     {
       "itemId": 28454,
@@ -7233,7 +7173,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 33.79
+      "curationHint": 33.81
     },
     {
       "itemId": 32259,
@@ -7251,7 +7191,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 5.78
+      "curationHint": 5.44
     },
     {
       "itemId": 32351,
@@ -7269,7 +7209,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 5.78
+      "curationHint": 5.44
     },
     {
       "itemId": 28453,
@@ -7287,7 +7227,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 4.42
+      "curationHint": 4.16
     },
     {
       "itemId": 30062,
@@ -7305,7 +7245,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.91
+      "curationHint": 3.68
     },
     {
       "itemId": 30868,
@@ -7323,7 +7263,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.74
+      "curationHint": 3.52
     },
     {
       "itemId": 32279,
@@ -7341,7 +7281,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.74
+      "curationHint": 3.52
     },
     {
       "itemId": 30047,
@@ -7359,7 +7299,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.57
+      "curationHint": 3.36
     },
     {
       "itemId": 30862,
@@ -7377,7 +7317,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.57
+      "curationHint": 3.36
     },
     {
       "itemId": 30869,
@@ -7395,7 +7335,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 3.57
+      "curationHint": 3.36
     },
     {
       "itemId": 28503,
@@ -7413,7 +7353,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 2.72
+      "curationHint": 2.56
     },
     {
       "itemId": 28512,
@@ -7431,7 +7371,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 2.72
+      "curationHint": 2.56
     },
     {
       "itemId": 28502,
