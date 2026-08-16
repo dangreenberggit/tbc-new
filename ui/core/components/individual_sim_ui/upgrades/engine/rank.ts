@@ -25,6 +25,20 @@
  * row-landed progress) is ported alongside these two pre-existing
  * adaptations, unchanged in shape from packages/core/src/rank.ts.
  *
+ * candidate-pool.md M2 (racing, §6.2): screen all eligible, apply the
+ * promotion rule, cap the promoted set, full-iteration sim only the
+ * promoted candidates — ported unchanged in shape. `screenCandidate` calls
+ * `deps.sim.run` with `{ seed, iterations: screenIterations }`, exactly the
+ * `SimRunOpts` shape `runCandidate` already uses with the default
+ * iterations — the `SimRunner` seam (`seams/sim-runner.ts`) takes
+ * iterations per call, so this file needed no change to carry a screening
+ * iteration count into a request. `WasmSimRunner.run`
+ * (`adapters/wasm_sim_runner.ts`) is what turns `SimRunOpts.iterations`
+ * into the proto it hands the WASM worker; it does not go through
+ * `sim.ts`'s `makeRaidSimRequest` at all, so that function's `iterations?`
+ * override (F7) is not this pass's screening consumer — see this repo's
+ * `sim.ts` doc comment for what does use it.
+ *
  * Everything else — the eight-stage pipeline, cutoff/replication logic, set
  * synergy, disclosure assembly — is unchanged from packages/core.
  */
@@ -40,6 +54,12 @@ import {
 import { orderCandidatesByEp } from "./candidate-order.js";
 import { migrateGemsToItem } from "./migrate-gems.js";
 import { promisePool } from "./promise-pool.js";
+import {
+  DEFAULT_PROMOTE_TOP_K,
+  DEFAULT_SCREEN_ITERATIONS,
+  promotionRule,
+  type ScreeningResult,
+} from "./promotion.js";
 import { compose } from "./compose.js";
 import { canonicalJson, ENGINE_VERSION, type HashedGearItem } from "./content-hash.js";
 import {
@@ -133,14 +153,39 @@ export type RankInput = {
   iterations?: number;
   seeds?: number[];
   /**
-   * Keeps the first N candidates of the EP ordering, plus every owned row
-   * regardless of N (candidate-pool.md §5.1.1). `undefined` means "no cap,
-   * sim every eligible candidate" — hashed identically to a cap equal to
-   * the eligible count (content-hash.ts's `candidateCap` normalization,
-   * mirrored below since this file hashes via `canonicalJson` directly
-   * rather than through `contentHashOf`).
+   * Pre-M2 (or `fullPool: true`): keeps the first N candidates of the EP
+   * ordering, plus every owned row regardless of N (§5.1.1). Once racing is
+   * active, the cap instead applies to the *promoted* set (§5.1.1 Dean Q2)
+   * — the sim, not EP, picks what the cap keeps. `undefined` means "no cap"
+   * — hashed identically to a cap equal to the relevant set's size
+   * (content-hash.ts's `candidateCap` normalization, mirrored below since
+   * this file hashes via `canonicalJson` directly rather than through
+   * `contentHashOf`).
    */
   candidateCap?: number;
+  /**
+   * Iterations per candidate in the screening pass (candidate-pool.md §6).
+   * PORTED unchanged from packages/core/src/rank.ts — see that file's doc
+   * comment on this same field for the full measured justification
+   * (§3.4.1's proposed 300/35 vs the held-out fixture's 42 above-cutoff
+   * rows at contiguous ranks 1–42, corrected to 1000/150). Ignored when
+   * `fullPool: true`.
+   */
+  screenIterations?: number;
+  /**
+   * How many top-screened candidates promote to a full-iteration sim
+   * (candidate-pool.md §6.1). PORTED unchanged from packages/core/src/rank.ts
+   * — see that file's doc comment on this same field. Ignored when
+   * `fullPool: true`.
+   */
+  promoteTopK?: number;
+  /**
+   * Skips screening entirely and full-iteration sims every eligible
+   * candidate — ADR-0018's escape flag, now paired with the racing it
+   * escapes (candidate-pool.md §6.1). `true` reproduces the pre-M2 flow
+   * byte-for-byte (§6.4).
+   */
+  fullPool?: boolean;
 };
 
 export type Deps = {
@@ -238,6 +283,22 @@ export type RankedItem = {
    * cutoff classification and tie groups.
    */
   simmed?: false;
+  /**
+   * Present only when this run raced (candidate-pool.md §6): the row was
+   * screened at `iterations` and the promotion rule did not promote it to a
+   * full-iteration sim. `deltaDps`/`se` above are the *screening*
+   * observation, not a full sim — a third view state, distinct from
+   * `belowCutoff` ("measured and small") because a screened row was never
+   * measured at full precision at all. Ranked only among other screened
+   * rows (view.ts), never interleaved with full-iteration deltas, and
+   * never deleted — a screened row keeps its screening delta rather than
+   * being dropped from `items`.
+   *
+   * `promoted: true` never appears here: a promoted candidate goes on to a
+   * full sim and this field is absent from its finished row, exactly like
+   * `simmed` never carries `true` for a normally-simmed row.
+   */
+  screened?: { iterations: number; promoted: false };
   belowCutoff: boolean;
   setContext?: SetContext;
 };
@@ -438,31 +499,31 @@ export async function rankUpgrades(
   const eligible = filterPoolByPhase(deps.pool ?? [], input.maxPhase).filter(
     (e) => !isKaelTempLegendary(e.itemId)
   );
-  // Pre-M2 cap (candidate-pool.md §5.1.1): keep the first N of the EP
-  // ordering plus every owned row regardless of N — an owned item must
-  // never silently drop off the ranking just because it sorts low. Ordering
-  // runs before any sim, from raw stats only, so it cannot fail on a
-  // candidate the sim itself would later reject.
+  // Ordering runs before any sim, from raw stats only, so it cannot fail on
+  // a candidate the sim itself would later reject. Pre-M2 (or `fullPool`)
+  // this order also decides which N the cap keeps (§5.1.1); once racing is
+  // active it is a tie-break only — the sim decides the cap via screening.
   const ordered = orderCandidatesByEp(
     eligible,
     equipment,
     deps.epWeights,
     (itemId) => getItem(itemId)?.stats ?? []
   );
-  const cap = input.candidateCap ?? ordered.length;
-  const candidates = ordered.filter(
-    (e, i) => i < cap || equippedIds.has(e.itemId)
-  );
+  const racing = input.fullPool !== true;
+  const screenIterations = input.screenIterations ?? DEFAULT_SCREEN_ITERATIONS;
+  const promoteTopK = input.promoteTopK ?? DEFAULT_PROMOTE_TOP_K;
 
   const simVersion = await deps.sim.version();
 
-  // Normalized the same way content-hash.ts normalizes `candidateCap` for
-  // `contentHashOf` — "no cap" and "a cap equal to the eligible count" must
-  // hash identically (plan §5.1.1) — even though this file hashes via
-  // `canonicalJson` directly rather than `contentHashOf` (D4, see file doc
-  // comment above).
-  const normalizedCandidateCap = input.candidateCap ?? candidates.length;
-
+  // Hashed on every *eligible* candidate, not the post-cap/post-promotion
+  // set: which candidates are eligible is known before any sim runs, so this
+  // is stable enough to gate the cache lookup before screening or full sims
+  // start. `candidateCap` and the racing knobs are separate hashed fields
+  // (below) that narrow the eligible set down to what actually gets a full
+  // sim — hashing here rather than at entry because the logged gear is the
+  // largest input to every delta, and it is not known until readGear
+  // resolves. The check still lands before the sim loop, which is the
+  // expensive part.
   const contentHash = canonicalJson({
     character: {
       region: input.character.region.toLowerCase(),
@@ -481,7 +542,7 @@ export async function rankUpgrades(
         gems: [...(item.gems ?? [])],
       }))
       .sort((a, b) => (a.slot < b.slot ? -1 : a.slot > b.slot ? 1 : a.id - b.id)),
-    candidates: candidates
+    candidates: ordered
       .map((e) => ({ itemId: e.itemId, slot: e.slot }))
       .sort((a, b) =>
         a.itemId !== b.itemId
@@ -500,7 +561,15 @@ export async function rankUpgrades(
     seeds: [...seeds],
     simVersion,
     engineVersion: ENGINE_VERSION,
-    candidateCap: normalizedCandidateCap,
+    // Normalized the same way content-hash.ts normalizes these fields for
+    // `contentHashOf` — "no cap"/omitted knob must hash identically to its
+    // explicit-default equivalent (plan §5.1.1, §6.1) — even though this
+    // file hashes via `canonicalJson` directly rather than `contentHashOf`
+    // (D4, see file doc comment above).
+    candidateCap: input.candidateCap ?? ordered.length,
+    fullPool: !racing,
+    screenIterations: racing ? screenIterations : null,
+    promoteTopK: racing ? promoteTopK : null,
   });
 
   const cached = await deps.store.get<Ranking>(rankingCacheKey(contentHash));
@@ -531,13 +600,9 @@ export async function rankUpgrades(
   }
 
   async function rankAfterJobCreated(): Promise<Ranking | PartialRanking> {
-    const replicaSims = usesPairedReplication(seeds)
-      ? (seeds.length - 1) *
-        (1 + Math.min(PAIRED_REPLICATE_TOP_N, candidates.length))
-      : 0;
-    const totalSims = 1 + candidates.length + replicaSims;
-    totalSimsForProgress = totalSims;
-    onProgress?.({ stage: "simming", done: 0, total: totalSims });
+    // Only `deps.sim.run` belongs inside this catch. A store read or write
+    // that fails is an `internal` fault, and labelling it `sim-failed` sends
+    // an operator to the wrong subsystem.
     let observation = await readCachedSim(deps, request, simVersion, runOpts);
     if (!observation) {
       try {
@@ -551,7 +616,6 @@ export async function rankUpgrades(
       await cacheSimResult(deps, request, simVersion, runOpts, observation);
     }
     simsDone = 1;
-    onProgress?.({ stage: "simming", done: simsDone, total: totalSims });
 
     const baselineDps = observation.dps;
     const ranked: RankedItem[] = [];
@@ -571,6 +635,65 @@ export async function rankUpgrades(
       spec: input.spec,
       ...(talentsString !== undefined ? { talentsString } : {}),
     });
+
+    /**
+     * One candidate's best screening delta (candidate-pool.md §6.1/§6.2) —
+     * every slot attempt at `screenIterations`, cheapest-delta-wins exactly
+     * like `runCandidate`'s full-iteration loop, but with none of the
+     * disclosure bookkeeping (hit caps, gem substitution notes, set-bonus
+     * context) a screened candidate never carries: only promoted candidates
+     * get a `RankedItem`'s full shape. A candidate whose every slot attempt
+     * panics screens at `-Infinity` rather than being silently promoted —
+     * the same "never let a sim failure look like a win" rule the
+     * full-iteration loop encodes by skipping the attempt entirely, except
+     * here there is no disclosure row to skip it *into*, so the delta itself
+     * carries the refusal.
+     */
+    async function screenCandidate(entry: PoolEntry): Promise<number> {
+      const slotNames = simSlotsForPoolSlot(entry.slot);
+      let best: number | undefined;
+      const screenOpts = { seed, iterations: screenIterations };
+      for (const slotName of slotNames) {
+        const slotIndex = SIM_ORDER.indexOf(slotName);
+        if (slotIndex < 0) continue;
+        const wornAt = equipment.findIndex((spec) => spec.id === entry.itemId);
+        if (wornAt >= 0 && wornAt !== slotIndex) continue;
+        let swapped: SimItemSpec[];
+        try {
+          swapped = candidateSwapWithRepairs(
+            equipment,
+            slotIndex,
+            entry.itemId,
+            gems
+          ).equipment;
+        } catch (err) {
+          if (!(err instanceof MetaRepairError)) throw err;
+          continue;
+        }
+        const candReq = compose(deps.raidSimSkeleton, {
+          name: input.character.name.toLowerCase(),
+          race,
+          equipment: swapped,
+        });
+        let candObs = await readCachedSim(
+          deps,
+          candReq,
+          simVersion,
+          screenOpts
+        );
+        if (!candObs) {
+          try {
+            candObs = await deps.sim.run(candReq, screenOpts);
+          } catch {
+            continue;
+          }
+          await cacheSimResult(deps, candReq, simVersion, screenOpts, candObs);
+        }
+        const deltaDps = candObs.dps - baselineDps;
+        if (best === undefined || deltaDps > best) best = deltaDps;
+      }
+      return best ?? Number.NEGATIVE_INFINITY;
+    }
 
     /**
      * One candidate's full slot-attempt loop, unchanged from the old serial
@@ -718,6 +841,100 @@ export async function rankUpgrades(
       onProgress?.({ kind: "row", row: item });
     }
 
+    // M2 racing (candidate-pool.md §6.2): screen all eligible, apply the
+    // promotion rule, then cap the *promoted* set — the sim, not EP, picks
+    // what a cap keeps once racing is active (§5.1.1 Dean Q2). Pre-M2 or
+    // `fullPool: true` keeps today's flow: cap the EP order directly, no
+    // screening pass, no screened rows.
+    let simCandidates: PoolEntry[];
+    const screenedRows: RankedItem[] = [];
+    if (racing) {
+      const screenSignal = deps.signal;
+      const screenTasks = ordered.map((entry) => async () => {
+        if (screenSignal?.aborted)
+          return { itemId: entry.itemId, deltaDps: Number.NEGATIVE_INFINITY };
+        const deltaDps = await screenCandidate(entry);
+        return { itemId: entry.itemId, deltaDps };
+      });
+      const screenResults: ScreeningResult[] = await promisePool(
+        screenTasks,
+        deps.concurrency ?? 1
+      );
+      // Set-package membership at screening time is judged the same way the
+      // full-iteration pass judges it (buildSetBonuses below): any set with
+      // a candidate present in the *eligible* pool is a set the promotion
+      // rule must not starve of pieces, since selectPackage picks its best
+      // pieces from whichever candidates got a full sim.
+      const setPackageItemIds = new Set(
+        ordered
+          .filter((e) => getItem(e.itemId)?.setId != null)
+          .map((e) => e.itemId)
+      );
+      const promotion = promotionRule({
+        screened: screenResults,
+        candidates: ordered,
+        promoteTopK,
+        ownedItemIds: equippedIds,
+        setPackageItemIds,
+      });
+      const promotedIds = new Set(
+        promotion.filter((p) => p.promoted).map((p) => p.itemId)
+      );
+      const deltaByItemId = new Map(
+        screenResults.map((r) => [r.itemId, r.deltaDps])
+      );
+      const promotedOrdered = ordered.filter((e) => promotedIds.has(e.itemId));
+      // Cap applies to the promoted set (Dean Q2): the first N of the EP
+      // order *within the promoted set*, plus every owned row regardless of
+      // N — same shape as the pre-M2 cap, just over a narrower input.
+      const promotedCap = input.candidateCap ?? promotedOrdered.length;
+      simCandidates = promotedOrdered.filter(
+        (e, i) => i < promotedCap || equippedIds.has(e.itemId)
+      );
+      const simCandidateIds = new Set(simCandidates.map((e) => e.itemId));
+      for (const entry of ordered) {
+        if (simCandidateIds.has(entry.itemId)) continue;
+        // Screened out: either the rule never promoted it, or the post-
+        // promotion cap dropped it — either way it keeps its screening
+        // delta and renders as the third view state (view.ts), never
+        // interleaved with full-iteration rows.
+        screenedRows.push({
+          rank: null,
+          itemId: entry.itemId,
+          name: entry.name,
+          slot: entry.slot,
+          source: entry.source,
+          deltaDps: deltaByItemId.get(entry.itemId) ?? 0,
+          deltaPct: 0,
+          se: 0,
+          seMethod: "independent",
+          screened: { iterations: screenIterations, promoted: false },
+          bisTags: entry.bisTags ?? [],
+          ...(entry.curatedSets ? { curatedSets: entry.curatedSets } : {}),
+          ...(entry.bisSets ? { bisSets: entry.bisSets } : {}),
+          belowCutoff: false,
+          ...(entry.sources ? { sources: entry.sources } : {}),
+        });
+      }
+    } else {
+      const cap = input.candidateCap ?? ordered.length;
+      simCandidates = ordered.filter(
+        (e, i) => i < cap || equippedIds.has(e.itemId)
+      );
+    }
+
+    // Counted here, after screening/promotion decide the full-iteration set
+    // — screening's own sims are accounted separately (screenCandidate does
+    // not touch simsDone/totalSims, which describe the full-iteration
+    // budget a progress bar promises).
+    const replicaSims = usesPairedReplication(seeds)
+      ? (seeds.length - 1) *
+        (1 + Math.min(PAIRED_REPLICATE_TOP_N, simCandidates.length))
+      : 0;
+    const totalSims = 1 + simCandidates.length + replicaSims;
+    totalSimsForProgress = totalSims;
+    onProgress?.({ stage: "simming", done: simsDone, total: totalSims });
+
     // Stop (candidate-pool.md §5.1.4): candidates not yet dispatched when
     // `signal` aborts are simply never started — `promisePool` stops
     // pulling new tasks once it observes the abort, so this is a plain
@@ -725,7 +942,7 @@ export async function rankUpgrades(
     // already in flight. Read once so an abort mid-dispatch is a clean cut
     // rather than a race between this check and the pool's own loop.
     const signal = deps.signal;
-    const dispatchedCandidates = signal?.aborted ? [] : candidates;
+    const dispatchedCandidates = signal?.aborted ? [] : simCandidates;
     const tasks = dispatchedCandidates.map(
       (entry) => () => runCandidate(entry)
     );
@@ -763,7 +980,7 @@ export async function rankUpgrades(
     // both say it was dropped for a sim failure and show it as unsimmed.
     const skippedIds = new Set(candidateSkips.map((s) => s.itemId));
     const unsimmedCandidates = aborted
-      ? candidates.filter(
+      ? simCandidates.filter(
           (c) =>
             !individualDeltasByItemId.has(c.itemId) && !skippedIds.has(c.itemId)
         )
@@ -812,7 +1029,7 @@ export async function rankUpgrades(
       ? []
       : await buildSetBonuses(
           deps,
-          candidates,
+          simCandidates,
           equipment,
           gems,
           race,
@@ -824,6 +1041,12 @@ export async function rankUpgrades(
           packageSimSkips
         );
     if (setBonuses.length > 0) applySetContext(ranked, setBonuses, equipment);
+    // Screened-out rows join after set-context (they belong to no set
+    // package — a package member is promoted by construction) and after
+    // replication's winning-request bookkeeping is built, since they were
+    // never simmed at full iterations and have no winning request to
+    // register (§6.1: ranked only among themselves, never interleaved).
+    ranked.push(...screenedRows);
 
     onProgress?.({ stage: "ranking" });
     // Sorted first so replication can pick the contested top of the list, then
@@ -831,8 +1054,15 @@ export async function rankUpgrades(
     // is built from, so ranking before it would freeze the ordering the
     // refinement exists to correct. Unsimmed rows sort last regardless of
     // their placeholder deltaDps (0), so an aborted run's honest-but-unsimmed
-    // rows never crowd out real deltas at the top of the list.
+    // rows never crowd out real deltas at the top of the list. Screened rows
+    // sort after every full-iteration row (simmed or not) and are ordered
+    // only against each other — a screening delta and a full-iteration delta
+    // are not the same quantity (§6.1), so they must never interleave.
     const bySimmedThenDelta = (a: RankedItem, b: RankedItem): number => {
+      const aScreened = a.screened !== undefined;
+      const bScreened = b.screened !== undefined;
+      if (aScreened !== bScreened) return aScreened ? 1 : -1;
+      if (aScreened && bScreened) return b.deltaDps - a.deltaDps;
       if (a.simmed === false && b.simmed !== false) return 1;
       if (b.simmed === false && a.simmed !== false) return -1;
       return b.deltaDps - a.deltaDps;
@@ -843,6 +1073,13 @@ export async function rankUpgrades(
 
     let rank = 1;
     for (const item of ranked) {
+      // Screened out: never measured at full precision, so there is no
+      // cutoff verdict to give it and no rank to assign (§6.1) — the same
+      // treatment Stop's unsimmed rows get, for the same reason.
+      if (item.screened !== undefined) {
+        item.rank = null;
+        continue;
+      }
       // Stop left this row unsimmed — excluded from cutoff classification
       // and tie groups (candidate-pool.md §5.1.4): there is no measured
       // delta to classify or group.

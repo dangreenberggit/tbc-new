@@ -556,7 +556,7 @@ export class UpgradesTab extends SimTab {
 		}
 		if (this.state.kind !== 'done') return <></>;
 		const view = applyView(this.state.ranking, this.currentViewOptions());
-		return this.rowsTable(view.shortlist, view.belowCutoffCount, view.rows);
+		return this.rowsTable(view.shortlist, view.rows);
 	}
 
 	/**
@@ -599,20 +599,30 @@ export class UpgradesTab extends SimTab {
 	private slotPaneContent(slot: SimOrderName, view: ViewResult): Node {
 		const rowsForSlot = view.rows.filter((r) => effectiveSlot(r) === slot);
 		const shortlistForSlot = rowsForSlot.filter((r) => !r.belowCutoffInView);
-		const belowCutoffForSlot = rowsForSlot.length - shortlistForSlot.length;
-		return <div className="p-gap">{this.rowsTable(shortlistForSlot, belowCutoffForSlot, rowsForSlot)}</div>;
+		return <div className="p-gap">{this.rowsTable(shortlistForSlot, rowsForSlot)}</div>;
 	}
 
 	/**
 	 * Shared table renderer for the shopping list and every slot pane — same
 	 * columns, same cutoff-behind-expand behaviour (plan §4), parameterized
 	 * only by which rows to show.
+	 *
+	 * Screened rows (candidate-pool.md §6.1 M2 racing) get their **own**
+	 * expand, separate from the below-cutoff one: a screened row was never
+	 * measured at full precision, which is a different fact from "measured
+	 * and small" — collapsing the two into one toggle would let a reader
+	 * conflate "this item is a small upgrade" with "this item's size is
+	 * unknown". `view.ts` already routes every screened row through
+	 * `belowCutoffInView: true` (so it never appears in `shortlist`), so
+	 * this only needs to split `allRows`'s below-cutoff set by `screened`
+	 * membership, not add a new filter of its own.
 	 */
-	private rowsTable(shortlist: ViewRow[], belowCutoffCount: number, allRows: ViewRow[]): Node {
-		if (shortlist.length === 0 && belowCutoffCount === 0) {
+	private rowsTable(shortlist: ViewRow[], allRows: ViewRow[]): Node {
+		const screenedRows = allRows.filter((r) => r.screened !== undefined);
+		const belowCutoffRows = allRows.filter((r) => r.belowCutoffInView && r.screened === undefined);
+		if (shortlist.length === 0 && belowCutoffRows.length === 0 && screenedRows.length === 0) {
 			return <div className="text-muted">{i18n.t('upgrades_tab.results.empty')}</div>;
 		}
-		const toggleRef = ref<HTMLButtonElement>();
 		const table = (
 			<table className="upgrades-results-table table table-sm">
 				<thead>
@@ -637,40 +647,62 @@ export class UpgradesTab extends SimTab {
 				</tbody>
 			</table>
 		);
-		if (belowCutoffCount === 0) return table;
-
-		const belowRows = allRows.filter((r) => r.belowCutoffInView);
-		const belowTbodyRef = ref<HTMLTableSectionElement>();
-		const belowTable = (
-			<table className="upgrades-results-table upgrades-below-cutoff-table table table-sm d-none">
-				<tbody ref={belowTbodyRef} />
-			</table>
-		);
-		belowTbodyRef.value!.replaceChildren(...belowRows.map((row) => this.resultRow(row)));
 
 		return (
 			<>
 				{table}
+				{belowCutoffRows.length > 0 ? this.expandableRowGroup(belowCutoffRows, 'below-cutoff') : null}
+				{screenedRows.length > 0 ? this.expandableRowGroup(screenedRows, 'screened') : null}
+			</>
+		);
+	}
+
+	/**
+	 * One hidden-behind-a-toggle table, shared shape for both the
+	 * below-cutoff expand and the screened-rows expand (candidate-pool.md
+	 * §6.1: "renders behind its own expand", "hidden, never deleted") — the
+	 * two are kept as separate calls (never merged into one row set) so
+	 * their toggle labels and row counts stay honest about which claim each
+	 * one makes.
+	 */
+	private expandableRowGroup(rows: ViewRow[], kind: 'below-cutoff' | 'screened'): Node {
+		const toggleRef = ref<HTMLButtonElement>();
+		const tbodyRef = ref<HTMLTableSectionElement>();
+		const showKey = kind === 'below-cutoff' ? 'upgrades_tab.results.below_cutoff_toggle_show' : 'upgrades_tab.results.screened_toggle_show';
+		const hideKey = kind === 'below-cutoff' ? 'upgrades_tab.results.below_cutoff_toggle_hide' : 'upgrades_tab.results.screened_toggle_hide';
+		const groupTable = (
+			<table className={`upgrades-results-table upgrades-${kind}-table table table-sm d-none`}>
+				<tbody ref={tbodyRef} />
+			</table>
+		);
+		tbodyRef.value!.replaceChildren(...rows.map((row) => this.resultRow(row)));
+
+		return (
+			<>
 				<button
 					ref={toggleRef}
 					type="button"
-					className="btn btn-sm btn-outline-secondary upgrades-below-cutoff-toggle"
+					className={`btn btn-sm btn-outline-secondary upgrades-${kind}-toggle`}
 					onclick={() => {
-						const below = belowTable as HTMLElement;
-						const nowShown = below.classList.toggle('d-none') === false;
-						toggleRef.value!.textContent = nowShown
-							? i18n.t('upgrades_tab.results.below_cutoff_toggle_hide')
-							: i18n.t('upgrades_tab.results.below_cutoff_toggle_show', { count: belowCutoffCount });
+						const group = groupTable as HTMLElement;
+						const nowShown = group.classList.toggle('d-none') === false;
+						toggleRef.value!.textContent = nowShown ? i18n.t(hideKey) : i18n.t(showKey, { count: rows.length });
 					}}>
-					{i18n.t('upgrades_tab.results.below_cutoff_toggle_show', { count: belowCutoffCount })}
+					{i18n.t(showKey, { count: rows.length })}
 				</button>
-				{belowTable}
+				{groupTable}
 			</>
 		);
 	}
 
 	private resultRow(row: ViewRow): Node {
 		const bisLabel = row.bisTags.includes('BiS') ? ' ★ BiS' : row.bisTags.includes('Alt') ? ' Alt' : '';
+		// A screened row's deltaDps is a screening-iteration observation, not
+		// a full-iteration one (candidate-pool.md §6.1) — labelled distinctly
+		// so a reader never reads it as directly comparable to a full row's
+		// delta in the same column.
+		const deltaLabel =
+			row.screened !== undefined ? i18n.t('upgrades_tab.results.screened_delta_dps', { value: row.deltaDps.toFixed(1) }) : `+${row.deltaDps.toFixed(1)}`;
 		return (
 			<tr className={row.owned ? 'upgrades-row-owned text-muted' : ''}>
 				<td>{row.rank ?? '—'}</td>
@@ -680,7 +712,7 @@ export class UpgradesTab extends SimTab {
 					{row.owned ? ` (${i18n.t('upgrades_tab.results.owned')})` : ''}
 				</td>
 				<td>{slotLabel(effectiveSlot(row))}</td>
-				<td>{`+${row.deltaDps.toFixed(1)}`}</td>
+				<td>{deltaLabel}</td>
 				<td>{sourceLabel(row.source)}</td>
 			</tr>
 		);

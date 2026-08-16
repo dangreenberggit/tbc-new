@@ -92,11 +92,12 @@ clone/repo-configuration decision outside a single slice's scope.
 | `logged-gear.ts` | `logged-gear.ts` | none (import paths only) | `34b5bc81ae85e781625fe118c8869bec94f09c72fc573753d24b7b7063ffbc79` |
 | `caps.ts` | `caps.ts` | none (import paths only) | `d785ad56ae60e4cd5af4b465a620f739ac715c7b401c741d7a943fd222369d63` |
 | `compose.ts` | `compose.ts` | none | `bff06777e8338873f06746901ea24d821895ad35ca701549c2c6d6a5103f3578` |
-| `content-hash.ts` | `content-hash.ts` | adapted — `canonicalJson` only, no `sha256Hex`/`node:crypto` (D4) | `a30d22bf04c59cc1c9c6692ec283c775c568161e551ce9571219f04210889b3c` |
+| `content-hash.ts` | `content-hash.ts` | adapted — `canonicalJson` only, no `sha256Hex`/`node:crypto` (D4); M2's `screenIterations`/`promoteTopK`/`fullPool` hash fields are inlined at `rank.ts`'s `canonicalJson(...)` call site rather than in this file (see this file's own doc comment) | `363a100acdda9d322520df882d1b89b280a4cd861f08b74e53ec6e5df7db463a` |
 | `disclosure.ts` | `disclosure.ts` | none | `0dec2c071c0fe56a7e37d0d07de9672a4fa076d93f30b8f5734dc05835a0a243` |
 | `plausibility.ts` | `plausibility.ts` | none (import paths only) | `182f518ddda01ec9747afba7b3bf90cf1577d62fbf723fda1263b177d1651e9f` |
-| `view.ts` | `view.ts` | adapted — inlines `setPotentialIsConfounded` instead of importing `rank-report-rules.ts` (out of scope) | `bd8833ac761fc4c95c109b2b1ee43188d7ee96d4bf461496f5b7bcbf70c4c45a` |
-| `rank.ts` | `rank.ts` | adapted — drops spec-mismatch check (`spec.ts` not ported); cache key is `canonicalJson(...)` not `contentHashOf(...)` (D4); candidate-pool.md M1 (cap, concurrency, EP ordering, Stop/`complete`, row events) ported unchanged in shape | `60823b6ec8963d98ab6c42f37c6cdd35c685f3f545f2adc4b13e6fdd95b1c74b` |
+| `view.ts` | `view.ts` | adapted — inlines `setPotentialIsConfounded` instead of importing `rank-report-rules.ts` (out of scope); M2's screened-row third-view-state (§6.1/7.7) ported unchanged in shape | `4a419e33b2629a38dbdd6ac32def4b7bca4177f12622bc330ac50a8f7a9da561` |
+| `rank.ts` | `rank.ts` | adapted — drops spec-mismatch check (`spec.ts` not ported); cache key is `canonicalJson(...)` not `contentHashOf(...)` (D4); candidate-pool.md M1 (cap, concurrency, EP ordering, Stop/`complete`, row events) and M2 (racing: screen/promote/cap-promoted-set, `screenCandidate`, `fullPool`) ported unchanged in shape | `a418589da2c3e5e80f17218e6be1d6d693b615a3a46c8596a8b34983e82fced4` |
+| `promotion.ts` | `promotion.ts` | none (import paths only) | `bdf61851de73f9b3fd1dd0a2942e5bf4b2cda79c7bb096ba8441d545df556ef6` |
 | `candidate-order.ts` | `candidate-order.ts` | none (import paths only) | `c0fb93b75f278af0b505d6c426a30aa235716949b57b48da90f9363fa732be64` |
 | `promise-pool.ts` | `promise-pool.ts` | none | `3b93e38dd3c2e8b5413dc93b0771f63face959717e1a4fbd03883fb0c38ff8ff` |
 | `seams/gear-source.ts` | `seams/gear-source.ts` | none | `085d3a088a19aa5b8a28db6a2f219df6d0b44ecb39a42568c9788a21e7137cfe` |

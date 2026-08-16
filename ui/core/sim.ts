@@ -292,9 +292,18 @@ export class Sim {
 	// ordinary sim button) keeps reading from global sim settings unchanged.
 	// candidate-pool.md §6.3/F7 wanted a per-request override as one optional
 	// parameter rather than a parallel request-builder that would drift from
-	// this one. Its original consumer (M2 racing) was cancelled by E-W5's
-	// no-go, so nothing overrides this today; the parameter stays because the
-	// override is the shape any future per-request iteration control needs.
+	// this one. M2 racing (resumed by §3.4.1 after E-W5's WASM go) turned
+	// out **not** to be this parameter's consumer: the upgrades tab's own
+	// screening pass (`upgrades/engine/rank.ts`'s `screenCandidate`) runs
+	// through `SimRunner.run(req, opts)` (`seams/sim-runner.ts`), whose
+	// `SimRunOpts.iterations` is threaded straight into the request
+	// `WasmSimRunner.run` builds itself (`upgrades/adapters/wasm_sim_runner.ts`)
+	// — that adapter never calls this method at all. This tab's one call site
+	// (`upgrades/adapters/skeleton.ts`) still calls `makeRaidSimRequest(false)`
+	// with no override, once, to capture the golden request skeleton, not
+	// per-candidate. So this parameter still has no real caller passing a
+	// value; it stays for the same reason as before — the shape any future
+	// per-request iteration control needs — not because racing ended up using it.
 	makeRaidSimRequest(debug: boolean, iterations?: number): RaidSimRequest {
 		const raid = this.getModifiedRaidProto();
 		const encounter = this.encounter.toProto();
