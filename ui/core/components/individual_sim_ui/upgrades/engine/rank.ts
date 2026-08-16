@@ -1188,7 +1188,12 @@ export async function rankUpgrades(
     if (!usesPairedReplication(seeds)) return;
 
     const top = ranked
-      .filter((item) => !item.belowCutoff)
+      .filter(
+        (item) =>
+          !item.belowCutoff &&
+          item.screened === undefined &&
+          item.simmed !== false
+      )
       .slice(0, PAIRED_REPLICATE_TOP_N);
     if (top.length === 0) return;
     const baselineBySeed = new Map<number, number>();
