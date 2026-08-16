@@ -304,11 +304,16 @@ export type Ranking = {
   setBonuses?: SetBonusValue[];
   plausibilityWarnings?: PlausibilityWarning[];
   /**
-   * `true` unless Stop cut this run short (candidate-pool.md §5.1.4). Kept
-   * as a required, type-narrowed field rather than an optional one so the
-   * ranking cache can accept `PartialRanking` nowhere by construction — see
-   * `rankingCacheKey`'s only call site — instead of relying on a caller to
-   * remember to check it.
+   * `true` unless Stop cut this run short (candidate-pool.md §5.1.4).
+   *
+   * The literal type does real work at every consumer that names `Ranking`
+   * in its signature — `applyView` will not accept a `PartialRanking`. It
+   * does **not** guard the ranking cache: `Store.put<T>` is generic, so
+   * writing a partial under a `ranking:` key type-checks fine. The only
+   * thing keeping a partial out of the cache is the `if (aborted) return
+   * partial` branch below, which returns before the write — a runtime
+   * check, so treat it as one and do not remove it on the theory that the
+   * type covers you.
    */
   complete: true;
 };
@@ -751,8 +756,17 @@ export async function rankUpgrades(
     // (§5.1.4 — completeness is "the whole flow ran", not "all candidates
     // ran").
     if (signal?.aborted) aborted = true;
+    // A candidate the sim panicked on is already dropped and disclosed in
+    // `substitutions` (ticket 122), and it never reaches
+    // `individualDeltasByItemId` either — so filtering on that map alone
+    // would re-add it here as a Stop placeholder, and the ranking would
+    // both say it was dropped for a sim failure and show it as unsimmed.
+    const skippedIds = new Set(candidateSkips.map((s) => s.itemId));
     const unsimmedCandidates = aborted
-      ? candidates.filter((c) => !individualDeltasByItemId.has(c.itemId))
+      ? candidates.filter(
+          (c) =>
+            !individualDeltasByItemId.has(c.itemId) && !skippedIds.has(c.itemId)
+        )
       : [];
     for (const entry of unsimmedCandidates) {
       // A row Stop never reached — placeholder numbers so the shape stays a

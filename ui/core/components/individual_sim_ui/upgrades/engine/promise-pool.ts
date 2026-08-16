@@ -28,6 +28,7 @@ export async function promisePool<T>(
   const results: T[] = new Array(tasks.length);
   let nextIndex = 0;
   let firstError: unknown;
+  let firstErrorIndex = Number.POSITIVE_INFINITY;
   let hasError = false;
 
   async function worker(): Promise<void> {
@@ -40,16 +41,27 @@ export async function promisePool<T>(
       try {
         results[index] = await task();
       } catch (err) {
-        if (!hasError) {
-          hasError = true;
+        // Lowest index wins, not whichever rejected first in wall-clock
+        // order: with two tasks failing in one drain, a time-ordered winner
+        // makes the surfaced error depend on pool size and sim latency, and
+        // the caller's "same error at any concurrency" guarantee is exactly
+        // what a bounded pool is supposed to preserve.
+        if (index < firstErrorIndex) {
+          firstErrorIndex = index;
           firstError = err;
         }
+        hasError = true;
         return;
       }
     }
   }
 
-  const workerCount = Math.max(1, Math.min(n, tasks.length));
+  // `Math.min(NaN, len)` is NaN and `Array.from({length: NaN})` is empty, so
+  // a non-finite `n` would spawn zero workers, run nothing, and return a
+  // sparse array as if it had succeeded. No caller passes one today; this
+  // exists so the silent-success path cannot be reintroduced by one.
+  const requested = Number.isFinite(n) ? Math.trunc(n) : 1;
+  const workerCount = Math.max(1, Math.min(requested, tasks.length));
   await Promise.all(Array.from({ length: workerCount }, () => worker()));
 
   if (hasError) throw firstError;
