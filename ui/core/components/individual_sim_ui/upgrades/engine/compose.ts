@@ -16,6 +16,14 @@ export type ComposePlayer = {
   name: string;
   race: Race;
   equipment: readonly SimItemSpec[];
+  /**
+   * Per-request item rows for the WASM sim, which is built without
+   * `with_db` and so starts with an empty registry (ticket 212). Opaque
+   * protojson, like RaidSimRequest — the shape belongs to the sim's
+   * SimDatabase, and deriving a type for it here would buy nothing.
+   * Omitted by CLI callers, whose binary is built with_db.
+   */
+  database?: Readonly<Record<string, unknown>>;
 };
 
 export function compose(
@@ -37,6 +45,7 @@ export function compose(
   slot.name = player.name;
   slot.race = player.race;
   slot.equipment = { items: player.equipment.map(toProtoItem) };
+  if (player.database) slot.database = player.database;
 
   return req;
 }

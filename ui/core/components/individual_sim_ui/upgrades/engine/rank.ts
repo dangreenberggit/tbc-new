@@ -198,6 +198,20 @@ export type Deps = {
   gemPalette?: readonly GemEntry[];
   pool?: readonly PoolEntry[];
   /**
+   * Per-request item rows for the sim's database (ticket 212). Data, not a
+   * port: synchronous, no I/O, nothing to record — same family as `pool` and
+   * `epWeights`.
+   *
+   * The browser needs it because its WASM sim is built without `with_db`, so
+   * the registry is filled per request; a candidate is never worn, so the
+   * skeleton's own database never describes it. CLI callers omit it —
+   * `wowsimcli` is built `with_db` — and composed requests then stay
+   * byte-identical to today's.
+   */
+  simDatabaseFor?: (
+    equipment: readonly SimItemSpec[]
+  ) => Readonly<Record<string, unknown>> | undefined;
+  /**
    * How many candidate sims may be in flight at once (candidate-pool.md
    * §5.1.2). A plain scalar, not a ranking input — it changes how fast a
    * run goes, never what it returns, so it stays out of the content hash.
@@ -485,11 +499,27 @@ export async function rankUpgrades(
     equipmentFromLoggedGear(logged),
     socketed
   );
-  const request = compose(deps.raidSimSkeleton, {
-    name: input.character.name.toLowerCase(),
-    race,
-    equipment,
-  });
+  // Every request describes its own equipment in its own database, which is
+  // upstream's invariant (ui/core/sim.ts:346-347). Without a resolver this is
+  // exactly today's compose call, so CLI requests stay byte-identical.
+  const composeFor = (forEquipment: readonly SimItemSpec[]) => {
+    const database = deps.simDatabaseFor?.(forEquipment);
+    return compose(deps.raidSimSkeleton, {
+      name: input.character.name.toLowerCase(),
+      race,
+      equipment: forEquipment,
+      // Spread rather than `database: undefined` — exactOptionalPropertyTypes
+      // distinguishes an absent key from an explicit undefined, and compose
+      // must see no key at all when there is no resolver.
+      //
+      // `!== undefined`, not truthiness: an empty database is a meaningful
+      // answer ("this request needs no extra rows") and must be written
+      // through, where `undefined` means no resolver at all — the CLI path.
+      ...(database !== undefined ? { database } : {}),
+    });
+  };
+
+  const request = composeFor(equipment);
 
   const iterations = input.iterations ?? DEFAULT_ITERATIONS;
   const seeds = input.seeds ?? DEFAULT_SEEDS;
@@ -708,11 +738,7 @@ export async function rankUpgrades(
           });
           continue;
         }
-        const candReq = compose(deps.raidSimSkeleton, {
-          name: input.character.name.toLowerCase(),
-          race,
-          equipment: swapped,
-        });
+        const candReq = composeFor(swapped);
         let candObs = await readCachedSim(
           deps,
           candReq,
@@ -794,11 +820,7 @@ export async function rankUpgrades(
           });
           continue;
         }
-        const candReq = compose(deps.raidSimSkeleton, {
-          name: input.character.name.toLowerCase(),
-          race,
-          equipment: swapped,
-        });
+        const candReq = composeFor(swapped);
         let candObs = await readCachedSim(deps, candReq, simVersion, runOpts);
         if (!candObs) {
           try {
@@ -1154,6 +1176,7 @@ export async function rankUpgrades(
           gems,
           race,
           input,
+          composeFor,
           individualDeltasByItemId,
           { dps: baselineDps, se: observation.stdev / Math.sqrt(iterations) },
           simVersion,
@@ -1389,6 +1412,13 @@ async function buildSetBonuses(
   gems: GemContext,
   race: Race,
   input: RankInput,
+  /**
+   * `rankUpgrades`'s own compose helper, passed in rather than rebuilt here:
+   * a second copy drifts silently, since no test covers both call sites
+   * (ticket 212 review). Every composed request must carry the database its
+   * own equipment needs.
+   */
+  composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
   individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>,
   baseline: DpsSample,
   simVersion: string,
@@ -1513,11 +1543,7 @@ async function buildSetBonuses(
         });
         continue;
       }
-      const packageRequest = compose(deps.raidSimSkeleton, {
-        name: input.character.name.toLowerCase(),
-        race,
-        equipment: packageEquipment,
-      });
+      const packageRequest = composeFor(packageEquipment);
 
       let packageObs = await readCachedSim(
         deps,
