@@ -8,6 +8,7 @@ import { Spec } from '../../proto/common.js';
 import { SimTab } from '../sim_tab';
 import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
 import { currentPageSkeleton } from './upgrades/adapters/skeleton';
+import { simDatabaseFor } from './upgrades/adapters/sim_database';
 import { WasmSimRunner } from './upgrades/adapters/wasm_sim_runner';
 import { epWeightsFor, poolFor } from './upgrades/data/data';
 import { isKaelTempLegendary } from './upgrades/engine/kael-temp';
@@ -404,6 +405,7 @@ export class UpgradesTab extends SimTab {
 					raidSimSkeleton: skeleton,
 					epWeights: epWeightsFor(specId),
 					pool: poolFor(specId, maxPhase),
+					simDatabaseFor,
 					// `min(workers, memoryCap)` — WasmSimRunner derives this once at
 					// construction from the measured per-process memory cost
 					// (candidate-pool.md §5.1.2, wasm_sim_runner.ts).
