@@ -22,6 +22,7 @@ export type DeadSlotCause =
   | "thin-pool"
   | "unknown-item"
   | "unidentified-worn-item"
+  | "worn-unrankable"
   | "benign-nothing-better";
 
 export type DeadSlotRow = {
@@ -45,8 +46,15 @@ export type DeadSlot = {
   poolSize: number;
 };
 
+export type WornUnrankableItem = {
+  itemId: number;
+  itemName: string;
+  slot: string;
+};
+
 export type ClassifyDeadSlotsOptions = {
   wornSetCounts: ReadonlyMap<number, number>;
+  wornUnrankable?: readonly WornUnrankableItem[];
 };
 
 function thresholdLostByDroppingOnePiece(
@@ -80,7 +88,27 @@ export function classifyDeadSlots(
   }
 
   const dead: DeadSlot[] = [];
+
+  const unrankableSlots = new Set(
+    (options.wornUnrankable ?? []).map((w) => w.slot)
+  );
+  for (const worn of options.wornUnrankable ?? []) {
+    const slotRows = bySlot.get(worn.slot) ?? [];
+    dead.push({
+      slot: worn.slot,
+      cause: "worn-unrankable",
+      wornItemId: worn.itemId,
+      wornItemName: worn.itemName,
+      wornSetId: null,
+      wornSetName: null,
+      runnerUpGapDps: null,
+      tiedCandidates: null,
+      poolSize: slotRows.length,
+    });
+  }
+
   for (const [slot, slotRows] of bySlot) {
+    if (unrankableSlots.has(slot)) continue;
     const best = Math.max(...slotRows.map((r) => r.deltaDps));
     if (best > 0) continue;
 

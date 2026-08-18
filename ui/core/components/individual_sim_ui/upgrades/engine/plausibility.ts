@@ -22,6 +22,7 @@ const WARNED_DEAD_SLOT_CAUSES: readonly DeadSlotCause[] = [
   "unique-effect",
   "unknown-item",
   "unidentified-worn-item",
+  "worn-unrankable",
 ];
 
 export type ImplausibleSetBonusWarning = {
@@ -107,6 +108,14 @@ function deadSlotMessage(
       `into this slot.`
     );
   }
+  if (cause === "worn-unrankable") {
+    return (
+      `${slot} is unmeasured: the worn ${wornItemName} is not in the candidate pool for ` +
+      `this slot, so every row shown for ${slot} was scored against an empty slot, not against ` +
+      `${wornItemName}. Do not read any of them as an upgrade or a loss — this slot needs the ` +
+      `worn item added to the pool before it can be ranked.`
+    );
+  }
   if (cause === "set-break-toll") {
     return (
       `No positive candidate in ${slot}: every alternative displaces ${wornItemName} ` +
@@ -160,6 +169,9 @@ export function plausibilityWarnings(
     ...setBonusMagnitudeWarnings(input.setBonuses ?? [], {
       baselineDps: input.baselineDps,
     }),
-    ...deadSlotWarnings(input.rows, { wornSetCounts: input.wornSetCounts }),
+    ...deadSlotWarnings(input.rows, {
+      wornSetCounts: input.wornSetCounts,
+      ...(input.wornUnrankable ? { wornUnrankable: input.wornUnrankable } : {}),
+    }),
   ];
 }

@@ -19,6 +19,29 @@ have not changed since this table was written — nothing about behaviour.**
 Only the parity test (E-W3, `packages/core/test/wowsims-fork-parity.test.ts`)
 proves behaviour is unchanged.
 
+## Two rows trace to a later core commit than the header
+
+`dead-slots.ts` and `plausibility.ts` carry a source-commit note in their
+label column: they trace to core `2e6b257` ("Mark worn-unrankable slots
+instead of showing false losses"), which is **not** an ancestor of the header
+commit above:
+
+```
+git merge-base --is-ancestor 2e6b257 12ce58414ad0f8f1e34c581d7583e6998e05e8bb   && echo ancestor || echo "not an ancestor"
+```
+
+The `worn-unrankable` feature landed in core after this table was written, so
+the two files sat stale while their "none (import paths only)" labels stayed
+literally accurate for the commit they were compared against — which is why
+neither gate could see it (ticket 214). The port was applied 2026-08-17 and
+both files now show zero comment-stripped code divergence from their core
+sources.
+
+The header commit is stale for **every** row, not just these two. Re-baselining
+the whole table is deliberately not done here: it would assert a fresh
+comparison for 31 rows nobody re-verified in this round. Recorded as an open
+observation on ticket 214 instead.
+
 ## A CRLF trap in this clone
 
 This fork clone has `core.autocrlf=true` (`git -C vendor/tbc-new-fork config
@@ -87,14 +110,14 @@ clone/repo-configuration decision outside a single slice's scope.
 | `meta-repair.ts` | `meta-repair.ts` | none (import paths only) | `2c7fd7dd705f8173a0c813cb573bfb904d5870d5cd665c605068782b23e09777` |
 | `set-bonus.ts` | `set-bonus.ts` | none (import paths only) | `44d6cd77247fff7b87f21b3716b7bb21305d24ab2f002d98706c4c6286d2fe09` |
 | `set-value.ts` | `set-value.ts` | none (import paths only) | `317f07056e02038a70f9594606300e1d1b9189d321cdc873c3f1fa1c6cf0b270` |
-| `dead-slots.ts` | `dead-slots.ts` | none (import paths only) | `f141d194686dc1f70e6afe60b40445e505c6ea4c6ffdd4a7711365613c260ae9` |
+| `dead-slots.ts` | `dead-slots.ts` | none (import paths only); traces to core `2e6b257`, not the header commit | `c6b5957ae1877407dcfe52ea4bd284120ed8b0c5cc6c3e66c90b0e361ad027bb` |
 | `pool.ts` | `pool.ts` | adapted — hand-written `ItemSlot`/`ITEM_SOURCE_KINDS` literals, not generated | `27595bfe7abe0b852162451dff7db6e03f803b5379bd1dde0d8ac6b8a7e2e165` |
 | `logged-gear.ts` | `logged-gear.ts` | none (import paths only) | `34b5bc81ae85e781625fe118c8869bec94f09c72fc573753d24b7b7063ffbc79` |
 | `caps.ts` | `caps.ts` | none (import paths only) | `d785ad56ae60e4cd5af4b465a620f739ac715c7b401c741d7a943fd222369d63` |
 | `compose.ts` | `compose.ts` | none | `64d24100ca609361cf453f6f4c3bb67e3a2a0fd74eab071582d8a4253c28d677` |
 | `content-hash.ts` | `content-hash.ts` | adapted — `canonicalJson` only, no `sha256Hex`/`node:crypto` (D4); M2's `screenIterations`/`promoteTopK`/`fullPool` hash fields are inlined at `rank.ts`'s `canonicalJson(...)` call site rather than in this file (see this file's own doc comment) | `363a100acdda9d322520df882d1b89b280a4cd861f08b74e53ec6e5df7db463a` |
 | `disclosure.ts` | `disclosure.ts` | none | `0dec2c071c0fe56a7e37d0d07de9672a4fa076d93f30b8f5734dc05835a0a243` |
-| `plausibility.ts` | `plausibility.ts` | none (import paths only) | `182f518ddda01ec9747afba7b3bf90cf1577d62fbf723fda1263b177d1651e9f` |
+| `plausibility.ts` | `plausibility.ts` | none (import paths only); traces to core `2e6b257`, not the header commit | `d63b682eb95b6eba8ed5bc247cc374fcce54376857c05dbee7a0effe5cdbe455` |
 | `view.ts` | `view.ts` | adapted — inlines `setPotentialIsConfounded` instead of importing `rank-report-rules.ts` (out of scope); M2's screened-row third-view-state (§6.1/7.7) ported unchanged in shape | `4a419e33b2629a38dbdd6ac32def4b7bca4177f12622bc330ac50a8f7a9da561` |
 | `rank.ts` | `rank.ts` | adapted — drops spec-mismatch check (`spec.ts` not ported); cache key is `canonicalJson(...)` not `contentHashOf(...)` (D4); candidate-pool.md M1 (cap, concurrency, EP ordering, Stop/`complete`, row events) and M2 (racing: screen/promote/cap-promoted-set, `screenCandidate`, `fullPool`) ported unchanged in shape; ticket 156's replication filter (skip screened/unsimmed rows) and screening disclosure (`screeningSkips`, `sim-failed` refusal, `screening` progress stage, drop-and-disclose for failed screens) ported unchanged; ticket 212's `simDatabaseFor` threading ported in core's post-`ea8f916` shape (one `compose(deps.raidSimSkeleton` call, inside a single `composeFor` closure that all four compose sites call; `buildSetBonuses` takes `composeFor` as a parameter rather than resolving a database of its own) | `b7bacf2003da542a405a74ad10762218647de84388c0f491eb217a9eb33ab1b2` |
 | `promotion.ts` | `promotion.ts` | adapted — no `promoteTopJ` (the per-slot depth knob is core-only; this port keeps the pre-§6.4 best-in-slot floor); ticket 156's `topK` finiteness filter ported unchanged | `7b7eeeb068e3ced9fb7518f2a5d2ce3369bca80c02dae9592245581c8c1cd8c3` |
