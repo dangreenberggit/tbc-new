@@ -879,7 +879,7 @@
 			"only_bis": "Only items on a BIS list"
 		},
 		"prune": {
-			"only_bis": "Sim only items on a BIS list"
+			"only_bis": "Sim only BiS-list items (this phase)"
 		},
 		"progress": {
 			"resolving": "Starting…",
@@ -906,7 +906,7 @@
 			"iterations": "Iterations",
 			"max_phase": "Max phase",
 			"pool": "Candidate pool",
-			"pool_bis_only": "BIS-list items only",
+			"pool_bis_only": "BiS-list items only — worn items not on the list are left out of this table",
 			"pool_all": "every eligible item",
 			"candidate_cap": "Candidate cap",
 			"candidate_cap_note": "top {{cap}} candidates simmed in full, plus anything you already own",
