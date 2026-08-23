@@ -401,6 +401,13 @@ export class UpgradesTab extends SimTab {
 			maxPhase,
 			iterations: this.readIterations(),
 			candidateCap: this.readCandidateCap(),
+			// Full sweep, matching core (ADR-0026: racing never cleared the 20 %
+			// wall-clock bar it had to clear to justify its complexity, so core
+			// deleted it and full-sweeps every eligible candidate). This flag is
+			// the fork engine's escape hatch from its still-present screening
+			// path; the racing code is deleted outright in a later commit, and
+			// this line goes with it.
+			fullPool: true,
 		};
 
 		this.stopButton.disabled = false;
@@ -801,16 +808,9 @@ export class UpgradesTab extends SimTab {
 					{cap !== undefined ? (
 						<>
 							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.candidate_cap')}</dt>
-							{/* Racing IS shipped and is always on here: the tab never sets
-							    `fullPool`, so `rank.ts`'s `input.fullPool !== true` is true
-							    on every browser run. The whole eligible pool is screened at
-							    DEFAULT_SCREEN_ITERATIONS, the promotion rule runs, and the
-							    cap applies to the promoted set. The CLI is the surface that
-							    never races (`cli.ts` hardcodes `fullPool: true`), which is
-							    why this note survived saying the opposite (ticket 209).
-							    Which order the cap slices within the promoted set is
-							    ticket 208 — stated as EP here because that is what the code
-							    does today, not as an endorsement of it. */}
+							{/* Which order the cap slices within its input set is ticket 208 —
+							    stated as EP in the note because that is what the code does
+							    today, not as an endorsement of it. */}
 							<dd className="col-sm-8">{i18n.t('upgrades_tab.assumptions.candidate_cap_note', { cap })}</dd>
 						</>
 					) : null}

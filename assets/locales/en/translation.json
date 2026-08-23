@@ -904,7 +904,7 @@
 			"iterations": "Iterations",
 			"max_phase": "Max phase",
 			"candidate_cap": "Candidate cap",
-			"candidate_cap_note": "top {{cap}} of the candidates that survived screening— every eligible item is screened first, then the best are simmed in full",
+			"candidate_cap_note": "top {{cap}} candidates simmed in full, plus anything you already own",
 			"substitutions_title": "Dropped candidates and substitutions ({{count}})",
 			"engine_provenance": "Engine (fork commit)",
 			"sim_version": "Sim version"
