@@ -870,6 +870,7 @@
 			"unsupported_spec": "This spec has no ranking data yet.",
 			"error": "Ranking failed: {{message}}",
 			"done": "Your current gear: {{dps}} DPS.",
+			"elapsed": "Took {{seconds}} s.",
 			"stale": "settings changed since this ranking — results may be out of date",
 			"stopped": "Stopped early. Your current gear: {{dps}} DPS. Rows still simming were skipped — replication and set-completion packages were not run."
 		},

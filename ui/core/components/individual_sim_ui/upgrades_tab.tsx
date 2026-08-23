@@ -109,6 +109,11 @@ export class UpgradesTab extends SimTab {
 	// finishes.
 	private landedRows: Ranking['items'] = [];
 	private state: RunState = { kind: 'idle' };
+	// Wall-clock of the last finished run, in seconds. Held on the instance
+	// rather than in the 'done'/'stopped' state so a re-render triggered by a
+	// view control (which runs no sims) keeps showing the run's own elapsed
+	// instead of clearing it. `undefined` until a run finishes.
+	private lastRunSeconds: number | undefined;
 
 	constructor(parentElem: HTMLElement, simUI: IndividualSimUI<any>) {
 		super(parentElem, simUI, { identifier: 'upgrades-tab', title: i18n.t('upgrades_tab.title') });
@@ -379,6 +384,12 @@ export class UpgradesTab extends SimTab {
 		// set at run time could only ever describe the run just started.
 		this.abortController = new AbortController();
 		this.landedRows = [];
+		this.lastRunSeconds = undefined;
+		// Run click to run finished, the figure the time budget is judged on
+		// (docs/verification-log.md's finish-the-tab entry). `performance.now()`
+		// rather than `Date.now()`: monotonic, so a clock adjustment mid-run
+		// cannot produce a negative or wildly wrong elapsed.
+		const startedAt = performance.now();
 		this.setState({ kind: 'running', progress: { stage: 'resolving' } });
 
 		const input: RankInput = {
@@ -432,6 +443,9 @@ export class UpgradesTab extends SimTab {
 		} finally {
 			this.stopButton.disabled = true;
 			this.abortController = undefined;
+			// Set before the terminal setState below so the first render of
+			// 'done'/'stopped' already carries the figure.
+			this.lastRunSeconds = (performance.now() - startedAt) / 1000;
 		}
 
 		if (ranking.complete) {
@@ -473,6 +487,7 @@ export class UpgradesTab extends SimTab {
 				return (
 					<div className="upgrades-stopped-banner alert alert-warning py-1 px-2 mb-2 d-inline-flex align-items-center gap-2">
 						<span>{label}</span>
+						{this.elapsedContent()}
 					</div>
 				);
 			}
@@ -483,12 +498,26 @@ export class UpgradesTab extends SimTab {
 						<span>{label}</span>
 						<span>—</span>
 						<strong>{i18n.t('upgrades_tab.status.stale')}</strong>
+						{this.elapsedContent()}
 					</div>
 				) : (
-					<span>{label}</span>
+					<span>
+						{label} {this.elapsedContent()}
+					</span>
 				);
 			}
 		}
+	}
+
+	/**
+	 * The finished run's wall-clock, appended to the done/stopped status. Empty
+	 * when no run has finished in this page session. Integer seconds: the figure
+	 * is compared against a minutes-scale budget, and sub-second precision would
+	 * imply a resolution the surface (a foregrounded browser tab) does not have.
+	 */
+	private elapsedContent(): Node {
+		if (this.lastRunSeconds === undefined) return <></>;
+		return <span className="upgrades-elapsed">{i18n.t('upgrades_tab.status.elapsed', { seconds: Math.round(this.lastRunSeconds) })}</span>;
 	}
 
 	/**
