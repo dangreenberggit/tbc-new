@@ -63,6 +63,13 @@ const EP_WEIGHTS_BY_SPEC: Record<SpecId, Readonly<Record<string, number>>> = {
  * per-item phase cut once the pool is loaded.
  */
 function universeFor(spec: SpecId, maxPhase: ContentPhase): RawUniverse | undefined {
+  return universeChoiceFor(spec, maxPhase)?.universe;
+}
+
+function universeChoiceFor(
+  spec: SpecId,
+  maxPhase: ContentPhase
+): { universe: RawUniverse; phase: number } | undefined {
   const byPhase = UNIVERSES_BY_SPEC_AND_PHASE[spec];
   let best: RawUniverse | undefined;
   let bestPhase = 0;
@@ -73,7 +80,28 @@ function universeFor(spec: SpecId, maxPhase: ContentPhase): RawUniverse | undefi
       bestPhase = phase;
     }
   }
-  return best;
+  return best ? { universe: best, phase: bestPhase } : undefined;
+}
+
+/**
+ * Which universe file a run drew its pool from, for the assumptions drawer.
+ *
+ * The chosen file is not always the one the selected phase would suggest --
+ * `universeFor` falls back to the highest phase that has data at or below the
+ * selection -- so a reader who assumes "phase 4 means the p4 file" can be
+ * wrong. Naming the file and its entry count makes that visible instead of
+ * requiring someone to know the fallback rule.
+ */
+export function poolSourceFor(
+  spec: SpecId,
+  maxPhase: ContentPhase
+): { file: string; entries: number } | undefined {
+  const choice = universeChoiceFor(spec, maxPhase);
+  if (!choice) return undefined;
+  return {
+    file: `${spec}-p${choice.phase}.universe.json`,
+    entries: choice.universe.entries.length,
+  };
 }
 
 export function poolFor(

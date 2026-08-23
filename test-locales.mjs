@@ -28,10 +28,18 @@ const validateSchemas = async () => {
 
 	for (const [name, schema] of Object.entries(schemas)) {
 		const validate = ajv.compile(schema);
-		const filePaths = await glob(path.join(__dirname, localesPath, `**/${name}.json`));
+		// Forward slashes, not path.join: on Windows path.join yields
+		// backslashes, glob reads those as escape characters, zero files
+		// match, and this gate exits 0 having validated nothing. It looked
+		// green on Windows while the schema violation below was real and
+		// firing on CI.
+		const filePaths = await glob([__dirname, localesPath, `**/${name}.json`].join('/'));
 
 		for (const filePath of filePaths) {
-			const relativePath = filePath.split(localesPath)[1].replace('/', '');
+			// Normalise before splitting: glob returns native separators, so on
+			// Windows the path contains backslashes and a split on the
+			// forward-slash localesPath yields undefined.
+			const relativePath = filePath.split(/[\/]/).slice(-2).join('/');
 			const data = await fs.readFile(filePath, 'utf-8');
 
 			const valid = validate(JSON.parse(data));

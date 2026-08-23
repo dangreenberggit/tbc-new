@@ -876,10 +876,10 @@
 		},
 		"view": {
 			"set_potential": "Include set-bonus potential",
-			"only_bis": "Only items on a BIS list"
+			"only_bis": "Only items on a {{phase}} BIS list"
 		},
 		"prune": {
-			"only_bis": "Sim only BiS-list items (this phase)"
+			"only_bis": "Sim only {{phase}} BiS-list items"
 		},
 		"progress": {
 			"resolving": "Starting…",
@@ -906,7 +906,9 @@
 			"iterations": "Iterations",
 			"max_phase": "Max phase",
 			"pool": "Candidate pool",
-			"pool_bis_only": "BiS-list items for this phase",
+        "pool_universe": "Pool source",
+        "pool_universe_note": "{{file}} ({{count}} entries)",
+			"pool_bis_only": "BiS-list items for {{phase}}",
 			"pool_all": "every eligible item",
 			"candidate_cap": "Candidate cap",
 			"candidate_cap_note": "top {{cap}} candidates simmed in full, plus anything you already own",

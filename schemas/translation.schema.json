@@ -8710,6 +8710,209 @@
 			},
 			"additionalProperties": false,
 			"required": ["iterations", "warnings", "buttons", "header", "results", "character_stats"]
+		},
+		"upgrades_tab": {
+			"type": "object",
+			"properties": {
+				"title": {
+					"type": "string"
+				},
+				"subtabs": {
+					"type": "object",
+					"properties": {
+						"shopping_list": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["shopping_list"]
+				},
+				"placeholder": {
+					"type": "string"
+				},
+				"run": {
+					"type": "string"
+				},
+				"stop": {
+					"type": "string"
+				},
+				"import_wcl": {
+					"type": "string"
+				},
+				"iterations_label": {
+					"type": "string"
+				},
+				"candidates_label": {
+					"type": "string"
+				},
+				"candidates_placeholder": {
+					"type": "string"
+				},
+				"candidates_placeholder_uncapped": {
+					"type": "string"
+				},
+				"status": {
+					"type": "object",
+					"properties": {
+						"idle": {
+							"type": "string"
+						},
+						"unsupported_spec": {
+							"type": "string"
+						},
+						"error": {
+							"type": "string"
+						},
+						"done": {
+							"type": "string"
+						},
+						"elapsed": {
+							"type": "string"
+						},
+						"stale": {
+							"type": "string"
+						},
+						"stopped": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["idle", "unsupported_spec", "error", "done", "elapsed", "stale", "stopped"]
+				},
+				"view": {
+					"type": "object",
+					"properties": {
+						"set_potential": {
+							"type": "string"
+						},
+						"only_bis": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["set_potential", "only_bis"]
+				},
+				"prune": {
+					"type": "object",
+					"properties": {
+						"only_bis": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["only_bis"]
+				},
+				"progress": {
+					"type": "object",
+					"properties": {
+						"resolving": {
+							"type": "string"
+						},
+						"reading_gear": {
+							"type": "string"
+						},
+						"composing": {
+							"type": "string"
+						},
+						"building_pool": {
+							"type": "string"
+						},
+						"simming": {
+							"type": "string"
+						},
+						"ranking": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["resolving", "reading_gear", "composing", "building_pool", "simming", "ranking"]
+				},
+				"results": {
+					"type": "object",
+					"properties": {
+						"rank": {
+							"type": "string"
+						},
+						"item": {
+							"type": "string"
+						},
+						"slot": {
+							"type": "string"
+						},
+						"delta_dps": {
+							"type": "string"
+						},
+						"source": {
+							"type": "string"
+						},
+						"owned": {
+							"type": "string"
+						},
+						"empty": {
+							"type": "string"
+						},
+						"below_cutoff_toggle_show": {
+							"type": "string"
+						},
+						"below_cutoff_toggle_hide": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["rank", "item", "slot", "delta_dps", "source", "owned", "empty", "below_cutoff_toggle_show", "below_cutoff_toggle_hide"]
+				},
+				"assumptions": {
+					"type": "object",
+					"properties": {
+						"title": {
+							"type": "string"
+						},
+						"seeds": {
+							"type": "string"
+						},
+						"iterations": {
+							"type": "string"
+						},
+						"max_phase": {
+							"type": "string"
+						},
+						"pool": {
+							"type": "string"
+						},
+						"pool_universe": {
+							"type": "string"
+						},
+						"pool_universe_note": {
+							"type": "string"
+						},
+						"pool_bis_only": {
+							"type": "string"
+						},
+						"pool_all": {
+							"type": "string"
+						},
+						"candidate_cap": {
+							"type": "string"
+						},
+						"candidate_cap_note": {
+							"type": "string"
+						},
+						"substitutions_title": {
+							"type": "string"
+						},
+						"engine_provenance": {
+							"type": "string"
+						},
+						"sim_version": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["title", "seeds", "iterations", "max_phase", "pool", "pool_universe", "pool_universe_note", "pool_bis_only", "pool_all", "candidate_cap", "candidate_cap_note", "substitutions_title", "engine_provenance", "sim_version"]
+				}
+			},
+			"additionalProperties": false,
+			"required": ["title", "subtabs", "placeholder", "run", "stop", "import_wcl", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "status", "view", "prune", "progress", "results", "assumptions"]
 		}
 	},
 	"additionalProperties": false,
@@ -8726,7 +8929,8 @@
 		"import",
 		"export",
 		"info",
-		"sidebar"
+		"sidebar",
+		"upgrades_tab"
 	],
 	"$schema": "http://json-schema.org/draft-07/schema#",
 	"title": "Generated Schema",

@@ -5,12 +5,13 @@ import i18n from '../../../i18n/config';
 import { CURRENT_API_VERSION } from '../../constants/other.js';
 import { IndividualSimUI } from '../../individual_sim_ui';
 import { Spec } from '../../proto/common.js';
+import { makePhaseSelector } from '../inputs/other_inputs';
 import { SimTab } from '../sim_tab';
 import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
 import { currentPageSkeleton } from './upgrades/adapters/skeleton';
 import { simDatabaseFor } from './upgrades/adapters/sim_database';
 import { WasmSimRunner } from './upgrades/adapters/wasm_sim_runner';
-import { epWeightsFor, poolFor } from './upgrades/data/data';
+import { epWeightsFor, poolFor, poolSourceFor } from './upgrades/data/data';
 import { isKaelTempLegendary } from './upgrades/engine/kael-temp';
 import { filterPoolByPhase } from './upgrades/engine/pool';
 import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
@@ -21,7 +22,7 @@ import { simSlotsForPoolSlot } from './upgrades/engine/pool';
 import { rankUpgrades, type PartialRanking, type Progress, type Ranking, type RankInput } from './upgrades/engine/rank';
 import { MemoryStore } from './upgrades/engine/seams/store';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
-import type { SpecId } from './upgrades/engine/types';
+import type { ContentPhase, SpecId } from './upgrades/engine/types';
 import { applyView, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
 
 /**
@@ -85,6 +86,8 @@ export class UpgradesTab extends SimTab {
 	protected bisOnlyLabel!: HTMLElement;
 	protected bisPruneToggle!: HTMLInputElement;
 	protected bisPruneLabel!: HTMLElement;
+	protected bisPruneText!: HTMLElement;
+	protected bisOnlyText!: HTMLElement;
 	protected statusElem!: HTMLElement;
 	protected resultsElem!: HTMLElement;
 	protected assumptionsElem!: HTMLElement;
@@ -196,6 +199,9 @@ export class UpgradesTab extends SimTab {
 		const bisOnlyLabelRef = ref<HTMLLabelElement>();
 		const bisPruneToggleRef = ref<HTMLInputElement>();
 		const bisPruneLabelRef = ref<HTMLLabelElement>();
+		const bisPruneTextRef = ref<HTMLSpanElement>();
+		const bisOnlyTextRef = ref<HTMLSpanElement>();
+		const phaseSelectorRef = ref<HTMLDivElement>();
 		const statusRef = ref<HTMLDivElement>();
 		const resultsRef = ref<HTMLDivElement>();
 		const assumptionsRef = ref<HTMLDivElement>();
@@ -242,7 +248,7 @@ export class UpgradesTab extends SimTab {
 					</label>
 					<label ref={bisPruneLabelRef} className="upgrades-bis-prune-label d-flex align-items-center gap-1 mb-0 d-none">
 						<input ref={bisPruneToggleRef} type="checkbox" className="upgrades-bis-prune-toggle form-check-input mt-0" />
-						{i18n.t('upgrades_tab.prune.only_bis')}
+						<span ref={bisPruneTextRef} />
 					</label>
 					<label ref={setPotentialLabelRef} className="upgrades-set-potential-label d-flex align-items-center gap-1 mb-0 d-none">
 						<input ref={setPotentialToggleRef} type="checkbox" className="upgrades-set-potential-toggle form-check-input mt-0" />
@@ -250,8 +256,9 @@ export class UpgradesTab extends SimTab {
 					</label>
 					<label ref={bisOnlyLabelRef} className="upgrades-bis-only-label d-flex align-items-center gap-1 mb-0 d-none">
 						<input ref={bisOnlyToggleRef} type="checkbox" className="upgrades-bis-only-toggle form-check-input mt-0" />
-						{i18n.t('upgrades_tab.view.only_bis')}
+						<span ref={bisOnlyTextRef} />
 					</label>
+					<div ref={phaseSelectorRef} className="upgrades-phase-selector" />
 					<div ref={statusRef} className="upgrades-status text-muted" />
 				</div>
 				<div ref={resultsRef} className="upgrades-results mt-gap" />
@@ -270,10 +277,18 @@ export class UpgradesTab extends SimTab {
 		this.bisOnlyLabel = bisOnlyLabelRef.value!;
 		this.bisPruneToggle = bisPruneToggleRef.value!;
 		this.bisPruneLabel = bisPruneLabelRef.value!;
+		this.bisPruneText = bisPruneTextRef.value!;
+		this.bisOnlyText = bisOnlyTextRef.value!;
 		this.statusElem = statusRef.value!;
 		this.resultsElem = resultsRef.value!;
 		this.assumptionsElem = assumptionsRef.value!;
 		this.paneContentElems.set('shopping-list', this.resultsElem);
+
+		// The page's own phase picker, bound to the same `sim` the Gear tab's
+		// item-selector modal binds it to. Surfacing the setting, not
+		// overriding it: a tab-local phase could silently disagree with the
+		// page's, and the pool this tab ranks is chosen by exactly this value.
+		makePhaseSelector(phaseSelectorRef.value!, this.simUI.sim);
 
 		this.runButton.addEventListener('click', () => {
 			this.run().catch((err) => {
@@ -351,6 +366,7 @@ export class UpgradesTab extends SimTab {
 	 * "no cap" placeholder rather than showing a misleading zero.
 	 */
 	private refreshCandidatesPlaceholder() {
+		this.refreshPhaseLabels();
 		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
 		if (!specId) {
 			this.setPruneAvailable(false);
@@ -364,6 +380,27 @@ export class UpgradesTab extends SimTab {
 		this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder', {
 			count: this.eligibleCount(specId, maxPhase),
 		});
+	}
+
+	/**
+	 * Writes the selected phase into the two controls that used to say "this
+	 * phase".
+	 *
+	 * "Sim only BiS-list items (this phase)" left the reader to work out which
+	 * phase that was, and it changes under them from the Gear tab. Both labels
+	 * now name it. `common.phases.N` is the page's own spelling of a phase
+	 * ("Phase 3 (2.2 - T6)"), so the tab agrees with every other phase control
+	 * on the page instead of inventing a second wording.
+	 *
+	 * Called from `refreshCandidatesPlaceholder`, which the staleness listener
+	 * already runs on `sim.changeEmitter` -- the emitter a phase change arrives
+	 * through. It also runs on gear and talent changes, which is harmless: the
+	 * labels are recomputed to the same text.
+	 */
+	private refreshPhaseLabels(): void {
+		const phase = i18n.t(`common.phases.${this.simUI.sim.getPhase()}`);
+		this.bisPruneText.textContent = i18n.t('upgrades_tab.prune.only_bis', { phase });
+		this.bisOnlyText.textContent = i18n.t('upgrades_tab.view.only_bis', { phase });
 	}
 
 	/**
@@ -937,6 +974,10 @@ export class UpgradesTab extends SimTab {
 		if (this.state.kind !== 'done' && this.state.kind !== 'stopped') return <></>;
 		const a: Assumptions = this.state.ranking.assumptions;
 		const cap = this.readCandidateCap();
+		// The run's own phase, not the picker's current value -- the drawer
+		// describes the finished run, and the picker may have moved since.
+		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
+		const poolSource = specId ? poolSourceFor(specId, a.maxPhase as ContentPhase) : undefined;
 		const detailsRef = ref<HTMLDetailsElement>();
 		return (
 			<details ref={detailsRef} className="upgrades-assumptions-drawer">
@@ -947,9 +988,27 @@ export class UpgradesTab extends SimTab {
 					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.iterations')}</dt>
 					<dd className="col-sm-8">{a.iterations}</dd>
 					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.max_phase')}</dt>
-					<dd className="col-sm-8">{a.maxPhase}</dd>
+					{/* The page's own spelling of the phase, not a bare number: a
+					    reader should not have to know that 3 means "2.2 - T6". */}
+					<dd className="col-sm-8">{i18n.t(`common.phases.${a.maxPhase}`)}</dd>
 					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.pool')}</dt>
-					<dd className="col-sm-8">{i18n.t(this.lastRunPruned ? 'upgrades_tab.assumptions.pool_bis_only' : 'upgrades_tab.assumptions.pool_all')}</dd>
+					<dd className="col-sm-8">
+						{this.lastRunPruned
+							? i18n.t('upgrades_tab.assumptions.pool_bis_only', { phase: i18n.t(`common.phases.${a.maxPhase}`) })
+							: i18n.t('upgrades_tab.assumptions.pool_all')}
+					</dd>
+					{poolSource ? (
+						<>
+							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.pool_universe')}</dt>
+							{/* Which bundled file the run drew from. The chosen file is
+							    not always the selected phase's -- data.ts falls back to
+							    the highest phase with data at or below it -- so naming
+							    it stops a reader assuming a p4 selection read a p4 file. */}
+							<dd className="col-sm-8">
+								{i18n.t('upgrades_tab.assumptions.pool_universe_note', { file: poolSource.file, count: poolSource.entries })}
+							</dd>
+						</>
+					) : null}
 					{cap !== undefined ? (
 						<>
 							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.candidate_cap')}</dt>

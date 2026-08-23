@@ -79,6 +79,26 @@ function zoneKeyOf(item: RankedItem): string {
   return ZONELESS_SOURCE_LABELS[item.source.kind] ?? item.source.kind;
 }
 
+export function raidFilterOptions(items: readonly RankedItem[]): string[] {
+  const zoneless = new Set(Object.values(ZONELESS_SOURCE_LABELS));
+  const zones: string[] = [];
+  const buckets: string[] = [];
+  const seen = new Set<string>();
+  for (const item of items) {
+    const key = zoneKeyOf(item);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    (zoneless.has(key) ? buckets : zones).push(key);
+  }
+  return [...zones, ...buckets];
+}
+
+function matchesRaidFilter(item: RankedItem, value: string): boolean {
+  if (matchesZone(item, value)) return true;
+  const key = zoneKeyOf(item);
+  return key === value && !sourcesOf(item).some((s) => "zone" in s);
+}
+
 function tieWindow(a: ViewRow, b: ViewRow): number {
   const se =
     a.seMethod === b.seMethod ? Math.min(a.se, b.se) : Math.max(a.se, b.se);
@@ -168,7 +188,7 @@ export function applyView(r: Ranking, v: ViewOptions = {}): ViewResult {
   const rows: ViewRow[] = r.items
     .filter((item) => {
       if (v.hideOwned === true && item.owned === true) return false;
-      if (zone !== undefined && !matchesZone(item, zone)) return false;
+      if (zone !== undefined && !matchesRaidFilter(item, zone)) return false;
       if (boss !== undefined && !matchesBoss(item, zone, boss)) return false;
       return true;
     })
