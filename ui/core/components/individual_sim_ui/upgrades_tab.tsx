@@ -81,6 +81,8 @@ export class UpgradesTab extends SimTab {
 	protected candidatesInput!: HTMLInputElement;
 	protected setPotentialToggle!: HTMLInputElement;
 	protected setPotentialLabel!: HTMLElement;
+	protected bisOnlyToggle!: HTMLInputElement;
+	protected bisOnlyLabel!: HTMLElement;
 	protected statusElem!: HTMLElement;
 	protected resultsElem!: HTMLElement;
 	protected assumptionsElem!: HTMLElement;
@@ -183,6 +185,8 @@ export class UpgradesTab extends SimTab {
 		const candidatesInputRef = ref<HTMLInputElement>();
 		const setPotentialToggleRef = ref<HTMLInputElement>();
 		const setPotentialLabelRef = ref<HTMLLabelElement>();
+		const bisOnlyToggleRef = ref<HTMLInputElement>();
+		const bisOnlyLabelRef = ref<HTMLLabelElement>();
 		const statusRef = ref<HTMLDivElement>();
 		const resultsRef = ref<HTMLDivElement>();
 		const assumptionsRef = ref<HTMLDivElement>();
@@ -231,6 +235,10 @@ export class UpgradesTab extends SimTab {
 						<input ref={setPotentialToggleRef} type="checkbox" className="upgrades-set-potential-toggle form-check-input mt-0" />
 						{i18n.t('upgrades_tab.view.set_potential')}
 					</label>
+					<label ref={bisOnlyLabelRef} className="upgrades-bis-only-label d-flex align-items-center gap-1 mb-0 d-none">
+						<input ref={bisOnlyToggleRef} type="checkbox" className="upgrades-bis-only-toggle form-check-input mt-0" />
+						{i18n.t('upgrades_tab.view.only_bis')}
+					</label>
 					<div ref={statusRef} className="upgrades-status text-muted" />
 				</div>
 				<div ref={resultsRef} className="upgrades-results mt-gap" />
@@ -245,6 +253,8 @@ export class UpgradesTab extends SimTab {
 		this.candidatesInput = candidatesInputRef.value!;
 		this.setPotentialToggle = setPotentialToggleRef.value!;
 		this.setPotentialLabel = setPotentialLabelRef.value!;
+		this.bisOnlyToggle = bisOnlyToggleRef.value!;
+		this.bisOnlyLabel = bisOnlyLabelRef.value!;
 		this.statusElem = statusRef.value!;
 		this.resultsElem = resultsRef.value!;
 		this.assumptionsElem = assumptionsRef.value!;
@@ -259,6 +269,7 @@ export class UpgradesTab extends SimTab {
 		// A view option, not a run input: re-rendering applies it to the ranking
 		// already in hand and dispatches no sim.
 		this.setPotentialToggle.addEventListener('change', () => this.render());
+		this.bisOnlyToggle.addEventListener('change', () => this.render());
 
 		// Stop's contract (candidate-pool.md §5.1.4) is "finish in-flight work,
 		// dispatch nothing new" — signalling the abort is all this button does;
@@ -485,6 +496,7 @@ export class UpgradesTab extends SimTab {
 		this.runButton.disabled = this.state.kind === 'running';
 		this.stopButton.disabled = this.state.kind !== 'running';
 		this.refreshSetPotentialVisibility();
+		this.refreshBisOnlyVisibility();
 		this.statusElem.replaceChildren(this.statusContent());
 		this.renderSubTabs();
 		this.assumptionsElem.replaceChildren(this.assumptionsContent());
@@ -543,6 +555,18 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
+	 * Same hide-when-absent rule as the set-potential control. With the
+	 * universes this fork ships every spec/phase carries BIS tags, so the
+	 * hidden branch is unreachable with current data; it exists so a future
+	 * universe without tags degrades to "no control" rather than "a filter
+	 * that empties the table".
+	 */
+	private refreshBisOnlyVisibility(): void {
+		const available = this.state.kind === 'done' && this.state.ranking.items.some((i) => i.bisTags.length > 0);
+		this.bisOnlyLabel.classList.toggle('d-none', !available);
+	}
+
+	/**
 	 * The finished run's wall-clock, appended to the done/stopped status. Empty
 	 * when no run has finished in this page session. Integer seconds: the figure
 	 * is compared against a minutes-scale budget, and sub-second precision would
@@ -580,7 +604,7 @@ export class UpgradesTab extends SimTab {
 
 		if (this.state.kind !== 'done') return;
 
-		const view = applyView(this.state.ranking, this.currentViewOptions());
+		const view = this.currentView();
 		const slotsPresent = slotsInView(view);
 		if (slotsPresent.length === 0) return;
 
@@ -630,6 +654,42 @@ export class UpgradesTab extends SimTab {
 		}
 	}
 
+	/**
+	 * The view every 'done' renderer draws from: the engine's own `applyView`,
+	 * then the tab-local BIS-list filter. Single call site for `applyView` so
+	 * the two renderers (shopping list and slot panes) can never disagree about
+	 * which rows are on screen.
+	 *
+	 * Only callable in the 'done' state — `applyView` accepts a complete
+	 * `Ranking` only, which is why the 'stopped' path builds its own list.
+	 */
+	private currentView(): ViewResult {
+		if (this.state.kind !== 'done') throw new Error('currentView() requires a completed ranking');
+		return this.applyBisFilter(applyView(this.state.ranking, this.currentViewOptions()));
+	}
+
+	/**
+	 * Post-sim display filter: with the toggle on, keep only rows carrying at
+	 * least one BIS-list tag. A filter rather than a pin, because a pin leaves
+	 * the untagged rows on screen and the ask was to see the BIS list alone.
+	 *
+	 * Filtering after `applyView` is safe for everything the tab renders.
+	 * `belowCutoffInView` is decided per row from the row's own delta, the
+	 * baseline and the cutoff, with no reference to the other rows, so dropping
+	 * rows cannot change any surviving row's verdict — only how many are below
+	 * it, which is recomputed here. `tieGroupId` is set-dependent and is left
+	 * as `applyView` computed it, which is harmless because the tab renders no
+	 * tie grouping; `groups` is only ever populated when `groupBy` is passed,
+	 * and this tab never passes it.
+	 */
+	private applyBisFilter(view: ViewResult): ViewResult {
+		if (!this.bisOnlyToggle.checked) return view;
+		const tagged = (row: ViewRow) => row.bisTags.length > 0;
+		const rows = view.rows.filter(tagged);
+		const shortlist = view.shortlist.filter(tagged);
+		return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length };
+	}
+
 	private currentViewOptions(): ViewOptions {
 		// Owned rows are greyed, not hidden — plan §4's sub-tab 1 list does not
 		// ask for a hide toggle, so this is fixed rather than user-controlled.
@@ -656,7 +716,7 @@ export class UpgradesTab extends SimTab {
 			return this.landedRowsTable(this.state.ranking.items);
 		}
 		if (this.state.kind !== 'done') return <></>;
-		const view = applyView(this.state.ranking, this.currentViewOptions());
+		const view = this.currentView();
 		return this.rowsTable(view.shortlist, view.rows);
 	}
 

@@ -875,7 +875,8 @@
 			"stopped": "Stopped early. Your current gear: {{dps}} DPS. Rows still simming were skipped — replication and set-completion packages were not run."
 		},
 		"view": {
-			"set_potential": "Include set-bonus potential"
+			"set_potential": "Include set-bonus potential",
+			"only_bis": "Only items on a BIS list"
 		},
 		"progress": {
 			"resolving": "Starting…",
