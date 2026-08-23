@@ -874,6 +874,9 @@
 			"stale": "settings changed since this ranking — results may be out of date",
 			"stopped": "Stopped early. Your current gear: {{dps}} DPS. Rows still simming were skipped — replication and set-completion packages were not run."
 		},
+		"view": {
+			"set_potential": "Include set-bonus potential"
+		},
 		"progress": {
 			"resolving": "Starting…",
 			"reading_gear": "Reading your gear…",

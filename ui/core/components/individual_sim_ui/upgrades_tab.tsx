@@ -79,6 +79,8 @@ export class UpgradesTab extends SimTab {
 	protected importButton!: HTMLButtonElement;
 	protected iterationsInput!: HTMLInputElement;
 	protected candidatesInput!: HTMLInputElement;
+	protected setPotentialToggle!: HTMLInputElement;
+	protected setPotentialLabel!: HTMLElement;
 	protected statusElem!: HTMLElement;
 	protected resultsElem!: HTMLElement;
 	protected assumptionsElem!: HTMLElement;
@@ -179,6 +181,8 @@ export class UpgradesTab extends SimTab {
 		const importButtonRef = ref<HTMLButtonElement>();
 		const iterationsInputRef = ref<HTMLInputElement>();
 		const candidatesInputRef = ref<HTMLInputElement>();
+		const setPotentialToggleRef = ref<HTMLInputElement>();
+		const setPotentialLabelRef = ref<HTMLLabelElement>();
 		const statusRef = ref<HTMLDivElement>();
 		const resultsRef = ref<HTMLDivElement>();
 		const assumptionsRef = ref<HTMLDivElement>();
@@ -223,6 +227,10 @@ export class UpgradesTab extends SimTab {
 							placeholder={i18n.t('upgrades_tab.candidates_placeholder')}
 						/>
 					</label>
+					<label ref={setPotentialLabelRef} className="upgrades-set-potential-label d-flex align-items-center gap-1 mb-0 d-none">
+						<input ref={setPotentialToggleRef} type="checkbox" className="upgrades-set-potential-toggle form-check-input mt-0" />
+						{i18n.t('upgrades_tab.view.set_potential')}
+					</label>
 					<div ref={statusRef} className="upgrades-status text-muted" />
 				</div>
 				<div ref={resultsRef} className="upgrades-results mt-gap" />
@@ -235,6 +243,8 @@ export class UpgradesTab extends SimTab {
 		this.importButton = importButtonRef.value!;
 		this.iterationsInput = iterationsInputRef.value!;
 		this.candidatesInput = candidatesInputRef.value!;
+		this.setPotentialToggle = setPotentialToggleRef.value!;
+		this.setPotentialLabel = setPotentialLabelRef.value!;
 		this.statusElem = statusRef.value!;
 		this.resultsElem = resultsRef.value!;
 		this.assumptionsElem = assumptionsRef.value!;
@@ -245,6 +255,10 @@ export class UpgradesTab extends SimTab {
 				this.setState({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
 			});
 		});
+
+		// A view option, not a run input: re-rendering applies it to the ranking
+		// already in hand and dispatches no sim.
+		this.setPotentialToggle.addEventListener('change', () => this.render());
 
 		// Stop's contract (candidate-pool.md §5.1.4) is "finish in-flight work,
 		// dispatch nothing new" — signalling the abort is all this button does;
@@ -470,6 +484,7 @@ export class UpgradesTab extends SimTab {
 	private render() {
 		this.runButton.disabled = this.state.kind === 'running';
 		this.stopButton.disabled = this.state.kind !== 'running';
+		this.refreshSetPotentialVisibility();
 		this.statusElem.replaceChildren(this.statusContent());
 		this.renderSubTabs();
 		this.assumptionsElem.replaceChildren(this.assumptionsContent());
@@ -514,6 +529,17 @@ export class UpgradesTab extends SimTab {
 				);
 			}
 		}
+	}
+
+	/**
+	 * PLAN.md §4: hide a view control when no data exists for it, because a
+	 * toggle that visibly does nothing reads as a bug. Set potential only
+	 * exists once a run has produced rows carrying it, so the control appears
+	 * with the results and disappears with them.
+	 */
+	private refreshSetPotentialVisibility(): void {
+		const available = this.state.kind === 'done' && this.state.ranking.items.some(hasRankableSetPotential);
+		this.setPotentialLabel.classList.toggle('d-none', !available);
 	}
 
 	/**
@@ -607,7 +633,10 @@ export class UpgradesTab extends SimTab {
 	private currentViewOptions(): ViewOptions {
 		// Owned rows are greyed, not hidden — plan §4's sub-tab 1 list does not
 		// ask for a hide toggle, so this is fixed rather than user-controlled.
-		return { hideOwned: false };
+		// The set-potential toggle is read here and nowhere else, and is never
+		// persisted: a later three-state control (off / full / weighted) has to
+		// be able to replace the checkbox without any other call site changing.
+		return { hideOwned: false, withSetPotential: this.setPotentialToggle.checked };
 	}
 
 	private resultsContent(): Node {
@@ -896,6 +925,25 @@ const SLOT_LABELS: Record<SimOrderName, string> = {
  */
 function effectiveSlot(row: ViewRow): SimOrderName {
 	return row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0];
+}
+
+/**
+ * Whether a row has set-bonus potential the view would actually rank on.
+ *
+ * Deliberate drift: this mirrors `rankableSetPotential(item) > 0` in
+ * `view.ts`, which is private to that module. Exporting it would be an engine
+ * edit, and every engine edit costs a PROVENANCE re-hash and an E-W3 run — too
+ * much for a predicate that only decides whether a checkbox is on screen. If
+ * `view.ts`'s definition changes, this must change with it.
+ *
+ * The `prospectiveBonusBreaks` half is not an optimisation: a row whose bonus
+ * is confounded by breaking another set gets no credit from the view either
+ * (the `(k-1)*B` inflation argument, PLAN.md ticket 90), so counting it here
+ * would offer a toggle that changes nothing.
+ */
+function hasRankableSetPotential(item: Ranking['items'][number]): boolean {
+	if (item.setContext?.prospectiveBonusBreaks?.length) return false;
+	return (item.setContext?.prospectiveBonusDps ?? 0) > 0;
 }
 
 /** Slots with at least one ranked candidate, in SIM_ORDER (stable, matches the page's own gear ordering). */
