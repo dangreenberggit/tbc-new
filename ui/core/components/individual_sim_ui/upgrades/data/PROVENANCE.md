@@ -65,6 +65,44 @@ for f in ['ret-p2','ret-p3','ret-p4','ret-p5','feral-p2','feral-p3']:
 they can drift again the moment a universe is regenerated. Ticket 211 owns
 that; this refresh fixes the data, not the mechanism.
 
+## Refresh, 2026-08-23 (ticket 211 closes)
+
+They drifted again, exactly as the 2026-08-16 note predicted. Five of the
+eight copies were stale; `ret-p2.universe.json` and both EP-weight files
+still matched. Two upstream commits in `dgreenberggit/tbc-gear-prio` explain
+every one of the five, and each file below is attributed to its cause:
+
+| Fork file | Delta vs its source | Cause |
+|---|---|---|
+| `ret-p3.universe.json` | 1 local-only: 29297 | `5cf0ea0` |
+| `ret-p4.universe.json` | 1 local-only: 29297 | `5cf0ea0` |
+| `ret-p5.universe.json` | 2 local-only: 29297, 34470 | `5cf0ea0` |
+| `feral-p2.universe.json` | 18 fork-only weapon rows | `5c42a37` |
+| `feral-p3.universe.json` | 33 fork-only weapon rows; 1 local-only: 29297 | `5c42a37` (removals) + `5cf0ea0` (29297) |
+
+- `5cf0ea0` "Ship Band of the Eternal Defender, now that the sim implements
+  it" admits Band of the Eternal Defender (29297) to ret-p3, ret-p4, ret-p5
+  and feral-p3, and Timbal's Focusing Crystal (34470, phase 5) to ret-p5.
+  The stale copies were **missing** those rings, so the tab could not rank
+  them.
+- `5c42a37` "Exclude weapon types a druid cannot equip" removes
+  druid-unusable weapon rows from the feral universes (18 from p2, 33 from
+  p3). The stale copies still **contained** them, so the tab was offering a
+  feral player weapons a druid cannot equip.
+
+No shared entry differed in content in any of the five files -- this drift
+was membership only.
+
+**Resolved:** `scripts/sync_fork_universes.py` in the source repo now owns
+the mechanism the last refresh left open. `pnpm fork-universes:check` runs
+in that repo's `pnpm verify` and byte-compares every row of the mapping
+table above; `python scripts/sync_fork_universes.py --write` is the
+one-command refresh. Run from the source repo:
+
+```bash
+python scripts/sync_fork_universes.py --check
+```
+
 ## Known staleness, carried over rather than fixed here
 
 - **Ret only has EP weights at p2.** Plan §7 flags this: "ret p3 rankings

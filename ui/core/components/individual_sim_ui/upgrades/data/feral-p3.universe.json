@@ -2145,6 +2145,25 @@
       "curationHint": 0.0
     },
     {
+      "itemId": 29297,
+      "name": "Band of the Eternal Defender",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "faction": "The Scale of the Sands",
+          "factionId": 990,
+          "kind": "rep",
+          "standing": "Exalted",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
       "itemId": 29302,
       "name": "Band of Eternity",
       "slot": "finger",
@@ -5688,60 +5707,6 @@
       "curationHint": 273.68
     },
     {
-      "itemId": 32248,
-      "name": "Halberd of Desolation",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Black Temple",
-          "boss": "High Warlord Naj'entus",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 124.76
-    },
-    {
-      "itemId": 30902,
-      "name": "Cataclysm's Edge",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Hyjal Summit",
-          "boss": "Archimonde",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 112.1
-    },
-    {
-      "itemId": 32348,
-      "name": "Soul Cleaver",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Black Temple",
-          "boss": "Teron Gorefiend",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 101.1
-    },
-    {
       "itemId": 32332,
       "name": "Torch of the Damned",
       "slot": "weapon",
@@ -5758,78 +5723,6 @@
         }
       ],
       "curationHint": 89.54
-    },
-    {
-      "itemId": 28773,
-      "name": "Gorehowl",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Prince Malchezaar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 88.1
-    },
-    {
-      "itemId": 28587,
-      "name": "Legacy",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "The Wizard of Oz",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 74.4
-    },
-    {
-      "itemId": 29993,
-      "name": "Twinblade of the Phoenix",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Tempest Keep",
-          "boss": "Kael'thas Sunstrider",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 66.99
-    },
-    {
-      "itemId": 30722,
-      "name": "Ethereum Nexus-Reaver",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "boss": "Doomwalker",
-          "kind": "raid",
-          "zone": "World Bosses",
-          "origin": "atlasloot"
-        }
-      ],
-      "curationHint": 62.1
     },
     {
       "itemId": 30865,
@@ -5850,24 +5743,6 @@
       "curationHint": 53.51
     },
     {
-      "itemId": 30881,
-      "name": "Blade of Infamy",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Hyjal Summit",
-          "boss": "Anetheron",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 52.08
-    },
-    {
       "itemId": 30901,
       "name": "Boundless Agony",
       "slot": "weapon",
@@ -5886,24 +5761,6 @@
       "curationHint": 52.08
     },
     {
-      "itemId": 30082,
-      "name": "Talon of Azshara",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Serpentshrine Cavern",
-          "boss": "Morogrim Tidewalker",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 51.8
-    },
-    {
       "itemId": 32944,
       "name": "Talon of the Phoenix",
       "slot": "weapon",
@@ -5920,24 +5777,6 @@
         }
       ],
       "curationHint": 48.13
-    },
-    {
-      "itemId": 32369,
-      "name": "Blade of Savagery",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Black Temple",
-          "boss": "Mother Shahraz",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 47.64
     },
     {
       "itemId": 32943,
@@ -5961,42 +5800,6 @@
         }
       ],
       "curationHint": 44.45
-    },
-    {
-      "itemId": 28794,
-      "name": "Axe of the Gronn Lords",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Gruul's Lair",
-          "boss": "Gruul the Dragonkiller",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 43.4
-    },
-    {
-      "itemId": 29924,
-      "name": "Netherbane",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Tempest Keep",
-          "boss": "Al'ar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 43.0
     },
     {
       "itemId": 30103,
@@ -6035,24 +5838,6 @@
       "curationHint": 40.92
     },
     {
-      "itemId": 28573,
-      "name": "Despair",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Romulo and Julianne",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 40.56
-    },
-    {
       "itemId": 30090,
       "name": "World Breaker",
       "slot": "weapon",
@@ -6087,24 +5872,6 @@
         }
       ],
       "curationHint": 38.36
-    },
-    {
-      "itemId": 32236,
-      "name": "Rising Tide",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Black Temple",
-          "boss": "High Warlord Naj'entus",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 36.82
     },
     {
       "itemId": 32945,
@@ -6225,24 +5992,6 @@
       "curationHint": 32.8
     },
     {
-      "itemId": 28729,
-      "name": "Spiteblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Netherspite",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 32.34
-    },
-    {
       "itemId": 28657,
       "name": "Fool's Bane",
       "slot": "weapon",
@@ -6259,24 +6008,6 @@
         }
       ],
       "curationHint": 28.98
-    },
-    {
-      "itemId": 30733,
-      "name": "Hope Ender",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "boss": "Doom Lord Kazzak",
-          "kind": "raid",
-          "zone": "World Bosses",
-          "origin": "atlasloot"
-        }
-      ],
-      "curationHint": 24.5
     },
     {
       "itemId": 29962,
@@ -6315,42 +6046,6 @@
       "curationHint": 22.4
     },
     {
-      "itemId": 30889,
-      "name": "Kaz'rogal's Hardened Heart",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Hyjal Summit",
-          "boss": "Kaz'rogal",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 21.42
-    },
-    {
-      "itemId": 32254,
-      "name": "The Brutalizer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Black Temple",
-          "boss": "Supremus",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 21.42
-    },
-    {
       "itemId": 29996,
       "name": "Rod of the Sun King",
       "slot": "weapon",
@@ -6385,47 +6080,6 @@
         }
       ],
       "curationHint": 17.5
-    },
-    {
-      "itemId": 28749,
-      "name": "King's Defender",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "db"
-        },
-        {
-          "boss": "Chess Event",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
-        }
-      ],
-      "curationHint": 17.34
-    },
-    {
-      "itemId": 28825,
-      "name": "Aldori Legacy Defender",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Gruul's Lair",
-          "boss": "Gruul the Dragonkiller",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 15.3
     },
     {
       "itemId": 30058,
@@ -6536,42 +6190,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 28606,
-      "name": "Shield of Impenetrable Darkness",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Nightbane",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28611,
-      "name": "Dragonheart Flameshield",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Nightbane",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 28633,
       "name": "Staff of Infinite Mysteries",
       "slot": "weapon",
@@ -6621,29 +6239,6 @@
           "zone": "Karazhan",
           "boss": "Netherspite",
           "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28754,
-      "name": "Triptych Shield of the Ancients",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "db"
-        },
-        {
-          "boss": "Chess Event",
-          "kind": "raid",
-          "zone": "Karazhan",
-          "origin": "atlasloot"
         }
       ],
       "curationHint": 0.0
@@ -6708,42 +6303,6 @@
       "slot": "weapon",
       "armorType": null,
       "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Magtheridon's Lair",
-          "boss": "Magtheridon",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28802,
-      "name": "Bloodmaw Magus-Blade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Gruul's Lair",
-          "boss": "Gruul the Dragonkiller",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 29458,
-      "name": "Aegis of the Vindicator",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
       "quality": 4,
       "phase": 1,
       "sources": [
@@ -6829,24 +6388,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 30095,
-      "name": "Fang of the Leviathan",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Serpentshrine Cavern",
-          "boss": "Leotheras the Blind",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 30108,
       "name": "Lightfathom Scepter",
       "slot": "weapon",
@@ -6919,83 +6460,11 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 30874,
-      "name": "The Unbreakable Will",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Hyjal Summit",
-          "boss": "Anetheron",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 30882,
-      "name": "Bastion of Light",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Hyjal Summit",
-          "boss": "Anetheron",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 30908,
       "name": "Apostle of Argus",
       "slot": "weapon",
       "armorType": null,
       "handType": 4,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Hyjal Summit",
-          "boss": "Archimonde",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 30909,
-      "name": "Antonidas's Aegis of Rapt Concentration",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Hyjal Summit",
-          "boss": "Archimonde",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 30910,
-      "name": "Tempest of Chaos",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
       "quality": 4,
       "phase": 3,
       "sources": [
@@ -7057,24 +6526,6 @@
           "kind": "raid",
           "zone": "Black Temple",
           "boss": "High Warlord Naj'entus",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32255,
-      "name": "Felstone Bulwark",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Black Temple",
-          "boss": "Supremus",
           "origin": "db"
         }
       ],
@@ -7153,24 +6604,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 32375,
-      "name": "Bulwark of Azzinoth",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Black Temple",
-          "boss": "Illidan Stormrage",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 34009,
       "name": "Hammer of Judgement",
       "slot": "weapon",
@@ -7189,29 +6622,6 @@
           "kind": "raid",
           "zone": "Hyjal Summit",
           "origin": "atlasloot"
-        },
-        {
-          "boss": "Trash",
-          "kind": "raid",
-          "zone": "Black Temple",
-          "origin": "atlasloot"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 34011,
-      "name": "Illidari Runeshield",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Black Temple",
-          "origin": "db"
         },
         {
           "boss": "Trash",

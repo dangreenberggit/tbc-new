@@ -3609,6 +3609,25 @@
       "curationHint": 0.0
     },
     {
+      "itemId": 29297,
+      "name": "Band of the Eternal Defender",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "faction": "The Scale of the Sands",
+          "factionId": 990,
+          "kind": "rep",
+          "standing": "Exalted",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
       "itemId": 30028,
       "name": "Seventh Ring of the Tirisfalen",
       "slot": "finger",
@@ -7629,6 +7648,23 @@
         }
       ],
       "curationHint": 8.48
+    },
+    {
+      "itemId": 34470,
+      "name": "Timbal's Focusing Crystal",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "heroic",
+          "dungeon": "Magisters' Terrace",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 7.04
     },
     {
       "itemId": 32496,
