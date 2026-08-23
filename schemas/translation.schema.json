@@ -8787,10 +8787,16 @@
 						},
 						"only_bis": {
 							"type": "string"
+						},
+						"raid_filter": {
+							"type": "string"
+						},
+						"raid_filter_all": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["set_potential", "only_bis"]
+					"required": ["set_potential", "only_bis", "raid_filter", "raid_filter_all"]
 				},
 				"prune": {
 					"type": "object",

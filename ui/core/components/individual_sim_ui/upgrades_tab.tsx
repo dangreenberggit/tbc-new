@@ -23,7 +23,7 @@ import { rankUpgrades, type PartialRanking, type Progress, type Ranking, type Ra
 import { MemoryStore } from './upgrades/engine/seams/store';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
-import { applyView, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
+import { applyView, raidFilterOptions, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
 
 /**
  * Specs this tab can rank, per plan §2.5: "The tab renders only for specs
@@ -86,6 +86,8 @@ export class UpgradesTab extends SimTab {
 	protected bisOnlyLabel!: HTMLElement;
 	protected bisPruneToggle!: HTMLInputElement;
 	protected bisPruneLabel!: HTMLElement;
+	protected raidFilterSelect!: HTMLSelectElement;
+	protected raidFilterLabel!: HTMLElement;
 	protected bisPruneText!: HTMLElement;
 	protected bisOnlyText!: HTMLElement;
 	protected statusElem!: HTMLElement;
@@ -201,6 +203,8 @@ export class UpgradesTab extends SimTab {
 		const bisPruneLabelRef = ref<HTMLLabelElement>();
 		const bisPruneTextRef = ref<HTMLSpanElement>();
 		const bisOnlyTextRef = ref<HTMLSpanElement>();
+		const raidFilterSelectRef = ref<HTMLSelectElement>();
+		const raidFilterLabelRef = ref<HTMLLabelElement>();
 		const phaseSelectorRef = ref<HTMLDivElement>();
 		const statusRef = ref<HTMLDivElement>();
 		const resultsRef = ref<HTMLDivElement>();
@@ -258,6 +262,10 @@ export class UpgradesTab extends SimTab {
 						<input ref={bisOnlyToggleRef} type="checkbox" className="upgrades-bis-only-toggle form-check-input mt-0" />
 						<span ref={bisOnlyTextRef} />
 					</label>
+					<label ref={raidFilterLabelRef} className="upgrades-raid-filter-label d-flex align-items-center gap-1 mb-0 d-none">
+						{i18n.t('upgrades_tab.view.raid_filter')}
+						<select ref={raidFilterSelectRef} className="upgrades-raid-filter form-select form-select-sm" />
+					</label>
 					<div ref={phaseSelectorRef} className="upgrades-phase-selector" />
 					<div ref={statusRef} className="upgrades-status text-muted" />
 				</div>
@@ -277,6 +285,8 @@ export class UpgradesTab extends SimTab {
 		this.bisOnlyLabel = bisOnlyLabelRef.value!;
 		this.bisPruneToggle = bisPruneToggleRef.value!;
 		this.bisPruneLabel = bisPruneLabelRef.value!;
+		this.raidFilterSelect = raidFilterSelectRef.value!;
+		this.raidFilterLabel = raidFilterLabelRef.value!;
 		this.bisPruneText = bisPruneTextRef.value!;
 		this.bisOnlyText = bisOnlyTextRef.value!;
 		this.statusElem = statusRef.value!;
@@ -300,6 +310,7 @@ export class UpgradesTab extends SimTab {
 		// already in hand and dispatches no sim.
 		this.setPotentialToggle.addEventListener('change', () => this.render());
 		this.bisOnlyToggle.addEventListener('change', () => this.render());
+		this.raidFilterSelect.addEventListener('change', () => this.render());
 		// A run input, not a view option: it changes what the *next* run sims, so
 		// it refreshes the count the placeholder promises and nothing else.
 		this.bisPruneToggle.addEventListener('change', () => this.refreshCandidatesPlaceholder());
@@ -583,6 +594,7 @@ export class UpgradesTab extends SimTab {
 		this.stopButton.disabled = this.state.kind !== 'running';
 		this.refreshSetPotentialVisibility();
 		this.refreshBisOnlyVisibility();
+		this.refreshRaidFilter();
 		this.statusElem.replaceChildren(this.statusContent());
 		this.renderSubTabs();
 		this.assumptionsElem.replaceChildren(this.assumptionsContent());
@@ -650,6 +662,42 @@ export class UpgradesTab extends SimTab {
 	private refreshBisOnlyVisibility(): void {
 		const available = this.state.kind === 'done' && this.state.ranking.items.some((i) => i.bisTags.length > 0);
 		this.bisOnlyLabel.classList.toggle('d-none', !available);
+	}
+
+	/**
+	 * Fills and shows the content filter, on the same hide-when-absent rule as
+	 * the other two view controls.
+	 *
+	 * Options come from the engine's `raidFilterOptions`, so the values are the
+	 * same buckets `groupBy: 'raid'` would file rows under -- zones first, then
+	 * the zoneless buckets the pool actually contains. Every row is therefore
+	 * reachable under exactly one option, including badge and crafted gear that
+	 * a zone-only filter would hide with no way to see it.
+	 *
+	 * Derived from the *unfiltered* ranking, not the current view: options
+	 * computed from the filtered rows would collapse to the one already
+	 * selected, and there would be no way back to another zone.
+	 *
+	 * A selection that no longer exists after a re-run falls back to "All"
+	 * rather than silently filtering to nothing.
+	 */
+	private refreshRaidFilter(): void {
+		// Narrowed on `this.state` directly rather than through a boolean, so
+		// the compiler can see `ranking` exists on the branch that reads it.
+		if (this.state.kind !== 'done') {
+			this.raidFilterLabel.classList.add('d-none');
+			this.raidFilterSelect.replaceChildren();
+			return;
+		}
+		this.raidFilterLabel.classList.remove('d-none');
+		const options = raidFilterOptions(this.state.ranking.items);
+		const previous = this.raidFilterSelect.value;
+		const keep = options.includes(previous) ? previous : 'all';
+		this.raidFilterSelect.replaceChildren(
+			<option value="all">{i18n.t('upgrades_tab.view.raid_filter_all')}</option>,
+			...options.map(option => <option value={option}>{option}</option>),
+		);
+		this.raidFilterSelect.value = keep;
 	}
 
 	/**
@@ -809,7 +857,15 @@ export class UpgradesTab extends SimTab {
 		// The set-potential toggle is read here and nowhere else, and is never
 		// persisted: a later three-state control (off / full / weighted) has to
 		// be able to replace the checkbox without any other call site changing.
-		return { hideOwned: false, withSetPotential: this.setPotentialToggle.checked };
+		// `raid` carries a zone name or a zoneless bucket label; the engine's
+		// filter understands both, so badge and crafted gear stay reachable
+		// under their own option instead of vanishing under every zone.
+		const raid = this.raidFilterSelect.value;
+		return {
+			hideOwned: false,
+			withSetPotential: this.setPotentialToggle.checked,
+			...(raid && raid !== 'all' ? { raid } : {}),
+		};
 	}
 
 	private resultsContent(view: ViewResult | undefined): Node {

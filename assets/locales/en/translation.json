@@ -876,7 +876,9 @@
 		},
 		"view": {
 			"set_potential": "Include set-bonus potential",
-			"only_bis": "Only items on a {{phase}} BIS list"
+			"only_bis": "Only items on a {{phase}} BIS list",
+        "raid_filter": "Content",
+        "raid_filter_all": "All"
 		},
 		"prune": {
 			"only_bis": "Sim only {{phase}} BiS-list items"
