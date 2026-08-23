@@ -416,11 +416,12 @@ export class UpgradesTab extends SimTab {
 	 * sites is what keeps the count in the Candidates placeholder equal to the
 	 * total the run then reports.
 	 *
-	 * The prune is deliberately tags-only: untagged gear the player is already
-	 * wearing is dropped from a pruned run, because the engine's owned-row
-	 * rescue happens downstream of the pool it is given. The assumptions drawer
-	 * says which pool a result came from so a pruned ranking is never read as
-	 * an exhaustive one.
+	 * The prune is deliberately tags-only. It narrows which candidates get
+	 * simmed, not what they are compared against: the baseline is the gear read
+	 * off the page either way, so every delta means the same thing. The only
+	 * visible difference is that an untagged item the player is wearing gets no
+	 * greyed "already have it" row of its own, which is what "BiS-list items"
+	 * already says. The assumptions drawer names the pool a result came from.
 	 */
 	private effectivePool(specId: SpecId, maxPhase: RankInput['maxPhase']) {
 		const pool = poolFor(specId, maxPhase);
