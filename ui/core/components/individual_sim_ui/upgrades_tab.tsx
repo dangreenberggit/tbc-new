@@ -637,7 +637,13 @@ export class UpgradesTab extends SimTab {
 	 * `Ranking`, matching plan §4's "no view changes a number".
 	 */
 	private renderSubTabs() {
-		this.resultsElem.replaceChildren(this.resultsContent());
+		// One view for both renderers. `resultsContent` used to call
+		// `currentView()` for itself, so the shopping list and the slot strip
+		// each filtered independently; a view option that emptied `rows` then
+		// rendered the empty state *and* stripped the sub-tabs below, with no
+		// way back except re-running.
+		const view = this.state.kind === 'done' ? this.currentView() : undefined;
+		this.resultsElem.replaceChildren(this.resultsContent(view));
 
 		// Remove any previously-built slot nav items/panes; keep the
 		// shopping-list nav item (first child) and pane untouched.
@@ -650,10 +656,13 @@ export class UpgradesTab extends SimTab {
 			this.paneContentElems.delete(id);
 		}
 
-		if (this.state.kind !== 'done') return;
+		if (view === undefined) return;
 
-		const view = this.currentView();
-		const slotsPresent = slotsInView(view);
+		// Slots come from the ranking, not from the filtered view: a display
+		// filter must change which rows a pane shows, never which panes exist.
+		// Deriving them from `view` let "no tagged row survived" read as "this
+		// ranking has no slots" and tear the strip down for good.
+		const slotsPresent = slotsInView(this.unfilteredView());
 		if (slotsPresent.length === 0) return;
 
 		const buttonById = new Map<SubTabId, HTMLButtonElement>();
@@ -712,8 +721,21 @@ export class UpgradesTab extends SimTab {
 	 * `Ranking` only, which is why the 'stopped' path builds its own list.
 	 */
 	private currentView(): ViewResult {
-		if (this.state.kind !== 'done') throw new Error('currentView() requires a completed ranking');
-		return this.applyBisFilter(applyView(this.state.ranking, this.currentViewOptions()));
+		return this.applyBisFilter(this.unfilteredView());
+	}
+
+	/**
+	 * The engine's view of the completed ranking, before any tab-local display
+	 * filter. The slot strip is built from this so a filter can never remove a
+	 * pane, only empty it.
+	 *
+	 * Both this and `currentView()` are called only from `renderSubTabs`, which
+	 * checks `state.kind === 'done'` first -- that check is the guard, rather
+	 * than a throw in here that a future caller would only discover at runtime.
+	 */
+	private unfilteredView(): ViewResult {
+		const ranking = (this.state as Extract<RunState, { kind: 'done' }>).ranking;
+		return applyView(ranking, this.currentViewOptions());
 	}
 
 	/**
@@ -747,7 +769,7 @@ export class UpgradesTab extends SimTab {
 		return { hideOwned: false, withSetPotential: this.setPotentialToggle.checked };
 	}
 
-	private resultsContent(): Node {
+	private resultsContent(view: ViewResult | undefined): Node {
 		if (this.state.kind === 'running') {
 			// Skeleton fill (candidate-pool.md §5.1.5): show rows as they land
 			// rather than nothing until the whole run finishes. Not run through
@@ -763,8 +785,7 @@ export class UpgradesTab extends SimTab {
 			// deserves, not a pretend-complete view (candidate-pool.md §5.1.4).
 			return this.landedRowsTable(this.state.ranking.items);
 		}
-		if (this.state.kind !== 'done') return <></>;
-		const view = this.currentView();
+		if (view === undefined) return <></>;
 		return this.rowsTable(view.shortlist, view.rows);
 	}
 
