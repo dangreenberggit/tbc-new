@@ -42,6 +42,36 @@ the whole table is deliberately not done here: it would assert a fresh
 comparison for 31 rows nobody re-verified in this round. Recorded as an open
 observation on ticket 214 instead.
 
+## Racing removed 2026-08-22
+
+`rank.ts`, `view.ts` and `content-hash.ts` (doc comment only) no longer carry
+candidate-pool.md M2's racing pass, and `promotion.ts` is deleted — its row is
+gone from the table below, because the drift script reports a listed file that
+is absent as `missing:` and fails.
+
+Ported from core commit `28b00f9` ("Remove racing; full-sweep every eligible
+candidate"), the change ADR-0026 records; the ADR itself was written in
+`66dab19`. That commit is **later than this file's header commit** and not an
+ancestor of it:
+
+```
+git merge-base --is-ancestor 28b00f9 12ce58414ad0f8f1e34c581d7583e6998e05e8bb
+# exit 1 — not an ancestor
+```
+
+`rank.ts` was **not** re-ported from core. The removal was done in place, so
+the fork keeps its three deliberate adaptations (`canonicalJson` hashing, no
+`spec.ts`, `simDatabaseFor` threading). Two divergences from core survive on
+purpose and must not be "fixed" by copying core's file: the cache payload
+freezes three racing fields where core freezes four (no `promoteTopJ`, which
+the fork never hashed — adding it would change every key already written), and
+`candidateCap` is hashed as `?? ordered.length` where core omits it when
+undefined. Compare the two files by hand, not with `diff -w`.
+
+E-W3 (`packages/core/test/wowsims-fork-parity.test.ts`) passed against the
+de-raced engine before these hashes were written, which is the order this
+file's own rule requires.
+
 ## A CRLF trap in this clone
 
 This fork clone has `core.autocrlf=true` (`git -C vendor/tbc-new-fork config
@@ -115,12 +145,11 @@ clone/repo-configuration decision outside a single slice's scope.
 | `logged-gear.ts` | `logged-gear.ts` | none (import paths only) | `34b5bc81ae85e781625fe118c8869bec94f09c72fc573753d24b7b7063ffbc79` |
 | `caps.ts` | `caps.ts` | none (import paths only) | `d785ad56ae60e4cd5af4b465a620f739ac715c7b401c741d7a943fd222369d63` |
 | `compose.ts` | `compose.ts` | none | `64d24100ca609361cf453f6f4c3bb67e3a2a0fd74eab071582d8a4253c28d677` |
-| `content-hash.ts` | `content-hash.ts` | adapted — `canonicalJson` only, no `sha256Hex`/`node:crypto` (D4); M2's `screenIterations`/`promoteTopK`/`fullPool` hash fields are inlined at `rank.ts`'s `canonicalJson(...)` call site rather than in this file (see this file's own doc comment) | `363a100acdda9d322520df882d1b89b280a4cd861f08b74e53ec6e5df7db463a` |
+| `content-hash.ts` | `content-hash.ts` | adapted — `canonicalJson` only, no `sha256Hex`/`node:crypto` (D4); racing's hash fields are frozen literals at `rank.ts`'s `canonicalJson(...)` call site, not in this file (ADR-0026) | `8a55e4d63387d98436c2687cfff7a3d1d6846ab8e8bb734e0fd7fa3199329af2` |
 | `disclosure.ts` | `disclosure.ts` | none | `0dec2c071c0fe56a7e37d0d07de9672a4fa076d93f30b8f5734dc05835a0a243` |
 | `plausibility.ts` | `plausibility.ts` | none (import paths only); traces to core `2e6b257`, not the header commit | `d63b682eb95b6eba8ed5bc247cc374fcce54376857c05dbee7a0effe5cdbe455` |
-| `view.ts` | `view.ts` | adapted — inlines `setPotentialIsConfounded` instead of importing `rank-report-rules.ts` (out of scope); M2's screened-row third-view-state (§6.1/7.7) ported unchanged in shape | `4a419e33b2629a38dbdd6ac32def4b7bca4177f12622bc330ac50a8f7a9da561` |
-| `rank.ts` | `rank.ts` | adapted — drops spec-mismatch check (`spec.ts` not ported); cache key is `canonicalJson(...)` not `contentHashOf(...)` (D4); candidate-pool.md M1 (cap, concurrency, EP ordering, Stop/`complete`, row events) and M2 (racing: screen/promote/cap-promoted-set, `screenCandidate`, `fullPool`) ported unchanged in shape; ticket 156's replication filter (skip screened/unsimmed rows) and screening disclosure (`screeningSkips`, `sim-failed` refusal, `screening` progress stage, drop-and-disclose for failed screens) ported unchanged; ticket 212's `simDatabaseFor` threading ported in core's post-`ea8f916` shape (one `compose(deps.raidSimSkeleton` call, inside a single `composeFor` closure that all four compose sites call; `buildSetBonuses` takes `composeFor` as a parameter rather than resolving a database of its own) | `b7bacf2003da542a405a74ad10762218647de84388c0f491eb217a9eb33ab1b2` |
-| `promotion.ts` | `promotion.ts` | adapted — no `promoteTopJ` (the per-slot depth knob is core-only; this port keeps the pre-§6.4 best-in-slot floor); ticket 156's `topK` finiteness filter ported unchanged | `7b7eeeb068e3ced9fb7518f2a5d2ce3369bca80c02dae9592245581c8c1cd8c3` |
+| `view.ts` | `view.ts` | adapted — inlines `setPotentialIsConfounded` instead of importing `rank-report-rules.ts` (out of scope) | `765a239a8ee7ed035e3e7abfede4735abd8638c0f4795f7b5fb150daba5ac445` |
+| `rank.ts` | `rank.ts` | adapted — drops spec-mismatch check (`spec.ts` not ported); cache key is `canonicalJson(...)` not `contentHashOf(...)` (D4); candidate-pool.md M1 (cap, concurrency, EP ordering, Stop/`complete`, row events) ported unchanged in shape; racing removed in place (core `28b00f9` / ADR-0026), so M2's screen/promote pass, `screenCandidate`, the `screening` progress stage and `screeningSkips` are gone; the cache payload keeps the three frozen racing literals (`fullPool: true`, `screenIterations: null`, `promoteTopK: null`) and no `promoteTopJ` — deliberate divergence from core's four; ticket 212's `simDatabaseFor` threading ported in core's post-`ea8f916` shape (one `compose(deps.raidSimSkeleton` call, inside a single `composeFor` closure that all four compose sites call; `buildSetBonuses` takes `composeFor` as a parameter rather than resolving a database of its own) | `522d6f2942034474d3ef0f6ff0f2dcaefd830a8be330fce9c65f6246ef514fe1` |
 | `candidate-order.ts` | `candidate-order.ts` | none (import paths only) | `c0fb93b75f278af0b505d6c426a30aa235716949b57b48da90f9363fa732be64` |
 | `promise-pool.ts` | `promise-pool.ts` | none | `3b93e38dd3c2e8b5413dc93b0771f63face959717e1a4fbd03883fb0c38ff8ff` |
 | `seams/gear-source.ts` | `seams/gear-source.ts` | none | `085d3a088a19aa5b8a28db6a2f219df6d0b44ecb39a42568c9788a21e7137cfe` |
