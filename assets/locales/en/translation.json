@@ -886,8 +886,6 @@
 			"reading_gear": "Reading your gear…",
 			"composing": "Preparing your character…",
 			"building_pool": "Building the candidate pool…",
-			"screening": "Screening {{done}}/{{total}}…",
-			"screening_with_failures": "Screening {{done}}/{{total}}… ({{failed}} failed)",
 			"simming": "Simming {{done}}/{{total}}…",
 			"ranking": "Ranking results…"
 		},
@@ -900,10 +898,7 @@
 			"owned": "Owned",
 			"empty": "No upgrades found above the cutoff.",
 			"below_cutoff_toggle_show": "Show {{count}} item(s) below the cutoff",
-			"below_cutoff_toggle_hide": "Hide items below the cutoff",
-			"screened_toggle_show": "Show {{count}} screened item(s) (not fully simmed)",
-			"screened_toggle_hide": "Hide screened items",
-			"screened_delta_dps": "~{{value}} (screened)"
+			"below_cutoff_toggle_hide": "Hide items below the cutoff"
 		},
 		"assumptions": {
 			"title": "Assumptions",

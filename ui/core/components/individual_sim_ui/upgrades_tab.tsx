@@ -481,13 +481,6 @@ export class UpgradesTab extends SimTab {
 			maxPhase,
 			iterations: this.readIterations(),
 			candidateCap: this.readCandidateCap(),
-			// Full sweep, matching core (ADR-0026: racing never cleared the 20 %
-			// wall-clock bar it had to clear to justify its complexity, so core
-			// deleted it and full-sweeps every eligible candidate). This flag is
-			// the fork engine's escape hatch from its still-present screening
-			// path; the racing code is deleted outright in a later commit, and
-			// this line goes with it.
-			fullPool: true,
 		};
 
 		this.stopButton.disabled = false;
@@ -822,21 +815,10 @@ export class UpgradesTab extends SimTab {
 	 * Shared table renderer for the shopping list and every slot pane — same
 	 * columns, same cutoff-behind-expand behaviour (plan §4), parameterized
 	 * only by which rows to show.
-	 *
-	 * Screened rows (candidate-pool.md §6.1 M2 racing) get their **own**
-	 * expand, separate from the below-cutoff one: a screened row was never
-	 * measured at full precision, which is a different fact from "measured
-	 * and small" — collapsing the two into one toggle would let a reader
-	 * conflate "this item is a small upgrade" with "this item's size is
-	 * unknown". `view.ts` already routes every screened row through
-	 * `belowCutoffInView: true` (so it never appears in `shortlist`), so
-	 * this only needs to split `allRows`'s below-cutoff set by `screened`
-	 * membership, not add a new filter of its own.
 	 */
 	private rowsTable(shortlist: ViewRow[], allRows: ViewRow[]): Node {
-		const screenedRows = allRows.filter((r) => r.screened !== undefined);
-		const belowCutoffRows = allRows.filter((r) => r.belowCutoffInView && r.screened === undefined);
-		if (shortlist.length === 0 && belowCutoffRows.length === 0 && screenedRows.length === 0) {
+		const belowCutoffRows = allRows.filter((r) => r.belowCutoffInView);
+		if (shortlist.length === 0 && belowCutoffRows.length === 0) {
 			return <div className="text-muted">{i18n.t('upgrades_tab.results.empty')}</div>;
 		}
 		const table = (
@@ -867,27 +849,22 @@ export class UpgradesTab extends SimTab {
 		return (
 			<>
 				{table}
-				{belowCutoffRows.length > 0 ? this.expandableRowGroup(belowCutoffRows, 'below-cutoff') : null}
-				{screenedRows.length > 0 ? this.expandableRowGroup(screenedRows, 'screened') : null}
+				{belowCutoffRows.length > 0 ? this.expandableRowGroup(belowCutoffRows) : null}
 			</>
 		);
 	}
 
 	/**
-	 * One hidden-behind-a-toggle table, shared shape for both the
-	 * below-cutoff expand and the screened-rows expand (candidate-pool.md
-	 * §6.1: "renders behind its own expand", "hidden, never deleted") — the
-	 * two are kept as separate calls (never merged into one row set) so
-	 * their toggle labels and row counts stay honest about which claim each
-	 * one makes.
+	 * The below-cutoff rows, hidden behind a toggle (candidate-pool.md §6.1:
+	 * "renders behind its own expand", "hidden, never deleted").
 	 */
-	private expandableRowGroup(rows: ViewRow[], kind: 'below-cutoff' | 'screened'): Node {
+	private expandableRowGroup(rows: ViewRow[]): Node {
 		const toggleRef = ref<HTMLButtonElement>();
 		const tbodyRef = ref<HTMLTableSectionElement>();
-		const showKey = kind === 'below-cutoff' ? 'upgrades_tab.results.below_cutoff_toggle_show' : 'upgrades_tab.results.screened_toggle_show';
-		const hideKey = kind === 'below-cutoff' ? 'upgrades_tab.results.below_cutoff_toggle_hide' : 'upgrades_tab.results.screened_toggle_hide';
+		const showKey = 'upgrades_tab.results.below_cutoff_toggle_show';
+		const hideKey = 'upgrades_tab.results.below_cutoff_toggle_hide';
 		const groupTable = (
-			<table className={`upgrades-results-table upgrades-${kind}-table table table-sm d-none`}>
+			<table className="upgrades-results-table upgrades-below-cutoff-table table table-sm d-none">
 				<tbody ref={tbodyRef} />
 			</table>
 		);
@@ -898,7 +875,7 @@ export class UpgradesTab extends SimTab {
 				<button
 					ref={toggleRef}
 					type="button"
-					className={`btn btn-sm btn-outline-secondary upgrades-${kind}-toggle`}
+					className="btn btn-sm btn-outline-secondary upgrades-below-cutoff-toggle"
 					onclick={() => {
 						const group = groupTable as HTMLElement;
 						const nowShown = group.classList.toggle('d-none') === false;
@@ -913,12 +890,7 @@ export class UpgradesTab extends SimTab {
 
 	private resultRow(row: ViewRow): Node {
 		const bisLabel = row.bisTags.includes('BiS') ? ' ★ BiS' : row.bisTags.includes('Alt') ? ' Alt' : '';
-		// A screened row's deltaDps is a screening-iteration observation, not
-		// a full-iteration one (candidate-pool.md §6.1) — labelled distinctly
-		// so a reader never reads it as directly comparable to a full row's
-		// delta in the same column.
-		const deltaLabel =
-			row.screened !== undefined ? i18n.t('upgrades_tab.results.screened_delta_dps', { value: row.deltaDps.toFixed(1) }) : `+${row.deltaDps.toFixed(1)}`;
+		const deltaLabel = `+${row.deltaDps.toFixed(1)}`;
 		return (
 			<tr className={row.owned ? 'upgrades-row-owned text-muted' : ''}>
 				<td>{row.rank ?? '—'}</td>
@@ -975,8 +947,8 @@ export class UpgradesTab extends SimTab {
 	 * (ticket 156): the engine has always recorded dropped candidates in
 	 * `substitutions`, but the drawer showed only the run's settings, so a run
 	 * that lost candidates to sim panics looked identical on the page to one
-	 * where every candidate simmed cleanly. That is what let a fully failed
-	 * screening pass read as "no upgrades found above the cutoff".
+	 * where every candidate simmed cleanly. That is what let a run whose sims
+	 * all failed read as "no upgrades found above the cutoff".
 	 */
 	private substitutionsContent(): Node {
 		if (this.state.kind !== 'done' && this.state.kind !== 'stopped') return <></>;
@@ -1108,14 +1080,6 @@ function progressLabel(p: Progress): string {
 			return i18n.t('upgrades_tab.progress.composing');
 		case 'building-pool':
 			return i18n.t('upgrades_tab.progress.building_pool');
-		// Failures are named in the status line as they happen, not just
-		// counted at the end (ticket 156): a screening pass that is losing
-		// every candidate used to look identical to one finding no upgrade,
-		// and the run took minutes before saying anything at all.
-		case 'screening':
-			return p.failed > 0
-				? i18n.t('upgrades_tab.progress.screening_with_failures', { done: p.done, total: p.total, failed: p.failed })
-				: i18n.t('upgrades_tab.progress.screening', { done: p.done, total: p.total });
 		case 'simming':
 			return i18n.t('upgrades_tab.progress.simming', { done: p.done, total: p.total });
 		case 'ranking':

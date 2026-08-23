@@ -14,12 +14,11 @@
  * `HashedGearItem` and `ENGINE_VERSION` are ported unchanged — both are
  * plain data shapes/constants with nothing to adapt.
  *
- * candidate-pool.md M2 (racing): this file has no `ContentHashInput`/
- * `hashPayload` type to extend — `rank.ts` builds its `canonicalJson(...)`
- * call site inline (see this file's doc comment above) rather than through
- * a typed builder function, so the `screenIterations`/`promoteTopK`/
- * `fullPool` fields are added at that call site, not here. Nothing in this
- * file changed for M2.
+ * candidate-pool.md M2 once added racing fields to `rank.ts`'s inline
+ * `canonicalJson(...)` call site rather than here, because this file has no
+ * `ContentHashInput`/`hashPayload` type to extend. Racing is gone (ADR-0026)
+ * and `rank.ts` now freezes those fields as literals to keep existing cache
+ * keys stable. Nothing in this file changed for either.
  */
 
 export function canonicalJson(value: unknown): string {
