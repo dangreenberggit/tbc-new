@@ -652,7 +652,12 @@ export class UpgradesTab extends SimTab {
 		}
 		for (const id of [...this.paneContentElems.keys()]) {
 			if (id === 'shopping-list') continue;
-			this.paneContentElems.get(id)?.parentElement?.remove();
+			// Remove the pane itself, not its parent. The slot panes are direct
+			// children of `tabContentElem`, so `parentElement` is that shared
+			// container -- removing it took the whole tab body with it, including
+			// the shopping list, and only a re-run brought it back.
+			const pane = this.paneContentElems.get(id);
+			if (pane?.parentElement === this.tabContentElem) pane.remove();
 			this.paneContentElems.delete(id);
 		}
 
