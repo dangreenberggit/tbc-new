@@ -83,6 +83,8 @@ export class UpgradesTab extends SimTab {
 	protected setPotentialLabel!: HTMLElement;
 	protected bisOnlyToggle!: HTMLInputElement;
 	protected bisOnlyLabel!: HTMLElement;
+	protected bisPruneToggle!: HTMLInputElement;
+	protected bisPruneLabel!: HTMLElement;
 	protected statusElem!: HTMLElement;
 	protected resultsElem!: HTMLElement;
 	protected assumptionsElem!: HTMLElement;
@@ -118,6 +120,11 @@ export class UpgradesTab extends SimTab {
 	// view control (which runs no sims) keeps showing the run's own elapsed
 	// instead of clearing it. `undefined` until a run finishes.
 	private lastRunSeconds: number | undefined;
+	// Whether the run that produced the current result was pruned to BIS-list
+	// items. Captured at run time, not read from the checkbox at render time:
+	// the drawer has to describe the run the numbers came from, and the box can
+	// be toggled afterwards.
+	private lastRunPruned = false;
 
 	constructor(parentElem: HTMLElement, simUI: IndividualSimUI<any>) {
 		super(parentElem, simUI, { identifier: 'upgrades-tab', title: i18n.t('upgrades_tab.title') });
@@ -187,6 +194,8 @@ export class UpgradesTab extends SimTab {
 		const setPotentialLabelRef = ref<HTMLLabelElement>();
 		const bisOnlyToggleRef = ref<HTMLInputElement>();
 		const bisOnlyLabelRef = ref<HTMLLabelElement>();
+		const bisPruneToggleRef = ref<HTMLInputElement>();
+		const bisPruneLabelRef = ref<HTMLLabelElement>();
 		const statusRef = ref<HTMLDivElement>();
 		const resultsRef = ref<HTMLDivElement>();
 		const assumptionsRef = ref<HTMLDivElement>();
@@ -231,6 +240,10 @@ export class UpgradesTab extends SimTab {
 							placeholder={i18n.t('upgrades_tab.candidates_placeholder')}
 						/>
 					</label>
+					<label ref={bisPruneLabelRef} className="upgrades-bis-prune-label d-flex align-items-center gap-1 mb-0 d-none">
+						<input ref={bisPruneToggleRef} type="checkbox" className="upgrades-bis-prune-toggle form-check-input mt-0" />
+						{i18n.t('upgrades_tab.prune.only_bis')}
+					</label>
 					<label ref={setPotentialLabelRef} className="upgrades-set-potential-label d-flex align-items-center gap-1 mb-0 d-none">
 						<input ref={setPotentialToggleRef} type="checkbox" className="upgrades-set-potential-toggle form-check-input mt-0" />
 						{i18n.t('upgrades_tab.view.set_potential')}
@@ -255,6 +268,8 @@ export class UpgradesTab extends SimTab {
 		this.setPotentialLabel = setPotentialLabelRef.value!;
 		this.bisOnlyToggle = bisOnlyToggleRef.value!;
 		this.bisOnlyLabel = bisOnlyLabelRef.value!;
+		this.bisPruneToggle = bisPruneToggleRef.value!;
+		this.bisPruneLabel = bisPruneLabelRef.value!;
 		this.statusElem = statusRef.value!;
 		this.resultsElem = resultsRef.value!;
 		this.assumptionsElem = assumptionsRef.value!;
@@ -270,6 +285,9 @@ export class UpgradesTab extends SimTab {
 		// already in hand and dispatches no sim.
 		this.setPotentialToggle.addEventListener('change', () => this.render());
 		this.bisOnlyToggle.addEventListener('change', () => this.render());
+		// A run input, not a view option: it changes what the *next* run sims, so
+		// it refreshes the count the placeholder promises and nothing else.
+		this.bisPruneToggle.addEventListener('change', () => this.refreshCandidatesPlaceholder());
 
 		// Stop's contract (candidate-pool.md §5.1.4) is "finish in-flight work,
 		// dispatch nothing new" — signalling the abort is all this button does;
@@ -335,13 +353,27 @@ export class UpgradesTab extends SimTab {
 	private refreshCandidatesPlaceholder() {
 		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
 		if (!specId) {
+			this.setPruneAvailable(false);
 			this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder_uncapped');
 			return;
 		}
 		const maxPhase = this.simUI.sim.getPhase() as RankInput['maxPhase'];
+		// Availability is decided on the unpruned pool: asking whether the
+		// pruned pool has tags would be circular once the toggle is on.
+		this.setPruneAvailable(poolFor(specId, maxPhase).some((e) => (e.bisTags?.length ?? 0) > 0));
 		this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder', {
 			count: this.eligibleCount(specId, maxPhase),
 		});
+	}
+
+	/**
+	 * Shows or hides the prune control, and forces it off while hidden so a
+	 * spec or phase with no BIS tags cannot leave a checked box applying an
+	 * invisible filter to the next run.
+	 */
+	private setPruneAvailable(available: boolean): void {
+		if (!available) this.bisPruneToggle.checked = false;
+		this.bisPruneLabel.classList.toggle('d-none', !available);
 	}
 
 	private setState(next: RunState) {
@@ -370,7 +402,29 @@ export class UpgradesTab extends SimTab {
 	 * current spec and phase, both of which can change between runs.
 	 */
 	private eligibleCount(specId: SpecId, maxPhase: RankInput['maxPhase']): number {
-		return filterPoolByPhase(poolFor(specId, maxPhase), maxPhase).filter((e) => !isKaelTempLegendary(e.itemId)).length;
+		return filterPoolByPhase(this.effectivePool(specId, maxPhase), maxPhase).filter((e) => !isKaelTempLegendary(e.itemId)).length;
+	}
+
+	/**
+	 * The candidate pool the next run will use: the whole universe, or only its
+	 * BIS-tagged entries when the pre-sim prune is on.
+	 *
+	 * The tag filter is applied to the raw `poolFor` result, before any phase
+	 * filtering, at the one place both callers go through. `eligibleCount`
+	 * wraps this in the phase and Kael filters; `run()` hands the result to the
+	 * engine, which applies its own phase filter. Filtering tags first at both
+	 * sites is what keeps the count in the Candidates placeholder equal to the
+	 * total the run then reports.
+	 *
+	 * The prune is deliberately tags-only: untagged gear the player is already
+	 * wearing is dropped from a pruned run, because the engine's owned-row
+	 * rescue happens downstream of the pool it is given. The assumptions drawer
+	 * says which pool a result came from so a pruned ranking is never read as
+	 * an exhaustive one.
+	 */
+	private effectivePool(specId: SpecId, maxPhase: RankInput['maxPhase']) {
+		const pool = poolFor(specId, maxPhase);
+		return this.bisPruneToggle.checked ? pool.filter((e) => (e.bisTags?.length ?? 0) > 0) : pool;
 	}
 
 	/**
@@ -410,6 +464,7 @@ export class UpgradesTab extends SimTab {
 		this.abortController = new AbortController();
 		this.landedRows = [];
 		this.lastRunSeconds = undefined;
+		this.lastRunPruned = this.bisPruneToggle.checked;
 		// Run click to run finished, the figure the time budget is judged on
 		// (docs/verification-log.md's finish-the-tab entry). `performance.now()`
 		// rather than `Date.now()`: monotonic, so a clock adjustment mid-run
@@ -447,7 +502,7 @@ export class UpgradesTab extends SimTab {
 					clock: () => new Date(),
 					raidSimSkeleton: skeleton,
 					epWeights: epWeightsFor(specId),
-					pool: poolFor(specId, maxPhase),
+					pool: this.effectivePool(specId, maxPhase),
 					simDatabaseFor,
 					// `min(workers, memoryCap)` — WasmSimRunner derives this once at
 					// construction from the measured per-process memory cost
@@ -894,6 +949,8 @@ export class UpgradesTab extends SimTab {
 					<dd className="col-sm-8">{a.iterations}</dd>
 					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.max_phase')}</dt>
 					<dd className="col-sm-8">{a.maxPhase}</dd>
+					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.pool')}</dt>
+					<dd className="col-sm-8">{i18n.t(this.lastRunPruned ? 'upgrades_tab.assumptions.pool_bis_only' : 'upgrades_tab.assumptions.pool_all')}</dd>
 					{cap !== undefined ? (
 						<>
 							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.candidate_cap')}</dt>

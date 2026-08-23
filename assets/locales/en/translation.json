@@ -878,6 +878,9 @@
 			"set_potential": "Include set-bonus potential",
 			"only_bis": "Only items on a BIS list"
 		},
+		"prune": {
+			"only_bis": "Sim only items on a BIS list"
+		},
 		"progress": {
 			"resolving": "Starting…",
 			"reading_gear": "Reading your gear…",
@@ -907,6 +910,9 @@
 			"seeds": "Seeds",
 			"iterations": "Iterations",
 			"max_phase": "Max phase",
+			"pool": "Candidate pool",
+			"pool_bis_only": "BIS-list items only",
+			"pool_all": "every eligible item",
 			"candidate_cap": "Candidate cap",
 			"candidate_cap_note": "top {{cap}} candidates simmed in full, plus anything you already own",
 			"substitutions_title": "Dropped candidates and substitutions ({{count}})",
