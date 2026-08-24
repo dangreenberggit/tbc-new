@@ -286,6 +286,13 @@ export class UpgradesTab extends SimTab {
 	protected bisPruneControl!: ToggleControl;
 	protected raidFilterSelect!: HTMLSelectElement;
 	protected raidFilterLabel!: HTMLElement;
+	// Tracks the user's choice independent of the DOM: `refreshRaidFilter()`
+	// rebuilds `raidFilterSelect` (including a full clear while non-'done')
+	// on every render, and rebuilding a <select> resets `.value` to `""`.
+	// Reading the field back, rather than the element, is what lets the
+	// selection survive the hundreds of clear-and-rebuild cycles a run's
+	// row-landed progress callbacks trigger before the state reaches 'done'.
+	private pendingRaidFilter: string = NO_RAID_FILTER;
 	protected statusElem!: HTMLElement;
 	protected resultsElem!: HTMLElement;
 	protected assumptionsElem!: HTMLElement;
@@ -525,7 +532,10 @@ export class UpgradesTab extends SimTab {
 		// already in hand and dispatches no sim.
 		this.setPotentialControl.input.addEventListener('change', () => this.render());
 		this.bisOnlyControl.input.addEventListener('change', () => this.render());
-		this.raidFilterSelect.addEventListener('change', () => this.render());
+		this.raidFilterSelect.addEventListener('change', () => {
+			this.pendingRaidFilter = this.raidFilterSelect.value;
+			this.render();
+		});
 		// A run input, not a view option: it changes what the *next* run sims, so
 		// it refreshes the count the placeholder promises and nothing else.
 		this.bisPruneControl.input.addEventListener('change', () => this.refreshCandidatesPlaceholder());
@@ -961,8 +971,9 @@ export class UpgradesTab extends SimTab {
 		setControlVisible(this.raidFilterLabel, true);
 		const groups = raidFilterGroups(this.state.ranking.items);
 		const options = groups.flatMap(group => group.options);
-		const previous = this.raidFilterSelect.value;
+		const previous = this.pendingRaidFilter;
 		const keep = options.includes(previous) ? previous : NO_RAID_FILTER;
+		this.pendingRaidFilter = keep;
 		this.raidFilterSelect.replaceChildren(
 			<option value={NO_RAID_FILTER}>{i18n.t('upgrades_tab.view.raid_filter_all')}</option>,
 			...groups.map(group => (
