@@ -82,6 +82,73 @@ type RunState =
 	| { kind: 'error'; message: string }
 	| { kind: 'unsupported-spec' };
 
+/**
+ * One checkbox control on the run row: its label, its input, and the
+ * show/hide half every one of these controls repeated by hand (ticket 275).
+ *
+ * `setVisible` only shows and hides. It deliberately does **not** force the
+ * box off while hidden, which is what the prune control's old bespoke
+ * visibility method did: forcing it off destroys the user's preference the
+ * moment a spec or phase change hides the control, and silently restores an
+ * unchecked box when it comes back. The safety that force-off bought — a
+ * hidden prune must not apply to the next run — is bought instead by gating
+ * at the *read* site (`pruneEffective()`: `visible && checked`), which keeps
+ * the preference.
+ *
+ * That read-site gate is for the **prune control only**. The set-potential
+ * and BiS-only controls feed the done-state view's sort key, and gating them
+ * on visibility would move the order the Q1 measurement was taken against, so
+ * those two keep reading `checked` directly.
+ *
+ * The class owns nothing beyond label + input + visibility on purpose: the
+ * set-potential control is expected to become a three-state control later
+ * (weighted set-bonus variant), and nothing here bakes in two-state
+ * semantics that such a swap would have to unpick.
+ */
+class ToggleControl {
+	constructor(
+		readonly label: HTMLElement,
+		readonly input: HTMLInputElement,
+		readonly text?: HTMLElement,
+	) {}
+
+	get checked(): boolean {
+		return this.input.checked;
+	}
+
+	get visible(): boolean {
+		return !this.label.classList.contains('d-none');
+	}
+
+	setVisible(visible: boolean): void {
+		setControlVisible(this.label, visible);
+	}
+
+	setText(text: string): void {
+		if (this.text) this.text.textContent = text;
+	}
+}
+
+/**
+ * The visibility half of `ToggleControl`, as a free function so the raid
+ * filter can share it. That control is a `<select>` populated by
+ * `replaceChildren` with value preservation, not a checkbox — it has no
+ * `checked` to own, so it borrows visibility and nothing else.
+ */
+function setControlVisible(label: HTMLElement, visible: boolean): void {
+	label.classList.toggle('d-none', !visible);
+}
+
+/**
+ * "Is this entry on a BIS list?" — the one spelling of the test the prune
+ * filter, the prune-availability check, the BiS-only view filter and the
+ * `pinBis` hoist all used to write out by hand. Pool entries carry `bisTags`
+ * optionally; ranked rows always carry it, so the optional shape covers both.
+ */
+function isBisTagged(entry: { bisTags?: readonly string[] }): boolean {
+	return (entry.bisTags?.length ?? 0) > 0;
+}
+
 export class UpgradesTab extends SimTab {
 	readonly simUI: IndividualSimUI<any>;
 
@@ -91,16 +158,11 @@ export class UpgradesTab extends SimTab {
 	protected importButton!: HTMLButtonElement;
 	protected iterationsInput!: HTMLInputElement;
 	protected candidatesInput!: HTMLInputElement;
-	protected setPotentialToggle!: HTMLInputElement;
-	protected setPotentialLabel!: HTMLElement;
-	protected bisOnlyToggle!: HTMLInputElement;
-	protected bisOnlyLabel!: HTMLElement;
-	protected bisPruneToggle!: HTMLInputElement;
-	protected bisPruneLabel!: HTMLElement;
+	protected setPotentialControl!: ToggleControl;
+	protected bisOnlyControl!: ToggleControl;
+	protected bisPruneControl!: ToggleControl;
 	protected raidFilterSelect!: HTMLSelectElement;
 	protected raidFilterLabel!: HTMLElement;
-	protected bisPruneText!: HTMLElement;
-	protected bisOnlyText!: HTMLElement;
 	protected statusElem!: HTMLElement;
 	protected resultsElem!: HTMLElement;
 	protected assumptionsElem!: HTMLElement;
@@ -290,16 +352,11 @@ export class UpgradesTab extends SimTab {
 		this.importButton = importButtonRef.value!;
 		this.iterationsInput = iterationsInputRef.value!;
 		this.candidatesInput = candidatesInputRef.value!;
-		this.setPotentialToggle = setPotentialToggleRef.value!;
-		this.setPotentialLabel = setPotentialLabelRef.value!;
-		this.bisOnlyToggle = bisOnlyToggleRef.value!;
-		this.bisOnlyLabel = bisOnlyLabelRef.value!;
-		this.bisPruneToggle = bisPruneToggleRef.value!;
-		this.bisPruneLabel = bisPruneLabelRef.value!;
+		this.setPotentialControl = new ToggleControl(setPotentialLabelRef.value!, setPotentialToggleRef.value!);
+		this.bisOnlyControl = new ToggleControl(bisOnlyLabelRef.value!, bisOnlyToggleRef.value!, bisOnlyTextRef.value!);
+		this.bisPruneControl = new ToggleControl(bisPruneLabelRef.value!, bisPruneToggleRef.value!, bisPruneTextRef.value!);
 		this.raidFilterSelect = raidFilterSelectRef.value!;
 		this.raidFilterLabel = raidFilterLabelRef.value!;
-		this.bisPruneText = bisPruneTextRef.value!;
-		this.bisOnlyText = bisOnlyTextRef.value!;
 		this.statusElem = statusRef.value!;
 		this.resultsElem = resultsRef.value!;
 		this.assumptionsElem = assumptionsRef.value!;
@@ -319,12 +376,12 @@ export class UpgradesTab extends SimTab {
 
 		// A view option, not a run input: re-rendering applies it to the ranking
 		// already in hand and dispatches no sim.
-		this.setPotentialToggle.addEventListener('change', () => this.render());
-		this.bisOnlyToggle.addEventListener('change', () => this.render());
+		this.setPotentialControl.input.addEventListener('change', () => this.render());
+		this.bisOnlyControl.input.addEventListener('change', () => this.render());
 		this.raidFilterSelect.addEventListener('change', () => this.render());
 		// A run input, not a view option: it changes what the *next* run sims, so
 		// it refreshes the count the placeholder promises and nothing else.
-		this.bisPruneToggle.addEventListener('change', () => this.refreshCandidatesPlaceholder());
+		this.bisPruneControl.input.addEventListener('change', () => this.refreshCandidatesPlaceholder());
 
 		// Stop's contract (candidate-pool.md §5.1.4) is "finish in-flight work,
 		// dispatch nothing new" — signalling the abort is all this button does;
@@ -391,14 +448,14 @@ export class UpgradesTab extends SimTab {
 		this.refreshPhaseLabels();
 		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
 		if (!specId) {
-			this.setPruneAvailable(false);
+			this.bisPruneControl.setVisible(false);
 			this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder_uncapped');
 			return;
 		}
 		const maxPhase = this.simUI.sim.getPhase() as RankInput['maxPhase'];
 		// Availability is decided on the unpruned pool: asking whether the
 		// pruned pool has tags would be circular once the toggle is on.
-		this.setPruneAvailable(poolFor(specId, maxPhase).some((e) => (e.bisTags?.length ?? 0) > 0));
+		this.bisPruneControl.setVisible(poolFor(specId, maxPhase).some(isBisTagged));
 		this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder', {
 			count: this.eligibleCount(specId, maxPhase),
 		});
@@ -421,18 +478,20 @@ export class UpgradesTab extends SimTab {
 	 */
 	private refreshPhaseLabels(): void {
 		const phase = i18n.t(`common.phases.${this.simUI.sim.getPhase()}`);
-		this.bisPruneText.textContent = i18n.t('upgrades_tab.prune.only_bis', { phase });
-		this.bisOnlyText.textContent = i18n.t('upgrades_tab.view.only_bis', { phase });
+		this.bisPruneControl.setText(i18n.t('upgrades_tab.prune.only_bis', { phase }));
+		this.bisOnlyControl.setText(i18n.t('upgrades_tab.view.only_bis', { phase }));
 	}
 
 	/**
-	 * Shows or hides the prune control, and forces it off while hidden so a
-	 * spec or phase with no BIS tags cannot leave a checked box applying an
-	 * invisible filter to the next run.
+	 * Whether the next run should prune to BIS-tagged candidates.
+	 *
+	 * The single read of the prune checkbox. Gated on visibility so a hidden
+	 * control cannot apply an invisible filter — the safety the old force-off
+	 * provided, without discarding the user's choice while the control is
+	 * away (see `ToggleControl`).
 	 */
-	private setPruneAvailable(available: boolean): void {
-		if (!available) this.bisPruneToggle.checked = false;
-		this.bisPruneLabel.classList.toggle('d-none', !available);
+	private pruneEffective(): boolean {
+		return this.bisPruneControl.visible && this.bisPruneControl.checked;
 	}
 
 	private setState(next: RunState) {
@@ -461,7 +520,8 @@ export class UpgradesTab extends SimTab {
 	 * current spec and phase, both of which can change between runs.
 	 */
 	private eligibleCount(specId: SpecId, maxPhase: RankInput['maxPhase']): number {
-		return filterPoolByPhase(this.effectivePool(specId, maxPhase), maxPhase).filter((e) => !isKaelTempLegendary(e.itemId)).length;
+		return filterPoolByPhase(this.effectivePool(specId, maxPhase, this.pruneEffective()), maxPhase).filter((e) => !isKaelTempLegendary(e.itemId))
+			.length;
 	}
 
 	/**
@@ -482,9 +542,9 @@ export class UpgradesTab extends SimTab {
 	 * greyed "already have it" row of its own, which is what "BiS-list items"
 	 * already says. The assumptions drawer names the pool a result came from.
 	 */
-	private effectivePool(specId: SpecId, maxPhase: RankInput['maxPhase']) {
+	private effectivePool(specId: SpecId, maxPhase: RankInput['maxPhase'], pruned: boolean) {
 		const pool = poolFor(specId, maxPhase);
-		return this.bisPruneToggle.checked ? pool.filter((e) => (e.bisTags?.length ?? 0) > 0) : pool;
+		return pruned ? pool.filter(isBisTagged) : pool;
 	}
 
 	/**
@@ -524,7 +584,12 @@ export class UpgradesTab extends SimTab {
 		this.abortController = new AbortController();
 		this.landedRows = [];
 		this.lastRunSeconds = undefined;
-		this.lastRunPruned = this.bisPruneToggle.checked;
+		// Captured once, here, and never recomputed: `lastRunPruned` is a
+		// recorded fact about *this* run, surfaced in the assumptions drawer.
+		// Re-reading the control later would let a finished run's description
+		// drift when the control's visibility or value changes.
+		const pruned = this.pruneEffective();
+		this.lastRunPruned = pruned;
 		// Run click to run finished, the figure the time budget is judged on
 		// (docs/verification-log.md's finish-the-tab entry). `performance.now()`
 		// rather than `Date.now()`: monotonic, so a clock adjustment mid-run
@@ -555,7 +620,7 @@ export class UpgradesTab extends SimTab {
 					clock: () => new Date(),
 					raidSimSkeleton: skeleton,
 					epWeights: epWeightsFor(specId),
-					pool: this.effectivePool(specId, maxPhase),
+					pool: this.effectivePool(specId, maxPhase, pruned),
 					simDatabaseFor,
 					// `min(workers, memoryCap)` — WasmSimRunner derives this once at
 					// construction from the measured per-process memory cost
@@ -603,8 +668,7 @@ export class UpgradesTab extends SimTab {
 	private render() {
 		this.runButton.disabled = this.state.kind === 'running';
 		this.stopButton.disabled = this.state.kind !== 'running';
-		this.refreshSetPotentialVisibility();
-		this.refreshBisOnlyVisibility();
+		this.refreshViewControlVisibility();
 		this.refreshRaidFilter();
 		this.statusElem.replaceChildren(this.statusContent());
 		this.renderSubTabs();
@@ -654,30 +718,33 @@ export class UpgradesTab extends SimTab {
 
 	/**
 	 * PLAN.md §4: hide a view control when no data exists for it, because a
-	 * toggle that visibly does nothing reads as a bug. Set potential only
-	 * exists once a run has produced rows carrying it, so the control appears
-	 * with the results and disappears with them.
+	 * toggle that visibly does nothing reads as a bug. Both controls only mean
+	 * anything once a run has produced rows carrying the data they act on, so
+	 * they appear with the results and disappear with them.
+	 *
+	 * With the universes this fork ships every spec/phase carries BIS tags, so
+	 * the BiS-only control's hidden branch is unreachable with current data; it
+	 * exists so a future universe without tags degrades to "no control" rather
+	 * than "a filter that empties the table".
 	 */
-	private refreshSetPotentialVisibility(): void {
-		const available = this.state.kind === 'done' && this.state.ranking.items.some(hasRankableSetPotential);
-		this.setPotentialLabel.classList.toggle('d-none', !available);
-	}
-
-	/**
-	 * Same hide-when-absent rule as the set-potential control. With the
-	 * universes this fork ships every spec/phase carries BIS tags, so the
-	 * hidden branch is unreachable with current data; it exists so a future
-	 * universe without tags degrades to "no control" rather than "a filter
-	 * that empties the table".
-	 */
-	private refreshBisOnlyVisibility(): void {
-		const available = this.state.kind === 'done' && this.state.ranking.items.some((i) => i.bisTags.length > 0);
-		this.bisOnlyLabel.classList.toggle('d-none', !available);
+	private refreshViewControlVisibility(): void {
+		// Narrowed on `this.state` directly rather than through a boolean, so
+		// the compiler can see `ranking` exists on the branch that reads it.
+		if (this.state.kind !== 'done') {
+			this.setPotentialControl.setVisible(false);
+			this.bisOnlyControl.setVisible(false);
+			return;
+		}
+		const items = this.state.ranking.items;
+		this.setPotentialControl.setVisible(items.some(hasRankableSetPotential));
+		this.bisOnlyControl.setVisible(items.some(isBisTagged));
 	}
 
 	/**
 	 * Fills and shows the content filter, on the same hide-when-absent rule as
-	 * the other two view controls.
+	 * the other two view controls. It is a `<select>`, not a toggle, so it
+	 * borrows only `setControlVisible` from the shared control shape and keeps
+	 * its own populate-with-value-preservation logic.
 	 *
 	 * Options come from the engine's `raidFilterOptions`, so the values are the
 	 * same buckets `groupBy: 'raid'` would file rows under -- zones first, then
@@ -696,11 +763,11 @@ export class UpgradesTab extends SimTab {
 		// Narrowed on `this.state` directly rather than through a boolean, so
 		// the compiler can see `ranking` exists on the branch that reads it.
 		if (this.state.kind !== 'done') {
-			this.raidFilterLabel.classList.add('d-none');
+			setControlVisible(this.raidFilterLabel, false);
 			this.raidFilterSelect.replaceChildren();
 			return;
 		}
-		this.raidFilterLabel.classList.remove('d-none');
+		setControlVisible(this.raidFilterLabel, true);
 		const options = raidFilterOptions(this.state.ranking.items);
 		const previous = this.raidFilterSelect.value;
 		const keep = options.includes(previous) ? previous : NO_RAID_FILTER;
@@ -855,8 +922,11 @@ export class UpgradesTab extends SimTab {
 	 * and this tab never passes it.
 	 */
 	private applyBisFilter(view: ViewResult): ViewResult {
-		if (!this.bisOnlyToggle.checked) return view;
-		const tagged = (row: ViewRow) => row.bisTags.length > 0;
+		// Read directly, not gated on visibility: this feeds the done-state
+		// view, and the control is only ever visible in that state anyway.
+		// Gating it would move the view's sort key. Same for set potential.
+		if (!this.bisOnlyControl.checked) return view;
+		const tagged = (row: ViewRow) => isBisTagged(row);
 		const rows = view.rows.filter(tagged);
 		const shortlist = view.shortlist.filter(tagged);
 		return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length };
@@ -878,7 +948,7 @@ export class UpgradesTab extends SimTab {
 		const raid = this.raidFilterSelect.value;
 		return {
 			hideOwned: false,
-			withSetPotential: this.setPotentialToggle.checked,
+			withSetPotential: this.setPotentialControl.checked,
 			...(raid === NO_RAID_FILTER ? {} : { raid }),
 		};
 	}
