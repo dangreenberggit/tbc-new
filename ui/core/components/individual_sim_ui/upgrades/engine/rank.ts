@@ -880,10 +880,16 @@ export async function rankUpgrades(
     // refinement exists to correct. Unsimmed rows sort last regardless of
     // their placeholder deltaDps (0), so an aborted run's honest-but-unsimmed
     // rows never crowd out real deltas at the top of the list.
+    // Tiebreak matches view.ts's compareRows (bisTags richness, then itemId)
+    // so the stamped rank and the rendered row order agree inside exact
+    // delta ties (ticket 279).
     const bySimmedThenDelta = (a: RankedItem, b: RankedItem): number => {
       if (a.simmed === false && b.simmed !== false) return 1;
       if (b.simmed === false && a.simmed !== false) return -1;
-      return b.deltaDps - a.deltaDps;
+      if (a.deltaDps !== b.deltaDps) return b.deltaDps - a.deltaDps;
+      const richness = b.bisTags.length - a.bisTags.length;
+      if (richness !== 0) return richness;
+      return a.itemId - b.itemId;
     };
     ranked.sort(bySimmedThenDelta);
     if (!aborted) await replicateTopItems(ranked, winningRequests, baselineDps);
