@@ -2,15 +2,41 @@
 // redesign: every rule here reproduces what the utilities it replaces already
 // did. One-off utilities stay inline in the TSX.
 
-.upgrades-run-row {
-	// Five controls on this row -- iterations, candidates, and three toggles --
-	// each of which spelled out the same four utilities on its own label.
+// The run inputs and the view options are two different kinds of control --
+// one decides what the next run computes, the other only re-filters rows
+// already computed -- so they are two groups, separated by space rather than
+// by a rule: every view option is `d-none` until a run produces rows for it,
+// and a border or separator would draw an empty box in every other state.
+.upgrades-toolbar {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--spacer-3);
+}
+
+// Belt and braces with the empty-group rule above: even the flex `gap` would
+// show as extra space beside a zero-width group, so the group is removed from
+// layout entirely while all of its children are hidden.
+// `!important` because the group carries Bootstrap's `.d-flex`, which is
+// itself `display: flex !important` -- without it this rule always loses and
+// the hidden group still claims the toolbar's `gap`.
+.upgrades-view-controls:not(:has(> :not(.d-none))) {
+	display: none !important;
+}
+
+.upgrades-run-controls,
+.upgrades-view-controls {
+	// Five controls -- iterations, candidates, and three toggles -- each of
+	// which spelled out the same four utilities on its own label. The phase
+	// wrapper joins them for layout parity: it is not a <label>, because the
+	// picker self-names through its options.
 	.upgrades-iterations-label,
 	.upgrades-candidates-label,
 	.upgrades-bis-prune-label,
 	.upgrades-set-potential-label,
 	.upgrades-bis-only-label,
-	.upgrades-raid-filter-label {
+	.upgrades-raid-filter-label,
+	.upgrades-phase-label {
 		display: flex;
 		align-items: center;
 		gap: var(--spacer-1);
@@ -56,7 +82,10 @@
 		.upgrades-run-button,
 		.upgrades-stop-button,
 		.upgrades-import-button,
-		.upgrades-raid-filter {
+		.upgrades-raid-filter,
+		// The phase select was the one control WP1's touch-target floor
+		// missed: it had no label wrapper to be found under.
+		.upgrades-phase-selector select {
 			min-height: 40px;
 		}
 	}
@@ -81,13 +110,14 @@
 	}
 }
 
-.upgrades-stopped-banner,
-.upgrades-stale-banner {
-	display: inline-flex;
+// One line, one idiom, for all seven run states: the tone is a Bootstrap text
+// utility chosen per state in statusContent(), so nothing here declares colour.
+.upgrades-status-line {
+	display: flex;
 	align-items: center;
+	flex-wrap: wrap;
 	gap: var(--spacer-2);
-	padding: var(--spacer-1) var(--spacer-2);
-	margin-bottom: var(--spacer-2);
+	margin-top: var(--spacer-2);
 }
 
 .upgrades-results-table {

@@ -330,67 +330,76 @@ export class UpgradesTab extends SimTab {
 
 		this.shoppingListElem.appendChild(
 			<div className="upgrades-shopping-list p-gap">
-				<div className="upgrades-run-row d-flex align-items-center gap-2">
-					<button ref={runButtonRef} className="btn btn-primary upgrades-run-button" type="button">
-						{i18n.t('upgrades_tab.run')}
-					</button>
-					<button ref={stopButtonRef} className="btn btn-outline-danger upgrades-stop-button" type="button" disabled>
-						{i18n.t('upgrades_tab.stop')}
-					</button>
-					<button
-						ref={importButtonRef}
-						className="btn btn-outline-secondary upgrades-import-button"
-						type="button"
-						title={i18n.t('upgrades_tab.import_wcl')}>
-						{i18n.t('upgrades_tab.import_wcl_short')}
-					</button>
-					<label className="upgrades-iterations-label">
-						{i18n.t('upgrades_tab.iterations_label')}
-						<input
-							ref={iterationsInputRef}
-							type="number"
-							min="1"
-							step="1"
-							className="upgrades-iterations-input form-control form-control-sm"
-							value={String(DEFAULT_ITERATIONS)}
-						/>
-					</label>
-					<label className="upgrades-candidates-label">
-						{i18n.t('upgrades_tab.candidates_label')}
-						<input
-							ref={candidatesInputRef}
-							type="number"
-							min="1"
-							step="1"
-							className="upgrades-candidates-input form-control form-control-sm"
-							// Placeholder, not a value: the real default is "every
-							// eligible candidate", which depends on the selected
-							// spec/maxPhase and is not known until Run is clicked
-							// (readCandidateCap() below re-derives it then). An empty
-							// input reads as "no cap" — matching RankInput.candidateCap's
-							// own `undefined` meaning (candidate-pool.md §5.1.1).
-							placeholder={i18n.t('upgrades_tab.candidates_placeholder')}
-						/>
-					</label>
-					<label ref={bisPruneLabelRef} className="upgrades-bis-prune-label d-none">
-						<input ref={bisPruneToggleRef} type="checkbox" className="upgrades-bis-prune-toggle form-check-input mt-0" />
-						<span ref={bisPruneTextRef} />
-					</label>
-					<label ref={setPotentialLabelRef} className="upgrades-set-potential-label d-none">
-						<input ref={setPotentialToggleRef} type="checkbox" className="upgrades-set-potential-toggle form-check-input mt-0" />
-						{i18n.t('upgrades_tab.view.set_potential')}
-					</label>
-					<label ref={bisOnlyLabelRef} className="upgrades-bis-only-label d-none">
-						<input ref={bisOnlyToggleRef} type="checkbox" className="upgrades-bis-only-toggle form-check-input mt-0" />
-						<span ref={bisOnlyTextRef} />
-					</label>
-					<label ref={raidFilterLabelRef} className="upgrades-raid-filter-label d-none">
-						{i18n.t('upgrades_tab.view.raid_filter')}
-						<select ref={raidFilterSelectRef} className="upgrades-raid-filter form-select form-select-sm" />
-					</label>
-					<div ref={phaseSelectorRef} className="upgrades-phase-selector" />
-					<div ref={statusRef} className="upgrades-status text-muted" />
+				<div className="upgrades-toolbar">
+					<div className="upgrades-run-controls d-flex align-items-center gap-2">
+						<button ref={runButtonRef} className="btn btn-primary upgrades-run-button" type="button">
+							{i18n.t('upgrades_tab.run')}
+						</button>
+						<button ref={stopButtonRef} className="btn btn-outline-danger upgrades-stop-button" type="button" disabled>
+							{i18n.t('upgrades_tab.stop')}
+						</button>
+						<button
+							ref={importButtonRef}
+							className="btn btn-outline-secondary upgrades-import-button"
+							type="button"
+							title={i18n.t('upgrades_tab.import_wcl')}>
+							{i18n.t('upgrades_tab.import_wcl_short')}
+						</button>
+						<label className="upgrades-iterations-label">
+							{i18n.t('upgrades_tab.iterations_label')}
+							<input
+								ref={iterationsInputRef}
+								type="number"
+								min="1"
+								step="1"
+								className="upgrades-iterations-input form-control form-control-sm"
+								value={String(DEFAULT_ITERATIONS)}
+							/>
+						</label>
+						<label className="upgrades-candidates-label">
+							{i18n.t('upgrades_tab.candidates_label')}
+							<input
+								ref={candidatesInputRef}
+								type="number"
+								min="1"
+								step="1"
+								className="upgrades-candidates-input form-control form-control-sm"
+								// Placeholder, not a value: the real default is "every
+								// eligible candidate", which depends on the selected
+								// spec/maxPhase and is not known until Run is clicked
+								// (readCandidateCap() below re-derives it then). An empty
+								// input reads as "no cap" — matching RankInput.candidateCap's
+								// own `undefined` meaning (candidate-pool.md §5.1.1).
+								placeholder={i18n.t('upgrades_tab.candidates_placeholder')}
+							/>
+						</label>
+						<label ref={bisPruneLabelRef} className="upgrades-bis-prune-label d-none">
+							<input ref={bisPruneToggleRef} type="checkbox" className="upgrades-bis-prune-toggle form-check-input mt-0" />
+							<span ref={bisPruneTextRef} />
+						</label>
+						{/* Not a <label>: the picker self-names through its options, so the
+						    wrapper exists only to give the selector the same flex treatment
+						    the other run inputs get from their label elements. */}
+						<div className="upgrades-phase-label">
+							<div ref={phaseSelectorRef} className="upgrades-phase-selector" />
+						</div>
+					</div>
+					<div className="upgrades-view-controls d-flex align-items-center gap-2">
+						<label ref={setPotentialLabelRef} className="upgrades-set-potential-label d-none">
+							<input ref={setPotentialToggleRef} type="checkbox" className="upgrades-set-potential-toggle form-check-input mt-0" />
+							{i18n.t('upgrades_tab.view.set_potential')}
+						</label>
+						<label ref={bisOnlyLabelRef} className="upgrades-bis-only-label d-none">
+							<input ref={bisOnlyToggleRef} type="checkbox" className="upgrades-bis-only-toggle form-check-input mt-0" />
+							<span ref={bisOnlyTextRef} />
+						</label>
+						<label ref={raidFilterLabelRef} className="upgrades-raid-filter-label d-none">
+							{i18n.t('upgrades_tab.view.raid_filter')}
+							<select ref={raidFilterSelectRef} className="upgrades-raid-filter form-select form-select-sm" />
+						</label>
+					</div>
 				</div>
+				<div ref={statusRef} className="upgrades-status" />
 				<div ref={resultsRef} className="upgrades-results mt-gap" />
 				<div ref={assumptionsRef} className="upgrades-assumptions mt-gap" />
 			</div>,
@@ -727,21 +736,25 @@ export class UpgradesTab extends SimTab {
 	private statusContent(): Node {
 		switch (this.state.kind) {
 			case 'idle':
-				return <span>{i18n.t('upgrades_tab.status.idle')}</span>;
+				return <div className="upgrades-status-line text-muted">{i18n.t('upgrades_tab.status.idle')}</div>;
 			case 'unsupported-spec':
-				return <span>{i18n.t('upgrades_tab.status.unsupported_spec')}</span>;
+				return <div className="upgrades-status-line text-muted">{i18n.t('upgrades_tab.status.unsupported_spec')}</div>;
 			case 'running':
 				// Row-landed count (candidate-pool.md §5.1.5), not just the stage
 				// label — "Simming 12/246" is more useful mid-run than the stage
 				// name alone, and `landedRows` is exactly the rows that fired a
 				// `{ kind: 'row' }` event so far.
-				return <span>{`${progressLabel(this.state.progress)} (${this.landedRows.length} rows landed)`}</span>;
+				return (
+					<div className="upgrades-status-line text-muted">{`${progressLabel(this.state.progress)} (${this.landedRows.length} rows landed)`}</div>
+				);
 			case 'error':
-				return <span className="text-danger">{i18n.t('upgrades_tab.status.error', { message: this.state.message })}</span>;
+				return (
+					<div className="upgrades-status-line text-danger">{i18n.t('upgrades_tab.status.error', { message: this.state.message })}</div>
+				);
 			case 'stopped': {
 				const label = i18n.t('upgrades_tab.status.stopped', { dps: this.state.ranking.baseline.dps.toFixed(1) });
 				return (
-					<div className="upgrades-stopped-banner alert alert-warning">
+					<div className="upgrades-status-line text-warning">
 						<span>{label}</span>
 						{this.elapsedContent()}
 					</div>
@@ -750,16 +763,16 @@ export class UpgradesTab extends SimTab {
 			case 'done': {
 				const label = i18n.t('upgrades_tab.status.done', { dps: this.state.ranking.baseline.dps.toFixed(1) });
 				return this.state.stale ? (
-					<div className="upgrades-stale-banner alert alert-warning">
+					<div className="upgrades-status-line text-warning">
 						<span>{label}</span>
 						<span>—</span>
 						<strong>{i18n.t('upgrades_tab.status.stale')}</strong>
 						{this.elapsedContent()}
 					</div>
 				) : (
-					<span>
+					<div className="upgrades-status-line text-muted">
 						{label} {this.elapsedContent()}
-					</span>
+					</div>
 				);
 			}
 		}
