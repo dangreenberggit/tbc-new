@@ -645,113 +645,33 @@ export default class ItemList<T extends ItemListType> {
 	}
 
 	private getSourceInfo(item: Item, sim: Sim): JSX.Element {
-		const makeAnchor = (href: string, inner: string | JSX.Element) => {
-			return (
-				<a href={href} target="_blank" dataset={{ whtticon: 'false' }}>
-					<small>{inner}</small>
-				</a>
-			);
-		};
+		return getSourceInfo(item, sim);
+	}
 
-		if (!item.sources?.length) {
-			if (item.randomSuffixOptions.length) {
-				return makeAnchor(`${ActionId.makeItemUrl(item.id)}#dropped-by`, 'World Drop');
-			} else if (isPVPItem(item)) {
-				const season = getPVPSeasonFromItem(item);
-				if (!season) return <></>;
+	private bindToggleCompare(element: Element) {
+		element.classList['remove']('hide');
+	}
+}
 
-				return makeAnchor(
-					ActionId.makeItemUrl(item.id),
-					<span>
-						{season}
-						<br />
-						PVP
-					</span>,
-				);
-			}
-			return <></>;
-		}
+/**
+ * The item's acquisition source, rendered as a wowhead-linked anchor (zone,
+ * NPC, quest, or item page depending on source kind). Extracted to a free
+ * function so `upgrades_tab.tsx` can render the same Source cell the gear
+ * picker does (WP3) without re-deriving zone/quest/rep resolution — the
+ * method above forwards here, unchanged, for the gear picker's own call site.
+ */
+export function getSourceInfo(item: Item, sim: Sim): JSX.Element {
+	const makeAnchor = (href: string, inner: string | JSX.Element) => {
+		return (
+			<a href={href} target="_blank" dataset={{ whtticon: 'false' }}>
+				<small>{inner}</small>
+			</a>
+		);
+	};
 
-		let source = item.sources[0];
-		if (source.source.oneofKind === 'crafted') {
-			const src = source.source.crafted;
-
-			if (src.spellId) {
-				return makeAnchor(ActionId.makeSpellUrl(src.spellId), professionNames.get(src.profession) ?? 'Unknown');
-			}
-			return makeAnchor(ActionId.makeItemUrl(item.id), professionNames.get(src.profession) ?? 'Unknown');
-		} else if (source.source.oneofKind === 'drop') {
-			const src = source.source.drop;
-			const zone = sim.db.getZone(src.zoneId);
-			const npc = sim.db.getNpc(src.npcId);
-			if (!zone) {
-				console.error('No zone found for item:', item);
-				return <></>;
-			}
-
-			const category = src.category ? ` - ${src.category}` : '';
-			if (npc) {
-				return makeAnchor(
-					ActionId.makeNpcUrl(npc.id),
-					<span>
-						{zone.name} ({difficultyNames.get(src.difficulty) ?? 'Unknown'})
-						<br />
-						{npc.name + category}
-					</span>,
-				);
-			} else if (src.otherName) {
-				return makeAnchor(
-					ActionId.makeZoneUrl(zone.id),
-					<span>
-						{zone.name}
-						<br />
-						{src.otherName}
-					</span>,
-				);
-			}
-			return makeAnchor(ActionId.makeZoneUrl(zone.id), zone.name);
-		} else if (source.source.oneofKind === 'quest' && source.source.quest.name) {
-			const src = source.source.quest;
-			return makeAnchor(
-				ActionId.makeQuestUrl(src.id),
-				<span>
-					Quest
-					{item.factionRestriction === UIItem_FactionRestriction.ALLIANCE_ONLY && (
-						<img src="/tbc/assets/img/alliance.png" className="ms-1" width="15" height="15" />
-					)}
-					{item.factionRestriction === UIItem_FactionRestriction.HORDE_ONLY && (
-						<img src="/tbc/assets/img/horde.png" className="ms-1" width="15" height="15" />
-					)}
-					<br />
-					{src.name}
-				</span>,
-			);
-		} else if ((source = item.sources.find(source => source.source.oneofKind === 'rep') ?? source).source.oneofKind === 'rep') {
-			const factionNames = item.sources
-				.filter(source => source.source.oneofKind === 'rep')
-				.map(source =>
-					source.source.oneofKind === 'rep' ? REP_FACTION_NAMES[source.source.rep.repFactionId] : REP_FACTION_NAMES[RepFaction.RepFactionUnknown],
-				);
-			const src = source.source.rep;
-			const npcId = REP_FACTION_QUARTERMASTERS[src.repFactionId];
-			return makeAnchor(
-				ActionId.makeNpcUrl(npcId),
-				<>
-					{factionNames.map(name => (
-						<span>
-							{name}
-							{item.factionRestriction === UIItem_FactionRestriction.ALLIANCE_ONLY && (
-								<img src="/tbc/assets/img/alliance.png" className="ms-1" width="15" height="15" />
-							)}
-							{item.factionRestriction === UIItem_FactionRestriction.HORDE_ONLY && (
-								<img src="/tbc/assets/img/horde.png" className="ms-1" width="15" height="15" />
-							)}
-							<br />
-						</span>
-					))}
-					<span>{REP_LEVEL_NAMES[src.repLevel]}</span>
-				</>,
-			);
+	if (!item.sources?.length) {
+		if (item.randomSuffixOptions.length) {
+			return makeAnchor(`${ActionId.makeItemUrl(item.id)}#dropped-by`, 'World Drop');
 		} else if (isPVPItem(item)) {
 			const season = getPVPSeasonFromItem(item);
 			if (!season) return <></>;
@@ -764,21 +684,112 @@ export default class ItemList<T extends ItemListType> {
 					PVP
 				</span>,
 			);
-		} else if (source.source.oneofKind === 'soldBy') {
-			const src = source.source.soldBy;
-			return makeAnchor(
-				ActionId.makeNpcUrl(src.npcId),
-				<span>
-					Sold by
-					<br />
-					{src.npcName}
-				</span>,
-			);
 		}
 		return <></>;
 	}
 
-	private bindToggleCompare(element: Element) {
-		element.classList['remove']('hide');
+	let source = item.sources[0];
+	if (source.source.oneofKind === 'crafted') {
+		const src = source.source.crafted;
+
+		if (src.spellId) {
+			return makeAnchor(ActionId.makeSpellUrl(src.spellId), professionNames.get(src.profession) ?? 'Unknown');
+		}
+		return makeAnchor(ActionId.makeItemUrl(item.id), professionNames.get(src.profession) ?? 'Unknown');
+	} else if (source.source.oneofKind === 'drop') {
+		const src = source.source.drop;
+		const zone = sim.db.getZone(src.zoneId);
+		const npc = sim.db.getNpc(src.npcId);
+		if (!zone) {
+			console.error('No zone found for item:', item);
+			return <></>;
+		}
+
+		const category = src.category ? ` - ${src.category}` : '';
+		if (npc) {
+			return makeAnchor(
+				ActionId.makeNpcUrl(npc.id),
+				<span>
+					{zone.name} ({difficultyNames.get(src.difficulty) ?? 'Unknown'})
+					<br />
+					{npc.name + category}
+				</span>,
+			);
+		} else if (src.otherName) {
+			return makeAnchor(
+				ActionId.makeZoneUrl(zone.id),
+				<span>
+					{zone.name}
+					<br />
+					{src.otherName}
+				</span>,
+			);
+		}
+		return makeAnchor(ActionId.makeZoneUrl(zone.id), zone.name);
+	} else if (source.source.oneofKind === 'quest' && source.source.quest.name) {
+		const src = source.source.quest;
+		return makeAnchor(
+			ActionId.makeQuestUrl(src.id),
+			<span>
+				Quest
+				{item.factionRestriction === UIItem_FactionRestriction.ALLIANCE_ONLY && (
+					<img src="/tbc/assets/img/alliance.png" className="ms-1" width="15" height="15" />
+				)}
+				{item.factionRestriction === UIItem_FactionRestriction.HORDE_ONLY && (
+					<img src="/tbc/assets/img/horde.png" className="ms-1" width="15" height="15" />
+				)}
+				<br />
+				{src.name}
+			</span>,
+		);
+	} else if ((source = item.sources.find(source => source.source.oneofKind === 'rep') ?? source).source.oneofKind === 'rep') {
+		const factionNames = item.sources
+			.filter(source => source.source.oneofKind === 'rep')
+			.map(source =>
+				source.source.oneofKind === 'rep' ? REP_FACTION_NAMES[source.source.rep.repFactionId] : REP_FACTION_NAMES[RepFaction.RepFactionUnknown],
+			);
+		const src = source.source.rep;
+		const npcId = REP_FACTION_QUARTERMASTERS[src.repFactionId];
+		return makeAnchor(
+			ActionId.makeNpcUrl(npcId),
+			<>
+				{factionNames.map(name => (
+					<span>
+						{name}
+						{item.factionRestriction === UIItem_FactionRestriction.ALLIANCE_ONLY && (
+							<img src="/tbc/assets/img/alliance.png" className="ms-1" width="15" height="15" />
+						)}
+						{item.factionRestriction === UIItem_FactionRestriction.HORDE_ONLY && (
+							<img src="/tbc/assets/img/horde.png" className="ms-1" width="15" height="15" />
+						)}
+						<br />
+					</span>
+				))}
+				<span>{REP_LEVEL_NAMES[src.repLevel]}</span>
+			</>,
+		);
+	} else if (isPVPItem(item)) {
+		const season = getPVPSeasonFromItem(item);
+		if (!season) return <></>;
+
+		return makeAnchor(
+			ActionId.makeItemUrl(item.id),
+			<span>
+				{season}
+				<br />
+				PVP
+			</span>,
+		);
+	} else if (source.source.oneofKind === 'soldBy') {
+		const src = source.source.soldBy;
+		return makeAnchor(
+			ActionId.makeNpcUrl(src.npcId),
+			<span>
+				Sold by
+				<br />
+				{src.npcName}
+			</span>,
+		);
 	}
+	return <></>;
 }

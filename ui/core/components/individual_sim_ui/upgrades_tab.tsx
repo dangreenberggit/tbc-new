@@ -2,9 +2,13 @@ import { Tab } from 'bootstrap';
 import { ref } from 'tsx-vanilla';
 
 import i18n from '../../../i18n/config';
+import { setItemQualityCssClass } from '../../css_utils';
 import { CURRENT_API_VERSION } from '../../constants/other.js';
 import { IndividualSimUI } from '../../individual_sim_ui';
 import { Spec } from '../../proto/common.js';
+import { ActionId } from '../../proto_utils/action_id';
+import { Database } from '../../proto_utils/database.js';
+import { getSourceInfo } from '../gear_picker/item_list';
 import { makePhaseSelector } from '../inputs/other_inputs';
 import { SimTab } from '../sim_tab';
 import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
@@ -1156,21 +1160,61 @@ export class UpgradesTab extends SimTab {
 	 * at all and show a provisional position in the current delta order.
 	 */
 	private resultRow(row: RankedItem, display: { rankText: string }): Node {
-		const bisLabel = row.bisTags.includes('BiS') ? ' ★ BiS' : row.bisTags.includes('Alt') ? ' Alt' : '';
 		const deltaLabel = formatDelta(row.deltaDps);
 		return (
 			<tr className={row.owned ? 'upgrades-row-owned text-muted' : ''}>
 				<td>{display.rankText}</td>
-				<td>
-					{row.name}
-					{bisLabel}
-					{row.owned ? ` (${i18n.t('upgrades_tab.results.owned')})` : ''}
-				</td>
+				<td>{this.itemCell(row)}</td>
 				<td>{slotLabel(effectiveSlot(row))}</td>
 				<td>{deltaLabel}</td>
-				<td>{sourceLabel(row.source)}</td>
+				<td>{sourceCell(row, this.simUI.sim)}</td>
 			</tr>
 		);
+	}
+
+	/**
+	 * The Item cell: icon + quality-coloured name + wowhead tooltip link, the
+	 * same idiom `item_list.tsx`'s `createItemElem` uses for every other item
+	 * row on the site (WP3). `RankedItem` carries only `itemId`/`name`, not
+	 * quality or an icon URL, so both come from `ActionId.fromItemId` --
+	 * `.fill()` resolves them the same way the gear picker's own list items do
+	 * (icon URL and canonical name from wowhead/local data), and
+	 * `setWowheadHref` + the `whtticon: false` dataset flag reproduce the same
+	 * tooltip-link markup so the browser's wowhead script picks it up
+	 * identically to any other item link on the page.
+	 */
+	private itemCell(row: RankedItem): Node {
+		const nameElem = ref<HTMLElement>();
+		const iconElem = ref<HTMLImageElement>();
+		const anchorElem = ref<HTMLAnchorElement>();
+		const bisLabel = row.bisTags.includes('BiS')
+			? i18n.t('upgrades_tab.results.bis_badge')
+			: row.bisTags.includes('Alt')
+				? i18n.t('upgrades_tab.results.alt_badge')
+				: undefined;
+
+		const cell = (
+			<span className="upgrades-item-cell">
+				<a className="upgrades-item-link" ref={anchorElem} dataset={{ whtticon: 'false' }}>
+					<img className="upgrades-item-icon" ref={iconElem} />
+					<span className="upgrades-item-name" ref={nameElem}>
+						{row.name}
+					</span>
+				</a>
+				{bisLabel ? <span className="badge rounded-pill upgrades-bis-badge ms-1">{bisLabel}</span> : null}
+				{row.owned ? <span className="text-muted ms-1">{`(${i18n.t('upgrades_tab.results.owned')})`}</span> : null}
+			</span>
+		);
+
+		const actionId = ActionId.fromItemId(row.itemId);
+		actionId.fill().then(filledId => {
+			filledId.setWowheadHref(anchorElem.value!);
+			iconElem.value!.src = filledId.iconUrl;
+		});
+		const item = Database.getSync().getItemById(row.itemId);
+		setItemQualityCssClass(nameElem.value!, item?.quality ?? null);
+
+		return cell;
 	}
 
 	private assumptionsContent(): Node {
@@ -1344,6 +1388,38 @@ const SOURCE_LABELS: Record<string, string> = {
 function sourceLabel(source: ItemSource): string {
 	if ('zone' in source) return source.zone;
 	return SOURCE_LABELS[source.kind] ?? source.kind;
+}
+
+/**
+ * The Source cell: item_list.tsx's own `getSourceInfo` when it can render
+ * something, falling back to the engine's own pool-summary label
+ * (`sourceLabel`) as plain text otherwise. Two misses need this fallback, not
+ * one: the item can be missing from `sim.db` entirely, or (badge vendor, rep,
+ * tier-token, and other sources `getSourceInfo` does not model) present in
+ * the database but resolved to an empty `<></>` fragment -- `getSourceInfo`
+ * returns that empty fragment for real, non-error cases, so its *content*
+ * has to be checked, not just whether the lookup itself succeeded.
+ * `RankedItem.source` is `upgrades/engine/pool.ts`'s `ItemSource` -- a
+ * ranking-pool summary (kind + zone/boss), not the full site `Item` proto
+ * `getSourceInfo` reads -- so the two are resolved independently rather than
+ * one derived from the other.
+ */
+function sourceCell(row: Pick<RankedItem, 'itemId' | 'source'>, sim: IndividualSimUI<any>['sim']): Node {
+	const item = Database.getSync().getItemById(row.itemId);
+	const rendered = item ? getSourceInfo(item, sim) : null;
+	if (rendered === null || isEmptyElement(rendered)) return <>{sourceLabel(row.source)}</>;
+	return rendered;
+}
+
+/**
+ * Whether a `JSX.Element` rendered no content -- `getSourceInfo`'s `<></>`
+ * cases (no PvP season, no zone, no npc/otherName, no modeled source kind).
+ * tsx-vanilla's fragment shorthand has no props to inspect ahead of render,
+ * so this checks the one thing that is actually true of every empty case:
+ * the DOM node it produces has no children and no text.
+ */
+function isEmptyElement(node: Node): boolean {
+	return node.childNodes.length === 0 && !node.textContent;
 }
 
 /** Narrows away the `{ kind: 'row' }` side channel, which carries no `stage`. */

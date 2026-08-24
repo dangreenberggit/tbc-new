@@ -900,6 +900,8 @@
 			"delta_dps_value": "{{delta}} DPS",
 			"source": "Source",
 			"owned": "Owned",
+			"bis_badge": "★ BiS",
+			"alt_badge": "Alt",
 			"empty_no_run": "Run a ranking to see upgrades for your current gear.",
 			"empty_no_upgrades": "No upgrades found above the cutoff.",
 			"below_cutoff_group": "{{count}} item(s) below the cutoff"

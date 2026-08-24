@@ -8860,6 +8860,12 @@
 						"owned": {
 							"type": "string"
 						},
+						"bis_badge": {
+							"type": "string"
+						},
+						"alt_badge": {
+							"type": "string"
+						},
 						"empty_no_run": {
 							"type": "string"
 						},
@@ -8879,6 +8885,8 @@
 						"delta_dps_value",
 						"source",
 						"owned",
+						"bis_badge",
+						"alt_badge",
 						"empty_no_run",
 						"empty_no_upgrades",
 						"below_cutoff_group"
