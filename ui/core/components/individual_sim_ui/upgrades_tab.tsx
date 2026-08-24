@@ -27,7 +27,7 @@ import { rankUpgrades, type PartialRanking, type Progress, type Ranking, type Ra
 import { MemoryStore } from './upgrades/engine/seams/store';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
-import { applyView, raidFilterGroups, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
+import { applyView, raidFilterGroups, SOURCE_LABELS, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
 
 /**
  * Specs this tab can rank, per plan §2.5: "The tab renders only for specs
@@ -41,7 +41,7 @@ import { applyView, raidFilterGroups, type ViewOptions, type ViewResult, type Vi
  *
  * Deliberately outside the filter's own value space. Every real option
  * comes from `raidFilterGroups`, which returns a zone name or a
- * `ZONELESS_SOURCE_LABELS` bucket -- never the empty string. A sentinel
+ * `SOURCE_LABELS` bucket -- never the empty string. A sentinel
  * inside the value space, such as the earlier `all`, would silently mean
  * "no filter" for a zone or bucket that happened to be named that way.
  */
@@ -180,9 +180,22 @@ function rankTextFor(row: Pick<RankedItem, 'rank'>): string {
 }
 
 /**
- * The results table header. Shared so the mid-run table and the done-state
- * tables cannot drift into different column sets, which is how the mid-run
- * table ended up four columns wide with no Rank (ticket 278).
+ * Column identity for both results-table heads (ticket 280, ticket 289). One
+ * id per `<th>`, in table order — `resultsTableHead`, `sortColumnFor`, and
+ * `sortableResultsTableHead` all index off this order, and the mobile SCSS's
+ * `nth-child` column-width rules depend on this exact column count and order
+ * staying put, so a new column here would need matching `nth-child` rules in
+ * `_upgrades_tab.scss`.
+ */
+const RESULTS_SORT_COLUMNS = ['rank', 'item', 'slot', 'delta_dps', 'source'] as const;
+type ResultsSortColumn = (typeof RESULTS_SORT_COLUMNS)[number];
+
+/**
+ * The results table header. Both this and `sortableResultsTableHead` render
+ * from `RESULTS_SORT_COLUMNS` so the mid-run table and the done-state tables
+ * cannot drift into different column sets, which is how the mid-run table
+ * ended up four columns wide with no Rank (ticket 278), and how a sortable
+ * variant reintroduced that same drift risk (ticket 289).
  *
  * Plain, non-interactive header for tables with no stable row set to sort —
  * the mid-run skeleton fill and the Stop-truncated result render straight
@@ -194,26 +207,13 @@ function resultsTableHead(): Node {
 	return (
 		<thead>
 			<tr>
-				<th>{i18n.t('upgrades_tab.results.rank')}</th>
-				<th>{i18n.t('upgrades_tab.results.item')}</th>
-				<th>{i18n.t('upgrades_tab.results.slot')}</th>
-				<th>{i18n.t('upgrades_tab.results.delta_dps')}</th>
-				<th>{i18n.t('upgrades_tab.results.source')}</th>
+				{RESULTS_SORT_COLUMNS.map((column) => (
+					<th>{resultsSortColumnLabel(column)}</th>
+				))}
 			</tr>
 		</thead>
 	);
 }
-
-/**
- * Column identity for the sortable done-state header (ticket 280). One id
- * per `<th>`, in table order — `sortColumnFor`/`sortableResultsTableHead`
- * both index off this order, and the mobile SCSS's `nth-child` column-width
- * rules depend on this exact column count and order staying put, so a new
- * column here would need matching `nth-child` rules in
- * `_upgrades_tab.scss`.
- */
-const RESULTS_SORT_COLUMNS = ['rank', 'item', 'slot', 'delta_dps', 'source'] as const;
-type ResultsSortColumn = (typeof RESULTS_SORT_COLUMNS)[number];
 
 type ResultsSort = { column: ResultsSortColumn; direction: 'asc' | 'desc' };
 
@@ -1149,7 +1149,7 @@ export class UpgradesTab extends SimTab {
 		// be able to replace the checkbox without any other call site changing.
 		// The empty string is the no-filter sentinel, not a value the filter
 		// could ever legitimately carry: zoneKeyOf returns a zone name or a
-		// ZONELESS_SOURCE_LABELS bucket, and neither is empty. Core keeps its
+		// SOURCE_LABELS bucket, and neither is empty. Core keeps its
 		// own `all` handling, which is untouched here.
 		// `raid` carries a zone name or a zoneless bucket label; the engine's
 		// filter understands both, so badge and crafted gear stay reachable
@@ -1170,14 +1170,14 @@ export class UpgradesTab extends SimTab {
 			// individual rows the row-landed Progress event has delivered.
 			return this.landedRowsTable(this.landedRows);
 		}
-		if (this.state.kind === 'stopped') {
-			// PartialRanking is not a Ranking (`complete: false` vs the `true`
-			// literal applyView's parameter requires), so this renders directly
-			// from `ranking.items` rather than going through applyView/the slot
-			// tab strip — a stopped run gets the plain list its own state
-			// deserves, not a pretend-complete view (candidate-pool.md §5.1.4).
-			return this.landedRowsTable(this.state.ranking.items);
-		}
+		// Ticket 286 (owner ruling): Stop resets the tab rather than showing a
+		// partial table with withheld view controls/sorting. The `PartialRanking`
+		// stays on `this.state` for cheap in-memory retention, but nothing here
+		// reads it — 'stopped' renders the same empty results table as 'idle'.
+		// The assumptions/substitutions drawers still render for 'stopped'
+		// (recorded decision, ticket 286 review): they describe the abandoned
+		// run's inputs, not its half-computed outputs. The stopped status
+		// wording is reconciled under ticket 290's state-design pass.
 		// No run in this page session yet: say so, rather than leaving the
 		// results area blank. An empty panel reads as "it found nothing",
 		// which is a different (and discouraging) claim from "nothing has
@@ -1586,16 +1586,6 @@ function slotsInView(view: ViewResult): SimOrderName[] {
 	for (const row of view.rows) present.add(effectiveSlot(row));
 	return SIM_ORDER.filter((s) => present.has(s));
 }
-
-const SOURCE_LABELS: Record<string, string> = {
-	badge: 'Badge vendor',
-	crafted: 'Crafted',
-	rep: 'Reputation vendor',
-	pvp: 'PvP vendor',
-	world: 'World drop',
-	heroic: 'Heroic dungeon',
-	unknown: 'Source not recorded',
-};
 
 function sourceLabel(source: ItemSource): string {
 	if ('zone' in source) return source.zone;

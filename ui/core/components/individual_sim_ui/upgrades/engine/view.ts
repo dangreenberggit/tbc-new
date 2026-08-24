@@ -63,7 +63,14 @@ function matchesBoss(item: RankedItem, zone: string | undefined, boss: string) {
   return sourcesOf(item).some((s) => sourceMatchesBoss(s, boss, zone));
 }
 
-const ZONELESS_SOURCE_LABELS: Record<string, string> = {
+/**
+ * Display label for every zoneless source kind. Ticket 288: the tab
+ * (`upgrades_tab.tsx`'s `sourceLabel`) renders the same per-item source
+ * label the raid filter groups here, from this one map, so the two cannot
+ * drift the way they did before fork e637fa284 (heroic items filed under
+ * "Raid zones" as the raw `"heroic"` token).
+ */
+export const SOURCE_LABELS: Record<string, string> = {
   badge: "Badge vendor",
   crafted: "Crafted",
   rep: "Reputation vendor",
@@ -77,7 +84,7 @@ function zoneKeyOf(item: RankedItem): string {
   for (const s of sourcesOf(item)) {
     if ("zone" in s) return s.zone;
   }
-  return ZONELESS_SOURCE_LABELS[item.source.kind] ?? item.source.kind;
+  return SOURCE_LABELS[item.source.kind] ?? item.source.kind;
 }
 
 export type RaidFilterGroup = { key: string; options: string[] };
@@ -87,7 +94,7 @@ export type RaidFilterGroup = { key: string; options: string[] };
  * Flattening `groups.flatMap(g => g.options)` reproduces the old flat list.
  */
 export function raidFilterGroups(items: readonly RankedItem[]): RaidFilterGroup[] {
-  const zoneless = new Set(Object.values(ZONELESS_SOURCE_LABELS));
+  const zoneless = new Set(Object.values(SOURCE_LABELS));
   const zones: string[] = [];
   const buckets: string[] = [];
   const seen = new Set<string>();
