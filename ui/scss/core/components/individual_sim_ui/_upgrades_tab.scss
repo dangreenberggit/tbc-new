@@ -108,6 +108,14 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
+
+	// Bootstrap's .btn sets cursor: pointer but never resets it on :disabled
+	// (node_modules/bootstrap/scss/_buttons.scss), so a disabled Stop keeps
+	// the pointer cursor. Same idiom as the disabled dropdown items in
+	// _header.scss.
+	.upgrades-stop-button:disabled {
+		cursor: not-allowed;
+	}
 }
 
 // One line, one idiom, for all seven run states: the tone is a Bootstrap text
