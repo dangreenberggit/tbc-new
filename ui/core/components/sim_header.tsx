@@ -48,6 +48,33 @@ export class SimHeader extends Component {
 
 		// Allow styling the sticky header
 		new IntersectionObserver(([e]) => e.target.classList.toggle('stuck', e.intersectionRatio < 1), { threshold: [1] }).observe(this.rootElem);
+
+		this.wireTabStripScrollAffordance();
+	}
+
+	// Signals that the tab strip has more content past its right edge when
+	// it's overflowing and not already scrolled to the end (WP1 defect 3).
+	// A ResizeObserver on .sim-header-container (or .sim-tabs) never fires
+	// from addTab(): .sim-tabs has flex-wrap: nowrap inside a flex row, so
+	// its own border-box is fixed by the flex layout -- only its *content*
+	// overflows via the container's overflow-x, which ResizeObserver does
+	// not report. A MutationObserver on .sim-tabs's childList catches every
+	// tab actually being added (and removed). The scroll listener
+	// separately covers the user scrolling to the end.
+	private wireTabStripScrollAffordance() {
+		const container = this.rootElem.querySelector<HTMLElement>('.sim-header-container')!;
+		const tabsContent = this.rootElem.querySelector<HTMLElement>('.sim-tabs')!;
+		const wrap = this.rootElem.querySelector<HTMLElement>('.sim-header-container-wrap')!;
+
+		const update = () => {
+			const atEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 1;
+			wrap.classList.toggle('scrolled-to-end', atEnd);
+		};
+
+		container.addEventListener('scroll', update, { passive: true });
+		new ResizeObserver(update).observe(container);
+		new MutationObserver(update).observe(tabsContent, { childList: true });
+		update();
 	}
 
 	activateTab(className: string) {
@@ -238,23 +265,25 @@ export class SimHeader extends Component {
 	protected customRootElement(): HTMLElement {
 		return (
 			<header className="sim-header">
-				<div className="sim-header-container">
-					<ul className="sim-tabs nav nav-tabs" attributes={{ role: 'tablist' }}></ul>
-					<div className="import-export nav within-raid-sim-hide">
-						<div className="dropdown sim-dropdown-menu import-dropdown">
-							<button className="import-link" attributes={{ 'aria-expanded': 'false' }} dataset={{ bsToggle: 'dropdown', bsDisplay: 'dynamic' }}>
-								<i className="fa fa-download"></i> {i18n.t('import.title')}
-							</button>
-							<ul className="dropdown-menu"></ul>
+				<div className="sim-header-container-wrap">
+					<div className="sim-header-container">
+						<ul className="sim-tabs nav nav-tabs" attributes={{ role: 'tablist' }}></ul>
+						<div className="import-export nav within-raid-sim-hide">
+							<div className="dropdown sim-dropdown-menu import-dropdown">
+								<button className="import-link" attributes={{ 'aria-expanded': 'false' }} dataset={{ bsToggle: 'dropdown', bsDisplay: 'dynamic' }}>
+									<i className="fa fa-download"></i> {i18n.t('import.title')}
+								</button>
+								<ul className="dropdown-menu"></ul>
+							</div>
+							<div className="dropdown sim-dropdown-menu export-dropdown">
+								<button className="export-link" attributes={{ 'aria-expanded': 'false' }} dataset={{ bsToggle: 'dropdown', bsDisplay: 'dynamic' }}>
+									<i className="fa fa-right-from-bracket"></i> {i18n.t('export.title')}
+								</button>
+								<ul className="dropdown-menu"></ul>
+							</div>
 						</div>
-						<div className="dropdown sim-dropdown-menu export-dropdown">
-							<button className="export-link" attributes={{ 'aria-expanded': 'false' }} dataset={{ bsToggle: 'dropdown', bsDisplay: 'dynamic' }}>
-								<i className="fa fa-right-from-bracket"></i> {i18n.t('export.title')}
-							</button>
-							<ul className="dropdown-menu"></ul>
-						</div>
+						<div className="sim-toolbar nav"></div>
 					</div>
-					<div className="sim-toolbar nav"></div>
 				</div>
 			</header>
 		) as HTMLElement;

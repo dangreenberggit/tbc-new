@@ -337,8 +337,12 @@ export class UpgradesTab extends SimTab {
 					<button ref={stopButtonRef} className="btn btn-outline-danger upgrades-stop-button" type="button" disabled>
 						{i18n.t('upgrades_tab.stop')}
 					</button>
-					<button ref={importButtonRef} className="btn btn-outline-secondary upgrades-import-button" type="button">
-						{i18n.t('upgrades_tab.import_wcl')}
+					<button
+						ref={importButtonRef}
+						className="btn btn-outline-secondary upgrades-import-button"
+						type="button"
+						title={i18n.t('upgrades_tab.import_wcl')}>
+						{i18n.t('upgrades_tab.import_wcl_short')}
 					</button>
 					<label className="upgrades-iterations-label">
 						{i18n.t('upgrades_tab.iterations_label')}

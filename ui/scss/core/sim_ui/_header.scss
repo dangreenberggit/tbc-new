@@ -37,6 +37,34 @@
 		}
 	}
 
+	// Wraps .sim-header-container so the fade-edge mask below can sit at a
+	// fixed position while the container itself scrolls underneath it.
+	.sim-header-container-wrap {
+		// .sim-header is display: block, so flex/min-width here are inert --
+		// this element only needs to anchor the fade-edge mask below.
+		position: relative;
+
+		// Right-edge fade signalling there's more tab strip to scroll to
+		// (WP1 defect 3). Hidden once scrolled to the end so it doesn't
+		// imply content past what's actually there.
+		&::after {
+			content: '';
+			position: absolute;
+			top: 0;
+			right: 0;
+			bottom: 0;
+			width: var(--spacer-5);
+			pointer-events: none;
+			background: linear-gradient(to right, transparent, var(--bs-body-bg));
+			opacity: 1;
+			transition: opacity 0.15s ease-in-out;
+		}
+
+		&.scrolled-to-end::after {
+			opacity: 0;
+		}
+	}
+
 	.sim-header-container {
 		height: 100%;
 		display: flex;

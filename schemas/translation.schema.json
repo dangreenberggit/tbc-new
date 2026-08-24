@@ -8739,6 +8739,9 @@
 				"import_wcl": {
 					"type": "string"
 				},
+				"import_wcl_short": {
+					"type": "string"
+				},
 				"iterations_label": {
 					"type": "string"
 				},
@@ -8932,7 +8935,7 @@
 				}
 			},
 			"additionalProperties": false,
-			"required": ["title", "subtabs", "placeholder", "run", "stop", "import_wcl", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "status", "view", "prune", "progress", "results", "assumptions"]
+			"required": ["title", "subtabs", "placeholder", "run", "stop", "import_wcl", "import_wcl_short", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "status", "view", "prune", "progress", "results", "assumptions"]
 		}
 	},
 	"additionalProperties": false,

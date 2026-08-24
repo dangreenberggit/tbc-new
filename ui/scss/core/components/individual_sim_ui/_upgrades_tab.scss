@@ -16,6 +16,69 @@
 		gap: var(--spacer-1);
 		margin-bottom: 0;
 	}
+
+	// ~10 controls at full width force .sim-ui to scroll horizontally on
+	// narrow screens (WP1 defect 1); wrapping keeps every control reachable
+	// without a page-level scrollbar.
+	@include media-breakpoint-down(md) {
+		flex-wrap: wrap;
+	}
+
+	// flex children shrink to their min-content by default, which clips
+	// "3000" and the "all N eligible" placeholder (WP1 defect 2, reproduces
+	// at desktop widths too). ch sizes to the digit count these fields
+	// actually need instead of a guessed px value.
+	.upgrades-iterations-input {
+		width: 6ch;
+		flex-shrink: 0;
+	}
+
+	.upgrades-candidates-input {
+		width: 14ch;
+		flex-shrink: 0;
+	}
+
+	// 40px is the touch-target floor (WP1 defect 4); desktop keeps the
+	// existing form-control-sm/form-check-input sizing.
+	@include media-breakpoint-down(md) {
+		.upgrades-iterations-input,
+		.upgrades-candidates-input {
+			min-height: 40px;
+		}
+
+		.upgrades-bis-prune-toggle,
+		.upgrades-set-potential-toggle,
+		.upgrades-bis-only-toggle {
+			width: 40px;
+			height: 40px;
+		}
+
+		.upgrades-run-button,
+		.upgrades-stop-button,
+		.upgrades-import-button,
+		.upgrades-raid-filter {
+			min-height: 40px;
+		}
+	}
+
+	// Old label "Import gear from log" wrapped to multiple lines beside
+	// Run/Stop once the row's other flex-shrink: 0 controls (iterations/
+	// candidates above) claimed their full width (WP1 defect 5, visible at
+	// desktop widths too). Using the shorter "Import log" label (title
+	// attribute keeps the full text as a tooltip) fits on one line at the
+	// widths this row actually renders at; min-width holds that reading and
+	// the ellipsis is only a backstop for widths narrower than any measured
+	// here.
+	.upgrades-import-button {
+		flex-shrink: 1;
+		// "Import log" glyphs + button padding measures ~91px at this
+		// font -- 9ch (80.7px) was short and still clipped to "Import l…".
+		// 12ch covers it with headroom.
+		min-width: 12ch;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
 }
 
 .upgrades-stopped-banner,
