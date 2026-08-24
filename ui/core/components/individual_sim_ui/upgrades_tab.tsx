@@ -19,7 +19,7 @@ import { WclGearImportModal } from './upgrades/wcl_import_modal';
 import type { Assumptions } from './upgrades/engine/disclosure';
 import type { ItemSource } from './upgrades/engine/pool';
 import { simSlotsForPoolSlot } from './upgrades/engine/pool';
-import { rankUpgrades, type PartialRanking, type Progress, type Ranking, type RankInput } from './upgrades/engine/rank';
+import { rankUpgrades, type PartialRanking, type Progress, type Ranking, type RankedItem, type RankInput } from './upgrades/engine/rank';
 import { MemoryStore } from './upgrades/engine/seams/store';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
@@ -147,6 +147,44 @@ function setControlVisible(label: HTMLElement, visible: boolean): void {
  */
 function isBisTagged(entry: { bisTags?: readonly string[] }): boolean {
 	return (entry.bisTags?.length ?? 0) > 0;
+}
+
+/**
+ * A delta in the results tables. Both renderers used to hardcode the `+`,
+ * so a negative delta rendered as "+-41.0" — mid-run rows are frequently
+ * negative, so this was on screen. The sign comes from the number.
+ */
+function formatDelta(deltaDps: number): string {
+	const sign = deltaDps > 0 ? '+' : '';
+	return `${sign}${deltaDps.toFixed(1)}`;
+}
+
+/**
+ * The results table header. Shared so the mid-run table and the done-state
+ * tables cannot drift into different column sets, which is how the mid-run
+ * table ended up four columns wide with no Rank (ticket 278).
+ */
+/**
+ * The done-state Rank cell. `rank` is null for rows the engine never ranked —
+ * unsimmed, or below the cutoff — and those render an em dash rather than a
+ * number they do not have.
+ */
+function rankTextFor(row: Pick<RankedItem, 'rank'>): string {
+	return row.rank !== null ? String(row.rank) : '—';
+}
+
+function resultsTableHead(): Node {
+	return (
+		<thead>
+			<tr>
+				<th>{i18n.t('upgrades_tab.results.rank')}</th>
+				<th>{i18n.t('upgrades_tab.results.item')}</th>
+				<th>{i18n.t('upgrades_tab.results.slot')}</th>
+				<th>{i18n.t('upgrades_tab.results.delta_dps')}</th>
+				<th>{i18n.t('upgrades_tab.results.source')}</th>
+			</tr>
+		</thead>
+	);
 }
 
 export class UpgradesTab extends SimTab {
@@ -981,30 +1019,27 @@ export class UpgradesTab extends SimTab {
 	 * placeholder 0 delta, which would misread as "no upgrade" instead of
 	 * "not simmed".
 	 */
-	private landedRowsTable(rows: readonly Ranking['items'][number][]): Node {
+	private landedRowsTable(rows: readonly RankedItem[]): Node {
 		const simmedRows = rows.filter((r) => r.simmed !== false);
 		if (simmedRows.length === 0) {
 			return <div className="text-muted">{i18n.t('upgrades_tab.results.empty')}</div>;
 		}
+		// Sorted at render time, on a copy. The engine emits no ordering for
+		// these rows — there is no complete Ranking to run through applyView
+		// yet — and rows land in whatever order their sims finish, so without
+		// this the reader watches an unsorted list (ticket 278). Copying rather
+		// than sorting in place: `rows` is the caller's array, and for the
+		// mid-run path it is the accumulating `landedRows` buffer.
+		const sorted = [...simmedRows].sort((a, b) => b.deltaDps - a.deltaDps);
+		// Marked provisional: this table's Rank column is a position in the
+		// rows landed *so far*, not the engine's final `rank`, and a row that
+		// has not been simmed yet is simply absent. The class lets the styling
+		// say so, alongside the running status line's own "N rows landed".
 		return (
-			<table className="upgrades-results-table table table-sm">
-				<thead>
-					<tr>
-						<th>{i18n.t('upgrades_tab.results.item')}</th>
-						<th>{i18n.t('upgrades_tab.results.slot')}</th>
-						<th>{i18n.t('upgrades_tab.results.delta_dps')}</th>
-						<th>{i18n.t('upgrades_tab.results.source')}</th>
-					</tr>
-				</thead>
+			<table className="upgrades-results-table upgrades-results-table-provisional table table-sm">
+				{resultsTableHead()}
 				<tbody>
-					{simmedRows.map((row) => (
-						<tr className={row.owned ? 'upgrades-row-owned text-muted' : ''}>
-							<td>{row.name}</td>
-							<td>{slotLabel(row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0])}</td>
-							<td>{`+${row.deltaDps.toFixed(1)}`}</td>
-							<td>{sourceLabel(row.source)}</td>
-						</tr>
-					))}
+					{sorted.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }))}
 				</tbody>
 			</table>
 		);
@@ -1028,18 +1063,10 @@ export class UpgradesTab extends SimTab {
 		}
 		const table = (
 			<table className="upgrades-results-table table table-sm">
-				<thead>
-					<tr>
-						<th>{i18n.t('upgrades_tab.results.rank')}</th>
-						<th>{i18n.t('upgrades_tab.results.item')}</th>
-						<th>{i18n.t('upgrades_tab.results.slot')}</th>
-						<th>{i18n.t('upgrades_tab.results.delta_dps')}</th>
-						<th>{i18n.t('upgrades_tab.results.source')}</th>
-					</tr>
-				</thead>
+				{resultsTableHead()}
 				<tbody>
 					{shortlist.length > 0 ? (
-						shortlist.map((row) => this.resultRow(row))
+						shortlist.map((row) => this.resultRow(row, { rankText: rankTextFor(row) }))
 					) : (
 						<tr>
 							<td colSpan={5} className="text-muted">
@@ -1073,7 +1100,7 @@ export class UpgradesTab extends SimTab {
 				<tbody ref={tbodyRef} />
 			</table>
 		);
-		tbodyRef.value!.replaceChildren(...rows.map((row) => this.resultRow(row)));
+		tbodyRef.value!.replaceChildren(...rows.map((row) => this.resultRow(row, { rankText: rankTextFor(row) })));
 
 		return (
 			<>
@@ -1093,12 +1120,27 @@ export class UpgradesTab extends SimTab {
 		);
 	}
 
-	private resultRow(row: ViewRow): Node {
+	/**
+	 * The one row renderer, shared by the done-state tables and the mid-run
+	 * skeleton fill (ticket 278).
+	 *
+	 * It takes a `RankedItem`, not a `ViewRow`: `belowCutoffInView` is assigned
+	 * only inside `applyView`, and mid-run there is no complete `Ranking` to run
+	 * through it. Nothing in a row's own markup depends on that flag anyway —
+	 * the callers group below-cutoff rows into their own table — so the only
+	 * difference the renderer needs handed to it is the Rank text.
+	 *
+	 * `rankText` is a string because the two states mean different things by
+	 * it: done-state rows carry the engine's own `rank` (null for unsimmed and
+	 * below-cutoff rows, rendered "—"), while mid-run rows have no final rank
+	 * at all and show a provisional position in the current delta order.
+	 */
+	private resultRow(row: RankedItem, display: { rankText: string }): Node {
 		const bisLabel = row.bisTags.includes('BiS') ? ' ★ BiS' : row.bisTags.includes('Alt') ? ' Alt' : '';
-		const deltaLabel = `+${row.deltaDps.toFixed(1)}`;
+		const deltaLabel = formatDelta(row.deltaDps);
 		return (
 			<tr className={row.owned ? 'upgrades-row-owned text-muted' : ''}>
-				<td>{row.rank ?? '—'}</td>
+				<td>{display.rankText}</td>
 				<td>
 					{row.name}
 					{bisLabel}
@@ -1239,7 +1281,7 @@ const SLOT_LABELS: Record<SimOrderName, string> = {
  * itself to `SimOrderName` is unsound: it is a pool `ItemSlot`, and
  * `weapon`/`finger`/`trinket` are not `SIM_ORDER` members.
  */
-function effectiveSlot(row: ViewRow): SimOrderName {
+function effectiveSlot(row: Pick<RankedItem, 'slot' | 'slotChoice'>): SimOrderName {
 	return row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0];
 }
 
