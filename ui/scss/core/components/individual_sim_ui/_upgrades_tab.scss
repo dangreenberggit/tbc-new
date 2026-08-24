@@ -120,6 +120,14 @@
 	margin-top: var(--spacer-2);
 }
 
+// Sits inside the running state's .upgrades-status-line — capped width so it
+// reads as an inline indicator alongside the text, not a full-width bar.
+.upgrades-progress {
+	--bs-progress-height: 8px;
+	width: 100%;
+	max-width: 200px;
+}
+
 .upgrades-results-table {
 	// The mid-run table's Rank column holds a position in the rows landed so
 	// far, not the engine's final rank. Muting it says "not final yet" without

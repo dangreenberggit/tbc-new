@@ -828,14 +828,19 @@ export class UpgradesTab extends SimTab {
 				return <div className="upgrades-status-line text-muted">{i18n.t('upgrades_tab.status.idle')}</div>;
 			case 'unsupported-spec':
 				return <div className="upgrades-status-line text-muted">{i18n.t('upgrades_tab.status.unsupported_spec')}</div>;
-			case 'running':
+			case 'running': {
 				// Row-landed count (candidate-pool.md §5.1.5), not just the stage
 				// label — "Simming 12/246" is more useful mid-run than the stage
 				// name alone, and `landedRows` is exactly the rows that fired a
 				// `{ kind: 'row' }` event so far.
+				const text = `${progressLabel(this.state.progress)} (${this.landedRows.length} rows landed)`;
 				return (
-					<div className="upgrades-status-line text-muted">{`${progressLabel(this.state.progress)} (${this.landedRows.length} rows landed)`}</div>
+					<div className="upgrades-status-line text-muted">
+						<span>{text}</span>
+						{this.progressBarContent(this.state.progress)}
+					</div>
 				);
+			}
 			case 'error':
 				return (
 					<div className="upgrades-status-line text-danger">{i18n.t('upgrades_tab.status.error', { message: this.state.message })}</div>
@@ -865,6 +870,39 @@ export class UpgradesTab extends SimTab {
 				);
 			}
 		}
+	}
+
+	/**
+	 * Reuses the Bootstrap `.progress`/`.progress-bar` markup that
+	 * `progress_tracker_modal.tsx` already renders for the Bulk tab, so the
+	 * bar reads as the site's one progress idiom rather than a second one.
+	 * Only the `simming` stage carries a done/total ratio (`rank.ts`'s
+	 * `Progress` type); every stage ahead of it (resolving, reading-gear,
+	 * composing, building-pool) and the trailing `ranking` stage have none,
+	 * so those render the bar in Bootstrap's indeterminate/striped mode
+	 * instead of a fabricated width — a 0% or 100% bar before rows have
+	 * landed would read as "not started" or "finished" when neither is true.
+	 */
+	private progressBarContent(progress: Progress): Node {
+		const stageProgress = isStageProgress(progress) ? progress : undefined;
+		const hasRatio = stageProgress?.stage === 'simming' && stageProgress.total > 0;
+		const pct = hasRatio ? Math.min(100, Math.round((stageProgress.done / stageProgress.total) * 100)) : undefined;
+		const barRef = ref<HTMLDivElement>();
+		const bar = (
+			<div
+				ref={barRef}
+				className={`progress-bar${hasRatio ? '' : ' progress-bar-striped progress-bar-animated'}`}
+				style={{ width: hasRatio ? `${pct}%` : '100%' }}
+				attributes={{ role: 'progressbar' }}
+			/>
+		);
+		// aria-value* set imperatively, matching progress_tracker_modal.tsx —
+		// this JSX helper's `attributes` type only covers `role` for a bare
+		// div, not the aria-value* trio.
+		barRef.value?.setAttribute('aria-valuemin', '0');
+		barRef.value?.setAttribute('aria-valuemax', '100');
+		if (pct !== undefined) barRef.value?.setAttribute('aria-valuenow', pct.toString());
+		return <div className="upgrades-progress progress">{bar}</div>;
 	}
 
 	/**
