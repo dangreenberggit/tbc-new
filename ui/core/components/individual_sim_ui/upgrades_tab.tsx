@@ -160,11 +160,6 @@ function formatDelta(deltaDps: number): string {
 }
 
 /**
- * The results table header. Shared so the mid-run table and the done-state
- * tables cannot drift into different column sets, which is how the mid-run
- * table ended up four columns wide with no Rank (ticket 278).
- */
-/**
  * The done-state Rank cell. `rank` is null for rows the engine never ranked —
  * unsimmed, or below the cutoff — and those render an em dash rather than a
  * number they do not have.
@@ -173,6 +168,11 @@ function rankTextFor(row: Pick<RankedItem, 'rank'>): string {
 	return row.rank !== null ? String(row.rank) : '—';
 }
 
+/**
+ * The results table header. Shared so the mid-run table and the done-state
+ * tables cannot drift into different column sets, which is how the mid-run
+ * table ended up four columns wide with no Rank (ticket 278).
+ */
 function resultsTableHead(): Node {
 	return (
 		<thead>
@@ -333,7 +333,7 @@ export class UpgradesTab extends SimTab {
 					<button ref={importButtonRef} className="btn btn-outline-secondary upgrades-import-button" type="button">
 						{i18n.t('upgrades_tab.import_wcl')}
 					</button>
-					<label className="upgrades-iterations-label d-flex align-items-center gap-1 mb-0">
+					<label className="upgrades-iterations-label">
 						{i18n.t('upgrades_tab.iterations_label')}
 						<input
 							ref={iterationsInputRef}
@@ -344,7 +344,7 @@ export class UpgradesTab extends SimTab {
 							value={String(DEFAULT_ITERATIONS)}
 						/>
 					</label>
-					<label className="upgrades-candidates-label d-flex align-items-center gap-1 mb-0">
+					<label className="upgrades-candidates-label">
 						{i18n.t('upgrades_tab.candidates_label')}
 						<input
 							ref={candidatesInputRef}
@@ -361,19 +361,19 @@ export class UpgradesTab extends SimTab {
 							placeholder={i18n.t('upgrades_tab.candidates_placeholder')}
 						/>
 					</label>
-					<label ref={bisPruneLabelRef} className="upgrades-bis-prune-label d-flex align-items-center gap-1 mb-0 d-none">
+					<label ref={bisPruneLabelRef} className="upgrades-bis-prune-label d-none">
 						<input ref={bisPruneToggleRef} type="checkbox" className="upgrades-bis-prune-toggle form-check-input mt-0" />
 						<span ref={bisPruneTextRef} />
 					</label>
-					<label ref={setPotentialLabelRef} className="upgrades-set-potential-label d-flex align-items-center gap-1 mb-0 d-none">
+					<label ref={setPotentialLabelRef} className="upgrades-set-potential-label d-none">
 						<input ref={setPotentialToggleRef} type="checkbox" className="upgrades-set-potential-toggle form-check-input mt-0" />
 						{i18n.t('upgrades_tab.view.set_potential')}
 					</label>
-					<label ref={bisOnlyLabelRef} className="upgrades-bis-only-label d-flex align-items-center gap-1 mb-0 d-none">
+					<label ref={bisOnlyLabelRef} className="upgrades-bis-only-label d-none">
 						<input ref={bisOnlyToggleRef} type="checkbox" className="upgrades-bis-only-toggle form-check-input mt-0" />
 						<span ref={bisOnlyTextRef} />
 					</label>
-					<label ref={raidFilterLabelRef} className="upgrades-raid-filter-label d-flex align-items-center gap-1 mb-0 d-none">
+					<label ref={raidFilterLabelRef} className="upgrades-raid-filter-label d-none">
 						{i18n.t('upgrades_tab.view.raid_filter')}
 						<select ref={raidFilterSelectRef} className="upgrades-raid-filter form-select form-select-sm" />
 					</label>
@@ -730,7 +730,7 @@ export class UpgradesTab extends SimTab {
 			case 'stopped': {
 				const label = i18n.t('upgrades_tab.status.stopped', { dps: this.state.ranking.baseline.dps.toFixed(1) });
 				return (
-					<div className="upgrades-stopped-banner alert alert-warning py-1 px-2 mb-2 d-inline-flex align-items-center gap-2">
+					<div className="upgrades-stopped-banner alert alert-warning">
 						<span>{label}</span>
 						{this.elapsedContent()}
 					</div>
@@ -739,7 +739,7 @@ export class UpgradesTab extends SimTab {
 			case 'done': {
 				const label = i18n.t('upgrades_tab.status.done', { dps: this.state.ranking.baseline.dps.toFixed(1) });
 				return this.state.stale ? (
-					<div className="upgrades-stale-banner alert alert-warning py-1 px-2 mb-2 d-inline-flex align-items-center gap-2">
+					<div className="upgrades-stale-banner alert alert-warning">
 						<span>{label}</span>
 						<span>—</span>
 						<strong>{i18n.t('upgrades_tab.status.stale')}</strong>
