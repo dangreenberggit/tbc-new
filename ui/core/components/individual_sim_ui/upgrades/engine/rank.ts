@@ -882,7 +882,10 @@ export async function rankUpgrades(
     // rows never crowd out real deltas at the top of the list.
     // Tiebreak matches view.ts's compareRows (bisTags richness, then itemId)
     // so the stamped rank and the rendered row order agree inside exact
-    // delta ties (ticket 279).
+    // delta ties (ticket 279) -- but only while the view sorts on raw
+    // deltaDps: with set-potential on, compareRows keys on deltaDps +
+    // rankableSetPotential and the two orders can still diverge (repo
+    // ticket 287).
     const bySimmedThenDelta = (a: RankedItem, b: RankedItem): number => {
       if (a.simmed === false && b.simmed !== false) return 1;
       if (b.simmed === false && a.simmed !== false) return -1;

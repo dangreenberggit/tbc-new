@@ -69,6 +69,7 @@ const ZONELESS_SOURCE_LABELS: Record<string, string> = {
   rep: "Reputation vendor",
   pvp: "PvP vendor",
   world: "World drop",
+  heroic: "Heroic dungeon",
   unknown: "Source not recorded",
 };
 
