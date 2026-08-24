@@ -1007,7 +1007,11 @@ export class UpgradesTab extends SimTab {
 			// deserves, not a pretend-complete view (candidate-pool.md §5.1.4).
 			return this.landedRowsTable(this.state.ranking.items);
 		}
-		if (view === undefined) return <></>;
+		// No run in this page session yet: say so, rather than leaving the
+		// results area blank. An empty panel reads as "it found nothing",
+		// which is a different (and discouraging) claim from "nothing has
+		// been asked yet".
+		if (view === undefined) return <div className="text-muted">{i18n.t('upgrades_tab.results.empty_no_run')}</div>;
 		return this.rowsTable(view.shortlist, view.rows);
 	}
 
@@ -1022,7 +1026,9 @@ export class UpgradesTab extends SimTab {
 	private landedRowsTable(rows: readonly RankedItem[]): Node {
 		const simmedRows = rows.filter((r) => r.simmed !== false);
 		if (simmedRows.length === 0) {
-			return <div className="text-muted">{i18n.t('upgrades_tab.results.empty')}</div>;
+			// No row has landed yet — nothing has been measured, so this is the
+			// "no results yet" message, not "the run found nothing".
+			return <div className="text-muted">{i18n.t('upgrades_tab.results.empty_no_run')}</div>;
 		}
 		// Sorted at render time, on a copy. The engine emits no ordering for
 		// these rows — there is no complete Ranking to run through applyView
@@ -1059,7 +1065,7 @@ export class UpgradesTab extends SimTab {
 	private rowsTable(shortlist: ViewRow[], allRows: ViewRow[]): Node {
 		const belowCutoffRows = allRows.filter((r) => r.belowCutoffInView);
 		if (shortlist.length === 0 && belowCutoffRows.length === 0) {
-			return <div className="text-muted">{i18n.t('upgrades_tab.results.empty')}</div>;
+			return <div className="text-muted">{i18n.t('upgrades_tab.results.empty_no_upgrades')}</div>;
 		}
 		const table = (
 			<table className="upgrades-results-table table table-sm">
@@ -1070,7 +1076,7 @@ export class UpgradesTab extends SimTab {
 					) : (
 						<tr>
 							<td colSpan={5} className="text-muted">
-								{i18n.t('upgrades_tab.results.empty')}
+								{i18n.t('upgrades_tab.results.empty_no_upgrades')}
 							</td>
 						</tr>
 					)}
@@ -1091,33 +1097,23 @@ export class UpgradesTab extends SimTab {
 	 * "renders behind its own expand", "hidden, never deleted").
 	 */
 	private expandableRowGroup(rows: ViewRow[]): Node {
-		const toggleRef = ref<HTMLButtonElement>();
 		const tbodyRef = ref<HTMLTableSectionElement>();
-		const showKey = 'upgrades_tab.results.below_cutoff_toggle_show';
-		const hideKey = 'upgrades_tab.results.below_cutoff_toggle_hide';
-		const groupTable = (
-			<table className="upgrades-results-table upgrades-below-cutoff-table table table-sm d-none">
-				<tbody ref={tbodyRef} />
-			</table>
+		// Native <details>, the same disclosure the assumptions drawer uses.
+		// The hand-rolled version was a button toggling `d-none` and swapping
+		// its own label — two idioms for one behaviour on one screen, and the
+		// browser's own gives keyboard and screen-reader semantics for free.
+		// The element's open/closed state carries the show/hide verb, so the
+		// summary keeps only the part that says something either way: the count.
+		const details = (
+			<details className="upgrades-below-cutoff-group">
+				<summary>{i18n.t('upgrades_tab.results.below_cutoff_group', { count: rows.length })}</summary>
+				<table className="upgrades-results-table upgrades-below-cutoff-table table table-sm">
+					<tbody ref={tbodyRef} />
+				</table>
+			</details>
 		);
 		tbodyRef.value!.replaceChildren(...rows.map((row) => this.resultRow(row, { rankText: rankTextFor(row) })));
-
-		return (
-			<>
-				<button
-					ref={toggleRef}
-					type="button"
-					className="btn btn-sm btn-outline-secondary upgrades-below-cutoff-toggle"
-					onclick={() => {
-						const group = groupTable as HTMLElement;
-						const nowShown = group.classList.toggle('d-none') === false;
-						toggleRef.value!.textContent = nowShown ? i18n.t(hideKey) : i18n.t(showKey, { count: rows.length });
-					}}>
-					{i18n.t(showKey, { count: rows.length })}
-				</button>
-				{groupTable}
-			</>
-		);
+		return details;
 	}
 
 	/**

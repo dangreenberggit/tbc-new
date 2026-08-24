@@ -870,15 +870,15 @@
 			"unsupported_spec": "This spec has no ranking data yet.",
 			"error": "Ranking failed: {{message}}",
 			"done": "Your current gear: {{dps}} DPS.",
-			"elapsed": "Took {{seconds}} s.",
+			"elapsed": "Took {{seconds}}s.",
 			"stale": "settings changed since this ranking — results may be out of date",
 			"stopped": "Stopped early. Your current gear: {{dps}} DPS. Rows still simming were skipped — replication and set-completion packages were not run."
 		},
 		"view": {
 			"set_potential": "Include set-bonus potential",
 			"only_bis": "Only items on a {{phase}} BIS list",
-        "raid_filter": "Content",
-        "raid_filter_all": "All"
+			"raid_filter": "Content",
+			"raid_filter_all": "All"
 		},
 		"prune": {
 			"only_bis": "Sim only {{phase}} BiS-list items"
@@ -898,9 +898,9 @@
 			"delta_dps": "DPS",
 			"source": "Source",
 			"owned": "Owned",
-			"empty": "No upgrades found above the cutoff.",
-			"below_cutoff_toggle_show": "Show {{count}} item(s) below the cutoff",
-			"below_cutoff_toggle_hide": "Hide items below the cutoff"
+			"empty_no_run": "Run a ranking to see upgrades for your current gear.",
+			"empty_no_upgrades": "No upgrades found above the cutoff.",
+			"below_cutoff_group": "{{count}} item(s) below the cutoff"
 		},
 		"assumptions": {
 			"title": "Assumptions",
@@ -908,8 +908,8 @@
 			"iterations": "Iterations",
 			"max_phase": "Max phase",
 			"pool": "Candidate pool",
-        "pool_universe": "Pool source",
-        "pool_universe_note": "{{file}} ({{count}} entries)",
+			"pool_universe": "Pool source",
+			"pool_universe_note": "{{file}} ({{count}} entries)",
 			"pool_bis_only": "BiS-list items for {{phase}}",
 			"pool_all": "every eligible item",
 			"candidate_cap": "Candidate cap",

@@ -8854,18 +8854,28 @@
 						"owned": {
 							"type": "string"
 						},
-						"empty": {
+						"empty_no_run": {
 							"type": "string"
 						},
-						"below_cutoff_toggle_show": {
+						"empty_no_upgrades": {
 							"type": "string"
 						},
-						"below_cutoff_toggle_hide": {
+						"below_cutoff_group": {
 							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["rank", "item", "slot", "delta_dps", "source", "owned", "empty", "below_cutoff_toggle_show", "below_cutoff_toggle_hide"]
+					"required": [
+						"rank",
+						"item",
+						"slot",
+						"delta_dps",
+						"source",
+						"owned",
+						"empty_no_run",
+						"empty_no_upgrades",
+						"below_cutoff_group"
+					]
 				},
 				"assumptions": {
 					"type": "object",
