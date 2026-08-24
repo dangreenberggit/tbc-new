@@ -183,6 +183,12 @@ function rankTextFor(row: Pick<RankedItem, 'rank'>): string {
  * The results table header. Shared so the mid-run table and the done-state
  * tables cannot drift into different column sets, which is how the mid-run
  * table ended up four columns wide with no Rank (ticket 278).
+ *
+ * Plain, non-interactive header for tables with no stable row set to sort —
+ * the mid-run skeleton fill and the Stop-truncated result render straight
+ * from `ranking.items` in landing/delta order, not through `applyView`
+ * (ticket 280 scope is the done-state tables; see `sortableResultsTableHead`
+ * for those).
  */
 function resultsTableHead(): Node {
 	return (
@@ -196,6 +202,74 @@ function resultsTableHead(): Node {
 			</tr>
 		</thead>
 	);
+}
+
+/**
+ * Column identity for the sortable done-state header (ticket 280). One id
+ * per `<th>`, in table order — `sortColumnFor`/`sortableResultsTableHead`
+ * both index off this order, and the mobile SCSS's `nth-child` column-width
+ * rules depend on this exact column count and order staying put, so a new
+ * column here would need matching `nth-child` rules in
+ * `_upgrades_tab.scss`.
+ */
+const RESULTS_SORT_COLUMNS = ['rank', 'item', 'slot', 'delta_dps', 'source'] as const;
+type ResultsSortColumn = (typeof RESULTS_SORT_COLUMNS)[number];
+
+type ResultsSort = { column: ResultsSortColumn; direction: 'asc' | 'desc' };
+
+/**
+ * The i18n label already used for each column header, reused as the click
+ * target rather than a second copy of the same string.
+ */
+function resultsSortColumnLabel(column: ResultsSortColumn): string {
+	return i18n.t(`upgrades_tab.results.${column}`);
+}
+
+/**
+ * Sort-key extraction for each column, applied to the done-state `ViewRow`
+ * shape. `rank` sorts on the engine's own rank (nulls — unsimmed or
+ * below-cutoff rows — key as +Infinity, so they sort last ascending and
+ * first descending; unobservable today because every sortable table has
+ * uniform rank nullity); the other columns sort on the same text/number a
+ * reader sees in that cell.
+ */
+function resultsSortKey(column: ResultsSortColumn, row: ViewRow): string | number {
+	switch (column) {
+		case 'rank':
+			return row.rank ?? Number.POSITIVE_INFINITY;
+		case 'item':
+			return row.name.toLowerCase();
+		case 'slot':
+			return slotLabel(effectiveSlot(row)).toLowerCase();
+		case 'delta_dps':
+			return row.deltaDps;
+		case 'source':
+			return sourceLabel(row.source).toLowerCase();
+	}
+}
+
+/**
+ * Orders `rows` by `sort`, stable on the engine's own order for equal keys
+ * (`Array.prototype.sort` is stable, and `rows` arrives already ordered by
+ * `applyView`'s `compareRows`) so a sort that does not distinguish two rows
+ * never reshuffles them arbitrarily.
+ *
+ * The Rank column's *values* are never recomputed here (ticket 280's "Done
+ * when": the engine's rank stays fixed to the row) — sorting by another
+ * column only changes row order, never what any cell displays. A `rank`
+ * sort re-derives the engine's own ordering (nulls last), which is the same
+ * order `rows` already carries; naming it explicitly lets a reader return to
+ * that order after sorting by something else, rather than only being able to
+ * approximate it by clicking every other header away.
+ */
+function sortRows(rows: readonly ViewRow[], sort: ResultsSort): ViewRow[] {
+	const dir = sort.direction === 'asc' ? 1 : -1;
+	return [...rows].sort((a, b) => {
+		const ak = resultsSortKey(sort.column, a);
+		const bk = resultsSortKey(sort.column, b);
+		if (ak === bk) return 0;
+		return ak < bk ? -dir : dir;
+	});
 }
 
 export class UpgradesTab extends SimTab {
@@ -252,6 +326,17 @@ export class UpgradesTab extends SimTab {
 	// the drawer has to describe the run the numbers came from, and the box can
 	// be toggled afterwards.
 	private lastRunPruned = false;
+
+	// Column-header sort state for the done-state results tables (ticket 280).
+	// `undefined` means "the engine's own order" (rank ascending / delta
+	// descending, `view.ts`'s `compareRows`) -- a display concern held on the
+	// instance like the view-option checkboxes, not part of `ViewOptions`:
+	// sorting never re-runs `applyView` or changes which rows are in the
+	// shortlist vs. below-cutoff, only the order the survivors render in.
+	// Shared across the shopping list and every slot pane, matching how
+	// `bisOnlyControl`/`setPotentialControl` are one switch for every pane
+	// rather than per-pane state.
+	private resultsSort: ResultsSort | undefined;
 
 	constructor(parentElem: HTMLElement, simUI: IndividualSimUI<any>) {
 		super(parentElem, simUI, { identifier: 'upgrades-tab', title: i18n.t('upgrades_tab.title') });
@@ -1089,18 +1174,24 @@ export class UpgradesTab extends SimTab {
 	 * Shared table renderer for the shopping list and every slot pane — same
 	 * columns, same cutoff-behind-expand behaviour (plan §4), parameterized
 	 * only by which rows to show.
+	 *
+	 * `shortlist`/`allRows` arrive in the engine's own order (`applyView`'s
+	 * `compareRows`); `this.resultsSort`, when set, reorders the rendered rows
+	 * only — it never touches which rows are shortlisted vs. below-cutoff
+	 * (ticket 280).
 	 */
 	private rowsTable(shortlist: ViewRow[], allRows: ViewRow[]): Node {
 		const belowCutoffRows = allRows.filter((r) => r.belowCutoffInView);
 		if (shortlist.length === 0 && belowCutoffRows.length === 0) {
 			return <div className="text-muted">{i18n.t('upgrades_tab.results.empty_no_upgrades')}</div>;
 		}
+		const sortedShortlist = this.resultsSort ? sortRows(shortlist, this.resultsSort) : shortlist;
 		const table = (
 			<table className="upgrades-results-table table table-sm">
-				{resultsTableHead()}
+				{this.sortableResultsTableHead()}
 				<tbody>
-					{shortlist.length > 0 ? (
-						shortlist.map((row) => this.resultRow(row, { rankText: rankTextFor(row) }))
+					{sortedShortlist.length > 0 ? (
+						sortedShortlist.map((row) => this.resultRow(row, { rankText: rankTextFor(row) }))
 					) : (
 						<tr>
 							<td colSpan={5} className="text-muted">
@@ -1118,6 +1209,64 @@ export class UpgradesTab extends SimTab {
 				{belowCutoffRows.length > 0 ? this.expandableRowGroup(belowCutoffRows) : null}
 			</>
 		);
+	}
+
+	/**
+	 * The done-state header: same columns as `resultsTableHead()`, each one a
+	 * click target that sorts the shopping list and every slot pane by that
+	 * column (ticket 280). One shared `resultsSort` drives all of them, so
+	 * clicking a header in one pane and switching sub-tabs shows the other
+	 * pane sorted the same way, matching how the view-option checkboxes are
+	 * one switch for every pane rather than per-pane state.
+	 *
+	 * Clicking the already-active column reverses direction, the same
+	 * click-to-toggle idiom `gear_picker/item_list.tsx`'s `sort()` uses for
+	 * its ilvl/EP headers. `aria-sort` on the active `<th>` is the one thing
+	 * that idiom does not carry — added here since a `<table>` header is the
+	 * case ARIA defines the attribute for.
+	 */
+	private sortableResultsTableHead(): Node {
+		const cells = RESULTS_SORT_COLUMNS.map((column) => {
+			const active = this.resultsSort?.column === column;
+			const ariaSort = active ? (this.resultsSort!.direction === 'asc' ? 'ascending' : 'descending') : 'none';
+			const onclick = (event: MouseEvent) => {
+				event.preventDefault();
+				this.toggleResultsSort(column);
+			};
+			return (
+				<th
+					className="upgrades-results-sortable-header"
+					attributes={{
+						role: 'columnheader',
+						'aria-sort': ariaSort,
+					}}>
+					<button type="button" className="upgrades-results-sort-button" onclick={onclick}>
+						{resultsSortColumnLabel(column)}
+						{active ? <span className="upgrades-results-sort-indicator">{this.resultsSort!.direction === 'asc' ? '▲' : '▼'}</span> : null}
+					</button>
+				</th>
+			);
+		});
+		return (
+			<thead>
+				<tr>{cells}</tr>
+			</thead>
+		);
+	}
+
+	/**
+	 * The click handler behind every sortable header: first click on a column
+	 * sorts descending (matching the engine's own delta-descending default, so
+	 * clicking "DPS" once lands on the order the page already opened with),
+	 * a second click on the same column reverses it, and clicking a different
+	 * column starts that column fresh at descending. Re-renders through
+	 * `renderSubTabs()` alone — sorting is a display concern, never a re-run,
+	 * so nothing else in `render()` needs to run again.
+	 */
+	private toggleResultsSort(column: ResultsSortColumn): void {
+		const current = this.resultsSort;
+		this.resultsSort = current && current.column === column ? { column, direction: current.direction === 'asc' ? 'desc' : 'asc' } : { column, direction: 'desc' };
+		this.renderSubTabs();
 	}
 
 	/**
@@ -1140,7 +1289,12 @@ export class UpgradesTab extends SimTab {
 				</table>
 			</details>
 		);
-		tbodyRef.value!.replaceChildren(...rows.map((row) => this.resultRow(row, { rankText: rankTextFor(row) })));
+		// Same shared sort as the shortlist table above it (ticket 280) — the
+		// header buttons live on the shortlist table only, but a below-cutoff
+		// row group under a sorted shortlist reading in the old engine order
+		// would look like the sort silently stopped at the fold.
+		const sorted = this.resultsSort ? sortRows(rows, this.resultsSort) : rows;
+		tbodyRef.value!.replaceChildren(...sorted.map((row) => this.resultRow(row, { rankText: rankTextFor(row) })));
 		return details;
 	}
 

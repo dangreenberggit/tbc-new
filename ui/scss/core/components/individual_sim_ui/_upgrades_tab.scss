@@ -137,6 +137,38 @@
 	}
 }
 
+// Sortable column headers (ticket 280). The button fills the `<th>` so the
+// whole header cell is a click target, not just the label text -- same
+// touch-target reasoning as WP1's 40px minimum, applied to a `<th>` this time
+// instead of a checkbox/input.
+.upgrades-results-sortable-header {
+	padding: 0;
+}
+
+.upgrades-results-sort-button {
+	display: flex;
+	align-items: center;
+	gap: var(--spacer-1);
+	width: 100%;
+	padding: var(--spacer-2);
+	border: none;
+	background: none;
+	color: inherit;
+	font: inherit;
+	font-weight: inherit;
+	text-align: inherit;
+	cursor: pointer;
+
+	&:hover,
+	&:focus-visible {
+		color: var(--bs-link-hover-color);
+	}
+}
+
+.upgrades-results-sort-indicator {
+	font-size: 0.65em;
+}
+
 // The Item cell (WP3): icon + quality-coloured link, the same idiom
 // `.selector-modal-list-item-*` uses in the gear picker (_item_list.scss),
 // sized down for a dense results row instead of that picker's 3rem icon.
@@ -265,5 +297,15 @@
 
 	.upgrades-item-name {
 		min-width: 0;
+	}
+
+	// 40px is the touch-target floor (WP1 defect 4), applied here to the
+	// sort-header buttons (ticket 280) the same way WP1 applied it to the run
+	// row's own controls. `min-height` rather than a fixed `height`: the
+	// button's padding plus its label already flexes the header row taller
+	// than 40px in `auto` layout, and pinning `height` would clip that instead
+	// of just guaranteeing a floor.
+	.upgrades-results-sort-button {
+		min-height: 40px;
 	}
 }
