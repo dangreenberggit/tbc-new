@@ -25,6 +25,7 @@ const loadSchemaFiles = async () => {
 const validateSchemas = async () => {
 	const schemas = await loadSchemaFiles();
 	let hasError = false;
+	let validatedCount = 0;
 
 	for (const [name, schema] of Object.entries(schemas)) {
 		const validate = ajv.compile(schema);
@@ -35,11 +36,25 @@ const validateSchemas = async () => {
 		// firing on CI.
 		const filePaths = await glob([__dirname, localesPath, `**/${name}.json`].join('/'));
 
+		// A schema whose glob stops matching validates nothing while still
+		// exiting 0 -- exactly how the Windows path.join bug above stayed
+		// invisible. Count what was validated so that cannot recur.
+		//
+		// Zero matches is reported but not fatal: upstream ships
+		// gear.schema.json with no gear.json locale file, and has since
+		// before this branch. Failing on that would make the gate red for a
+		// gap this fork did not create and cannot fix here.
+		if (filePaths.length === 0) {
+			console.log(`⚠  no locale file for schema ${name} -- nothing validated`);
+			continue;
+		}
+		validatedCount += filePaths.length;
+
 		for (const filePath of filePaths) {
 			// Normalise before splitting: glob returns native separators, so on
 			// Windows the path contains backslashes and a split on the
 			// forward-slash localesPath yields undefined.
-			const relativePath = filePath.split(/[\/]/).slice(-2).join('/');
+			const relativePath = filePath.split(/[\\\/]/).slice(-2).join('/');
 			const data = await fs.readFile(filePath, 'utf-8');
 
 			const valid = validate(JSON.parse(data));
@@ -57,6 +72,13 @@ const validateSchemas = async () => {
 			}
 		}
 	}
+	// The real regression guard: if the globs collectively matched nothing,
+	// this gate validated nothing and must not report success.
+	if (validatedCount === 0) {
+		console.log(`❌ no locale files matched any schema -- the gate validated nothing`);
+		process.exit(1);
+	}
+	console.log(`validated ${validatedCount} locale file(s)`);
 	if (hasError) process.exit(1);
 };
 

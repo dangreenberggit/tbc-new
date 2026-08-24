@@ -32,6 +32,17 @@ import { applyView, raidFilterOptions, type ViewOptions, type ViewResult, type V
  * different `DetectedSpecId` value the engine never produces here (see
  * engine/types.ts's doc comment on `DetectedSpecId`).
  */
+/**
+ * Content-filter value meaning "no filter".
+ *
+ * Deliberately outside the filter's own value space. Every real option
+ * comes from `raidFilterOptions`, which returns a zone name or a
+ * `ZONELESS_SOURCE_LABELS` bucket -- never the empty string. A sentinel
+ * inside the value space, such as the earlier `all`, would silently mean
+ * "no filter" for a zone or bucket that happened to be named that way.
+ */
+const NO_RAID_FILTER = '';
+
 const SPEC_ID_BY_PROTO_SPEC: Partial<Record<Spec, SpecId>> = {
 	[Spec.SpecRetributionPaladin]: 'ret',
 	[Spec.SpecFeralCatDruid]: 'feral',
@@ -692,9 +703,9 @@ export class UpgradesTab extends SimTab {
 		this.raidFilterLabel.classList.remove('d-none');
 		const options = raidFilterOptions(this.state.ranking.items);
 		const previous = this.raidFilterSelect.value;
-		const keep = options.includes(previous) ? previous : 'all';
+		const keep = options.includes(previous) ? previous : NO_RAID_FILTER;
 		this.raidFilterSelect.replaceChildren(
-			<option value="all">{i18n.t('upgrades_tab.view.raid_filter_all')}</option>,
+			<option value={NO_RAID_FILTER}>{i18n.t('upgrades_tab.view.raid_filter_all')}</option>,
 			...options.map(option => <option value={option}>{option}</option>),
 		);
 		this.raidFilterSelect.value = keep;
@@ -857,6 +868,10 @@ export class UpgradesTab extends SimTab {
 		// The set-potential toggle is read here and nowhere else, and is never
 		// persisted: a later three-state control (off / full / weighted) has to
 		// be able to replace the checkbox without any other call site changing.
+		// The empty string is the no-filter sentinel, not a value the filter
+		// could ever legitimately carry: zoneKeyOf returns a zone name or a
+		// ZONELESS_SOURCE_LABELS bucket, and neither is empty. Core keeps its
+		// own `all` handling, which is untouched here.
 		// `raid` carries a zone name or a zoneless bucket label; the engine's
 		// filter understands both, so badge and crafted gear stay reachable
 		// under their own option instead of vanishing under every zone.
@@ -864,7 +879,7 @@ export class UpgradesTab extends SimTab {
 		return {
 			hideOwned: false,
 			withSetPotential: this.setPotentialToggle.checked,
-			...(raid && raid !== 'all' ? { raid } : {}),
+			...(raid === NO_RAID_FILTER ? {} : { raid }),
 		};
 	}
 
