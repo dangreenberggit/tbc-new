@@ -8796,10 +8796,16 @@
 						},
 						"raid_filter_all": {
 							"type": "string"
+						},
+						"raid_filter_group_zone": {
+							"type": "string"
+						},
+						"raid_filter_group_other": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["set_potential", "only_bis", "raid_filter", "raid_filter_all"]
+					"required": ["set_potential", "only_bis", "raid_filter", "raid_filter_all", "raid_filter_group_zone", "raid_filter_group_other"]
 				},
 				"prune": {
 					"type": "object",

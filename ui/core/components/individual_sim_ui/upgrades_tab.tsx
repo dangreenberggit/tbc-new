@@ -27,7 +27,7 @@ import { rankUpgrades, type PartialRanking, type Progress, type Ranking, type Ra
 import { MemoryStore } from './upgrades/engine/seams/store';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
-import { applyView, raidFilterOptions, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
+import { applyView, raidFilterGroups, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
 
 /**
  * Specs this tab can rank, per plan §2.5: "The tab renders only for specs
@@ -40,7 +40,7 @@ import { applyView, raidFilterOptions, type ViewOptions, type ViewResult, type V
  * Content-filter value meaning "no filter".
  *
  * Deliberately outside the filter's own value space. Every real option
- * comes from `raidFilterOptions`, which returns a zone name or a
+ * comes from `raidFilterGroups`, which returns a zone name or a
  * `ZONELESS_SOURCE_LABELS` bucket -- never the empty string. A sentinel
  * inside the value space, such as the earlier `all`, would silently mean
  * "no filter" for a zone or bucket that happened to be named that way.
@@ -935,11 +935,13 @@ export class UpgradesTab extends SimTab {
 	 * borrows only `setControlVisible` from the shared control shape and keeps
 	 * its own populate-with-value-preservation logic.
 	 *
-	 * Options come from the engine's `raidFilterOptions`, so the values are the
-	 * same buckets `groupBy: 'raid'` would file rows under -- zones first, then
-	 * the zoneless buckets the pool actually contains. Every row is therefore
-	 * reachable under exactly one option, including badge and crafted gear that
-	 * a zone-only filter would hide with no way to see it.
+	 * Options come from the engine's `raidFilterGroups`, so the values -- and
+	 * their grouping into zones vs. zoneless buckets -- are the same split
+	 * `groupBy: 'raid'` would file rows under. Every row is therefore
+	 * reachable under exactly one option, including badge and crafted gear
+	 * that a zone-only filter would hide with no way to see it. Each group
+	 * renders as an `<optgroup>` so zones and buckets read as the two
+	 * different kinds of thing they are, not as one flat list of peers.
 	 *
 	 * Derived from the *unfiltered* ranking, not the current view: options
 	 * computed from the filtered rows would collapse to the one already
@@ -957,12 +959,19 @@ export class UpgradesTab extends SimTab {
 			return;
 		}
 		setControlVisible(this.raidFilterLabel, true);
-		const options = raidFilterOptions(this.state.ranking.items);
+		const groups = raidFilterGroups(this.state.ranking.items);
+		const options = groups.flatMap(group => group.options);
 		const previous = this.raidFilterSelect.value;
 		const keep = options.includes(previous) ? previous : NO_RAID_FILTER;
 		this.raidFilterSelect.replaceChildren(
 			<option value={NO_RAID_FILTER}>{i18n.t('upgrades_tab.view.raid_filter_all')}</option>,
-			...options.map(option => <option value={option}>{option}</option>),
+			...groups.map(group => (
+				<optgroup label={i18n.t(`upgrades_tab.view.raid_filter_group_${group.key === 'zone' ? 'zone' : 'other'}`)}>
+					{group.options.map(option => (
+						<option value={option}>{option}</option>
+					))}
+				</optgroup>
+			)),
 		);
 		this.raidFilterSelect.value = keep;
 	}

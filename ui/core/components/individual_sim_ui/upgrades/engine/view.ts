@@ -79,7 +79,13 @@ function zoneKeyOf(item: RankedItem): string {
   return ZONELESS_SOURCE_LABELS[item.source.kind] ?? item.source.kind;
 }
 
-export function raidFilterOptions(items: readonly RankedItem[]): string[] {
+export type RaidFilterGroup = { key: string; options: string[] };
+
+/**
+ * Zones and zoneless buckets, each under its own group key, in that order.
+ * Flattening `groups.flatMap(g => g.options)` reproduces the old flat list.
+ */
+export function raidFilterGroups(items: readonly RankedItem[]): RaidFilterGroup[] {
   const zoneless = new Set(Object.values(ZONELESS_SOURCE_LABELS));
   const zones: string[] = [];
   const buckets: string[] = [];
@@ -90,7 +96,10 @@ export function raidFilterOptions(items: readonly RankedItem[]): string[] {
     seen.add(key);
     (zoneless.has(key) ? buckets : zones).push(key);
   }
-  return [...zones, ...buckets];
+  const groups: RaidFilterGroup[] = [];
+  if (zones.length > 0) groups.push({ key: 'zone', options: zones });
+  if (buckets.length > 0) groups.push({ key: 'other', options: buckets });
+  return groups;
 }
 
 function matchesRaidFilter(item: RankedItem, value: string): boolean {
