@@ -896,6 +896,7 @@
 			"item": "Item",
 			"slot": "Slot",
 			"delta_dps": "DPS",
+			"delta_dps_value": "{{delta}} DPS",
 			"source": "Source",
 			"owned": "Owned",
 			"empty_no_run": "Run a ranking to see upgrades for your current gear.",

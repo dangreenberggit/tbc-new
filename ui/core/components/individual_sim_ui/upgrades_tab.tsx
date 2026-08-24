@@ -150,13 +150,20 @@ function isBisTagged(entry: { bisTags?: readonly string[] }): boolean {
 }
 
 /**
- * A delta in the results tables. Both renderers used to hardcode the `+`,
- * so a negative delta rendered as "+-41.0" — mid-run rows are frequently
- * negative, so this was on screen. The sign comes from the number.
+ * A delta in the results tables, with its unit: "+104.9 DPS".
+ *
+ * Both renderers used to hardcode the `+`, so a negative delta rendered as
+ * "+-41.0" — mid-run rows are frequently negative, so this was on screen. The
+ * sign comes from the number.
+ *
+ * The unit goes through i18n rather than being appended here, because where a
+ * unit sits relative to its number is language-dependent, and because every
+ * other "DPS" this page renders is already a locale string — `status.done`
+ * spells the same figure "{{dps}} DPS".
  */
 function formatDelta(deltaDps: number): string {
 	const sign = deltaDps > 0 ? '+' : '';
-	return `${sign}${deltaDps.toFixed(1)}`;
+	return i18n.t('upgrades_tab.results.delta_dps_value', { delta: `${sign}${deltaDps.toFixed(1)}` });
 }
 
 /**

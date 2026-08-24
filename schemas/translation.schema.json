@@ -8848,6 +8848,9 @@
 						"delta_dps": {
 							"type": "string"
 						},
+						"delta_dps_value": {
+							"type": "string"
+						},
 						"source": {
 							"type": "string"
 						},
@@ -8870,6 +8873,7 @@
 						"item",
 						"slot",
 						"delta_dps",
+						"delta_dps_value",
 						"source",
 						"owned",
 						"empty_no_run",
