@@ -891,22 +891,6 @@
       "curationHint": 155.87
     },
     {
-      "itemId": 32002,
-      "name": "Merciless Gladiator's Leather Tunic",
-      "slot": "chest",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 142.96
-    },
-    {
       "itemId": 22009,
       "name": "Darkmantle Tunic",
       "slot": "chest",
@@ -921,22 +905,6 @@
         }
       ],
       "curationHint": 128.62
-    },
-    {
-      "itemId": 25831,
-      "name": "Gladiator's Leather Tunic",
-      "slot": "chest",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 122.51
     },
     {
       "itemId": 16453,
@@ -4128,22 +4096,6 @@
       "curationHint": 163.39
     },
     {
-      "itemId": 31999,
-      "name": "Merciless Gladiator's Leather Helm",
-      "slot": "head",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 153.77
-    },
-    {
       "itemId": 21360,
       "name": "Deathdealer's Helm",
       "slot": "head",
@@ -4158,22 +4110,6 @@
         }
       ],
       "curationHint": 145.1
-    },
-    {
-      "itemId": 25830,
-      "name": "Gladiator's Leather Helm",
-      "slot": "head",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 132.41
     },
     {
       "itemId": 16455,
@@ -4697,22 +4633,6 @@
       ]
     },
     {
-      "itemId": 32000,
-      "name": "Merciless Gladiator's Leather Legguards",
-      "slot": "legs",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 167.27
-    },
-    {
       "itemId": 22477,
       "name": "Bonescythe Legplates",
       "slot": "legs",
@@ -4727,22 +4647,6 @@
         }
       ],
       "curationHint": 158.19
-    },
-    {
-      "itemId": 25833,
-      "name": "Gladiator's Leather Legguards",
-      "slot": "legs",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 152.96
     },
     {
       "itemId": 16456,
@@ -6382,38 +6286,6 @@
       "curationHint": 64.55
     },
     {
-      "itemId": 32054,
-      "name": "Merciless Gladiator's War Edge",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 55.41
-    },
-    {
-      "itemId": 28319,
-      "name": "Gladiator's War Edge",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 42.85
-    },
-    {
       "itemId": 28826,
       "name": "Shuriken of Negation",
       "slot": "ranged",
@@ -6450,22 +6322,6 @@
       "curationHint": 34.72
     },
     {
-      "itemId": 31986,
-      "name": "Merciless Gladiator's Crossbow of the Phoenix",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 25.71
-    },
-    {
       "itemId": 20599,
       "name": "Polished Ironwood Crossbow",
       "slot": "ranged",
@@ -6496,22 +6352,6 @@
         }
       ],
       "curationHint": 23.8
-    },
-    {
-      "itemId": 28294,
-      "name": "Gladiator's Heavy Crossbow",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 20.55
     },
     {
       "itemId": 32187,
@@ -6723,22 +6563,6 @@
       "curationHint": 135.56
     },
     {
-      "itemId": 32001,
-      "name": "Merciless Gladiator's Leather Spaulders",
-      "slot": "shoulder",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 134.69
-    },
-    {
       "itemId": 28755,
       "name": "Bladed Shoulderpads of the Merciless",
       "slot": "shoulder",
@@ -6776,22 +6600,6 @@
         }
       ],
       "curationHint": 126.49
-    },
-    {
-      "itemId": 25832,
-      "name": "Gladiator's Leather Spaulders",
-      "slot": "shoulder",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 117.02
     },
     {
       "itemId": 21361,
@@ -8313,22 +8121,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 31966,
-      "name": "Merciless Gladiator's Decapitator",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1396.691
-    },
-    {
       "itemId": 29993,
       "name": "Twinblade of the Phoenix",
       "slot": "weapon",
@@ -8347,54 +8139,6 @@
       "curationHint": 1391.522
     },
     {
-      "itemId": 31959,
-      "name": "Merciless Gladiator's Bonegrinder",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1358.891
-    },
-    {
-      "itemId": 31984,
-      "name": "Merciless Gladiator's Greatsword",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1358.891
-    },
-    {
-      "itemId": 28298,
-      "name": "Gladiator's Decapitator",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1293.008
-    },
-    {
       "itemId": 28773,
       "name": "Gorehowl",
       "slot": "weapon",
@@ -8411,38 +8155,6 @@
         }
       ],
       "curationHint": 1267.223
-    },
-    {
-      "itemId": 24550,
-      "name": "Gladiator's Greatsword",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1264.208
-    },
-    {
-      "itemId": 28299,
-      "name": "Gladiator's Bonegrinder",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1264.208
     },
     {
       "itemId": 28794,
@@ -8680,175 +8392,6 @@
       "curationHint": 1022.686
     },
     {
-      "itemId": 32052,
-      "name": "Merciless Gladiator's Slicer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1005.616
-    },
-    {
-      "itemId": 31958,
-      "name": "Merciless Gladiator's Bonecracker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1005.377
-    },
-    {
-      "itemId": 31985,
-      "name": "Merciless Gladiator's Hacker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1005.377
-    },
-    {
-      "itemId": 32003,
-      "name": "Merciless Gladiator's Left Ripper",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1005.377
-    },
-    {
-      "itemId": 32027,
-      "name": "Merciless Gladiator's Quickblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "curated"
-        }
-      ],
-      "curationHint": 1005.377,
-      "curatedSets": [
-        "p2"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p2"
-      ]
-    },
-    {
-      "itemId": 31965,
-      "name": "Merciless Gladiator's Cleaver",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1003.82
-    },
-    {
-      "itemId": 32026,
-      "name": "Merciless Gladiator's Pummeler",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1003.82
-    },
-    {
-      "itemId": 32028,
-      "name": "Merciless Gladiator's Right Ripper",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1003.82
-    },
-    {
-      "itemId": 32044,
-      "name": "Merciless Gladiator's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1003.82
-    },
-    {
-      "itemId": 32046,
-      "name": "Merciless Gladiator's Shiv",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1003.82
-    },
-    {
       "itemId": 29924,
       "name": "Netherbane",
       "slot": "weapon",
@@ -8971,169 +8514,6 @@
         }
       ],
       "curationHint": 943.972
-    },
-    {
-      "itemId": 28313,
-      "name": "Gladiator's Right Ripper",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 934.423
-    },
-    {
-      "itemId": 28295,
-      "name": "Gladiator's Slicer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "curated"
-        }
-      ],
-      "curationHint": 932.627,
-      "curatedSets": [
-        "p1"
-      ]
-    },
-    {
-      "itemId": 28305,
-      "name": "Gladiator's Pummeler",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 932.627
-    },
-    {
-      "itemId": 28308,
-      "name": "Gladiator's Cleaver",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 932.627
-    },
-    {
-      "itemId": 28312,
-      "name": "Gladiator's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 932.228
-    },
-    {
-      "itemId": 28310,
-      "name": "Gladiator's Shiv",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 931.857
-    },
-    {
-      "itemId": 28302,
-      "name": "Gladiator's Bonecracker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 931.19
-    },
-    {
-      "itemId": 28307,
-      "name": "Gladiator's Quickblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 931.19
-    },
-    {
-      "itemId": 28309,
-      "name": "Gladiator's Hacker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 931.19
-    },
-    {
-      "itemId": 28314,
-      "name": "Gladiator's Left Ripper",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 931.19
     },
     {
       "itemId": 30733,
@@ -9479,38 +8859,6 @@
         }
       ],
       "curationHint": 849.792
-    },
-    {
-      "itemId": 32014,
-      "name": "Merciless Gladiator's Maul",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 831.7
-    },
-    {
-      "itemId": 28476,
-      "name": "Gladiator's Maul",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 798.505
     },
     {
       "itemId": 18830,
@@ -10675,102 +10023,6 @@
       "curationHint": 386.109
     },
     {
-      "itemId": 32964,
-      "name": "Merciless Gladiator's Salvation",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 385.585
-    },
-    {
-      "itemId": 28297,
-      "name": "Gladiator's Spellblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 385.555
-    },
-    {
-      "itemId": 32450,
-      "name": "Gladiator's Gavel",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 385.555
-    },
-    {
-      "itemId": 32451,
-      "name": "Gladiator's Salvation",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 385.555
-    },
-    {
-      "itemId": 32053,
-      "name": "Merciless Gladiator's Spellblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 385.545
-    },
-    {
-      "itemId": 32963,
-      "name": "Merciless Gladiator's Gavel",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 385.545
-    },
-    {
       "itemId": 28770,
       "name": "Nathrezim Mindblade",
       "slot": "weapon",
@@ -10841,38 +10093,6 @@
       "curationHint": 0.27
     },
     {
-      "itemId": 31978,
-      "name": "Merciless Gladiator's Endgame",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.27
-    },
-    {
-      "itemId": 32961,
-      "name": "Merciless Gladiator's Reprieve",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.27
-    },
-    {
       "itemId": 28781,
       "name": "Karaborian Talisman",
       "slot": "weapon",
@@ -10891,40 +10111,8 @@
       "curationHint": 0.23
     },
     {
-      "itemId": 28346,
-      "name": "Gladiator's Endgame",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.21
-    },
-    {
       "itemId": 32191,
       "name": "Chancellor's Battletome",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.21
-    },
-    {
-      "itemId": 32452,
-      "name": "Gladiator's Reprieve",
       "slot": "weapon",
       "armorType": null,
       "handType": 3,

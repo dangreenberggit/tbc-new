@@ -1529,22 +1529,6 @@
       "curationHint": 104.63
     },
     {
-      "itemId": 35099,
-      "name": "Brutal Gladiator's Silk Raiment",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 103.54
-    },
-    {
       "itemId": 29077,
       "name": "Vestments of the Aldor",
       "slot": "chest",
@@ -1598,38 +1582,6 @@
       "curationHint": 86.21
     },
     {
-      "itemId": 32050,
-      "name": "Merciless Gladiator's Silk Raiment",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 85.61
-    },
-    {
-      "itemId": 33760,
-      "name": "Vengeful Gladiator's Silk Raiment",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 84.06
-    },
-    {
       "itemId": 22512,
       "name": "Robe of Faith",
       "slot": "chest",
@@ -1660,22 +1612,6 @@
         }
       ],
       "curationHint": 76.84
-    },
-    {
-      "itemId": 25856,
-      "name": "Gladiator's Silk Raiment",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 74.83
     },
     {
       "itemId": 20635,
@@ -5632,22 +5568,6 @@
       "curationHint": 115.16
     },
     {
-      "itemId": 35097,
-      "name": "Brutal Gladiator's Silk Cowl",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 115.09
-    },
-    {
       "itemId": 32329,
       "name": "Cowl of Benevolence",
       "slot": "head",
@@ -5735,38 +5655,6 @@
         }
       ],
       "curationHint": 104.42
-    },
-    {
-      "itemId": 33758,
-      "name": "Vengeful Gladiator's Silk Cowl",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 95.61
-    },
-    {
-      "itemId": 32048,
-      "name": "Merciless Gladiator's Silk Cowl",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 91.46
     },
     {
       "itemId": 33463,
@@ -5868,22 +5756,6 @@
         }
       ],
       "curationHint": 71.45
-    },
-    {
-      "itemId": 25855,
-      "name": "Gladiator's Silk Cowl",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 70.51
     },
     {
       "itemId": 22065,
@@ -6167,22 +6039,6 @@
       "curationHint": 149.21
     },
     {
-      "itemId": 35100,
-      "name": "Brutal Gladiator's Silk Trousers",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 142.43
-    },
-    {
       "itemId": 30734,
       "name": "Leggings of the Seventh Circle",
       "slot": "legs",
@@ -6269,22 +6125,6 @@
       "curationHint": 124.6
     },
     {
-      "itemId": 33761,
-      "name": "Vengeful Gladiator's Silk Trousers",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 122.95
-    },
-    {
       "itemId": 29972,
       "name": "Trousers of the Astromancer",
       "slot": "legs",
@@ -6301,22 +6141,6 @@
         }
       ],
       "curationHint": 120.96
-    },
-    {
-      "itemId": 32051,
-      "name": "Merciless Gladiator's Silk Trousers",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 118.49
     },
     {
       "itemId": 29977,
@@ -6415,22 +6239,6 @@
         }
       ],
       "curationHint": 98.46
-    },
-    {
-      "itemId": 25858,
-      "name": "Gladiator's Silk Trousers",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 96.31
     },
     {
       "itemId": 28742,
@@ -8304,22 +8112,6 @@
       ]
     },
     {
-      "itemId": 35107,
-      "name": "Brutal Gladiator's Touch of Defeat",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 39.65
-    },
-    {
       "itemId": 33192,
       "name": "Carved Witch Doctor's Stick",
       "slot": "ranged",
@@ -8354,22 +8146,6 @@
       "curationHint": 36.93
     },
     {
-      "itemId": 33764,
-      "name": "Vengeful Gladiator's Touch of Defeat",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 36.34
-    },
-    {
       "itemId": 30080,
       "name": "Luminescent Rod of the Naaru",
       "slot": "ranged",
@@ -8386,102 +8162,6 @@
         }
       ],
       "curationHint": 33.22
-    },
-    {
-      "itemId": 32962,
-      "name": "Merciless Gladiator's Touch of Defeat",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 33.03
-    },
-    {
-      "itemId": 34985,
-      "name": "Brutal Gladiator's Baton of Light",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 32.65
-    },
-    {
-      "itemId": 34059,
-      "name": "Vengeful Gladiator's Baton of Light",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 29.34
-    },
-    {
-      "itemId": 28320,
-      "name": "Gladiator's Touch of Defeat",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.41
-    },
-    {
-      "itemId": 35065,
-      "name": "Brutal Gladiator's Piercing Touch",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 16.0
-    },
-    {
-      "itemId": 34066,
-      "name": "Vengeful Gladiator's Piercing Touch",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 14.0
     },
     {
       "itemId": 19130,
@@ -8724,22 +8404,6 @@
       ]
     },
     {
-      "itemId": 35096,
-      "name": "Brutal Gladiator's Silk Amice",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 83.75
-    },
-    {
       "itemId": 30079,
       "name": "Illidari Shoulderpads",
       "slot": "shoulder",
@@ -8827,22 +8491,6 @@
       "curationHint": 70.12
     },
     {
-      "itemId": 33757,
-      "name": "Vengeful Gladiator's Silk Amice",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 70.12
-    },
-    {
       "itemId": 22499,
       "name": "Frostfire Shoulderpads",
       "slot": "shoulder",
@@ -8857,38 +8505,6 @@
         }
       ],
       "curationHint": 67.68
-    },
-    {
-      "itemId": 32047,
-      "name": "Merciless Gladiator's Silk Amice",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 66.43
-    },
-    {
-      "itemId": 25854,
-      "name": "Gladiator's Silk Amice",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 59.04
     },
     {
       "itemId": 22515,
@@ -10856,38 +10472,6 @@
       "curationHint": 486.85
     },
     {
-      "itemId": 34987,
-      "name": "Brutal Gladiator's Battle Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 443.6
-    },
-    {
-      "itemId": 34540,
-      "name": "Vengeful Gladiator's Battle Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 407.08
-    },
-    {
       "itemId": 32374,
       "name": "Zhar'doom, Greatstaff of the Devourer",
       "slot": "weapon",
@@ -10913,38 +10497,6 @@
       "bisSets": [
         "p3_staff"
       ]
-    },
-    {
-      "itemId": 35109,
-      "name": "Brutal Gladiator's War Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 370.0
-    },
-    {
-      "itemId": 32055,
-      "name": "Merciless Gladiator's War Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 367.56
     },
     {
       "itemId": 34336,
@@ -11013,38 +10565,6 @@
       ]
     },
     {
-      "itemId": 33766,
-      "name": "Vengeful Gladiator's War Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 342.68
-    },
-    {
-      "itemId": 35102,
-      "name": "Brutal Gladiator's Spellblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 337.21
-    },
-    {
       "itemId": 34337,
       "name": "Golden Staff of the Sin'dorei",
       "slot": "weapon",
@@ -11061,38 +10581,6 @@
         }
       ],
       "curationHint": 322.64
-    },
-    {
-      "itemId": 24557,
-      "name": "Gladiator's War Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 320.87
-    },
-    {
-      "itemId": 33763,
-      "name": "Vengeful Gladiator's Spellblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 312.3
     },
     {
       "itemId": 28633,
@@ -11184,22 +10672,6 @@
         }
       ],
       "curationHint": 283.68
-    },
-    {
-      "itemId": 32053,
-      "name": "Merciless Gladiator's Spellblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 283.08
     },
     {
       "itemId": 32185,
@@ -11383,22 +10855,6 @@
       "curationHint": 241.9
     },
     {
-      "itemId": 28297,
-      "name": "Gladiator's Spellblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 222.58
-    },
-    {
       "itemId": 34604,
       "name": "Jaded Crystal Dagger",
       "slot": "weapon",
@@ -11506,22 +10962,6 @@
         }
       ],
       "curationHint": 194.82
-    },
-    {
-      "itemId": 37739,
-      "name": "Brutal Gladiator's Blade of Alacrity",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 193.76
     },
     {
       "itemId": 29155,
@@ -11872,22 +11312,6 @@
       "curationHint": 75.66
     },
     {
-      "itemId": 35008,
-      "name": "Brutal Gladiator's Endgame",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 72.75
-    },
-    {
       "itemId": 21523,
       "name": "Fang of Korialstrasz",
       "slot": "weapon",
@@ -12062,22 +11486,6 @@
       ]
     },
     {
-      "itemId": 33681,
-      "name": "Vengeful Gladiator's Endgame",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 62.51
-    },
-    {
       "itemId": 28525,
       "name": "Signet of Unshakable Faith",
       "slot": "weapon",
@@ -12094,38 +11502,6 @@
         }
       ],
       "curationHint": 60.31
-    },
-    {
-      "itemId": 31978,
-      "name": "Merciless Gladiator's Endgame",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 57.89
-    },
-    {
-      "itemId": 35074,
-      "name": "Brutal Gladiator's Reprieve",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 57.75
     },
     {
       "itemId": 32350,
@@ -12198,22 +11574,6 @@
       "curationHint": 49.66
     },
     {
-      "itemId": 33736,
-      "name": "Vengeful Gladiator's Reprieve",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 49.51
-    },
-    {
       "itemId": 29273,
       "name": "Khadgar's Knapsack",
       "slot": "weapon",
@@ -12244,22 +11604,6 @@
         }
       ],
       "curationHint": 46.34
-    },
-    {
-      "itemId": 32961,
-      "name": "Merciless Gladiator's Reprieve",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 45.89
     },
     {
       "itemId": 20582,
@@ -12422,22 +11766,6 @@
       "curationHint": 40.78
     },
     {
-      "itemId": 28346,
-      "name": "Gladiator's Endgame",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 37.34
-    },
-    {
       "itemId": 19315,
       "name": "Therazane's Touch",
       "slot": "weapon",
@@ -12445,22 +11773,6 @@
       "handType": 3,
       "quality": 4,
       "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 33.0
-    },
-    {
-      "itemId": 35016,
-      "name": "Brutal Gladiator's Grimoire",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 5,
       "sources": [
         {
           "kind": "unknown",
@@ -12516,38 +11828,6 @@
         }
       ],
       "curationHint": 32.03
-    },
-    {
-      "itemId": 32452,
-      "name": "Gladiator's Reprieve",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 30.34
-    },
-    {
-      "itemId": 34033,
-      "name": "Vengeful Gladiator's Grimoire",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.0
     },
     {
       "itemId": 29274,
@@ -13046,86 +12326,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 24550,
-      "name": "Gladiator's Greatsword",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28295,
-      "name": "Gladiator's Slicer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28307,
-      "name": "Gladiator's Quickblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28310,
-      "name": "Gladiator's Shiv",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28312,
-      "name": "Gladiator's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 28524,
       "name": "Emerald Ripper",
       "slot": "weapon",
@@ -13558,86 +12758,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 31984,
-      "name": "Merciless Gladiator's Greatsword",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32027,
-      "name": "Merciless Gladiator's Quickblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32044,
-      "name": "Merciless Gladiator's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32046,
-      "name": "Merciless Gladiator's Shiv",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32052,
-      "name": "Merciless Gladiator's Slicer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 32177,
       "name": "Chancellor's Quickblade",
       "slot": "weapon",
@@ -13935,118 +13055,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 33688,
-      "name": "Vengeful Gladiator's Greatsword",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 33716,
-      "name": "Vengeful Gladiator's Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 33734,
-      "name": "Vengeful Gladiator's Quickblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 33754,
-      "name": "Vengeful Gladiator's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 33756,
-      "name": "Vengeful Gladiator's Shiv",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 33762,
-      "name": "Vengeful Gladiator's Slicer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 33801,
-      "name": "Vengeful Gladiator's Mutilator",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 34164,
       "name": "Dragonscale-Encrusted Longblade",
       "slot": "weapon",
@@ -14317,118 +13325,6 @@
       "slot": "weapon",
       "armorType": null,
       "handType": 3,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 35015,
-      "name": "Brutal Gladiator's Greatsword",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 35058,
-      "name": "Brutal Gladiator's Mutilator",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 35072,
-      "name": "Brutal Gladiator's Quickblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 35093,
-      "name": "Brutal Gladiator's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 35095,
-      "name": "Brutal Gladiator's Shiv",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 35101,
-      "name": "Brutal Gladiator's Slicer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 35103,
-      "name": "Brutal Gladiator's Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
       "quality": 4,
       "phase": 5,
       "sources": [

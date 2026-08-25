@@ -944,22 +944,6 @@
       "curationHint": 86.21
     },
     {
-      "itemId": 32050,
-      "name": "Merciless Gladiator's Silk Raiment",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 85.61
-    },
-    {
       "itemId": 22512,
       "name": "Robe of Faith",
       "slot": "chest",
@@ -990,22 +974,6 @@
         }
       ],
       "curationHint": 76.84
-    },
-    {
-      "itemId": 25856,
-      "name": "Gladiator's Silk Raiment",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 74.83
     },
     {
       "itemId": 20635,
@@ -3550,22 +3518,6 @@
       "curationHint": 104.42
     },
     {
-      "itemId": 32048,
-      "name": "Merciless Gladiator's Silk Cowl",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 91.46
-    },
-    {
       "itemId": 32089,
       "name": "Mana-Binders Cowl",
       "slot": "head",
@@ -3647,22 +3599,6 @@
         }
       ],
       "curationHint": 71.45
-    },
-    {
-      "itemId": 25855,
-      "name": "Gladiator's Silk Cowl",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 70.51
     },
     {
       "itemId": 22065,
@@ -3867,22 +3803,6 @@
       "curationHint": 120.96
     },
     {
-      "itemId": 32051,
-      "name": "Merciless Gladiator's Silk Trousers",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 118.49
-    },
-    {
       "itemId": 29977,
       "name": "Star-Soul Breeches",
       "slot": "legs",
@@ -3945,22 +3865,6 @@
         }
       ],
       "curationHint": 101.4
-    },
-    {
-      "itemId": 25858,
-      "name": "Gladiator's Silk Trousers",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 96.31
     },
     {
       "itemId": 28742,
@@ -5212,38 +5116,6 @@
       "curationHint": 33.22
     },
     {
-      "itemId": 32962,
-      "name": "Merciless Gladiator's Touch of Defeat",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 33.03
-    },
-    {
-      "itemId": 28320,
-      "name": "Gladiator's Touch of Defeat",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.41
-    },
-    {
       "itemId": 19130,
       "name": "Cold Snap",
       "slot": "ranged",
@@ -5419,38 +5291,6 @@
         }
       ],
       "curationHint": 67.68
-    },
-    {
-      "itemId": 32047,
-      "name": "Merciless Gladiator's Silk Amice",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 66.43
-    },
-    {
-      "itemId": 25854,
-      "name": "Gladiator's Silk Amice",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 59.04
     },
     {
       "itemId": 22515,
@@ -6597,22 +6437,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 32055,
-      "name": "Merciless Gladiator's War Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 367.56
-    },
-    {
       "itemId": 29988,
       "name": "The Nexus Key",
       "slot": "weapon",
@@ -6638,22 +6462,6 @@
       "bisSets": [
         "p2"
       ]
-    },
-    {
-      "itemId": 24557,
-      "name": "Gladiator's War Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 320.87
     },
     {
       "itemId": 28633,
@@ -6688,22 +6496,6 @@
         }
       ],
       "curationHint": 287.7
-    },
-    {
-      "itemId": 32053,
-      "name": "Merciless Gladiator's Spellblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 283.08
     },
     {
       "itemId": 32185,
@@ -6813,22 +6605,6 @@
         }
       ],
       "curationHint": 241.9
-    },
-    {
-      "itemId": 28297,
-      "name": "Gladiator's Spellblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 222.58
     },
     {
       "itemId": 32190,
@@ -7273,22 +7049,6 @@
       "curationHint": 60.31
     },
     {
-      "itemId": 31978,
-      "name": "Merciless Gladiator's Endgame",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 57.89
-    },
-    {
       "itemId": 29923,
       "name": "Talisman of the Sun King",
       "slot": "weapon",
@@ -7371,22 +7131,6 @@
         }
       ],
       "curationHint": 46.34
-    },
-    {
-      "itemId": 32961,
-      "name": "Merciless Gladiator's Reprieve",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 45.89
     },
     {
       "itemId": 20582,
@@ -7549,22 +7293,6 @@
       "curationHint": 40.78
     },
     {
-      "itemId": 28346,
-      "name": "Gladiator's Endgame",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 37.34
-    },
-    {
       "itemId": 19315,
       "name": "Therazane's Touch",
       "slot": "weapon",
@@ -7627,22 +7355,6 @@
         }
       ],
       "curationHint": 32.03
-    },
-    {
-      "itemId": 32452,
-      "name": "Gladiator's Reprieve",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 30.34
     },
     {
       "itemId": 29274,
@@ -8141,86 +7853,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 24550,
-      "name": "Gladiator's Greatsword",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28295,
-      "name": "Gladiator's Slicer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28307,
-      "name": "Gladiator's Quickblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28310,
-      "name": "Gladiator's Shiv",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28312,
-      "name": "Gladiator's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 28524,
       "name": "Emerald Ripper",
       "slot": "weapon",
@@ -8536,86 +8168,6 @@
       "handType": 4,
       "quality": 4,
       "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 31984,
-      "name": "Merciless Gladiator's Greatsword",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32027,
-      "name": "Merciless Gladiator's Quickblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32044,
-      "name": "Merciless Gladiator's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32046,
-      "name": "Merciless Gladiator's Shiv",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32052,
-      "name": "Merciless Gladiator's Slicer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 2,
       "sources": [
         {
           "kind": "unknown",
