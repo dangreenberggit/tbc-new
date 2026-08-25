@@ -43,3 +43,7 @@ against the committed `data/equip-eligibility.json` on every `pnpm verify`, so
 the command above is not something to run by hand in normal work.
 
 Output is deterministic: spec names sorted, ids sorted ascending, LF endings.
+Each spec's id array is written on a single line — the file holds ~79k ids, and
+a line per id would cost a megabyte and swamp the diff of any commit near it
+while telling a reader nothing the checker's own error output does not already
+name.

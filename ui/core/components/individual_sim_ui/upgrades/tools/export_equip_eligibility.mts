@@ -43,6 +43,32 @@ function isPlayerSpec(value: unknown): boolean {
 	return v != null && typeof v.specID === 'number' && typeof v.canDualWield === 'boolean';
 }
 
+/**
+ * JSON with each spec's id array on ONE line.
+ *
+ * `JSON.stringify(payload, null, 2)` puts every id on its own line, which for
+ * ~79k ids is a megabyte of file and dominates the diff of any commit that
+ * touches it. Per-id diff granularity buys nothing here: when this file
+ * disagrees with the fork, check_equip_eligibility.py names the exact ids that
+ * moved, so a line-per-id would only duplicate the gate's own error output.
+ */
+function serialize(payload: { _comment: string; generatedFrom: Record<string, string>; itemCount: number; specs: Record<string, number[]> }): string {
+	const lines = [
+		'{',
+		`  ${JSON.stringify('_comment')}: ${JSON.stringify(payload._comment)},`,
+		`  ${JSON.stringify('generatedFrom')}: ${JSON.stringify(payload.generatedFrom, null, 4).split('\n').join('\n  ')},`,
+		`  ${JSON.stringify('itemCount')}: ${payload.itemCount},`,
+		`  ${JSON.stringify('specs')}: {`,
+	];
+	const names = Object.keys(payload.specs);
+	names.forEach((name, i) => {
+		const comma = i === names.length - 1 ? '' : ',';
+		lines.push(`    ${JSON.stringify(name)}: [${payload.specs[name].join(',')}]${comma}`);
+	});
+	lines.push('  }', '}', '');
+	return lines.join('\n');
+}
+
 async function main(): Promise<void> {
 	const dbPath = resolvePath(FORK_ROOT, 'assets/database/db.json');
 	const raw = JSON.parse(readFileSync(dbPath, 'utf8'));
@@ -89,7 +115,7 @@ async function main(): Promise<void> {
 
 	const outPath = process.argv[2];
 	if (!outPath) throw new Error('usage: export_equip_eligibility.mts <output-json-path>');
-	writeFileSync(outPath, JSON.stringify(payload, null, 2) + '\n', { encoding: 'utf8' });
+	writeFileSync(outPath, serialize(payload), { encoding: 'utf8' });
 
 	const counts = specNames.map(n => `${n}=${specs[n].length}`).join(' ');
 	process.stderr.write(`equip eligibility: ${specNames.length} specs, ${db.items.length} items\n${counts}\n`);
