@@ -275,6 +275,105 @@ export function epWeightsDisclosureFor(
 }
 
 /**
+ * Which curated-set phase a label like `p3`, `t5` or `preraid` speaks for.
+ *
+ * Mirrors `CURATED_SET_PHASE` in `scripts/assemble_universe.py`, which is the
+ * source of truth — the labels are produced there. Warlock's sets are named
+ * by raid tier rather than phase, which is why `t4`-`swp` appear; their
+ * mapping is measured against a phase-named spec's item-level ladder, not
+ * assumed. The phase token is not always leading (`destro_t4`,
+ * `p1_bm_dw_9p`), so every underscore-separated token is tried.
+ */
+const CURATED_SET_PHASE: Record<string, number> = {
+	preraid: 1,
+	prebis: 1,
+	p1: 1,
+	p2: 2,
+	p3: 3,
+	p4: 4,
+	p5: 5,
+	t4: 1,
+	t5: 2,
+	t6: 3,
+	za: 4,
+	swp: 5,
+};
+
+function curatedSetPhase(label: string): number | undefined {
+	for (const token of label.split('_')) {
+		const phase = CURATED_SET_PHASE[token];
+		if (phase !== undefined) return phase;
+	}
+	return undefined;
+}
+
+/**
+ * The phase this universe's BiS tags actually speak for, or `undefined` when
+ * nothing is tagged.
+ *
+ * Read off the rows' own `bisSets` labels rather than from a bundled report:
+ * the assembler scopes every surviving tag to one phase, so any tagged row
+ * carries the same answer, and the universes are already bundled.
+ *
+ * Where upstream's curated sets stop short of the phase being ranked, this is
+ * earlier than `maxPhase` and the tags mean "BiS as of the latest set we
+ * have" rather than "BiS now". Four specs ship that way — hunter at p5,
+ * shadow and rogue at p4-p5, mage at p4-p5 — and ret already did for p4-p5
+ * before this feature. Saying nothing would let a reader take a p3-era tag
+ * for a current recommendation (plan step 8).
+ */
+export function bisTagPhaseFor(
+	spec: SpecId,
+	maxPhase: ContentPhase,
+): { tagsFromPhase: number; requestedPhase: number } | undefined {
+	const choice = universeChoiceFor(spec, maxPhase);
+	if (!choice) return undefined;
+	for (const entry of choice.universe.entries) {
+		const row = entry as { bisTags?: string[]; bisSets?: string[] };
+		if (!row.bisTags?.length || !row.bisSets?.length) continue;
+		for (const label of row.bisSets) {
+			const phase = curatedSetPhase(label);
+			if (phase !== undefined) {
+				return { tagsFromPhase: phase, requestedPhase: maxPhase };
+			}
+		}
+	}
+	return undefined;
+}
+
+/**
+ * Specs whose cutoff is ret's borrowed number rather than their own.
+ *
+ * The cutoff is a noise floor: it decides which rows are called
+ * distinguishable from zero. Only ret and feral have had a five-seed spread
+ * run, and they differ — feral's is 3.6 against ret's 3.4, because feral's
+ * rotation is measurably noisier at the same iteration count. Every spec
+ * below therefore ships ret's floor with no measurement behind it, which
+ * under-filters a noisier spec and over-filters a quieter one. Neither
+ * failure announces itself, so the run says so (review A6; the measurement
+ * itself is carry-forward ticket 291).
+ *
+ * Kept here rather than read off the engine's CUTOFF_BY_SPEC because that
+ * table holds values, not provenance — every entry is the same `CUTOFF`
+ * object, so "is this borrowed" is not a question the values can answer.
+ */
+const CUTOFF_UNMEASURED_SPECS: ReadonlySet<SpecId> = new Set<SpecId>([
+	'balance',
+	'hunter',
+	'mage',
+	'shadow',
+	'rogue',
+	'ele',
+	'enh',
+	'warlock',
+	'warrior',
+]);
+
+export function cutoffIsUnmeasuredFor(spec: SpecId): boolean {
+	return CUTOFF_UNMEASURED_SPECS.has(spec);
+}
+
+/**
  * How many of the chosen universe's entries were admitted by database phase
  * alone, and so carry no source detail.
  *

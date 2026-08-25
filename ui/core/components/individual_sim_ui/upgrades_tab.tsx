@@ -15,7 +15,7 @@ import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
 import { currentPageSkeleton } from './upgrades/adapters/skeleton';
 import { simDatabaseFor } from './upgrades/adapters/sim_database';
 import { WasmSimRunner } from './upgrades/adapters/wasm_sim_runner';
-import { epWeightsDisclosureFor, epWeightsFor, poolFor, poolSourceFor, unsourcedCountFor } from './upgrades/data/data';
+import { bisTagPhaseFor, cutoffIsUnmeasuredFor, epWeightsDisclosureFor, epWeightsFor, poolFor, poolSourceFor, unsourcedCountFor } from './upgrades/data/data';
 import { isKaelTempLegendary } from './upgrades/engine/kael-temp';
 import { filterPoolByPhase } from './upgrades/engine/pool';
 import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
@@ -1550,6 +1550,9 @@ export class UpgradesTab extends SimTab {
 		// missing field.
 		const epDisclosure = specId ? epWeightsDisclosureFor(specId, a.maxPhase as ContentPhase) : undefined;
 		const unsourced = specId ? unsourcedCountFor(specId, a.maxPhase as ContentPhase) : 0;
+		// A third degradation, and the same rule: state it rather than let a
+		// reader take a p3-era BiS badge for a current recommendation.
+		const bisTagPhase = specId ? bisTagPhaseFor(specId, a.maxPhase as ContentPhase) : undefined;
 		const detailsRef = ref<HTMLDetailsElement>();
 		return (
 			<details ref={detailsRef} className="upgrades-assumptions-drawer">
@@ -1590,6 +1593,23 @@ export class UpgradesTab extends SimTab {
 									requested: epDisclosure.requested,
 								})}
 							</dd>
+						</>
+					) : null}
+					{bisTagPhase && bisTagPhase.tagsFromPhase < bisTagPhase.requestedPhase ? (
+						<>
+							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.bis_tags')}</dt>
+							<dd className="col-sm-8">
+								{i18n.t('upgrades_tab.assumptions.bis_tags_note', {
+									from: `P${bisTagPhase.tagsFromPhase}`,
+									requested: `P${bisTagPhase.requestedPhase}`,
+								})}
+							</dd>
+						</>
+					) : null}
+					{specId && cutoffIsUnmeasuredFor(specId) ? (
+						<>
+							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.cutoff_basis')}</dt>
+							<dd className="col-sm-8">{i18n.t('upgrades_tab.assumptions.cutoff_basis_unmeasured')}</dd>
 						</>
 					) : null}
 					{unsourced > 0 ? (

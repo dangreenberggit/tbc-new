@@ -927,7 +927,11 @@
 			"ep_weights": "EP weights",
 			"ep_weights_note": "written for {{from}}, ranking {{requested}}",
 			"source_attribution": "Source attribution",
-			"source_attribution_partial": "partial — {{count}} items were admitted by their database phase and carry no drop, badge or vendor detail"
+			"source_attribution_partial": "partial — {{count}} items were admitted by their database phase and carry no drop, badge or vendor detail",
+			"bis_tags": "BiS tags",
+			"bis_tags_note": "from {{from}} sets (ranking {{requested}}) — no curated {{requested}} set exists upstream",
+			"cutoff_basis": "Cutoff",
+			"cutoff_basis_unmeasured": "borrowed from Retribution Paladin — no noise measurement has been run for this spec yet"
 		}
 	},
 	"bulk_tab": {

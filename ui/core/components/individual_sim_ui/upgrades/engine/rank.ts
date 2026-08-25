@@ -114,6 +114,7 @@ import {
   type PlausibilityWarning,
 } from "./plausibility.js";
 import { getItem } from "./items.js";
+import { HandType } from "../../../../proto/common.js";
 import { SIM_ORDER, type SimItemSpec } from "./slots.js";
 import type {
   CharacterRef,
@@ -474,6 +475,19 @@ export async function rankUpgrades(
   const equippedIds = new Set(
     equipment.map((s) => s.id).filter((id): id is number => !!id)
   );
+  /**
+   * Whether the worn main hand leaves the off hand usable at all.
+   *
+   * A two-hander occupies both hands, so no off-hand candidate is legal
+   * beside it. An *empty* main hand counts as usable: nothing blocks the off
+   * hand, and a character with no weapon at all should still see off-hand
+   * rows rather than silently losing the slot.
+   */
+  const mainHandIsOneHanded = ((): boolean => {
+    const wornMainHandId = equipment[SIM_ORDER.indexOf("mainhand")]?.id;
+    if (!wornMainHandId) return true;
+    return getItem(wornMainHandId)?.handType !== HandType.HandTypeTwoHand;
+  })();
   const eligible = filterPoolByPhase(deps.pool ?? [], input.maxPhase).filter(
     (e) => !isKaelTempLegendary(e.itemId)
   );
@@ -642,6 +656,20 @@ export async function rankUpgrades(
 
       for (let s = 0; s < slotNames.length; s++) {
         const slotName = slotNames[s]!;
+        // A one-hander is only a legal off-hand candidate if the weapon
+        // already in the main hand is itself one-handed. `simSlotsForPoolSlot`
+        // filters the *candidate's* hand type and knows nothing about what is
+        // worn, so without this the ranker sims a one-hander into an empty off
+        // hand while a two-hander stays in the main hand — a pairing the game
+        // cannot equip, priced as an upgrade.
+        //
+        // Skipping is the minimal correct semantics. The alternative, letting
+        // the off-hand pick displace the worn two-hander, prices a two-item
+        // swap under a one-item row: the delta would silently include losing
+        // the two-hander, which is not what the row claims. A player holding a
+        // two-hander who wants to dual-wield gets that answer from the
+        // main-hand rows, which are ranked normally.
+        if (slotName === "offhand" && !mainHandIsOneHanded) continue;
         const slotIndex = SIM_ORDER.indexOf(slotName);
         if (slotIndex < 0) {
           throw new Error(

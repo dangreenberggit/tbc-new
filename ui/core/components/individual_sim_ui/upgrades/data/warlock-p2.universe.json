@@ -7482,22 +7482,6 @@
       "curationHint": 5.32
     },
     {
-      "itemId": 2801,
-      "name": "Blade of Hanna",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 4.18
-    },
-    {
       "itemId": 19310,
       "name": "Tome of the Ice Lord",
       "slot": "weapon",
@@ -7594,22 +7578,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 13262,
-      "name": "Ashbringer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 5,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 14555,
       "name": "Alcor's Sunrazor",
       "slot": "weapon",
@@ -7658,22 +7626,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 18542,
-      "name": "Typhoon",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 18838,
       "name": "Grand Marshal's Dirk",
       "slot": "weapon",
@@ -7695,38 +7647,6 @@
       "slot": "weapon",
       "armorType": null,
       "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 18876,
-      "name": "Grand Marshal's Claymore",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 18877,
-      "name": "High Warlord's Greatsword",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
       "quality": 4,
       "phase": 1,
       "sources": [
@@ -7950,24 +7870,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 28573,
-      "name": "Despair",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Romulo and Julianne",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 28658,
       "name": "Terestian's Stranglestaff",
       "slot": "weapon",
@@ -8073,24 +7975,6 @@
           "kind": "raid",
           "zone": "Tempest Keep",
           "boss": "High Astromancer Solarian",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 29993,
-      "name": "Twinblade of the Phoenix",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Tempest Keep",
-          "boss": "Kael'thas Sunstrider",
           "origin": "db"
         }
       ],
@@ -8275,22 +8159,6 @@
       "slot": "weapon",
       "armorType": null,
       "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32186,
-      "name": "Chancellor's Warblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
       "quality": 4,
       "phase": 1,
       "sources": [

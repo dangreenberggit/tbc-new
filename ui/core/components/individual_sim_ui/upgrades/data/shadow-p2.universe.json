@@ -7191,22 +7191,6 @@
       "curationHint": 45.78
     },
     {
-      "itemId": 21188,
-      "name": "Fist of Cenarius",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 45.04
-    },
-    {
       "itemId": 18608,
       "name": "Benediction",
       "slot": "weapon",
@@ -7403,54 +7387,6 @@
         }
       ],
       "curationHint": 29.51
-    },
-    {
-      "itemId": 23455,
-      "name": "Grand Marshal's Demolisher",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.97
-    },
-    {
-      "itemId": 23457,
-      "name": "High Warlord's Destroyer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.97
-    },
-    {
-      "itemId": 23465,
-      "name": "High Warlord's Destroyer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.97
     },
     {
       "itemId": 19366,
@@ -7731,24 +7667,6 @@
       "curationHint": 3.06
     },
     {
-      "itemId": 28800,
-      "name": "Hammer of the Naaru",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Gruul's Lair",
-          "boss": "High King Maulgar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 2.22
-    },
-    {
       "itemId": 2243,
       "name": "Hand of Edward the Odd",
       "slot": "weapon",
@@ -7763,22 +7681,6 @@
         }
       ],
       "curationHint": 1.98
-    },
-    {
-      "itemId": 31322,
-      "name": "The Hammer of Destiny",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1.74
     },
     {
       "itemId": 29271,
@@ -7957,59 +7859,11 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 18867,
-      "name": "Grand Marshal's Battle Hammer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 18868,
-      "name": "High Warlord's Pulverizer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 19311,
       "name": "Tome of Fiery Arcana",
       "slot": "weapon",
       "armorType": null,
       "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 19323,
-      "name": "The Unstoppable Force",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
       "quality": 4,
       "phase": 1,
       "sources": [
@@ -8332,24 +8186,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 30090,
-      "name": "World Breaker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Serpentshrine Cavern",
-          "boss": "Fathom-Lord Karathress",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 30103,
       "name": "Fang of Vashj",
       "slot": "weapon",
@@ -8453,38 +8289,6 @@
       "slot": "weapon",
       "armorType": null,
       "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32181,
-      "name": "Chancellor's Bonegrinder",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32183,
-      "name": "Chancellor's Maul",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
       "quality": 4,
       "phase": 1,
       "sources": [

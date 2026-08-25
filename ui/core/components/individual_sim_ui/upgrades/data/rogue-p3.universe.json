@@ -10351,184 +10351,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 30902,
-      "name": "Cataclysm's Edge",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Hyjal Summit",
-          "boss": "Archimonde",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1472.41
-    },
-    {
-      "itemId": 32332,
-      "name": "Torch of the Damned",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Black Temple",
-          "boss": "Reliquary of the Lost",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1448.537
-    },
-    {
-      "itemId": 29993,
-      "name": "Twinblade of the Phoenix",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Tempest Keep",
-          "boss": "Kael'thas Sunstrider",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1391.522
-    },
-    {
-      "itemId": 32348,
-      "name": "Soul Cleaver",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Black Temple",
-          "boss": "Teron Gorefiend",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1384.616
-    },
-    {
-      "itemId": 28773,
-      "name": "Gorehowl",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Prince Malchezaar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1267.223
-    },
-    {
-      "itemId": 28794,
-      "name": "Axe of the Gronn Lords",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Gruul's Lair",
-          "boss": "Gruul the Dragonkiller",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1244.163
-    },
-    {
-      "itemId": 28587,
-      "name": "Legacy",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "The Wizard of Oz",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1232.02
-    },
-    {
-      "itemId": 30090,
-      "name": "World Breaker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Serpentshrine Cavern",
-          "boss": "Fathom-Lord Karathress",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1228.059
-    },
-    {
-      "itemId": 30722,
-      "name": "Ethereum Nexus-Reaver",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "boss": "Doomwalker",
-          "kind": "raid",
-          "zone": "World Bosses",
-          "origin": "atlasloot"
-        }
-      ],
-      "curationHint": 1197.77
-    },
-    {
-      "itemId": 32182,
-      "name": "Chancellor's Decapitator",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1192.085
-    },
-    {
       "itemId": 32837,
       "name": "Warglaive of Azzinoth",
       "slot": "weapon",
@@ -10556,56 +10378,6 @@
       ]
     },
     {
-      "itemId": 28800,
-      "name": "Hammer of the Naaru",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Gruul's Lair",
-          "boss": "High King Maulgar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1168.313
-    },
-    {
-      "itemId": 32181,
-      "name": "Chancellor's Bonegrinder",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1164.185
-    },
-    {
-      "itemId": 32186,
-      "name": "Chancellor's Warblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1164.185
-    },
-    {
       "itemId": 32838,
       "name": "Warglaive of Azzinoth",
       "slot": "weapon",
@@ -10631,24 +10403,6 @@
       "bisSets": [
         "p3"
       ]
-    },
-    {
-      "itemId": 28573,
-      "name": "Despair",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Karazhan",
-          "boss": "Romulo and Julianne",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1121.96
     },
     {
       "itemId": 32943,
@@ -10857,22 +10611,6 @@
       "curationHint": 1029.386
     },
     {
-      "itemId": 31322,
-      "name": "The Hammer of Destiny",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1022.686
-    },
-    {
       "itemId": 32945,
       "name": "Fist of Molten Fury",
       "slot": "weapon",
@@ -10989,22 +10727,6 @@
         }
       ],
       "curationHint": 987.73
-    },
-    {
-      "itemId": 31318,
-      "name": "Singing Crystal Axe",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 986.037
     },
     {
       "itemId": 32262,
@@ -11442,118 +11164,6 @@
       "curationHint": 849.792
     },
     {
-      "itemId": 18830,
-      "name": "Grand Marshal's Sunderer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 775.431
-    },
-    {
-      "itemId": 18831,
-      "name": "High Warlord's Battle Axe",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 775.431
-    },
-    {
-      "itemId": 18867,
-      "name": "Grand Marshal's Battle Hammer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 775.431
-    },
-    {
-      "itemId": 18868,
-      "name": "High Warlord's Pulverizer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 775.431
-    },
-    {
-      "itemId": 18876,
-      "name": "Grand Marshal's Claymore",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 775.431
-    },
-    {
-      "itemId": 18877,
-      "name": "High Warlord's Greatsword",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 775.431
-    },
-    {
-      "itemId": 32183,
-      "name": "Chancellor's Maul",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 769.829
-    },
-    {
       "itemId": 31331,
       "name": "The Night Blade",
       "slot": "weapon",
@@ -11632,102 +11242,6 @@
         }
       ],
       "curationHint": 732.75
-    },
-    {
-      "itemId": 23455,
-      "name": "Grand Marshal's Demolisher",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 722.901
-    },
-    {
-      "itemId": 23457,
-      "name": "High Warlord's Destroyer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 722.901
-    },
-    {
-      "itemId": 23465,
-      "name": "High Warlord's Destroyer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 722.901
-    },
-    {
-      "itemId": 13262,
-      "name": "Ashbringer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 5,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 697.387
-    },
-    {
-      "itemId": 18542,
-      "name": "Typhoon",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 662.779
-    },
-    {
-      "itemId": 19323,
-      "name": "The Unstoppable Force",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 642.568
     },
     {
       "itemId": 21244,
@@ -12002,38 +11516,6 @@
       "curationHint": 603.678
     },
     {
-      "itemId": 2801,
-      "name": "Blade of Hanna",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 600.928
-    },
-    {
-      "itemId": 21188,
-      "name": "Fist of Cenarius",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 584.417
-    },
-    {
       "itemId": 21268,
       "name": "Blessed Qiraji War Hammer",
       "slot": "weapon",
@@ -12096,22 +11578,6 @@
         }
       ],
       "curationHint": 553.417
-    },
-    {
-      "itemId": 1263,
-      "name": "Brain Hacker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 529.267
     },
     {
       "itemId": 20577,
