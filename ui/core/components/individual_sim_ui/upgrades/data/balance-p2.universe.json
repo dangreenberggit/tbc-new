@@ -9566,22 +9566,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 18202,
-      "name": "Eskhandar's Left Claw",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 18838,
       "name": "Grand Marshal's Dirk",
       "slot": "weapon",
@@ -9635,38 +9619,6 @@
       "slot": "weapon",
       "armorType": null,
       "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 18847,
-      "name": "Grand Marshal's Left Hand Blade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 18848,
-      "name": "High Warlord's Left Claw",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
       "quality": 4,
       "phase": 1,
       "sources": [
@@ -10074,40 +10026,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 29275,
-      "name": "Searing Sunblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 29948,
-      "name": "Claw of the Phoenix",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Tempest Keep",
-          "boss": "Al'ar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 29962,
       "name": "Heartrazor",
       "slot": "weapon",
@@ -10354,22 +10272,6 @@
       "slot": "weapon",
       "armorType": null,
       "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 32188,
-      "name": "Chancellor's Left Ripper",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
       "quality": 4,
       "phase": 1,
       "sources": [

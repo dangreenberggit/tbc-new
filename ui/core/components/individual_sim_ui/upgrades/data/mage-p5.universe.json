@@ -12375,22 +12375,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 29275,
-      "name": "Searing Sunblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 29962,
       "name": "Heartrazor",
       "slot": "weapon",
@@ -13107,38 +13091,6 @@
       "slot": "weapon",
       "armorType": null,
       "handType": 4,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 34949,
-      "name": "Swift Blade of Uncertainty",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 34952,
-      "name": "The Mutilator",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
       "quality": 4,
       "phase": 5,
       "sources": [

@@ -3,7 +3,7 @@
   "maxPhase": 3,
   "carryoverPolicy": "union",
   "generatedBy": "scripts/assemble_universe.py",
-  "d7Note": "D7 eligibility implemented in assemble_universe.py.",
+  "d7Note": "D7 eligibility implemented in assemble_universe.py. Policy exclusion beyond the sim's equip rules -- weapon type(s) 5, 7: Retribution is a two-handed spec: Seal of Command and the ret talent tree are built around a single slow two-hander, and a paladin wielding a one-hander with a shield is playing protection or holy. This repo builds no holy or protection universe, so a shield like Bulwark of Azzinoth (id 28593) has no list it legitimately belongs to. Shields and one-handers are excluded because they are not low-ranked ret candidates but correct items for a different spec, and their presence in a retribution list reads as a build recommendation the tool is not making.",
   "epWeights": {
     "path": "data/presets/ret/p3.ep-weights.json",
     "pin": "ac0ed034b (master, 2026-08-13) -- not yet at this repo's 8aa378b3 pin; P3_EP_PRESET does not exist at 8aa378b3. Note the matching p3.gear.json is NOT in ac0ed034b; it landed 26 min later in 5c7491899 ('missed jsons'), so a curated-set pin bump must reach 5c7491899 or later."
@@ -919,6 +919,24 @@
       "curationHint": 52.8
     },
     {
+      "itemId": 30913,
+      "name": "Robes of Rhonin",
+      "slot": "chest",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Hyjal Summit",
+          "boss": "Archimonde",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 12.96
+    },
+    {
       "itemId": 32592,
       "name": "Chestguard of Relentless Storms",
       "slot": "chest",
@@ -946,6 +964,60 @@
         }
       ],
       "curationHint": 11.84
+    },
+    {
+      "itemId": 32327,
+      "name": "Robe of the Shadow Council",
+      "slot": "chest",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "Teron Gorefiend",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 11.68
+    },
+    {
+      "itemId": 30107,
+      "name": "Vestments of the Sea-Witch",
+      "slot": "chest",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Lady Vashj",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 9.12
+    },
+    {
+      "itemId": 30056,
+      "name": "Robe of Hateful Echoes",
+      "slot": "chest",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Hydross the Unstable",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 8.0
     },
     {
       "itemId": 30075,
@@ -1002,6 +1074,24 @@
       "curationHint": 5.92
     },
     {
+      "itemId": 32340,
+      "name": "Garments of Temperance",
+      "slot": "chest",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "Gurtogg Bloodboil",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.92
+    },
+    {
       "itemId": 30904,
       "name": "Savior's Grasp",
       "slot": "chest",
@@ -1018,6 +1108,42 @@
         }
       ],
       "curationHint": 5.76
+    },
+    {
+      "itemId": 28602,
+      "name": "Robe of the Elder Scribes",
+      "slot": "chest",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Nightbane",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.12
+    },
+    {
+      "itemId": 28578,
+      "name": "Masquerade Gown",
+      "slot": "chest",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Romulo and Julianne",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.8
     },
     {
       "itemId": 28662,
@@ -1506,6 +1632,24 @@
       "curationHint": 18.0
     },
     {
+      "itemId": 30894,
+      "name": "Blue Suede Shoes",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Hyjal Summit",
+          "boss": "Kaz'rogal",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 8.96
+    },
+    {
       "itemId": 32242,
       "name": "Boots of Oceanic Fury",
       "slot": "feet",
@@ -1522,6 +1666,42 @@
         }
       ],
       "curationHint": 8.8
+    },
+    {
+      "itemId": 30067,
+      "name": "Velvet Boots of the Guardian",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "The Lurker Below",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 7.84
+    },
+    {
+      "itemId": 32239,
+      "name": "Slippers of the Seacaller",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "High Warlord Naj'entus",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 7.04
     },
     {
       "itemId": 32352,
@@ -1558,6 +1738,42 @@
         }
       ],
       "curationHint": 6.24
+    },
+    {
+      "itemId": 28585,
+      "name": "Ruby Slippers",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Wizard of Oz",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.6
+    },
+    {
+      "itemId": 28670,
+      "name": "Boots of the Infernal Coven",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shade of Aran",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.44
     },
     {
       "itemId": 30027,
@@ -1637,6 +1853,24 @@
       "curationHint": 4.48
     },
     {
+      "itemId": 30885,
+      "name": "Archbishop's Slippers",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Hyjal Summit",
+          "boss": "Anetheron",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.48
+    },
+    {
       "itemId": 30886,
       "name": "Enchanted Leather Sandals",
       "slot": "feet",
@@ -1673,6 +1907,24 @@
       "curationHint": 4.48
     },
     {
+      "itemId": 28517,
+      "name": "Boots of Foretelling",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Maiden of Virtue",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.16
+    },
+    {
       "itemId": 30092,
       "name": "Orca-Hide Boots",
       "slot": "feet",
@@ -1691,6 +1943,53 @@
       "curationHint": 4.0
     },
     {
+      "itemId": 32609,
+      "name": "Boots of the Divine Light",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Hyjal Summit",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Hyjal Summit",
+          "origin": "atlasloot"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Black Temple",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 4.0
+    },
+    {
+      "itemId": 30100,
+      "name": "Soul-Strider Boots",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Fathom-Lord Karathress",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.52
+    },
+    {
       "itemId": 28569,
       "name": "Boots of Valiance",
       "slot": "feet",
@@ -1703,6 +2002,24 @@
           "kind": "raid",
           "zone": "Karazhan",
           "boss": "Moroes",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.04
+    },
+    {
+      "itemId": 28663,
+      "name": "Boots of the Incorrupt",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shade of Aran",
           "origin": "db"
         }
       ],
@@ -1750,6 +2067,24 @@
       "curationHint": 2.72
     },
     {
+      "itemId": 30050,
+      "name": "Boots of the Shifting Nightmare",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Hydross the Unstable",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
       "itemId": 30641,
       "name": "Boots of Elusion",
       "slot": "feet",
@@ -1768,6 +2103,24 @@
           "kind": "raid",
           "zone": "Karazhan",
           "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30680,
+      "name": "Glider's Foot-Wraps",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shadikith the Glider",
+          "origin": "db"
         }
       ],
       "curationHint": 0.0
@@ -1839,6 +2192,26 @@
           "kind": "raid",
           "zone": "Tempest Keep",
           "boss": "High Astromancer Solarian",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 32391,
+      "name": "Soulguard Slippers",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Tailoring",
+          "recipeFaction": "Ashtongue Deathsworn",
+          "recipeStanding": "Honored",
+          "recipeFactionId": 1012,
           "origin": "db"
         }
       ],
@@ -3179,6 +3552,78 @@
       "curationHint": 35.44
     },
     {
+      "itemId": 29987,
+      "name": "Gauntlets of the Sun King",
+      "slot": "hands",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Kael'thas Sunstrider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.72
+    },
+    {
+      "itemId": 28780,
+      "name": "Soul-Eater's Handwraps",
+      "slot": "hands",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Magtheridon's Lair",
+          "boss": "Magtheridon",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.76
+    },
+    {
+      "itemId": 28507,
+      "name": "Handwraps of Flowing Thought",
+      "slot": "hands",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Attumen the Huntsman",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.6
+    },
+    {
+      "itemId": 30725,
+      "name": "Anger-Spark Gloves",
+      "slot": "hands",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doomwalker",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 4.8
+    },
+    {
       "itemId": 32275,
       "name": "Spiritwalker Gauntlets",
       "slot": "hands",
@@ -3274,6 +3719,24 @@
       "curationHint": 4.0
     },
     {
+      "itemId": 32353,
+      "name": "Gloves of Unfailing Faith",
+      "slot": "hands",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "Reliquary of the Lost",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.0
+    },
+    {
       "itemId": 28521,
       "name": "Mitts of the Treemender",
       "slot": "hands",
@@ -3328,6 +3791,24 @@
       "curationHint": 3.36
     },
     {
+      "itemId": 28508,
+      "name": "Gloves of Saintly Blessings",
+      "slot": "hands",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Attumen the Huntsman",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.24
+    },
+    {
       "itemId": 28518,
       "name": "Iron Gauntlets of the Maiden",
       "slot": "hands",
@@ -3359,6 +3840,29 @@
           "zone": "Tempest Keep",
           "boss": "Kael'thas Sunstrider",
           "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30668,
+      "name": "Grasp of the Dead",
+      "slot": "hands",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
         }
       ],
       "curationHint": 0.0
@@ -3700,6 +4204,60 @@
       "curationHint": 31.0
     },
     {
+      "itemId": 28804,
+      "name": "Collar of Cho'gall",
+      "slot": "head",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "Gruul the Dragonkiller",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 10.88
+    },
+    {
+      "itemId": 32525,
+      "name": "Cowl of the Illidari High Lord",
+      "slot": "head",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "Illidan Stormrage",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 10.24
+    },
+    {
+      "itemId": 29986,
+      "name": "Cowl of the Grand Engineer",
+      "slot": "head",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Void Reaver",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 8.48
+    },
+    {
       "itemId": 28583,
       "name": "Big Bad Wolf's Head",
       "slot": "head",
@@ -3718,6 +4276,42 @@
       "curationHint": 7.52
     },
     {
+      "itemId": 28744,
+      "name": "Uni-Mind Headdress",
+      "slot": "head",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Netherspite",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 7.36
+    },
+    {
+      "itemId": 28586,
+      "name": "Wicked Witch's Hat",
+      "slot": "head",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Wizard of Oz",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.88
+    },
+    {
       "itemId": 32241,
       "name": "Helm of Soothing Currents",
       "slot": "head",
@@ -3730,6 +4324,24 @@
           "kind": "raid",
           "zone": "Black Temple",
           "boss": "High Warlord Naj'entus",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.92
+    },
+    {
+      "itemId": 32329,
+      "name": "Cowl of Benevolence",
+      "slot": "head",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "Teron Gorefiend",
           "origin": "db"
         }
       ],
@@ -3752,6 +4364,24 @@
         }
       ],
       "curationHint": 5.92
+    },
+    {
+      "itemId": 29990,
+      "name": "Crown of the Sun",
+      "slot": "head",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Kael'thas Sunstrider",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.76
     },
     {
       "itemId": 30728,
@@ -3824,6 +4454,29 @@
         }
       ],
       "curationHint": 4.96
+    },
+    {
+      "itemId": 28756,
+      "name": "Headdress of the High Potentate",
+      "slot": "head",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Chess Event",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 4.32
     },
     {
       "itemId": 30731,
@@ -4165,6 +4818,144 @@
       "curationHint": 24.0
     },
     {
+      "itemId": 32367,
+      "name": "Leggings of Devastation",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "Mother Shahraz",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 9.6
+    },
+    {
+      "itemId": 30916,
+      "name": "Leggings of Channeled Elements",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Hyjal Summit",
+          "boss": "Kaz'rogal",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 9.44
+    },
+    {
+      "itemId": 29972,
+      "name": "Trousers of the Astromancer",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "High Astromancer Solarian",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 8.64
+    },
+    {
+      "itemId": 30734,
+      "name": "Leggings of the Seventh Circle",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doom Lord Kazzak",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 8.0
+    },
+    {
+      "itemId": 28594,
+      "name": "Trial-Fire Trousers",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Wizard of Oz",
+          "origin": "db"
+        },
+        {
+          "boss": "The Big Bad Wolf",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        },
+        {
+          "boss": "Romulo and Julianne",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 7.84
+    },
+    {
+      "itemId": 30912,
+      "name": "Leggings of Eternity",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Hyjal Summit",
+          "boss": "Archimonde",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.56
+    },
+    {
+      "itemId": 30727,
+      "name": "Gilded Trousers of Benediction",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "boss": "Doomwalker",
+          "kind": "raid",
+          "zone": "World Bosses",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 5.92
+    },
+    {
       "itemId": 30893,
       "name": "Sun-touched Chain Leggings",
       "slot": "legs",
@@ -4217,6 +5008,24 @@
         }
       ],
       "curationHint": 5.76
+    },
+    {
+      "itemId": 29977,
+      "name": "Star-Soul Breeches",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "High Astromancer Solarian",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.44
     },
     {
       "itemId": 28751,
@@ -4272,6 +5081,24 @@
       "curationHint": 4.32
     },
     {
+      "itemId": 28742,
+      "name": "Pantaloons of Repentance",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Netherspite",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.68
+    },
+    {
       "itemId": 28748,
       "name": "Legplates of the Innocent",
       "slot": "legs",
@@ -4293,6 +5120,26 @@
         }
       ],
       "curationHint": 3.52
+    },
+    {
+      "itemId": 32389,
+      "name": "Soulguard Leggings",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Tailoring",
+          "recipeFaction": "Ashtongue Deathsworn",
+          "recipeStanding": "Honored",
+          "recipeFactionId": 1012,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
     },
     {
       "itemId": 32396,
@@ -5256,6 +6103,101 @@
       "curationHint": 21.0
     },
     {
+      "itemId": 30884,
+      "name": "Hatefury Mantle",
+      "slot": "shoulder",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Hyjal Summit",
+          "boss": "Anetheron",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 8.8
+    },
+    {
+      "itemId": 32338,
+      "name": "Blood-cursed Shoulderpads",
+      "slot": "shoulder",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "Gurtogg Bloodboil",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 8.8
+    },
+    {
+      "itemId": 30024,
+      "name": "Mantle of the Elven Kings",
+      "slot": "shoulder",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 6.24
+    },
+    {
+      "itemId": 30079,
+      "name": "Illidari Shoulderpads",
+      "slot": "shoulder",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Morogrim Tidewalker",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.24
+    },
+    {
+      "itemId": 28726,
+      "name": "Mantle of the Mind Flayer",
+      "slot": "shoulder",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Shade of Aran",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.6
+    },
+    {
       "itemId": 30111,
       "name": "Runetotem's Mantle",
       "slot": "shoulder",
@@ -5286,6 +6228,24 @@
           "kind": "raid",
           "zone": "Hyjal Summit",
           "boss": "Anetheron",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.48
+    },
+    {
+      "itemId": 32273,
+      "name": "Amice of Brilliant Light",
+      "slot": "shoulder",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "Shade of Akama",
           "origin": "db"
         }
       ],
@@ -5398,6 +6358,24 @@
         }
       ],
       "curationHint": 3.52
+    },
+    {
+      "itemId": 28612,
+      "name": "Pauldrons of the Solace-Giver",
+      "slot": "shoulder",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "The Curator",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.04
     },
     {
       "itemId": 28666,
@@ -6175,6 +7153,60 @@
       "curationHint": 16.0
     },
     {
+      "itemId": 32256,
+      "name": "Waistwrap of Infinity",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "Supremus",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 8.96
+    },
+    {
+      "itemId": 30888,
+      "name": "Anetheron's Noose",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Hyjal Summit",
+          "boss": "Anetheron",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 8.8
+    },
+    {
+      "itemId": 30064,
+      "name": "Cord of Screaming Terrors",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "The Lurker Below",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 8.0
+    },
+    {
       "itemId": 30914,
       "name": "Belt of the Crescent Moon",
       "slot": "waist",
@@ -6211,6 +7243,60 @@
       "curationHint": 7.04
     },
     {
+      "itemId": 28799,
+      "name": "Belt of Divine Inspiration",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Gruul's Lair",
+          "boss": "High King Maulgar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.88
+    },
+    {
+      "itemId": 28654,
+      "name": "Malefic Girdle",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Terestian Illhoof",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.92
+    },
+    {
+      "itemId": 28565,
+      "name": "Nethershard Girdle",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Moroes",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.6
+    },
+    {
       "itemId": 32342,
       "name": "Girdle of Mighty Resolve",
       "slot": "waist",
@@ -6227,6 +7313,24 @@
         }
       ],
       "curationHint": 4.8
+    },
+    {
+      "itemId": 30895,
+      "name": "Angelista's Sash",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Hyjal Summit",
+          "boss": "Kaz'rogal",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.48
     },
     {
       "itemId": 30897,
@@ -6342,6 +7446,24 @@
       "curationHint": 4.0
     },
     {
+      "itemId": 32519,
+      "name": "Belt of Divine Guidance",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "The Illidari Council",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.0
+    },
+    {
       "itemId": 32512,
       "name": "Girdle of Lordaeron's Fallen",
       "slot": "waist",
@@ -6414,6 +7536,47 @@
       "curationHint": 3.2
     },
     {
+      "itemId": 28652,
+      "name": "Cincture of Will",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Terestian Illhoof",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.2
+    },
+    {
+      "itemId": 30020,
+      "name": "Fire-Cord of the Magus",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
       "itemId": 30096,
       "name": "Girdle of the Invulnerable",
       "slot": "waist",
@@ -6426,6 +7589,47 @@
           "kind": "raid",
           "zone": "Serpentshrine Cavern",
           "boss": "Leotheras the Blind",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30673,
+      "name": "Inferno Waist Cord",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "db"
+        },
+        {
+          "boss": "Trash",
+          "kind": "raid",
+          "zone": "Karazhan",
+          "origin": "atlasloot"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30675,
+      "name": "Lurker's Cord",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Hyakiss the Lurker",
           "origin": "db"
         }
       ],
@@ -6498,6 +7702,26 @@
           "kind": "raid",
           "zone": "Black Temple",
           "boss": "Gurtogg Bloodboil",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 32390,
+      "name": "Soulguard Girdle",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Tailoring",
+          "recipeFaction": "Ashtongue Deathsworn",
+          "recipeStanding": "Friendly",
+          "recipeFactionId": 1012,
           "origin": "db"
         }
       ],
@@ -7195,6 +8419,60 @@
       "curationHint": 33.81
     },
     {
+      "itemId": 32270,
+      "name": "Focused Mana Bindings",
+      "slot": "wrist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "Shade of Akama",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.72
+    },
+    {
+      "itemId": 29918,
+      "name": "Mindstorm Wristbands",
+      "slot": "wrist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Tempest Keep",
+          "boss": "Al'ar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.76
+    },
+    {
+      "itemId": 30870,
+      "name": "Cuffs of Devastation",
+      "slot": "wrist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Hyjal Summit",
+          "boss": "Rage Winterchill",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.44
+    },
+    {
       "itemId": 32259,
       "name": "Bands of the Coming Storm",
       "slot": "wrist",
@@ -7231,10 +8509,46 @@
       "curationHint": 5.44
     },
     {
+      "itemId": 28515,
+      "name": "Bands of Nefarious Deeds",
+      "slot": "wrist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Maiden of Virtue",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.12
+    },
+    {
       "itemId": 28453,
       "name": "Bracers of the White Stag",
       "slot": "wrist",
       "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Attumen the Huntsman",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.16
+    },
+    {
+      "itemId": 28477,
+      "name": "Harbinger Bands",
+      "slot": "wrist",
+      "armorType": 1,
       "handType": null,
       "quality": 4,
       "phase": 1,
@@ -7271,6 +8585,24 @@
       "name": "Rejuvenating Bracers",
       "slot": "wrist",
       "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Hyjal Summit",
+          "boss": "Rage Winterchill",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.52
+    },
+    {
+      "itemId": 30871,
+      "name": "Bracers of Martyrdom",
+      "slot": "wrist",
+      "armorType": 1,
       "handType": null,
       "quality": 4,
       "phase": 3,
@@ -7357,6 +8689,42 @@
       "curationHint": 3.36
     },
     {
+      "itemId": 32513,
+      "name": "Wristbands of Divine Influence",
+      "slot": "wrist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Black Temple",
+          "boss": "Shade of Akama",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.36
+    },
+    {
+      "itemId": 32516,
+      "name": "Wraps of Purification",
+      "slot": "wrist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Serpentshrine Cavern",
+          "boss": "Hydross the Unstable",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.88
+    },
+    {
       "itemId": 28503,
       "name": "Whirlwind Bracers",
       "slot": "wrist",
@@ -7369,6 +8737,24 @@
           "kind": "raid",
           "zone": "Karazhan",
           "boss": "Attumen the Huntsman",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.56
+    },
+    {
+      "itemId": 28511,
+      "name": "Bands of Indwelling",
+      "slot": "wrist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Maiden of Virtue",
           "origin": "db"
         }
       ],
@@ -7405,6 +8791,24 @@
           "kind": "raid",
           "zone": "Karazhan",
           "boss": "Attumen the Huntsman",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 30684,
+      "name": "Ravager's Cuffs",
+      "slot": "wrist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "raid",
+          "zone": "Karazhan",
+          "boss": "Rokad the Ravager",
           "origin": "db"
         }
       ],
@@ -7477,6 +8881,26 @@
           "kind": "raid",
           "zone": "Black Temple",
           "boss": "High Warlord Naj'entus",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 32392,
+      "name": "Soulguard Bracers",
+      "slot": "wrist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Tailoring",
+          "recipeFaction": "Ashtongue Deathsworn",
+          "recipeStanding": "Friendly",
+          "recipeFactionId": 1012,
           "origin": "db"
         }
       ],

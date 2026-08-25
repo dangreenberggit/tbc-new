@@ -3,7 +3,7 @@
   "maxPhase": 3,
   "carryoverPolicy": "union",
   "generatedBy": "scripts/assemble_universe.py",
-  "d7Note": "D7 eligibility implemented in assemble_universe.py.",
+  "d7Note": "D7 eligibility implemented in assemble_universe.py. Policy exclusion beyond the sim's equip rules -- weapon type(s) 6: Druids can equip polearms, but TBC never itemised one for them: of the 49 items carrying feral attack power, 39 are staves and 10 are maces, and no polearm carries any. In cat form the weapon is a pure stat stick -- its damage is discarded -- so a polearm with no feral attack power is not a low-ranked candidate, it is a non-candidate, and nine of the 39 druid-equippable polearms have an entirely empty stat line. They are excluded from the pool because their presence in a feral weapon list reads as a tool bug rather than as a correct last place.",
   "epWeights": {
     "path": "data/presets/feral/p1.ep-weights.json",
     "pin": "8aa378b3"
@@ -5854,47 +5854,6 @@
         }
       ],
       "curationHint": 39.0
-    },
-    {
-      "itemId": 29948,
-      "name": "Claw of the Phoenix",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Tempest Keep",
-          "boss": "Al'ar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 38.36
-    },
-    {
-      "itemId": 32945,
-      "name": "Fist of Molten Fury",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Hyjal Summit",
-          "origin": "db"
-        },
-        {
-          "boss": "Trash",
-          "kind": "raid",
-          "zone": "Hyjal Summit",
-          "origin": "atlasloot"
-        }
-      ],
-      "curationHint": 36.5
     },
     {
       "itemId": 32946,

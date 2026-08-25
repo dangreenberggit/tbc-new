@@ -181,3 +181,37 @@ No field-level transformation was applied to any file — `poolFromUniverse`
 (`engine/pool.ts`) and `epScore`/`EpWeights` (`engine/stats.ts`) already
 accept these shapes unchanged, confirmed by reading both source files
 against the copied JSON before writing `data.ts`.
+
+## Refresh, 2026-08-25 (equip legality borrowed from `canEquipItem`)
+
+28 of the 63 copies drifted, caught by `pnpm fork-universes:check` and
+refreshed with `python scripts/sync_fork_universes.py --write`. One upstream
+change explains all 28: the source repo stopped re-implementing this fork's
+equip rules in Python and now consumes `canEquipItem`'s own answer, exported
+by `upgrades/tools/export_equip_eligibility.mts` in this fork.
+
+| Fork files | Delta vs source | Cause |
+|---|---|---|
+| `ret-p2/p3/p4/p5` | 48/76/85/97 local-only, all cloth armor | Ret's pool no longer filters by armor class |
+| `feral-p2/p3/p4/p5` | 1/2/3/5 fork-only | Off-hand-only fist weapons a druid cannot dual-wield |
+| `balance-p2/p3/p4/p5` | 6/7/8/14 fork-only | Same off-hand rule |
+| `ele-p2/p3/p4/p5` | 6/7/8/14 fork-only | Same off-hand rule |
+| `mage`, `shadow`, `warlock` p2-p5 | 1/1/1/3 fork-only each | Same off-hand rule |
+
+Two kinds of change, both deliberate:
+
+- **Removals (99 rows across 24 files) are a correctness fix.** Every one is
+  an off-hand-only weapon (proto `HandTypeOffHand = 3`) held by a spec that
+  cannot dual-wield. The Python mirror had no off-hand check at all, so the
+  stale copies were offering weapons the sim's own gear picker refuses — the
+  same failure class as the rogue two-handed sword in ticket 301. Off-hand
+  *frills* (`WeaponTypeOffHand`) are unaffected and stay in: any class may
+  hold one.
+- **Additions (306 rows, ret only) are a ruled policy change.** A paladin can
+  equip cloth, and every other spec's pool already admitted it — warrior, the
+  other plate class, ships 177 cloth pieces at p5. Ret's omission was an
+  unexplained outlier, ruled so by the SME gate for this branch. Ret keeps its
+  two-hander-only weapon rule, which survives as a *named* policy exclusion
+  rather than as an equip rule.
+
+No shared entry differed in content in any of the 28 files — membership only.

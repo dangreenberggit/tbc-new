@@ -18434,22 +18434,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 18202,
-      "name": "Eskhandar's Left Claw",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 18825,
       "name": "Grand Marshal's Aegis",
       "slot": "weapon",
@@ -18599,38 +18583,6 @@
       "slot": "weapon",
       "armorType": null,
       "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 18847,
-      "name": "Grand Marshal's Left Hand Blade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 18848,
-      "name": "High Warlord's Left Claw",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
       "quality": 4,
       "phase": 1,
       "sources": [
@@ -19176,45 +19128,11 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 29275,
-      "name": "Searing Sunblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 29924,
       "name": "Netherbane",
       "slot": "weapon",
       "armorType": null,
       "handType": 2,
-      "quality": 4,
-      "phase": 2,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Tempest Keep",
-          "boss": "Al'ar",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 29948,
-      "name": "Claw of the Phoenix",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
       "quality": 4,
       "phase": 2,
       "sources": [
@@ -19623,22 +19541,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 32188,
-      "name": "Chancellor's Left Ripper",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 32189,
       "name": "Chancellor's Right Ripper",
       "slot": "weapon",
@@ -19872,29 +19774,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 32945,
-      "name": "Fist of Molten Fury",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 3,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Hyjal Summit",
-          "origin": "db"
-        },
-        {
-          "boss": "Trash",
-          "kind": "raid",
-          "zone": "Hyjal Summit",
-          "origin": "atlasloot"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 32946,
       "name": "Claw of Molten Fury",
       "slot": "weapon",
@@ -20077,24 +19956,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 33640,
-      "name": "Fury",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 4,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Zul'Aman",
-          "boss": "Nalorakk",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 34165,
       "name": "Fang of Kalecgos",
       "slot": "weapon",
@@ -20167,24 +20028,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 34203,
-      "name": "Grip of Mannoroth",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Sunwell Plateau",
-          "boss": "Eredar Twins",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 34329,
       "name": "Crux of the Apocalypse",
       "slot": "weapon",
@@ -20216,29 +20059,6 @@
           "zone": "Sunwell Plateau",
           "boss": "Kil'jaeden",
           "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 34346,
-      "name": "Mounting Vengeance",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "raid",
-          "zone": "Sunwell Plateau",
-          "origin": "db"
-        },
-        {
-          "boss": "Trash",
-          "kind": "raid",
-          "zone": "Sunwell Plateau",
-          "origin": "atlasloot"
         }
       ],
       "curationHint": 0.0
@@ -20388,70 +20208,6 @@
       "slot": "weapon",
       "armorType": null,
       "handType": 4,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 34949,
-      "name": "Swift Blade of Uncertainty",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 34950,
-      "name": "Vanir's Left Fist of Savagery",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 34951,
-      "name": "Vanir's Left Fist of Brutality",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 5,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 34952,
-      "name": "The Mutilator",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
       "quality": 4,
       "phase": 5,
       "sources": [
