@@ -30,13 +30,6 @@
         "p3_arms",
         "p3_fury",
         "p4_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_arms",
-        "p3_fury"
       ]
     },
     {
@@ -57,6 +50,13 @@
       ],
       "curationHint": 79.42,
       "curatedSets": [
+        "p5_arms",
+        "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
         "p5_arms",
         "p5_fury"
       ]
@@ -1185,6 +1185,13 @@
       "curatedSets": [
         "p5_arms",
         "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p5_arms",
+        "p5_fury"
       ]
     },
     {
@@ -1243,12 +1250,6 @@
       "curatedSets": [
         "p3_fury",
         "p4_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_fury"
       ]
     },
     {
@@ -1304,12 +1305,6 @@
       "curatedSets": [
         "p3_arms",
         "p4_arms"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_arms"
       ]
     },
     {
@@ -3233,6 +3228,13 @@
       "curatedSets": [
         "p5_arms",
         "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p5_arms",
+        "p5_fury"
       ]
     },
     {
@@ -3291,12 +3293,6 @@
       "curatedSets": [
         "p3_fury",
         "p4_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_fury"
       ]
     },
     {
@@ -3351,12 +3347,6 @@
       "curatedSets": [
         "p3_arms",
         "p4_arms"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_arms"
       ]
     },
     {
@@ -5450,13 +5440,6 @@
         "p3_fury",
         "p4_arms",
         "p4_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_arms",
-        "p3_fury"
       ]
     },
     {
@@ -5477,6 +5460,13 @@
       ],
       "curationHint": 90.7,
       "curatedSets": [
+        "p5_arms",
+        "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
         "p5_arms",
         "p5_fury"
       ]
@@ -5520,6 +5510,12 @@
       "curationHint": 73.05,
       "curatedSets": [
         "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p5_fury"
       ]
     },
     {
@@ -5541,6 +5537,12 @@
       ],
       "curationHint": 72.68,
       "curatedSets": [
+        "p5_arms"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
         "p5_arms"
       ]
     },
@@ -5666,13 +5668,6 @@
       ],
       "curationHint": 63.0,
       "curatedSets": [
-        "p3_arms",
-        "p3_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
         "p3_arms",
         "p3_fury"
       ]
@@ -7826,6 +7821,13 @@
       "curatedSets": [
         "p5_arms",
         "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p5_arms",
+        "p5_fury"
       ]
     },
     {
@@ -7889,12 +7891,6 @@
       "curatedSets": [
         "p3_fury",
         "p4_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_fury"
       ]
     },
     {
@@ -7988,12 +7984,6 @@
       "curatedSets": [
         "p3_arms",
         "p4_arms"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_arms"
       ]
     },
     {
@@ -9427,6 +9417,13 @@
       "curatedSets": [
         "p5_arms",
         "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p5_arms",
+        "p5_fury"
       ]
     },
     {
@@ -9449,12 +9446,6 @@
       "curatedSets": [
         "p3_fury",
         "p4_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_fury"
       ]
     },
     {
@@ -9622,12 +9613,6 @@
       "curatedSets": [
         "p3_arms",
         "p4_arms"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_arms"
       ]
     },
     {
@@ -11160,6 +11145,13 @@
       "curatedSets": [
         "p5_arms",
         "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p5_arms",
+        "p5_fury"
       ]
     },
     {
@@ -11184,13 +11176,6 @@
         "p3_fury",
         "p4_arms",
         "p4_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_arms",
-        "p3_fury"
       ]
     },
     {
@@ -13371,12 +13356,6 @@
       "curatedSets": [
         "p3_fury",
         "p4_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_fury"
       ]
     },
     {
@@ -13398,6 +13377,13 @@
       ],
       "curationHint": 81.04,
       "curatedSets": [
+        "p5_arms",
+        "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
         "p5_arms",
         "p5_fury"
       ]
@@ -13467,12 +13453,6 @@
       "curatedSets": [
         "p3_arms",
         "p4_arms"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_arms"
       ]
     },
     {
@@ -14877,6 +14857,13 @@
       "curatedSets": [
         "p5_arms",
         "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p5_arms",
+        "p5_fury"
       ]
     },
     {
@@ -15071,13 +15058,6 @@
       "curatedSets": [
         "p2_arms",
         "p2_fury",
-        "p3_arms",
-        "p3_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
         "p3_arms",
         "p3_fury"
       ]
@@ -15727,6 +15707,13 @@
       "curatedSets": [
         "p5_arms",
         "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p5_arms",
+        "p5_fury"
       ]
     },
     {
@@ -15821,13 +15808,6 @@
         "p3_fury",
         "p4_arms",
         "p4_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_arms",
-        "p3_fury"
       ]
     },
     {
@@ -17219,13 +17199,6 @@
         "p3_fury",
         "p4_arms",
         "p4_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_arms",
-        "p3_fury"
       ]
     },
     {
@@ -17299,6 +17272,13 @@
       ],
       "curationHint": 46.44,
       "curatedSets": [
+        "p5_arms",
+        "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
         "p5_arms",
         "p5_fury"
       ]
@@ -17462,8 +17442,8 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms",
-        "p3_fury"
+        "p5_arms",
+        "p5_fury"
       ]
     },
     {
@@ -18323,6 +18303,13 @@
       "curatedSets": [
         "p5_arms",
         "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p5_arms",
+        "p5_fury"
       ]
     },
     {
@@ -18383,13 +18370,6 @@
         "p3_fury",
         "p4_arms",
         "p4_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_arms",
-        "p3_fury"
       ]
     },
     {
@@ -20165,6 +20145,12 @@
       "curationHint": 538.314,
       "curatedSets": [
         "p5_arms"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p5_arms"
       ]
     },
     {
@@ -20258,12 +20244,6 @@
       "curatedSets": [
         "p3_arms",
         "p4_arms"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_arms"
       ]
     },
     {
@@ -20915,7 +20895,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_fury"
+        "p5_fury"
       ]
     },
     {
@@ -21156,7 +21136,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_fury"
+        "p5_fury"
       ]
     },
     {
@@ -26969,6 +26949,13 @@
       "curatedSets": [
         "p5_arms",
         "p5_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p5_arms",
+        "p5_fury"
       ]
     },
     {
@@ -27015,13 +27002,6 @@
         "p3_fury",
         "p4_arms",
         "p4_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_arms",
-        "p3_fury"
       ]
     },
     {

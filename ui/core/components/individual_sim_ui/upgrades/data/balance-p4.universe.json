@@ -96,7 +96,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -1130,7 +1130,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -2275,7 +2275,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -3357,6 +3357,12 @@
       "curationHint": 119.16,
       "curatedSets": [
         "p4"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p4"
       ]
     },
     {
@@ -3407,7 +3413,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -3510,12 +3516,6 @@
       ],
       "curationHint": 67.23,
       "curatedSets": [
-        "p3"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
         "p3"
       ]
     },
@@ -5435,7 +5435,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -6183,7 +6183,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -7241,7 +7241,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -8398,6 +8398,12 @@
       "curationHint": 84.58,
       "curatedSets": [
         "p4"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p4"
       ]
     },
     {
@@ -8435,12 +8441,6 @@
       "curationHint": 68.92,
       "curatedSets": [
         "p2",
-        "p3"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
         "p3"
       ]
     },
@@ -9671,7 +9671,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -9757,7 +9757,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -10620,7 +10620,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -10659,6 +10659,12 @@
       ],
       "curationHint": 53.0,
       "curatedSets": [
+        "p4"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
         "p4"
       ]
     },
@@ -11310,12 +11316,6 @@
       "curationHint": 0.0,
       "curatedSets": [
         "p3"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3"
       ]
     },
     {
@@ -11617,7 +11617,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -12577,7 +12577,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -16163,7 +16163,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {

@@ -34,7 +34,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -1110,7 +1110,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -2454,7 +2454,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -4047,7 +4047,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -4074,6 +4074,12 @@
       "curationHint": 146.9,
       "curatedSets": [
         "p4"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p4"
       ]
     },
     {
@@ -4095,12 +4101,6 @@
       "curationHint": 139.1,
       "curatedSets": [
         "p2",
-        "p3"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
         "p3"
       ]
     },
@@ -6157,7 +6157,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -7092,7 +7092,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -8507,7 +8507,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -10012,7 +10012,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -11277,6 +11277,12 @@
       "curationHint": 196.73,
       "curatedSets": [
         "p4"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p4"
       ]
     },
     {
@@ -11298,12 +11304,6 @@
       ],
       "curationHint": 193.51,
       "curatedSets": [
-        "p3"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
         "p3"
       ]
     },
@@ -12463,6 +12463,12 @@
       "curationHint": 90.0,
       "curatedSets": [
         "p4"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p4"
       ]
     },
     {
@@ -12519,12 +12525,6 @@
         "p2",
         "p3",
         "preraid"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3"
       ]
     },
     {
@@ -12623,7 +12623,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -13432,7 +13432,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -15586,7 +15586,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3"
+        "p4"
       ]
     },
     {
@@ -19094,12 +19094,6 @@
       "curationHint": 145.47,
       "curatedSets": [
         "p3"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3"
       ]
     },
     {
@@ -19120,6 +19114,12 @@
       ],
       "curationHint": 129.64,
       "curatedSets": [
+        "p4"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
         "p4"
       ]
     },

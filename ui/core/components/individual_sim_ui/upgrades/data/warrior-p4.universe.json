@@ -35,8 +35,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms",
-        "p3_fury"
+        "p4_fury"
       ]
     },
     {
@@ -55,6 +54,12 @@
       ],
       "curationHint": 61.1,
       "curatedSets": [
+        "p4_arms"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
         "p4_arms"
       ]
     },
@@ -1152,7 +1157,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_fury"
+        "p4_fury"
       ]
     },
     {
@@ -1181,7 +1186,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms"
+        "p4_arms"
       ]
     },
     {
@@ -2645,7 +2650,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_fury"
+        "p4_fury"
       ]
     },
     {
@@ -2689,7 +2694,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms"
+        "p4_arms"
       ]
     },
     {
@@ -4659,8 +4664,8 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms",
-        "p3_fury"
+        "p4_arms",
+        "p4_fury"
       ]
     },
     {
@@ -4708,6 +4713,13 @@
       ],
       "curationHint": 72.3,
       "curatedSets": [
+        "p4_arms",
+        "p4_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
         "p4_arms",
         "p4_fury"
       ]
@@ -4807,13 +4819,6 @@
       ],
       "curationHint": 63.0,
       "curatedSets": [
-        "p3_arms",
-        "p3_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
         "p3_arms",
         "p3_fury"
       ]
@@ -6752,7 +6757,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_fury"
+        "p4_fury"
       ]
     },
     {
@@ -6817,7 +6822,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms"
+        "p4_arms"
       ]
     },
     {
@@ -7976,7 +7981,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_fury"
+        "p4_fury"
       ]
     },
     {
@@ -8099,7 +8104,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms"
+        "p4_arms"
       ]
     },
     {
@@ -9469,8 +9474,8 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms",
-        "p3_fury"
+        "p4_arms",
+        "p4_fury"
       ]
     },
     {
@@ -11194,7 +11199,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_fury"
+        "p4_fury"
       ]
     },
     {
@@ -11249,7 +11254,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms"
+        "p4_arms"
       ]
     },
     {
@@ -12450,6 +12455,13 @@
       "curatedSets": [
         "p4_arms",
         "p4_fury"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p4_arms",
+        "p4_fury"
       ]
     },
     {
@@ -12588,13 +12600,6 @@
       "curatedSets": [
         "p2_arms",
         "p2_fury",
-        "p3_arms",
-        "p3_fury"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
         "p3_arms",
         "p3_fury"
       ]
@@ -13131,8 +13136,8 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms",
-        "p3_fury"
+        "p4_arms",
+        "p4_fury"
       ]
     },
     {
@@ -14289,8 +14294,8 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms",
-        "p3_fury"
+        "p4_arms",
+        "p4_fury"
       ]
     },
     {
@@ -14448,8 +14453,8 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms",
-        "p3_fury"
+        "p4_arms",
+        "p4_fury"
       ]
     },
     {
@@ -15243,8 +15248,8 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms",
-        "p3_fury"
+        "p4_arms",
+        "p4_fury"
       ]
     },
     {
@@ -16866,7 +16871,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms"
+        "p4_arms"
       ]
     },
     {
@@ -17396,7 +17401,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_fury"
+        "p4_fury"
       ]
     },
     {
@@ -17443,7 +17448,7 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_fury"
+        "p4_fury"
       ]
     },
     {
@@ -22404,8 +22409,8 @@
         "BiS"
       ],
       "bisSets": [
-        "p3_arms",
-        "p3_fury"
+        "p4_arms",
+        "p4_fury"
       ]
     },
     {
