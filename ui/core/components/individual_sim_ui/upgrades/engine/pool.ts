@@ -258,19 +258,29 @@ const DUAL_WIELD_SPECS: ReadonlySet<SpecId> = new Set<SpecId>([
 /**
  * Whether an item can physically be placed in the given sim slot.
  *
- * Only weapons need this, and only the two-handed exclusion is load-bearing:
- * without it every two-hander in the pool is priced as an offhand swap, which
- * the game cannot equip. `HandTypeOffHand` items are the mirror case — they
- * cannot go in the main hand. Items with no recorded hand type (`null`, which
- * the index writes for everything that is not a weapon) are left alone rather
- * than filtered, since a missing field is not evidence of a restriction.
+ * Only weapons need this, and the off hand is an **allowlist**, not a
+ * denylist: a one-hander or a dedicated off-hand item, and nothing else.
+ * Excluding just two-handers is not enough — `HandTypeMainHand` is a distinct
+ * value carried by 235 items in the pinned db (Talon of the Phoenix among
+ * them), and letting one through produces a candidate the fork's own equip
+ * logic then rejects with "No slots left to equip", failing the whole run
+ * rather than one row.
+ *
+ * The main hand is the mirror: everything except a dedicated off-hand item.
+ *
+ * Items with no recorded hand type (`null`, which the index writes for
+ * everything that is not a weapon) are left alone rather than filtered, since
+ * a missing field is not evidence of a restriction.
  */
 function itemFitsSimSlot(itemId: number, slotName: SimSlotName): boolean {
   if (slotName !== "mainhand" && slotName !== "offhand") return true;
   const handType = getItem(itemId)?.handType;
   if (handType == null) return true;
   if (slotName === "offhand") {
-    return handType !== HandType.HandTypeTwoHand;
+    return (
+      handType === HandType.HandTypeOneHand ||
+      handType === HandType.HandTypeOffHand
+    );
   }
   return handType !== HandType.HandTypeOffHand;
 }

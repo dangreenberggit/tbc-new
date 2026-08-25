@@ -142,7 +142,7 @@ clone/repo-configuration decision outside a single slice's scope.
 | `set-bonus.ts` | `set-bonus.ts` | none (import paths only) | `44d6cd77247fff7b87f21b3716b7bb21305d24ab2f002d98706c4c6286d2fe09` |
 | `set-value.ts` | `set-value.ts` | none (import paths only) | `317f07056e02038a70f9594606300e1d1b9189d321cdc873c3f1fa1c6cf0b270` |
 | `dead-slots.ts` | `dead-slots.ts` | none (import paths only); traces to core `2e6b257`, not the header commit | `c6b5957ae1877407dcfe52ea4bd284120ed8b0c5cc6c3e66c90b0e361ad027bb` |
-| `pool.ts` | `pool.ts` | adapted — hand-written `ItemSlot`/`ITEM_SOURCE_KINDS` literals, not generated | `0e8c1a92cc32605f1f1b161057f5561871a8f3448312e54fabdc593b59b11c95` |
+| `pool.ts` | `pool.ts` | adapted — hand-written `ItemSlot`/`ITEM_SOURCE_KINDS` literals, not generated | `8c18ebdf1ddd255ed1b84ac961b41e741a67e091edb16734108a9ef18a595271` |
 | `logged-gear.ts` | `logged-gear.ts` | none (import paths only) | `34b5bc81ae85e781625fe118c8869bec94f09c72fc573753d24b7b7063ffbc79` |
 | `caps.ts` | `caps.ts` | none (import paths only) | `584242334d82b33ae10d789412b32c45ccb4b4e8c6a844384fdf09128bb09d79` |
 | `compose.ts` | `compose.ts` | none | `64d24100ca609361cf453f6f4c3bb67e3a2a0fd74eab071582d8a4253c28d677` |
