@@ -8727,9 +8727,6 @@
 					"additionalProperties": false,
 					"required": ["shopping_list"]
 				},
-				"placeholder": {
-					"type": "string"
-				},
 				"run": {
 					"type": "string"
 				},
@@ -8777,10 +8774,13 @@
 						},
 						"stopped": {
 							"type": "string"
+						},
+						"running_rows": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["idle", "unsupported_spec", "error", "done", "elapsed", "stale", "stopped"]
+					"required": ["idle", "unsupported_spec", "error", "done", "elapsed", "stale", "stopped", "running_rows"]
 				},
 				"view": {
 					"type": "object",
@@ -8872,7 +8872,10 @@
 						"alt_badge": {
 							"type": "string"
 						},
-						"empty_no_run": {
+						"empty_no_ranking": {
+							"type": "string"
+						},
+						"rows_pending": {
 							"type": "string"
 						},
 						"empty_no_upgrades": {
@@ -8893,7 +8896,8 @@
 						"owned",
 						"bis_badge",
 						"alt_badge",
-						"empty_no_run",
+						"empty_no_ranking",
+						"rows_pending",
 						"empty_no_upgrades",
 						"below_cutoff_group"
 					]
@@ -8949,7 +8953,7 @@
 				}
 			},
 			"additionalProperties": false,
-			"required": ["title", "subtabs", "placeholder", "run", "stop", "import_wcl", "import_wcl_short", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "status", "view", "prune", "progress", "results", "assumptions"]
+			"required": ["title", "subtabs", "run", "stop", "import_wcl", "import_wcl_short", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "status", "view", "prune", "progress", "results", "assumptions"]
 		}
 	},
 	"additionalProperties": false,

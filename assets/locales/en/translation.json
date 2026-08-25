@@ -857,7 +857,6 @@
 		"subtabs": {
 			"shopping_list": "Shopping List"
 		},
-		"placeholder": "Nothing here yet. This tab will rank gear upgrades against the gear on your Gear tab, using your own sim settings.",
 		"run": "Run",
 		"stop": "Stop",
 		"import_wcl": "Import gear from log",
@@ -873,7 +872,8 @@
 			"done": "Your current gear: {{dps}} DPS.",
 			"elapsed": "Took {{seconds}}s.",
 			"stale": "settings changed since this ranking — results may be out of date",
-			"stopped": "Stopped early. Your current gear: {{dps}} DPS. Rows still simming were skipped — replication and set-completion packages were not run."
+			"stopped": "Stopped early. Your current gear: {{dps}} DPS. No candidate rows to show — run again for a full ranking.",
+			"running_rows": "{{label}} ({{count}} rows landed)"
 		},
 		"view": {
 			"set_potential": "Include set-bonus potential",
@@ -904,7 +904,8 @@
 			"owned": "Owned",
 			"bis_badge": "★ BiS",
 			"alt_badge": "Alt",
-			"empty_no_run": "Run a ranking to see upgrades for your current gear.",
+			"empty_no_ranking": "No finished ranking to show.",
+			"rows_pending": "Rows appear here as their sims finish.",
 			"empty_no_upgrades": "No upgrades found above the cutoff.",
 			"below_cutoff_group": "{{count}} item(s) below the cutoff"
 		},

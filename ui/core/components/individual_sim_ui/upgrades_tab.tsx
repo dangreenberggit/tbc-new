@@ -293,6 +293,10 @@ export class UpgradesTab extends SimTab {
 	// row-landed progress callbacks trigger before the state reaches 'done'.
 	private pendingRaidFilter: string = NO_RAID_FILTER;
 	protected statusElem!: HTMLElement;
+	/** Last kind written to a live region, so a re-render within one state stays silent. */
+	private announcedKind: RunState['kind'] | undefined;
+	protected statusAnnounceElem!: HTMLElement;
+	protected errorAlertElem!: HTMLElement;
 	protected resultsElem!: HTMLElement;
 	protected assumptionsElem!: HTMLElement;
 
@@ -420,6 +424,8 @@ export class UpgradesTab extends SimTab {
 		const raidFilterLabelRef = ref<HTMLLabelElement>();
 		const phaseSelectorRef = ref<HTMLDivElement>();
 		const statusRef = ref<HTMLDivElement>();
+		const statusAnnounceRef = ref<HTMLDivElement>();
+		const errorAlertRef = ref<HTMLDivElement>();
 		const resultsRef = ref<HTMLDivElement>();
 		const assumptionsRef = ref<HTMLDivElement>();
 
@@ -494,7 +500,36 @@ export class UpgradesTab extends SimTab {
 						</label>
 					</div>
 				</div>
+				{/*
+				 * The visible status text. Not itself a live region: it holds the
+				 * per-tick running text, which changes about once a second for up to
+				 * a minute and a half, and announcing every tick is worse than
+				 * announcing none. The progress bar rendered inside it carries the
+				 * numbers for AT through its own `role="progressbar"`, which is the
+				 * surface built for a value that changes continuously.
+				 */}
 				<div ref={statusRef} className="upgrades-status" />
+				{/*
+				 * The announcement channel, kept separate from the visible text so
+				 * the two can differ: this speaks only at state *transitions*, never
+				 * on a running tick. Both elements are permanent -- a live region
+				 * must already be in the DOM before its content changes, or the
+				 * change is not announced at all -- and `render()` only ever calls
+				 * `replaceChildren` on them.
+				 *
+				 * Two regions because the two urgencies differ. Polite for ordinary
+				 * transitions; `role="alert"` is assertive and interrupts, which is
+				 * right for a failure and wrong for finishing a run. Switching one
+				 * element's role at announce time does not work -- the role has to be
+				 * there before the content arrives. The alert carries no explicit
+				 * `aria-live`: pairing the two makes VoiceOver on iOS speak twice.
+				 */}
+				<div
+					ref={statusAnnounceRef}
+					className="upgrades-status-announce visually-hidden"
+					attributes={{ role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' }}
+				/>
+				<div ref={errorAlertRef} className="upgrades-status-alert visually-hidden" attributes={{ role: 'alert' }} />
 				<div ref={resultsRef} className="upgrades-results mt-gap" />
 				<div ref={assumptionsRef} className="upgrades-assumptions mt-gap" />
 			</div>,
@@ -511,6 +546,8 @@ export class UpgradesTab extends SimTab {
 		this.raidFilterSelect = raidFilterSelectRef.value!;
 		this.raidFilterLabel = raidFilterLabelRef.value!;
 		this.statusElem = statusRef.value!;
+		this.statusAnnounceElem = statusAnnounceRef.value!;
+		this.errorAlertElem = errorAlertRef.value!;
 		this.resultsElem = resultsRef.value!;
 		this.assumptionsElem = assumptionsRef.value!;
 		this.paneContentElems.set('shopping-list', this.resultsElem);
@@ -827,8 +864,35 @@ export class UpgradesTab extends SimTab {
 		this.refreshViewControlVisibility();
 		this.refreshRaidFilter();
 		this.statusElem.replaceChildren(this.statusContent());
+		this.renderAnnouncement();
 		this.renderSubTabs();
 		this.assumptionsElem.replaceChildren(this.assumptionsContent());
+	}
+
+	/**
+	 * Speaks state transitions, not renders. `running` re-renders about once a
+	 * second for up to a minute and a half; announcing each tick would bury the
+	 * one thing worth hearing, so only a change of `kind` is written here and a
+	 * tick within `running` writes nothing. Sighted readers get the live counts
+	 * from the visible status line, and AT can poll the progress bar's
+	 * `role="progressbar"` for the same numbers on demand.
+	 *
+	 * Errors go to the assertive region and everything else to the polite one,
+	 * and the region not being used is cleared -- a stale failure left in the
+	 * alert would be re-announced the next time anything about it changed.
+	 */
+	private renderAnnouncement(): void {
+		const kind = this.state.kind;
+		if (kind === this.announcedKind) return;
+		this.announcedKind = kind;
+
+		const message =
+			kind === 'error'
+				? i18n.t('upgrades_tab.status.error', { message: this.state.message })
+				: this.statusElem.textContent?.trim() ?? '';
+		const isError = kind === 'error';
+		this.errorAlertElem.replaceChildren(isError ? message : '');
+		this.statusAnnounceElem.replaceChildren(isError ? '' : message);
 	}
 
 	private statusContent(): Node {
@@ -842,7 +906,10 @@ export class UpgradesTab extends SimTab {
 				// label — "Simming 12/246" is more useful mid-run than the stage
 				// name alone, and `landedRows` is exactly the rows that fired a
 				// `{ kind: 'row' }` event so far.
-				const text = `${progressLabel(this.state.progress)} (${this.landedRows.length} rows landed)`;
+				const text = i18n.t('upgrades_tab.status.running_rows', {
+					label: progressLabel(this.state.progress),
+					count: this.landedRows.length,
+				});
 				return (
 					<div className="upgrades-status-line text-muted">
 						<span>{text}</span>
@@ -1181,7 +1248,7 @@ export class UpgradesTab extends SimTab {
 		// results area blank. An empty panel reads as "it found nothing",
 		// which is a different (and discouraging) claim from "nothing has
 		// been asked yet".
-		if (view === undefined) return <div className="text-muted">{i18n.t('upgrades_tab.results.empty_no_run')}</div>;
+		if (view === undefined) return <div className="text-muted">{i18n.t('upgrades_tab.results.empty_no_ranking')}</div>;
 		return this.rowsTable(view.shortlist, view.rows);
 	}
 
@@ -1198,7 +1265,7 @@ export class UpgradesTab extends SimTab {
 		if (simmedRows.length === 0) {
 			// No row has landed yet — nothing has been measured, so this is the
 			// "no results yet" message, not "the run found nothing".
-			return <div className="text-muted">{i18n.t('upgrades_tab.results.empty_no_run')}</div>;
+			return <div className="text-muted">{i18n.t('upgrades_tab.results.rows_pending')}</div>;
 		}
 		// Sorted at render time, on a copy. The engine emits no ordering for
 		// these rows — there is no complete Ranking to run through applyView
