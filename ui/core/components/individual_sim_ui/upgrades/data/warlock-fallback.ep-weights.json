@@ -1,0 +1,20 @@
+{
+  "source": "tbc-new-fork ui/warlock/dps/presets.ts P1_AFFLI_DEMO_DESTRO_EP",
+  "pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
+  "label": "P1 - Affli / Demo / Destro",
+  "notes": [
+    "Transcribed from the fork, not upstream: ui/warlock/dps/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
+    "ui/warlock/dps/sim.ts:60 wires P1_AFFLI_DEMO_DESTRO_EP; the Destruction/Fire variant is derived via .withStat() from this one (presets.ts:56-58) and is not transcribed"
+  ],
+  "weights": {
+    "3": 0.38,
+    "5": 1.0,
+    "7": 0.07,
+    "11": 0.92,
+    "12": 1.73,
+    "13": 0.82,
+    "14": 1.21,
+    "35": 0.29
+  },
+  "pseudoWeights": {}
+}

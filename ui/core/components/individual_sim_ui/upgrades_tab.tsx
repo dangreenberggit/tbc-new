@@ -15,7 +15,7 @@ import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
 import { currentPageSkeleton } from './upgrades/adapters/skeleton';
 import { simDatabaseFor } from './upgrades/adapters/sim_database';
 import { WasmSimRunner } from './upgrades/adapters/wasm_sim_runner';
-import { epWeightsFor, poolFor, poolSourceFor } from './upgrades/data/data';
+import { epWeightsDisclosureFor, epWeightsFor, poolFor, poolSourceFor, unsourcedCountFor } from './upgrades/data/data';
 import { isKaelTempLegendary } from './upgrades/engine/kael-temp';
 import { filterPoolByPhase } from './upgrades/engine/pool';
 import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
@@ -47,17 +47,43 @@ import { applyView, raidFilterGroups, SOURCE_LABELS, type ViewOptions, type View
  */
 const NO_RAID_FILTER = '';
 
+/**
+ * Which proto spec the engine can rank, and under what name.
+ *
+ * Stays `Partial` on purpose. The proto enum covers tanks and healers this
+ * engine has no universe for, so a spec absent from this map is a real state
+ * the tab must render — the `unsupported-spec` message — rather than a gap to
+ * be filled. What changed with the all-DPS-specs pass is only which specs are
+ * present: all eleven DPS ones, where before it was two.
+ */
 const SPEC_ID_BY_PROTO_SPEC: Partial<Record<Spec, SpecId>> = {
-	[Spec.SpecRetributionPaladin]: 'ret',
+	[Spec.SpecBalanceDruid]: 'balance',
 	[Spec.SpecFeralCatDruid]: 'feral',
+	[Spec.SpecHunter]: 'hunter',
+	[Spec.SpecMage]: 'mage',
+	[Spec.SpecRetributionPaladin]: 'ret',
+	// The fork ships exactly one DPS priest sim and it registers SpecPriest
+	// with a shadow config (ui/priest/dps/sim.ts). There is no separate
+	// shadow value in the enum.
+	[Spec.SpecPriest]: 'shadow',
+	[Spec.SpecRogue]: 'rogue',
+	[Spec.SpecElementalShaman]: 'ele',
+	[Spec.SpecEnhancementShaman]: 'enh',
+	[Spec.SpecWarlock]: 'warlock',
+	[Spec.SpecDpsWarrior]: 'warrior',
 };
 
 /**
  * Sub-tab identity for the slot strip. `'shopping-list'` is the always-first
  * tab (plan §4's sub-tab 1); everything else is one `SimOrderName` per
- * populated slot. `'offhand'` is excluded — SIM_ORDER carries it, but no
- * ret/feral pool slot maps onto it (pool.ts's `simSlotsForPoolSlot` doc
- * comment says the same).
+ * populated slot.
+ *
+ * `'offhand'` is included, and needs no special casing: the strip is derived
+ * from the slots the ranked rows actually occupy (`slotsInView`), so it
+ * appears for a dual-wielding spec and stays absent for every other one. The
+ * comment here used to say offhand was excluded because no pool slot mapped
+ * onto it; `simSlotsForPoolSlot` now maps `"weapon"` onto both hands for the
+ * four dual-wield specs.
  */
 type SubTabId = 'shopping-list' | SimOrderName;
 
@@ -1517,6 +1543,13 @@ export class UpgradesTab extends SimTab {
 		// describes the finished run, and the picker may have moved since.
 		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
 		const poolSource = specId ? poolSourceFor(specId, a.maxPhase as ContentPhase) : undefined;
+		// Two degradations this run may carry. Both are real and both are
+		// defensible -- EP only orders the shortlist, and a db-phase item is
+		// genuinely available at its phase -- but the brief bans silent
+		// wrongness, so each states itself rather than being inferred from a
+		// missing field.
+		const epDisclosure = specId ? epWeightsDisclosureFor(specId, a.maxPhase as ContentPhase) : undefined;
+		const unsourced = specId ? unsourcedCountFor(specId, a.maxPhase as ContentPhase) : 0;
 		const detailsRef = ref<HTMLDetailsElement>();
 		return (
 			<details ref={detailsRef} className="upgrades-assumptions-drawer">
@@ -1545,6 +1578,25 @@ export class UpgradesTab extends SimTab {
 							    it stops a reader assuming a p4 selection read a p4 file. */}
 							<dd className="col-sm-8">
 								{i18n.t('upgrades_tab.assumptions.pool_universe_note', { file: poolSource.file, count: poolSource.entries })}
+							</dd>
+						</>
+					) : null}
+					{epDisclosure ? (
+						<>
+							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.ep_weights')}</dt>
+							<dd className="col-sm-8">
+								{i18n.t('upgrades_tab.assumptions.ep_weights_note', {
+									from: epDisclosure.from,
+									requested: epDisclosure.requested,
+								})}
+							</dd>
+						</>
+					) : null}
+					{unsourced > 0 ? (
+						<>
+							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.source_attribution')}</dt>
+							<dd className="col-sm-8">
+								{i18n.t('upgrades_tab.assumptions.source_attribution_partial', { count: unsourced })}
 							</dd>
 						</>
 					) : null}

@@ -8946,10 +8946,22 @@
 						},
 						"sim_version": {
 							"type": "string"
+						},
+						"ep_weights": {
+							"type": "string"
+						},
+						"ep_weights_note": {
+							"type": "string"
+						},
+						"source_attribution": {
+							"type": "string"
+						},
+						"source_attribution_partial": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "seeds", "iterations", "max_phase", "pool", "pool_universe", "pool_universe_note", "pool_bis_only", "pool_all", "candidate_cap", "candidate_cap_note", "substitutions_title", "engine_provenance", "sim_version"]
+					"required": ["title", "seeds", "iterations", "max_phase", "pool", "pool_universe", "pool_universe_note", "pool_bis_only", "pool_all", "candidate_cap", "candidate_cap_note", "substitutions_title", "engine_provenance", "sim_version", "ep_weights", "ep_weights_note", "source_attribution", "source_attribution_partial"]
 				}
 			},
 			"additionalProperties": false,

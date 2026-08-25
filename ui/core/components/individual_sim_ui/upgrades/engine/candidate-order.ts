@@ -10,6 +10,7 @@
 import { simSlotsForPoolSlot, type PoolEntry } from "./pool.js";
 import { SIM_ORDER, type SimItemSpec } from "./slots.js";
 import { epScore, type EpWeights } from "./stats.js";
+import type { SpecId } from "./types.js";
 
 /** Looks up an item's raw stats array by id; missing id → no stats (`[]`). */
 export type StatsLookup = (itemId: number) => readonly number[];
@@ -29,11 +30,12 @@ function bestEpDelta(
   entry: PoolEntry,
   equipment: readonly SimItemSpec[],
   weights: EpWeights,
-  stats: StatsLookup
+  stats: StatsLookup,
+  spec?: SpecId
 ): number {
   const candidateEp = epScore(stats(entry.itemId), weights);
   let best: number | undefined;
-  for (const slotName of simSlotsForPoolSlot(entry.slot)) {
+  for (const slotName of simSlotsForPoolSlot(entry.slot, spec, entry.itemId)) {
     const slotIndex = SIM_ORDER.indexOf(slotName);
     if (slotIndex < 0) continue;
     const wornId = equipment[slotIndex]?.id;
@@ -53,11 +55,12 @@ export function orderCandidatesByEp(
   candidates: readonly PoolEntry[],
   equipment: readonly SimItemSpec[],
   weights: EpWeights,
-  stats: StatsLookup
+  stats: StatsLookup,
+  spec?: SpecId
 ): PoolEntry[] {
   return [...candidates].sort((a, b) => {
-    const deltaA = bestEpDelta(a, equipment, weights, stats);
-    const deltaB = bestEpDelta(b, equipment, weights, stats);
+    const deltaA = bestEpDelta(a, equipment, weights, stats, spec);
+    const deltaB = bestEpDelta(b, equipment, weights, stats, spec);
     if (deltaA !== deltaB) return deltaB - deltaA;
     return a.itemId - b.itemId;
   });

@@ -125,10 +125,11 @@ clone/repo-configuration decision outside a single slice's scope.
 
 | Fork file | Source (`packages/core/src/`) | Adaptation | sha256 |
 |---|---|---|---|
-| `types.ts` | `types.ts` | none (narrowed doc comment only) | `e23454dacccd7bb154b461a65d866fafb7dbd1d04e3eb1107b999b4bafb5adf7` |
+| `types.ts` | `types.ts` | none | `a4940cedec5a23d7794e2779044a1ba0bdaa6a59da17ee4040dbfee929a323a8` |
+| `cap-profile.ts` | `cap-profile.ts` | none | `a34bf7ddeba3a64b8622ae144b1f3e66fb94a0e22774cd78d58392637e7f6c1a` |
 | `slots.ts` | `slots.ts` (SIM_ORDER only) + `slots-sim-order.generated.ts` | adapted — hand-written literal, WCL_ORDER/mapWclGearToSim dropped | `54d51dcdf27b6a25cce19c8908ce60fdcf5b163c56c313d75ebb5f74b2078c34` |
 | `stats.ts` | `stats.ts` | adapted — `Stat` from fork's own generated proto | `2cbb61e565dc1cfe66c18ae590e7683c97a0ab41e22c6fec89ad053662e499af` |
-| `cutoff.ts` | `cutoff.ts` | none | `806d9bb1383950074da3bcc4b245c9a6180083a39a0a37413131cf53bdc8edc9` |
+| `cutoff.ts` | `cutoff.ts` | none | `97a73cda2c8018c58607e09457b5b085fc042be07e700488d503deab4628b202` |
 | `se.ts` | `se.ts` | none | `2c03b1a318c23600d55568a4acf00a0698802135ece833e0c9d5ddb855bc9540` |
 | `kael-temp.ts` | `kael-temp.ts` | none | `945180888a3d8fc18f361f2efa1d6952a86da52c3f18169c3facd5916843fe4e` |
 | `items.ts` | `items.ts` | adapted — Database-backed, not JSON-backed (plan §2.1) | `bd6788a87a54afcce7b8c77aede395e39399b8a4d86def0e8e0bfc69f8ecedd4` |
@@ -136,21 +137,21 @@ clone/repo-configuration decision outside a single slice's scope.
 | `gems.ts` | `gems.ts` | adapted — Database-backed, not JSON-backed | `0899adb651c2cbac93eb8ecfb50ed66b2649518683fa9d442dd05cf2b84ba58c` |
 | `meta.ts` | `meta.ts` | adapted — reuses fork's own `MetaGemCondition`/`gemColorMatchesSocket` | `3b6010347c3c86b16490fbc6abfa4346c291b2bbb49d1f0057af312f0f6213cf` |
 | `migrate-gems.ts` | `migrate-gems.ts` | none (import paths only) | `b46f39a410eb07af3768047fc79c8ce98ca2c331d18d6324f4393cef241547f2` |
-| `candidate-gems.ts` | `candidate-gems.ts` | none (import paths only) | `9bf16a4243bd20748b78167b1e27efcc2f5b1967ebcba84fc1accf695bd1332e` |
+| `candidate-gems.ts` | `candidate-gems.ts` | none (import paths only) | `84d03442cbd4746c4a771be76cadae081862b46c3c428e25fc14928cf1e73c02` |
 | `meta-repair.ts` | `meta-repair.ts` | none (import paths only) | `2c7fd7dd705f8173a0c813cb573bfb904d5870d5cd665c605068782b23e09777` |
 | `set-bonus.ts` | `set-bonus.ts` | none (import paths only) | `44d6cd77247fff7b87f21b3716b7bb21305d24ab2f002d98706c4c6286d2fe09` |
 | `set-value.ts` | `set-value.ts` | none (import paths only) | `317f07056e02038a70f9594606300e1d1b9189d321cdc873c3f1fa1c6cf0b270` |
 | `dead-slots.ts` | `dead-slots.ts` | none (import paths only); traces to core `2e6b257`, not the header commit | `c6b5957ae1877407dcfe52ea4bd284120ed8b0c5cc6c3e66c90b0e361ad027bb` |
-| `pool.ts` | `pool.ts` | adapted — hand-written `ItemSlot`/`ITEM_SOURCE_KINDS` literals, not generated | `27595bfe7abe0b852162451dff7db6e03f803b5379bd1dde0d8ac6b8a7e2e165` |
+| `pool.ts` | `pool.ts` | adapted — hand-written `ItemSlot`/`ITEM_SOURCE_KINDS` literals, not generated | `0e8c1a92cc32605f1f1b161057f5561871a8f3448312e54fabdc593b59b11c95` |
 | `logged-gear.ts` | `logged-gear.ts` | none (import paths only) | `34b5bc81ae85e781625fe118c8869bec94f09c72fc573753d24b7b7063ffbc79` |
-| `caps.ts` | `caps.ts` | none (import paths only) | `d785ad56ae60e4cd5af4b465a620f739ac715c7b401c741d7a943fd222369d63` |
+| `caps.ts` | `caps.ts` | none (import paths only) | `584242334d82b33ae10d789412b32c45ccb4b4e8c6a844384fdf09128bb09d79` |
 | `compose.ts` | `compose.ts` | none | `64d24100ca609361cf453f6f4c3bb67e3a2a0fd74eab071582d8a4253c28d677` |
 | `content-hash.ts` | `content-hash.ts` | adapted — `canonicalJson` only, no `sha256Hex`/`node:crypto` (D4); racing's hash fields are frozen literals at `rank.ts`'s `canonicalJson(...)` call site, not in this file (ADR-0026) | `8a55e4d63387d98436c2687cfff7a3d1d6846ab8e8bb734e0fd7fa3199329af2` |
 | `disclosure.ts` | `disclosure.ts` | none | `0dec2c071c0fe56a7e37d0d07de9672a4fa076d93f30b8f5734dc05835a0a243` |
 | `plausibility.ts` | `plausibility.ts` | none (import paths only); traces to core `2e6b257`, not the header commit | `d63b682eb95b6eba8ed5bc247cc374fcce54376857c05dbee7a0effe5cdbe455` |
 | `view.ts` | `view.ts` | adapted — inlines `setPotentialIsConfounded` instead of importing `rank-report-rules.ts` (out of scope) | `2053e0ea4aeea2fc11233946d876c925eefee1a49565548359027208b1436a38` |
-| `rank.ts` | `rank.ts` | adapted — drops spec-mismatch check (`spec.ts` not ported); cache key is `canonicalJson(...)` not `contentHashOf(...)` (D4); candidate-pool.md M1 (cap, concurrency, EP ordering, Stop/`complete`, row events) ported unchanged in shape; racing removed in place (core `28b00f9` / ADR-0026), so M2's screen/promote pass, `screenCandidate`, the `screening` progress stage and `screeningSkips` are gone; the cache payload keeps the three frozen racing literals (`fullPool: true`, `screenIterations: null`, `promoteTopK: null`) and no `promoteTopJ` — deliberate divergence from core's four; ticket 212's `simDatabaseFor` threading ported in core's post-`ea8f916` shape (one `compose(deps.raidSimSkeleton` call, inside a single `composeFor` closure that all four compose sites call; `buildSetBonuses` takes `composeFor` as a parameter rather than resolving a database of its own) | `193d57bff7cdb2fb4250910e700112e736ced4ae4abce614755777fdcb067b63` |
-| `candidate-order.ts` | `candidate-order.ts` | none (import paths only) | `c0fb93b75f278af0b505d6c426a30aa235716949b57b48da90f9363fa732be64` |
+| `rank.ts` | `rank.ts` | adapted — drops spec-mismatch check (`spec.ts` not ported); cache key is `canonicalJson(...)` not `contentHashOf(...)` (D4); candidate-pool.md M1 (cap, concurrency, EP ordering, Stop/`complete`, row events) ported unchanged in shape; racing removed in place (core `28b00f9` / ADR-0026), so M2's screen/promote pass, `screenCandidate`, the `screening` progress stage and `screeningSkips` are gone; the cache payload keeps the three frozen racing literals (`fullPool: true`, `screenIterations: null`, `promoteTopK: null`) and no `promoteTopJ` — deliberate divergence from core's four; ticket 212's `simDatabaseFor` threading ported in core's post-`ea8f916` shape (one `compose(deps.raidSimSkeleton` call, inside a single `composeFor` closure that all four compose sites call; `buildSetBonuses` takes `composeFor` as a parameter rather than resolving a database of its own); `PRESET_ID_BY_SPEC` values stay the fork's `<spec>/current-page-settings` labels rather than core's file paths, because the skeleton comes from the page and no such file exists here | `d17170d22b8bca2364589bc5ad65c26bd0419f16bbc1b52ea33ea8c717c6606b` |
+| `candidate-order.ts` | `candidate-order.ts` | none (import paths only) | `69238fe0e37b4f59be53fbc553e33f31528f3097573c421d8d1c2fc0a06b8835` |
 | `promise-pool.ts` | `promise-pool.ts` | none | `3b93e38dd3c2e8b5413dc93b0771f63face959717e1a4fbd03883fb0c38ff8ff` |
 | `seams/gear-source.ts` | `seams/gear-source.ts` | none | `085d3a088a19aa5b8a28db6a2f219df6d0b44ecb39a42568c9788a21e7137cfe` |
 | `seams/sim-runner.ts` | `seams/sim-runner.ts` | adapted — cache key is canonical-JSON string, no `node:crypto` (D4) | `7540cbc3d0f03f662d937bac65669b053b1db9cae9f42f1b0a8a99c6cfd39595` |

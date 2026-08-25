@@ -1,0 +1,26 @@
+{
+  "source": "tbc-new-fork ui/shaman/enhancement/presets.ts P3_EP_PRESET",
+  "pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
+  "label": "P3 (WiP)",
+  "notes": [
+    "Transcribed from the fork, not upstream: ui/shaman/enhancement/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
+    "ui/shaman/enhancement/sim.ts:77 wires P1_EP_PRESET"
+  ],
+  "weights": {
+    "0": 2.2,
+    "1": 1.69,
+    "3": 0.1,
+    "5": 0.48,
+    "10": 0.35,
+    "17": 1.0,
+    "20": 1.91,
+    "21": 1.74,
+    "22": 1.94,
+    "23": 0.33,
+    "24": 2.73
+  },
+  "pseudoWeights": {
+    "0": 8.25,
+    "1": 3.61
+  }
+}

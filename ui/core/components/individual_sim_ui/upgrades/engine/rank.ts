@@ -368,6 +368,15 @@ const DEFAULT_SEEDS = [11, 22, 33, 44, 55];
 const PRESET_ID_BY_SPEC: Record<SpecId, string> = {
   ret: "ret/current-page-settings",
   feral: "feral/current-page-settings",
+  balance: "balance/current-page-settings",
+  hunter: "hunter/current-page-settings",
+  mage: "mage/current-page-settings",
+  shadow: "shadow/current-page-settings",
+  rogue: "rogue/current-page-settings",
+  ele: "ele/current-page-settings",
+  enh: "enh/current-page-settings",
+  warlock: "warlock/current-page-settings",
+  warrior: "warrior/current-page-settings",
 };
 
 function presetIdFor(spec: SpecId): string {
@@ -475,7 +484,8 @@ export async function rankUpgrades(
     eligible,
     equipment,
     deps.epWeights,
-    (itemId) => getItem(itemId)?.stats ?? []
+    (itemId) => getItem(itemId)?.stats ?? [],
+    input.spec
   );
 
   const simVersion = await deps.sim.version();
@@ -623,7 +633,11 @@ export async function rankUpgrades(
      */
     async function runCandidate(entry: PoolEntry): Promise<void> {
       const owned = equippedIds.has(entry.itemId);
-      const slotNames = simSlotsForPoolSlot(entry.slot);
+      const slotNames = simSlotsForPoolSlot(
+        entry.slot,
+        input.spec,
+        entry.itemId
+      );
       let best: BestSwap | null = null;
 
       for (let s = 0; s < slotNames.length; s++) {
@@ -685,8 +699,18 @@ export async function rankUpgrades(
             stdev: candObs.stdev,
             request: candReq,
             slotIndex,
-            hitDriven: isHitDriven(statDelta, caps.hit, { deltaDps }),
-            hitRegression: hitRegression(statDelta, caps.hit, { deltaDps }),
+            hitDriven: isHitDriven(
+              statDelta,
+              caps.hit,
+              { deltaDps },
+              input.spec
+            ),
+            hitRegression: hitRegression(
+              statDelta,
+              caps.hit,
+              { deltaDps },
+              input.spec
+            ),
             repairSwaps,
             candidateGems: swapped[slotIndex]?.gems ?? [],
           };
@@ -1098,7 +1122,11 @@ async function buildSetBonuses(
 
   const wornCounts = setCounts(equipment);
   const slotIndexForPoolEntry = (entry: PoolEntry): number | undefined => {
-    for (const slotName of simSlotsForPoolSlot(entry.slot)) {
+    for (const slotName of simSlotsForPoolSlot(
+      entry.slot,
+      input.spec,
+      entry.itemId
+    )) {
       const idx = SIM_ORDER.indexOf(slotName);
       if (idx >= 0) return idx;
     }

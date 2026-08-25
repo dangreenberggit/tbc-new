@@ -1,0 +1,25 @@
+{
+  "source": "tbc-new-fork ui/rogue/dps/presets.ts P1_EP_PRESET",
+  "pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
+  "label": "Combat Swords",
+  "notes": [
+    "Transcribed from the fork, not upstream: ui/rogue/dps/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
+    "ui/rogue/dps/sim.ts:76 wires P1_EP_PRESET; it is the only rogue preset"
+  ],
+  "weights": {
+    "0": 1.1,
+    "1": 2.17,
+    "2": 0.01,
+    "17": 1.0,
+    "20": 3.06,
+    "21": 1.7,
+    "22": 2.19,
+    "23": 0.3,
+    "24": 3.47,
+    "41": 8.47
+  },
+  "pseudoWeights": {
+    "0": 9.34,
+    "1": 3.4
+  }
+}

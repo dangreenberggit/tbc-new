@@ -923,7 +923,11 @@
 			"candidate_cap_note": "top {{cap}} candidates simmed in full, plus anything you already own",
 			"substitutions_title": "Dropped candidates and substitutions ({{count}})",
 			"engine_provenance": "Engine (fork commit)",
-			"sim_version": "Sim version"
+			"sim_version": "Sim version",
+			"ep_weights": "EP weights",
+			"ep_weights_note": "written for {{from}}, ranking {{requested}}",
+			"source_attribution": "Source attribution",
+			"source_attribution_partial": "partial — {{count}} items were admitted by their database phase and carry no drop, badge or vendor detail"
 		}
 	},
 	"bulk_tab": {
