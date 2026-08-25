@@ -275,13 +275,21 @@ export function epWeightsDisclosureFor(
 }
 
 /**
- * How many of the chosen universe's entries carry no source detail.
+ * How many of the chosen universe's entries were admitted by database phase
+ * alone, and so carry no source detail.
  *
  * The nine specs added by the all-DPS-specs pass have no Wowhead list layer,
  * so their badge, PvP and vendor gear is admitted on its database `phase`
  * alone and ships `{kind: "unknown", origin: "db"}`. The item is really in
  * the pool and really available at that phase; what is missing is where it
- * comes from. Ret and feral return 0 — their list layer supplies the detail.
+ * comes from.
+ *
+ * The test is on **`origin`**, not on `kind`. `kind: "unknown"` is also what
+ * a *curated* force-include carries — ret's ticket-157 items are exactly that
+ * shape — and counting those made ret disclose "8 items admitted by their
+ * database phase" when its db-phase count is zero. A curated row is a claim
+ * somebody made deliberately, which is the opposite of the missing
+ * attribution this line reports.
  */
 export function unsourcedCountFor(
   spec: SpecId,
@@ -291,8 +299,16 @@ export function unsourcedCountFor(
   if (!choice) return 0;
   let n = 0;
   for (const entry of choice.universe.entries) {
-    const sources = (entry as { sources?: Array<{ kind?: string }> }).sources;
-    if (sources?.length === 1 && sources[0]?.kind === "unknown") n++;
+    const sources = (
+      entry as { sources?: Array<{ kind?: string; origin?: string }> }
+    ).sources;
+    if (
+      sources?.length === 1 &&
+      sources[0]?.kind === "unknown" &&
+      sources[0]?.origin === "db"
+    ) {
+      n++;
+    }
   }
   return n;
 }
