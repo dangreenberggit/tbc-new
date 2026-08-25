@@ -171,31 +171,37 @@ function formatDelta(deltaDps: number): string {
 }
 
 /**
- * The done-state Rank cell. `rank` is null for rows the engine never ranked —
- * unsimmed, or below the cutoff — and those render an em dash rather than a
- * number they do not have.
+ * Column identity for the sortable columns in both results-table heads
+ * (ticket 280, ticket 289, ticket 287 follow-through). One id per `<th>`,
+ * in table order *after* the fixed Rank column — `resultsTableHead` and
+ * `sortableResultsTableHead` both render Rank first, then these, so the
+ * on-screen column order is `[rank, ...RESULTS_SORT_COLUMNS]`. `rank` is
+ * deliberately absent here: the cell is a display position, never a value
+ * to sort by (`rankColumnLabel`, `resultsSortKey`). The mobile SCSS's
+ * `nth-child` column-width rules depend on the total column count (five)
+ * and this order staying put, so a new column would need matching
+ * `nth-child` rules in `_upgrades_tab.scss`.
  */
-function rankTextFor(row: Pick<RankedItem, 'rank'>): string {
-	return row.rank !== null ? String(row.rank) : '—';
-}
-
-/**
- * Column identity for both results-table heads (ticket 280, ticket 289). One
- * id per `<th>`, in table order — `resultsTableHead`, `sortColumnFor`, and
- * `sortableResultsTableHead` all index off this order, and the mobile SCSS's
- * `nth-child` column-width rules depend on this exact column count and order
- * staying put, so a new column here would need matching `nth-child` rules in
- * `_upgrades_tab.scss`.
- */
-const RESULTS_SORT_COLUMNS = ['rank', 'item', 'slot', 'delta_dps', 'source'] as const;
+const RESULTS_SORT_COLUMNS = ['item', 'slot', 'delta_dps', 'source'] as const;
 type ResultsSortColumn = (typeof RESULTS_SORT_COLUMNS)[number];
 
 /**
+ * The Rank column's header label. Not part of `RESULTS_SORT_COLUMNS`: the
+ * cell shows a row's position in its own table's current display order (not
+ * `RankedItem.rank`), so sorting by it would be a tautology — there is
+ * nothing to click. Both table heads render it as the same fixed first
+ * column, ahead of the sortable columns.
+ */
+function rankColumnLabel(): string {
+	return i18n.t('upgrades_tab.results.rank');
+}
+
+/**
  * The results table header. Both this and `sortableResultsTableHead` render
- * from `RESULTS_SORT_COLUMNS` so the mid-run table and the done-state tables
- * cannot drift into different column sets, which is how the mid-run table
- * ended up four columns wide with no Rank (ticket 278), and how a sortable
- * variant reintroduced that same drift risk (ticket 289).
+ * the Rank column plus `RESULTS_SORT_COLUMNS` so the mid-run table and the
+ * done-state tables cannot drift into different column sets, which is how
+ * the mid-run table ended up four columns wide with no Rank (ticket 278),
+ * and how a sortable variant reintroduced that same drift risk (ticket 289).
  *
  * Plain, non-interactive header for tables with no stable row set to sort —
  * the mid-run skeleton fill and the Stop-truncated result render straight
@@ -207,6 +213,7 @@ function resultsTableHead(): Node {
 	return (
 		<thead>
 			<tr>
+				<th>{rankColumnLabel()}</th>
 				{RESULTS_SORT_COLUMNS.map((column) => (
 					<th>{resultsSortColumnLabel(column)}</th>
 				))}
@@ -227,16 +234,12 @@ function resultsSortColumnLabel(column: ResultsSortColumn): string {
 
 /**
  * Sort-key extraction for each column, applied to the done-state `ViewRow`
- * shape. `rank` sorts on the engine's own rank (nulls — unsimmed or
- * below-cutoff rows — key as +Infinity, so they sort last ascending and
- * first descending; unobservable today because every sortable table has
- * uniform rank nullity); the other columns sort on the same text/number a
- * reader sees in that cell.
+ * shape. Every column sorts on the same text/number a reader sees in that
+ * cell. The Rank column carries no key of its own — it is a display
+ * position, not a value to sort by (see `RESULTS_SORT_COLUMNS`).
  */
 function resultsSortKey(column: ResultsSortColumn, row: ViewRow): string | number {
 	switch (column) {
-		case 'rank':
-			return row.rank ?? Number.POSITIVE_INFINITY;
 		case 'item':
 			return row.name.toLowerCase();
 		case 'slot':
@@ -254,13 +257,9 @@ function resultsSortKey(column: ResultsSortColumn, row: ViewRow): string | numbe
  * `applyView`'s `compareRows`) so a sort that does not distinguish two rows
  * never reshuffles them arbitrarily.
  *
- * The Rank column's *values* are never recomputed here (ticket 280's "Done
- * when": the engine's rank stays fixed to the row) — sorting by another
- * column only changes row order, never what any cell displays. A `rank`
- * sort re-derives the engine's own ordering (nulls last), which is the same
- * order `rows` already carries; naming it explicitly lets a reader return to
- * that order after sorting by something else, rather than only being able to
- * approximate it by clicking every other header away.
+ * The Rank column is not sortable (see `RESULTS_SORT_COLUMNS`) and always
+ * shows each row's 1-based position in the order this function returns, so
+ * sorting by another column renumbers Rank rather than leaving it fixed.
  */
 function sortRows(rows: readonly ViewRow[], sort: ResultsSort): ViewRow[] {
 	const dir = sort.direction === 'asc' ? 1 : -1;
@@ -1249,7 +1248,7 @@ export class UpgradesTab extends SimTab {
 				{this.sortableResultsTableHead()}
 				<tbody>
 					{sortedShortlist.length > 0 ? (
-						sortedShortlist.map((row) => this.resultRow(row, { rankText: rankTextFor(row) }))
+						sortedShortlist.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }))
 					) : (
 						<tr>
 							<td colSpan={5} className="text-muted">
@@ -1284,6 +1283,11 @@ export class UpgradesTab extends SimTab {
 	 * case ARIA defines the attribute for.
 	 */
 	private sortableResultsTableHead(): Node {
+		const rankCell = (
+			<th className="upgrades-results-header" attributes={{ role: 'columnheader' }}>
+				{rankColumnLabel()}
+			</th>
+		);
 		const cells = RESULTS_SORT_COLUMNS.map((column) => {
 			const active = this.resultsSort?.column === column;
 			const ariaSort = active ? (this.resultsSort!.direction === 'asc' ? 'ascending' : 'descending') : 'none';
@@ -1307,7 +1311,10 @@ export class UpgradesTab extends SimTab {
 		});
 		return (
 			<thead>
-				<tr>{cells}</tr>
+				<tr>
+					{rankCell}
+					{cells}
+				</tr>
 			</thead>
 		);
 	}
@@ -1352,7 +1359,12 @@ export class UpgradesTab extends SimTab {
 		// row group under a sorted shortlist reading in the old engine order
 		// would look like the sort silently stopped at the fold.
 		const sorted = this.resultsSort ? sortRows(rows, this.resultsSort) : rows;
-		tbodyRef.value!.replaceChildren(...sorted.map((row) => this.resultRow(row, { rankText: rankTextFor(row) })));
+		// Numbered 1..N within this table, independent of the shortlist above it
+		// (owner ruling, ticket 287 follow-through): the below-cutoff group is
+		// its own set of displayed items, not a continuation of the shortlist's
+		// count, and the engine's `rank` this used to show is no longer surfaced
+		// anywhere in the UI.
+		tbodyRef.value!.replaceChildren(...sorted.map((row, i) => this.resultRow(row, { rankText: String(i + 1) })));
 		return details;
 	}
 
@@ -1366,10 +1378,11 @@ export class UpgradesTab extends SimTab {
 	 * the callers group below-cutoff rows into their own table — so the only
 	 * difference the renderer needs handed to it is the Rank text.
 	 *
-	 * `rankText` is a string because the two states mean different things by
-	 * it: done-state rows carry the engine's own `rank` (null for unsimmed and
-	 * below-cutoff rows, rendered "—"), while mid-run rows have no final rank
-	 * at all and show a provisional position in the current delta order.
+	 * `rankText` is always a caller-supplied 1-based position in whichever
+	 * table this row is rendering into (the shortlist, a slot pane, the
+	 * below-cutoff group, or the mid-run skeleton), never the engine's own
+	 * `RankedItem.rank` — the UI no longer shows that value (owner ruling,
+	 * ticket 287 follow-through).
 	 */
 	private resultRow(row: RankedItem, display: { rankText: string }): Node {
 		const deltaLabel = formatDelta(row.deltaDps);
