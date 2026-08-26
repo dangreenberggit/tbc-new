@@ -215,3 +215,20 @@ Two kinds of change, both deliberate:
   rather than as an equip rule.
 
 No shared entry differed in content in any of the 28 files — membership only.
+
+## Refresh, 2026-08-25 (ret policy note corrected)
+
+`ret-p2/p3/p4/p5.universe.json` only, and **text only — no membership change**
+(`0 local-only; 0 fork-only; 0 shared entries differ in content`; the delta is
+the payload's `d7Note` string).
+
+Pre-merge review found two defects in the same note:
+
+- The generator published a policy justification only for a weapon-type
+  exclusion, so ret's two-hander rule — which is a hand-type rule — shipped its
+  mandatory note silently. A reader of the artifact could not learn why the
+  one-handers were missing. `scripts/check_policy_notes.py` now pins each
+  policy kind separately.
+- The note cited "Bulwark of Azzinoth (id 28593)". 28593 is Eternium Greathelm,
+  a plate helm that is legitimately **in** ret's pool; Bulwark of Azzinoth is
+  32375. The example named an included item as an excluded one.
