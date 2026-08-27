@@ -1331,7 +1331,18 @@ export class UpgradesTab extends SimTab {
 	 * (ticket 280).
 	 */
 	private rowsTable(shortlist: ViewRow[], allRows: ViewRow[]): Node {
-		const belowCutoffRows = allRows.filter((r) => r.belowCutoffInView);
+		// Items the player already wears cannot be an upgrade, so listing them
+		// under "below the cutoff" is noise that makes the group read as broken
+		// (ticket 304 item 7). Owned rows are dropped from this group only --
+		// owned *shortlist* rows stay kept-and-greyed, which is the behaviour
+		// ticket 269 is about, and `hideOwned`/`greyOwned` are untouched.
+		//
+		// The engine's `belowCutoffCount` (engine/view.ts) deliberately keeps
+		// its delta-only semantics and still counts owned rows, so the rendered
+		// group is that count minus the owned rows. That divergence is safe
+		// today because the count has no reader anywhere in this UI beyond its
+		// own construction; a future consumer should read this comment first.
+		const belowCutoffRows = allRows.filter((r) => r.belowCutoffInView && !r.owned);
 		if (shortlist.length === 0 && belowCutoffRows.length === 0) {
 			return <div className="text-muted">{i18n.t('upgrades_tab.results.empty_no_upgrades')}</div>;
 		}
