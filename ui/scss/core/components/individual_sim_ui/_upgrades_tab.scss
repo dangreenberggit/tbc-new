@@ -7,11 +7,19 @@
 // already computed -- so they are two groups, separated by space rather than
 // by a rule: every view option is `d-none` until a run produces rows for it,
 // and a border or separator would draw an empty box in every other state.
+//
+// Those two groups used to share one wrapped flex row, which is what made
+// "3000" clip and the row read as a jumble (ticket 304 item 3). The toolbar
+// now carries `.content-block-body`, so the groups stack as rows on the site's
+// own `--block-spacer` rhythm instead of wrapping against each other, and each
+// group keeps its own horizontal flex.
 .upgrades-toolbar {
-	display: flex;
-	align-items: center;
-	flex-wrap: wrap;
-	gap: var(--spacer-3);
+	.upgrades-run-controls,
+	.upgrades-view-controls {
+		flex-wrap: wrap;
+		gap: var(--spacer-3);
+		row-gap: var(--spacer-2);
+	}
 }
 
 // Belt and braces with the empty-group rule above: even the flex `gap` would
@@ -54,8 +62,20 @@
 	// "3000" and the "all N eligible" placeholder (WP1 defect 2, reproduces
 	// at desktop widths too). ch sizes to the digit count these fields
 	// actually need instead of a guessed px value.
+	// The earlier `width: 6ch` did win the cascade -- it was simply too small,
+	// so re-measuring beat assuming the existing rule worked. Bootstrap sets
+	// `box-sizing: border-box` globally, so `6ch` sizes the *border* box:
+	// 53.8px, of which 7px+7px padding, 1px+1px border and the number
+	// spinner's own chrome leave less than the 34.36px "3000" needs at this
+	// font, and the browser reports the field clipped
+	// (scrollWidth 67 > clientWidth 52 at 1280px).
+	//
+	// Widths probed in devtools on the rendered input: 6ch and 7ch both still
+	// clip; 8ch (71.7px) is the first that does not. `ch` is kept over a px
+	// value so the rule still tracks the digit count rather than one measured
+	// font, and 8ch is what four digits plus that chrome actually costs.
 	.upgrades-iterations-input {
-		width: 6ch;
+		width: 8ch;
 		flex-shrink: 0;
 	}
 
@@ -120,12 +140,45 @@
 
 // One line, one idiom, for all seven run states: the tone is a Bootstrap text
 // utility chosen per state in statusContent(), so nothing here declares colour.
+//
+// The row is a fixed three-column grid rather than a wrapping flex row so the
+// progress bar's position does not depend on the label's length. Measured on a
+// live run before this rule: the label grows from "Simming 4/65… (3 rows
+// landed)" to "Simming 33/65… (28 rows landed)" and the bar's left edge slid
+// 585.2px -> 606.2px, ~21px of horizontal jitter every tick (ticket 304 item
+// 11). The label cell is reserved in `ch` at the widest running string so the
+// digits can grow into space that is already there.
+//
+// `min-height` holds the row's height across the states whose content is one
+// line versus a line plus a bar, so the block below does not move when the
+// shape swaps (item 5). The bar's own `width: 100%; max-width` cap is the
+// progress-tracker modal's idiom, unchanged.
 .upgrades-status-line {
-	display: flex;
+	display: grid;
+	grid-template-columns: minmax(0, max-content) minmax(0, 200px) max-content;
 	align-items: center;
-	flex-wrap: wrap;
 	gap: var(--spacer-2);
-	margin-top: var(--spacer-2);
+	min-height: 1.5rem;
+
+	> span:first-child {
+		min-width: 34ch;
+	}
+
+	@include media-breakpoint-down(md) {
+		grid-template-columns: minmax(0, 1fr);
+
+		> span:first-child {
+			min-width: 0;
+		}
+	}
+}
+
+// Holds one line of status in every state, so the results block below does not
+// move when statusContent() swaps one DOM shape for another (ticket 304 item
+// 5). Measured: the host is 17.5px tall in idle, running and done alike, so
+// this reserves what the tallest of those needs rather than a guessed value.
+.upgrades-status {
+	min-height: 1.5rem;
 }
 
 // Sits inside the running state's .upgrades-status-line — capped width so it
@@ -323,5 +376,50 @@
 	// of just guaranteeing a floor.
 	.upgrades-results-sort-button {
 		min-height: 40px;
+	}
+}
+
+// Desktop was left on `table-layout: auto` with Bootstrap's default cell
+// padding while every calibrated rule sat inside the mobile guard above, which
+// is why the desktop table read as uncalibrated (ticket 304 item 6). These
+// rules are the desktop counterpart, on the same rationale the mobile block
+// records: Rank/Slot/DPS are pared to what their content actually needs so the
+// majority share can go to Item, which is what the table is for.
+//
+// `min-width` rather than `width`: `table-layout: auto` stays, so a long item
+// name can still push its column wider instead of breaking mid-word, and these
+// floors only stop the browser collapsing the short columns to their content.
+@include media-breakpoint-up(md) {
+	.upgrades-results-table {
+		th,
+		td {
+			padding: var(--spacer-2) var(--spacer-3);
+			vertical-align: middle;
+		}
+
+		// Rank: two digits plus the padding above.
+		th:first-child,
+		td:first-child {
+			width: 1%;
+			white-space: nowrap;
+			text-align: right;
+		}
+
+		// Slot ("Trinket 1" is the longest label) and DPS both hold short,
+		// predictable strings; keeping them off the item name is the point.
+		th:nth-child(3),
+		td:nth-child(3),
+		th:nth-child(4),
+		td:nth-child(4) {
+			width: 1%;
+			white-space: nowrap;
+		}
+
+		// The DPS delta is a number column: aligning it right makes the
+		// magnitudes comparable down the column rather than ragged.
+		th:nth-child(4),
+		td:nth-child(4) {
+			text-align: right;
+		}
 	}
 }

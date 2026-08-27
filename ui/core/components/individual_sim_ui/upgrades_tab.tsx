@@ -456,8 +456,8 @@ export class UpgradesTab extends SimTab {
 		const assumptionsRef = ref<HTMLDivElement>();
 
 		this.shoppingListElem.appendChild(
-			<div className="upgrades-shopping-list p-gap">
-				<div className="upgrades-toolbar">
+			<div className="upgrades-shopping-list p-gap content-block">
+				<div className="upgrades-toolbar content-block-body">
 					<div className="upgrades-run-controls d-flex align-items-center gap-2">
 						<button ref={runButtonRef} className="btn btn-primary upgrades-run-button" type="button">
 							{i18n.t('upgrades_tab.run')}
@@ -556,8 +556,15 @@ export class UpgradesTab extends SimTab {
 					attributes={{ role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' }}
 				/>
 				<div ref={errorAlertRef} className="upgrades-status-alert visually-hidden" attributes={{ role: 'alert' }} />
-				<div ref={resultsRef} className="upgrades-results mt-gap" />
-				<div ref={assumptionsRef} className="upgrades-assumptions mt-gap" />
+				{/*
+				 * The block rhythm comes from `.content-block`'s own `gap`
+				 * (`--block-spacer`) on the wrapper, not from per-element `mt-gap`
+				 * utilities: the spacing between the toolbar, status, results and
+				 * assumptions is one decision made once, so a state that renders
+				 * nothing collapses its slot instead of leaving a stranded margin.
+				 */}
+				<div ref={resultsRef} className="upgrades-results" />
+				<div ref={assumptionsRef} className="upgrades-assumptions" />
 			</div>,
 		);
 
