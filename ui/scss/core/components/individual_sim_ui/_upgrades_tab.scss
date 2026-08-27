@@ -22,14 +22,22 @@
 	}
 }
 
-// Belt and braces with the empty-group rule above: even the flex `gap` would
-// show as extra space beside a zero-width group, so the group is removed from
-// layout entirely while all of its children are hidden.
-// `!important` because the group carries Bootstrap's `.d-flex`, which is
-// itself `display: flex !important` -- without it this rule always loses and
-// the hidden group still claims the toolbar's `gap`.
-.upgrades-view-controls:not(:has(> :not(.d-none))) {
-	display: none !important;
+// The view-control row's height is reserved from the first paint instead of
+// appearing with the first results (owner ruling, ticket 304 item 5).
+//
+// Measured cause of the jump the owner reported: the status host is a constant
+// height in idle, running and done alike, so the status line was never the
+// culprit. `.upgrades-toolbar` grew from 69.6px to 108.1px at completion, when
+// refreshViewControlVisibility() reveals these filters, and pushed everything
+// below it down ~82px.
+//
+// This deliberately overrides the earlier WP5 decision to remove the group
+// from layout while empty. That decision's stated concern was not drawing an
+// empty *bordered box* in the pre-run states; reserving bare height with no
+// border and no separator honours the concern while removing the jump. The
+// cost is an empty strip before the first run, which the owner accepted.
+.upgrades-view-controls {
+	min-height: 2.25rem;
 }
 
 .upgrades-run-controls,
@@ -421,5 +429,63 @@
 		td:nth-child(4) {
 			text-align: right;
 		}
+	}
+}
+
+// De-emphasised text, ticket 304 item 1.
+//
+// This tab used Bootstrap's `.text-muted` for every secondary string. That was
+// never a site idiom -- `grep -rn text-muted ui` finds it in exactly two files,
+// this tab and its WCL import modal, both of which we added; nothing upstream
+// uses it, `.text-body-secondary` or `.text-secondary`, and no SCSS consumes
+// `--bs-secondary-color`. It was also unreadable: the fork sets `$body-bg` and
+// `$body-color` but never `$body-secondary-color`, so Bootstrap 5.3 emits its
+// light-theme default and `.text-muted` computed to rgba(33, 37, 41, .75) over
+// #15171e -- a measured contrast of 1.11:1.
+//
+// What upstream actually does for de-emphasised text is set an explicit grey:
+// `--bs-gray-300` in _dropdown_picker.scss:26, `--bs-gray-500` in
+// _stat_weights_action.scss:124, `$gray-600` for `$form-text-color`. This
+// borrows that convention rather than repairing a token nothing else reads,
+// which also keeps the change inside this tab instead of re-theming the site.
+//
+// gray-500 measures 8.63:1 against the body background, comfortably past the
+// 4.5:1 AA floor for body text. gray-600 was rejected: it measures 3.82:1 and
+// fails AA.
+.upgrades-text-secondary {
+	color: var(--bs-gray-500);
+}
+
+// Owned rows are secondary by meaning -- "you already have this" -- so they
+// keep a de-emphasis, but through one mechanism instead of the two that were
+// stacked here before (`upgrades-row-owned text-muted`). The row keeps the
+// readable grey; the `(Owned)` suffix carries the same class inline.
+.upgrades-row-owned {
+	color: var(--bs-gray-500);
+}
+
+// Empty states, ticket 304 item 2. Borrowed from the site's only empty-state
+// precedent, `#noResultsTab` (_detailed_results.scss:89-95): centred, padded
+// on `--gap-width`. That rule supplies centring and padding and nothing else,
+// so the heading and call-to-action treatment below is a local addition and is
+// stated as such rather than claimed as a borrow.
+.upgrades-empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: var(--spacer-2);
+	padding: var(--gap-width);
+	text-align: center;
+
+	.upgrades-empty-state-title {
+		font-weight: bold;
+		margin-bottom: 0;
+	}
+
+	.upgrades-empty-state-body {
+		color: var(--bs-gray-500);
+		margin-bottom: 0;
+		max-width: 48ch;
 	}
 }

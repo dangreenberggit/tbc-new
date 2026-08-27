@@ -904,9 +904,12 @@
 			"owned": "Owned",
 			"bis_badge": "★ BiS",
 			"alt_badge": "Alt",
-			"empty_no_ranking": "No finished ranking to show.",
+			"empty_no_ranking": "No ranking yet",
+			"empty_no_ranking_body": "This tab ranks gear upgrades against the character and settings on this page. Press Run to start.",
 			"rows_pending": "Rows appear here as their sims finish.",
-			"empty_no_upgrades": "No upgrades found above the cutoff.",
+			"empty_no_upgrades": "No upgrades found",
+			"empty_no_upgrades_body": "Every candidate simmed at or below your current gear. Widen the phase or content filter to consider more items.",
+			"empty_unsupported_spec_body": "Ranking data has not been built for this spec yet, so there is nothing to run.",
 			"below_cutoff_group": "{{count}} item(s) below the cutoff"
 		},
 		"assumptions": {

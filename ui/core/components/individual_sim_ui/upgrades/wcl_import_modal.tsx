@@ -93,7 +93,7 @@ export class WclGearImportModal extends BaseModal {
       case "roster-pick":
         return this.rosterPickContent(this.step.reportCode, this.step.fightId, this.step.roster);
       case "loading":
-        return <div className="text-muted">{this.step.message}</div>;
+        return <div className="upgrades-text-secondary">{this.step.message}</div>;
       case "error":
         return (
           <div>
@@ -113,7 +113,7 @@ export class WclGearImportModal extends BaseModal {
     const urlInputRef = ref<HTMLInputElement>();
     return (
       <div>
-        <p className="text-muted">
+        <p className="upgrades-text-secondary">
           Paste a report link, e.g. https://classic.warcraftlogs.com/reports/AbCd1234#fight=5. Only the 17 equipment slots are
           applied — talents, rotation, buffs, and consumes on this page stay exactly as you set them.
         </p>
@@ -158,7 +158,7 @@ export class WclGearImportModal extends BaseModal {
   private fightPickContent(reportCode: string, fights: WclFightSummary[]): Node {
     return (
       <div>
-        <p className="text-muted">No fight ID in the link — pick a fight:</p>
+        <p className="upgrades-text-secondary">No fight ID in the link — pick a fight:</p>
         <ul className="list-group">
           {fights.map((f) => (
             <li className="list-group-item list-group-item-action" attributes={{ role: 'button' }}>
@@ -197,7 +197,7 @@ export class WclGearImportModal extends BaseModal {
   private rosterPickContent(_reportCode: string, _fightId: number, roster: WclRosterEntry[]): Node {
     return (
       <div>
-        <p className="text-muted">Pick your character:</p>
+        <p className="upgrades-text-secondary">Pick your character:</p>
         <ul className="list-group">
           {roster.map((entry) => (
             <li className="list-group-item list-group-item-action" attributes={{ role: 'button' }}>

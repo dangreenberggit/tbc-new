@@ -931,9 +931,9 @@ export class UpgradesTab extends SimTab {
 	private statusContent(): Node {
 		switch (this.state.kind) {
 			case 'idle':
-				return <div className="upgrades-status-line text-muted">{i18n.t('upgrades_tab.status.idle')}</div>;
+				return <div className="upgrades-status-line">{i18n.t('upgrades_tab.status.idle')}</div>;
 			case 'unsupported-spec':
-				return <div className="upgrades-status-line text-muted">{i18n.t('upgrades_tab.status.unsupported_spec')}</div>;
+				return <div className="upgrades-status-line">{i18n.t('upgrades_tab.status.unsupported_spec')}</div>;
 			case 'running': {
 				// Row-landed count (candidate-pool.md §5.1.5), not just the stage
 				// label — "Simming 12/246" is more useful mid-run than the stage
@@ -944,7 +944,7 @@ export class UpgradesTab extends SimTab {
 					count: this.landedRows.length,
 				});
 				return (
-					<div className="upgrades-status-line text-muted">
+					<div className="upgrades-status-line">
 						<span>{text}</span>
 						{this.progressBarContent(this.state.progress)}
 					</div>
@@ -973,7 +973,7 @@ export class UpgradesTab extends SimTab {
 						{this.elapsedContent()}
 					</div>
 				) : (
-					<div className="upgrades-status-line text-muted">
+					<div className="upgrades-status-line">
 						{label} {this.elapsedContent()}
 					</div>
 				);
@@ -1281,8 +1281,43 @@ export class UpgradesTab extends SimTab {
 		// results area blank. An empty panel reads as "it found nothing",
 		// which is a different (and discouraging) claim from "nothing has
 		// been asked yet".
-		if (view === undefined) return <div className="text-muted">{i18n.t('upgrades_tab.results.empty_no_ranking')}</div>;
+		if (view === undefined) {
+			// Idle is the one empty state that gets a call to action: pressing
+			// Run is exactly what resolves it. The unsupported-spec variant
+			// below deliberately has none, because Run cannot help there.
+			return this.state.kind === 'unsupported-spec'
+				? this.emptyState(i18n.t('upgrades_tab.status.unsupported_spec'), i18n.t('upgrades_tab.results.empty_unsupported_spec_body'))
+				: this.emptyState(
+						i18n.t('upgrades_tab.results.empty_no_ranking'),
+						i18n.t('upgrades_tab.results.empty_no_ranking_body'),
+						() => this.runButton.click(),
+					);
+		}
 		return this.rowsTable(view.shortlist, view.rows);
+	}
+
+	/**
+	 * The three empty states say three different things (ticket 304 item 2):
+	 * "nothing has been asked yet", "this is still filling in", and "the run
+	 * worked and found nothing". Only the first two render through here -- the
+	 * pending one is a single transient line and gets no heading, because a
+	 * heading and a button would invite the user to interrupt their own run.
+	 *
+	 * `onAction` is optional so the same shape serves the state that can be
+	 * resolved by pressing Run and the one that cannot.
+	 */
+	private emptyState(title: string, body: string, onAction?: () => void): Node {
+		return (
+			<div className="upgrades-empty-state">
+				<p className="upgrades-empty-state-title">{title}</p>
+				<p className="upgrades-empty-state-body">{body}</p>
+				{onAction ? (
+					<button className="btn btn-primary btn-sm" type="button" onclick={onAction}>
+						{i18n.t('upgrades_tab.run')}
+					</button>
+				) : null}
+			</div>
+		);
 	}
 
 	/**
@@ -1298,7 +1333,7 @@ export class UpgradesTab extends SimTab {
 		if (simmedRows.length === 0) {
 			// No row has landed yet — nothing has been measured, so this is the
 			// "no results yet" message, not "the run found nothing".
-			return <div className="text-muted">{i18n.t('upgrades_tab.results.rows_pending')}</div>;
+			return <div className="upgrades-text-secondary">{i18n.t('upgrades_tab.results.rows_pending')}</div>;
 		}
 		// Sorted at render time, on a copy. The engine emits no ordering for
 		// these rows — there is no complete Ranking to run through applyView
@@ -1351,7 +1386,10 @@ export class UpgradesTab extends SimTab {
 		// own construction; a future consumer should read this comment first.
 		const belowCutoffRows = allRows.filter((r) => r.belowCutoffInView && !r.owned);
 		if (shortlist.length === 0 && belowCutoffRows.length === 0) {
-			return <div className="text-muted">{i18n.t('upgrades_tab.results.empty_no_upgrades')}</div>;
+			// A result, not an absence: the run worked and nothing cleared the
+			// cutoff. No Run call to action -- re-running the same settings
+			// gives the same answer, so the body points at the filters instead.
+			return this.emptyState(i18n.t('upgrades_tab.results.empty_no_upgrades'), i18n.t('upgrades_tab.results.empty_no_upgrades_body'));
 		}
 		const sortedShortlist = this.resultsSort ? sortRows(shortlist, this.resultsSort) : shortlist;
 		const table = (
@@ -1362,7 +1400,7 @@ export class UpgradesTab extends SimTab {
 						sortedShortlist.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }))
 					) : (
 						<tr>
-							<td colSpan={5} className="text-muted">
+							<td colSpan={5} className="upgrades-text-secondary">
 								{i18n.t('upgrades_tab.results.empty_no_upgrades')}
 							</td>
 						</tr>
@@ -1498,7 +1536,7 @@ export class UpgradesTab extends SimTab {
 	private resultRow(row: RankedItem, display: { rankText: string }): Node {
 		const deltaLabel = formatDelta(row.deltaDps);
 		return (
-			<tr className={row.owned ? 'upgrades-row-owned text-muted' : ''}>
+			<tr className={row.owned ? 'upgrades-row-owned' : ''}>
 				<td>{display.rankText}</td>
 				<td>{this.itemCell(row)}</td>
 				<td>{slotLabel(effectiveSlot(row))}</td>
@@ -1538,7 +1576,7 @@ export class UpgradesTab extends SimTab {
 					</span>
 				</a>
 				{bisLabel ? <span className="badge rounded-pill upgrades-bis-badge ms-1">{bisLabel}</span> : null}
-				{row.owned ? <span className="text-muted ms-1">{`(${i18n.t('upgrades_tab.results.owned')})`}</span> : null}
+				{row.owned ? <span className="upgrades-text-secondary ms-1">{`(${i18n.t('upgrades_tab.results.owned')})`}</span> : null}
 			</span>
 		);
 

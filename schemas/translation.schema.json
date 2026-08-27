@@ -8875,10 +8875,19 @@
 						"empty_no_ranking": {
 							"type": "string"
 						},
+						"empty_no_ranking_body": {
+							"type": "string"
+						},
 						"rows_pending": {
 							"type": "string"
 						},
 						"empty_no_upgrades": {
+							"type": "string"
+						},
+						"empty_no_upgrades_body": {
+							"type": "string"
+						},
+						"empty_unsupported_spec_body": {
 							"type": "string"
 						},
 						"below_cutoff_group": {
@@ -8897,8 +8906,11 @@
 						"bis_badge",
 						"alt_badge",
 						"empty_no_ranking",
+						"empty_no_ranking_body",
 						"rows_pending",
 						"empty_no_upgrades",
+						"empty_no_upgrades_body",
+						"empty_unsupported_spec_body",
 						"below_cutoff_group"
 					]
 				},
