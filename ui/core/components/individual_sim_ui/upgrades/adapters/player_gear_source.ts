@@ -33,67 +33,57 @@
  *    disclose.
  */
 
-import type { IndividualSimUI } from "../../../../individual_sim_ui.js";
-import { SIM_ORDER } from "../engine/slots.js";
-import type {
-  GearSource,
-  FightSummary,
-  LoggedGear,
-  LoggedItem,
-} from "../engine/seams/gear-source.js";
-import type { CharacterRef, FightRef, SpecId } from "../engine/types.js";
+import type { IndividualSimUI } from '../../../../individual_sim_ui.js';
+import { SIM_ORDER } from '../engine/slots.js';
+import type { GearSource, FightSummary, LoggedGear, LoggedItem } from '../engine/seams/gear-source.js';
+import type { CharacterRef, FightRef, SpecId } from '../engine/types.js';
 
 /** The one synthetic fight this surface ever has: "current gear on this page". */
 export const CURRENT_PAGE_FIGHT: FightRef = {
-  reportCode: "current-page",
-  fightId: 0,
+	reportCode: 'current-page',
+	fightId: 0,
 };
 
 const CURRENT_PAGE_FIGHT_SUMMARY: FightSummary = {
-  reportCode: CURRENT_PAGE_FIGHT.reportCode,
-  fightId: CURRENT_PAGE_FIGHT.fightId,
-  encounterName: "Current page settings",
-  route: "report-events",
-  confidence: 1,
+	reportCode: CURRENT_PAGE_FIGHT.reportCode,
+	fightId: CURRENT_PAGE_FIGHT.fightId,
+	encounterName: 'Current page settings',
+	route: 'report-events',
+	confidence: 1,
 };
 
 export class PlayerGearSource implements GearSource {
-  constructor(private readonly simUI: IndividualSimUI<any>) {}
+	constructor(private readonly simUI: IndividualSimUI<any>) {}
 
-  async findFights(
-    _character: CharacterRef,
-    _spec: SpecId
-  ): Promise<FightSummary[]> {
-    return [CURRENT_PAGE_FIGHT_SUMMARY];
-  }
+	async findFights(_character: CharacterRef, _spec: SpecId): Promise<FightSummary[]> {
+		return [CURRENT_PAGE_FIGHT_SUMMARY];
+	}
 
-  async readGear(_fight: FightRef): Promise<LoggedGear> {
-    const player = this.simUI.player;
-    const equipped = player.getGear().getEquippedItems();
+	async readGear(_fight: FightRef): Promise<LoggedGear> {
+		const player = this.simUI.player;
+		const equipped = player.getGear().getEquippedItems();
 
-    const items: LoggedItem[] = SIM_ORDER.map((slot, i) => {
-      const eq = equipped[i];
-      if (!eq) return { id: 0, slot };
-      const item: LoggedItem = { id: eq.id, slot };
-      const enchant = eq.enchant;
-      if (enchant) item.enchant = enchant.effectId;
-      const gemIds = eq.gems
-        .filter((g): g is NonNullable<typeof g> => g != null)
-        .map((g) => g.id);
-      if (gemIds.length > 0) item.gems = gemIds;
-      return item;
-    });
+		const items: LoggedItem[] = SIM_ORDER.map((slot, i) => {
+			const eq = equipped[i];
+			if (!eq) return { id: 0, slot };
+			const item: LoggedItem = { id: eq.id, slot };
+			const enchant = eq.enchant;
+			if (enchant) item.enchant = enchant.effectId;
+			const gemIds = eq.gems.filter((g): g is NonNullable<typeof g> => g != null).map(g => g.id);
+			if (gemIds.length > 0) item.gems = gemIds;
+			return item;
+		});
 
-    return {
-      items,
-      talentPointsByTree: talentPointsByTree(player.getTalentTreePoints()),
-      provenance: {
-        reportCode: CURRENT_PAGE_FIGHT.reportCode,
-        fightId: CURRENT_PAGE_FIGHT.fightId,
-        sourceID: 0,
-      },
-    };
-  }
+		return {
+			items,
+			talentPointsByTree: talentPointsByTree(player.getTalentTreePoints()),
+			provenance: {
+				reportCode: CURRENT_PAGE_FIGHT.reportCode,
+				fightId: CURRENT_PAGE_FIGHT.fightId,
+				sourceID: 0,
+			},
+		};
+	}
 }
 
 /**
@@ -104,10 +94,8 @@ export class PlayerGearSource implements GearSource {
  * problem to surface rather than paper over with a default.
  */
 function talentPointsByTree(points: number[]): [number, number, number] {
-  if (points.length !== 3) {
-    throw new Error(
-      `expected 3 talent trees, got ${points.length} from the page's talents string`
-    );
-  }
-  return [points[0]!, points[1]!, points[2]!];
+	if (points.length !== 3) {
+		throw new Error(`expected 3 talent trees, got ${points.length} from the page's talents string`);
+	}
+	return [points[0]!, points[1]!, points[2]!];
 }

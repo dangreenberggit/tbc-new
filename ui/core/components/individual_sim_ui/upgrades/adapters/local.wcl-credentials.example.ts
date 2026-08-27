@@ -6,5 +6,5 @@
  * credentials ... are personal dev credentials. They never enter the fork's
  * source, its build output, or any commit."
  */
-export const WCL_CLIENT_ID = "";
-export const WCL_CLIENT_SECRET = "";
+export const WCL_CLIENT_ID = '';
+export const WCL_CLIENT_SECRET = '';

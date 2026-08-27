@@ -240,7 +240,7 @@ function resultsTableHead(): Node {
 		<thead>
 			<tr>
 				<th>{rankColumnLabel()}</th>
-				{RESULTS_SORT_COLUMNS.map((column) => (
+				{RESULTS_SORT_COLUMNS.map(column => (
 					<th>{resultsSortColumnLabel(column)}</th>
 				))}
 			</tr>
@@ -422,9 +422,9 @@ export class UpgradesTab extends SimTab {
 		this.paneContentElems.set('shopping-list', document.createElement('div'));
 
 		new Tab(shoppingListBtnRef.value!);
-		this.tabNavElem.addEventListener('shown.bs.tab', (e) => {
+		this.tabNavElem.addEventListener('shown.bs.tab', e => {
 			const target = (e.target as HTMLElement).dataset.bsTarget;
-			const found = ([...this.paneContentElems.keys()] as SubTabId[]).find((id) => paneId(id) === target?.slice(1));
+			const found = ([...this.paneContentElems.keys()] as SubTabId[]).find(id => paneId(id) === target?.slice(1));
 			if (found) this.activeSubTab = found;
 		});
 
@@ -592,7 +592,7 @@ export class UpgradesTab extends SimTab {
 		makePhaseSelector(phaseSelectorRef.value!, this.simUI.sim);
 
 		this.runButton.addEventListener('click', () => {
-			this.run().catch((err) => {
+			this.run().catch(err => {
 				this.setState({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
 			});
 		});
@@ -746,8 +746,7 @@ export class UpgradesTab extends SimTab {
 	 * current spec and phase, both of which can change between runs.
 	 */
 	private eligibleCount(specId: SpecId, maxPhase: RankInput['maxPhase']): number {
-		return filterPoolByPhase(this.effectivePool(specId, maxPhase, this.pruneEffective()), maxPhase).filter((e) => !isKaelTempLegendary(e.itemId))
-			.length;
+		return filterPoolByPhase(this.effectivePool(specId, maxPhase, this.pruneEffective()), maxPhase).filter(e => !isKaelTempLegendary(e.itemId)).length;
 	}
 
 	/**
@@ -854,7 +853,7 @@ export class UpgradesTab extends SimTab {
 					concurrency: this.sim.concurrency,
 					signal: this.abortController.signal,
 				},
-				(progress) => {
+				progress => {
 					// Row-landed events (candidate-pool.md §5.1.5) are a side
 					// channel alongside the stage sequence, not a stage of their
 					// own — accumulate them for the skeleton fill and keep
@@ -935,10 +934,7 @@ export class UpgradesTab extends SimTab {
 		if (kind === this.announcedKind) return;
 		this.announcedKind = kind;
 
-		const message =
-			kind === 'error'
-				? i18n.t('upgrades_tab.status.error', { message: this.state.message })
-				: this.statusElem.textContent?.trim() ?? '';
+		const message = kind === 'error' ? i18n.t('upgrades_tab.status.error', { message: this.state.message }) : (this.statusElem.textContent?.trim() ?? '');
 		const isError = kind === 'error';
 		this.errorAlertElem.replaceChildren(isError ? message : '');
 		this.statusAnnounceElem.replaceChildren(isError ? '' : message);
@@ -967,9 +963,7 @@ export class UpgradesTab extends SimTab {
 				);
 			}
 			case 'error':
-				return (
-					<div className="upgrades-status-line text-danger">{i18n.t('upgrades_tab.status.error', { message: this.state.message })}</div>
-				);
+				return <div className="upgrades-status-line text-danger">{i18n.t('upgrades_tab.status.error', { message: this.state.message })}</div>;
 			case 'stopped': {
 				const label = i18n.t('upgrades_tab.status.stopped', { dps: this.state.ranking.baseline.dps.toFixed(1) });
 				return (
@@ -1172,7 +1166,7 @@ export class UpgradesTab extends SimTab {
 			// panes exist -- so a filter can empty a tab to (0) rather than
 			// removing it, and the tab stays clickable so the user can see
 			// that it is empty and why.
-			const shortlistCount = view.rows.filter((r) => effectiveSlot(r) === slot && !r.belowCutoffInView).length;
+			const shortlistCount = view.rows.filter(r => effectiveSlot(r) === slot && !r.belowCutoffInView).length;
 			this.tabNavElem.appendChild(
 				<li className="nav-item" attributes={{ role: 'presentation' }}>
 					<button
@@ -1314,10 +1308,8 @@ export class UpgradesTab extends SimTab {
 			// below deliberately has none, because Run cannot help there.
 			return this.state.kind === 'unsupported-spec'
 				? this.emptyState(i18n.t('upgrades_tab.status.unsupported_spec'), i18n.t('upgrades_tab.results.empty_unsupported_spec_body'))
-				: this.emptyState(
-						i18n.t('upgrades_tab.results.empty_no_ranking'),
-						i18n.t('upgrades_tab.results.empty_no_ranking_body'),
-						() => this.runButton.click(),
+				: this.emptyState(i18n.t('upgrades_tab.results.empty_no_ranking'), i18n.t('upgrades_tab.results.empty_no_ranking_body'), () =>
+						this.runButton.click(),
 					);
 		}
 		return this.resultsBlock(this.rowsTable(view.shortlist, view.rows), view.shortlist.length);
@@ -1381,7 +1373,7 @@ export class UpgradesTab extends SimTab {
 	 * "not simmed".
 	 */
 	private landedRowsTable(rows: readonly RankedItem[]): Node {
-		const simmedRows = rows.filter((r) => r.simmed !== false);
+		const simmedRows = rows.filter(r => r.simmed !== false);
 		if (simmedRows.length === 0) {
 			// No row has landed yet — nothing has been measured, so this is the
 			// "no results yet" message, not "the run found nothing".
@@ -1401,16 +1393,14 @@ export class UpgradesTab extends SimTab {
 		return (
 			<table className="upgrades-results-table upgrades-results-table-provisional table table-sm">
 				{resultsTableHead()}
-				<tbody>
-					{sorted.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }))}
-				</tbody>
+				<tbody>{sorted.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }))}</tbody>
 			</table>
 		);
 	}
 
 	private slotPaneContent(slot: SimOrderName, view: ViewResult): Node {
-		const rowsForSlot = view.rows.filter((r) => effectiveSlot(r) === slot);
-		const shortlistForSlot = rowsForSlot.filter((r) => !r.belowCutoffInView);
+		const rowsForSlot = view.rows.filter(r => effectiveSlot(r) === slot);
+		const shortlistForSlot = rowsForSlot.filter(r => !r.belowCutoffInView);
 		return <div className="p-gap">{this.rowsTable(shortlistForSlot, rowsForSlot)}</div>;
 	}
 
@@ -1449,7 +1439,7 @@ export class UpgradesTab extends SimTab {
 		// an item-id set membership test, so it records *that* an item is
 		// worn, never *where*. The condition this filter would need has no
 		// left-hand side until that plumbing exists.
-		const belowCutoffRows = allRows.filter((r) => r.belowCutoffInView && !r.owned);
+		const belowCutoffRows = allRows.filter(r => r.belowCutoffInView && !r.owned);
 		if (shortlist.length === 0 && belowCutoffRows.length === 0) {
 			// A result, not an absence: the run worked and nothing cleared the
 			// cutoff. No Run call to action -- re-running the same settings
@@ -1515,7 +1505,7 @@ export class UpgradesTab extends SimTab {
 				{rankColumnLabel()}
 			</th>
 		);
-		const cells = RESULTS_SORT_COLUMNS.map((column) => {
+		const cells = RESULTS_SORT_COLUMNS.map(column => {
 			const active = this.resultsSort?.column === column;
 			const ariaSort = active ? (this.resultsSort!.direction === 'asc' ? 'ascending' : 'descending') : 'none';
 			const onclick = (event: MouseEvent) => {
@@ -1557,7 +1547,8 @@ export class UpgradesTab extends SimTab {
 	 */
 	private toggleResultsSort(column: ResultsSortColumn): void {
 		const current = this.resultsSort;
-		this.resultsSort = current && current.column === column ? { column, direction: current.direction === 'asc' ? 'desc' : 'asc' } : { column, direction: 'desc' };
+		this.resultsSort =
+			current && current.column === column ? { column, direction: current.direction === 'asc' ? 'desc' : 'asc' } : { column, direction: 'desc' };
 		this.renderSubTabs();
 	}
 
@@ -1749,9 +1740,7 @@ export class UpgradesTab extends SimTab {
 					{unsourced > 0 ? (
 						<>
 							<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.source_attribution')}</dt>
-							<dd className="upgrades-assumptions-desc">
-								{i18n.t('upgrades_tab.assumptions.source_attribution_partial', { count: unsourced })}
-							</dd>
+							<dd className="upgrades-assumptions-desc">{i18n.t('upgrades_tab.assumptions.source_attribution_partial', { count: unsourced })}</dd>
 						</>
 					) : null}
 					{cap !== undefined ? (
@@ -1866,7 +1855,7 @@ function hasRankableSetPotential(item: Ranking['items'][number]): boolean {
 function slotsInView(view: ViewResult): SimOrderName[] {
 	const present = new Set<SimOrderName>();
 	for (const row of view.rows) present.add(effectiveSlot(row));
-	return SIM_ORDER.filter((s) => present.has(s));
+	return SIM_ORDER.filter(s => present.has(s));
 }
 
 function sourceLabel(source: ItemSource): string {

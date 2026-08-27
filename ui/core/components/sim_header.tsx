@@ -270,13 +270,19 @@ export class SimHeader extends Component {
 						<ul className="sim-tabs nav nav-tabs" attributes={{ role: 'tablist' }}></ul>
 						<div className="import-export nav within-raid-sim-hide">
 							<div className="dropdown sim-dropdown-menu import-dropdown">
-								<button className="import-link" attributes={{ 'aria-expanded': 'false' }} dataset={{ bsToggle: 'dropdown', bsDisplay: 'dynamic' }}>
+								<button
+									className="import-link"
+									attributes={{ 'aria-expanded': 'false' }}
+									dataset={{ bsToggle: 'dropdown', bsDisplay: 'dynamic' }}>
 									<i className="fa fa-download"></i> {i18n.t('import.title')}
 								</button>
 								<ul className="dropdown-menu"></ul>
 							</div>
 							<div className="dropdown sim-dropdown-menu export-dropdown">
-								<button className="export-link" attributes={{ 'aria-expanded': 'false' }} dataset={{ bsToggle: 'dropdown', bsDisplay: 'dynamic' }}>
+								<button
+									className="export-link"
+									attributes={{ 'aria-expanded': 'false' }}
+									dataset={{ bsToggle: 'dropdown', bsDisplay: 'dynamic' }}>
 									<i className="fa fa-right-from-bracket"></i> {i18n.t('export.title')}
 								</button>
 								<ul className="dropdown-menu"></ul>

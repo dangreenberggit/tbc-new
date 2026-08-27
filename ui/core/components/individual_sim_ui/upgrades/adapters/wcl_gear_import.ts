@@ -27,29 +27,29 @@
  * WCL log knows nothing about. `setGear` touches only `player.equipment`.
  */
 
-import { EquipmentSpec, ItemSpec } from "../../../../proto/common.js";
-import { Database } from "../../../../proto_utils/database.js";
+import { EquipmentSpec, ItemSpec } from '../../../../proto/common.js';
+import { Database } from '../../../../proto_utils/database.js';
 
 /** One report/fight identified by a pasted WCL report URL. */
 export type WclFightRef = {
-  reportCode: string;
-  fightId: number;
+	reportCode: string;
+	fightId: number;
 };
 
 /** A single roster member's gear, as returned by WCL's report table. */
 export type WclRosterEntry = {
-  id: number;
-  name: string;
-  /** WCL's own `icon` field, e.g. "Paladin-Retribution" — display only, no spec inference performed here (gear-only import needs no spec match). */
-  icon: string;
-  className: string;
-  gear: WclGearItem[];
+	id: number;
+	name: string;
+	/** WCL's own `icon` field, e.g. "Paladin-Retribution" — display only, no spec inference performed here (gear-only import needs no spec match). */
+	icon: string;
+	className: string;
+	gear: WclGearItem[];
 };
 
 export type WclGearItem = {
-  id: number;
-  permanentEnchant?: number;
-  gems?: { id: number }[];
+	id: number;
+	permanentEnchant?: number;
+	gems?: { id: number }[];
 };
 
 export class WclImportError extends Error {}
@@ -62,102 +62,100 @@ export class WclImportError extends Error {}
  * rather than silently picking the first fight — the caller resolves it via
  * `listFights`, letting the picker UI show real fight names.
  */
-export function parseReportUrl(url: string): { reportCode: string; fightId: number | "unspecified" } {
-  const match = url.match(/classic\.warcraftlogs\.com\/reports\/([a-zA-Z0-9:]+)\/?(#.*fight=((\d+)|(last)))?/);
-  if (!match) {
-    throw new WclImportError(
-      `Invalid WCL URL "${url}", must look like "classic.warcraftlogs.com/reports/XXXX#fight=N"`,
-    );
-  }
-  const reportCode = match[1]!;
-  if (match[3] === "last") return { reportCode, fightId: "unspecified" }; // resolved against listFights() by the caller
-  if (match[3]) return { reportCode, fightId: Number(match[4]) };
-  return { reportCode, fightId: "unspecified" };
+export function parseReportUrl(url: string): { reportCode: string; fightId: number | 'unspecified' } {
+	const match = url.match(/classic\.warcraftlogs\.com\/reports\/([a-zA-Z0-9:]+)\/?(#.*fight=((\d+)|(last)))?/);
+	if (!match) {
+		throw new WclImportError(`Invalid WCL URL "${url}", must look like "classic.warcraftlogs.com/reports/XXXX#fight=N"`);
+	}
+	const reportCode = match[1]!;
+	if (match[3] === 'last') return { reportCode, fightId: 'unspecified' }; // resolved against listFights() by the caller
+	if (match[3]) return { reportCode, fightId: Number(match[4]) };
+	return { reportCode, fightId: 'unspecified' };
 }
 
 export type WclFightSummary = { id: number; name: string };
 
 export interface WclClient {
-  listFights(reportCode: string): Promise<WclFightSummary[]>;
-  readRoster(fight: WclFightRef): Promise<WclRosterEntry[]>;
+	listFights(reportCode: string): Promise<WclFightSummary[]>;
+	readRoster(fight: WclFightRef): Promise<WclRosterEntry[]>;
 }
 
 /** Real WCL API v2 client, browser-direct (same auth shape as `raid_wcl_importer.tsx`, different credentials — see this file's top comment). */
 export class HttpWclClient implements WclClient {
-  private token = "";
+	private token = '';
 
-  constructor(
-    private readonly clientId: string,
-    private readonly clientSecret: string,
-  ) {}
+	constructor(
+		private readonly clientId: string,
+		private readonly clientSecret: string,
+	) {}
 
-  private async bearerToken(): Promise<string> {
-    if (this.token === "") {
-      const response = await fetch("https://classic.warcraftlogs.com/oauth/token", {
-        method: "POST",
-        headers: {
-          Authorization: "Basic " + btoa(`${this.clientId}:${this.clientSecret}`),
-        },
-        body: new URLSearchParams({ grant_type: "client_credentials" }),
-      });
-      const json = await response.json();
-      if (!json.access_token) {
-        throw new WclImportError("WCL auth failed — check the local client id/secret");
-      }
-      this.token = json.access_token;
-    }
-    return this.token;
-  }
+	private async bearerToken(): Promise<string> {
+		if (this.token === '') {
+			const response = await fetch('https://classic.warcraftlogs.com/oauth/token', {
+				method: 'POST',
+				headers: {
+					Authorization: 'Basic ' + btoa(`${this.clientId}:${this.clientSecret}`),
+				},
+				body: new URLSearchParams({ grant_type: 'client_credentials' }),
+			});
+			const json = await response.json();
+			if (!json.access_token) {
+				throw new WclImportError('WCL auth failed — check the local client id/secret');
+			}
+			this.token = json.access_token;
+		}
+		return this.token;
+	}
 
-  private async query(query: string): Promise<any> {
-    const token = await this.bearerToken();
-    const res = await fetch(encodeURI(`https://classic.warcraftlogs.com/api/v2/client?query=${query}`), {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        Accept: "application/json",
-      },
-    });
-    const result = await res.json();
-    if (result?.errors?.length) {
-      const errorStr = result.errors.map((e: any) => e.message).join("\n");
-      throw new WclImportError(`WCL GraphQL error: ${errorStr}`);
-    }
-    return result;
-  }
+	private async query(query: string): Promise<any> {
+		const token = await this.bearerToken();
+		const res = await fetch(encodeURI(`https://classic.warcraftlogs.com/api/v2/client?query=${query}`), {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Bearer ${token}`,
+				Accept: 'application/json',
+			},
+		});
+		const result = await res.json();
+		if (result?.errors?.length) {
+			const errorStr = result.errors.map((e: any) => e.message).join('\n');
+			throw new WclImportError(`WCL GraphQL error: ${errorStr}`);
+		}
+		return result;
+	}
 
-  async listFights(reportCode: string): Promise<WclFightSummary[]> {
-    const data = await this.query(`{
+	async listFights(reportCode: string): Promise<WclFightSummary[]> {
+		const data = await this.query(`{
       reportData {
         report(code: "${reportCode}") {
           fights(killType: Kills, translate: true) { id, name }
         }
       }
     }`);
-    const fights = data?.data?.reportData?.report?.fights;
-    if (!fights) throw new WclImportError(`Report "${reportCode}" not found or has no fights`);
-    return fights as WclFightSummary[];
-  }
+		const fights = data?.data?.reportData?.report?.fights;
+		if (!fights) throw new WclImportError(`Report "${reportCode}" not found or has no fights`);
+		return fights as WclFightSummary[];
+	}
 
-  async readRoster(fight: WclFightRef): Promise<WclRosterEntry[]> {
-    const data = await this.query(`{
+	async readRoster(fight: WclFightRef): Promise<WclRosterEntry[]> {
+		const data = await this.query(`{
       reportData {
         report(code: "${fight.reportCode}") {
           playerDetails: table(fightIDs: [${fight.fightId}], dataType: Casts, killType: All, viewBy: Default)
         }
       }
     }`);
-    const entries = data?.data?.reportData?.report?.playerDetails?.data?.entries;
-    if (!entries) throw new WclImportError(`No player data for fight ${fight.fightId} in report "${fight.reportCode}"`);
-    return (entries as any[]).map((p) => ({
-      id: p.id,
-      name: p.name,
-      icon: p.icon,
-      className: p.type,
-      gear: (p.gear ?? []) as WclGearItem[],
-    }));
-  }
+		const entries = data?.data?.reportData?.report?.playerDetails?.data?.entries;
+		if (!entries) throw new WclImportError(`No player data for fight ${fight.fightId} in report "${fight.reportCode}"`);
+		return (entries as any[]).map(p => ({
+			id: p.id,
+			name: p.name,
+			icon: p.icon,
+			className: p.type,
+			gear: (p.gear ?? []) as WclGearItem[],
+		}));
+	}
 }
 
 /**
@@ -167,21 +165,21 @@ export class HttpWclClient implements WclClient {
  * to resolve rather than silently dropping them.
  */
 export async function resolveGearFromRoster(entry: WclRosterEntry): Promise<{
-  equipmentSpec: EquipmentSpec;
-  unresolvedItemIds: number[];
+	equipmentSpec: EquipmentSpec;
+	unresolvedItemIds: number[];
 }> {
-  const equipmentSpec = EquipmentSpec.create({
-    items: entry.gear.map((g) =>
-      ItemSpec.create({
-        id: g.id,
-        enchant: g.permanentEnchant,
-        gems: g.gems ? g.gems.map((gem) => gem.id) : [],
-      }),
-    ),
-  });
+	const equipmentSpec = EquipmentSpec.create({
+		items: entry.gear.map(g =>
+			ItemSpec.create({
+				id: g.id,
+				enchant: g.permanentEnchant,
+				gems: g.gems ? g.gems.map(gem => gem.id) : [],
+			}),
+		),
+	});
 
-  const db = await Database.loadLeftoversIfNecessary(equipmentSpec);
-  const unresolvedItemIds = equipmentSpec.items.filter((spec) => spec.id > 0 && !db.lookupItemSpec(spec)).map((spec) => spec.id);
+	const db = await Database.loadLeftoversIfNecessary(equipmentSpec);
+	const unresolvedItemIds = equipmentSpec.items.filter(spec => spec.id > 0 && !db.lookupItemSpec(spec)).map(spec => spec.id);
 
-  return { equipmentSpec, unresolvedItemIds };
+	return { equipmentSpec, unresolvedItemIds };
 }

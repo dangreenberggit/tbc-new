@@ -20,16 +20,14 @@
  * actual sim call.
  */
 
-import { RaidSimRequest as RaidSimRequestProto } from "../../../../proto/api.js";
-import type { IndividualSimUI } from "../../../../individual_sim_ui.js";
-import type { RaidSimRequest } from "../engine/seams/sim-runner.js";
+import { RaidSimRequest as RaidSimRequestProto } from '../../../../proto/api.js';
+import type { IndividualSimUI } from '../../../../individual_sim_ui.js';
+import type { RaidSimRequest } from '../engine/seams/sim-runner.js';
 
-export function currentPageSkeleton(
-  simUI: IndividualSimUI<any>
-): RaidSimRequest {
-  const proto = simUI.sim.makeRaidSimRequest(false);
-  const json = RaidSimRequestProto.toJson(proto) as Record<string, unknown>;
-  delete json.simOptions;
-  delete json.requestId;
-  return json as RaidSimRequest;
+export function currentPageSkeleton(simUI: IndividualSimUI<any>): RaidSimRequest {
+	const proto = simUI.sim.makeRaidSimRequest(false);
+	const json = RaidSimRequestProto.toJson(proto) as Record<string, unknown>;
+	delete json.simOptions;
+	delete json.requestId;
+	return json as RaidSimRequest;
 }

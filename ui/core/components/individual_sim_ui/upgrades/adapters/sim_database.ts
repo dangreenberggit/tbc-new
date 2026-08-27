@@ -22,31 +22,24 @@
  * the panic instead.
  */
 
-import { Database } from "../../../../proto_utils/database.js";
-import { EquipmentSpec } from "../../../../proto/common.js";
-import { SimDatabase } from "../../../../proto/db.js";
-import type { SimItemSpec } from "../engine/slots.js";
+import { Database } from '../../../../proto_utils/database.js';
+import { EquipmentSpec } from '../../../../proto/common.js';
+import { SimDatabase } from '../../../../proto/db.js';
+import type { SimItemSpec } from '../engine/slots.js';
 
 /**
  * Builds the resolver `rankUpgrades` calls for every composed request
  * (`Deps.simDatabaseFor`). Returns protojson, matching the engine's opaque
  * `Readonly<Record<string, unknown>>` — the engine never inspects it.
  */
-export function simDatabaseFor(
-  equipment: readonly SimItemSpec[]
-): Readonly<Record<string, unknown>> | undefined {
-  // Unguarded, like the engine's own items.ts: `getSync` throws if the
-  // Database has not loaded, and by the time a ranking runs the page has
-  // long since awaited it. A guard returning undefined here would silently
-  // hand the sim a database-less request -- the exact bug ticket 212 fixes.
-  const db = Database.getSync();
+export function simDatabaseFor(equipment: readonly SimItemSpec[]): Readonly<Record<string, unknown>> | undefined {
+	// Unguarded, like the engine's own items.ts: `getSync` throws if the
+	// Database has not loaded, and by the time a ranking runs the page has
+	// long since awaited it. A guard returning undefined here would silently
+	// hand the sim a database-less request -- the exact bug ticket 212 fixes.
+	const db = Database.getSync();
 
-  const spec = EquipmentSpec.fromJson(
-    { items: equipment.map((item) => ({ ...item })) },
-    { ignoreUnknownFields: true }
-  );
-  const gear = db.lookupEquipmentSpec(spec);
-  return SimDatabase.toJson(gear.toDatabase(db)) as Readonly<
-    Record<string, unknown>
-  >;
+	const spec = EquipmentSpec.fromJson({ items: equipment.map(item => ({ ...item })) }, { ignoreUnknownFields: true });
+	const gear = db.lookupEquipmentSpec(spec);
+	return SimDatabase.toJson(gear.toDatabase(db)) as Readonly<Record<string, unknown>>;
 }
