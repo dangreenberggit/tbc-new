@@ -74,16 +74,19 @@
 	//
 	// The earlier `width: 6ch` did win the cascade -- it was simply too small,
 	// so re-measuring beat assuming the existing rule worked. Bootstrap sets
-	// `box-sizing: border-box` globally, so `6ch` sizes the *border* box:
-	// 53.8px, of which 7px+7px padding, 1px+1px border and the number
-	// spinner's own chrome leave less than the 34.36px "3000" needs at this
-	// font, and the browser reports the field clipped
-	// (scrollWidth 67 > clientWidth 52 at 1280px).
+	// `box-sizing: border-box` globally, so a `ch` width sizes the *border*
+	// box: the padding, borders and the number spinner's own chrome all come
+	// out of it before any digits do, which is why the field fits fewer digits
+	// than its `ch` value suggests. 6ch and 7ch both still clipped "3000" when
+	// probed on the rendered input; 8ch is the first that does not.
 	//
-	// Widths probed in devtools on the rendered input: 6ch and 7ch both still
-	// clip; 8ch (71.7px) is the first that does not. `ch` is kept over a px
-	// value so the rule still tracks the digit count rather than one measured
-	// font, and 8ch is what four digits plus that chrome actually costs.
+	// `ch` is kept over a px value so the rule tracks the digit count rather
+	// than one measured font.
+	//
+	// This fits the four digits the default uses. A five-digit iteration count
+	// still clips -- accepted rather than widening the field for a value the
+	// UI does not offer, and recorded in ticket 304 item 3 rather than only
+	// here.
 	.upgrades-iterations-input {
 		width: 8ch;
 		flex-shrink: 0;
@@ -148,21 +151,26 @@
 	}
 }
 
-// One line, one idiom, for all seven run states: the tone is a Bootstrap text
-// utility chosen per state in statusContent(), so nothing here declares colour.
+// One idiom for every run state: the tone is a Bootstrap text utility chosen
+// per state in statusContent(), so nothing here declares colour.
 //
-// The row is a fixed three-column grid rather than a wrapping flex row so the
-// progress bar's position does not depend on the label's length. Measured on a
-// live run before this rule: the label grows from "Simming 4/65… (3 rows
-// landed)" to "Simming 33/65… (28 rows landed)" and the bar's left edge slid
-// 585.2px -> 606.2px, ~21px of horizontal jitter every tick (ticket 304 item
-// 11). The label cell is reserved in `ch` at the widest running string so the
-// digits can grow into space that is already there.
+// The row is a fixed grid rather than a wrapping flex row so the progress bar's
+// position does not depend on the label's length. Before this rule the bar's
+// left edge slid ~21px every tick, as the running label grew from "Simming
+// 4/65…" to "Simming 33/65…" and pushed it along (ticket 304 item 11). The
+// label cell is reserved in `ch` at the widest running string, so the digits
+// grow into space that is already there.
 //
-// `min-height` holds the row's height across the states whose content is one
-// line versus a line plus a bar, so the block below does not move when the
-// shape swaps (item 5). The bar's own `width: 100%; max-width` cap is the
-// progress-tracker modal's idiom, unchanged.
+// The three columns size the running state -- label, bar, and what follows it.
+// Other states render fewer children and simply leave columns empty; the `done
+// + stale` state renders four and wraps its last onto a second row, which is
+// why `.upgrades-status` below carries the height floor rather than this rule
+// (round-3 review T3). `> span:first-child` is likewise a no-op in the states
+// that render bare text with no span -- harmless, because the floor is what
+// actually holds the block below in place.
+//
+// The bar's own `width: 100%; max-width` cap is the progress-tracker modal's
+// idiom, unchanged.
 .upgrades-status-line {
 	display: grid;
 	grid-template-columns: minmax(0, max-content) minmax(0, 200px) max-content;
@@ -185,8 +193,11 @@
 
 // Holds one line of status in every state, so the results block below does not
 // move when statusContent() swaps one DOM shape for another (ticket 304 item
-// 5). Measured: the host is 17.5px tall in idle, running and done alike, so
-// this reserves what the tallest of those needs rather than a guessed value.
+// 5). One line of this text measured 17.5px in idle, running and done alike;
+// the floor is the next round figure above it rather than that measurement, so
+// a font or line-height change has somewhere to grow before the block below
+// starts moving again. An earlier version of this comment claimed the value WAS
+// the measurement, which it never was (round-3 review T1).
 .upgrades-status {
 	min-height: 1.5rem;
 }
@@ -197,6 +208,29 @@
 	--bs-progress-height: 8px;
 	width: 100%;
 	max-width: 200px;
+}
+
+// The finished table sits in the site's own `.content-block`, so the header's
+// bold `h6` and its bottom border come from `_content_block.scss` and nothing
+// is redeclared here. Only the count beside the title needs a rule: it is
+// secondary to the title it follows, and uses the same `--bs-gray-500` the rest
+// of this tab uses for de-emphasised text rather than a second grey.
+.upgrades-results-count {
+	color: var(--bs-gray-500);
+}
+
+// The bulk renderer's divider, borrowed rule for rule
+// (`bulk/_bulk_sim_result_renderer.scss`): a line between result groups, drawn
+// only when a group has a sibling to be separated from. `:not(:only-child)`
+// is what keeps a lone shortlist table from growing a trailing border, and it
+// is the reason the idiom is copied rather than approximated with a plain
+// `border-bottom`.
+.upgrades-result-group {
+	&:not(:last-child):not(:only-child) {
+		padding-bottom: var(--gap-width);
+		border-bottom: var(--border-default);
+		margin-bottom: var(--gap-width);
+	}
 }
 
 .upgrades-results-table {
@@ -541,7 +575,14 @@
 // to open it and see that it is empty -- but reads as de-emphasised so the
 // strip's populated tabs are what the eye lands on. Not `disabled`: the tab
 // still works, and disabling it would also strip it from keyboard navigation.
-.upgrades-subtab-empty {
+//
+// `:not(.active)` because the class is applied to whichever tabs are empty,
+// including the one the user is currently on. Without the guard this competes
+// with Bootstrap's `.nav-link.active` colour and the winner is decided by
+// source order -- and an active tab that reads as de-emphasised loses the more
+// important signal: which tab you are looking at outranks whether it is empty,
+// and the `(0)` badge says the latter anyway (round-3 review T4).
+.upgrades-subtab-empty:not(.active) {
 	color: var(--bs-gray-500);
 
 	.upgrades-subtab-count {
@@ -563,16 +604,27 @@
 // down 47.9px at the moment results arrived -- the last vertical shift left
 // after the toolbar and status host were stabilised.
 //
-// `min-height` is two rows' worth of the site's own tab metrics rather than a
-// guessed px value. Measured on the populated strip: the row pitch is 46px and
-// a `.nav-link` carrying its count badge is 45.6px tall (14px padding top and
-// bottom, and the badge sets the line box), over the strip's 1px bottom
-// border -- so two rows is 2 * 45.6 + 1 = 92.2px, which is exactly what the
-// wrapped strip measures once all seventeen tabs exist.
+// This is a local rule, not a borrow: no other tab strip on the site reserves
+// rows, so there is no idiom to copy here. Stated plainly rather than left to
+// read as principled because it carries arithmetic (round-3 review T2).
 //
-// Sizing this off the idle strip's 43.3px would leave the reservation 4.6px
-// short, because the lone Shopping List tab has no badge to set the taller
-// line box.
+// The height is the measured one. Deriving it from tokens was tried and is
+// wrong: `$nav-link-padding-y` is `--spacer-3` (1rem), so
+// `2 * ($line-height-base * 1em + 2 * --spacer-3) + 1px` computes 113px against
+// the 92.2px the strip actually occupies -- these tabs do not render at the
+// nominal nav padding, and reserving 113px would strand ~21px of empty space
+// under them. Until the effective padding is itself expressed in a token this
+// rule can read, the measurement is the more honest of the two.
+//
+// So: a `.nav-link` carrying its count badge measures 45.6px (the badge sets
+// the taller line box), over the strip's 1px bottom border -- two rows is
+// 2 * 45.6 + 1 = 92.2px, exactly what the wrapped strip measures once all
+// seventeen tabs exist. Sizing off the *idle* strip's 43.3px instead would
+// under-reserve by 4.6px, because the lone Shopping List tab has no badge.
+//
+// The exposure this leaves: a change to nav padding, font size, or the badge's
+// `font-size` moves the real height and nothing here fails. Re-measure the
+// populated strip if any of those change.
 //
 // `align-content: flex-start` keeps the tabs packed to the top of that
 // reserved box instead of stretching to fill it, so the one-tab idle state

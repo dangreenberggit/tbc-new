@@ -8892,6 +8892,12 @@
 						},
 						"below_cutoff_group": {
 							"type": "string"
+						},
+						"heading": {
+							"type": "string"
+						},
+						"heading_count": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
@@ -8911,7 +8917,9 @@
 						"empty_no_upgrades",
 						"empty_no_upgrades_body",
 						"empty_unsupported_spec_body",
-						"below_cutoff_group"
+						"below_cutoff_group",
+						"heading",
+						"heading_count"
 					]
 				},
 				"assumptions": {

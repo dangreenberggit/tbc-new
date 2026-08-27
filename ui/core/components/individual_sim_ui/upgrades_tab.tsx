@@ -1320,7 +1320,32 @@ export class UpgradesTab extends SimTab {
 						() => this.runButton.click(),
 					);
 		}
-		return this.rowsTable(view.shortlist, view.rows);
+		return this.resultsBlock(this.rowsTable(view.shortlist, view.rows), view.shortlist.length);
+	}
+
+	/**
+	 * The finished table under the site's own `.content-block` header, the same
+	 * markup `ContentBlock` builds (`content_block.tsx`: `h6.content-block-title`
+	 * inside `.content-block-header`) -- an `h6` and the partial's bottom border,
+	 * not a local heading rule. The classes are written out rather than
+	 * constructed through `new ContentBlock(...)` because this node is rebuilt by
+	 * `replaceChildren` on every view change, and the component owns a persistent
+	 * root element it appends to a parent.
+	 *
+	 * Only the table gets a header. The empty states carry their own title and a
+	 * second one above them would say the same thing twice, and the running
+	 * skeleton has no final count to name yet.
+	 */
+	private resultsBlock(table: Node, shortlistCount: number): Node {
+		return (
+			<div className="upgrades-results-block content-block">
+				<div className="content-block-header">
+					<h6 className="content-block-title">{i18n.t('upgrades_tab.results.heading')}</h6>
+					<span className="upgrades-results-count">{i18n.t('upgrades_tab.results.heading_count', { count: shortlistCount })}</span>
+				</div>
+				<div className="content-block-body">{table}</div>
+			</div>
+		);
 	}
 
 	/**
@@ -1438,8 +1463,21 @@ export class UpgradesTab extends SimTab {
 
 		return (
 			<>
-				{table}
-				{belowCutoffRows.length > 0 ? this.expandableRowGroup(belowCutoffRows) : null}
+				{/*
+				 * Each result group is its own `.upgrades-result-group` so the
+				 * divider rule has siblings to match on: the shortlist table and
+				 * the below-cutoff disclosure are two groups, and the rule draws a
+				 * line between them only when both are present. The idiom is the
+				 * bulk renderer's (`_bulk_sim_result_renderer.scss`:
+				 * `&:not(:last-child):not(:only-child)` + `--border-default` +
+				 * `--gap-width`), which is what item 10's "take inspiration from
+				 * the batch UI" asks for -- that file's dividers are the reusable
+				 * part; its `flex` ratios describe a row of gear combos, not a
+				 * table, and its emphasis of a first result does not exist to
+				 * borrow (round-3 review S2, ticket 307).
+				 */}
+				<div className="upgrades-result-group">{table}</div>
+				{belowCutoffRows.length > 0 ? <div className="upgrades-result-group">{this.expandableRowGroup(belowCutoffRows)}</div> : null}
 			</>
 		);
 	}

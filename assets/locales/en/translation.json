@@ -910,7 +910,9 @@
 			"empty_no_upgrades": "No upgrades found",
 			"empty_no_upgrades_body": "Every candidate simmed at or below your current gear. Widen the phase or content filter to consider more items.",
 			"empty_unsupported_spec_body": "Ranking data has not been built for this spec yet, so there is nothing to run.",
-			"below_cutoff_group": "{{count}} item(s) below the cutoff"
+			"below_cutoff_group": "{{count}} item(s) below the cutoff",
+			"heading": "Upgrades",
+			"heading_count": "{{count}} above the cutoff"
 		},
 		"assumptions": {
 			"title": "Assumptions",
