@@ -550,3 +550,41 @@
 		color: var(--bs-gray-500);
 	}
 }
+
+// The slot strip is a deliberate two-row shape, not a wrap that happens to
+// land on two rows (owner ruling, ticket 304 item 10 "organise them, rather
+// than one long wrapping strip"). Seventeen tabs on one row is too many to
+// read, so two rows is the strip's normal form.
+//
+// The height is reserved from the first paint, for the same reason the
+// toolbar's is: tabs exist only for slots present in the ranking, so before a
+// run the strip holds one tab and afterwards seventeen. Measured before this
+// rule, that took the strip from 44.3px to 92.2px and pushed the results table
+// down 47.9px at the moment results arrived -- the last vertical shift left
+// after the toolbar and status host were stabilised.
+//
+// `min-height` is two rows' worth of the site's own tab metrics rather than a
+// guessed px value. Measured on the populated strip: the row pitch is 46px and
+// a `.nav-link` carrying its count badge is 45.6px tall (14px padding top and
+// bottom, and the badge sets the line box), over the strip's 1px bottom
+// border -- so two rows is 2 * 45.6 + 1 = 92.2px, which is exactly what the
+// wrapped strip measures once all seventeen tabs exist.
+//
+// Sizing this off the idle strip's 43.3px would leave the reservation 4.6px
+// short, because the lone Shopping List tab has no badge to set the taller
+// line box.
+//
+// `align-content: flex-start` keeps the tabs packed to the top of that
+// reserved box instead of stretching to fill it, so the one-tab idle state
+// looks like a tab strip with room beneath rather than one giant tab.
+.upgrades-tab-tabs > .nav-tabs {
+	min-height: calc(2 * 45.6px + 1px);
+	align-content: flex-start;
+
+	// Below md the strip is already free to take as many rows as it needs --
+	// reserving desktop's two-row height on a narrow screen would either
+	// strand empty space or fight a third row.
+	@include media-breakpoint-down(md) {
+		min-height: 0;
+	}
+}
