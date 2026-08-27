@@ -5,8 +5,9 @@
 // The run inputs and the view options are two different kinds of control --
 // one decides what the next run computes, the other only re-filters rows
 // already computed -- so they are two groups, separated by space rather than
-// by a rule: every view option is `d-none` until a run produces rows for it,
-// and a border or separator would draw an empty box in every other state.
+// by a rule. Each view option is still `d-none` until a run produces rows for
+// it; what changed is that the row they sit in now reserves its height anyway
+// (see the rule below), so revealing them does not shift the page.
 //
 // Those two groups used to share one wrapped flex row, which is what made
 // "3000" clip and the row read as a jumble (ticket 304 item 3). The toolbar
@@ -68,8 +69,9 @@
 
 	// flex children shrink to their min-content by default, which clips
 	// "3000" and the "all N eligible" placeholder (WP1 defect 2, reproduces
-	// at desktop widths too). ch sizes to the digit count these fields
-	// actually need instead of a guessed px value.
+	// at desktop widths too), so these two fields are sized in `ch` and not
+	// allowed to shrink.
+	//
 	// The earlier `width: 6ch` did win the cascade -- it was simply too small,
 	// so re-measuring beat assuming the existing rule worked. Bootstrap sets
 	// `box-sizing: border-box` globally, so `6ch` sizes the *border* box:
@@ -487,5 +489,64 @@
 		color: var(--bs-gray-500);
 		margin-bottom: 0;
 		max-width: 48ch;
+	}
+}
+
+// The drawer was a Bootstrap `dl.row` with `col-sm-4` / `col-sm-8` pairs, so
+// every short label reserved a third of the width and the value sat across a
+// large empty gutter (ticket 304 item 8). A content-sized two-column grid
+// gives the label exactly what it needs and the rest to the value.
+//
+// No site idiom exists to borrow for content-sized label/value pairs -- the
+// only precedent was the same `dl.row` being replaced here -- so this is a
+// stated local rule, scoped to this one selector.
+.upgrades-assumptions-grid {
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: var(--spacer-1) var(--spacer-3);
+
+	.upgrades-assumptions-term {
+		font-weight: normal;
+		color: var(--bs-gray-500);
+	}
+
+	.upgrades-assumptions-desc {
+		margin-bottom: 0;
+	}
+
+	// Single column on narrow screens: two columns of wrapped text is worse
+	// than a stacked list once the value has no room left.
+	@include media-breakpoint-down(md) {
+		grid-template-columns: 1fr;
+		gap: 0 0;
+
+		.upgrades-assumptions-desc {
+			margin-bottom: var(--spacer-2);
+		}
+	}
+}
+
+// Per-slot counts on the sub-tab strip (ticket 304 item 10). Borrows the
+// `badge rounded-pill` idiom the gear-set chips and `.upgrades-bis-badge`
+// already use, rather than inventing a second count treatment.
+.upgrades-subtab-count {
+	margin-left: var(--spacer-1);
+	background-color: var(--bs-gray-700);
+	color: var(--bs-gray-200);
+	font-size: 0.75em;
+	font-weight: normal;
+}
+
+// A tab a view filter has emptied stays clickable -- the user should be able
+// to open it and see that it is empty -- but reads as de-emphasised so the
+// strip's populated tabs are what the eye lands on. Not `disabled`: the tab
+// still works, and disabling it would also strip it from keyboard navigation.
+.upgrades-subtab-empty {
+	color: var(--bs-gray-500);
+
+	.upgrades-subtab-count {
+		background-color: transparent;
+		border: 1px solid var(--bs-gray-600);
+		color: var(--bs-gray-500);
 	}
 }

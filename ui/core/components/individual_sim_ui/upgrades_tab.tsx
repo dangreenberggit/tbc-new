@@ -879,6 +879,15 @@ export class UpgradesTab extends SimTab {
 			this.lastRunSeconds = (performance.now() - startedAt) / 1000;
 		}
 
+		// Build metadata, not run provenance: the engine commit and the API
+		// version are identical for every run of a given build and say nothing
+		// about this run, so they read as developer noise on a page a player is
+		// reading (ticket 304 item 9). They still have to be recoverable when
+		// someone is diagnosing a bad ranking, so they move here rather than
+		// being deleted. Everything the drawer says about how *this* run was
+		// degraded or what data it consumed stays on the page.
+		console.info(`[upgrades] engine ${ENGINE_FORK_COMMIT} · api-v${CURRENT_API_VERSION}`);
+
 		if (ranking.complete) {
 			this.setState({ kind: 'done', ranking, stale: false });
 		} else {
@@ -1147,11 +1156,21 @@ export class UpgradesTab extends SimTab {
 		for (const slot of slotsPresent) {
 			const id: SubTabId = slot;
 			const btnRef = ref<HTMLButtonElement>();
+			// The badge counts the same rows the pane will render: both derive
+			// from the filtered `view` by the identical predicate
+			// `slotPaneContent` uses, inside this one call, so a badge can
+			// never disagree with its own pane under a view filter (ticket 304
+			// item 10). Tab *existence* still comes from the unfiltered view
+			// above -- filtering must change what a pane shows, never which
+			// panes exist -- so a filter can empty a tab to (0) rather than
+			// removing it, and the tab stays clickable so the user can see
+			// that it is empty and why.
+			const shortlistCount = view.rows.filter((r) => effectiveSlot(r) === slot && !r.belowCutoffInView).length;
 			this.tabNavElem.appendChild(
 				<li className="nav-item" attributes={{ role: 'presentation' }}>
 					<button
 						ref={btnRef}
-						className="nav-link"
+						className={shortlistCount === 0 ? 'nav-link upgrades-subtab-empty' : 'nav-link'}
 						type="button"
 						attributes={{
 							role: 'tab',
@@ -1164,6 +1183,7 @@ export class UpgradesTab extends SimTab {
 							bsTarget: `#${paneId(id)}`,
 						}}>
 						{slotLabel(slot)}
+						<span className="upgrades-subtab-count badge rounded-pill">{String(shortlistCount)}</span>
 					</button>
 				</li>,
 			);
@@ -1613,37 +1633,37 @@ export class UpgradesTab extends SimTab {
 		return (
 			<details ref={detailsRef} className="upgrades-assumptions-drawer">
 				<summary>{i18n.t('upgrades_tab.assumptions.title')}</summary>
-				<dl className="row mb-0">
-					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.seeds')}</dt>
-					<dd className="col-sm-8">{a.seeds.join(', ')}</dd>
-					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.iterations')}</dt>
-					<dd className="col-sm-8">{a.iterations}</dd>
-					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.max_phase')}</dt>
+				<dl className="upgrades-assumptions-grid mb-0">
+					<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.seeds')}</dt>
+					<dd className="upgrades-assumptions-desc">{a.seeds.join(', ')}</dd>
+					<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.iterations')}</dt>
+					<dd className="upgrades-assumptions-desc">{a.iterations}</dd>
+					<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.max_phase')}</dt>
 					{/* The page's own spelling of the phase, not a bare number: a
 					    reader should not have to know that 3 means "2.2 - T6". */}
-					<dd className="col-sm-8">{i18n.t(`common.phases.${a.maxPhase}`)}</dd>
-					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.pool')}</dt>
-					<dd className="col-sm-8">
+					<dd className="upgrades-assumptions-desc">{i18n.t(`common.phases.${a.maxPhase}`)}</dd>
+					<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.pool')}</dt>
+					<dd className="upgrades-assumptions-desc">
 						{this.lastRunPruned
 							? i18n.t('upgrades_tab.assumptions.pool_bis_only', { phase: i18n.t(`common.phases.${a.maxPhase}`) })
 							: i18n.t('upgrades_tab.assumptions.pool_all')}
 					</dd>
 					{poolSource ? (
 						<>
-							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.pool_universe')}</dt>
+							<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.pool_universe')}</dt>
 							{/* Which bundled file the run drew from. The chosen file is
 							    not always the selected phase's -- data.ts falls back to
 							    the highest phase with data at or below it -- so naming
 							    it stops a reader assuming a p4 selection read a p4 file. */}
-							<dd className="col-sm-8">
+							<dd className="upgrades-assumptions-desc">
 								{i18n.t('upgrades_tab.assumptions.pool_universe_note', { file: poolSource.file, count: poolSource.entries })}
 							</dd>
 						</>
 					) : null}
 					{epDisclosure ? (
 						<>
-							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.ep_weights')}</dt>
-							<dd className="col-sm-8">
+							<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.ep_weights')}</dt>
+							<dd className="upgrades-assumptions-desc">
 								{i18n.t('upgrades_tab.assumptions.ep_weights_note', {
 									from: epDisclosure.from,
 									requested: epDisclosure.requested,
@@ -1653,8 +1673,8 @@ export class UpgradesTab extends SimTab {
 					) : null}
 					{bisTagPhase && bisTagPhase.tagsFromPhase < bisTagPhase.requestedPhase ? (
 						<>
-							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.bis_tags')}</dt>
-							<dd className="col-sm-8">
+							<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.bis_tags')}</dt>
+							<dd className="upgrades-assumptions-desc">
 								{i18n.t('upgrades_tab.assumptions.bis_tags_note', {
 									from: `P${bisTagPhase.tagsFromPhase}`,
 									requested: `P${bisTagPhase.requestedPhase}`,
@@ -1664,31 +1684,27 @@ export class UpgradesTab extends SimTab {
 					) : null}
 					{specId && cutoffIsUnmeasuredFor(specId) ? (
 						<>
-							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.cutoff_basis')}</dt>
-							<dd className="col-sm-8">{i18n.t('upgrades_tab.assumptions.cutoff_basis_unmeasured')}</dd>
+							<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.cutoff_basis')}</dt>
+							<dd className="upgrades-assumptions-desc">{i18n.t('upgrades_tab.assumptions.cutoff_basis_unmeasured')}</dd>
 						</>
 					) : null}
 					{unsourced > 0 ? (
 						<>
-							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.source_attribution')}</dt>
-							<dd className="col-sm-8">
+							<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.source_attribution')}</dt>
+							<dd className="upgrades-assumptions-desc">
 								{i18n.t('upgrades_tab.assumptions.source_attribution_partial', { count: unsourced })}
 							</dd>
 						</>
 					) : null}
 					{cap !== undefined ? (
 						<>
-							<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.candidate_cap')}</dt>
+							<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.candidate_cap')}</dt>
 							{/* Which order the cap slices within its input set is ticket 208 —
 							    stated as EP in the note because that is what the code does
 							    today, not as an endorsement of it. */}
-							<dd className="col-sm-8">{i18n.t('upgrades_tab.assumptions.candidate_cap_note', { cap })}</dd>
+							<dd className="upgrades-assumptions-desc">{i18n.t('upgrades_tab.assumptions.candidate_cap_note', { cap })}</dd>
 						</>
 					) : null}
-					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.engine_provenance')}</dt>
-					<dd className="col-sm-8">{ENGINE_FORK_COMMIT}</dd>
-					<dt className="col-sm-4">{i18n.t('upgrades_tab.assumptions.sim_version')}</dt>
-					<dd className="col-sm-8">{`api-v${CURRENT_API_VERSION}`}</dd>
 				</dl>
 				{this.substitutionsContent()}
 			</details>
@@ -1713,11 +1729,11 @@ export class UpgradesTab extends SimTab {
 				<p className="mb-1">
 					<strong>{i18n.t('upgrades_tab.assumptions.substitutions_title', { count: subs.length })}</strong>
 				</p>
-				<dl className="row mb-0 upgrades-substitutions">
+				<dl className="upgrades-assumptions-grid mb-0 upgrades-substitutions">
 					{subs.map(s => (
 						<>
-							<dt className="col-sm-4">{s.field}</dt>
-							<dd className="col-sm-8">{s.detail}</dd>
+							<dt className="upgrades-assumptions-term">{s.field}</dt>
+							<dd className="upgrades-assumptions-desc">{s.detail}</dd>
 						</>
 					))}
 				</dl>
