@@ -877,16 +877,23 @@ export class UpgradesTab extends SimTab {
 			// Set before the terminal setState below so the first render of
 			// 'done'/'stopped' already carries the figure.
 			this.lastRunSeconds = (performance.now() - startedAt) / 1000;
-		}
 
-		// Build metadata, not run provenance: the engine commit and the API
-		// version are identical for every run of a given build and say nothing
-		// about this run, so they read as developer noise on a page a player is
-		// reading (ticket 304 item 9). They still have to be recoverable when
-		// someone is diagnosing a bad ranking, so they move here rather than
-		// being deleted. Everything the drawer says about how *this* run was
-		// degraded or what data it consumed stays on the page.
-		console.info(`[upgrades] engine ${ENGINE_FORK_COMMIT} · api-v${CURRENT_API_VERSION}`);
+			// Build metadata, not run provenance: the engine commit and the API
+			// version are identical for every run of a given build and say nothing
+			// about this run, so they read as developer noise on a page a player is
+			// reading (ticket 304 item 9). They still have to be recoverable when
+			// someone is diagnosing a bad ranking, so they move here rather than
+			// being deleted. Everything the drawer says about how *this* run was
+			// degraded or what data it consumed stays on the page.
+			//
+			// In the `finally` rather than after it: a throw from rankUpgrades
+			// propagates to the caller's catch, so a line placed after this block
+			// never runs for a failed run -- the exact case the paragraph above
+			// says the metadata has to survive, and the case where the drawer
+			// (which only renders for 'done'/'stopped') cannot supply it either.
+			// Pre-merge review round 3, adversarial axis.
+			console.info(`[upgrades] engine ${ENGINE_FORK_COMMIT} · api-v${CURRENT_API_VERSION}`);
+		}
 
 		if (ranking.complete) {
 			this.setState({ kind: 'done', ranking, stale: false });
