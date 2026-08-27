@@ -1436,6 +1436,19 @@ export class UpgradesTab extends SimTab {
 		// group is that count minus the owned rows. That divergence is safe
 		// today because the count has no reader anywhere in this UI beyond its
 		// own construction; a future consumer should read this comment first.
+		//
+		// Dropping owned rows is safe only because of the worn-item guard in
+		// engine/rank.ts: an owned item is re-simmed into the slot it already
+		// occupies and nowhere else, so its delta is ~0 by construction and
+		// nothing real is hidden. Ticket 308 recorded second-copy placement of
+		// non-unique rings and trinkets as deliberately out of scope, which is
+		// what keeps that guard standing. Whoever implements it (ticket 309)
+		// must change this filter in the same change, because an owned item
+		// could then carry a genuine positive delta in the other slot -- and
+		// `ViewRow` cannot express the distinction today: `owned` comes from
+		// an item-id set membership test, so it records *that* an item is
+		// worn, never *where*. The condition this filter would need has no
+		// left-hand side until that plumbing exists.
 		const belowCutoffRows = allRows.filter((r) => r.belowCutoffInView && !r.owned);
 		if (shortlist.length === 0 && belowCutoffRows.length === 0) {
 			// A result, not an absence: the run worked and nothing cleared the

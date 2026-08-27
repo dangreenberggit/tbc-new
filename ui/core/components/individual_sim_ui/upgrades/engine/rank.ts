@@ -677,6 +677,25 @@ export async function rankUpgrades(
               `(item ${entry.itemId} ${entry.name})`
           );
         }
+        // A paired slot tries both placements and keeps the better one, so
+        // without this an item already worn in finger2 gets priced as an
+        // upgrade into finger1 as well — a second copy the player does not
+        // have. Skipping leaves the identity swap as the only outcome for a
+        // worn item, matching what every unpaired slot already does.
+        //
+        // Wearing a second copy of a *non-unique* ring or trinket is legal in
+        // TBC, and this guard blocks that row. Ticket 308 decided it is
+        // deliberately out of scope, because relaxing the guard here does not
+        // produce the missing row. This loop emits one row per *item*, not per
+        // placement: it keeps only the best swap across slots, so an unguarded
+        // second placement would not appear alongside the worn item's identity
+        // swap — it would win the comparison and overwrite it, turning "you
+        // already wear this" into "wear a second one" with nothing in the row
+        // saying so. The below-cutoff owned-row filter in upgrades_tab.tsx
+        // rests on this guard for the same reason. Producing the row honestly
+        // needs a per-placement row concept through the engine output, the
+        // view, and the UI; every item entry already carries `unique` for
+        // whoever builds it. Ticket 309 holds the redesign map.
         const wornAt = equipment.findIndex((spec) => spec.id === entry.itemId);
         if (wornAt >= 0 && wornAt !== slotIndex) continue;
         let swapped: SimItemSpec[];
