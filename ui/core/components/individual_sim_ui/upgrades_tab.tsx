@@ -1870,7 +1870,7 @@ export class UpgradesTab extends SimTab {
 
 	/**
 	 * Writes the ThatsMyBis payload for the rows currently on screen (ticket
-	 * 314).
+	 * 314), less the ones the player already wears (ticket 316).
 	 *
 	 * **The shortlist only, in `sortedShortlist` order.** Below-cutoff rows are
 	 * excluded deliberately: they are the rows the ranking says not to
@@ -1884,11 +1884,23 @@ export class UpgradesTab extends SimTab {
 	 * first-seen `seen` map (`rank-report.ts:877-889`), neither of which the
 	 * fork can import. Ids only — enchants and gems belong to the worn item,
 	 * and a candidate is one the player does not have yet.
+	 *
+	 * Owned rows are dropped here and only here (ticket 316): a thatsmybis
+	 * payload is a priority list, and asking the raid to award an item the
+	 * player already wears is not a priority. The table still renders those
+	 * rows greyed — that is ticket 269's behaviour and this filter must not
+	 * reach it. `row.owned` is the same flag the greying and the below-cutoff
+	 * filter read, set from the equipped ids in `engine/rank.ts`.
+	 *
+	 * The count is derived from `items` rather than from `rows`, so it cannot
+	 * claim rows the copied JSON does not contain. When every row is owned the
+	 * payload is a well-formed `{"items": []}` with a zero count.
 	 */
 	private updateExport(rows: readonly ViewRow[]): void {
 		const seen = new Set<number>();
 		const items: { id: number }[] = [];
 		for (const row of rows) {
+			if (row.owned === true) continue;
 			if (seen.has(row.itemId)) continue;
 			seen.add(row.itemId);
 			items.push({ id: row.itemId });
