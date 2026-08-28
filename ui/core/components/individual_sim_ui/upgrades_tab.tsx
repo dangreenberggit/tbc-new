@@ -322,6 +322,8 @@ export class UpgradesTab extends SimTab {
 	readonly simUI: IndividualSimUI<any>;
 
 	protected shoppingListElem: HTMLElement;
+	protected settingsCardElem: HTMLElement;
+	protected eligibleCountElem!: HTMLElement;
 	protected runButton!: HTMLButtonElement;
 	protected stopButton!: HTMLButtonElement;
 	protected importButton!: HTMLButtonElement;
@@ -404,6 +406,7 @@ export class UpgradesTab extends SimTab {
 		const shoppingListRef = ref<HTMLDivElement>();
 		const tabNavRef = ref<HTMLUListElement>();
 		const tabContentRef = ref<HTMLDivElement>();
+		const settingsCardRef = ref<HTMLDivElement>();
 
 		this.contentContainer.appendChild(
 			<>
@@ -434,10 +437,24 @@ export class UpgradesTab extends SimTab {
 						</div>
 					</div>
 				</div>
+				{/*
+				 * The run settings live in their own panel, outside the sub-tab
+				 * panes, so Run stays on screen whichever sub-tab is active -- it
+				 * used to be inside the shopping-list pane and vanished the moment a
+				 * slot sub-tab was selected (ticket 312). The two-pane split and the
+				 * sticky card are the Batch tab's own structure (`bulk_tab.tsx:155`,
+				 * `_bulk_tab.scss:11-23`), borrowed rather than invented.
+				 */}
+				<div className="upgrades-tab-right tab-panel-right">
+					<div className="upgrades-settings-outer-container">
+						<div ref={settingsCardRef} className="upgrades-settings-container" />
+					</div>
+				</div>
 			</>,
 		);
 
 		this.shoppingListElem = shoppingListRef.value!;
+		this.settingsCardElem = settingsCardRef.value!;
 		this.tabNavElem = tabNavRef.value!;
 		this.tabContentElem = tabContentRef.value!;
 		this.paneContentElems.set('shopping-list', document.createElement('div'));
@@ -454,6 +471,7 @@ export class UpgradesTab extends SimTab {
 	}
 
 	protected buildTabContent() {
+		const eligibleCountRef = ref<HTMLParagraphElement>();
 		const runButtonRef = ref<HTMLButtonElement>();
 		const stopButtonRef = ref<HTMLButtonElement>();
 		const importButtonRef = ref<HTMLButtonElement>();
@@ -476,62 +494,75 @@ export class UpgradesTab extends SimTab {
 		const resultsRef = ref<HTMLDivElement>();
 		const assumptionsRef = ref<HTMLDivElement>();
 
+		this.settingsCardElem.appendChild(
+			<div className="upgrades-run-controls">
+				{/*
+				 * Readout first, then the action it gates, then the knobs that rarely
+				 * change -- the Batch tab's own internal order
+				 * (`bulk_tab.tsx:158-161`). Stacking them as rows instead of wrapping
+				 * them into one line is what lets the BiS-prune label wrap normally
+				 * rather than being the widest thing on the row (ticket 312).
+				 */}
+				<p ref={eligibleCountRef} className="upgrades-eligible-count h4" />
+				<button ref={runButtonRef} className="btn btn-primary upgrades-run-button" type="button">
+					{i18n.t('upgrades_tab.run')}
+				</button>
+				<div className="upgrades-secondary-actions">
+					<button ref={stopButtonRef} className="btn btn-outline-danger upgrades-stop-button" type="button" disabled>
+						{i18n.t('upgrades_tab.stop')}
+					</button>
+					<button
+						ref={importButtonRef}
+						className="btn btn-outline-secondary upgrades-import-button"
+						type="button"
+						title={i18n.t('upgrades_tab.import_wcl')}>
+						{i18n.t('upgrades_tab.import_wcl_short')}
+					</button>
+				</div>
+				<label className="upgrades-iterations-label">
+					{i18n.t('upgrades_tab.iterations_label')}
+					<input
+						ref={iterationsInputRef}
+						type="number"
+						min="1"
+						step="1"
+						className="upgrades-iterations-input form-control form-control-sm"
+						value={String(DEFAULT_ITERATIONS)}
+					/>
+				</label>
+				<label className="upgrades-candidates-label">
+					{i18n.t('upgrades_tab.candidates_label')}
+					<input
+						ref={candidatesInputRef}
+						type="number"
+						min="1"
+						step="1"
+						className="upgrades-candidates-input form-control form-control-sm"
+						// Placeholder, not a value: the real default is "every
+						// eligible candidate", which depends on the selected
+						// spec/maxPhase and is not known until Run is clicked
+						// (readCandidateCap() below re-derives it then). An empty
+						// input reads as "no cap" — matching RankInput.candidateCap's
+						// own `undefined` meaning (candidate-pool.md §5.1.1).
+						placeholder={i18n.t('upgrades_tab.candidates_placeholder')}
+					/>
+				</label>
+				<label ref={bisPruneLabelRef} className="upgrades-bis-prune-label d-none">
+					<input ref={bisPruneToggleRef} type="checkbox" className="upgrades-bis-prune-toggle form-check-input mt-0" />
+					<span ref={bisPruneTextRef} />
+				</label>
+				{/* Not a <label>: the picker self-names through its options, so the
+				    wrapper exists only to give the selector the same treatment
+				    the other run inputs get from their label elements. */}
+				<div className="upgrades-phase-label">
+					<div ref={phaseSelectorRef} className="upgrades-phase-selector" />
+				</div>
+			</div>,
+		);
+
 		this.shoppingListElem.appendChild(
 			<div className="upgrades-shopping-list p-gap content-block">
 				<div className="upgrades-toolbar content-block-body">
-					<div className="upgrades-run-controls d-flex align-items-center gap-2">
-						<button ref={runButtonRef} className="btn btn-primary upgrades-run-button" type="button">
-							{i18n.t('upgrades_tab.run')}
-						</button>
-						<button ref={stopButtonRef} className="btn btn-outline-danger upgrades-stop-button" type="button" disabled>
-							{i18n.t('upgrades_tab.stop')}
-						</button>
-						<button
-							ref={importButtonRef}
-							className="btn btn-outline-secondary upgrades-import-button"
-							type="button"
-							title={i18n.t('upgrades_tab.import_wcl')}>
-							{i18n.t('upgrades_tab.import_wcl_short')}
-						</button>
-						<label className="upgrades-iterations-label">
-							{i18n.t('upgrades_tab.iterations_label')}
-							<input
-								ref={iterationsInputRef}
-								type="number"
-								min="1"
-								step="1"
-								className="upgrades-iterations-input form-control form-control-sm"
-								value={String(DEFAULT_ITERATIONS)}
-							/>
-						</label>
-						<label className="upgrades-candidates-label">
-							{i18n.t('upgrades_tab.candidates_label')}
-							<input
-								ref={candidatesInputRef}
-								type="number"
-								min="1"
-								step="1"
-								className="upgrades-candidates-input form-control form-control-sm"
-								// Placeholder, not a value: the real default is "every
-								// eligible candidate", which depends on the selected
-								// spec/maxPhase and is not known until Run is clicked
-								// (readCandidateCap() below re-derives it then). An empty
-								// input reads as "no cap" — matching RankInput.candidateCap's
-								// own `undefined` meaning (candidate-pool.md §5.1.1).
-								placeholder={i18n.t('upgrades_tab.candidates_placeholder')}
-							/>
-						</label>
-						<label ref={bisPruneLabelRef} className="upgrades-bis-prune-label d-none">
-							<input ref={bisPruneToggleRef} type="checkbox" className="upgrades-bis-prune-toggle form-check-input mt-0" />
-							<span ref={bisPruneTextRef} />
-						</label>
-						{/* Not a <label>: the picker self-names through its options, so the
-						    wrapper exists only to give the selector the same flex treatment
-						    the other run inputs get from their label elements. */}
-						<div className="upgrades-phase-label">
-							<div ref={phaseSelectorRef} className="upgrades-phase-selector" />
-						</div>
-					</div>
 					<div className="upgrades-view-controls d-flex align-items-center gap-2">
 						<label ref={setPotentialLabelRef} className="upgrades-set-potential-label d-none">
 							<input ref={setPotentialToggleRef} type="checkbox" className="upgrades-set-potential-toggle form-check-input mt-0" />
@@ -589,6 +620,7 @@ export class UpgradesTab extends SimTab {
 			</div>,
 		);
 
+		this.eligibleCountElem = eligibleCountRef.value!;
 		this.runButton = runButtonRef.value!;
 		this.stopButton = stopButtonRef.value!;
 		this.importButton = importButtonRef.value!;
@@ -697,15 +729,18 @@ export class UpgradesTab extends SimTab {
 		if (!specId) {
 			this.bisPruneControl.setVisible(false);
 			this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder_uncapped');
+			this.eligibleCountElem.textContent = i18n.t('upgrades_tab.eligible_count_unknown');
 			return;
 		}
 		const maxPhase = this.simUI.sim.getPhase() as RankInput['maxPhase'];
 		// Availability is decided on the unpruned pool: asking whether the
 		// pruned pool has tags would be circular once the toggle is on.
 		this.bisPruneControl.setVisible(poolFor(specId, maxPhase).some(isBisTagged));
-		this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder', {
-			count: this.eligibleCount(specId, maxPhase),
-		});
+		const eligible = this.eligibleCount(specId, maxPhase);
+		this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder', { count: eligible });
+		// The count the Run button acts on, sitting with it in the card -- the
+		// Batch tab's readout-above-the-action idiom (`bulk_tab.tsx:158`).
+		this.eligibleCountElem.textContent = i18n.t('upgrades_tab.eligible_count', { count: eligible });
 	}
 
 	/**

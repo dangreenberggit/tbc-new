@@ -8751,6 +8751,12 @@
 				"candidates_placeholder_uncapped": {
 					"type": "string"
 				},
+				"eligible_count": {
+					"type": "string"
+				},
+				"eligible_count_unknown": {
+					"type": "string"
+				},
 				"status": {
 					"type": "object",
 					"properties": {
@@ -9000,7 +9006,7 @@
 				}
 			},
 			"additionalProperties": false,
-			"required": ["title", "subtabs", "run", "stop", "import_wcl", "import_wcl_short", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "status", "view", "prune", "progress", "results", "assumptions"]
+			"required": ["title", "subtabs", "run", "stop", "import_wcl", "import_wcl_short", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "prune", "progress", "results", "assumptions"]
 		}
 	},
 	"additionalProperties": false,

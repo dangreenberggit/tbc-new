@@ -15,12 +15,84 @@
 // own `--block-spacer` rhythm instead of wrapping against each other, and each
 // group keeps its own horizontal flex.
 .upgrades-toolbar {
-	.upgrades-run-controls,
 	.upgrades-view-controls {
 		flex-wrap: wrap;
 		gap: var(--spacer-3);
 		row-gap: var(--spacer-2);
 	}
+}
+
+// The run settings card, in its own panel outside the sub-tab panes (ticket
+// 312). Structure borrowed verbatim from the Batch tab's settings card
+// (`_bulk_tab.scss:11-23`) apart from the class names: sticky under the sim
+// header, bordered, padded, and a grid so the controls stack as rows instead of
+// competing for one wrapped line. The rules are copied rather than `@extend`ed
+// because `_bulk_tab.scss` scopes its versions under `#bulk-tab`, which this
+// tab is not inside.
+.upgrades-settings-outer-container {
+	position: sticky;
+	top: var(--sim-header-height);
+	padding-top: var(--gap-width);
+}
+
+.upgrades-settings-container {
+	padding: var(--spacer-3);
+	border: var(--border-default);
+	display: grid;
+	gap: var(--gap-width);
+	background: var(--bs-body-bg);
+}
+
+// Stacking the run controls, rather than wrapping them into a row, is the
+// structural half of ticket 312: it gives the BiS-prune label a full row to
+// wrap in instead of making it the widest element on a shared line.
+.upgrades-run-controls {
+	display: grid;
+	gap: var(--spacer-3);
+
+	// Stacking the label above its field is the fix for the *cause* of the
+	// clipping ticket 304 item 3 reported, rather than for its symptom: the
+	// label used to sit inline beside the input and squeeze it, which is why
+	// the field needed a `ch` width at all. Given a full row, the input has
+	// the width to render its digits (the `8ch` cap is re-measured against
+	// this layout in the picker slice).
+	.upgrades-iterations-label,
+	.upgrades-candidates-label {
+		display: grid;
+		gap: var(--spacer-1);
+		justify-items: start;
+		margin-bottom: 0;
+	}
+
+	// A checkbox and its text read as one control, so these stay inline --
+	// `align-items: start` rather than `center` because the prune label wraps
+	// to two lines in the card's width and a centred box floats beside them.
+	.upgrades-bis-prune-label {
+		display: flex;
+		align-items: start;
+		gap: var(--spacer-1);
+		margin-bottom: 0;
+	}
+
+	.upgrades-phase-label {
+		display: flex;
+		align-items: center;
+		gap: var(--spacer-1);
+		margin-bottom: 0;
+	}
+}
+
+.upgrades-eligible-count {
+	margin-bottom: 0;
+}
+
+// Stop and Import are secondary to Run, so they share a row below it at
+// outline weight -- the action-cluster idiom of `.bulk-gear-actions`
+// (`_bulk_tab.scss:140-144`).
+.upgrades-secondary-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--spacer-2);
 }
 
 // The view-control row's height is reserved from the first paint instead of
@@ -47,13 +119,21 @@
 	// which spelled out the same four utilities on its own label. The phase
 	// wrapper joins them for layout parity: it is not a <label>, because the
 	// picker self-names through its options.
-	.upgrades-iterations-label,
-	.upgrades-candidates-label,
-	.upgrades-bis-prune-label,
+	//
+	// The two rows no longer share a parent -- the run controls moved to the
+	// settings card in the right panel (ticket 312) -- so this selector list
+	// names both roots rather than nesting under the toolbar they used to
+	// share. Each child selector below belongs to exactly one of the two.
+	//
+	// The label layout itself is NOT shared any more, and is deliberately not
+	// listed here: the card stacks its labels above their fields (see
+	// `.upgrades-run-controls` above) while the view row keeps them inline.
+	// Listing them together here would silently win over the card's rule by
+	// source order, which is exactly how this block's interleaving hid a
+	// layout decision before.
 	.upgrades-set-potential-label,
 	.upgrades-bis-only-label,
-	.upgrades-raid-filter-label,
-	.upgrades-phase-label {
+	.upgrades-raid-filter-label {
 		display: flex;
 		align-items: center;
 		gap: var(--spacer-1);

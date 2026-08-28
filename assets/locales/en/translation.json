@@ -865,6 +865,8 @@
 		"candidates_label": "Candidates",
 		"candidates_placeholder": "all {{count}} eligible",
 		"candidates_placeholder_uncapped": "all eligible",
+		"eligible_count": "{{count}} eligible items",
+		"eligible_count_unknown": "No ranking data for this spec",
 		"status": {
 			"idle": "Ranks upgrades against your current gear and settings on this page.",
 			"unsupported_spec": "This spec has no ranking data yet.",
