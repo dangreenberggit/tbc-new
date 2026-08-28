@@ -8733,10 +8733,7 @@
 				"stop": {
 					"type": "string"
 				},
-				"import_wcl": {
-					"type": "string"
-				},
-				"import_wcl_short": {
+				"settings_title": {
 					"type": "string"
 				},
 				"iterations_label": {
@@ -9050,7 +9047,7 @@
 				}
 			},
 			"additionalProperties": false,
-			"required": ["title", "subtabs", "run", "stop", "import_wcl", "import_wcl_short", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "export", "set_bonus", "prune", "progress", "results", "assumptions"]
+			"required": ["title", "subtabs", "run", "stop", "settings_title", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "export", "set_bonus", "prune", "progress", "results", "assumptions"]
 		}
 	},
 	"additionalProperties": false,

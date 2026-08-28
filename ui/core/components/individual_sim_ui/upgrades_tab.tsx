@@ -22,7 +22,6 @@ import { bisTagPhaseFor, cutoffIsUnmeasuredFor, epWeightsDisclosureFor, epWeight
 import { isKaelTempLegendary } from './upgrades/engine/kael-temp';
 import { filterPoolByPhase } from './upgrades/engine/pool';
 import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
-import { WclGearImportModal } from './upgrades/wcl_import_modal';
 import type { Assumptions } from './upgrades/engine/disclosure';
 import type { ItemSource } from './upgrades/engine/pool';
 import { simSlotsForPoolSlot } from './upgrades/engine/pool';
@@ -348,7 +347,6 @@ export class UpgradesTab extends SimTab {
 
 	protected runButton!: HTMLButtonElement;
 	protected stopButton!: HTMLButtonElement;
-	protected importButton!: HTMLButtonElement;
 	/** The prune picker's root, so visibility can be toggled without reaching into the picker. */
 	protected bisPruneElem!: HTMLElement;
 	/** The candidates picker's root, so its placeholder can be kept current. */
@@ -512,10 +510,11 @@ export class UpgradesTab extends SimTab {
 		const eligibleCountRef = ref<HTMLParagraphElement>();
 		const runButtonRef = ref<HTMLButtonElement>();
 		const stopButtonRef = ref<HTMLButtonElement>();
-		const importButtonRef = ref<HTMLButtonElement>();
 		const iterationsPickerRef = ref<HTMLDivElement>();
 		const candidatesPickerRef = ref<HTMLDivElement>();
 		const bisPrunePickerRef = ref<HTMLDivElement>();
+		const settingsToggleRef = ref<HTMLButtonElement>();
+		const settingsBodyRef = ref<HTMLDivElement>();
 		const setPotentialToggleRef = ref<HTMLInputElement>();
 		const setPotentialLabelRef = ref<HTMLLabelElement>();
 		const bisOnlyToggleRef = ref<HTMLInputElement>();
@@ -551,30 +550,47 @@ export class UpgradesTab extends SimTab {
 					<button ref={stopButtonRef} className="btn btn-outline-danger upgrades-stop-button" type="button" disabled>
 						{i18n.t('upgrades_tab.stop')}
 					</button>
-					<button
-						ref={importButtonRef}
-						className="btn btn-outline-secondary upgrades-import-button"
-						type="button"
-						title={i18n.t('upgrades_tab.import_wcl')}>
-						{i18n.t('upgrades_tab.import_wcl_short')}
-					</button>
 				</div>
 				{/*
-				 * Mount points. The controls themselves are real pickers, built
+				 * The four set-once knobs, in a native disclosure. Below `xl` the
+				 * shared `.tab-pane-content-container` stacks the panels into one
+				 * column, and these four rows are 208px of controls a phone reader
+				 * scrolls past every time to reach anything else -- so there they
+				 * collapse behind the summary, closed on first paint (ticket 321).
+				 * Run, Stop and the eligible count are deliberately outside it and
+				 * never collapse.
+				 *
+				 * A button plus a class, deliberately NOT a `<details>`. `<details>`
+				 * was tried first and measured broken: a closed `<details>` hides its
+				 * own non-summary children as a UA behaviour that neither
+				 * `display: contents` on the element nor on the body defeats, so at
+				 * 1280px all four controls reported `checkVisibility() === false`
+				 * while every gate exited 0. Desktop must ignore the collapsed state
+				 * entirely, and only an ordinary class the SCSS can override at `xl`
+				 * gives that. `aria-expanded` carries the state for AT.
+				 *
+				 * Mount points only. The controls themselves are real pickers, built
 				 * below -- the same `NumberPicker`/`BooleanPicker` rows the Batch
 				 * and Settings tabs use, rather than markup imitating them
 				 * (ticket 312). Borrowing the real component is what gives the
 				 * prune label its normal wrapping and the number fields their
 				 * content-driven width.
 				 */}
-				<div ref={iterationsPickerRef} className="upgrades-iterations-picker" />
-				<div ref={candidatesPickerRef} className="upgrades-candidates-picker" />
-				<div ref={bisPrunePickerRef} className="upgrades-bis-prune-picker d-none" />
-				{/* Not a <label>: the picker self-names through its options, so the
-				    wrapper exists only to give the selector the same treatment
-				    the other run inputs get from their label elements. */}
-				<div className="upgrades-phase-label">
-					<div ref={phaseSelectorRef} className="upgrades-phase-selector" />
+				<div className="upgrades-run-settings">
+					<button ref={settingsToggleRef} className="upgrades-run-settings-summary" type="button" attributes={{ 'aria-expanded': 'false' }}>
+						{i18n.t('upgrades_tab.settings_title')}
+					</button>
+					<div ref={settingsBodyRef} className="upgrades-run-settings-body">
+						<div ref={iterationsPickerRef} className="upgrades-iterations-picker" />
+						<div ref={candidatesPickerRef} className="upgrades-candidates-picker" />
+						<div ref={bisPrunePickerRef} className="upgrades-bis-prune-picker d-none" />
+						{/* Not a <label>: the picker self-names through its options, so the
+						    wrapper exists only to give the selector the same treatment
+						    the other run inputs get from their label elements. */}
+						<div className="upgrades-phase-label">
+							<div ref={phaseSelectorRef} className="upgrades-phase-selector" />
+						</div>
+					</div>
 				</div>
 			</div>,
 		);
@@ -680,7 +696,6 @@ export class UpgradesTab extends SimTab {
 		this.eligibleCountElem = eligibleCountRef.value!;
 		this.runButton = runButtonRef.value!;
 		this.stopButton = stopButtonRef.value!;
-		this.importButton = importButtonRef.value!;
 		this.setPotentialControl = new ToggleControl(setPotentialLabelRef.value!, setPotentialToggleRef.value!);
 		this.bisOnlyControl = new ToggleControl(bisOnlyLabelRef.value!, bisOnlyToggleRef.value!, bisOnlyTextRef.value!);
 		this.bisPruneElem = bisPrunePickerRef.value!;
@@ -802,13 +817,15 @@ export class UpgradesTab extends SimTab {
 			this.abortController?.abort();
 		});
 
-		// Gear-only import (plan §6, slice 5): opens its own modal rather than
-		// registering as a header import link, because it applies only
-		// `player.equipment` — the header importers (JSON/60U/WoWHead/Addon)
-		// all apply race/talents/professions too, which this deliberately does
-		// not (E-W4 binds the application call to plain `setGear`).
-		this.importButton.addEventListener('click', () => {
-			new WclGearImportModal(this.simUI.rootElem, this.simUI).open();
+		// The collapse is only ever a narrow-width affordance: at `xl` and up the
+		// SCSS shows the body unconditionally and hides this button, so the class
+		// toggled here is inert there and desktop cannot be left holding a
+		// collapsed card. Nothing reads the state back -- the pickers own their
+		// own values, and the Run handler still derives the candidate cap at
+		// click time regardless of whether the group is showing.
+		settingsToggleRef.value!.addEventListener('click', () => {
+			const expanded = settingsBodyRef.value!.classList.toggle('upgrades-run-settings-body--open');
+			settingsToggleRef.value!.setAttribute('aria-expanded', String(expanded));
 		});
 
 		// Before this, the field showed its raw `{{count}}` template until a

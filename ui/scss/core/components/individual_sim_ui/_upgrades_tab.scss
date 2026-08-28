@@ -835,3 +835,115 @@
 		min-height: 0;
 	}
 }
+
+// Narrow-width ordering and the settings disclosure (ticket 321).
+//
+// The breakpoint here is `xl`, not `lg`, and the difference is the whole bug.
+// `.tab-pane-content-container` switches to `flex-direction: column` at
+// `media-breakpoint-down(xl)` (`_sim_tab.scss:6-8`) -- that is when the right
+// panel stops sitting beside the left one and drops beneath it. `.tab-panel-left`
+// separately goes flex-column at `down(lg)` (`:25-28`), which is a different
+// thing and 208px of viewport later. Measured on the running page before this
+// rule existed: at 1100px -- between the two breakpoints -- the results sat at
+// y=316 and the Run button at y=601, so a rule scoped to `lg` would have left
+// the whole 992-1200px band broken.
+//
+// `_sim_tab.scss` is shared with every other tab and is deliberately not edited;
+// both rules below key off this tab's own panel classes.
+@include media-breakpoint-down(xl) {
+	// The panels are flex items of `.tab-pane-content-container` once it has
+	// stacked, so `order` moves the settings card above the results without
+	// re-parenting anything. Re-parenting is what silently drops SCSS rules in
+	// this file (see the deleted `.upgrades-toolbar` note at the top), so the
+	// reorder is deliberately done where no rule can lose its ancestor.
+	//
+	// Before this: the controls you use to configure a run rendered underneath
+	// the output of the run, about 1.5 viewport heights down (ticket 321).
+	.upgrades-tab-right {
+		order: -1;
+	}
+
+	.upgrades-tab-left {
+		order: 0;
+	}
+}
+
+// The collapsible group holding Iterations, Candidates, BiS-prune and Phase.
+//
+// A button plus a class rather than a `<details>`. `<details>` was tried first
+// and measured broken at 1280px: a closed `<details>` hides its own non-summary
+// children as a UA behaviour that `display: contents` does not defeat --
+// neither on the body nor on the element itself -- so all four controls
+// reported `checkVisibility() === false` on desktop while type-check,
+// stylelint, oxlint, oxfmt and the locale gate all exited 0. That is the same
+// class of silent break as the re-parenting note at the top of this file: no
+// gate renders the page, so this one is verified by DOM measurement.
+//
+// At `xl` and up there is no collapse at all. The button is removed from the
+// layout and the body is shown whatever class the toggle has left on it, so
+// desktop keeps exactly the card it had before this change and cannot be left
+// holding a collapsed group. `display: contents` on the body lets the four rows
+// keep participating in `.upgrades-run-controls`'s grid as they did when they
+// were its direct children -- a `block` wrapper would collapse them into one
+// grid track and change desktop spacing.
+@include media-breakpoint-up(xl) {
+	.upgrades-run-settings,
+	.upgrades-run-settings-body,
+	.upgrades-run-settings-body--open {
+		display: contents;
+	}
+
+	.upgrades-run-settings-summary {
+		display: none;
+	}
+}
+
+// Below `xl` it is a real collapse, closed on first paint. Run, Stop and the
+// eligible count sit outside it in the card and never collapse -- the point is
+// that the four set-once knobs stop pushing the primary action down a phone
+// screen, not that the card gets smaller. Measured at 375px: closed card 192px
+// against 424px before, with Run above the results instead of 285px below them.
+@include media-breakpoint-down(xl) {
+	.upgrades-run-settings-summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--spacer-2);
+		width: 100%;
+		padding: 0;
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+
+		// A caret rather than a marker, so the row reads as a header. Rotates to
+		// point down once the group is open.
+		&::after {
+			content: '';
+			width: 0.5rem;
+			height: 0.5rem;
+			border-right: 1px solid currentcolor;
+			border-bottom: 1px solid currentcolor;
+			transform: rotate(-45deg);
+			transition: transform 0.15s ease-in-out;
+		}
+
+		&[aria-expanded='true']::after {
+			transform: rotate(45deg);
+		}
+	}
+
+	.upgrades-run-settings-body {
+		display: none;
+	}
+
+	// The four rows stack on the card's own rhythm, matching the gap they get
+	// from `.upgrades-run-controls` at desktop widths.
+	.upgrades-run-settings-body--open {
+		display: grid;
+		gap: var(--spacer-3);
+		padding-top: var(--spacer-3);
+	}
+}
