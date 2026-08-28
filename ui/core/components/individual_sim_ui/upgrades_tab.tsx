@@ -746,6 +746,14 @@ export class UpgradesTab extends SimTab {
 		// `TypedEvent<void>`, exactly as the Batch tab binds its own pickers to
 		// plain component state (`bulk_tab.tsx:47, 693-701`).
 		//
+		// Each `setValue` emits `settingsChangedEmitter`, matching the Batch
+		// tab's setters (`bulk_tab.tsx:596, 638, 658, 664`). The emit is what
+		// makes the `Input` base's re-sync path (`input.tsx:68`) live: on the
+		// event every bound picker repaints from its source field, so a
+		// *programmatic* write to a field shows through instead of leaving a
+		// stale display. For a user edit the repaint is a no-op (the field
+		// already holds what the picker just wrote).
+		//
 		// Writing on change does not change *when* a run reads them: `run()`
 		// still calls `readIterations()` and `readCandidateCap()` at click time,
 		// which now read these fields. Editing a picker mid-run cannot alter the
@@ -756,8 +764,9 @@ export class UpgradesTab extends SimTab {
 			positive: true,
 			changedEvent: _ => this.settingsChangedEmitter,
 			getValue: _ => this.iterations,
-			setValue: (_eventID, _obj, newValue: number) => {
+			setValue: (eventID, _obj, newValue: number) => {
 				this.iterations = newValue;
+				this.settingsChangedEmitter.emit(eventID);
 			},
 		});
 
@@ -771,8 +780,9 @@ export class UpgradesTab extends SimTab {
 			showZeroes: false,
 			changedEvent: _ => this.settingsChangedEmitter,
 			getValue: _ => this.candidateCap,
-			setValue: (_eventID, _obj, newValue: number) => {
+			setValue: (eventID, _obj, newValue: number) => {
 				this.candidateCap = newValue;
+				this.settingsChangedEmitter.emit(eventID);
 			},
 		});
 
@@ -784,9 +794,10 @@ export class UpgradesTab extends SimTab {
 			inline: true,
 			changedEvent: _ => this.settingsChangedEmitter,
 			getValue: _ => this.bisPrune,
-			setValue: (_eventID, _obj, newValue: boolean) => {
+			setValue: (eventID, _obj, newValue: boolean) => {
 				this.bisPrune = newValue;
 				this.refreshCandidatesPlaceholder();
+				this.settingsChangedEmitter.emit(eventID);
 			},
 		});
 
