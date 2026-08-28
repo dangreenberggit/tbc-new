@@ -197,6 +197,27 @@ function formatDelta(deltaDps: number): string {
 }
 
 /**
+ * Trims a substitution detail to its first line for display (ticket 311).
+ *
+ * A substitution caused by a sim crash carries the whole Go stack trace in its
+ * detail — thousands of bytes of goroutine frames — and the first line of the
+ * error already says what went wrong. The trace's newlines arrive both as real
+ * newline characters and as written-out backslash-n pairs, because the sim's
+ * error object is stringified into the detail, so both count as a line break.
+ *
+ * Deliberate drift: this mirrors `firstLineOf` in
+ * `packages/core/src/rank-report.ts:154`, which cannot be imported — nothing in
+ * `packages/core` is reachable from the fork's `ui/`, and the engine port
+ * directory is byte-gated. The suffix differs on purpose: the report path points
+ * at its JSON artifact, and this tab has none, so it points at the console where
+ * `substitutionsContent` logs the full detail instead.
+ */
+function firstLineOf(detail: string): string {
+	const line = detail.split(/\r?\n|\\n/, 1)[0] ?? detail;
+	return line === detail ? detail : `${line}${i18n.t('upgrades_tab.assumptions.substitution_truncated_suffix')}`;
+}
+
+/**
  * Column identity for the sortable columns in both results-table heads
  * (ticket 280, ticket 289, ticket 287 follow-through). One id per `<th>`,
  * in table order *after* the fixed Rank column — `resultsTableHead` and
@@ -1777,12 +1798,19 @@ export class UpgradesTab extends SimTab {
 					<strong>{i18n.t('upgrades_tab.assumptions.substitutions_title', { count: subs.length })}</strong>
 				</p>
 				<dl className="upgrades-assumptions-grid mb-0 upgrades-substitutions">
-					{subs.map(s => (
-						<>
-							<dt className="upgrades-assumptions-term">{s.field}</dt>
-							<dd className="upgrades-assumptions-desc">{s.detail}</dd>
-						</>
-					))}
+					{subs.map(s => {
+						// The page shows one line; the diagnostic record goes to the console
+						// rather than being lost, since this tab has no JSON artifact to
+						// hold it (ticket 311).
+						const shown = firstLineOf(s.detail);
+						if (shown !== s.detail) console.warn(`[upgrades] ${s.field}: ${s.detail}`);
+						return (
+							<>
+								<dt className="upgrades-assumptions-term">{s.field}</dt>
+								<dd className="upgrades-assumptions-desc">{shown}</dd>
+							</>
+						);
+					})}
 				</dl>
 			</>
 		);

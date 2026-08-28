@@ -936,7 +936,8 @@
 			"bis_tags": "BiS tags",
 			"bis_tags_note": "from {{from}} sets (ranking {{requested}}) — no curated {{requested}} set exists upstream",
 			"cutoff_basis": "Cutoff",
-			"cutoff_basis_unmeasured": "borrowed from Retribution Paladin — no noise measurement has been run for this spec yet"
+			"cutoff_basis_unmeasured": "borrowed from Retribution Paladin — no noise measurement has been run for this spec yet",
+			"substitution_truncated_suffix": "… (full text in the browser console)"
 		}
 	},
 	"bulk_tab": {
