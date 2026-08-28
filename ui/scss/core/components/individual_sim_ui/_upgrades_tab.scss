@@ -721,10 +721,14 @@
 	}
 }
 
-// The drawer was a Bootstrap `dl.row` with `col-sm-4` / `col-sm-8` pairs, so
-// every short label reserved a third of the width and the value sat across a
-// large empty gutter (ticket 304 item 8). A content-sized two-column grid
-// gives the label exactly what it needs and the rest to the value.
+// These label/value pairs were a Bootstrap `dl.row` with `col-sm-4` /
+// `col-sm-8` pairs, so every short label reserved a third of the width and the
+// value sat across a large empty gutter (ticket 304 item 8). A content-sized
+// two-column grid gives the label exactly what it needs and the rest to the
+// value.
+//
+// The class name outlived the assumptions block it was written for (ticket
+// 318): the substitutions list uses the same pairs and is the only caller now.
 //
 // No site idiom exists to borrow for content-sized label/value pairs -- the
 // only precedent was the same `dl.row` being replaced here -- so this is a

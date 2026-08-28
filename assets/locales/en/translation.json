@@ -930,28 +930,7 @@
 			"heading_count": "{{count}} above the cutoff"
 		},
 		"assumptions": {
-			"title": "Assumptions",
-			"seeds": "Seeds",
-			"iterations": "Iterations",
-			"max_phase": "Max phase",
-			"pool": "Candidate pool",
-			"pool_universe": "Pool source",
-			"pool_universe_note": "{{file}} ({{count}} entries)",
-			"pool_bis_only": "BiS-list items for {{phase}}",
-			"pool_all": "every eligible item",
-			"candidate_cap": "Candidate cap",
-			"candidate_cap_note": "top {{cap}} candidates simmed in full, plus anything you already own",
 			"substitutions_title": "Dropped candidates and substitutions ({{count}})",
-			"engine_provenance": "Engine (fork commit)",
-			"sim_version": "Sim version",
-			"ep_weights": "EP weights",
-			"ep_weights_note": "written for {{from}}, ranking {{requested}}",
-			"source_attribution": "Source attribution",
-			"source_attribution_partial": "partial — {{count}} items were admitted by their database phase and carry no drop, badge or vendor detail",
-			"bis_tags": "BiS tags",
-			"bis_tags_note": "from {{from}} sets (ranking {{requested}}) — no curated {{requested}} set exists upstream",
-			"cutoff_basis": "Cutoff",
-			"cutoff_basis_unmeasured": "borrowed from Retribution Paladin — no noise measurement has been run for this spec yet",
 			"substitution_truncated_suffix": "… (full text in the browser console)"
 		}
 	},

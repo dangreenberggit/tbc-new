@@ -368,7 +368,7 @@ export class UpgradesTab extends SimTab {
 	protected statusAnnounceElem!: HTMLElement;
 	protected errorAlertElem!: HTMLElement;
 	protected resultsElem!: HTMLElement;
-	protected assumptionsElem!: HTMLElement;
+	protected substitutionsHostElem!: HTMLElement;
 	protected exportBoxElem!: HTMLElement;
 	protected exportAreaElem!: HTMLTextAreaElement;
 	protected exportCountElem!: HTMLElement;
@@ -527,7 +527,7 @@ export class UpgradesTab extends SimTab {
 		const statusAnnounceRef = ref<HTMLDivElement>();
 		const errorAlertRef = ref<HTMLDivElement>();
 		const resultsRef = ref<HTMLDivElement>();
-		const assumptionsRef = ref<HTMLDivElement>();
+		const substitutionsHostRef = ref<HTMLDivElement>();
 		const exportBoxRef = ref<HTMLDivElement>();
 		const exportAreaRef = ref<HTMLTextAreaElement>();
 		const exportCountRef = ref<HTMLSpanElement>();
@@ -667,7 +667,7 @@ export class UpgradesTab extends SimTab {
 				 * The block rhythm comes from `.content-block`'s own `gap`
 				 * (`--block-spacer`) on the wrapper, not from per-element `mt-gap`
 				 * utilities: the spacing between the toolbar, status, results and
-				 * assumptions is one decision made once, so a state that renders
+				 * substitutions is one decision made once, so a state that renders
 				 * nothing collapses its slot instead of leaving a stranded margin.
 				 */}
 				<div ref={resultsRef} className="upgrades-results" />
@@ -689,7 +689,7 @@ export class UpgradesTab extends SimTab {
 						</button>
 					</div>
 				</div>
-				<div ref={assumptionsRef} className="upgrades-assumptions" />
+				<div ref={substitutionsHostRef} className="upgrades-substitutions-host" />
 			</div>,
 		);
 
@@ -706,7 +706,7 @@ export class UpgradesTab extends SimTab {
 		this.statusAnnounceElem = statusAnnounceRef.value!;
 		this.errorAlertElem = errorAlertRef.value!;
 		this.resultsElem = resultsRef.value!;
-		this.assumptionsElem = assumptionsRef.value!;
+		this.substitutionsHostElem = substitutionsHostRef.value!;
 		this.exportBoxElem = exportBoxRef.value!;
 		this.exportAreaElem = exportAreaRef.value!;
 		// The payload is generated, never typed into; set as a property because
@@ -990,7 +990,8 @@ export class UpgradesTab extends SimTab {
 	 * off the page either way, so every delta means the same thing. The only
 	 * visible difference is that an untagged item the player is wearing gets no
 	 * greyed "already have it" row of its own, which is what "BiS-list items"
-	 * already says. The assumptions drawer names the pool a result came from.
+	 * already says. The assumptions console line names the pool a result came
+	 * from.
 	 */
 	private effectivePool(specId: SpecId, maxPhase: RankInput['maxPhase'], pruned: boolean) {
 		const pool = poolFor(specId, maxPhase);
@@ -1033,7 +1034,7 @@ export class UpgradesTab extends SimTab {
 		this.landedRows = [];
 		this.lastRunSeconds = undefined;
 		// Captured once, here, and never recomputed: `lastRunPruned` is a
-		// recorded fact about *this* run, surfaced in the assumptions drawer.
+		// recorded fact about *this* run, reported in the assumptions log line.
 		// Re-reading the control later would let a finished run's description
 		// drift when the control's visibility or value changes.
 		const pruned = this.pruneEffective();
@@ -1058,6 +1059,9 @@ export class UpgradesTab extends SimTab {
 
 		this.stopButton.disabled = false;
 		let ranking: Ranking | PartialRanking;
+		// Read by the `finally`'s assumptions log, which also runs when
+		// rankUpgrades throws and `ranking` is therefore never assigned.
+		let runAssumptions: Assumptions | undefined;
 		try {
 			ranking = await rankUpgrades(
 				input,
@@ -1093,6 +1097,7 @@ export class UpgradesTab extends SimTab {
 					if (this.state.kind === 'running') this.setState({ kind: 'running', progress });
 				},
 			);
+			runAssumptions = ranking.assumptions;
 		} finally {
 			this.stopButton.disabled = true;
 			this.abortController = undefined;
@@ -1105,16 +1110,19 @@ export class UpgradesTab extends SimTab {
 			// about this run, so they read as developer noise on a page a player is
 			// reading (ticket 304 item 9). They still have to be recoverable when
 			// someone is diagnosing a bad ranking, so they move here rather than
-			// being deleted. Everything the drawer says about how *this* run was
-			// degraded or what data it consumed stays on the page.
+			// being deleted.
 			//
 			// In the `finally` rather than after it: a throw from rankUpgrades
 			// propagates to the caller's catch, so a line placed after this block
 			// never runs for a failed run -- the exact case the paragraph above
-			// says the metadata has to survive, and the case where the drawer
-			// (which only renders for 'done'/'stopped') cannot supply it either.
+			// says the metadata has to survive.
 			// Pre-merge review round 3, adversarial axis.
 			console.info(`[upgrades] engine ${ENGINE_FORK_COMMIT} · api-v${CURRENT_API_VERSION}`);
+			// The run's assumptions followed the same reasoning out of the UI
+			// (ticket 318) and land in the same place, for the same reader.
+			// Undefined only when rankUpgrades threw, and a diagnostic must never
+			// be the thing that masks the real failure.
+			if (runAssumptions) this.logAssumptions(runAssumptions);
 		}
 
 		if (ranking.complete) {
@@ -1142,7 +1150,7 @@ export class UpgradesTab extends SimTab {
 		this.statusElem.replaceChildren(this.statusContent());
 		this.renderAnnouncement();
 		this.renderSubTabs();
-		this.assumptionsElem.replaceChildren(this.assumptionsContent());
+		this.substitutionsHostElem.replaceChildren(this.substitutionsContent());
 	}
 
 	/**
@@ -1522,10 +1530,12 @@ export class UpgradesTab extends SimTab {
 		// partial table with withheld view controls/sorting. The `PartialRanking`
 		// stays on `this.state` for cheap in-memory retention, but nothing here
 		// reads it — 'stopped' renders the same empty results table as 'idle'.
-		// The assumptions/substitutions drawers still render for 'stopped'
-		// (recorded decision, ticket 286 review): they describe the abandoned
-		// run's inputs, not its half-computed outputs. The stopped status
-		// wording is reconciled under ticket 290's state-design pass.
+		// The substitutions list still renders for 'stopped' (recorded decision,
+		// ticket 286 review): it describes the abandoned run's inputs, not its
+		// half-computed outputs. The assumptions half of that decision now
+		// applies to the console line, which the run's `finally` emits on every
+		// exit path including Stop. The stopped status wording is reconciled
+		// under ticket 290's state-design pass.
 		// No run in this page session yet: say so, rather than leaving the
 		// results area blank. An empty panel reads as "it found nothing",
 		// which is a different (and discouraging) claim from "nothing has
@@ -1797,7 +1807,7 @@ export class UpgradesTab extends SimTab {
 	 */
 	private expandableRowGroup(rows: ViewRow[]): Node {
 		const tbodyRef = ref<HTMLTableSectionElement>();
-		// Native <details>, the same disclosure the assumptions drawer uses.
+		// Native <details>, the disclosure idiom this tab settled on.
 		// The hand-rolled version was a button toggling `d-none` and swapping
 		// its own label — two idioms for one behaviour on one screen, and the
 		// browser's own gives keyboard and screen-reader semantics for free.
@@ -2000,102 +2010,51 @@ export class UpgradesTab extends SimTab {
 		return cell;
 	}
 
-	private assumptionsContent(): Node {
-		if (this.state.kind !== 'done' && this.state.kind !== 'stopped') return <></>;
-		const a: Assumptions = this.state.ranking.assumptions;
+	/**
+	 * The run's assumptions, to the console rather than to the page (ticket 318).
+	 *
+	 * Every row this used to render was either a restatement of a control the
+	 * user had just set -- iterations, max phase, candidate pool -- or internal
+	 * detail no player can act on, so the block cost a player screen space and
+	 * gave nothing back. It is still what someone diagnosing a bad ranking reads,
+	 * which is why this logs rather than deletes.
+	 *
+	 * Plain English rather than the `i18n` strings the drawer used: a console
+	 * line is a diagnostic for whoever is debugging this build, not localised UI.
+	 * Its locale keys go with it.
+	 */
+	private logAssumptions(a: Assumptions): void {
 		const cap = this.readCandidateCap();
-		// The run's own phase, not the picker's current value -- the drawer
-		// describes the finished run, and the picker may have moved since.
+		// The run's own phase, not the picker's current value -- this describes
+		// the finished run, and the picker may have moved since.
 		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
 		const poolSource = specId ? poolSourceFor(specId, a.maxPhase as ContentPhase) : undefined;
-		// Two degradations this run may carry. Both are real and both are
-		// defensible -- EP only orders the shortlist, and a db-phase item is
-		// genuinely available at its phase -- but the brief bans silent
-		// wrongness, so each states itself rather than being inferred from a
-		// missing field.
 		const epDisclosure = specId ? epWeightsDisclosureFor(specId, a.maxPhase as ContentPhase) : undefined;
 		const unsourced = specId ? unsourcedCountFor(specId, a.maxPhase as ContentPhase) : 0;
-		// A third degradation, and the same rule: state it rather than let a
-		// reader take a p3-era BiS badge for a current recommendation.
 		const bisTagPhase = specId ? bisTagPhaseFor(specId, a.maxPhase as ContentPhase) : undefined;
-		const detailsRef = ref<HTMLDetailsElement>();
-		return (
-			<details ref={detailsRef} className="upgrades-assumptions-drawer">
-				<summary>{i18n.t('upgrades_tab.assumptions.title')}</summary>
-				<dl className="upgrades-assumptions-grid mb-0">
-					<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.seeds')}</dt>
-					<dd className="upgrades-assumptions-desc">{a.seeds.join(', ')}</dd>
-					<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.iterations')}</dt>
-					<dd className="upgrades-assumptions-desc">{a.iterations}</dd>
-					<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.max_phase')}</dt>
-					{/* The page's own spelling of the phase, not a bare number: a
-					    reader should not have to know that 3 means "2.2 - T6". */}
-					<dd className="upgrades-assumptions-desc">{i18n.t(`common.phases.${a.maxPhase}`)}</dd>
-					<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.pool')}</dt>
-					<dd className="upgrades-assumptions-desc">
-						{this.lastRunPruned
-							? i18n.t('upgrades_tab.assumptions.pool_bis_only', { phase: i18n.t(`common.phases.${a.maxPhase}`) })
-							: i18n.t('upgrades_tab.assumptions.pool_all')}
-					</dd>
-					{poolSource ? (
-						<>
-							<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.pool_universe')}</dt>
-							{/* Which bundled file the run drew from. The chosen file is
-							    not always the selected phase's -- data.ts falls back to
-							    the highest phase with data at or below it -- so naming
-							    it stops a reader assuming a p4 selection read a p4 file. */}
-							<dd className="upgrades-assumptions-desc">
-								{i18n.t('upgrades_tab.assumptions.pool_universe_note', { file: poolSource.file, count: poolSource.entries })}
-							</dd>
-						</>
-					) : null}
-					{epDisclosure ? (
-						<>
-							<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.ep_weights')}</dt>
-							<dd className="upgrades-assumptions-desc">
-								{i18n.t('upgrades_tab.assumptions.ep_weights_note', {
-									from: epDisclosure.from,
-									requested: epDisclosure.requested,
-								})}
-							</dd>
-						</>
-					) : null}
-					{bisTagPhase && bisTagPhase.tagsFromPhase < bisTagPhase.requestedPhase ? (
-						<>
-							<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.bis_tags')}</dt>
-							<dd className="upgrades-assumptions-desc">
-								{i18n.t('upgrades_tab.assumptions.bis_tags_note', {
-									from: `P${bisTagPhase.tagsFromPhase}`,
-									requested: `P${bisTagPhase.requestedPhase}`,
-								})}
-							</dd>
-						</>
-					) : null}
-					{specId && cutoffIsUnmeasuredFor(specId) ? (
-						<>
-							<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.cutoff_basis')}</dt>
-							<dd className="upgrades-assumptions-desc">{i18n.t('upgrades_tab.assumptions.cutoff_basis_unmeasured')}</dd>
-						</>
-					) : null}
-					{unsourced > 0 ? (
-						<>
-							<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.source_attribution')}</dt>
-							<dd className="upgrades-assumptions-desc">{i18n.t('upgrades_tab.assumptions.source_attribution_partial', { count: unsourced })}</dd>
-						</>
-					) : null}
-					{cap !== undefined ? (
-						<>
-							<dt className="upgrades-assumptions-term">{i18n.t('upgrades_tab.assumptions.candidate_cap')}</dt>
-							{/* Which order the cap slices within its input set is ticket 208 —
-							    stated as EP in the note because that is what the code does
-							    today, not as an endorsement of it. */}
-							<dd className="upgrades-assumptions-desc">{i18n.t('upgrades_tab.assumptions.candidate_cap_note', { cap })}</dd>
-						</>
-					) : null}
-				</dl>
-				{this.substitutionsContent()}
-			</details>
-		);
+
+		const lines = [
+			`seeds: ${a.seeds.join(', ')}`,
+			`iterations: ${a.iterations}`,
+			`max phase: ${a.maxPhase}`,
+			`candidate pool: ${this.lastRunPruned ? `BiS-list items for phase ${a.maxPhase}` : 'every eligible item'}`,
+		];
+		// Which bundled file the run drew from. The chosen file is not always the
+		// selected phase's -- data.ts falls back to the highest phase with data at
+		// or below it -- so naming it stops a reader assuming a p4 selection read
+		// a p4 file.
+		if (poolSource) lines.push(`pool source: ${poolSource.file} (${poolSource.entries} entries)`);
+		// The degradations a run may carry. Each states itself rather than being
+		// inferred from a missing field.
+		if (epDisclosure) lines.push(`EP weights: written for ${epDisclosure.from}, ranking ${epDisclosure.requested}`);
+		if (bisTagPhase && bisTagPhase.tagsFromPhase < bisTagPhase.requestedPhase) {
+			lines.push(`BiS tags: from P${bisTagPhase.tagsFromPhase} sets, ranking P${bisTagPhase.requestedPhase}`);
+		}
+		if (specId && cutoffIsUnmeasuredFor(specId)) lines.push('cutoff: borrowed from Retribution Paladin, unmeasured for this spec');
+		if (unsourced > 0) lines.push(`source attribution: partial, ${unsourced} items admitted by database phase only`);
+		if (cap !== undefined) lines.push(`candidate cap: top ${cap} simmed in full, plus anything you already own`);
+
+		console.info(`[upgrades] assumptions — ${lines.join(' · ')}`);
 	}
 
 	/**
@@ -2105,6 +2064,14 @@ export class UpgradesTab extends SimTab {
 	 * that lost candidates to sim panics looked identical on the page to one
 	 * where every candidate simmed cleanly. That is what let a run whose sims
 	 * all failed read as "no upgrades found above the cutoff".
+	 *
+	 * Kept on the page when the assumptions block left it for the console
+	 * (ticket 318): a dropped candidate is a reason an item a player expected is
+	 * missing from the list, which is the opposite of the developer detail that
+	 * demotion targeted. It renders in its own host now rather than inside the
+	 * assumptions drawer that used to contain it, and the leading `<hr />` went
+	 * with that drawer -- it separated this list from the rows above it, and
+	 * there are no longer any rows above it.
 	 */
 	private substitutionsContent(): Node {
 		if (this.state.kind !== 'done' && this.state.kind !== 'stopped') return <></>;
@@ -2112,7 +2079,6 @@ export class UpgradesTab extends SimTab {
 		if (subs.length === 0) return <></>;
 		return (
 			<>
-				<hr />
 				<p className="mb-1">
 					<strong>{i18n.t('upgrades_tab.assumptions.substitutions_title', { count: subs.length })}</strong>
 				</p>
