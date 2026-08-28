@@ -883,7 +883,7 @@
 			"only_bis_qualifier": "{{phase}} list",
 			"raid_filter": "Content",
 			"raid_filter_all": "All",
-			"raid_filter_group_zone": "Raid zones",
+			"raid_filter_group_zone": "Content",
 			"raid_filter_group_other": "Other sources"
 		},
 		"export": {
