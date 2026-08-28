@@ -1759,15 +1759,86 @@ export class UpgradesTab extends SimTab {
 	 */
 	private resultRow(row: RankedItem, display: { rankText: string }): Node {
 		const deltaLabel = formatDelta(row.deltaDps);
+		const setLine = this.setBonusLine(row);
 		return (
 			<tr className={row.owned ? 'upgrades-row-owned' : ''}>
 				<td>{display.rankText}</td>
 				<td>{this.itemCell(row)}</td>
 				<td>{slotLabel(effectiveSlot(row))}</td>
-				<td>{deltaLabel}</td>
+				<td>
+					{deltaLabel}
+					{setLine}
+				</td>
 				<td>{sourceCell(row, this.simUI.sim)}</td>
 			</tr>
 		);
+	}
+
+	/**
+	 * How much of this row's figure is set bonus (ticket 313), shown only while
+	 * the set-potential toggle is on — off, the toggle is not contributing to
+	 * the ordering, so there is nothing to explain.
+	 *
+	 * The number shown is the raw `prospectiveBonusDps`, which is exactly what
+	 * the view adds to `deltaDps` when the toggle is on (`view.ts:163,169-172`).
+	 * The report path discounts its own figure through `SET_POTENTIAL_WEIGHTS`;
+	 * that weighting does not apply here, and showing a discounted number would
+	 * fail to reconcile with the on-screen ordering.
+	 *
+	 * Four states, which must not be able to be read as one another:
+	 *
+	 * (a) prospective — the bonus is *not* yet inside `deltaDps`, so it is shown
+	 *     as a separate figure with the piece counts that would earn it.
+	 * (b) crossing — the bonus is already inside `deltaDps`. No second number,
+	 *     or a reader would add it to the delta a second time.
+	 * (c) confounded — the figure is inflated by breaking another set bonus and
+	 *     the view refuses to rank on it (ticket 90), so it is disclosed with
+	 *     that said plainly rather than presented as a clean gain.
+	 * (d) a set context with no populated bonus and no crossing — a real state
+	 *     (`rank.ts:1431-1440` only populates `prospectiveBonusDps` when the
+	 *     swap advances the piece count below a threshold) with nothing to say.
+	 */
+	private setBonusLine(row: RankedItem): Node | null {
+		if (!this.setPotentialControl.checked) return null;
+		const ctx = row.setContext;
+		if (!ctx) return null;
+
+		const breaks = ctx.prospectiveBonusBreaks;
+		if (breaks?.length) {
+			const broken = breaks[0];
+			return (
+				<small className="upgrades-set-bonus upgrades-set-bonus-confounded">
+					{i18n.t('upgrades_tab.set_bonus.confounded', {
+						dps: (ctx.prospectiveBonusDps ?? 0).toFixed(1),
+						set: ctx.setName,
+						broken: broken.setName,
+						brokenThreshold: broken.threshold,
+					})}
+				</small>
+			);
+		}
+
+		if (ctx.crossesThreshold) {
+			return (
+				<small className="upgrades-set-bonus">{i18n.t('upgrades_tab.set_bonus.crosses', { threshold: ctx.piecesAfterSwap, set: ctx.setName })}</small>
+			);
+		}
+
+		if (ctx.prospectiveBonusDps !== undefined && ctx.nextThreshold !== null) {
+			return (
+				<small className="upgrades-set-bonus">
+					{i18n.t('upgrades_tab.set_bonus.prospective', {
+						dps: ctx.prospectiveBonusDps.toFixed(1),
+						before: ctx.piecesWornBefore,
+						after: ctx.piecesAfterSwap,
+						threshold: ctx.nextThreshold,
+						set: ctx.setName,
+					})}
+				</small>
+			);
+		}
+
+		return null;
 	}
 
 	/**

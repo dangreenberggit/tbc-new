@@ -140,6 +140,27 @@
 	color: var(--bs-gray-500);
 }
 
+// How much of a row's figure is set bonus (ticket 313). A sub-line under the
+// DPS cell, not a column: it is present on a minority of rows and only while
+// the set-potential toggle is on, so a column would be mostly empty and would
+// need matching `nth-child` widths in the mobile table rules.
+//
+// `--bs-gray-500` is the tab's own muted-text colour, the same one
+// `.upgrades-text-secondary` uses -- not a second grey, and not
+// `--bs-secondary-color`, which renders near-black against this background.
+.upgrades-set-bonus {
+	display: block;
+	color: var(--bs-gray-500);
+	line-height: 1.2;
+}
+
+// A confounded figure is disclosed but never ranked on (ticket 90), so it must
+// not read as the same kind of claim as a clean one. Warning tone rather than
+// the muted grey, because the qualifier is the point of the line.
+.upgrades-set-bonus-confounded {
+	color: var(--bs-warning-text-emphasis, var(--bs-warning));
+}
+
 // Containment for the row's new home (ticket 312, F11). `.tab-panel-left` is
 // `display: grid` with `repeat(auto-fit, minmax(220px, 1fr))`
 // (`_sim_tab.scss:19-27`). The panel had exactly one direct child until this

@@ -887,6 +887,11 @@
 			"raid_filter_group_zone": "Raid zones",
 			"raid_filter_group_other": "Other sources"
 		},
+		"set_bonus": {
+			"prospective": "+{{dps}} set bonus ({{before}}/{{threshold}} → {{after}}/{{threshold}} {{set}})",
+			"crosses": "includes the {{threshold}}-piece {{set}} bonus",
+			"confounded": "+{{dps}} set bonus ({{set}}) — not counted in ranking: breaks {{broken}} {{brokenThreshold}}pc"
+		},
 		"prune": {
 			"only_bis": "Sim only {{phase}} BiS-list items"
 		},

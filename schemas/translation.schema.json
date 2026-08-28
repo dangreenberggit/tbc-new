@@ -8819,6 +8819,22 @@
 					"additionalProperties": false,
 					"required": ["title", "set_potential", "only_bis", "only_bis_qualifier", "raid_filter", "raid_filter_all", "raid_filter_group_zone", "raid_filter_group_other"]
 				},
+				"set_bonus": {
+					"type": "object",
+					"properties": {
+						"prospective": {
+							"type": "string"
+						},
+						"crosses": {
+							"type": "string"
+						},
+						"confounded": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["prospective", "crosses", "confounded"]
+				},
 				"prune": {
 					"type": "object",
 					"properties": {
@@ -9012,7 +9028,7 @@
 				}
 			},
 			"additionalProperties": false,
-			"required": ["title", "subtabs", "run", "stop", "import_wcl", "import_wcl_short", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "prune", "progress", "results", "assumptions"]
+			"required": ["title", "subtabs", "run", "stop", "import_wcl", "import_wcl_short", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "set_bonus", "prune", "progress", "results", "assumptions"]
 		}
 	},
 	"additionalProperties": false,
