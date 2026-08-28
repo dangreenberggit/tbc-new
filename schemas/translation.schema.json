@@ -8791,10 +8791,16 @@
 				"view": {
 					"type": "object",
 					"properties": {
+						"title": {
+							"type": "string"
+						},
 						"set_potential": {
 							"type": "string"
 						},
 						"only_bis": {
+							"type": "string"
+						},
+						"only_bis_qualifier": {
 							"type": "string"
 						},
 						"raid_filter": {
@@ -8811,7 +8817,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["set_potential", "only_bis", "raid_filter", "raid_filter_all", "raid_filter_group_zone", "raid_filter_group_other"]
+					"required": ["title", "set_potential", "only_bis", "only_bis_qualifier", "raid_filter", "raid_filter_all", "raid_filter_group_zone", "raid_filter_group_other"]
 				},
 				"prune": {
 					"type": "object",

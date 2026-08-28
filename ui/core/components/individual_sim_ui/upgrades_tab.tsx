@@ -326,6 +326,7 @@ export class UpgradesTab extends SimTab {
 
 	protected shoppingListElem: HTMLElement;
 	protected settingsCardElem: HTMLElement;
+	protected viewControlsHostElem: HTMLElement;
 	protected eligibleCountElem!: HTMLElement;
 
 	// The run settings the pickers write through to. They are tab state, not
@@ -429,10 +430,21 @@ export class UpgradesTab extends SimTab {
 		const tabNavRef = ref<HTMLUListElement>();
 		const tabContentRef = ref<HTMLDivElement>();
 		const settingsCardRef = ref<HTMLDivElement>();
+		const viewControlsHostRef = ref<HTMLDivElement>();
 
 		this.contentContainer.appendChild(
 			<>
 				<div className="upgrades-tab-left tab-panel-left">
+					{/*
+					 * The post-run filters sit here -- a direct child of the left
+					 * panel, before the sub-tab area -- rather than inside the
+					 * shopping-list pane, so they are visible and effective on
+					 * whichever sub-tab is showing. Inside the pane they governed
+					 * rows the reader could not see them from, which is how the
+					 * owner came to look for the BiS-only toggle and conclude it did
+					 * not exist (ticket 312).
+					 */}
+					<div ref={viewControlsHostRef} className="upgrades-view-controls-host" />
 					<div className="upgrades-tab-tabs">
 						<ul ref={tabNavRef} className="nav nav-tabs" attributes={{ role: 'tablist' }}>
 							<li className="nav-item" attributes={{ role: 'presentation' }}>
@@ -477,6 +489,7 @@ export class UpgradesTab extends SimTab {
 
 		this.shoppingListElem = shoppingListRef.value!;
 		this.settingsCardElem = settingsCardRef.value!;
+		this.viewControlsHostElem = viewControlsHostRef.value!;
 		this.tabNavElem = tabNavRef.value!;
 		this.tabContentElem = tabContentRef.value!;
 		this.paneContentElems.set('shopping-list', document.createElement('div'));
@@ -559,24 +572,44 @@ export class UpgradesTab extends SimTab {
 			</div>,
 		);
 
+		this.viewControlsHostElem.appendChild(
+			<div className="upgrades-view-controls">
+				{/*
+				 * Named as what it does to rows already computed, so the row cannot
+				 * be read as more run settings -- the confusion that made the owner
+				 * miss the BiS-only toggle. `.content-block-header` is the site's
+				 * own labelled-subgroup idiom, borrowed rather than invented.
+				 */}
+				<span className="content-block-header upgrades-view-controls-title">{i18n.t('upgrades_tab.view.title')}</span>
+				<div className="upgrades-view-controls-group">
+					<label ref={setPotentialLabelRef} className="upgrades-set-potential-label d-none">
+						<input ref={setPotentialToggleRef} type="checkbox" className="upgrades-set-potential-toggle form-check-input mt-0" />
+						{i18n.t('upgrades_tab.view.set_potential')}
+					</label>
+					{/*
+					 * "BiS only" is the control's name; the phase it lists against is
+					 * a qualifier, not part of the name. The name is what the row
+					 * shows, and the phase follows it in smaller secondary text --
+					 * which keeps the fact on screen while letting the row read as a
+					 * set of filters rather than a set of sentences (ticket 312). The
+					 * `title` carries the whole thing for a reader who wants it
+					 * spelled out.
+					 */}
+					<label ref={bisOnlyLabelRef} className="upgrades-bis-only-label d-none">
+						<input ref={bisOnlyToggleRef} type="checkbox" className="upgrades-bis-only-toggle form-check-input mt-0" />
+						<span className="upgrades-view-control-name">{i18n.t('upgrades_tab.view.only_bis')}</span>
+						<small ref={bisOnlyTextRef} className="upgrades-view-qualifier" />
+					</label>
+					<label ref={raidFilterLabelRef} className="upgrades-raid-filter-label d-none">
+						{i18n.t('upgrades_tab.view.raid_filter')}
+						<select ref={raidFilterSelectRef} className="upgrades-raid-filter form-select form-select-sm" />
+					</label>
+				</div>
+			</div>,
+		);
+
 		this.shoppingListElem.appendChild(
 			<div className="upgrades-shopping-list p-gap content-block">
-				<div className="upgrades-toolbar content-block-body">
-					<div className="upgrades-view-controls d-flex align-items-center gap-2">
-						<label ref={setPotentialLabelRef} className="upgrades-set-potential-label d-none">
-							<input ref={setPotentialToggleRef} type="checkbox" className="upgrades-set-potential-toggle form-check-input mt-0" />
-							{i18n.t('upgrades_tab.view.set_potential')}
-						</label>
-						<label ref={bisOnlyLabelRef} className="upgrades-bis-only-label d-none">
-							<input ref={bisOnlyToggleRef} type="checkbox" className="upgrades-bis-only-toggle form-check-input mt-0" />
-							<span ref={bisOnlyTextRef} />
-						</label>
-						<label ref={raidFilterLabelRef} className="upgrades-raid-filter-label d-none">
-							{i18n.t('upgrades_tab.view.raid_filter')}
-							<select ref={raidFilterSelectRef} className="upgrades-raid-filter form-select form-select-sm" />
-						</label>
-					</div>
-				</div>
 				{/*
 				 * The visible status text. Not itself a live region: it holds the
 				 * per-tick running text, which changes about once a second for up to
@@ -827,7 +860,9 @@ export class UpgradesTab extends SimTab {
 			pruneLabel.textContent = text;
 			pruneLabel.setAttribute('title', text);
 		}
-		this.bisOnlyControl.setText(i18n.t('upgrades_tab.view.only_bis', { phase }));
+		// Only the qualifier moves with the phase now; "BiS only" is static text
+		// in the label, so the control keeps its name when the phase changes.
+		this.bisOnlyControl.setText(i18n.t('upgrades_tab.view.only_bis_qualifier', { phase }));
 	}
 
 	/**

@@ -878,8 +878,10 @@
 			"running_rows": "{{label}} ({{count}} rows landed)"
 		},
 		"view": {
-			"set_potential": "Include set-bonus potential",
-			"only_bis": "Only items on a {{phase}} BIS list",
+			"title": "Filter results",
+			"set_potential": "Set potential",
+			"only_bis": "BiS only",
+			"only_bis_qualifier": "{{phase}} list",
 			"raid_filter": "Content",
 			"raid_filter_all": "All",
 			"raid_filter_group_zone": "Raid zones",

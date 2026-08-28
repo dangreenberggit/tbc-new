@@ -14,13 +14,12 @@
 // now carries `.content-block-body`, so the groups stack as rows on the site's
 // own `--block-spacer` rhythm instead of wrapping against each other, and each
 // group keeps its own horizontal flex.
-.upgrades-toolbar {
-	.upgrades-view-controls {
-		flex-wrap: wrap;
-		gap: var(--spacer-3);
-		row-gap: var(--spacer-2);
-	}
-}
+// The `.upgrades-toolbar` block that used to sit here is gone with the rows it
+// scoped. It nested the run and view rows under the toolbar ancestor, so the
+// rules stopped applying -- silently, with no error at any gate -- the moment
+// either row was re-parented. Both have now moved out: the run controls to the
+// settings card, the view controls to the left panel above the sub-tabs. Each
+// row's layout is declared at its own class below, with no ancestor to lose.
 
 // The run settings card, in its own panel outside the sub-tab panes (ticket
 // 312). Structure borrowed verbatim from the Batch tab's settings card
@@ -98,6 +97,104 @@
 // cost is an empty strip before the first run, which the owner accepted.
 .upgrades-view-controls {
 	min-height: 2.25rem;
+
+	// Replaces the wrap/gap the deleted `.upgrades-toolbar` block used to give
+	// this row from its ancestor -- declared here, on the row's own class, so
+	// re-parenting cannot silently drop it again.
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--spacer-2);
+	row-gap: var(--spacer-2);
+}
+
+// Each filter reads as one unit: the label boxes its own control and text, and
+// the gap *between* controls is wider than the gap *inside* one, so a reader
+// can see where one ends and the next begins. Two bare checkboxes each followed
+// by a sentence, all evenly spaced, is what made the owner miss the BiS-only
+// toggle entirely (ticket 312).
+.upgrades-view-controls-group {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--spacer-3);
+	row-gap: var(--spacer-2);
+}
+
+// The row acts on results already computed, so it is labelled as a filter
+// group rather than left to read as more run settings.
+.upgrades-view-controls-title {
+	margin-bottom: 0;
+}
+
+// The phase a BiS list belongs to is a qualifier on the control, not its name,
+// so it follows the name on its own line at a smaller weight. The label stacks
+// its own text (the checkbox stays beside it via `align-items: center` on the
+// row) rather than letting the qualifier run on into the next control's space.
+// `--bs-gray-500` is this tab's existing muted-text colour
+// (`.upgrades-text-secondary` below), not a second grey invented here.
+// `--bs-secondary-color` was tried first and renders near-black on this dark
+// background -- the unreadable grey the owner reported as item 1, so it is
+// deliberately not used.
+.upgrades-view-qualifier {
+	color: var(--bs-gray-500);
+}
+
+// Containment for the row's new home (ticket 312, F11). `.tab-panel-left` is
+// `display: grid` with `repeat(auto-fit, minmax(220px, 1fr))`
+// (`_sim_tab.scss:19-27`). The panel had exactly one direct child until this
+// row joined it, so the grid rendered as a single column; a second child makes
+// `auto-fit` open a second column at any width fitting two 220px tracks, which
+// would put these filters *beside* the sub-tab area instead of above it -- the
+// very misplacement moving them here exists to fix.
+//
+// Spanning every column keeps the row a full-width band above the tabs. This is
+// chosen over wrapping both children in a `.tab-panel-col` wrapper because it
+// adds one local rule and no DOM node, and because below `lg` the shared file
+// switches the panel to `display: flex; flex-direction: column`, where
+// `grid-column` is inert on a flex item -- so the narrow-width stacking is
+// preserved by construction rather than by a new wrapper's behaviour.
+//
+// `_sim_tab.scss` is shared with every other tab and is deliberately not edited.
+//
+// BOTH children need the span, not just the new one. `auto-fit` opens a track
+// per child, so with two children the panel resolves to several 229px columns
+// here: without the span the filters would sit beside the sub-tab area, and
+// with it on the filters alone the *sub-tab area* is left holding a single
+// 229px track and its content wraps a word per line. Measured at 1824px, where
+// the panel resolves to four 229px tracks.
+.upgrades-view-controls-host,
+.upgrades-tab-left > .upgrades-tab-tabs {
+	grid-column: 1 / -1;
+}
+
+// The host sizes to its own content, not to its grid row. As a grid item it
+// stretches by default, so it inherited the row's height and grew from 32px to
+// 82px and back during the first paint of a run -- shifting everything below it
+// by ~50px, which is the jump the height reservation exists to prevent (ticket
+// 304 item 5). The row inside it already reserves its own 2.25rem; this stops
+// the host from adding a second, variable, reservation on top.
+//
+// Measured across an idle -> running transition: with this rule the host holds
+// 32px and `.upgrades-results` holds a constant top through the transition.
+.upgrades-view-controls-host {
+	align-self: start;
+}
+
+// The panel's own row sizing, pinned so the filter row cannot change height
+// with the content below it. `.tab-panel-left`'s `auto-fit` track sizing is
+// written for a single child; with two spanning children the implicit rows are
+// sized from the whole panel's content, and the first row was measured growing
+// from 31.5px to 81.875px when the sub-tab pane's content shrank at run start
+// -- pushing the results block down ~50px and back, the jump the height
+// reservation exists to prevent (ticket 304 item 5).
+//
+// `max-content` on the first row and `auto` on the second says what the layout
+// actually means: the filter row is as tall as the filters, and the sub-tab
+// area takes the rest. Scoped to this tab's own panel class, so the shared
+// `_sim_tab.scss` stays unedited.
+.upgrades-tab-left {
+	grid-template-rows: max-content auto;
 }
 
 .upgrades-run-controls,
