@@ -951,15 +951,17 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * Reads the visible iterations control (D7) at click-time only — the
-	 * field itself is a plain number input with no change listener, so
-	 * editing it never triggers a sim or touches `this.state`; it only
-	 * changes what the *next* `run()` sends. Falls back to the same default
-	 * the engine uses when the field is empty or not a positive integer.
+	 * Reads the iterations field (D7) at click-time only. The field is a plain
+	 * `number` written by the `NumberPicker`; the picker coerces user input in
+	 * `getInputValue()` (`parseInt(value || '') || 0`), so this only ever sees
+	 * `0` or a positive integer, never `NaN`/`Infinity`. `0` (an empty field)
+	 * falls back to the engine's default. Reading it here, not on change, is
+	 * what keeps editing mid-run from touching a run in flight — it only
+	 * changes what the *next* `run()` sends.
 	 */
 	private readIterations(): number {
 		const parsed = this.iterations;
-		return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_ITERATIONS;
+		return parsed > 0 ? Math.floor(parsed) : DEFAULT_ITERATIONS;
 	}
 
 	/**
@@ -999,19 +1001,18 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * Reads the Candidates control (candidate-pool.md §5.1.1) at click-time,
-	 * same idiom as `readIterations`. An empty field means "no cap" —
+	 * Reads the Candidates field (candidate-pool.md §5.1.1) at click-time, same
+	 * idiom as `readIterations`. The field is a plain `number` coerced by the
+	 * `NumberPicker` (see `readIterations`), so it is only ever `0` or a
+	 * positive integer. `0` (an empty field) means "no cap" —
 	 * `RankInput.candidateCap: undefined`, sim every eligible candidate —
-	 * matching the field's own placeholder text rather than silently
-	 * defaulting to some other number the user never typed. A non-positive
-	 * or non-finite value is treated the same way: refusing to rank rather
-	 * than guessing is wrong here, but there is no error channel before
-	 * `rankUpgrades` starts, so "no cap" is the safe fallback (never simming
-	 * fewer candidates than the user could see was intended).
+	 * matching the field's own placeholder text rather than silently defaulting
+	 * to some other number the user never typed ("no cap" also never sims fewer
+	 * candidates than the user could see, which is the safe direction to err).
 	 */
 	private readCandidateCap(): number | undefined {
 		const parsed = this.candidateCap;
-		return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined;
+		return parsed > 0 ? Math.floor(parsed) : undefined;
 	}
 
 	private async run(): Promise<void> {
