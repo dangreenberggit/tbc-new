@@ -10,6 +10,9 @@ import { ActionId } from '../../proto_utils/action_id';
 import { Database } from '../../proto_utils/database.js';
 import { getSourceInfo } from '../gear_picker/item_list';
 import { makePhaseSelector } from '../inputs/other_inputs';
+import { BooleanPicker } from '../pickers/boolean_picker';
+import { NumberPicker } from '../pickers/number_picker';
+import { TypedEvent } from '../../typed_event';
 import { SimTab } from '../sim_tab';
 import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
 import { currentPageSkeleton } from './upgrades/adapters/skeleton';
@@ -324,14 +327,33 @@ export class UpgradesTab extends SimTab {
 	protected shoppingListElem: HTMLElement;
 	protected settingsCardElem: HTMLElement;
 	protected eligibleCountElem!: HTMLElement;
+
+	// The run settings the pickers write through to. They are tab state, not
+	// `Sim` state: `Input` carries no `Sim`/`Player` constraint, and the Batch
+	// tab already binds its pickers to plain component fields through a bare
+	// emitter (`bulk_tab.tsx:47`). The Phase selector is the deliberate
+	// exception -- it stays `makePhaseSelector`, because it surfaces the page's
+	// shared phase rather than anything this tab owns.
+	//
+	// A picker writes on change, but the run must still use the values as of
+	// the Run click, so `run()` reads these fields (and re-derives the cap
+	// through `readCandidateCap()`) at click time exactly as it read the input
+	// elements before.
+	readonly settingsChangedEmitter = new TypedEvent<void>();
+	private iterations: number = DEFAULT_ITERATIONS;
+	/** 0 means "no cap" -- the picker renders it as an empty field (`showZeroes: false`). */
+	private candidateCap = 0;
+	private bisPrune = false;
+
 	protected runButton!: HTMLButtonElement;
 	protected stopButton!: HTMLButtonElement;
 	protected importButton!: HTMLButtonElement;
-	protected iterationsInput!: HTMLInputElement;
-	protected candidatesInput!: HTMLInputElement;
+	/** The prune picker's root, so visibility can be toggled without reaching into the picker. */
+	protected bisPruneElem!: HTMLElement;
+	/** The candidates picker's root, so its placeholder can be kept current. */
+	protected candidatesPickerElem!: HTMLElement;
 	protected setPotentialControl!: ToggleControl;
 	protected bisOnlyControl!: ToggleControl;
-	protected bisPruneControl!: ToggleControl;
 	protected raidFilterSelect!: HTMLSelectElement;
 	protected raidFilterLabel!: HTMLElement;
 	// Tracks the user's choice independent of the DOM: `refreshRaidFilter()`
@@ -475,15 +497,13 @@ export class UpgradesTab extends SimTab {
 		const runButtonRef = ref<HTMLButtonElement>();
 		const stopButtonRef = ref<HTMLButtonElement>();
 		const importButtonRef = ref<HTMLButtonElement>();
-		const iterationsInputRef = ref<HTMLInputElement>();
-		const candidatesInputRef = ref<HTMLInputElement>();
+		const iterationsPickerRef = ref<HTMLDivElement>();
+		const candidatesPickerRef = ref<HTMLDivElement>();
+		const bisPrunePickerRef = ref<HTMLDivElement>();
 		const setPotentialToggleRef = ref<HTMLInputElement>();
 		const setPotentialLabelRef = ref<HTMLLabelElement>();
 		const bisOnlyToggleRef = ref<HTMLInputElement>();
 		const bisOnlyLabelRef = ref<HTMLLabelElement>();
-		const bisPruneToggleRef = ref<HTMLInputElement>();
-		const bisPruneLabelRef = ref<HTMLLabelElement>();
-		const bisPruneTextRef = ref<HTMLSpanElement>();
 		const bisOnlyTextRef = ref<HTMLSpanElement>();
 		const raidFilterSelectRef = ref<HTMLSelectElement>();
 		const raidFilterLabelRef = ref<HTMLLabelElement>();
@@ -519,38 +539,17 @@ export class UpgradesTab extends SimTab {
 						{i18n.t('upgrades_tab.import_wcl_short')}
 					</button>
 				</div>
-				<label className="upgrades-iterations-label">
-					{i18n.t('upgrades_tab.iterations_label')}
-					<input
-						ref={iterationsInputRef}
-						type="number"
-						min="1"
-						step="1"
-						className="upgrades-iterations-input form-control form-control-sm"
-						value={String(DEFAULT_ITERATIONS)}
-					/>
-				</label>
-				<label className="upgrades-candidates-label">
-					{i18n.t('upgrades_tab.candidates_label')}
-					<input
-						ref={candidatesInputRef}
-						type="number"
-						min="1"
-						step="1"
-						className="upgrades-candidates-input form-control form-control-sm"
-						// Placeholder, not a value: the real default is "every
-						// eligible candidate", which depends on the selected
-						// spec/maxPhase and is not known until Run is clicked
-						// (readCandidateCap() below re-derives it then). An empty
-						// input reads as "no cap" — matching RankInput.candidateCap's
-						// own `undefined` meaning (candidate-pool.md §5.1.1).
-						placeholder={i18n.t('upgrades_tab.candidates_placeholder')}
-					/>
-				</label>
-				<label ref={bisPruneLabelRef} className="upgrades-bis-prune-label d-none">
-					<input ref={bisPruneToggleRef} type="checkbox" className="upgrades-bis-prune-toggle form-check-input mt-0" />
-					<span ref={bisPruneTextRef} />
-				</label>
+				{/*
+				 * Mount points. The controls themselves are real pickers, built
+				 * below -- the same `NumberPicker`/`BooleanPicker` rows the Batch
+				 * and Settings tabs use, rather than markup imitating them
+				 * (ticket 312). Borrowing the real component is what gives the
+				 * prune label its normal wrapping and the number fields their
+				 * content-driven width.
+				 */}
+				<div ref={iterationsPickerRef} className="upgrades-iterations-picker" />
+				<div ref={candidatesPickerRef} className="upgrades-candidates-picker" />
+				<div ref={bisPrunePickerRef} className="upgrades-bis-prune-picker d-none" />
 				{/* Not a <label>: the picker self-names through its options, so the
 				    wrapper exists only to give the selector the same treatment
 				    the other run inputs get from their label elements. */}
@@ -624,11 +623,10 @@ export class UpgradesTab extends SimTab {
 		this.runButton = runButtonRef.value!;
 		this.stopButton = stopButtonRef.value!;
 		this.importButton = importButtonRef.value!;
-		this.iterationsInput = iterationsInputRef.value!;
-		this.candidatesInput = candidatesInputRef.value!;
 		this.setPotentialControl = new ToggleControl(setPotentialLabelRef.value!, setPotentialToggleRef.value!);
 		this.bisOnlyControl = new ToggleControl(bisOnlyLabelRef.value!, bisOnlyToggleRef.value!, bisOnlyTextRef.value!);
-		this.bisPruneControl = new ToggleControl(bisPruneLabelRef.value!, bisPruneToggleRef.value!, bisPruneTextRef.value!);
+		this.bisPruneElem = bisPrunePickerRef.value!;
+		this.candidatesPickerElem = candidatesPickerRef.value!;
 		this.raidFilterSelect = raidFilterSelectRef.value!;
 		this.raidFilterLabel = raidFilterLabelRef.value!;
 		this.statusElem = statusRef.value!;
@@ -644,6 +642,55 @@ export class UpgradesTab extends SimTab {
 		// page's, and the pool this tab ranks is chosen by exactly this value.
 		makePhaseSelector(phaseSelectorRef.value!, this.simUI.sim);
 
+		// The three run inputs, as the pickers the rest of the site uses. Each
+		// binds to a tab field through `settingsChangedEmitter` -- a bare
+		// `TypedEvent<void>`, exactly as the Batch tab binds its own pickers to
+		// plain component state (`bulk_tab.tsx:47, 693-701`).
+		//
+		// Writing on change does not change *when* a run reads them: `run()`
+		// still calls `readIterations()` and `readCandidateCap()` at click time,
+		// which now read these fields. Editing a picker mid-run cannot alter the
+		// run in flight, same as editing the old inputs could not.
+		new NumberPicker<UpgradesTab>(iterationsPickerRef.value!, this, {
+			id: 'upgrades-iterations',
+			label: i18n.t('upgrades_tab.iterations_label'),
+			positive: true,
+			changedEvent: _ => this.settingsChangedEmitter,
+			getValue: _ => this.iterations,
+			setValue: (_eventID, _obj, newValue: number) => {
+				this.iterations = newValue;
+			},
+		});
+
+		// Zero renders as an empty field and means "no cap" -- the same meaning
+		// the old empty input carried, and the meaning `RankInput.candidateCap`
+		// gives `undefined` (candidate-pool.md §5.1.1).
+		new NumberPicker<UpgradesTab>(candidatesPickerRef.value!, this, {
+			id: 'upgrades-candidates',
+			label: i18n.t('upgrades_tab.candidates_label'),
+			positive: true,
+			showZeroes: false,
+			changedEvent: _ => this.settingsChangedEmitter,
+			getValue: _ => this.candidateCap,
+			setValue: (_eventID, _obj, newValue: number) => {
+				this.candidateCap = newValue;
+			},
+		});
+
+		// The label that used to be the widest thing on the toolbar row. As a
+		// picker row in the card it wraps normally instead (ticket 312).
+		new BooleanPicker<UpgradesTab>(bisPrunePickerRef.value!, this, {
+			id: 'upgrades-bis-prune',
+			label: i18n.t('upgrades_tab.prune.only_bis', { phase: i18n.t(`common.phases.${this.simUI.sim.getPhase()}`) }),
+			inline: true,
+			changedEvent: _ => this.settingsChangedEmitter,
+			getValue: _ => this.bisPrune,
+			setValue: (_eventID, _obj, newValue: boolean) => {
+				this.bisPrune = newValue;
+				this.refreshCandidatesPlaceholder();
+			},
+		});
+
 		this.runButton.addEventListener('click', () => {
 			this.run().catch(err => {
 				this.setState({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
@@ -658,9 +705,10 @@ export class UpgradesTab extends SimTab {
 			this.pendingRaidFilter = this.raidFilterSelect.value;
 			this.render();
 		});
-		// A run input, not a view option: it changes what the *next* run sims, so
-		// it refreshes the count the placeholder promises and nothing else.
-		this.bisPruneControl.input.addEventListener('change', () => this.refreshCandidatesPlaceholder());
+		// The prune control is a run input, not a view option: it changes what the
+		// *next* run sims, so it refreshes the count the placeholder promises and
+		// nothing else. That refresh now happens in the picker's own `setValue`,
+		// so there is no separate change listener for it.
 
 		// Stop's contract (candidate-pool.md §5.1.4) is "finish in-flight work,
 		// dispatch nothing new" — signalling the abort is all this button does;
@@ -727,20 +775,30 @@ export class UpgradesTab extends SimTab {
 		this.refreshPhaseLabels();
 		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
 		if (!specId) {
-			this.bisPruneControl.setVisible(false);
-			this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder_uncapped');
+			setControlVisible(this.bisPruneElem, false);
+			this.setCandidatesPlaceholder(i18n.t('upgrades_tab.candidates_placeholder_uncapped'));
 			this.eligibleCountElem.textContent = i18n.t('upgrades_tab.eligible_count_unknown');
 			return;
 		}
 		const maxPhase = this.simUI.sim.getPhase() as RankInput['maxPhase'];
 		// Availability is decided on the unpruned pool: asking whether the
 		// pruned pool has tags would be circular once the toggle is on.
-		this.bisPruneControl.setVisible(poolFor(specId, maxPhase).some(isBisTagged));
+		setControlVisible(this.bisPruneElem, poolFor(specId, maxPhase).some(isBisTagged));
 		const eligible = this.eligibleCount(specId, maxPhase);
-		this.candidatesInput.placeholder = i18n.t('upgrades_tab.candidates_placeholder', { count: eligible });
+		this.setCandidatesPlaceholder(i18n.t('upgrades_tab.candidates_placeholder', { count: eligible }));
 		// The count the Run button acts on, sitting with it in the card -- the
 		// Batch tab's readout-above-the-action idiom (`bulk_tab.tsx:158`).
 		this.eligibleCountElem.textContent = i18n.t('upgrades_tab.eligible_count', { count: eligible });
+	}
+
+	/**
+	 * The Candidates picker's empty state still has to say what "empty" means.
+	 * `NumberPicker` owns its own `<input>`, so the placeholder is written onto
+	 * that element rather than passed through config.
+	 */
+	private setCandidatesPlaceholder(text: string): void {
+		const input = this.candidatesPickerElem.querySelector('input');
+		if (input) input.placeholder = text;
 	}
 
 	/**
@@ -760,7 +818,15 @@ export class UpgradesTab extends SimTab {
 	 */
 	private refreshPhaseLabels(): void {
 		const phase = i18n.t(`common.phases.${this.simUI.sim.getPhase()}`);
-		this.bisPruneControl.setText(i18n.t('upgrades_tab.prune.only_bis', { phase }));
+		// The prune control is a picker, which renders its label once from
+		// config, so the phase is written into that label element rather than
+		// through the picker's value channel.
+		const pruneLabel = this.bisPruneElem.querySelector('.form-label');
+		if (pruneLabel) {
+			const text = i18n.t('upgrades_tab.prune.only_bis', { phase });
+			pruneLabel.textContent = text;
+			pruneLabel.setAttribute('title', text);
+		}
 		this.bisOnlyControl.setText(i18n.t('upgrades_tab.view.only_bis', { phase }));
 	}
 
@@ -773,7 +839,7 @@ export class UpgradesTab extends SimTab {
 	 * away (see `ToggleControl`).
 	 */
 	private pruneEffective(): boolean {
-		return this.bisPruneControl.visible && this.bisPruneControl.checked;
+		return !this.bisPruneElem.classList.contains('d-none') && this.bisPrune;
 	}
 
 	private setState(next: RunState) {
@@ -789,7 +855,7 @@ export class UpgradesTab extends SimTab {
 	 * the engine uses when the field is empty or not a positive integer.
 	 */
 	private readIterations(): number {
-		const parsed = Number(this.iterationsInput.value);
+		const parsed = this.iterations;
 		return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : DEFAULT_ITERATIONS;
 	}
 
@@ -840,9 +906,7 @@ export class UpgradesTab extends SimTab {
 	 * fewer candidates than the user could see was intended).
 	 */
 	private readCandidateCap(): number | undefined {
-		const raw = this.candidatesInput.value.trim();
-		if (raw === '') return undefined;
-		const parsed = Number(raw);
+		const parsed = this.candidateCap;
 		return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : undefined;
 	}
 

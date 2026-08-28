@@ -50,27 +50,14 @@
 	display: grid;
 	gap: var(--spacer-3);
 
-	// Stacking the label above its field is the fix for the *cause* of the
-	// clipping ticket 304 item 3 reported, rather than for its symptom: the
-	// label used to sit inline beside the input and squeeze it, which is why
-	// the field needed a `ch` width at all. Given a full row, the input has
-	// the width to render its digits (the `8ch` cap is re-measured against
-	// this layout in the picker slice).
-	.upgrades-iterations-label,
-	.upgrades-candidates-label {
-		display: grid;
-		gap: var(--spacer-1);
-		justify-items: start;
-		margin-bottom: 0;
-	}
-
-	// A checkbox and its text read as one control, so these stay inline --
-	// `align-items: start` rather than `center` because the prune label wraps
-	// to two lines in the card's width and a centred box floats beside them.
-	.upgrades-bis-prune-label {
-		display: flex;
-		align-items: start;
-		gap: var(--spacer-1);
+	// The number pickers size their own input to its content
+	// (`NumberPicker.updateSize`), which is what retires the `8ch` rule the old
+	// hand-rolled input needed: the field grows with the digit count instead of
+	// being capped at a width five digits overflow. The picker also stacks its
+	// own label above the field, so the stacking rule the moved markup needed
+	// is gone with it.
+	.number-picker-root,
+	.boolean-picker-root {
 		margin-bottom: 0;
 	}
 
@@ -147,47 +134,27 @@
 		flex-wrap: wrap;
 	}
 
-	// flex children shrink to their min-content by default, which clips
-	// "3000" and the "all N eligible" placeholder (WP1 defect 2, reproduces
-	// at desktop widths too), so these two fields are sized in `ch` and not
-	// allowed to shrink.
-	//
-	// The earlier `width: 6ch` did win the cascade -- it was simply too small,
-	// so re-measuring beat assuming the existing rule worked. Bootstrap sets
-	// `box-sizing: border-box` globally, so a `ch` width sizes the *border*
-	// box: the padding, borders and the number spinner's own chrome all come
-	// out of it before any digits do, which is why the field fits fewer digits
-	// than its `ch` value suggests. 6ch and 7ch both still clipped "3000" when
-	// probed on the rendered input; 8ch is the first that does not.
-	//
-	// `ch` is kept over a px value so the rule tracks the digit count rather
-	// than one measured font.
-	//
-	// This fits the four digits the default uses. A five-digit iteration count
-	// still clips -- accepted rather than widening the field for a value the
-	// UI does not offer, and recorded in ticket 304 item 3 rather than only
-	// here.
-	.upgrades-iterations-input {
-		width: 8ch;
-		flex-shrink: 0;
-	}
-
-	.upgrades-candidates-input {
-		width: 14ch;
-		flex-shrink: 0;
-	}
+	// The `ch`-width rules that used to sit here are gone with the hand-rolled
+	// inputs they sized. `.upgrades-iterations-input` was capped at `8ch`
+	// because its label sat inline beside it and squeezed it, and that cap was
+	// the reason a five-digit iteration count clipped (ticket 304 item 3, left
+	// open there as an accepted limit). `NumberPicker` sizes its own input from
+	// the value's length on every keystroke (`number_picker.ts:103-106`), so
+	// the field now grows to fit its digits and the cap has nothing to fix.
 
 	// 40px is the touch-target floor (WP1 defect 4); desktop keeps the
 	// existing form-control-sm/form-check-input sizing.
 	@include media-breakpoint-down(md) {
-		.upgrades-iterations-input,
-		.upgrades-candidates-input {
+		.number-picker-input {
 			min-height: 40px;
 		}
 
-		.upgrades-bis-prune-toggle,
+		// `.boolean-picker-input` covers the prune control, which is a picker
+		// checkbox now rather than the hand-rolled `.upgrades-bis-prune-toggle`
+		// this list used to name.
 		.upgrades-set-potential-toggle,
-		.upgrades-bis-only-toggle {
+		.upgrades-bis-only-toggle,
+		.boolean-picker-input {
 			width: 40px;
 			height: 40px;
 		}
