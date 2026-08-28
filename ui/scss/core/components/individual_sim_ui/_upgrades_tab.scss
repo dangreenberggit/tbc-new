@@ -140,6 +140,36 @@
 	color: var(--bs-gray-500);
 }
 
+// The ThatsMyBis export (ticket 314). `.content-block` is the site's own
+// block idiom, so the box inherits the same padding and `--block-spacer`
+// rhythm as the results it sits under rather than inventing a second look.
+.upgrades-export {
+	.upgrades-export-caveat {
+		margin-bottom: 0;
+		color: var(--bs-gray-500);
+	}
+
+	// Monospace because the content is JSON, and `resize: vertical` because a
+	// reader may want to see more of a long payload without the box being able
+	// to break the column width.
+	.upgrades-export-area {
+		font-family: var(--bs-font-monospace);
+		font-size: var(--bs-body-font-size);
+		resize: vertical;
+	}
+
+	.upgrades-export-actions {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--spacer-2);
+	}
+
+	.upgrades-export-count {
+		color: var(--bs-gray-500);
+	}
+}
+
 // How much of a row's figure is set bonus (ticket 313). A sub-line under the
 // DPS cell, not a column: it is present on a minority of rows and only while
 // the set-potential toggle is on, so a column would be mostly empty and would

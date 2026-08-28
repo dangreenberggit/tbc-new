@@ -371,6 +371,9 @@ export class UpgradesTab extends SimTab {
 	protected errorAlertElem!: HTMLElement;
 	protected resultsElem!: HTMLElement;
 	protected assumptionsElem!: HTMLElement;
+	protected exportBoxElem!: HTMLElement;
+	protected exportAreaElem!: HTMLTextAreaElement;
+	protected exportCountElem!: HTMLElement;
 
 	// Sub-tab nav + pane container refs, built once; panes are re-rendered by
 	// content, not recreated, so Bootstrap's Tab instances (and their active
@@ -526,6 +529,10 @@ export class UpgradesTab extends SimTab {
 		const errorAlertRef = ref<HTMLDivElement>();
 		const resultsRef = ref<HTMLDivElement>();
 		const assumptionsRef = ref<HTMLDivElement>();
+		const exportBoxRef = ref<HTMLDivElement>();
+		const exportAreaRef = ref<HTMLTextAreaElement>();
+		const exportCountRef = ref<HTMLSpanElement>();
+		const exportCopyRef = ref<HTMLButtonElement>();
 
 		this.settingsCardElem.appendChild(
 			<div className="upgrades-run-controls">
@@ -648,6 +655,24 @@ export class UpgradesTab extends SimTab {
 				 * nothing collapses its slot instead of leaving a stranded margin.
 				 */}
 				<div ref={resultsRef} className="upgrades-results" />
+				{/*
+				 * The ThatsMyBis export (ticket 314), with the results rather than
+				 * with the run settings: it exports what is displayed, so it belongs
+				 * next to the rows it mirrors and follows the same reasoning that
+				 * puts the view filters above them. Permanent in the DOM and hidden
+				 * until a run produces rows, like the other post-run surfaces.
+				 */}
+				<div ref={exportBoxRef} className="upgrades-export content-block d-none">
+					<span className="content-block-header">{i18n.t('upgrades_tab.export.title')}</span>
+					<p className="upgrades-export-caveat">{i18n.t('upgrades_tab.export.caveat')}</p>
+					<textarea ref={exportAreaRef} className="upgrades-export-area form-control" rows={6} />
+					<div className="upgrades-export-actions">
+						<span ref={exportCountRef} className="upgrades-export-count" />
+						<button ref={exportCopyRef} className="btn btn-outline-secondary upgrades-export-copy" type="button">
+							{i18n.t('upgrades_tab.export.copy')}
+						</button>
+					</div>
+				</div>
 				<div ref={assumptionsRef} className="upgrades-assumptions" />
 			</div>,
 		);
@@ -667,6 +692,32 @@ export class UpgradesTab extends SimTab {
 		this.errorAlertElem = errorAlertRef.value!;
 		this.resultsElem = resultsRef.value!;
 		this.assumptionsElem = assumptionsRef.value!;
+		this.exportBoxElem = exportBoxRef.value!;
+		this.exportAreaElem = exportAreaRef.value!;
+		// The payload is generated, never typed into; set as a property because
+		// the JSX `attributes` map does not carry `readonly`.
+		this.exportAreaElem.readOnly = true;
+		this.exportCountElem = exportCountRef.value!;
+
+		// `navigator.clipboard` is unavailable on insecure origins, so the
+		// select-and-copy fallback is the report's own (`rank-report.ts:915`)
+		// rather than leaving the button dead where the API is missing.
+		exportCopyRef.value!.addEventListener('click', () => {
+			const text = this.exportAreaElem.value;
+			const done = () => {
+				exportCopyRef.value!.textContent = i18n.t('upgrades_tab.export.copied');
+				window.setTimeout(() => {
+					exportCopyRef.value!.textContent = i18n.t('upgrades_tab.export.copy');
+				}, 1500);
+			};
+			if (navigator.clipboard?.writeText) {
+				navigator.clipboard.writeText(text).then(done, () => {
+					this.exportAreaElem.select();
+				});
+			} else {
+				this.exportAreaElem.select();
+			}
+		});
 		this.paneContentElems.set('shopping-list', this.resultsElem);
 
 		// The page's own phase picker, bound to the same `sim` the Gear tab's
@@ -1066,6 +1117,11 @@ export class UpgradesTab extends SimTab {
 		this.stopButton.disabled = this.state.kind !== 'running';
 		this.refreshViewControlVisibility();
 		this.refreshRaidFilter();
+		// Hidden up front on every render; the shortlist path shows it again
+		// when it has rows to export. A state with no shortlist -- running,
+		// error, or a run that cleared the cutoff with nothing -- therefore
+		// leaves no stale payload on screen.
+		setControlVisible(this.exportBoxElem, false);
 		this.statusElem.replaceChildren(this.statusContent());
 		this.renderAnnouncement();
 		this.renderSubTabs();
@@ -1467,6 +1523,17 @@ export class UpgradesTab extends SimTab {
 						this.runButton.click(),
 					);
 		}
+		// The export tracks the shopping list, so it is computed here rather than
+		// inside `rowsTable`: that renderer is shared with every slot pane, and
+		// computing it there let the last pane rendered -- a single slot's
+		// subset -- overwrite the payload. Exporting a slot-grouped subset is
+		// the exact failure ticket 314 names, since it throws away the
+		// cross-slot ranked order the payload exists to carry.
+		//
+		// The same sort the table applies is applied here, so the payload order
+		// is the displayed order including a column-sort click.
+		const exported = this.resultsSort ? sortRows(view.shortlist, this.resultsSort) : view.shortlist;
+		this.updateExport(exported);
 		return this.resultsBlock(this.rowsTable(view.shortlist, view.rows), view.shortlist.length);
 	}
 
@@ -1772,6 +1839,36 @@ export class UpgradesTab extends SimTab {
 				<td>{sourceCell(row, this.simUI.sim)}</td>
 			</tr>
 		);
+	}
+
+	/**
+	 * Writes the ThatsMyBis payload for the rows currently on screen (ticket
+	 * 314).
+	 *
+	 * **The shortlist only, in `sortedShortlist` order.** Below-cutoff rows are
+	 * excluded deliberately: they are the rows the ranking says not to
+	 * prioritize, and a thatsmybis payload is a priority list. The per-slot
+	 * panes are never the source either — they are grouped slot by slot, so
+	 * exporting them would throw away the cross-slot ranked order that is the
+	 * whole point of the payload (the rule at `rank-report.ts:873-876`).
+	 *
+	 * Deliberate drift: mirrors `wowsimsItemIdsJson`
+	 * (`packages/core/src/rank-report-rules.ts:452`) and `updateExport`'s
+	 * first-seen `seen` map (`rank-report.ts:877-889`), neither of which the
+	 * fork can import. Ids only — enchants and gems belong to the worn item,
+	 * and a candidate is one the player does not have yet.
+	 */
+	private updateExport(rows: readonly ViewRow[]): void {
+		const seen = new Set<number>();
+		const items: { id: number }[] = [];
+		for (const row of rows) {
+			if (seen.has(row.itemId)) continue;
+			seen.add(row.itemId);
+			items.push({ id: row.itemId });
+		}
+		this.exportAreaElem.value = JSON.stringify({ items }, null, 2);
+		this.exportCountElem.textContent = i18n.t('upgrades_tab.export.count', { count: items.length });
+		setControlVisible(this.exportBoxElem, items.length > 0);
 	}
 
 	/**
