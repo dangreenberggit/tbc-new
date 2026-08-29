@@ -1,5 +1,4 @@
 import { Tab } from 'bootstrap';
-import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
 import i18n from '../../../i18n/config';
@@ -118,8 +117,13 @@ type RunState =
 	| { kind: 'unsupported-spec' };
 
 /**
- * One checkbox control on the run row: its label, its input, and the
- * show/hide half every one of these controls repeated by hand (ticket 275).
+ * One view-controls checkbox, built on the site's native `BooleanPicker`
+ * (`inline: true`) so it carries the `.form-check` markup by construction
+ * rather than by the hand-rolled `<label><input>` this class used to hold
+ * (ticket 334). The two-state value lives in `this.value`, driven through the
+ * picker's `getValue`/`setValue` triad; the picker's own `change` listener
+ * calls `setValue`, which runs `onChange` (the tab's `render`), so no manual
+ * `change` listener is wired outside the class.
  *
  * `setVisible` only shows and hides. It deliberately does **not** force the
  * box off while hidden, which is what the prune control's old bespoke
@@ -128,50 +132,94 @@ type RunState =
  * unchecked box when it comes back. The safety that force-off bought — a
  * hidden prune must not apply to the next run — is bought instead by gating
  * at the *read* site (`pruneEffective()`: `visible && checked`), which keeps
- * the preference.
+ * the preference. Hiding toggles `.d-none` on the picker's `rootElem` and
+ * never touches `this.value`, so the property holds by construction.
  *
  * That read-site gate is for the **prune control only**. The set-potential
  * and BiS-only controls feed the done-state view's sort key, and gating them
  * on visibility would move the order the Q1 measurement was taken against, so
  * those two keep reading `checked` directly.
  *
- * The class owns nothing beyond label + input + visibility on purpose: the
- * set-potential control is expected to become a three-state control later
- * (weighted set-bonus variant), and nothing here bakes in two-state
- * semantics that such a swap would have to unpick.
+ * The two-state choice lives **inside this class only**: `checked: boolean` is
+ * the entire external surface (three read sites, two visibility drivers, one
+ * `setText`), exactly as it was before the swap. The set-potential control is
+ * expected to become a three-state control later (weighted set-bonus variant);
+ * that variant re-implements the internal `BooleanPicker` over an `EnumPicker`
+ * (the same `Input` base, the same `getValue`/`setValue` triad) behind this
+ * same surface, so no consumer outside the class bakes in two-state semantics.
  */
-class ToggleControl {
+class ViewToggle {
+	private value = false;
+	private readonly emitter = new TypedEvent<void>();
+	private readonly picker: BooleanPicker<ViewToggle>;
+	private readonly qualifierElem?: HTMLElement;
+
 	constructor(
-		readonly label: HTMLElement,
-		readonly input: HTMLInputElement,
-		readonly text?: HTMLElement,
-	) {}
+		host: HTMLElement,
+		config: {
+			id: string;
+			label: string;
+			labelTooltip?: string;
+			qualifier?: boolean;
+			extraCssClasses?: Array<string>;
+			onChange: () => void;
+		},
+	) {
+		this.picker = new BooleanPicker<ViewToggle>(host, this, {
+			id: config.id,
+			label: config.label,
+			labelTooltip: config.labelTooltip,
+			extraCssClasses: config.extraCssClasses,
+			inline: true,
+			changedEvent: () => this.emitter,
+			getValue: () => this.value,
+			setValue: (_eventID, _obj, newValue) => {
+				this.value = newValue;
+				config.onChange();
+			},
+		});
+		// The picker appends its root INTO the host; toggle `.d-none` on that
+		// root (not the host) so the class carrying the `.form-check` layout is
+		// the same one visibility acts on.
+		this.picker.rootElem.classList.add('d-none');
+		if (config.qualifier) {
+			const label = this.picker.rootElem.querySelector('label');
+			this.qualifierElem = (<small className="upgrades-view-qualifier" />) as HTMLElement;
+			label?.appendChild(this.qualifierElem);
+		}
+	}
+
+	/** The picker root, so callers (SCSS-facing) can tag it for styling. */
+	get rootElem(): HTMLElement {
+		return this.picker.rootElem;
+	}
 
 	get checked(): boolean {
-		return this.input.checked;
+		return this.value;
 	}
 
 	get visible(): boolean {
-		return !this.label.classList.contains('d-none');
+		return !this.picker.rootElem.classList.contains('d-none');
 	}
 
 	setVisible(visible: boolean): void {
-		setControlVisible(this.label, visible);
+		setControlVisible(this.picker.rootElem, visible);
 	}
 
 	setText(text: string): void {
-		if (this.text) this.text.textContent = text;
+		if (this.qualifierElem) this.qualifierElem.textContent = text;
 	}
 }
 
 /**
- * The visibility half of `ToggleControl`, as a free function so the raid
- * filter can share it. That control is a `<select>` populated by
- * `replaceChildren` with value preservation, not a checkbox — it has no
- * `checked` to own, so it borrows visibility and nothing else.
+ * The visibility half of `ViewToggle`, as a free function so the raid filter
+ * can share it. That control is a `<select>` populated by `replaceChildren`
+ * with value preservation, not a checkbox — it has no `checked` to own, so it
+ * borrows visibility and nothing else. `ViewToggle` passes its picker root
+ * here; the raid filter passes its `<label>`.
  */
-function setControlVisible(label: HTMLElement, visible: boolean): void {
-	label.classList.toggle('d-none', !visible);
+function setControlVisible(elem: HTMLElement, visible: boolean): void {
+	elem.classList.toggle('d-none', !visible);
 }
 
 /**
@@ -354,8 +402,8 @@ export class UpgradesTab extends SimTab {
 	protected bisPruneElem!: HTMLElement;
 	/** The candidates picker's root, so its placeholder can be kept current. */
 	protected candidatesPickerElem!: HTMLElement;
-	protected setPotentialControl!: ToggleControl;
-	protected bisOnlyControl!: ToggleControl;
+	protected setPotentialControl!: ViewToggle;
+	protected bisOnlyControl!: ViewToggle;
 	protected raidFilterSelect!: HTMLSelectElement;
 	protected raidFilterLabel!: HTMLElement;
 	// Tracks the user's choice independent of the DOM: `refreshRaidFilter()`
@@ -518,11 +566,8 @@ export class UpgradesTab extends SimTab {
 		const bisPrunePickerRef = ref<HTMLDivElement>();
 		const settingsToggleRef = ref<HTMLButtonElement>();
 		const settingsBodyRef = ref<HTMLDivElement>();
-		const setPotentialToggleRef = ref<HTMLInputElement>();
-		const setPotentialLabelRef = ref<HTMLLabelElement>();
-		const bisOnlyToggleRef = ref<HTMLInputElement>();
-		const bisOnlyLabelRef = ref<HTMLLabelElement>();
-		const bisOnlyTextRef = ref<HTMLSpanElement>();
+		const setPotentialPickerRef = ref<HTMLDivElement>();
+		const bisOnlyPickerRef = ref<HTMLDivElement>();
 		const raidFilterSelectRef = ref<HTMLSelectElement>();
 		const raidFilterLabelRef = ref<HTMLLabelElement>();
 		const phaseSelectorRef = ref<HTMLDivElement>();
@@ -608,24 +653,20 @@ export class UpgradesTab extends SimTab {
 				 */}
 				<span className="content-block-header upgrades-view-controls-title">{i18n.t('upgrades_tab.view.title')}</span>
 				<div className="upgrades-view-controls-group">
-					<label ref={setPotentialLabelRef} className="upgrades-set-potential-label d-none">
-						<input ref={setPotentialToggleRef} type="checkbox" className="upgrades-set-potential-toggle form-check-input mt-0" />
-						{i18n.t('upgrades_tab.view.set_potential')}
-					</label>
 					{/*
-					 * "BiS only" is the control's name; the phase it lists against is
-					 * a qualifier, not part of the name. The name is what the row
-					 * shows, and the phase follows it in smaller secondary text --
-					 * which keeps the fact on screen while letting the row read as a
-					 * set of filters rather than a set of sentences (ticket 312). The
-					 * `title` carries the whole thing for a reader who wants it
-					 * spelled out.
+					 * Mount points only. The controls are native `BooleanPicker`s
+					 * (`inline: true`) built below (ticket 334): the picker owns the
+					 * `.form-check` markup — a `<label class="form-label">` sibling to
+					 * the checkbox — so the view row carries the same native shape the
+					 * other picker rows do rather than hand-rolled label markup. For
+					 * BiS only, "BiS only" is the control's name and the phase it lists
+					 * against is a qualifier, not part of the name; `ViewToggle`
+					 * appends the qualifier `<small>` into the picker's `form-label`
+					 * so it follows the name in smaller secondary text (ticket 312),
+					 * inside the click/hover target the label's `htmlFor` toggles.
 					 */}
-					<label ref={bisOnlyLabelRef} className="upgrades-bis-only-label d-none">
-						<input ref={bisOnlyToggleRef} type="checkbox" className="upgrades-bis-only-toggle form-check-input mt-0" />
-						<span className="upgrades-view-control-name">{i18n.t('upgrades_tab.view.only_bis')}</span>
-						<small ref={bisOnlyTextRef} className="upgrades-view-qualifier" />
-					</label>
+					<div ref={setPotentialPickerRef} />
+					<div ref={bisOnlyPickerRef} />
 					<label ref={raidFilterLabelRef} className="upgrades-raid-filter-label d-none">
 						{i18n.t('upgrades_tab.view.raid_filter')}
 						<select ref={raidFilterSelectRef} className="upgrades-raid-filter form-select" />
@@ -703,13 +744,29 @@ export class UpgradesTab extends SimTab {
 		this.eligibleCountElem = eligibleCountRef.value!;
 		this.runButton = runButtonRef.value!;
 		this.stopButton = stopButtonRef.value!;
-		this.setPotentialControl = new ToggleControl(setPotentialLabelRef.value!, setPotentialToggleRef.value!);
+		// A view option, not a run input: `onChange` re-renders, applying the
+		// toggle to the ranking already in hand and dispatching no sim. The
+		// picker's own `change` listener carries this through `setValue`, so no
+		// manual `change` listener is wired below.
+		//
 		// The set-potential toggle needs an explanation of what it does to the
-		// ranking (ticket 328 item 4). The site's own tooltip idiom is a tippy on
-		// the control element (as `CopyButton` attaches one); the label element is
-		// the whole hover target here.
-		tippy(this.setPotentialControl.label, { content: i18n.t('upgrades_tab.view.set_potential_tooltip') });
-		this.bisOnlyControl = new ToggleControl(bisOnlyLabelRef.value!, bisOnlyToggleRef.value!, bisOnlyTextRef.value!);
+		// ranking (ticket 328 item 4). `labelTooltip` attaches the site's tippy to
+		// the picker's `<label>` — the same label-element hover target the old
+		// hand-attached tippy used.
+		this.setPotentialControl = new ViewToggle(setPotentialPickerRef.value!, {
+			id: 'upgrades-set-potential',
+			label: i18n.t('upgrades_tab.view.set_potential'),
+			labelTooltip: i18n.t('upgrades_tab.view.set_potential_tooltip'),
+			extraCssClasses: ['upgrades-set-potential-control'],
+			onChange: () => this.render(),
+		});
+		this.bisOnlyControl = new ViewToggle(bisOnlyPickerRef.value!, {
+			id: 'upgrades-bis-only',
+			label: i18n.t('upgrades_tab.view.only_bis'),
+			qualifier: true,
+			extraCssClasses: ['upgrades-bis-only-control'],
+			onChange: () => this.render(),
+		});
 		this.bisPruneElem = bisPrunePickerRef.value!;
 		this.candidatesPickerElem = candidatesPickerRef.value!;
 		this.raidFilterSelect = raidFilterSelectRef.value!;
@@ -812,10 +869,9 @@ export class UpgradesTab extends SimTab {
 			});
 		});
 
-		// A view option, not a run input: re-rendering applies it to the ranking
-		// already in hand and dispatches no sim.
-		this.setPotentialControl.input.addEventListener('change', () => this.render());
-		this.bisOnlyControl.input.addEventListener('change', () => this.render());
+		// The two view toggles re-render on change through their picker's own
+		// `setValue` (`onChange: () => this.render()` at construction), so no
+		// manual `change` listener is wired for them here.
 		this.raidFilterSelect.addEventListener('change', () => {
 			this.pendingRaidFilter = this.raidFilterSelect.value;
 			this.render();
@@ -955,7 +1011,7 @@ export class UpgradesTab extends SimTab {
 	 * The single read of the prune checkbox. Gated on visibility so a hidden
 	 * control cannot apply an invisible filter — the safety the old force-off
 	 * provided, without discarding the user's choice while the control is
-	 * away (see `ToggleControl`).
+	 * away (see `ViewToggle`).
 	 */
 	private pruneEffective(): boolean {
 		return !this.bisPruneElem.classList.contains('d-none') && this.bisPrune;

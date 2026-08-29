@@ -266,13 +266,44 @@
 	// Listing them together here would silently win over the card's rule by
 	// source order, which is exactly how this block's interleaving hid a
 	// layout decision before.
-	.upgrades-set-potential-label,
-	.upgrades-bis-only-label,
+	//
+	// The two checkboxes are native `BooleanPicker`s now (ticket 334), so their
+	// roots carry `.input-root.boolean-picker-root.form-check.input-inline`. The
+	// raid filter is still a hand-rolled `<label>` (a `<select>`, not a
+	// checkbox — out of scope), so it keeps the flex rule it always had.
+	.upgrades-set-potential-control,
+	.upgrades-bis-only-control,
 	.upgrades-raid-filter-label {
 		display: flex;
 		align-items: center;
 		gap: var(--spacer-1);
 		margin-bottom: 0;
+	}
+
+	// The picker root defaults (`.input-root { width: 100% }`, and
+	// `.input-inline`/`.boolean-picker-root` `justify-content: space-between`)
+	// are written for a card row where the label and field sit at opposite ends
+	// of a full-width line. In this inline filter group each control sizes to
+	// its content and sits snug — checkbox then name — so those two defaults are
+	// overridden here. Scoped to the two view-toggle roots so the run-card
+	// pickers (iterations/candidates/prune) keep the card layout.
+	.upgrades-set-potential-control,
+	.upgrades-bis-only-control {
+		width: auto;
+		justify-content: flex-start;
+
+		// The picker's own `<label class="form-label">` holds the control name
+		// and — for BiS only — the phase qualifier appended after it. The name
+		// stacks above the qualifier (the checkbox stays beside the stack via
+		// `align-items: center` on the row above), matching the pre-picker
+		// layout: "BiS only" is the name, the phase a smaller line under it
+		// (ticket 312). `margin-bottom: 0` overrides Bootstrap's `.form-label`.
+		.form-label {
+			display: flex;
+			flex-direction: column;
+			align-items: flex-start;
+			margin-bottom: 0;
+		}
 	}
 
 	// ~10 controls at full width force .sim-ui to scroll horizontally on
