@@ -30,7 +30,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_ROOT = path.join(__dirname, 'dist'); // http-server root: the app uses absolute /tbc/... paths
 const OUT_DIR = path.join(OUT_ROOT, 'tbc');
 const PAGE_PATH = '/tbc/paladin/retribution/'; // the scout's spec
-const WIDTHS = [375, 768, 1280]; // 375 phone, 768 tablet, 1280 above xl=1200 where the grid is active
+const WIDTHS = [375, 653, 768, 1280]; // 375 phone, 653 narrow (covers the sub-768 legibility band), 768 tablet, 1280 above xl=1200 where the grid is active
 const HEIGHT = 900;
 const OVERFLOW_TOL = 2; // px; sub-pixel rounding and scrollbar-less overflow slack
 
@@ -281,12 +281,31 @@ function probeExpression(width) {
 		const pane = q('#upgrades-tab');
 		const paneStyle = getComputedStyle(pane);
 
-		// Elements to scan for overflow: everything inside the active pane.
+		// A horizontal scroller is meant to hold content wider than itself, so
+		// its descendants' right edges say nothing about page overflow -- the
+		// scroller's OWN right edge is what must stay inside the viewport.
+		// getBoundingClientRect ignores ancestor overflow clipping, so without
+		// this the ~424px table inside a ~319px overflow-x:auto .upgrades-results
+		// at 375px would trip assertion #1 (ticket 327/329 F2). Walk up to the
+		// pane looking for a computed overflow-x of auto/scroll; an element inside
+		// one is exempt from the viewport scan.
+		const isScrollerX = el => { const ox = getComputedStyle(el).overflowX; return ox === 'auto' || ox === 'scroll'; };
+		const hasScrollableAncestor = el => {
+			let p = el.parentElement;
+			while (p && p !== pane) { if (isScrollerX(p)) return true; p = p.parentElement; }
+			return false;
+		};
+
+		// Elements to scan for overflow: everything inside the active pane, minus
+		// descendants of a sanctioned horizontal scroller. Each scroller itself
+		// stays in the scan (its own box), so its right edge is still checked
+		// against the viewport.
 		const all = [...pane.querySelectorAll('*')];
 		let worst = null;
 		for (const el of all) {
 			const r = el.getBoundingClientRect();
 			if (r.width === 0 && r.height === 0) continue; // ignore collapsed/hidden boxes
+			if (hasScrollableAncestor(el)) continue; // exempt: inside a sanctioned scroller
 			if (worst === null || r.right > worst.right) {
 				worst = { right: r.right, cls: el.className && el.className.toString().slice(0, 80), tag: el.tagName };
 			}
@@ -435,6 +454,187 @@ function assertAll(width, m) {
 }
 
 // ---------------------------------------------------------------------------
+// The run phase (ticket 329).
+//
+// The five assertions above measure the pre-run shell. The legibility
+// assertions the owner asked for target the results table, which does not
+// exist until a run lands rows. So this phase drives a real headless WASM run
+// -- the gate's own Chromium runs the sim with no Go backend (probed feasible:
+// 5 rows in ~42s) -- then measures the landed cells. The sim runs ONCE, on one
+// page at 653px; the widths are re-emulated on that same page (rows survive a
+// device-metrics change without reload -- verified), so the ~40s cost is paid
+// a single time.
+// ---------------------------------------------------------------------------
+
+const RUN_WIDTH = 653; // narrow enough to reproduce the sub-md legibility defect
+const RUN_DEADLINE_MS = 120000; // ~3x the measured 42s to first 5 rows
+const MIN_ROWS = 5;
+const LINE_MULTIPLE_ONE_LINE = 1.5; // content height <= 1.5x line-height == one line
+// A tbody row's height is set by its tallest cell, not by the Slot/DPS text:
+// the Item cell carries a 1.5rem icon and its item name is content-sized with
+// no nowrap, so a long name ("Shoulderbraces") legitimately wraps to 2-3 lines
+// -- the design allows Item/Source to wrap, and only Slot/DPS must stay on one
+// line (assertion 6). Legitimate one-line-Slot/DPS rows measure up to ~84px
+// here (~4.8x the 17.5px line-height). This ceiling is a gross-shatter backstop
+// -- a per-character Slot/DPS stack would blow the row far past it -- set above
+// the measured legitimate maximum with headroom, not at the Slot/DPS line count
+// (that is what assertion 6 asserts, on the cells directly).
+const LINE_MULTIPLE_ROW = 7; // a tbody row <= 7x line-height (icon + wrapped item name)
+const CLIP_TOL = 2; // px slack for scroll/clientWidth comparison
+
+// Activate the Upgrades tab and click Run. Returns { ok } or { error }.
+function startRunExpression() {
+	return `(async () => {
+		const waitFor = async (fn, ms) => { const end = Date.now()+ms; while (Date.now()<end) { const v=fn(); if (v) return v; await new Promise(r=>setTimeout(r,100)); } return fn(); };
+		const navBtn = await waitFor(() => document.querySelector('button[data-bs-target="#upgrades-tab"]'), 30000);
+		if (!navBtn) return { error: 'upgrades-tab nav button never appeared (app did not boot?)' };
+		navBtn.click();
+		const runBtn = await waitFor(() => document.querySelector('.upgrades-run-button'), 15000);
+		if (!runBtn) return { error: 'upgrades run button never appeared' };
+		runBtn.click();
+		return { ok: true };
+	})()`;
+}
+
+// Count landed result rows. Polled until >= MIN_ROWS or the deadline.
+const rowCountExpression = `document.querySelectorAll('.upgrades-results-table tbody tr').length`;
+
+// Measure the first MIN_ROWS rows' Slot (col 3) and DPS (col 4) cells plus the
+// scroller state, at the current emulated width. Returns a plain object so all
+// measurement is one round trip.
+function legibilityProbeExpression() {
+	return `(() => {
+		const table = document.querySelector('.upgrades-results-table');
+		if (!table) return { error: 'no results table' };
+		const wrap = document.querySelector('.upgrades-results');
+		const rows = [...table.querySelectorAll('tbody tr')].slice(0, ${MIN_ROWS});
+		if (rows.length < ${MIN_ROWS}) return { error: 'only ' + rows.length + ' rows' };
+		// Content height of a cell, independent of its vertical padding: measured
+		// from a range over the cell's contents, so a genuine one-line cell with
+		// tall padding is not counted as multi-line.
+		const contentHeight = td => {
+			const range = document.createRange();
+			range.selectNodeContents(td);
+			const r = range.getBoundingClientRect();
+			range.detach && range.detach();
+			return r.height;
+		};
+		const lineHeightPx = td => {
+			const s = getComputedStyle(td);
+			let lh = parseFloat(s.lineHeight);
+			if (!isFinite(lh)) lh = parseFloat(s.fontSize) * 1.2; // 'normal' fallback
+			return lh;
+		};
+		// An ancestor (up to the pane) that hides overflow -- used to decide
+		// whether a clipped cell is actually invisible to the reader.
+		const pane = document.querySelector('#upgrades-tab');
+		const hidesOverflow = el => {
+			let p = el.parentElement;
+			while (p && p !== pane) {
+				const ox = getComputedStyle(p).overflowX, oy = getComputedStyle(p).overflowY;
+				if (ox === 'hidden' || oy === 'hidden' || ox === 'clip' || oy === 'clip') return true;
+				p = p.parentElement;
+			}
+			return false;
+		};
+		const cellInfo = td => ({
+			text: td.innerText,
+			contentH: contentHeight(td),
+			lh: lineHeightPx(td),
+			scrollW: td.scrollWidth,
+			clientW: td.clientWidth,
+			scrollH: td.scrollHeight,
+			clientH: td.clientHeight,
+			hidden: hidesOverflow(td),
+		});
+		const rowRects = rows.map(tr => { const r = tr.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, height: r.height }; });
+		const bodyLh = lineHeightPx(rows[0].querySelector('td:nth-child(4)') || rows[0]);
+		const slotCells = rows.map(tr => cellInfo(tr.querySelector('td:nth-child(3)')));
+		const dpsCells = rows.map(tr => cellInfo(tr.querySelector('td:nth-child(4)')));
+		// Every rendered cell in the sampled rows, for the clip check.
+		const allCells = rows.flatMap(tr => [...tr.querySelectorAll('td')].map(cellInfo));
+		const wrapInfo = wrap ? (() => { const s = getComputedStyle(wrap); return { overflowX: s.overflowX, clientW: wrap.clientWidth, scrollW: wrap.scrollWidth, tableScrollW: table.scrollWidth }; })() : null;
+		return { innerWidth: window.innerWidth, bodyLh, rowRects, slotCells, dpsCells, allCells, wrapInfo };
+	})()`;
+}
+
+// Legibility assertions (6),(7),(8) at one width, on the landed rows.
+function assertLegibility(width, m) {
+	const results = [];
+	if (m.error) {
+		results.push({ ok: false, msg: `[${width}] legibility PROBE FAILED: ${m.error}` });
+		return results;
+	}
+	const lh = m.bodyLh;
+
+	// (6) One-line Slot and DPS cells. Both are `white-space: nowrap` after the
+	// step-1 SCSS, so one line is exactly what the CSS promises. Content height
+	// (padding excluded) <= 1.5x line-height catches the owner's 2-line "+58.7
+	// DPS" break, which a looser 2x bound would false-pass.
+	{
+		const cells = [...m.slotCells.map(c => ({ ...c, col: 'Slot' })), ...m.dpsCells.map(c => ({ ...c, col: 'DPS' }))];
+		const bad = cells.find(c => c.contentH > c.lh * LINE_MULTIPLE_ONE_LINE + 0.5);
+		const ok = !bad;
+		results.push({
+			ok,
+			msg: ok
+				? `[${width}] one-line cells: all Slot/DPS content heights <= ${LINE_MULTIPLE_ONE_LINE}x line-height (${lh.toFixed(1)}px)`
+				: `[${width}] ${bad.col} cell "${bad.text}" content height ${bad.contentH.toFixed(1)} > ${LINE_MULTIPLE_ONE_LINE}x line-height ${bad.lh.toFixed(1)} -- text wrapped to multiple lines`,
+		});
+	}
+
+	// (7) No clipped text. A cell whose content overflows its box WHILE an
+	// ancestor hides overflow is invisible text -- fail. The sanctioned
+	// `.upgrades-results` scroller is exempt (it is overflow-x:auto, not hidden)
+	// and is instead required to be scrollable when the table is wider than it.
+	{
+		const clipped = m.allCells.find(c => c.hidden && (c.scrollW > c.clientW + CLIP_TOL || c.scrollH > c.clientH + CLIP_TOL));
+		const ok = !clipped;
+		results.push({
+			ok,
+			msg: ok
+				? `[${width}] no clipped text: no cell overflows its box under an overflow-hidden ancestor`
+				: `[${width}] clipped cell "${clipped.text}" scroll ${clipped.scrollW}x${clipped.scrollH} > client ${clipped.clientW}x${clipped.clientH} under a hidden-overflow ancestor`,
+		});
+	}
+	// (7b) When the table is wider than the scroller, the scroller must actually
+	// scroll (overflow-x auto/scroll), not clip.
+	if (m.wrapInfo) {
+		const needsScroll = m.wrapInfo.tableScrollW > m.wrapInfo.clientW + CLIP_TOL;
+		const scrolls = m.wrapInfo.overflowX === 'auto' || m.wrapInfo.overflowX === 'scroll';
+		const ok = !needsScroll || scrolls;
+		results.push({
+			ok,
+			msg: ok
+				? `[${width}] scroller ok: table ${m.wrapInfo.tableScrollW} vs wrap ${m.wrapInfo.clientW}, overflow-x ${m.wrapInfo.overflowX}`
+				: `[${width}] table (${m.wrapInfo.tableScrollW}px) wider than .upgrades-results (${m.wrapInfo.clientW}px) but overflow-x is ${m.wrapInfo.overflowX} -- content clips instead of scrolling`,
+		});
+	}
+
+	// (8) Row spacing: each measured row <= 4x line-height, and no gap between
+	// consecutive rows (rects touch, <= 2px).
+	{
+		const tallRow = m.rowRects.find(r => r.height > lh * LINE_MULTIPLE_ROW + 0.5);
+		let bigGap = null;
+		for (let i = 1; i < m.rowRects.length; i++) {
+			const gap = m.rowRects[i].top - m.rowRects[i - 1].bottom;
+			if (Math.abs(gap) > 2) { bigGap = { i, gap }; break; }
+		}
+		const ok = !tallRow && !bigGap;
+		results.push({
+			ok,
+			msg: ok
+				? `[${width}] row spacing: all rows <= ${LINE_MULTIPLE_ROW}x line-height, consecutive rows adjacent`
+				: tallRow
+					? `[${width}] tbody row height ${tallRow.height.toFixed(1)} > ${LINE_MULTIPLE_ROW}x line-height ${lh.toFixed(1)}`
+					: `[${width}] gap ${bigGap.gap.toFixed(1)}px between rows ${bigGap.i - 1} and ${bigGap.i} (expected adjacent)`,
+		});
+	}
+
+	return results;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -476,6 +676,46 @@ async function main() {
 			for (const r of results) {
 				if (r.ok) passes.push(r.msg);
 				else failures.push(r.msg);
+			}
+		}
+
+		// Run phase: one real WASM run at RUN_WIDTH, then re-emulate each width
+		// on the same page and measure the landed cells for legibility.
+		{
+			const { send } = await attachPage(client);
+			await send('Emulation.setDeviceMetricsOverride', { width: RUN_WIDTH, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
+			await send('Page.navigate', { url: `http://127.0.0.1:${server.port}${PAGE_PATH}` });
+			await sleep(300);
+
+			const started = await evaluate(send, startRunExpression());
+			if (started && started.error) {
+				failures.push(`[run] PROBE FAILED: ${started.error}`);
+			} else {
+				console.log('run started; polling for rows...');
+				const deadline = Date.now() + RUN_DEADLINE_MS;
+				const t0 = Date.now();
+				let rows = 0;
+				while (Date.now() < deadline) {
+					rows = await evaluate(send, rowCountExpression);
+					if (rows >= MIN_ROWS) break;
+					await sleep(1000);
+				}
+				const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+				if (rows < MIN_ROWS) {
+					failures.push(`[run] only ${rows} rows after ${elapsed}s (deadline ${RUN_DEADLINE_MS / 1000}s) -- expected >= ${MIN_ROWS}`);
+				} else {
+					console.log(`run produced ${rows} rows in ${elapsed}s; measuring legibility across widths...`);
+					for (const width of WIDTHS) {
+						await send('Emulation.setDeviceMetricsOverride', { width, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
+						await sleep(200);
+						const lm = await evaluate(send, legibilityProbeExpression());
+						const lresults = assertLegibility(width, lm);
+						for (const r of lresults) {
+							if (r.ok) passes.push(r.msg);
+							else failures.push(r.msg);
+						}
+					}
+				}
 			}
 		}
 	} finally {

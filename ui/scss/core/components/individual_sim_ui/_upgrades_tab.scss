@@ -510,82 +510,54 @@
 	color: var(--bs-dark);
 }
 
-// Mobile-only table treatment (WP3 fix-first, review-measured regression):
-// `table-layout: auto` (the default) sizes every column to its widest
-// unbroken content, so the Item cell's item name and the Source cell's
-// `<small>` text never wrapped -- each column simply grew, and the table
-// grew past its 319-361px column-panel container regardless of the icon.
-// `table-layout: fixed` with explicit column widths forces both to wrap
-// instead, which is what actually closes the gap; the icon alone (WP3's
-// first attempt) could not, because the unwrapped text was always the
-// larger contributor (259px item cell, 111px source cell measured against a
-// 218-row below-cutoff table).
+// Mobile table treatment (ticket 327). The earlier fix here forced the table
+// to the container width with `table-layout: fixed` + per-column `rem` widths
+// and `overflow-wrap: break-word`. That closed the horizontal overflow but at
+// the cost the owner reported: the pared Slot (2.25rem = 31.5px) and DPS
+// (2.75rem = 38.5px) columns are narrower than their own one-word content, so
+// `break-word` shattered the cells per character/word and pushed the row to
+// ~60px (measured 653px, 14px root: Slot=32px, DPS=39px, height 60px). The
+// widths are magic numbers that fail at a 16px root too -- the columns are
+// simply smaller than the text they must hold.
 //
-// Desktop is untouched -- `table-layout: auto` there sizes columns to
-// content same as before this table existed, and these rules are scoped to
-// the same `media-breakpoint-down(md)` WP1 already established for the
-// toolbar.
+// This adopts the native content-table pattern instead: `table-layout: auto`
+// (as the desktop block and `_stat_weights_action.scss` both use), so every
+// column sizes to its own content and nothing wraps mid-word. Slot and DPS get
+// `white-space: nowrap` so each renders on one line, symmetric with the desktop
+// block (`:648-663`) -- DPS right-aligned as a number column. Content sizing
+// can make the table wider than its narrow container (measured 424px content in
+// a 319px panel at 375px), so `.upgrades-results` gains `overflow-x: auto`
+// below: the table scrolls horizontally inside the panel instead of shattering,
+// and stays legible one line per cell at every width.
 @include media-breakpoint-down(md) {
+	.upgrades-results {
+		overflow-x: auto;
+	}
+
 	.upgrades-results-table {
-		table-layout: fixed;
+		table-layout: auto;
 		width: 100%;
 
 		th,
 		td {
 			padding: var(--spacer-1);
-			overflow-wrap: break-word;
 		}
 
-		// First attempt at this table gave Rank/Slot/DPS a narrow fixed share
-		// and let Item/Source split the *remainder* evenly -- an even split
-		// sounds neutral but is not: it left only ~77px for the item name
-		// after the icon, so "Shoulderbraces" (needs 120px) could not fit on
-		// any line and half of all names broke mid-word (review measurement,
-		// 80 rows). Item and Source are not equally dense text -- names run
-		// longer and matter more (they are what the table is *for*) -- so
-		// Item gets a deliberate majority share instead of an even tie, and
-		// every other column is pared to its actual minimum so that majority
-		// has somewhere to come from:
-		//  - Rank: "12" fits in two digits.
-		//  - Slot: "Trinket 1" (the longest label) wraps cleanly to two short
-		//    lines ("Trinket" / "1") at this width -- it does not need to fit
-		//    on one line, only to break between words instead of mid-word.
-		//  - DPS: the unit already wraps to its own line ("DPS" below
-		//    "+104.9") rather than needing horizontal room for both -- the
-		//    header cell still spells out the full "DPS" label, so nothing
-		//    here removes information, just where the wrap falls.
-		th:nth-child(1),
-		td:nth-child(1) {
-			width: 1.25rem;
-		}
-
+		// Slot ("Trinket 1" is the longest label) holds a short predictable
+		// string; keeping it on one line stops a two-word label breaking at the
+		// space under width pressure. Symmetric with the desktop block.
 		th:nth-child(3),
 		td:nth-child(3) {
-			width: 2.25rem;
+			white-space: nowrap;
 		}
 
+		// DPS is a number column: one line and right-aligned, so magnitudes line
+		// up down the column. Matches the desktop block (`:659-662`).
 		th:nth-child(4),
 		td:nth-child(4) {
-			width: 2.75rem;
+			white-space: nowrap;
+			text-align: right;
 		}
-
-		// Source keeps a fixed share narrower than Item's -- it wraps between
-		// whole words (zone/boss names break at the space already in the
-		// text: "Serpentshrine Cavern (N)" / "Lady Vashj"), so a mid-word
-		// break here is rarer than it was for the Item column and the
-		// remaining single-word cases (e.g. "Leatherworking") are accepted:
-		// the review's target is no *common-case* mid-word breaks in Item,
-		// and explicitly allows Source to wrap between words.
-		th:nth-child(5),
-		td:nth-child(5) {
-			width: 5.25rem;
-		}
-
-		// Item takes what's left of the 100% table width after the other
-		// four columns' explicit widths (1.25 + 2.25 + 2.75 + 5.25 = 11.5rem
-		// of the fixed columns) -- table-layout: fixed distributes remaining
-		// width to columns without an explicit one, so Item does not need
-		// its own width rule to claim the majority share.
 	}
 
 	.upgrades-item-icon {
