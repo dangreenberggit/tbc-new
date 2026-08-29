@@ -8794,6 +8794,9 @@
 						"set_potential": {
 							"type": "string"
 						},
+						"set_potential_tooltip": {
+							"type": "string"
+						},
 						"only_bis": {
 							"type": "string"
 						},
@@ -8814,7 +8817,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "set_potential", "only_bis", "only_bis_qualifier", "raid_filter", "raid_filter_all", "raid_filter_group_zone", "raid_filter_group_other"]
+					"required": ["title", "set_potential", "set_potential_tooltip", "only_bis", "only_bis_qualifier", "raid_filter", "raid_filter_all", "raid_filter_group_zone", "raid_filter_group_other"]
 				},
 				"export": {
 					"type": "object",

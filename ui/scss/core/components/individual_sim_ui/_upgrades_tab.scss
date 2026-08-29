@@ -292,28 +292,22 @@
 
 	// 40px is the touch-target floor (WP1 defect 4); desktop keeps the
 	// existing form-control-sm/form-check-input sizing.
+	//
+	// The checkboxes and the Content dropdown are deliberately NOT floored here
+	// (ticket 328): the owner's direction is to match wowsims' own control
+	// sizing presumptively, and native checkboxes (`.boolean-picker-input`) and
+	// native selects (the phase `EnumPicker`, `.form-select` with no floor) both
+	// render at 28px. Flooring these to 40px is what made them read as oversized
+	// against their native siblings. Run/Stop/Import stay floored -- they are
+	// buttons with no native small-size sibling on this row to match.
 	@include media-breakpoint-down(md) {
 		.number-picker-input {
 			min-height: 40px;
 		}
 
-		// `.boolean-picker-input` covers the prune control, which is a picker
-		// checkbox now rather than the hand-rolled `.upgrades-bis-prune-toggle`
-		// this list used to name.
-		.upgrades-set-potential-toggle,
-		.upgrades-bis-only-toggle,
-		.boolean-picker-input {
-			width: 40px;
-			height: 40px;
-		}
-
 		.upgrades-run-button,
 		.upgrades-stop-button,
-		.upgrades-import-button,
-		.upgrades-raid-filter,
-		// The phase select was the one control WP1's touch-target floor
-		// missed: it had no label wrapper to be found under.
-		.upgrades-phase-selector select {
+		.upgrades-import-button {
 			min-height: 40px;
 		}
 	}

@@ -1,4 +1,5 @@
 import { Tab } from 'bootstrap';
+import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
 import i18n from '../../../i18n/config';
@@ -8,6 +9,7 @@ import { IndividualSimUI } from '../../individual_sim_ui';
 import { Spec } from '../../proto/common.js';
 import { ActionId } from '../../proto_utils/action_id';
 import { Database } from '../../proto_utils/database.js';
+import { CopyButton } from '../copy_button';
 import { getSourceInfo } from '../gear_picker/item_list';
 import { makePhaseSelector } from '../inputs/other_inputs';
 import { BooleanPicker } from '../pickers/boolean_picker';
@@ -532,7 +534,7 @@ export class UpgradesTab extends SimTab {
 		const exportBoxRef = ref<HTMLDivElement>();
 		const exportAreaRef = ref<HTMLTextAreaElement>();
 		const exportCountRef = ref<HTMLSpanElement>();
-		const exportCopyRef = ref<HTMLButtonElement>();
+		const exportCopyHostRef = ref<HTMLSpanElement>();
 
 		this.settingsCardElem.appendChild(
 			<div className="upgrades-run-controls">
@@ -626,7 +628,7 @@ export class UpgradesTab extends SimTab {
 					</label>
 					<label ref={raidFilterLabelRef} className="upgrades-raid-filter-label d-none">
 						{i18n.t('upgrades_tab.view.raid_filter')}
-						<select ref={raidFilterSelectRef} className="upgrades-raid-filter form-select form-select-sm" />
+						<select ref={raidFilterSelectRef} className="upgrades-raid-filter form-select" />
 					</label>
 				</div>
 			</div>,
@@ -685,9 +687,13 @@ export class UpgradesTab extends SimTab {
 					<textarea ref={exportAreaRef} className="upgrades-export-area form-control" rows={6} />
 					<div className="upgrades-export-actions">
 						<span ref={exportCountRef} className="upgrades-export-count" />
-						<button ref={exportCopyRef} className="btn btn-outline-secondary upgrades-export-copy" type="button">
-							{i18n.t('upgrades_tab.export.copy')}
-						</button>
+						{/*
+						 * The native CopyButton (ticket 328): a filled `btn-secondary`
+						 * with the `fas fa-copy` icon and the site's own copied-state
+						 * feedback, mounted into this host. Replaces the hand-rolled
+						 * transparent outline button the owner read as disabled.
+						 */}
+						<span ref={exportCopyHostRef} className="upgrades-export-copy-host" />
 					</div>
 				</div>
 				<div ref={substitutionsHostRef} className="upgrades-substitutions-host" />
@@ -698,6 +704,11 @@ export class UpgradesTab extends SimTab {
 		this.runButton = runButtonRef.value!;
 		this.stopButton = stopButtonRef.value!;
 		this.setPotentialControl = new ToggleControl(setPotentialLabelRef.value!, setPotentialToggleRef.value!);
+		// The set-potential toggle needs an explanation of what it does to the
+		// ranking (ticket 328 item 4). The site's own tooltip idiom is a tippy on
+		// the control element (as `CopyButton` attaches one); the label element is
+		// the whole hover target here.
+		tippy(this.setPotentialControl.label, { content: i18n.t('upgrades_tab.view.set_potential_tooltip') });
 		this.bisOnlyControl = new ToggleControl(bisOnlyLabelRef.value!, bisOnlyToggleRef.value!, bisOnlyTextRef.value!);
 		this.bisPruneElem = bisPrunePickerRef.value!;
 		this.candidatesPickerElem = candidatesPickerRef.value!;
@@ -715,24 +726,17 @@ export class UpgradesTab extends SimTab {
 		this.exportAreaElem.readOnly = true;
 		this.exportCountElem = exportCountRef.value!;
 
-		// `navigator.clipboard` is unavailable on insecure origins, so the
-		// select-and-copy fallback is the report's own (`rank-report.ts:915`)
-		// rather than leaving the button dead where the API is missing.
-		exportCopyRef.value!.addEventListener('click', () => {
-			const text = this.exportAreaElem.value;
-			const done = () => {
-				exportCopyRef.value!.textContent = i18n.t('upgrades_tab.export.copied');
-				window.setTimeout(() => {
-					exportCopyRef.value!.textContent = i18n.t('upgrades_tab.export.copy');
-				}, 1500);
-			};
-			if (navigator.clipboard?.writeText) {
-				navigator.clipboard.writeText(text).then(done, () => {
-					this.exportAreaElem.select();
-				});
-			} else {
-				this.exportAreaElem.select();
-			}
+		// The site's own copy control (ticket 328): filled `btn-secondary`, the
+		// `fas fa-copy` icon, and the shared copied-state feedback, in place of
+		// the hand-rolled transparent button. `getContent` reads the current
+		// export payload at click time, matching the old handler. CopyButton
+		// carries wowsims' own insecure-origin behaviour (an `alert` of the
+		// payload) rather than this tab's former select-and-copy fallback -- the
+		// deliberate cost of adopting the native component.
+		new CopyButton(exportCopyHostRef.value!, {
+			getContent: () => this.exportAreaElem.value,
+			extraCssClasses: ['btn-secondary', 'upgrades-export-copy'],
+			text: i18n.t('upgrades_tab.export.copy'),
 		});
 		this.paneContentElems.set('shopping-list', this.resultsElem);
 
@@ -1984,7 +1988,6 @@ export class UpgradesTab extends SimTab {
 				<small className="upgrades-set-bonus">
 					{i18n.t('upgrades_tab.set_bonus.prospective', {
 						dps: ctx.prospectiveBonusDps.toFixed(1),
-						before: ctx.piecesWornBefore,
 						after: ctx.piecesAfterSwap,
 						threshold: ctx.nextThreshold,
 						set: ctx.setName,
