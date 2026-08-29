@@ -97,9 +97,15 @@ type SubTabId = 'shopping-list' | SimOrderName;
  */
 const DEFAULT_ITERATIONS = 3000;
 
-// A set-bonus figure at or below the default sims' ~5 DPS run-to-run spread is
-// indistinguishable from zero; only surface one that clears the noise. See the
-// note in `setBonusLine` and ticket 315.
+// A set-bonus figure near zero is indistinguishable from sim noise; only
+// surface one that clears it. The reported per-run SE at these settings is
+// ~1.678 DPS (docs/verification-log.md, "Independent-seed noise floor"), and
+// the single-item cutoff already trusts 2x that (packages/core/src/cutoff.ts:
+// CUTOFF.absDps = 3.4). A prospective set bonus folds two measured deltas, so
+// its noise combines to ~2.37 SE (~sqrt(2) larger); 10 is a deliberately
+// conservative ~4-SE floor -- chosen round-number-high over the ~4.7 a strict
+// 2-SE bar would give, per the owner's "at or below noise, don't show it".
+// See ticket 315 and the note in `setBonusLine`.
 const SET_BONUS_MIN_DISPLAY_DPS = 10;
 
 type RunState =
@@ -1977,11 +1983,11 @@ export class UpgradesTab extends SimTab {
 			);
 		}
 
-		// The default sims measure a set bonus with a run-to-run spread of ~5 DPS
-		// (ticket 315). A bonus at or below that is indistinguishable from zero --
-		// showing "-4.1 set bonus" reads as a real, negative bonus when the honest
-		// statement is "nothing measurable". Only surface a bonus that clears the
-		// noise; noise reduction is tracked separately (ticket 105).
+		// Only surface a bonus that clears sim noise (SET_BONUS_MIN_DISPLAY_DPS,
+		// derived above). A near-zero measurement shown raw reads as a real
+		// figure -- "-4.1 set bonus" looks like a negative bonus when the honest
+		// statement is "nothing measurable". Noise reduction is a separate item
+		// (ticket 105).
 		if (ctx.prospectiveBonusDps !== undefined && ctx.prospectiveBonusDps > SET_BONUS_MIN_DISPLAY_DPS && ctx.nextThreshold !== null) {
 			return (
 				<small className="upgrades-set-bonus">
