@@ -13,7 +13,11 @@
  * report-formatting module for one function.
  *
  */
-import { meetsCutoff, type Cutoff } from "./cutoff.js";
+import {
+  meetsCutoff,
+  SET_BONUS_NOISE_FLOOR_DPS,
+  type Cutoff,
+} from "./cutoff.js";
 import { sourceMatchesBoss, type ItemSource } from "./pool.js";
 import type { RankedItem, Ranking } from "./rank.js";
 
@@ -166,9 +170,19 @@ function belowCutoffUnderView(
   return !meetsCutoff(effectiveDps, effectivePct, cutoff);
 }
 
-function rankableSetPotential(item: Pick<RankedItem, "setContext">): number {
+/**
+ * A figure at or below `SET_BONUS_NOISE_FLOOR_DPS` is noise around a true zero,
+ * so it contributes nothing: it must not move the sort key or the cutoff
+ * verdict. The comparison is strict (`>`), matching the display gate's strict
+ * `> SET_BONUS_NOISE_FLOOR_DPS` so a boundary value behaves identically in both
+ * layers — no row sorts on a bonus the display hides (ticket 331).
+ */
+export function rankableSetPotential(
+  item: Pick<RankedItem, "setContext">
+): number {
   if (setPotentialIsConfounded(item)) return 0;
-  return item.setContext?.prospectiveBonusDps ?? 0;
+  const bonus = item.setContext?.prospectiveBonusDps ?? 0;
+  return bonus > SET_BONUS_NOISE_FLOOR_DPS ? bonus : 0;
 }
 
 function sortKeyFor(withSetPotential: boolean): (r: ViewRow) => number {

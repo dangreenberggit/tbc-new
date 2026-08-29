@@ -20,6 +20,25 @@ export type Cutoff = { readonly absDps: number; readonly pct: number };
 export const CUTOFF: Cutoff = { absDps: 3.4, pct: 0.15 };
 
 /**
+ * Shared noise floor for a prospective set bonus, in DPS. A set-bonus figure
+ * near zero is indistinguishable from sim noise; only a figure strictly above
+ * this floor may move anything — the display gate (the fork tab) and the
+ * ranking gate (`rankableSetPotential`, view.ts) both read this one constant,
+ * so the two layers can never disagree: no row sorts on a bonus the display
+ * hides.
+ *
+ * The reported per-run SE at these settings is ~1.678 DPS (ret; feral ~1.774)
+ * — see docs/verification-log.md, "Independent-seed noise floor", and
+ * cutoff.ts CUTOFF.absDps = 3.4, which is 2x that single-item SE. A prospective
+ * set bonus folds two measured deltas, so its noise combines to ~2.373 SE
+ * (~sqrt(2) larger), and a strict 2xSE bar would be ~4.75 ret / ~5.02 feral.
+ * 10 is a deliberately conservative round-number-high floor above both, per the
+ * owner's rule "at or below noise, don't show it — and don't rank on it".
+ * See ticket 331 and .scratch/stage-gate/upgrades-331-noise-rank/plan.md.
+ */
+export const SET_BONUS_NOISE_FLOOR_DPS = 10;
+
+/**
  * Feral cutoff derived from its own five-seed spread
  * (docs/five-seed-spread-feral.json, issue #1 README step 0), following the
  * same method as ret's above: max(3.0, 2× mean reported SE 1.774) → 3.6.

@@ -30,6 +30,7 @@ import { MemoryStore } from './upgrades/engine/seams/store';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
 import { applyView, raidFilterGroups, SOURCE_LABELS, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
+import { SET_BONUS_NOISE_FLOOR_DPS } from './upgrades/engine/cutoff';
 
 /**
  * Specs this tab can rank, per plan §2.5: "The tab renders only for specs
@@ -96,17 +97,6 @@ type SubTabId = 'shopping-list' | SimOrderName;
  * when the field is empty (see `run()`, which always sends a parsed number).
  */
 const DEFAULT_ITERATIONS = 3000;
-
-// A set-bonus figure near zero is indistinguishable from sim noise; only
-// surface one that clears it. The reported per-run SE at these settings is
-// ~1.678 DPS (docs/verification-log.md, "Independent-seed noise floor"), and
-// the single-item cutoff already trusts 2x that (packages/core/src/cutoff.ts:
-// CUTOFF.absDps = 3.4). A prospective set bonus folds two measured deltas, so
-// its noise combines to ~2.37 SE (~sqrt(2) larger); 10 is a deliberately
-// conservative ~4-SE floor -- chosen round-number-high over the ~4.7 a strict
-// 2-SE bar would give, per the owner's "at or below noise, don't show it".
-// See ticket 315 and the note in `setBonusLine`.
-const SET_BONUS_MIN_DISPLAY_DPS = 10;
 
 type RunState =
 	| { kind: 'idle' }
@@ -1983,12 +1973,13 @@ export class UpgradesTab extends SimTab {
 			);
 		}
 
-		// Only surface a bonus that clears sim noise (SET_BONUS_MIN_DISPLAY_DPS,
-		// derived above). A near-zero measurement shown raw reads as a real
+		// Only surface a bonus that clears sim noise (SET_BONUS_NOISE_FLOOR_DPS,
+		// the shared floor in engine/cutoff.ts — display and ranking read the
+		// same constant). A near-zero measurement shown raw reads as a real
 		// figure -- "-4.1 set bonus" looks like a negative bonus when the honest
 		// statement is "nothing measurable". Noise reduction is a separate item
 		// (ticket 105).
-		if (ctx.prospectiveBonusDps !== undefined && ctx.prospectiveBonusDps > SET_BONUS_MIN_DISPLAY_DPS && ctx.nextThreshold !== null) {
+		if (ctx.prospectiveBonusDps !== undefined && ctx.prospectiveBonusDps > SET_BONUS_NOISE_FLOOR_DPS && ctx.nextThreshold !== null) {
 			return (
 				<small className="upgrades-set-bonus">
 					{i18n.t('upgrades_tab.set_bonus.prospective', {
