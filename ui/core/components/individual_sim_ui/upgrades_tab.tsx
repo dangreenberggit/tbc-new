@@ -1988,7 +1988,6 @@ export class UpgradesTab extends SimTab {
 				<small className="upgrades-set-bonus">
 					{i18n.t('upgrades_tab.set_bonus.prospective', {
 						dps: ctx.prospectiveBonusDps.toFixed(1),
-						after: ctx.piecesAfterSwap,
 						threshold: ctx.nextThreshold,
 						set: ctx.setName,
 					})}

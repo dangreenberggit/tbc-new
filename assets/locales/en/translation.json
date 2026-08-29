@@ -879,7 +879,7 @@
 		"view": {
 			"title": "Filter results",
 			"set_potential": "Set potential",
-			"set_potential_tooltip": "Include set bonuses in the ranking. An item that would complete a set bonus gets credit for it; bonuses too small to change the ranking are ignored.",
+			"set_potential_tooltip": "When on, a row's DPS gain includes a set bonus the swap would earn. Bonuses too small to change the ranking are ignored.",
 			"only_bis": "BiS only",
 			"only_bis_qualifier": "{{phase}} list",
 			"raid_filter": "Content",
@@ -889,14 +889,14 @@
 		},
 		"export": {
 			"title": "ThatsMyBis export",
-			"caveat": "Copy your best raid-drop upgrades as JSON to import into a loot-priority tool.",
+			"caveat": "Copy these raid-drop upgrades as JSON to import into a loot-priority tool.",
 			"count": "{{count}} items",
 			"copy": "Copy JSON",
 			"copied": "Copied"
 		},
 		"set_bonus": {
-			"prospective": "+{{dps}} more at {{threshold}}pc {{set}} ({{after}}/{{threshold}} after this swap)",
-			"crosses": "includes the {{threshold}}-piece {{set}} bonus",
+			"prospective": "counts toward {{threshold}}pc {{set}} (+{{dps}} at {{threshold}}pc)",
+			"crosses": "includes the {{threshold}}pc {{set}} bonus",
 			"confounded": "+{{dps}} set bonus ({{set}}) — not counted in ranking: breaks {{broken}} {{brokenThreshold}}pc"
 		},
 		"prune": {
