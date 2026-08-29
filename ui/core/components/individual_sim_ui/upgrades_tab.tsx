@@ -31,7 +31,7 @@ import { MemoryStore } from './upgrades/engine/seams/store';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
 import { applyView, raidFilterGroups, SOURCE_LABELS, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
-import { SET_BONUS_NOISE_FLOOR_DPS } from './upgrades/engine/cutoff';
+import { setBonusNoiseFloorDps } from './upgrades/engine/cutoff';
 
 /**
  * Specs this tab can rank, per plan §2.5: "The tab renders only for specs
@@ -1353,7 +1353,11 @@ export class UpgradesTab extends SimTab {
 			return;
 		}
 		const items = this.state.ranking.items;
-		this.setPotentialControl.setVisible(items.some(hasRankableSetPotential));
+		// Same per-spec floor the ranking gate uses, from this done ranking's own
+		// frozen cutoff (in scope and non-null under the guard above) — tickets
+		// 331, 332.
+		const noiseFloorDps = setBonusNoiseFloorDps(this.state.ranking.cutoff);
+		this.setPotentialControl.setVisible(items.some(i => hasRankableSetPotential(i, noiseFloorDps)));
 		this.bisOnlyControl.setVisible(items.some(isBisTagged));
 	}
 
@@ -1434,7 +1438,14 @@ export class UpgradesTab extends SimTab {
 		// rendered the empty state *and* stripped the sub-tabs below, with no
 		// way back except re-running.
 		const view = this.state.kind === 'done' ? this.currentView() : undefined;
-		this.resultsElem.replaceChildren(this.resultsContent(view));
+		// The per-spec set-bonus floor, derived from the ranking's OWN frozen
+		// cutoff (never the live picker, which may have moved since the run --
+		// see 2117-2119). Computed here at the single done-narrowing point and
+		// threaded to the row renderer so the display gate and the ranking gate
+		// read the same number for every displayed row (tickets 331, 332).
+		const noiseFloorDps =
+			this.state.kind === 'done' ? setBonusNoiseFloorDps(this.state.ranking.cutoff) : undefined;
+		this.resultsElem.replaceChildren(this.resultsContent(view, noiseFloorDps));
 
 		// Remove any previously-built slot nav items/panes; keep the
 		// shopping-list nav item (first child) and pane untouched.
@@ -1504,7 +1515,7 @@ export class UpgradesTab extends SimTab {
 			this.tabContentElem.appendChild(<div id={paneId(id)} className="tab-pane fade" ref={paneRef} />);
 			const paneElem = paneRef.value!;
 			this.paneContentElems.set(id, paneElem);
-			paneElem.replaceChildren(this.slotPaneContent(slot, view));
+			paneElem.replaceChildren(this.slotPaneContent(slot, view, noiseFloorDps));
 		}
 
 		// Re-select whichever sub-tab the user was last on, so a
@@ -1591,7 +1602,7 @@ export class UpgradesTab extends SimTab {
 		};
 	}
 
-	private resultsContent(view: ViewResult | undefined): Node {
+	private resultsContent(view: ViewResult | undefined, noiseFloorDps: number | undefined): Node {
 		if (this.state.kind === 'running') {
 			// Skeleton fill (candidate-pool.md §5.1.5): show rows as they land
 			// rather than nothing until the whole run finishes. Not run through
@@ -1634,7 +1645,7 @@ export class UpgradesTab extends SimTab {
 		// is the displayed order including a column-sort click.
 		const exported = this.resultsSort ? sortRows(view.shortlist, this.resultsSort) : view.shortlist;
 		this.updateExport(exported);
-		return this.resultsBlock(this.rowsTable(view.shortlist, view.rows), view.shortlist.length);
+		return this.resultsBlock(this.rowsTable(view.shortlist, view.rows, noiseFloorDps), view.shortlist.length);
 	}
 
 	/**
@@ -1715,15 +1726,17 @@ export class UpgradesTab extends SimTab {
 		return (
 			<table className="upgrades-results-table upgrades-results-table-provisional table table-sm">
 				{resultsTableHead()}
-				<tbody>{sorted.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }))}</tbody>
+				{/* Mid-run skeleton: no ranking yet, so no per-spec floor exists —
+				    pass undefined and `setBonusLine` skips the prospective line. */}
+				<tbody>{sorted.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }, undefined))}</tbody>
 			</table>
 		);
 	}
 
-	private slotPaneContent(slot: SimOrderName, view: ViewResult): Node {
+	private slotPaneContent(slot: SimOrderName, view: ViewResult, noiseFloorDps: number | undefined): Node {
 		const rowsForSlot = view.rows.filter(r => effectiveSlot(r) === slot);
 		const shortlistForSlot = rowsForSlot.filter(r => !r.belowCutoffInView);
-		return <div className="p-gap">{this.rowsTable(shortlistForSlot, rowsForSlot)}</div>;
+		return <div className="p-gap">{this.rowsTable(shortlistForSlot, rowsForSlot, noiseFloorDps)}</div>;
 	}
 
 	/**
@@ -1736,7 +1749,7 @@ export class UpgradesTab extends SimTab {
 	 * only — it never touches which rows are shortlisted vs. below-cutoff
 	 * (ticket 280).
 	 */
-	private rowsTable(shortlist: ViewRow[], allRows: ViewRow[]): Node {
+	private rowsTable(shortlist: ViewRow[], allRows: ViewRow[], noiseFloorDps: number | undefined): Node {
 		// Items the player already wears cannot be an upgrade, so listing them
 		// under "below the cutoff" is noise that makes the group read as broken
 		// (ticket 304 item 7). Owned rows are dropped from this group only --
@@ -1774,7 +1787,7 @@ export class UpgradesTab extends SimTab {
 				{this.sortableResultsTableHead()}
 				<tbody>
 					{sortedShortlist.length > 0 ? (
-						sortedShortlist.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }))
+						sortedShortlist.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }, noiseFloorDps))
 					) : (
 						<tr>
 							<td colSpan={5} className="upgrades-text-secondary">
@@ -1802,7 +1815,7 @@ export class UpgradesTab extends SimTab {
 				 * borrow (round-3 review S2, ticket 307).
 				 */}
 				<div className="upgrades-result-group">{table}</div>
-				{belowCutoffRows.length > 0 ? <div className="upgrades-result-group">{this.expandableRowGroup(belowCutoffRows)}</div> : null}
+				{belowCutoffRows.length > 0 ? <div className="upgrades-result-group">{this.expandableRowGroup(belowCutoffRows, noiseFloorDps)}</div> : null}
 			</>
 		);
 	}
@@ -1878,7 +1891,7 @@ export class UpgradesTab extends SimTab {
 	 * The below-cutoff rows, hidden behind a toggle (candidate-pool.md §6.1:
 	 * "renders behind its own expand", "hidden, never deleted").
 	 */
-	private expandableRowGroup(rows: ViewRow[]): Node {
+	private expandableRowGroup(rows: ViewRow[], noiseFloorDps: number | undefined): Node {
 		const tbodyRef = ref<HTMLTableSectionElement>();
 		// Native <details>, the disclosure idiom this tab settled on.
 		// The hand-rolled version was a button toggling `d-none` and swapping
@@ -1904,7 +1917,7 @@ export class UpgradesTab extends SimTab {
 		// its own set of displayed items, not a continuation of the shortlist's
 		// count, and the engine's `rank` this used to show is no longer surfaced
 		// anywhere in the UI.
-		tbodyRef.value!.replaceChildren(...sorted.map((row, i) => this.resultRow(row, { rankText: String(i + 1) })));
+		tbodyRef.value!.replaceChildren(...sorted.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }, noiseFloorDps)));
 		return details;
 	}
 
@@ -1923,10 +1936,15 @@ export class UpgradesTab extends SimTab {
 	 * below-cutoff group, or the mid-run skeleton), never the engine's own
 	 * `RankedItem.rank` — the UI no longer shows that value (owner ruling,
 	 * ticket 287 follow-through).
+	 *
+	 * `noiseFloorDps` is the per-spec set-bonus floor from the done ranking's
+	 * frozen cutoff, or `undefined` on the mid-run skeleton path (no ranking
+	 * exists yet); it is threaded straight to `setBonusLine`, which skips the
+	 * prospective-bonus line when the floor is absent (tickets 331, 332).
 	 */
-	private resultRow(row: RankedItem, display: { rankText: string }): Node {
+	private resultRow(row: RankedItem, display: { rankText: string }, noiseFloorDps: number | undefined): Node {
 		const deltaLabel = formatDelta(row.deltaDps);
-		const setLine = this.setBonusLine(row);
+		const setLine = this.setBonusLine(row, noiseFloorDps);
 		return (
 			<tr className={row.owned ? 'upgrades-row-owned' : ''}>
 				<td>{display.rankText}</td>
@@ -2007,7 +2025,7 @@ export class UpgradesTab extends SimTab {
 	 *     (`rank.ts:1431-1440` only populates `prospectiveBonusDps` when the
 	 *     swap advances the piece count below a threshold) with nothing to say.
 	 */
-	private setBonusLine(row: RankedItem): Node | null {
+	private setBonusLine(row: RankedItem, noiseFloorDps: number | undefined): Node | null {
 		if (!this.setPotentialControl.checked) return null;
 		const ctx = row.setContext;
 		if (!ctx) return null;
@@ -2033,13 +2051,22 @@ export class UpgradesTab extends SimTab {
 			);
 		}
 
-		// Only surface a bonus that clears sim noise (SET_BONUS_NOISE_FLOOR_DPS,
-		// the shared floor in engine/cutoff.ts — display and ranking read the
-		// same constant). A near-zero measurement shown raw reads as a real
-		// figure -- "-4.1 set bonus" looks like a negative bonus when the honest
-		// statement is "nothing measurable". Noise reduction is a separate item
-		// (ticket 105).
-		if (ctx.prospectiveBonusDps !== undefined && ctx.prospectiveBonusDps > SET_BONUS_NOISE_FLOOR_DPS && ctx.nextThreshold !== null) {
+		// Only surface a bonus that clears sim noise. The floor is per-spec
+		// (`setBonusNoiseFloorDps` of the ranking's OWN frozen cutoff), threaded
+		// in as a parameter so display and ranking gate every displayed row on
+		// the same number — never a live picker lookup, which may have moved
+		// since the run (tickets 331, 332). When the floor is absent the row came
+		// from the mid-run skeleton, which carries no ranking; it has no honest
+		// floor to gate against yet, so the prospective line is skipped entirely.
+		// A near-zero measurement shown raw reads as a real figure -- "-4.1 set
+		// bonus" looks like a negative bonus when the honest statement is
+		// "nothing measurable". Noise reduction is a separate item (ticket 105).
+		if (
+			noiseFloorDps !== undefined &&
+			ctx.prospectiveBonusDps !== undefined &&
+			ctx.prospectiveBonusDps > noiseFloorDps &&
+			ctx.nextThreshold !== null
+		) {
 			return (
 				<small className="upgrades-set-bonus">
 					{i18n.t('upgrades_tab.set_bonus.prospective', {
@@ -2237,20 +2264,23 @@ function effectiveSlot(row: Pick<RankedItem, 'slot' | 'slotChoice'>): SimOrderNa
 /**
  * Whether a row has set-bonus potential the view would actually rank on.
  *
- * Deliberate drift: this mirrors `rankableSetPotential(item) > 0` in
- * `view.ts`, which is private to that module. Exporting it would be an engine
+ * Deliberate drift: this mirrors `rankableSetPotential(item, noiseFloorDps) > 0`
+ * in `view.ts`, which is private to that module. Exporting it would be an engine
  * edit, and every engine edit costs a PROVENANCE re-hash and an E-W3 run — too
  * much for a predicate that only decides whether a checkbox is on screen. If
- * `view.ts`'s definition changes, this must change with it.
+ * `view.ts`'s definition changes, this must change with it. The floor is now
+ * per-spec (`setBonusNoiseFloorDps` of the ranking's frozen cutoff, tickets
+ * 331/332); the caller derives it and passes it in, so this predicate gates on
+ * the same number the ranking did.
  *
  * The `prospectiveBonusBreaks` half is not an optimisation: a row whose bonus
  * is confounded by breaking another set gets no credit from the view either
  * (the `(k-1)*B` inflation argument, PLAN.md ticket 90), so counting it here
  * would offer a toggle that changes nothing.
  */
-function hasRankableSetPotential(item: Ranking['items'][number]): boolean {
+function hasRankableSetPotential(item: Ranking['items'][number], noiseFloorDps: number): boolean {
 	if (item.setContext?.prospectiveBonusBreaks?.length) return false;
-	return (item.setContext?.prospectiveBonusDps ?? 0) > 0;
+	return (item.setContext?.prospectiveBonusDps ?? 0) > noiseFloorDps;
 }
 
 /** Slots with at least one ranked candidate, in SIM_ORDER (stable, matches the page's own gear ordering). */
