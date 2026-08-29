@@ -97,6 +97,11 @@ type SubTabId = 'shopping-list' | SimOrderName;
  */
 const DEFAULT_ITERATIONS = 3000;
 
+// A set-bonus figure at or below the default sims' ~5 DPS run-to-run spread is
+// indistinguishable from zero; only surface one that clears the noise. See the
+// note in `setBonusLine` and ticket 315.
+const SET_BONUS_MIN_DISPLAY_DPS = 10;
+
 type RunState =
 	| { kind: 'idle' }
 	| { kind: 'running'; progress: Progress }
@@ -1972,7 +1977,12 @@ export class UpgradesTab extends SimTab {
 			);
 		}
 
-		if (ctx.prospectiveBonusDps !== undefined && ctx.nextThreshold !== null) {
+		// The default sims measure a set bonus with a run-to-run spread of ~5 DPS
+		// (ticket 315). A bonus at or below that is indistinguishable from zero --
+		// showing "-4.1 set bonus" reads as a real, negative bonus when the honest
+		// statement is "nothing measurable". Only surface a bonus that clears the
+		// noise; noise reduction is tracked separately (ticket 105).
+		if (ctx.prospectiveBonusDps !== undefined && ctx.prospectiveBonusDps > SET_BONUS_MIN_DISPLAY_DPS && ctx.nextThreshold !== null) {
 			return (
 				<small className="upgrades-set-bonus">
 					{i18n.t('upgrades_tab.set_bonus.prospective', {
