@@ -22,7 +22,16 @@ var ItemSetCryptstalkerArmor = core.NewItemSet(core.ItemSet{
 		},
 		// (4) Set: While your pet is active, increases Attack Power by 50 for both you and your pet.
 		4: func(agent core.Agent, setBonusAura *core.Aura) {
-			hunter := agent.(HunterAgent).GetHunter()
+			// Ticket 311 (this repo): item effects fire keyed by item id
+			// alone (sim/core/item_effects.go applyItemEffects), so a
+			// hunter-flavored effect on a mail item (e.g. 30892) runs for
+			// a paladin and the unguarded assertion panics. Comma-ok
+			// no-op is the guard; upstream-candidate (see ticket 311).
+			hunterAgent, ok := agent.(HunterAgent)
+			if !ok {
+				return
+			}
+			hunter := hunterAgent.GetHunter()
 			if hunter.Pet == nil {
 				return
 			}
@@ -60,7 +69,11 @@ var ItemSetCryptstalkerArmor = core.NewItemSet(core.ItemSet{
 		},
 		// (6) Set: Your ranged critical hits cause an Adrenaline Rush, granting you 50 mana.
 		6: func(agent core.Agent, setBonusAura *core.Aura) {
-			hunter := agent.(HunterAgent).GetHunter()
+			hunterAgent, ok := agent.(HunterAgent)
+			if !ok {
+				return
+			}
+			hunter := hunterAgent.GetHunter()
 			manaMetrics := hunter.NewManaMetrics(core.ActionID{SpellID: 28753})
 
 			setBonusAura.AttachProcTrigger(core.ProcTrigger{
@@ -93,7 +106,11 @@ var ItemSetBeastLordArmor = core.NewItemSet(core.ItemSet{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
 		},
 		4: func(agent core.Agent, setBonusAura *core.Aura) {
-			hunter := agent.(HunterAgent).GetHunter()
+			hunterAgent, ok := agent.(HunterAgent)
+			if !ok {
+				return
+			}
+			hunter := hunterAgent.GetHunter()
 
 			exploitedWeakness := hunter.RegisterAura(core.Aura{
 				Label:    "Exploited Weakness",
@@ -135,7 +152,11 @@ var ItemSetRiftStalkerArmor = core.NewItemSet(core.ItemSet{
 	ID:   652,
 	Bonuses: map[int32]core.ApplySetBonus{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
-			hunter := agent.(HunterAgent).GetHunter()
+			hunterAgent, ok := agent.(HunterAgent)
+			if !ok {
+				return
+			}
+			hunter := hunterAgent.GetHunter()
 			if hunter.Pet == nil {
 				return
 			}
@@ -168,7 +189,11 @@ var ItemSetGronnstalkersArmor = core.NewItemSet(core.ItemSet{
 	ID:   669,
 	Bonuses: map[int32]core.ApplySetBonus{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
-			hunter := agent.(HunterAgent).GetHunter()
+			hunterAgent, ok := agent.(HunterAgent)
+			if !ok {
+				return
+			}
+			hunter := hunterAgent.GetHunter()
 			hunter.GronnStalker2PcAura = setBonusAura.ExposeToAPL(38390)
 		},
 		4: func(agent core.Agent, setBonusAura *core.Aura) {
@@ -184,7 +209,11 @@ var ItemSetGronnstalkersArmor = core.NewItemSet(core.ItemSet{
 func init() {
 	// Thori'dal, the Star's Fury
 	core.NewItemEffect(ThoridalTheStarsFuryItemID, func(agent core.Agent) {
-		hunter := agent.(HunterAgent).GetHunter()
+		hunterAgent, ok := agent.(HunterAgent)
+		if !ok {
+			return
+		}
+		hunter := hunterAgent.GetHunter()
 
 		isEquipped := hunter.HasItemEquipped(ThoridalTheStarsFuryItemID, []proto.ItemSlot{proto.ItemSlot_ItemSlotRanged})
 		buildPhase := core.Ternary(isEquipped, core.CharacterBuildPhaseGear, core.CharacterBuildPhaseNone)
@@ -241,7 +270,11 @@ func init() {
 
 	// Beast-tamer's Shoulders
 	core.NewItemEffect(30892, func(agent core.Agent) {
-		hunter := agent.(HunterAgent).GetHunter()
+		hunterAgent, ok := agent.(HunterAgent)
+		if !ok {
+			return
+		}
+		hunter := hunterAgent.GetHunter()
 
 		hunter.Pet.PseudoStats.DamageDealtMultiplier *= 1.03
 		hunter.Pet.AddStat(stats.PhysicalCritPercent, 3)
@@ -250,7 +283,11 @@ func init() {
 	// Black Bow of the Betrayer
 	const BlackBowOfTheBetrayerItemID = 32336
 	core.NewItemEffect(BlackBowOfTheBetrayerItemID, func(agent core.Agent) {
-		hunter := agent.(HunterAgent).GetHunter()
+		hunterAgent, ok := agent.(HunterAgent)
+		if !ok {
+			return
+		}
+		hunter := hunterAgent.GetHunter()
 
 		manaMetrics := hunter.NewManaMetrics(core.ActionID{SpellID: 29471})
 
@@ -272,7 +309,11 @@ func init() {
 	// Ashtongue Talisman of Swiftness
 	const AshtongueTalismanOfSwiftnessItemID = 32487
 	core.NewItemEffect(AshtongueTalismanOfSwiftnessItemID, func(agent core.Agent) {
-		hunter := agent.(HunterAgent).GetHunter()
+		hunterAgent, ok := agent.(HunterAgent)
+		if !ok {
+			return
+		}
+		hunter := hunterAgent.GetHunter()
 		eligibleSlots := hunter.ItemSwap.EligibleSlotsForItem(AshtongueTalismanOfSwiftnessItemID)
 
 		statsAura := hunter.NewTemporaryStatsAura(
@@ -305,7 +346,11 @@ func init() {
 	// Talon of Al'ar
 	const TalonOfAlarItemID = 30448
 	core.NewItemEffect(TalonOfAlarItemID, func(agent core.Agent) {
-		hunter := agent.(HunterAgent).GetHunter()
+		hunterAgent, ok := agent.(HunterAgent)
+		if !ok {
+			return
+		}
+		hunter := hunterAgent.GetHunter()
 
 		hunter.TalonOfAlarAura = hunter.RegisterAura(core.Aura{
 			Label:    "Shot Power",
