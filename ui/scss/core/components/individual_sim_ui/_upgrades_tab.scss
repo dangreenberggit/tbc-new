@@ -191,6 +191,17 @@
 	color: var(--bs-warning-text-emphasis, var(--bs-warning));
 }
 
+// The reachable higher-threshold disclosure (ticket 336). It is not the row's
+// own number and must not read as one, so it sits below the set-bonus line in
+// the same muted grey but italicised, marking it as an aside rather than a
+// second measured figure on the row.
+.upgrades-set-package {
+	display: block;
+	color: var(--bs-gray-500);
+	line-height: 1.2;
+	font-style: italic;
+}
+
 // Containment for the row's new home (ticket 312, F11). `.tab-panel-left` is
 // `display: grid` with `repeat(auto-fit, minmax(220px, 1fr))`
 // (`_sim_tab.scss:19-27`). The panel had exactly one direct child until this

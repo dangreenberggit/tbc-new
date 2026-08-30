@@ -895,9 +895,10 @@
 			"copied": "Copied"
 		},
 		"set_bonus": {
-			"prospective": "counts toward {{threshold}}pc {{set}} (+{{dps}} at {{threshold}}pc)",
+			"prospective": "toward {{set}} {{threshold}}pc (+{{dps}})",
 			"crosses": "includes the {{threshold}}pc {{set}} bonus",
-			"confounded": "+{{dps}} set bonus ({{set}}) — not counted in ranking: breaks {{broken}} {{brokenThreshold}}pc"
+			"confounded": "+{{dps}} set bonus ({{set}}) — not counted in ranking: breaks {{broken}} {{brokenThreshold}}pc",
+			"package_disclosure": "also opens {{set}} {{threshold}}pc (+{{dps}}, {{pieces}} pieces) — not in this row's number"
 		},
 		"cutoff": {
 			"pct_arm": "cleared by %-arm",

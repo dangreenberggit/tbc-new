@@ -1955,6 +1955,7 @@ export class UpgradesTab extends SimTab {
 	private resultRow(row: RankedItem, display: { rankText: string }, noiseFloorDps: number | undefined, cutoff?: Cutoff): Node {
 		const deltaLabel = formatDelta(row.deltaDps);
 		const setLine = this.setBonusLine(row, noiseFloorDps);
+		const setPackageLine = this.setPackageLine(row, noiseFloorDps);
 		const cutoffArmLine = cutoff && cutoffAdmittingArm(row.deltaDps, row.deltaPct, cutoff) === 'pct'
 			? (
 				<small className="upgrades-cutoff-arm" title={i18n.t('upgrades_tab.cutoff.pct_arm_title', { pct: formatDelta(cutoff.pct), abs: cutoff.absDps })}>
@@ -1970,6 +1971,7 @@ export class UpgradesTab extends SimTab {
 				<td>
 					{deltaLabel}
 					{setLine}
+					{setPackageLine}
 					{cutoffArmLine}
 				</td>
 				<td>{sourceCell(row, this.simUI.sim)}</td>
@@ -2097,6 +2099,66 @@ export class UpgradesTab extends SimTab {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Discloses a reachable HIGHER-threshold set bonus the row's own line does
+	 * not show (ticket 336). `setBonusLine` shows the nearest measurable
+	 * threshold only — for a 2pc-implemented tier set that stops at the 2pc and
+	 * the row is silent about a 4pc that is a real, reachable upgrade (feral
+	 * Thunderheart 4pc measures +64 DPS in committed data). The 4pc figure
+	 * already rides on the row as `setContext.packages[]`; the tab just never
+	 * rendered it.
+	 *
+	 * This is DISCLOSURE, never credit. It re-implements the report path's
+	 * package-as-card idea locally — `packages/core/src/rank-report.ts:136-142`
+	 * (the per-row `pkg` span) and `rank-report-rules.ts:669-686`
+	 * (`formatPackageMembershipLine`) — which the fork cannot import
+	 * (upgrades_tab.tsx:262-263). Ticket 91 deliberately rejected smearing 4pc
+	 * credit onto the row number, and this line does the same: it reads
+	 * `packages[]` only, writes no number the sort consults (the sort keys off
+	 * `prospectiveBonusDps` in `view.ts`, never `packages[]`), and adds nothing
+	 * to `deltaDps`.
+	 *
+	 * Gating, so a disclosed figure never reads as a clean measured gain the row
+	 * did not earn:
+	 * - Only while the set-potential toggle is on (same reason as
+	 *   `setBonusLine`: off, set potential is not part of the ordering).
+	 * - Only packages ABOVE the threshold the row already shows
+	 *   (`ctx.nextThreshold`), so this never duplicates that line.
+	 * - Only packages whose measured `deltaDps` clears the same per-spec noise
+	 *   floor the prospective line uses, so a sub-noise or negative package (ret
+	 *   4pc is noise-around-zero) is not surfaced as a real bonus.
+	 * - Never in the confounded or crossing states: those carry their own line,
+	 *   and a confounded package is not a clean disclosure (ticket 90).
+	 */
+	private setPackageLine(row: RankedItem, noiseFloorDps: number | undefined): Node | null {
+		if (!this.setPotentialControl.checked) return null;
+		if (noiseFloorDps === undefined) return null;
+		const ctx = row.setContext;
+		if (!ctx || !ctx.packages || ctx.packages.length === 0) return null;
+		if (ctx.crossesThreshold || ctx.prospectiveBonusBreaks?.length) return null;
+
+		const shownThreshold = ctx.nextThreshold ?? 0;
+		const reachable = ctx.packages
+			.filter(pkg => pkg.threshold > shownThreshold && pkg.deltaDps > noiseFloorDps)
+			.sort((a, b) => a.threshold - b.threshold);
+		if (reachable.length === 0) return null;
+
+		return (
+			<>
+				{reachable.map(pkg => (
+					<small className="upgrades-set-package">
+						{i18n.t('upgrades_tab.set_bonus.package_disclosure', {
+							dps: pkg.deltaDps.toFixed(1),
+							threshold: pkg.threshold,
+							set: ctx.setName,
+							pieces: pkg.piecesNeeded,
+						})}
+					</small>
+				))}
+			</>
+		);
 	}
 
 	/**
