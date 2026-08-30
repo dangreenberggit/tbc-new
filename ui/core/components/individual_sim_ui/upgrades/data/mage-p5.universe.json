@@ -1214,6 +1214,7 @@
           "zone": "Black Temple",
           "token": "Chestguard of the Forgotten Vanquisher",
           "boss": "Illidan Stormrage",
+          "tokenId": 31090,
           "origin": "two-hop"
         }
       ],
@@ -1355,6 +1356,7 @@
           "zone": "Tempest Keep",
           "token": "Chestguard of the Vanquished Hero",
           "boss": "Kael'thas Sunstrider",
+          "tokenId": 30238,
           "origin": "two-hop"
         }
       ],
@@ -1542,6 +1544,7 @@
           "zone": "Magtheridon's Lair",
           "token": "Chestguard of the Fallen Hero",
           "boss": "Magtheridon",
+          "tokenId": 29755,
           "origin": "two-hop"
         }
       ],
@@ -1789,6 +1792,7 @@
           "zone": "Sunwell Plateau",
           "token": "Boots of the Forgotten Vanquisher",
           "boss": "Felmyst",
+          "tokenId": 34858,
           "origin": "two-hop"
         }
       ],
@@ -4946,6 +4950,7 @@
           "zone": "Hyjal Summit",
           "token": "Gloves of the Forgotten Vanquisher",
           "boss": "Azgalor",
+          "tokenId": 31093,
           "origin": "two-hop"
         }
       ],
@@ -4965,6 +4970,7 @@
           "zone": "Karazhan",
           "token": "Gloves of the Fallen Hero",
           "boss": "The Curator",
+          "tokenId": 29756,
           "origin": "two-hop"
         }
       ],
@@ -5039,6 +5045,7 @@
           "zone": "Serpentshrine Cavern",
           "token": "Gloves of the Vanquished Hero",
           "boss": "Leotheras the Blind",
+          "tokenId": 30241,
           "origin": "two-hop"
         }
       ],
@@ -5331,6 +5338,7 @@
           "zone": "Hyjal Summit",
           "token": "Helm of the Forgotten Vanquisher",
           "boss": "Archimonde",
+          "tokenId": 31096,
           "origin": "two-hop"
         }
       ],
@@ -5474,6 +5482,7 @@
           "zone": "Serpentshrine Cavern",
           "token": "Helm of the Vanquished Hero",
           "boss": "Lady Vashj",
+          "tokenId": 30244,
           "origin": "two-hop"
         }
       ],
@@ -5523,6 +5532,7 @@
           "zone": "Karazhan",
           "token": "Helm of the Fallen Hero",
           "boss": "Prince Malchezaar",
+          "tokenId": 29759,
           "origin": "two-hop"
         }
       ],
@@ -5867,6 +5877,7 @@
           "zone": "Black Temple",
           "token": "Leggings of the Forgotten Vanquisher",
           "boss": "The Illidari Council",
+          "tokenId": 31099,
           "origin": "two-hop"
         }
       ],
@@ -5895,6 +5906,7 @@
           "zone": "Serpentshrine Cavern",
           "token": "Leggings of the Vanquished Hero",
           "boss": "Fathom-Lord Karathress",
+          "tokenId": 30247,
           "origin": "two-hop"
         }
       ],
@@ -5960,6 +5972,7 @@
           "zone": "Gruul's Lair",
           "token": "Leggings of the Fallen Hero",
           "boss": "Gruul the Dragonkiller",
+          "tokenId": 29765,
           "origin": "two-hop"
         }
       ],
@@ -8268,6 +8281,7 @@
           "zone": "Black Temple",
           "token": "Pauldrons of the Forgotten Vanquisher",
           "boss": "Mother Shahraz",
+          "tokenId": 31102,
           "origin": "two-hop"
         }
       ],
@@ -8287,6 +8301,7 @@
           "zone": "Tempest Keep",
           "token": "Pauldrons of the Vanquished Hero",
           "boss": "Void Reaver",
+          "tokenId": 30250,
           "origin": "two-hop"
         }
       ],
@@ -8395,6 +8410,7 @@
           "zone": "Gruul's Lair",
           "token": "Pauldrons of the Fallen Hero",
           "boss": "High King Maulgar",
+          "tokenId": 29762,
           "origin": "two-hop"
         }
       ],
@@ -9805,6 +9821,7 @@
           "zone": "Sunwell Plateau",
           "token": "Belt of the Forgotten Vanquisher",
           "boss": "Brutallus",
+          "tokenId": 34855,
           "origin": "two-hop"
         }
       ],
@@ -13149,6 +13166,7 @@
           "zone": "Sunwell Plateau",
           "token": "Bracers of the Forgotten Vanquisher",
           "boss": "Kalecgos",
+          "tokenId": 34852,
           "origin": "two-hop"
         }
       ],

@@ -778,6 +778,7 @@
           "zone": "Tempest Keep",
           "token": "Chestguard of the Vanquished Hero",
           "boss": "Kael'thas Sunstrider",
+          "tokenId": 30238,
           "origin": "two-hop"
         }
       ],
@@ -863,6 +864,7 @@
           "zone": "Magtheridon's Lair",
           "token": "Chestguard of the Fallen Hero",
           "boss": "Magtheridon",
+          "tokenId": 29755,
           "origin": "two-hop"
         }
       ],
@@ -3115,6 +3117,7 @@
           "zone": "Serpentshrine Cavern",
           "token": "Gloves of the Vanquished Hero",
           "boss": "Leotheras the Blind",
+          "tokenId": 30241,
           "origin": "two-hop"
         }
       ],
@@ -3152,6 +3155,7 @@
           "zone": "Karazhan",
           "token": "Gloves of the Fallen Hero",
           "boss": "The Curator",
+          "tokenId": 29756,
           "origin": "two-hop"
         }
       ],
@@ -3377,6 +3381,7 @@
           "zone": "Serpentshrine Cavern",
           "token": "Helm of the Vanquished Hero",
           "boss": "Lady Vashj",
+          "tokenId": 30244,
           "origin": "two-hop"
         }
       ],
@@ -3473,6 +3478,7 @@
           "zone": "Karazhan",
           "token": "Helm of the Fallen Hero",
           "boss": "Prince Malchezaar",
+          "tokenId": 29759,
           "origin": "two-hop"
         }
       ],
@@ -3729,6 +3735,7 @@
           "zone": "Serpentshrine Cavern",
           "token": "Leggings of the Vanquished Hero",
           "boss": "Fathom-Lord Karathress",
+          "tokenId": 30247,
           "origin": "two-hop"
         }
       ],
@@ -3757,6 +3764,7 @@
           "zone": "Gruul's Lair",
           "token": "Leggings of the Fallen Hero",
           "boss": "Gruul the Dragonkiller",
+          "tokenId": 29765,
           "origin": "two-hop"
         }
       ],
@@ -5190,6 +5198,7 @@
           "zone": "Tempest Keep",
           "token": "Pauldrons of the Vanquished Hero",
           "boss": "Void Reaver",
+          "tokenId": 30250,
           "origin": "two-hop"
         }
       ],
@@ -5209,6 +5218,7 @@
           "zone": "Gruul's Lair",
           "token": "Pauldrons of the Fallen Hero",
           "boss": "High King Maulgar",
+          "tokenId": 29762,
           "origin": "two-hop"
         }
       ],

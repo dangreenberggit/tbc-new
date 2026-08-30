@@ -232,3 +232,42 @@ Pre-merge review found two defects in the same note:
 - The note cited "Bulwark of Azzinoth (id 28593)". 28593 is Eternium Greathelm,
   a plate helm that is legitimately **in** ret's pool; Bulwark of Azzinoth is
   32375. The example named an included item as an excluded one.
+
+## Refresh, 2026-08-29 (ticket 126 token ids; ticket 211 gate fixed)
+
+44 of the 63 copies drifted and were refreshed with
+`python scripts/sync_fork_universes.py --write`. Two causes, both deliberate,
+neither a membership change (`0 local-only; 0 fork-only; 0 shared entries
+differ in content` on every file — the delta is a new field, not a new row):
+
+- **`tokenId` added to tier pieces' `token` sources (ticket 126).**
+  `assemble_universe.py` now threads the class-token item id from
+  `data/two-hop/<spec>-tokens.json` onto each tier piece's `token` source, so
+  both the report export and this tab can emit the id that actually drops in
+  the raid (the token) rather than the gear id. 635 `tokenId` fields added
+  across the 63 copies; nothing else in the payload moved. Verify the content
+  delta is tokenId-only:
+
+  ```bash
+  git -C vendor/tbc-new-fork diff --ignore-cr-at-eol -- \
+    ui/core/components/individual_sim_ui/upgrades/data/ \
+    | grep -E '^[+-]' | grep -vE '^(\+\+\+|---)' | grep -v '"tokenId":'
+  # (empty output)
+  ```
+
+- **`feral-p3.universe.json` also normalised CRLF -> LF.** Its committed source
+  `data/universes/feral-p3.json` had been committed with CRLF line endings
+  (every sibling universe is LF, and `.gitattributes` pins `eol=lf`); the regen
+  rewrote it LF, matching the others. Byte-only; the parsed content delta is
+  still tokenId-only.
+
+The 43 formatting-only drifts `pnpm fork-universes:check` had been reporting
+red since before this branch (ticket 211's open gate) are fixed by the same
+`--write`: the check is green afterwards. Re-runnable:
+
+```bash
+pnpm fork-universes:check
+```
+
+No engine file changed — `upgrades/engine/PROVENANCE.md` and every ported
+`.ts` are untouched, so `pnpm engine-port-drift:check` stays green.
