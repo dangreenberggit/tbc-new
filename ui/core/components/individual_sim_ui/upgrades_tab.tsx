@@ -2088,9 +2088,10 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * How much of this row's figure is set bonus (ticket 313), shown only while
-	 * the set-potential toggle is on — off, the toggle is not contributing to
-	 * the ordering, so there is nothing to explain.
+	 * How much of this row's figure is set bonus (ticket 313). The text is
+	 * informational and renders in BOTH toggle states with identical wording
+	 * (owner revision 2): the set-potential toggle governs only whether
+	 * prospective bonuses affect the ranking/sort, not whether the text shows.
 	 *
 	 * The number shown is the raw `prospectiveBonusDps`, which is exactly what
 	 * the view adds to `deltaDps` when the toggle is on (`view.ts:163,169-172`).
@@ -2112,7 +2113,6 @@ export class UpgradesTab extends SimTab {
 	 *     swap advances the piece count below a threshold) with nothing to say.
 	 */
 	private setBonusLine(row: RankedItem, noiseFloorDps: number | undefined): Node | null {
-		if (!this.setPotentialControl.checked) return null;
 		const ctx = row.setContext;
 		if (!ctx) return null;
 
@@ -2123,7 +2123,7 @@ export class UpgradesTab extends SimTab {
 				<small className="upgrades-set-bonus upgrades-set-bonus-confounded">
 					{i18n.t('upgrades_tab.set_bonus.confounded', {
 						dps: (ctx.prospectiveBonusDps ?? 0).toFixed(1),
-						set: ctx.setName,
+						threshold: ctx.nextThreshold,
 						broken: broken.setName,
 						brokenThreshold: broken.threshold,
 					})}
@@ -2133,7 +2133,7 @@ export class UpgradesTab extends SimTab {
 
 		if (ctx.crossesThreshold) {
 			return (
-				<small className="upgrades-set-bonus">{i18n.t('upgrades_tab.set_bonus.crosses', { threshold: ctx.piecesAfterSwap, set: ctx.setName })}</small>
+				<small className="upgrades-set-bonus">{i18n.t('upgrades_tab.set_bonus.crosses', { threshold: ctx.piecesAfterSwap })}</small>
 			);
 		}
 
@@ -2156,9 +2156,9 @@ export class UpgradesTab extends SimTab {
 			return (
 				<small className="upgrades-set-bonus">
 					{i18n.t('upgrades_tab.set_bonus.prospective', {
+						worn: ctx.piecesWornBefore,
 						dps: ctx.prospectiveBonusDps.toFixed(1),
 						threshold: ctx.nextThreshold,
-						set: ctx.setName,
 					})}
 				</small>
 			);
@@ -2187,9 +2187,7 @@ export class UpgradesTab extends SimTab {
 	 * to `deltaDps`.
 	 *
 	 * Gating, so a disclosed figure never reads as a clean measured gain the row
-	 * did not earn:
-	 * - Only while the set-potential toggle is on (same reason as
-	 *   `setBonusLine`: off, set potential is not part of the ordering).
+	 * did not earn (the text itself renders in both toggle states, owner rev 2):
 	 * - Only packages ABOVE the threshold the row already shows
 	 *   (`ctx.nextThreshold`), so this never duplicates that line.
 	 * - Only packages whose measured `deltaDps` clears the same per-spec noise
@@ -2199,7 +2197,6 @@ export class UpgradesTab extends SimTab {
 	 *   and a confounded package is not a clean disclosure (ticket 90).
 	 */
 	private setPackageLine(row: RankedItem, noiseFloorDps: number | undefined): Node | null {
-		if (!this.setPotentialControl.checked) return null;
 		if (noiseFloorDps === undefined) return null;
 		const ctx = row.setContext;
 		if (!ctx || !ctx.packages || ctx.packages.length === 0) return null;
@@ -2216,10 +2213,9 @@ export class UpgradesTab extends SimTab {
 				{reachable.map(pkg => (
 					<small className="upgrades-set-package">
 						{i18n.t('upgrades_tab.set_bonus.package_disclosure', {
+							worn: ctx.piecesWornBefore,
 							dps: pkg.deltaDps.toFixed(1),
 							threshold: pkg.threshold,
-							set: ctx.setName,
-							pieces: pkg.piecesNeeded,
 						})}
 					</small>
 				))}

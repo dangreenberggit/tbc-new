@@ -191,15 +191,14 @@
 	color: var(--bs-warning-text-emphasis, var(--bs-warning));
 }
 
-// The reachable higher-threshold disclosure (ticket 336). It is not the row's
-// own number and must not read as one, so it sits below the set-bonus line in
-// the same muted grey but italicised, marking it as an aside rather than a
-// second measured figure on the row.
+// The reachable higher-threshold line (ticket 336) reads as the same kind of
+// progress line as the next-threshold one above it ("4pc bonus (0/4)" beside
+// "2pc bonus (0/2)"), so it shares that line's muted-grey styling — no italic,
+// which only made sense when this was framed as a separate aside.
 .upgrades-set-package {
 	display: block;
 	color: var(--bs-gray-500);
 	line-height: 1.2;
-	font-style: italic;
 }
 
 // Containment for the row's new home (ticket 312, F11). `.tab-panel-left` is

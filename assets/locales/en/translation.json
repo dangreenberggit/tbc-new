@@ -898,10 +898,10 @@
 			"flavour_gear": "Emitting the gear item id for every row."
 		},
 		"set_bonus": {
-			"prospective": "toward {{set}} {{threshold}}pc (+{{dps}})",
-			"crosses": "includes the {{threshold}}pc {{set}} bonus",
-			"confounded": "+{{dps}} set bonus ({{set}}) — not counted in ranking: breaks {{broken}} {{brokenThreshold}}pc",
-			"package_disclosure": "also opens {{set}} {{threshold}}pc (+{{dps}}, {{pieces}} pieces) — not in this row's number"
+			"prospective": "{{threshold}}pc bonus ({{worn}}/{{threshold}}) (+{{dps}})",
+			"crosses": "{{threshold}}pc bonus: activated",
+			"confounded": "{{threshold}}pc bonus (+{{dps}}) breaks {{broken}} {{brokenThreshold}}pc",
+			"package_disclosure": "{{threshold}}pc bonus ({{worn}}/{{threshold}}) (+{{dps}})"
 		},
 		"cutoff": {
 			"pct_arm": "cleared by %-arm",

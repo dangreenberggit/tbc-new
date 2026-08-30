@@ -8836,10 +8836,19 @@
 						},
 						"copied": {
 							"type": "string"
+						},
+						"flavour_toggle": {
+							"type": "string"
+						},
+						"flavour_tokens": {
+							"type": "string"
+						},
+						"flavour_gear": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "caveat", "count", "copy", "copied"]
+					"required": ["title", "caveat", "count", "copy", "copied", "flavour_toggle", "flavour_tokens", "flavour_gear"]
 				},
 				"set_bonus": {
 					"type": "object",
@@ -8852,10 +8861,26 @@
 						},
 						"confounded": {
 							"type": "string"
+						},
+						"package_disclosure": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["prospective", "crosses", "confounded"]
+					"required": ["prospective", "crosses", "confounded", "package_disclosure"]
+				},
+				"cutoff": {
+					"type": "object",
+					"properties": {
+						"pct_arm": {
+							"type": "string"
+						},
+						"pct_arm_title": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["pct_arm", "pct_arm_title"]
 				},
 				"prune": {
 					"type": "object",
@@ -8987,7 +9012,7 @@
 				}
 			},
 			"additionalProperties": false,
-			"required": ["title", "subtabs", "run", "stop", "settings_title", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "export", "set_bonus", "prune", "progress", "results", "assumptions"]
+			"required": ["title", "subtabs", "run", "stop", "settings_title", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "export", "set_bonus", "cutoff", "prune", "progress", "results", "assumptions"]
 		}
 	},
 	"additionalProperties": false,
