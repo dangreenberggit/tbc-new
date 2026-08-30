@@ -31,7 +31,7 @@ import { MemoryStore } from './upgrades/engine/seams/store';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
 import { applyView, raidFilterGroups, SOURCE_LABELS, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
-import { setBonusNoiseFloorDps } from './upgrades/engine/cutoff';
+import { cutoffAdmittingArm, setBonusNoiseFloorDps, type Cutoff } from './upgrades/engine/cutoff';
 
 /**
  * Specs this tab can rank, per plan §2.5: "The tab renders only for specs
@@ -1787,7 +1787,10 @@ export class UpgradesTab extends SimTab {
 				{this.sortableResultsTableHead()}
 				<tbody>
 					{sortedShortlist.length > 0 ? (
-						sortedShortlist.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }, noiseFloorDps))
+						// The frozen cutoff is threaded only to the shortlist: below-cutoff
+						// rows were admitted by no arm and the mid-run table has no cutoff
+						// verdict yet, so only these rows can carry the %-arm marker (254).
+						sortedShortlist.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }, noiseFloorDps, this.state.kind === 'done' ? this.state.ranking.cutoff : undefined))
 					) : (
 						<tr>
 							<td colSpan={5} className="upgrades-text-secondary">
@@ -1941,10 +1944,24 @@ export class UpgradesTab extends SimTab {
 	 * frozen cutoff, or `undefined` on the mid-run skeleton path (no ranking
 	 * exists yet); it is threaded straight to `setBonusLine`, which skips the
 	 * prospective-bonus line when the floor is absent (tickets 331, 332).
+	 *
+	 * `cutoff` is the same done ranking's frozen cutoff (or `undefined` mid-run),
+	 * threaded so a row admitted above the fold by the percentage arm alone can
+	 * say so (ticket 254): the cutoff is an OR (abs OR pct), and a shortlisted
+	 * row whose absolute DPS is below the abs threshold reads as if it broke the
+	 * absolute rule unless the %-arm is named. The marker's content is the
+	 * correctness fix; its visual polish is a follow-up (styling wave).
 	 */
-	private resultRow(row: RankedItem, display: { rankText: string }, noiseFloorDps: number | undefined): Node {
+	private resultRow(row: RankedItem, display: { rankText: string }, noiseFloorDps: number | undefined, cutoff?: Cutoff): Node {
 		const deltaLabel = formatDelta(row.deltaDps);
 		const setLine = this.setBonusLine(row, noiseFloorDps);
+		const cutoffArmLine = cutoff && cutoffAdmittingArm(row.deltaDps, row.deltaPct, cutoff) === 'pct'
+			? (
+				<small className="upgrades-cutoff-arm" title={i18n.t('upgrades_tab.cutoff.pct_arm_title', { pct: formatDelta(cutoff.pct), abs: cutoff.absDps })}>
+					{i18n.t('upgrades_tab.cutoff.pct_arm')}
+				</small>
+			)
+			: null;
 		return (
 			<tr className={row.owned ? 'upgrades-row-owned' : ''}>
 				<td>{display.rankText}</td>
@@ -1953,6 +1970,7 @@ export class UpgradesTab extends SimTab {
 				<td>
 					{deltaLabel}
 					{setLine}
+					{cutoffArmLine}
 				</td>
 				<td>{sourceCell(row, this.simUI.sim)}</td>
 			</tr>

@@ -899,6 +899,10 @@
 			"crosses": "includes the {{threshold}}pc {{set}} bonus",
 			"confounded": "+{{dps}} set bonus ({{set}}) — not counted in ranking: breaks {{broken}} {{brokenThreshold}}pc"
 		},
+		"cutoff": {
+			"pct_arm": "cleared by %-arm",
+			"pct_arm_title": "Above the cutoff via the percentage arm ({{pct}}%): its absolute DPS is below the {{abs}} DPS threshold."
+		},
 		"prune": {
 			"only_bis": "Sim only {{phase}} BiS-list items"
 		},

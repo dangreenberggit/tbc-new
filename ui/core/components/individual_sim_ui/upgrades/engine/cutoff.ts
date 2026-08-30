@@ -117,3 +117,26 @@ export function meetsCutoff(
 ): boolean {
   return deltaDps >= cutoff.absDps || deltaPct >= cutoff.pct;
 }
+
+/**
+ * Which arm of the OR cutoff admitted a row (ticket 254). `meetsCutoff` returns
+ * only the boolean, so a boundary row that clears the percentage arm while its
+ * absolute DPS sits below `absDps` reads, in the report, as if it broke the
+ * absolute rule — an SME flagged exactly that. This names the arm so the report
+ * can annotate such a row instead of leaving the reader to infer an
+ * inconsistency. `"none"` iff `!meetsCutoff` on the same inputs.
+ */
+export type CutoffArm = "abs" | "pct" | "both" | "none";
+
+export function cutoffAdmittingArm(
+  deltaDps: number,
+  deltaPct: number,
+  cutoff: Cutoff
+): CutoffArm {
+  const abs = deltaDps >= cutoff.absDps;
+  const pct = deltaPct >= cutoff.pct;
+  if (abs && pct) return "both";
+  if (abs) return "abs";
+  if (pct) return "pct";
+  return "none";
+}
