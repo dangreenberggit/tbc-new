@@ -423,6 +423,13 @@ export class UpgradesTab extends SimTab {
 	protected exportBoxElem!: HTMLElement;
 	protected exportAreaElem!: HTMLTextAreaElement;
 	protected exportCountElem!: HTMLElement;
+	protected exportFlavourCaptionElem!: HTMLElement;
+	// Which id each tier row emits (ticket 126). ThatsMyBis tracks what actually
+	// drops in the raid — a class token, not the tier piece — so the token
+	// flavour is the default and the reason this export exists. The gear-id
+	// flavour is kept for the wowsims-shaped importer, and the caption names
+	// whichever is active. Off = gear ids, on = token ids.
+	private exportTokenFlavour = true;
 
 	// Sub-tab nav + pane container refs, built once; panes are re-rendered by
 	// content, not recreated, so Bootstrap's Tab instances (and their active
@@ -580,6 +587,8 @@ export class UpgradesTab extends SimTab {
 		const exportAreaRef = ref<HTMLTextAreaElement>();
 		const exportCountRef = ref<HTMLSpanElement>();
 		const exportCopyHostRef = ref<HTMLSpanElement>();
+		const exportFlavourToggleRef = ref<HTMLInputElement>();
+		const exportFlavourCaptionRef = ref<HTMLParagraphElement>();
 
 		this.settingsCardElem.appendChild(
 			<div className="upgrades-run-controls">
@@ -725,6 +734,19 @@ export class UpgradesTab extends SimTab {
 				<div ref={exportBoxRef} className="upgrades-export content-block d-none">
 					<span className="content-block-header">{i18n.t('upgrades_tab.export.title')}</span>
 					<p className="upgrades-export-caveat">{i18n.t('upgrades_tab.export.caveat')}</p>
+					{/*
+					 * Which id each tier row emits (ticket 126). ThatsMyBis tracks
+					 * what actually drops in the raid — the class token, not the
+					 * tier piece — so this defaults on and the caption below names
+					 * the active flavour. Off falls back to the wowsims-shaped gear
+					 * ids. A plain checkbox rather than a ViewToggle: it changes the
+					 * export FORMAT, not the ranking or which rows show.
+					 */}
+					<label className="upgrades-export-flavour">
+						<input ref={exportFlavourToggleRef} type="checkbox" checked={this.exportTokenFlavour} />
+						{i18n.t('upgrades_tab.export.flavour_toggle')}
+					</label>
+					<p ref={exportFlavourCaptionRef} className="upgrades-export-flavour-caption" />
 					<textarea ref={exportAreaRef} className="upgrades-export-area form-control" rows={6} />
 					<div className="upgrades-export-actions">
 						<span ref={exportCountRef} className="upgrades-export-count" />
@@ -782,6 +804,16 @@ export class UpgradesTab extends SimTab {
 		// the JSX `attributes` map does not carry `readonly`.
 		this.exportAreaElem.readOnly = true;
 		this.exportCountElem = exportCountRef.value!;
+		this.exportFlavourCaptionElem = exportFlavourCaptionRef.value!;
+
+		// The token/gear-id flavour toggle (ticket 126). A change re-renders,
+		// which recomputes the payload through `updateExport` with the new
+		// flavour and repaints the caption — the same render-on-change pattern
+		// the view toggles use, but this one touches only the export format.
+		exportFlavourToggleRef.value!.addEventListener('change', (ev) => {
+			this.exportTokenFlavour = (ev.currentTarget as HTMLInputElement).checked;
+			this.render();
+		});
 
 		// The site's own copy control (ticket 328): filled `btn-secondary`, the
 		// `fas fa-copy` icon, and the shared copied-state feedback, in place of
@@ -2012,13 +2044,47 @@ export class UpgradesTab extends SimTab {
 		const items: { id: number }[] = [];
 		for (const row of rows) {
 			if (row.owned === true) continue;
-			if (seen.has(row.itemId)) continue;
-			seen.add(row.itemId);
-			items.push({ id: row.itemId });
+			// Choose the id for this flavour first, then dedupe on it: two rows
+			// that resolve to the same emitted id are one line in the payload.
+			const id = this.exportTokenFlavour ? this.exportIdForRow(row) : row.itemId;
+			if (seen.has(id)) continue;
+			seen.add(id);
+			items.push({ id });
 		}
 		this.exportAreaElem.value = JSON.stringify({ items }, null, 2);
 		this.exportCountElem.textContent = i18n.t('upgrades_tab.export.count', { count: items.length });
+		this.exportFlavourCaptionElem.textContent = i18n.t(
+			this.exportTokenFlavour
+				? 'upgrades_tab.export.flavour_tokens'
+				: 'upgrades_tab.export.flavour_gear',
+		);
 		setControlVisible(this.exportBoxElem, items.length > 0);
+	}
+
+	/**
+	 * The id this row emits under the token flavour (ticket 126): the class
+	 * token that actually drops in the raid for a tier piece, else the gear id.
+	 *
+	 * Local re-implementation of `tokenIdForExport`
+	 * (`packages/core/src/rank-report-rules.ts`) — imports across the port
+	 * boundary are impossible (314's verified finding), so the logic is
+	 * mirrored, not shared. Reads every source, not just the primary: a tier
+	 * row can carry a drop source ahead of its token source, and the token id
+	 * is the one wanted wherever it sits. `tokenId` rides on the `token`
+	 * source, threaded in by `assemble_universe.py` and carried through the
+	 * bundled universe → engine → `ViewRow.sources` verbatim. A Sunmote token
+	 * has no single tradeable id and falls through to the gear id, exactly as
+	 * the core function does.
+	 */
+	private exportIdForRow(row: ViewRow): number {
+		const sources = row.sources ?? [row.source];
+		for (const s of sources) {
+			if (s.kind === 'token') {
+				const tokenId = (s as { tokenId?: number }).tokenId;
+				if (typeof tokenId === 'number') return tokenId;
+			}
+		}
+		return row.itemId;
 	}
 
 	/**

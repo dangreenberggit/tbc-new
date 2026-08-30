@@ -892,7 +892,10 @@
 			"caveat": "Copy these raid-drop upgrades as JSON to import into a loot-priority tool.",
 			"count": "{{count}} items",
 			"copy": "Copy JSON",
-			"copied": "Copied"
+			"copied": "Copied",
+			"flavour_toggle": "Use raid-drop ids (tier tokens)",
+			"flavour_tokens": "Emitting the token id for tier pieces — what drops in the raid.",
+			"flavour_gear": "Emitting the gear item id for every row."
 		},
 		"set_bonus": {
 			"prospective": "toward {{set}} {{threshold}}pc (+{{dps}})",
