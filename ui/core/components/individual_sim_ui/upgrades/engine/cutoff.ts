@@ -35,12 +35,31 @@ export const CUTOFF: Cutoff = { absDps: 3.4, pct: 0.15 };
  * skeleton row has no ranking and shows no prospective line at all.
  *
  * Derivation: `absDps` is already the per-spec 2×SE bar (`CUTOFF.absDps` = 3.4
- * ret from 2×1.678 rounded up, `CUTOFF_FERAL.absDps` = 3.6 feral from 2×1.774),
- * and a prospective set bonus folds two measured deltas, so its noise combines
- * ~sqrt(2) larger. `√2 × absDps` is that combined 2×SE bar per spec: ≈4.81 ret,
- * ≈5.09 feral. The nine untested specs inherit ret's floor via `CUTOFF_BY_SPEC`
+ * ret from 2×1.678 rounded up, `CUTOFF_FERAL.absDps` = 3.6 feral from 2×1.774).
+ * The `√2` factor is the **2pc** bar specifically: a 2pc prospective bonus folds
+ * four sims (base + package + two singles), so its combined SE `sqrt(Σ se_i²)`
+ * (see `combineSe`, set-value.ts) is ≈ 2×1.678 ≈ √2 × the single-delta SE. `√2 ×
+ * absDps` is that combined 2×SE bar per spec: ≈4.81 ret, ≈5.09 feral.
+ *
+ * This flat `√2` bar is applied to **every** prospective bonus, 2pc and 4pc
+ * alike, and that is deliberate — it is a conservative-low ranking bar, not a
+ * per-piece-count-tuned one. A 4pc bonus folds six sims (base + package + four
+ * singles, one sample per added piece; see rank.ts where `prospectiveBonusDps`
+ * is set from the threshold's measured bonus), so its own noise is ≈ √6×1.678 —
+ * a √3-vs-single ratio, ~1.22× this floor (≈5.9 ret). Holding 4pc bonuses to the
+ * lower 2pc bar therefore *under*-filters 4pc noise in a narrow window (≈4.8–5.9
+ * ret). This is the intended direction for a bar whose job is to admit rather
+ * than hide: raising it would filter more real bonuses out, and the cutoff runs
+ * before replication precisely to be coarse-and-inclusive (ADR-0021). Measured:
+ * across every committed fixture carrying `prospectiveBonusDps`, no 4pc bonus
+ * (and no bonus of any threshold) lands in the (4.81, 5.89) under-filtered band —
+ * distinct 4pc values are ≤ −3.88 or ≥ 17.14 — so the flat floor changes no
+ * observed row's tier today (ticket 335, re-runnable via the band scan in that
+ * ticket over the six `.scratch/**` fixtures with `prospectiveBonusDps`).
+ *
+ * The nine untested specs inherit ret's floor via `CUTOFF_BY_SPEC`
  * (see `cutoffForSpec`), so the untested-spec debt stays annotated in one place.
- * See tickets 331 and 332, and
+ * See tickets 331, 332, and 335, and
  * .scratch/stage-gate/ticket-332-per-spec-ranking-floor/plan.md.
  */
 export function setBonusNoiseFloorDps(cutoff: Cutoff): number {

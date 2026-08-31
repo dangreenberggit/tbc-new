@@ -129,7 +129,7 @@ clone/repo-configuration decision outside a single slice's scope.
 | `cap-profile.ts` | `cap-profile.ts` | none | `a34bf7ddeba3a64b8622ae144b1f3e66fb94a0e22774cd78d58392637e7f6c1a` |
 | `slots.ts` | `slots.ts` (SIM_ORDER only) + `slots-sim-order.generated.ts` | adapted — hand-written literal, WCL_ORDER/mapWclGearToSim dropped | `54d51dcdf27b6a25cce19c8908ce60fdcf5b163c56c313d75ebb5f74b2078c34` |
 | `stats.ts` | `stats.ts` | adapted — `Stat` from fork's own generated proto | `2cbb61e565dc1cfe66c18ae590e7683c97a0ab41e22c6fec89ad053662e499af` |
-| `cutoff.ts` | `cutoff.ts` | none | `bcb7124fad9cd2ea428bbee930d04ee3d18216c6bf6307cd6251b91f7a20599b` |
+| `cutoff.ts` | `cutoff.ts` | none | `6c991b44eea87554c004ab755fe6741d1b2349375624dff884090a6f8bf179dc` |
 | `se.ts` | `se.ts` | none | `2c03b1a318c23600d55568a4acf00a0698802135ece833e0c9d5ddb855bc9540` |
 | `kael-temp.ts` | `kael-temp.ts` | none | `945180888a3d8fc18f361f2efa1d6952a86da52c3f18169c3facd5916843fe4e` |
 | `items.ts` | `items.ts` | adapted — Database-backed, not JSON-backed (plan §2.1) | `bd6788a87a54afcce7b8c77aede395e39399b8a4d86def0e8e0bfc69f8ecedd4` |
