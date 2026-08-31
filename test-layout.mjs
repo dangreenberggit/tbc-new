@@ -334,6 +334,7 @@ function probeExpression(width) {
 			hostGridColumnEnd: hostStyle.gridColumnEnd,
 			hostWidth: host.getBoundingClientRect().width,
 			leftGridTemplateRows: leftStyle ? leftStyle.gridTemplateRows : null,
+			leftGridTemplateColumns: leftStyle ? leftStyle.gridTemplateColumns : null,
 			leftDisplay: leftStyle ? leftStyle.display : null,
 			tabsWidth: tabs ? tabs.getBoundingClientRect().width : null,
 		};
@@ -441,12 +442,27 @@ function assertAll(width, m) {
 		// Width parity is the observable consequence: a full-span band is as wide
 		// as the sub-tab area beneath it. Allow 1px rounding.
 		const widthMatch = m.tabsWidth != null && Math.abs(m.hostWidth - m.tabsWidth) <= 1;
-		const ok = spans || widthMatch;
+		// Ticket 326: the `|| widthMatch` fallback is an escape hatch when the
+		// panel resolves to ONE column -- then the host and the sub-tabs are both
+		// full-width whether or not `grid-column: 1 / -1` is present, so a dropped
+		// span would still pass `widthMatch` and the gate would silently stop
+		// testing the span. So the span is now the primary assertion, and
+		// `widthMatch` is admitted as a proxy ONLY when the panel genuinely has
+		// >=2 tracks -- the two-column layout the span exists to survive, where a
+		// dropped span really would narrow the host and break parity. `auto-fit
+		// minmax(220px,1fr)` collapses to one track when the panel is too narrow;
+		// counting the resolved `grid-template-columns` tracks is the honest read.
+		const trackCount = (m.leftGridTemplateColumns || '')
+			.trim()
+			.split(/\s+/)
+			.filter(t => t && t !== 'none').length;
+		const twoPlusColumns = m.leftDisplay === 'grid' && trackCount >= 2;
+		const ok = spans || (twoPlusColumns && widthMatch);
 		results.push({
 			ok,
 			msg: ok
-				? `[${width}] view-controls-host spans full width (grid-column ${m.hostGridColumnStart}/${m.hostGridColumnEnd}, width ${m.hostWidth.toFixed(1)} == tabs ${m.tabsWidth?.toFixed(1)})`
-				: `[${width}] view-controls-host did NOT span: grid-column ${m.hostGridColumnStart}/${m.hostGridColumnEnd}, width ${m.hostWidth.toFixed(1)} vs tabs ${m.tabsWidth?.toFixed(1)} -- F11 containment dropped, filters sit beside the sub-tabs`,
+				? `[${width}] view-controls-host spans full width (grid-column ${m.hostGridColumnStart}/${m.hostGridColumnEnd}${spans ? '' : `, via width parity on ${trackCount} tracks`}, width ${m.hostWidth.toFixed(1)} == tabs ${m.tabsWidth?.toFixed(1)})`
+				: `[${width}] view-controls-host did NOT span: grid-column ${m.hostGridColumnStart}/${m.hostGridColumnEnd}, width ${m.hostWidth.toFixed(1)} vs tabs ${m.tabsWidth?.toFixed(1)}, ${trackCount} column track(s) -- F11 containment dropped, filters sit beside the sub-tabs (width parity is not accepted as a proxy at <2 tracks -- ticket 326)`,
 		});
 	}
 
