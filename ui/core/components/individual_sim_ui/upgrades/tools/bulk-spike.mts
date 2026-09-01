@@ -1,67 +1,83 @@
 /**
- * Bulk-sim spike (plan-web Steps 2 and 3).
+ * Bulk-sim spike (plan-web Steps 2 and 3, as replaced by amendment A1/A1.1).
  *
- * Answers two questions the plan must measure rather than model:
+ * Answers what only a real run can answer: inside the no-culling regime, does
+ * every candidate come back with a row carrying `dpsMetrics`? The
+ * stage-selection half of the original Step 2 is already settled exactly by
+ * executing upstream's own pure functions offline (flip at n=40 @3,000 and
+ * n=33 @5,000), so the arms here probe row completeness at n = 19, 25, 32 and
+ * the first arm past the derived boundary, n = 33.
  *
- *   Step 2 — where the TS cull boundary actually sits, by running synthetic
- *            requests at n = 19, 20, 25, 30 candidates x highStageIterations
- *            3,000 and 5,000 and recording, per arm, the stages run, the
- *            survivors, and whether every candidate came back with a row.
- *   Step 3 — whether `runConcurrentBulkSim` can be called directly from our
- *            own adapter with our own `WorkerPool`, at pool sizes 4 and 1.
+ * WHY THIS RUNS IN THE BROWSER, NOT NODE. `runConcurrentBulkSim` reaches a sim
+ * only through `WorkerPool`, whose `SimWorker` constructor calls
+ * `new window.Worker('/tbc/sim_worker.js')` (`ui/core/worker_pool.ts:32,309`),
+ * and that worker boots by `WebAssembly.instantiateStreaming(fetch('lib.wasm'))`
+ * (`ui/worker/sim_worker.ts:123`). Measured under the Node loader recipe the
+ * plan originally assumed: the pool fails to construct with "window.Worker is
+ * not a constructor". Growing `headless.mts`'s shims to cover a WASM sim worker
+ * is what that file's own doc comment warns against.
  *
- * PRECONDITION — read this before trying to run the file. `runConcurrentBulkSim`
- * reaches a real WASM sim only through `WorkerPool`, whose `SimWorker`
- * constructor calls `new window.Worker('/tbc/sim_worker.js')`
- * (`ui/core/worker_pool.ts:32,309`). That is a browser Web Worker loading a
- * site-absolute URL, and the worker itself boots by
- * `WebAssembly.instantiateStreaming(fetch('lib.wasm'))`
- * (`ui/worker/sim_worker.ts:123`). The headless harness in `headless.mts`
- * shims `window` as an inert object with no `Worker`, deliberately: its
- * doc comment states that a shim growing beyond an inert placeholder is the
- * signal that the thing being borrowed is UI behaviour rather than a pure
- * decision. A WASM sim worker is exactly that.
- *
- * So this spike does NOT run under `node --import <tsx-loader>`, which is what
- * plan-web C11 assumed. It is written to run in the browser, against the built
- * site, where `window.Worker` and `/tbc/sim_worker.js` are both real. See the
- * executor ledger's Step 2/3 rows for the flag this raised.
+ * WHY PORT 4180 AND NOT VITE. `vite.config.mts:20-25` rewrites
+ * `/tbc/sim_worker.js` to `/tbc/local_worker.js`, which is the HTTP worker
+ * (zero `WebAssembly` references; calls `.ready(false)`). On the vite dev server
+ * `isWasm()` is therefore false and the pool never grows past one worker — it
+ * would measure the HTTP transport while claiming to measure WASM. Serve the
+ * built `dist/` instead (the `wowsims-fork-prod` launch entry, port 4180),
+ * where the real `sim_worker.js` (`.ready(true)`) is served. `runSpike` asserts
+ * `isWasm()` before any arm and refuses to run if it is false.
  *
  * Not part of the site build; not under `engine/`, so no PROVENANCE row
  * (`tools/README.md:11`).
  */
 
 import { BulkGearCandidate, BulkSimRequest, RaidSimRequest as RaidSimRequestProto } from '../../../../proto/api.js';
-import { EquipmentSpec } from '../../../../proto/common.js';
+import { EquipmentSpec, ItemSpec } from '../../../../proto/common.js';
 import { RequestTypes, SimSignalManager } from '../../../../sim_signal_manager.js';
-import { WorkerPool } from '../../../../worker_pool.js';
+import { SimRequest } from '../../../../../worker/types.js';
+import { generateRequestId, WorkerPool } from '../../../../worker_pool.js';
 import { runConcurrentBulkSim } from '../../../../wasm/bulk_sim/index.js';
 
 export type SpikeArm = {
+	label: string;
 	candidateCount: number;
 	highStageIterations: number;
 	poolSize: number;
 };
 
+/** A1-2: every emitted line carries the transport provenance on its face. */
+export type SpikeProvenance = {
+	isWasm: boolean;
+	numWorkers: number;
+	workerUrl: string;
+};
+
 export type SpikeArmResult = {
 	arm: SpikeArm;
-	/** One entry per stage the tournament actually ran. */
+	provenance: SpikeProvenance;
 	stages: { stage: number; iterations: number; survivors: number; durationSeconds: number }[];
+	stageCount: number;
 	rowsReturned: number;
-	/** R2: a row present but lacking `dpsMetrics` is dropped by `statistics.ts:107`. */
+	/** R2: `statistics.ts:107` drops a result lacking `dpsMetrics` before slicing. */
 	rowsWithDpsMetrics: number;
 	allCandidatesReturned: boolean;
+	/** R4: `baseline` is its own field (`index.ts:165`), never an n+1th row. */
 	baselinePopulated: boolean;
+	baselineDps: number | null;
 	/** C15: at least one baseline probe per chunk; adaptive passes can add more. */
-	baselineSegments: number;
+	baselineProgressEvents: number;
+	candidateIndices: number[];
+	elapsedSeconds: number;
 	error?: string;
 };
 
+/** The worker URL `WorkerPool` actually resolves (`worker_pool.ts:32`). */
+export const RESOLVED_WORKER_URL = '/tbc/sim_worker.js';
+
 /**
- * Builds the spike's request. `topResults` is set to the candidate count per
- * L-new-1 — the default is 5 (`wasm/bulk_sim/constants.ts:1`) and truncates the
- * response independently of culling, so without this the row-count measurement
- * would fail for a reason that has nothing to do with the cull boundary.
+ * `topResults` is set to the candidate count per L-new-1: the default is 5
+ * (`wasm/bulk_sim/constants.ts:1`) and truncates the response independently of
+ * culling, so leaving it unset would make a row-count measurement fail for a
+ * reason that has nothing to do with the cull boundary.
  */
 export function buildSpikeRequest(
 	baseRequestJson: Readonly<Record<string, unknown>>,
@@ -75,12 +91,28 @@ export function buildSpikeRequest(
 	// only the static types disagree. `wasm_sim_runner.ts:112` never hits this
 	// because it passes a fresh object literal, so the cast is new at this
 	// boundary — Step 6's builder inherits it and should carry the same note.
-	const baseRequest = RaidSimRequestProto.fromJson(baseRequestJson as Record<string, never>, { ignoreUnknownFields: true });
+	// `compose()` deliberately strips `simOptions` (`engine/compose.ts:32`) —
+	// the engine's own runner supplies iterations and seed per call. But
+	// `validateBulkSimRequest` rejects a request without it (`index.ts:49`), and
+	// the tournament reads `baseRequest.simOptions.iterations` for its baseline
+	// probe (`index.ts:91,157`). So the builder must put it back. Step 6's
+	// `buildBulkSimRequest` inherits this obligation.
+	const withSimOptions = {
+		...baseRequestJson,
+		simOptions: { iterations: highStageIterations, randomSeed: '11', debugFirstIteration: false },
+	};
+	const baseRequest = RaidSimRequestProto.fromJson(withSimOptions as unknown as Record<string, never>, { ignoreUnknownFields: true });
 	return BulkSimRequest.create({
 		baseRequest,
 		candidates: candidateGear.map((gear, index) => BulkGearCandidate.create({ index, gear })),
 		topResults: candidateGear.length,
 		highStageIterations,
+		// Every per-candidate sim derives its worker task id from this
+		// (`wasm/bulk_sim/batch.ts:67`: `${request.requestId}-${index}-${offset}`),
+		// and `SimWorker.doApiCall` throws `ApiCall with empty id!` on a falsy id
+		// (`worker_pool.ts:407`). Measured: without this every arm fails instantly.
+		// Step 6's `buildBulkSimRequest` inherits this obligation.
+		requestId: generateRequestId(SimRequest.bulkSimAsync),
 	});
 }
 
@@ -88,66 +120,156 @@ export async function runSpikeArm(
 	arm: SpikeArm,
 	baseRequestJson: Readonly<Record<string, unknown>>,
 	candidateGear: readonly EquipmentSpec[],
+	pool: WorkerPool,
 ): Promise<SpikeArmResult> {
 	const request = buildSpikeRequest(baseRequestJson, candidateGear.slice(0, arm.candidateCount), arm.highStageIterations);
-	const pool = new WorkerPool(arm.poolSize);
 	const signalManager = new SimSignalManager();
 	const signals = signalManager.registerRunning(RequestTypes.BulkSim);
-	let baselineSegments = 0;
+	const provenance: SpikeProvenance = {
+		isWasm: await pool.isWasm(),
+		numWorkers: pool.getNumWorkers(),
+		workerUrl: RESOLVED_WORKER_URL,
+	};
+	let baselineProgressEvents = 0;
+	const startedAt = performance.now();
 	try {
 		const result = await runConcurrentBulkSim(
 			request,
 			pool,
 			progress => {
-				if (progress.finalBulkSimResult?.baseline) baselineSegments += 1;
+				if (progress.finalBulkSimResult?.baseline) baselineProgressEvents += 1;
 			},
 			signals,
 		);
+		const elapsedSeconds = (performance.now() - startedAt) / 1000;
 		if (result.error) {
 			return {
 				arm,
+				provenance,
 				stages: [],
+				stageCount: 0,
 				rowsReturned: 0,
 				rowsWithDpsMetrics: 0,
 				allCandidatesReturned: false,
 				baselinePopulated: false,
-				baselineSegments,
-				error: result.error.message,
+				baselineDps: null,
+				baselineProgressEvents,
+				candidateIndices: [],
+				elapsedSeconds,
+				error: result.error.message || `error type ${result.error.type}`,
 			};
 		}
 		const rowsWithDpsMetrics = result.topResults.filter(row => row.dpsMetrics).length;
 		return {
 			arm,
+			provenance,
 			stages: result.stageMetrics.map(metrics => ({
 				stage: metrics.stage,
 				iterations: metrics.iterations,
 				survivors: metrics.survivors,
 				durationSeconds: metrics.durationSeconds,
 			})),
+			stageCount: result.stageMetrics.length,
 			rowsReturned: result.topResults.length,
 			rowsWithDpsMetrics,
-			// R4: baseline is a separate field, never an n+1th row.
 			allCandidatesReturned: result.topResults.length === arm.candidateCount && rowsWithDpsMetrics === arm.candidateCount,
 			baselinePopulated: result.baseline !== undefined,
-			baselineSegments,
+			baselineDps: result.baseline?.dpsMetrics?.avg ?? null,
+			baselineProgressEvents,
+			// `BulkGearResult.candidateIndex` (`proto/api.ts:1920`), not `index` —
+			// the request side uses `index` (`BulkGearCandidate`) and the response
+			// side uses `candidateIndex`. Step 7's mapping must use this name.
+			candidateIndices: result.topResults.map(row => row.candidateIndex).sort((a, b) => a - b),
+			elapsedSeconds,
+		};
+	} catch (err) {
+		return {
+			arm,
+			provenance,
+			stages: [],
+			stageCount: 0,
+			rowsReturned: 0,
+			rowsWithDpsMetrics: 0,
+			allCandidatesReturned: false,
+			baselinePopulated: false,
+			baselineDps: null,
+			baselineProgressEvents,
+			candidateIndices: [],
+			elapsedSeconds: (performance.now() - startedAt) / 1000,
+			error: err instanceof Error ? err.message : String(err),
 		};
 	} finally {
 		signalManager.unregisterRunning(signals);
 	}
 }
 
-/** Step 2's eight arms, plus Step 3's pool-size-1 probe. */
-export const STEP_2_ARMS: readonly SpikeArm[] = [19, 20, 25, 30].flatMap(candidateCount =>
-	[3000, 5000].map(highStageIterations => ({ candidateCount, highStageIterations, poolSize: 4 })),
-);
+/**
+ * Step 2's arms (row completeness inside and just past the derived regime) plus
+ * Step 3's pool-size probes at the expected shared constant, 25.
+ */
+export function spikeArms(): SpikeArm[] {
+	return [
+		{ label: 'step2-n19', candidateCount: 19, highStageIterations: 5000, poolSize: 4 },
+		{ label: 'step2-n25', candidateCount: 25, highStageIterations: 5000, poolSize: 4 },
+		{ label: 'step2-n32', candidateCount: 32, highStageIterations: 5000, poolSize: 4 },
+		{ label: 'step2-n33', candidateCount: 33, highStageIterations: 5000, poolSize: 4 },
+		{ label: 'step3-pool4', candidateCount: 25, highStageIterations: 5000, poolSize: 4 },
+		{ label: 'step3-pool1', candidateCount: 25, highStageIterations: 5000, poolSize: 1 },
+	];
+}
 
-export function formatArmTable(results: readonly SpikeArmResult[]): string {
-	const header = '| n | highStageIterations | pool | stages | survivors | rows | rows w/ dpsMetrics | all returned? |';
-	const divider = '| --- | --- | --- | --- | --- | --- | --- | --- |';
-	const rows = results.map(r => {
-		const stages = r.stages.map(s => s.stage).join('/') || '(none)';
-		const survivors = r.stages.map(s => s.survivors).join('/') || '(none)';
-		return `| ${r.arm.candidateCount} | ${r.arm.highStageIterations} | ${r.arm.poolSize} | ${stages} | ${survivors} | ${r.rowsReturned} | ${r.rowsWithDpsMetrics} | ${r.allCandidatesReturned ? 'yes' : 'NO'} |`;
+/**
+ * Swaps one item into a copy of the baseline equipment per candidate, so each
+ * candidate differs from the baseline and from its siblings. `itemIds` supplies
+ * real ids from the page's own pool; the spike only needs distinct gear, not
+ * gear that is good.
+ */
+export function candidateEquipmentFrom(baselineItems: readonly ItemSpec[], slotIndex: number, itemIds: readonly number[]): EquipmentSpec[] {
+	return itemIds.map(id => {
+		const items = baselineItems.map(item => ItemSpec.clone(item));
+		if (items[slotIndex]) items[slotIndex] = ItemSpec.create({ id });
+		return EquipmentSpec.create({ items });
 	});
-	return [header, divider, ...rows].join('\n');
+}
+
+export type SpikeReport = {
+	precondition: SpikeProvenance & { passed: boolean };
+	results: SpikeArmResult[];
+};
+
+/**
+ * Drives every arm and emits one `BULK_SPIKE_RESULT ` line per arm. A1.1's
+ * binding precondition is checked first: if `isWasm()` is false the spike
+ * refuses to run, because the numbers would describe the HTTP transport.
+ */
+export async function runSpike(
+	baseRequestJson: Readonly<Record<string, unknown>>,
+	candidateGear: readonly EquipmentSpec[],
+	arms: readonly SpikeArm[] = spikeArms(),
+): Promise<SpikeReport> {
+	const probePool = new WorkerPool(4);
+	const isWasm = await probePool.isWasm();
+	const precondition = {
+		isWasm,
+		numWorkers: probePool.getNumWorkers(),
+		workerUrl: RESOLVED_WORKER_URL,
+		passed: isWasm === true,
+	};
+	console.log(`BULK_SPIKE_PRECONDITION ${JSON.stringify(precondition)}`);
+	if (!precondition.passed) {
+		(window as unknown as Record<string, unknown>).__bulkSpikeDone = true;
+		(window as unknown as Record<string, unknown>).__bulkSpikeResults = { precondition, results: [] };
+		throw new Error('bulk spike precondition failed: isWasm() is false — refusing to measure the HTTP transport as if it were WASM');
+	}
+
+	const results: SpikeArmResult[] = [];
+	for (const arm of arms) {
+		const pool = arm.poolSize === probePool.getNumWorkers() ? probePool : new WorkerPool(arm.poolSize);
+		const result = await runSpikeArm(arm, baseRequestJson, candidateGear, pool);
+		results.push(result);
+		console.log(`BULK_SPIKE_RESULT ${JSON.stringify(result)}`);
+		(window as unknown as Record<string, unknown>).__bulkSpikeResults = { precondition, results };
+	}
+	(window as unknown as Record<string, unknown>).__bulkSpikeDone = true;
+	return { precondition, results };
 }
