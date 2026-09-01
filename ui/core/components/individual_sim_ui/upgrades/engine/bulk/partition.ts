@@ -25,6 +25,11 @@ import type { BulkScreenCandidate } from "../seams/sim-runner.js";
  *   pre-High stages against `highStageIterations * candidateCount`
  *   (`wasm/bulk_sim/estimate.ts:14-32`).
  *
+ * The 32 is measured, not only derived: an n=32 batch returns one row per
+ * candidate from a single stage with every candidate surviving, while n=33 runs
+ * two stages and comes back with 5 rows of 33 — silently, with no error field
+ * set, which is why the runner also asserts row completeness per chunk.
+ *
  * 25 is the largest value inside both, so it is the shared constant. The web
  * side could carry 32; that headroom is deliberately left on the table rather
  * than letting the two transports use different batch sizes.
