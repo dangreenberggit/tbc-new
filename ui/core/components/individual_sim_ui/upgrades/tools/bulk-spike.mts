@@ -26,6 +26,21 @@
  * where the real `sim_worker.js` (`.ready(true)`) is served. `runSpike` asserts
  * `isWasm()` before any arm and refuses to run if it is false.
  *
+ * THE EMBEDDED DATABASE MUST COVER EVERY CANDIDATE ITEM. A bulk request
+ * carries ONE `player.database` for all candidates, while the per-candidate
+ * loop composes a fresh request (and so a fresh database) per candidate. Since
+ * `simDatabaseFor` builds rows from exactly the equipment handed to it
+ * (`adapters/sim_database.ts:42-44`) and `lib.wasm` is built without `with_db`,
+ * a candidate item absent from that one database makes the sim panic with
+ * "No item with id: N" — the deliberate behaviour documented at
+ * `adapters/sim_database.ts:19-22`. Measured: this is what made the tournament
+ * look like a hang. The panic surfaces only after the whole candidate queue
+ * drains (`wasm/bulk_sim/batch.ts:132-133` aborts on the first candidate error
+ * but the error is returned by `index.ts:121-122` only once the batch settles),
+ * so at n=19 @5,000 the failure takes many minutes to appear and reads as a
+ * wedged run. Step 6's `buildBulkSimRequest` must widen the database to the
+ * union over the baseline and every candidate.
+ *
  * Not part of the site build; not under `engine/`, so no PROVENANCE row
  * (`tools/README.md:11`).
  */
@@ -132,6 +147,7 @@ export async function runSpikeArm(
 	};
 	let baselineProgressEvents = 0;
 	const startedAt = performance.now();
+	console.log(`BULK_SPIKE_ARM_START ${JSON.stringify({ label: arm.label, n: arm.candidateCount, iters: arm.highStageIterations, pool: provenance.numWorkers })}`);
 	try {
 		const result = await runConcurrentBulkSim(
 			request,
@@ -218,16 +234,21 @@ export function spikeArms(): SpikeArm[] {
 	];
 }
 
+/** One candidate: put `itemId` in `slotIndex`, leaving every other slot alone. */
+export type CandidatePlacement = { itemId: number; slotIndex: number };
+
 /**
  * Swaps one item into a copy of the baseline equipment per candidate, so each
- * candidate differs from the baseline and from its siblings. `itemIds` supplies
- * real ids from the page's own pool; the spike only needs distinct gear, not
- * gear that is good.
+ * candidate is fully-slotted legal gear that differs from the baseline and from
+ * its siblings. Placements carry their own slot because the boundary arms need
+ * more candidates than any single slot on the page supplies (the best slot here
+ * has 29, and the n=32/33 arms need more), so they are drawn across slots. The
+ * spike only needs distinct legal gear, not gear that is good.
  */
-export function candidateEquipmentFrom(baselineItems: readonly ItemSpec[], slotIndex: number, itemIds: readonly number[]): EquipmentSpec[] {
-	return itemIds.map(id => {
+export function candidateEquipmentFrom(baselineItems: readonly ItemSpec[], placements: readonly CandidatePlacement[]): EquipmentSpec[] {
+	return placements.map(({ itemId, slotIndex }) => {
 		const items = baselineItems.map(item => ItemSpec.clone(item));
-		if (items[slotIndex]) items[slotIndex] = ItemSpec.create({ id });
+		if (items[slotIndex]) items[slotIndex] = ItemSpec.create({ id: itemId });
 		return EquipmentSpec.create({ items });
 	});
 }
@@ -260,6 +281,18 @@ export async function runSpike(
 		(window as unknown as Record<string, unknown>).__bulkSpikeDone = true;
 		(window as unknown as Record<string, unknown>).__bulkSpikeResults = { precondition, results: [] };
 		throw new Error('bulk spike precondition failed: isWasm() is false — refusing to measure the HTTP transport as if it were WASM');
+	}
+
+	// A single cheap arm (n=2 @200) for smoke-testing the harness end to end
+	// without paying for the full grid. Used to confirm the request-shape fixes;
+	// the real measurement is the arm list below.
+	if (new URLSearchParams(window.location.search).get('bulkProbe') === '1') {
+		const probeArm: SpikeArm = { label: 'probe-n2', candidateCount: 2, highStageIterations: 200, poolSize: probePool.getNumWorkers() };
+		const probeResult = await runSpikeArm(probeArm, baseRequestJson, candidateGear, probePool);
+		console.log(`BULK_SPIKE_RESULT ${JSON.stringify(probeResult)}`);
+		(window as unknown as Record<string, unknown>).__bulkSpikeResults = { precondition, results: [probeResult] };
+		(window as unknown as Record<string, unknown>).__bulkSpikeDone = true;
+		return { precondition, results: [probeResult] };
 	}
 
 	const results: SpikeArmResult[] = [];
