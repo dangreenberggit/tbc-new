@@ -295,8 +295,18 @@ export async function runSpike(
 		return { precondition, results: [probeResult] };
 	}
 
+	// `?bulkArm=<label>` runs a single arm. The grid is tens of minutes, so
+	// re-running all six to recover one interrupted arm wastes an hour; this
+	// keeps a resumed measurement honest by re-running exactly the arm that was
+	// lost rather than reporting a partial grid as complete.
+	const only = new URLSearchParams(window.location.search).get('bulkArm');
+	const selected = only ? arms.filter(arm => arm.label === only) : arms;
+	if (only && selected.length === 0) {
+		throw new Error(`bulk spike: no arm labelled '${only}' (have: ${arms.map(a => a.label).join(', ')})`);
+	}
+
 	const results: SpikeArmResult[] = [];
-	for (const arm of arms) {
+	for (const arm of selected) {
 		const pool = arm.poolSize === probePool.getNumWorkers() ? probePool : new WorkerPool(arm.poolSize);
 		const result = await runSpikeArm(arm, baseRequestJson, candidateGear, pool);
 		results.push(result);
