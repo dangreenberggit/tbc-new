@@ -456,6 +456,60 @@ export async function rankUpgrades(
     });
   };
 
+  /**
+   * The base request for a *bulk* screening pass. Identical to `composeFor`
+   * except that the embedded database is the union over every gear set the
+   * request can ask the sim to equip, not just the baseline's.
+   *
+   * A bulk request is one request spanning n gear sets, and the browser's WASM
+   * sim is built without `with_db`, so its item registry starts empty and is
+   * filled per request from the player's database (`adapters/sim_database.ts`
+   * doc comment; `compose.ts:48` writes it to the player, not the request
+   * root). A candidate item the character does not wear therefore appears in
+   * no database the baseline ever built, and environment construction dies on
+   * its id — "No item with id: N" — before a single iteration runs.
+   *
+   * The per-candidate loop never hits this because it composes each request
+   * from that candidate's own gear. Screening must widen the database instead.
+   * Each gear set is resolved separately and the repeated fields merged by row
+   * identity: handing `simDatabaseFor` a flat list of candidate ids instead
+   * fails inside `lookupEquipmentSpec` with "No slots left to equip", because
+   * it assigns items to slots and cannot place several same-slot items at once.
+   */
+  const composeForBulk = (
+    candidateGear: readonly (readonly SimItemSpec[])[]
+  ) => {
+    if (!deps.simDatabaseFor) return composeFor(equipment);
+    const byField = new Map<string, Map<string, unknown>>();
+    for (const gear of [equipment, ...candidateGear]) {
+      const database = deps.simDatabaseFor(gear) as
+        | Record<string, unknown>
+        | undefined;
+      if (!database) continue;
+      for (const [field, rows] of Object.entries(database)) {
+        if (!Array.isArray(rows)) continue;
+        const seen = byField.get(field) ?? new Map<string, unknown>();
+        // `JSON.stringify` is enough for row identity here (rather than a
+        // key-order-stable hash): every row in this union comes from one
+        // `simDatabaseFor` implementation within a single run, so equal rows
+        // are built the same way and serialise identically. Duplicates only
+        // cost bytes anyway — the failure this dedupe avoids is a bloated
+        // request, never a wrong one.
+        for (const row of rows) seen.set(JSON.stringify(row), row);
+        byField.set(field, seen);
+      }
+    }
+    const database = Object.fromEntries(
+      [...byField].map(([field, seen]) => [field, [...seen.values()]])
+    );
+    return compose(deps.raidSimSkeleton, {
+      name: input.character.name.toLowerCase(),
+      race,
+      equipment,
+      database,
+    });
+  };
+
   const request = composeFor(equipment);
 
   const iterations = input.iterations ?? DEFAULT_ITERATIONS;
@@ -686,7 +740,7 @@ export async function rankUpgrades(
       if (attempts.length === 0) return undefined;
 
       const result = await runBulkScreen({
-        baseRequest: request,
+        baseRequest: composeForBulk(attempts.map((attempt) => attempt.gear)),
         candidates: attempts.map((attempt, index) => ({
           index,
           gear: { items: attempt.gear.map((item) => ({ ...item })) },
