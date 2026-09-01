@@ -356,7 +356,7 @@ type BestSwap = {
   candidateGems: readonly number[];
 };
 
-const DEFAULT_ITERATIONS = 3000;
+const DEFAULT_ITERATIONS = 5000;
 const DEFAULT_SEEDS = [11, 22, 33, 44, 55];
 
 /**
@@ -632,6 +632,76 @@ export async function rankUpgrades(
       ...(talentsString !== undefined ? { talentsString } : {}),
     });
 
+    /** Screening observations are keyed by the attempt, not by the item. */
+    const screenKey = (itemId: number, slotIndex: number) =>
+      `${itemId}:${slotIndex}`;
+
+    /**
+     * Prices every (item, slot) attempt through the runner's bulk capability,
+     * returning one observation per attempt. Returns undefined when the runner
+     * has no such capability, which is what keeps the per-candidate path the
+     * default and this branch purely additive.
+     *
+     * Composition happens here exactly as it does in the loop — same
+     * `candidateSwapWithRepairs`, same `composeFor` — so the gear the screening
+     * pass prices is the gear the loop would have priced. An attempt whose
+     * repairs throw is simply not screened; the loop hits the same throw and
+     * records the `candidateSkips` row, so the disclosure stays in one place.
+     */
+    async function screenCandidates(
+      entries: readonly PoolEntry[]
+    ): Promise<Map<string, SimObservation> | undefined> {
+      const runBulkScreen = deps.sim.runBulkScreen?.bind(deps.sim);
+      if (!runBulkScreen) return undefined;
+
+      const attempts: { key: string; gear: readonly SimItemSpec[] }[] = [];
+      for (const entry of entries) {
+        const slotNames = simSlotsForPoolSlot(
+          entry.slot,
+          input.spec,
+          entry.itemId
+        );
+        for (const slotName of slotNames) {
+          if (slotName === "offhand" && !mainHandIsOneHanded) continue;
+          const slotIndex = SIM_ORDER.indexOf(slotName);
+          if (slotIndex < 0) continue;
+          const wornAt = equipment.findIndex((s) => s.id === entry.itemId);
+          if (wornAt >= 0 && wornAt !== slotIndex) continue;
+          try {
+            const outcome = candidateSwapWithRepairs(
+              equipment,
+              slotIndex,
+              entry.itemId,
+              gems
+            );
+            attempts.push({
+              key: screenKey(entry.itemId, slotIndex),
+              gear: outcome.equipment,
+            });
+          } catch (err) {
+            if (!(err instanceof MetaRepairError)) throw err;
+          }
+        }
+      }
+      if (attempts.length === 0) return undefined;
+
+      const result = await runBulkScreen({
+        baseRequest: request,
+        candidates: attempts.map((attempt, index) => ({
+          index,
+          gear: { items: attempt.gear.map((item) => ({ ...item })) },
+        })),
+        iterations,
+      });
+
+      const byKey = new Map<string, SimObservation>();
+      for (const row of result.rows) {
+        const attempt = attempts[row.index];
+        if (attempt) byKey.set(attempt.key, row.observation);
+      }
+      return byKey;
+    }
+
     /**
      * One candidate's full slot-attempt loop, unchanged from the old serial
      * body except that it is now a `promisePool` task rather than one turn
@@ -721,7 +791,16 @@ export async function rankUpgrades(
           continue;
         }
         const candReq = composeFor(swapped);
-        let candObs = await readCachedSim(deps, candReq, simVersion, runOpts);
+        // The bulk screening pass, when one ran, has already priced this exact
+        // (item, slot) attempt — everything else about the attempt is computed
+        // here exactly as the per-candidate path computes it, so only the DPS
+        // observation differs by route. `composeFor` still runs: it is pure and
+        // pre-sim, and `winningRequests` (used by `replicateTopItems`) must hold
+        // the same request either way.
+        let candObs = screened?.get(screenKey(entry.itemId, slotIndex));
+        if (!candObs) {
+          candObs = await readCachedSim(deps, candReq, simVersion, runOpts);
+        }
         if (!candObs) {
           try {
             candObs = await deps.sim.run(candReq, runOpts);
@@ -844,6 +923,19 @@ export async function rankUpgrades(
     // already in flight. Read once so an abort mid-dispatch is a clean cut
     // rather than a race between this check and the pool's own loop.
     const signal = deps.signal;
+
+    // Cheap screening pass, when the runner offers one (batch-sim plan Step 8).
+    // It supplies nothing but the DPS number for each (item, slot) attempt; the
+    // per-candidate loop below still composes every request, computes every stat
+    // delta and populates every row-metadata collection exactly as it always
+    // has. The accurate final pass — paired-seed replication against a single
+    // baseline — is untouched, so the ranking's estimand does not change.
+    //
+    // Absent capability, or an abort already raised, means no screening pass and
+    // the loop runs exactly as before.
+    const screened = signal?.aborted
+      ? undefined
+      : await screenCandidates(simCandidates);
     const dispatchedCandidates = signal?.aborted ? [] : simCandidates;
     const tasks = dispatchedCandidates.map(
       (entry) => () => runCandidate(entry)

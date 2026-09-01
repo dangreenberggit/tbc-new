@@ -32,9 +32,43 @@ export type SimObservation = {
   simVersion: string;
 };
 
+/**
+ * One candidate in a bulk screening batch. `index` is the caller's own
+ * numbering and is what comes back on the matching row, so a runner may
+ * reorder freely (the WASM tournament sorts its rows by descending DPS).
+ */
+export type BulkScreenCandidate = {
+  index: number;
+  gear: Readonly<Record<string, unknown>>;
+};
+
+export type BulkScreenRequest = {
+  baseRequest: RaidSimRequest;
+  candidates: readonly BulkScreenCandidate[];
+  iterations: number;
+};
+
+/**
+ * `baseline` is its own field, never an n+1th row — both transports keep the
+ * two separate, and screening deltas are taken against it.
+ */
+export type BulkScreenResult = {
+  baseline: SimObservation;
+  rows: ReadonlyArray<{ index: number; observation: SimObservation }>;
+};
+
 export interface SimRunner {
   version(): Promise<string>;
   run(req: RaidSimRequest, opts: SimRunOpts): Promise<SimObservation>;
+  /**
+   * Optional bulk screening capability. When a runner offers it, the ranking's
+   * screening pass hands it whole batches instead of looping `run` per
+   * candidate; when it is absent the loop runs unchanged, so this is additive
+   * and every existing runner stays valid. Stated in protojson vocabulary for
+   * the same reason `RaidSimRequest` is (see this file's header): the engine
+   * stays proto-unaware, and the adapter bridges to typed protos.
+   */
+  runBulkScreen?(req: BulkScreenRequest): Promise<BulkScreenResult>;
 }
 
 /** Stable key: canonical-JSON(request) + version + seed + iterations (D4). */
@@ -44,6 +78,21 @@ export function simCacheKey(
   opts: SimRunOpts
 ): string {
   return `${stableStringify(req)}:${simVersion}:${opts.seed}:${opts.iterations}`;
+}
+
+/**
+ * Stable key for a whole screening batch, same scheme as `simCacheKey` (D4):
+ * canonical JSON, no digest. The candidate list is part of the key because a
+ * different batch is a different question — but note the key is transport-blind
+ * by *shape* only; `simVersion` is supplied by whichever runner recorded it.
+ */
+export function bulkScreenCacheKey(
+  req: BulkScreenRequest,
+  simVersion: string
+): string {
+  return `bulk:${stableStringify(req.baseRequest)}:${stableStringify(
+    req.candidates
+  )}:${simVersion}:${req.iterations}`;
 }
 
 function stableStringify(value: unknown): string {
@@ -66,8 +115,32 @@ function sortKeys(value: unknown): unknown {
 export class RecordedSimRunner implements SimRunner {
   constructor(
     private readonly simVersion: string,
-    private readonly recordings: ReadonlyMap<string, SimObservation>
-  ) {}
+    private readonly recordings: ReadonlyMap<string, SimObservation>,
+    /**
+     * Absent means this runner offers no bulk capability, so a test built from
+     * it exercises the per-candidate loop — which is what every existing
+     * fixture wants. Supplying it opts a fixture into the bulk branch.
+     */
+    private readonly bulkRecordings?: ReadonlyMap<string, BulkScreenResult>
+  ) {
+    // An own property, not a prototype method: `rank.ts` treats
+    // `deps.sim.runBulkScreen` as a truthy capability check, so a recorded
+    // runner given no bulk fixtures must not appear to have the capability at
+    // all. A prototype method could not be hidden this way — `delete` does not
+    // remove inherited members.
+    if (bulkRecordings !== undefined) {
+      this.runBulkScreen = async (req: BulkScreenRequest) => {
+        const key = bulkScreenCacheKey(req, this.simVersion);
+        const hit = bulkRecordings.get(key);
+        if (!hit) {
+          throw new Error(`no recording for bulk screen key ${key}`);
+        }
+        return hit;
+      };
+    }
+  }
+
+  runBulkScreen?: (req: BulkScreenRequest) => Promise<BulkScreenResult>;
 
   async version(): Promise<string> {
     return this.simVersion;
