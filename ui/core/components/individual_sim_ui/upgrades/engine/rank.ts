@@ -790,16 +790,26 @@ export async function rankUpgrades(
      * the default and this branch purely additive.
      *
      * The baseline comes back with the observations because it is not
-     * interchangeable with the loop's. The bulk engine probes its own baseline
-     * inside the same batch, and that probe lands somewhere else entirely: the
-     * local HTTP measurement recorded in
+     * interchangeable with the loop's. The bulk pass probes its own baseline
+     * inside the same batch, at a seed it picks itself, and the two probes can
+     * land far apart: the local HTTP measurement recorded in
      * `.scratch/stage-gate/batch-sim-web-local/execution-ledger-local.md` put
      * the loop's seed-11 baseline at 2246.99 DPS and the bulk pass's own probe
-     * at 2181.67 — a 65.3 DPS offset against a cutoff of 3.4. Differencing a
-     * bulk-measured candidate against the loop-measured baseline would push
-     * that whole offset into every screened row's `deltaDps`, so each
-     * observation is differenced against the baseline measured by the same
-     * engine in the same run.
+     * at 2181.67 — 65.3 DPS apart, against a cutoff of 3.4.
+     *
+     * That gap is a SEED artifact, not an engine one, and the distinction
+     * matters for anyone tempted to "correct" for it elsewhere. The same ledger
+     * records the loop at seed 777 giving 2181.37 — within 0.3 DPS of the bulk
+     * probe — so two runs of the *same* route at different seeds differ by more
+     * than the two routes do. The engines agree; the seeds do not.
+     *
+     * Either way the rule is the same and holds under both readings: a delta is
+     * only meaningful against the baseline measured in the same run as the
+     * observation. Differencing a bulk-measured candidate against the
+     * loop-measured baseline would push the whole gap into every screened row's
+     * `deltaDps`. Because both halves of a screened delta come from one run, a
+     * shared offset cancels inside the subtraction — which is why the stored
+     * delta needs no later re-scaling (see `individualDeltasByItemId.set`).
      *
      * One baseline for the whole pass, not one per chunk. Both runners already
      * keep the first chunk's probe (`baseline ??=`) and that is the correct
@@ -947,10 +957,11 @@ export async function rankUpgrades(
         // the same request either way.
         // Which baseline this attempt's delta is taken against travels with the
         // observation, because the two are only meaningful as a pair: a
-        // screened observation was measured by the bulk engine's own probe and
-        // must be differenced against it (see `screenCandidates` for the
-        // measured 65.3 DPS offset that makes mixing them wrong), while a
-        // looped or cached observation belongs to `baselineDps`.
+        // screened observation was measured alongside the screening pass's own
+        // baseline probe and must be differenced against it (see
+        // `screenCandidates` for the measured 65.3 DPS gap that makes mixing
+        // them wrong), while a looped or cached observation belongs to
+        // `baselineDps`.
         let candBaselineDps = baselineDps;
         let candObs = screened?.byKey.get(screenKey(entry.itemId, slotIndex));
         if (candObs) {
@@ -1029,6 +1040,30 @@ export async function rankUpgrades(
 
       if (!best) return;
 
+      // Stored as measured, with NO re-basing onto the loop's baseline — and
+      // that is the correct thing to do, which is worth stating because the
+      // opposite is an inviting mistake.
+      //
+      // This map is combined arithmetically with a loop-measured number:
+      // `buildSetBonuses` sims each package through `deps.sim.run` and
+      // `computeSynergy` (set-value.ts) computes `bonusDps = (packageDps -
+      // baseline) - sum(addedPieceDeltas)`. So the deltas summed here must be on
+      // the same footing as that package delta. They already are. A screened
+      // delta is `screenedCandidateDps - screenedBaselineDps` — a difference of
+      // two readings from the SAME run — so whatever separates that run from the
+      // loop's, seed or engine, cancels inside the subtraction before the value
+      // is ever stored. Both routes yield an estimate of the item's own DPS
+      // effect, carrying no run-specific term. The ledger measures the two
+      // routes' deltas agreeing to ~0.1 DPS mean while their baselines sat 65.3
+      // apart, which is that cancellation observed rather than assumed.
+      //
+      // Adding `(best.baselineDps - baselineDps)` here to "convert to the loop's
+      // scale" would INJECT that 65.3 rather than remove it, once per added
+      // piece, against real bonuses of tens of DPS — and the 2-piece result
+      // compounds into the 4-piece calculation through `twoPieceBonus`. Only an
+      // absolute DPS reading needs re-basing; a same-run delta does not. The
+      // set-bonus assertions in `bulk-screen-branch.test.ts` pin this: they go
+      // red if a scale correction is reintroduced here.
       individualDeltasByItemId.set(entry.itemId, {
         itemId: entry.itemId,
         slotIndex: best.slotIndex,
@@ -1789,16 +1824,17 @@ async function cacheSimResult(
  * A screened observation is stored under its own key namespace, deliberately
  * NOT under `simStoreKey`.
  *
- * The loop's key is `sim:<request>:<version>:<seed>:<iterations>` and says
- * nothing about which engine measured the number. A bulk-measured observation
- * filed there would be read back by two callers that must never see one: the
+ * The loop's key is `sim:<request>:<version>:<seed>:<iterations>` and records
+ * nothing about which run produced the number — in particular not the screening
+ * pass's own probe seed, which it picks itself. A screened observation filed
+ * there would be read back by two callers that must never see one: the
  * per-candidate loop, which differences against the loop's own baseline, and —
  * because `simFor` shares `readCachedSim` and replication re-sims at
  * `seeds[0]`, the same seed `runOpts` carries — `replicateTopItems`, whose
- * paired-seed contract is that candidate and baseline are measured by the same
- * engine. Either would reintroduce the cross-engine offset `screenCandidates`
- * documents, and the second would push it into the accurate final pass that the
- * screening pass is specifically designed not to touch.
+ * paired-seed contract is that candidate and baseline come from the same run.
+ * Either would pair an observation with a baseline it was not measured against,
+ * reintroducing the gap `screenCandidates` documents, and the second would push
+ * it into the accurate final pass the screening pass is designed not to touch.
  *
  * Scoping the key to the screening route keeps the reuse (a re-run screens from
  * the store instead of re-simming) while making the observation unreachable

@@ -97,6 +97,23 @@ export type PackageSelectionResult =
   | { ok: true; piecesWorn: number; addedPieces: PackagePiece[] }
   | { ok: false; reason: "insufficient-pieces" };
 
+/**
+ * One item's own DPS delta, used both to pick a set package's pieces and to
+ * subtract the pieces' individual value out of a package's measured gain.
+ *
+ * `deltaDps` must estimate the item's true DPS effect — candidate minus
+ * baseline, both read by the SAME engine on the same run. That is the invariant
+ * `computeSynergy` depends on: it subtracts these deltas from
+ * `packageSample.dps - baseline.dps`, so each one has to be an effect estimate
+ * rather than an absolute reading tied to a particular engine's scale.
+ *
+ * A same-engine difference satisfies this automatically, including one measured
+ * by the fork's bulk screening pass against that pass's own baseline probe: a
+ * systematic offset between engines cancels inside the subtraction. Re-basing
+ * such a delta onto some other baseline would BREAK the invariant rather than
+ * restore it, by reintroducing the very offset the subtraction removed. See the
+ * comment at `rank.ts`'s `individualDeltasByItemId.set` call.
+ */
 export type IndividualDelta = {
   itemId: number;
   slotIndex: number;
