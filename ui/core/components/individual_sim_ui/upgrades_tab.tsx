@@ -18,6 +18,7 @@ import { SimTab } from '../sim_tab';
 import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
 import { currentPageSkeleton } from './upgrades/adapters/skeleton';
 import { simDatabaseFor } from './upgrades/adapters/sim_database';
+import { makeSimRunner } from './upgrades/adapters/bulk_wasm_sim_runner';
 import { WasmSimRunner } from './upgrades/adapters/wasm_sim_runner';
 import { bisTagPhaseFor, cutoffIsUnmeasuredFor, epWeightsDisclosureFor, epWeightsFor, poolFor, poolSourceFor, unsourcedCountFor } from './upgrades/data/data';
 import { isKaelTempLegendary } from './upgrades/engine/kael-temp';
@@ -443,7 +444,11 @@ export class UpgradesTab extends SimTab {
 	// expensive to spin up (each is a WASM instantiation), and MemoryStore's
 	// whole purpose (plan §2.5) is to dedupe identical sim requests *across*
 	// runs in the same page session, not just within one.
-	private readonly sim = new WasmSimRunner();
+	// The factory decides whether this tab gets the bulk screening capability:
+	// at worker concurrency Off or 1 it returns a plain WasmSimRunner with no
+	// `runBulkScreen`, and `rankUpgrades` then takes its per-candidate path
+	// unchanged. Never clamps a deliberate Off upward.
+	private readonly sim = makeSimRunner();
 	private readonly store = new MemoryStore();
 
 	// Rebuilt each run (an AbortController cannot be reused after abort) —
