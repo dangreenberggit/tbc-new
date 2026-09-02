@@ -18,8 +18,10 @@ import { SimTab } from '../sim_tab';
 import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
 import { currentPageSkeleton } from './upgrades/adapters/skeleton';
 import { simDatabaseFor } from './upgrades/adapters/sim_database';
+import { BulkHttpSimRunner } from './upgrades/adapters/bulk_http_sim_runner';
 import { makeSimRunner } from './upgrades/adapters/bulk_wasm_sim_runner';
 import { WasmSimRunner } from './upgrades/adapters/wasm_sim_runner';
+import { WorkerPool } from '../../worker_pool';
 import { bisTagPhaseFor, cutoffIsUnmeasuredFor, epWeightsDisclosureFor, epWeightsFor, poolFor, poolSourceFor, unsourcedCountFor } from './upgrades/data/data';
 import { isKaelTempLegendary } from './upgrades/engine/kael-temp';
 import { filterPoolByPhase } from './upgrades/engine/pool';
@@ -448,7 +450,19 @@ export class UpgradesTab extends SimTab {
 	// at worker concurrency Off or 1 it returns a plain WasmSimRunner with no
 	// `runBulkScreen`, and `rankUpgrades` then takes its per-candidate path
 	// unchanged. Never clamps a deliberate Off upward.
+	//
+	// That factory answers for the WASM transport only, because it is the only
+	// answer available synchronously. Under the packaged local Go server the
+	// right runner is `BulkHttpSimRunner` instead, and which transport this page
+	// actually has is only knowable once a worker reports ready
+	// (`worker_pool.ts:315`) — the serving server decides it, by rewriting
+	// `sim_worker.js` to `net_worker.js` (`sim/web/main.go:402-403`), so no
+	// synchronous check can see it. Hence `simRunner()` below: this field is the
+	// WASM-side answer and the fallback, resolved or replaced on first use.
 	private readonly sim = makeSimRunner();
+	// Memoised so the transport is probed once per tab, not once per run, and so
+	// two runs never hold different runners (each runner owns worker pools).
+	private simRunnerPromise: Promise<WasmSimRunner | BulkHttpSimRunner> | undefined;
 	private readonly store = new MemoryStore();
 
 	// Rebuilt each run (an AbortController cannot be reused after abort) —
@@ -1110,6 +1124,42 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
+	 * Picks the runner for this tab's transport, extending `makeSimRunner`'s
+	 * branch with the one case that factory cannot answer synchronously.
+	 *
+	 * `isWasm()` reports the transport the pool *actually has*, resolved from the
+	 * worker's own ready message (`worker_pool.ts:315`) rather than guessed from
+	 * the URL. It is false only under the packaged `wowsimtbc` server, which
+	 * serves `net_worker.js` in place of `sim_worker.js`
+	 * (`sim/web/main.go:402-403`) — so a page served by vite gets WASM even when
+	 * a Go server happens to be running elsewhere, and that is the correct answer:
+	 * posting a bulk request to a server that did not serve the page is a
+	 * configuration this deliberately does not support. Both branches are native
+	 * bulk; only the transport differs.
+	 *
+	 * The user's WASM concurrency setting does not gate the HTTP branch. Upstream
+	 * itself declines to apply that setting off-WASM — "Local sim has native
+	 * threading" (`ui/core/sim.ts:163-169`) — because the Go server threads one
+	 * request over NumCPU internally with no client-side knob. So Off/1, which
+	 * correctly withholds the WASM tournament, must not withhold this one.
+	 *
+	 * On any failure — no workers, a ready message that never arrives — this falls
+	 * back to the factory's runner rather than failing the run: the fallback is a
+	 * working per-candidate path, and a transport probe is not worth a dead tab.
+	 */
+	private simRunner(): Promise<WasmSimRunner | BulkHttpSimRunner> {
+		this.simRunnerPromise ??= (async () => {
+			try {
+				if (await new WorkerPool(1).isWasm()) return this.sim;
+			} catch {
+				return this.sim;
+			}
+			return new BulkHttpSimRunner(this.sim.concurrency);
+		})();
+		return this.simRunnerPromise;
+	}
+
+	/**
 	 * Reads the Candidates field (candidate-pool.md §5.1.1) at click-time, same
 	 * idiom as `readIterations`. The field is a plain `number` coerced by the
 	 * `NumberPicker` (see `readIterations`), so it is only ever `0` or a
@@ -1167,6 +1217,11 @@ export class UpgradesTab extends SimTab {
 			candidateCap: this.readCandidateCap(),
 		};
 
+		// Resolved before the run rather than at construction: the transport is
+		// only knowable once a worker reports ready (see `simRunner`). Memoised,
+		// so only the first run pays the probe.
+		const sim = await this.simRunner();
+
 		this.stopButton.disabled = false;
 		let ranking: Ranking | PartialRanking;
 		// Read by the `finally`'s assumptions log, which also runs when
@@ -1177,7 +1232,7 @@ export class UpgradesTab extends SimTab {
 				input,
 				{
 					gear: gearSource,
-					sim: this.sim,
+					sim,
 					store: this.store,
 					clock: () => new Date(),
 					raidSimSkeleton: skeleton,
@@ -1187,7 +1242,7 @@ export class UpgradesTab extends SimTab {
 					// `min(workers, memoryCap)` — WasmSimRunner derives this once at
 					// construction from the measured per-process memory cost
 					// (candidate-pool.md §5.1.2, wasm_sim_runner.ts).
-					concurrency: this.sim.concurrency,
+					concurrency: sim.concurrency,
 					signal: this.abortController.signal,
 				},
 				progress => {
