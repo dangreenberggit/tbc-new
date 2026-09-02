@@ -345,6 +345,13 @@ export type PartialRanking = Omit<Ranking, "complete"> & { complete: false };
 
 type BestSwap = {
   deltaDps: number;
+  /**
+   * The baseline `deltaDps` was measured against — the loop's own baseline, or
+   * the bulk engine's probe when this attempt came from the screening pass
+   * (see `screenCandidates`). Carried so `deltaPct` divides by the same
+   * reference the delta was taken from rather than assuming the loop's.
+   */
+  baselineDps: number;
   stdev: number;
   request: RaidSimRequest;
   slotChoice?: SimSlotName;
@@ -356,6 +363,21 @@ type BestSwap = {
   candidateGems: readonly number[];
 };
 
+/**
+ * Flat and fixed, for the accurate final pass rather than for speed. The owner's
+ * standing decision is that the ranking's published numbers come from a full
+ * per-candidate sim at this count, which is why the bulk screening pass changes
+ * only where a screening DPS comes from and never what the final pass measures.
+ *
+ * Deliberately not adaptive. Raising the base count and adopting an
+ * adaptive-iteration scheme are held together as one open decision in ticket
+ * 339 — the two interact (adaptive is the mechanism that makes a higher base
+ * affordable), so neither moves alone.
+ *
+ * Changing it is not local. The value is part of every ranking cache key, and
+ * the no-culling batch bound in `bulk/partition.ts` was measured at this count
+ * and moves DOWN as iterations rise (ticket 349).
+ */
 const DEFAULT_ITERATIONS = 5000;
 const DEFAULT_SEEDS = [11, 22, 33, 44, 55];
 
@@ -691,10 +713,104 @@ export async function rankUpgrades(
       `${itemId}:${slotIndex}`;
 
     /**
+     * Which `(item, slot)` attempts are eligible to be priced at all.
+     *
+     * One implementation for both routes on purpose. The screening pass and the
+     * pricing loop each walk the same candidates and must agree *exactly* on the
+     * resulting attempt set, because `screenKey` is only `itemId:slotIndex` — it
+     * carries no fingerprint of the gear the observation was measured on. If the
+     * two routes ever disagreed about which attempts exist while both still
+     * continued past the disagreement, the loop could read a screened DPS that
+     * was measured on different gear than the `candReq` it records into
+     * `winningRequests`, and nothing would report it: a wrong number rather than
+     * a failure.
+     *
+     * Deliberately returns *why* an attempt is ineligible rather than a boolean,
+     * so the loop can keep the one behaviour that legitimately differs between
+     * the routes — an unmappable slot is a bug assertion the loop throws on,
+     * while screening has no run to fail and simply does not screen it. Every
+     * other outcome is shared.
+     *
+     * Meta-gem repair is NOT part of this: `candidateSwapWithRepairs` is
+     * deterministic over the same immutable `equipment`/`gems`, so both routes
+     * throw on exactly the same attempts, and only the loop records the
+     * `candidateSkips` disclosure — keeping that in one place is the point.
+     */
+    const attemptEligibility = (
+      entry: PoolEntry,
+      slotName: SimSlotName
+    ):
+      | { kind: "ok"; slotIndex: number }
+      | { kind: "skip" }
+      | { kind: "unmapped" } => {
+      // A one-hander is only a legal off-hand candidate if the weapon already in
+      // the main hand is itself one-handed. `simSlotsForPoolSlot` filters the
+      // *candidate's* hand type and knows nothing about what is worn, so without
+      // this the ranker sims a one-hander into an empty off hand while a
+      // two-hander stays in the main hand — a pairing the game cannot equip,
+      // priced as an upgrade.
+      //
+      // Skipping is the minimal correct semantics. The alternative, letting the
+      // off-hand pick displace the worn two-hander, prices a two-item swap under
+      // a one-item row: the delta would silently include losing the two-hander,
+      // which is not what the row claims. A player holding a two-hander who
+      // wants to dual-wield gets that answer from the main-hand rows, which are
+      // ranked normally.
+      if (slotName === "offhand" && !mainHandIsOneHanded) return { kind: "skip" };
+      const slotIndex = SIM_ORDER.indexOf(slotName);
+      if (slotIndex < 0) return { kind: "unmapped" };
+      // A paired slot tries both placements and keeps the better one, so without
+      // this an item already worn in finger2 gets priced as an upgrade into
+      // finger1 as well — a second copy the player does not have. Skipping
+      // leaves the identity swap as the only outcome for a worn item, matching
+      // what every unpaired slot already does.
+      //
+      // Wearing a second copy of a *non-unique* ring or trinket is legal in TBC,
+      // and this guard blocks that row. Ticket 308 decided it is deliberately out
+      // of scope, because relaxing the guard here does not produce the missing
+      // row. The loop emits one row per *item*, not per placement: it keeps only
+      // the best swap across slots, so an unguarded second placement would not
+      // appear alongside the worn item's identity swap — it would win the
+      // comparison and overwrite it, turning "you already wear this" into "wear a
+      // second one" with nothing in the row saying so. The below-cutoff owned-row
+      // filter in upgrades_tab.tsx rests on this guard for the same reason.
+      // Producing the row honestly needs a per-placement row concept through the
+      // engine output, the view, and the UI; every item entry already carries
+      // `unique` for whoever builds it. Ticket 309 holds the redesign map.
+      const wornAt = equipment.findIndex((spec) => spec.id === entry.itemId);
+      if (wornAt >= 0 && wornAt !== slotIndex) return { kind: "skip" };
+      return { kind: "ok", slotIndex };
+    };
+
+    /**
      * Prices every (item, slot) attempt through the runner's bulk capability,
-     * returning one observation per attempt. Returns undefined when the runner
-     * has no such capability, which is what keeps the per-candidate path the
-     * default and this branch purely additive.
+     * returning one observation per attempt **and the baseline those
+     * observations must be differenced against**. Returns undefined when the
+     * runner has no such capability, which is what keeps the per-candidate path
+     * the default and this branch purely additive.
+     *
+     * The baseline comes back with the observations because it is not
+     * interchangeable with the loop's. The bulk engine probes its own baseline
+     * inside the same batch, and that probe lands somewhere else entirely: the
+     * local HTTP measurement recorded in
+     * `.scratch/stage-gate/batch-sim-web-local/execution-ledger-local.md` put
+     * the loop's seed-11 baseline at 2246.99 DPS and the bulk pass's own probe
+     * at 2181.67 — a 65.3 DPS offset against a cutoff of 3.4. Differencing a
+     * bulk-measured candidate against the loop-measured baseline would push
+     * that whole offset into every screened row's `deltaDps`, so each
+     * observation is differenced against the baseline measured by the same
+     * engine in the same run.
+     *
+     * One baseline for the whole pass, not one per chunk. Both runners already
+     * keep the first chunk's probe (`baseline ??=`) and that is the correct
+     * choice: a single shared offset is invisible to the sort that produces the
+     * ranking, whereas a per-chunk baseline would apply a *different* noise
+     * term to each disjoint subset of rows and make candidates from different
+     * chunks non-comparable in exactly the global sort and absolute cutoff this
+     * function feeds. Nothing cancels per chunk either — every chunk is built
+     * from the same `randomSeed` (`adapters/bulk_request_builder.ts`), so a
+     * later chunk's probe is a redundant re-measurement of the same stream, not
+     * a paired one.
      *
      * Composition happens here exactly as it does in the loop — same
      * `candidateSwapWithRepairs`, same `composeFor` — so the gear the screening
@@ -702,9 +818,13 @@ export async function rankUpgrades(
      * repairs throw is simply not screened; the loop hits the same throw and
      * records the `candidateSkips` row, so the disclosure stays in one place.
      */
-    async function screenCandidates(
-      entries: readonly PoolEntry[]
-    ): Promise<Map<string, SimObservation> | undefined> {
+    async function screenCandidates(entries: readonly PoolEntry[]): Promise<
+      | {
+          baselineDps: number;
+          byKey: ReadonlyMap<string, SimObservation>;
+        }
+      | undefined
+    > {
       const runBulkScreen = deps.sim.runBulkScreen?.bind(deps.sim);
       if (!runBulkScreen) return undefined;
 
@@ -716,11 +836,12 @@ export async function rankUpgrades(
           entry.itemId
         );
         for (const slotName of slotNames) {
-          if (slotName === "offhand" && !mainHandIsOneHanded) continue;
-          const slotIndex = SIM_ORDER.indexOf(slotName);
-          if (slotIndex < 0) continue;
-          const wornAt = equipment.findIndex((s) => s.id === entry.itemId);
-          if (wornAt >= 0 && wornAt !== slotIndex) continue;
+          const eligibility = attemptEligibility(entry, slotName);
+          // An unmappable slot is a bug the loop asserts on. Screening has no
+          // run to fail here — the loop reaches the same attempt and throws —
+          // so it simply does not screen it.
+          if (eligibility.kind !== "ok") continue;
+          const { slotIndex } = eligibility;
           try {
             const outcome = candidateSwapWithRepairs(
               equipment,
@@ -746,6 +867,9 @@ export async function rankUpgrades(
           gear: { items: attempt.gear.map((item) => ({ ...item })) },
         })),
         iterations,
+        // The same seed the per-candidate path would have used, so the
+        // screening pass measures the question the loop asks.
+        seed: runOpts.seed,
       });
 
       const byKey = new Map<string, SimObservation>();
@@ -753,7 +877,7 @@ export async function rankUpgrades(
         const attempt = attempts[row.index];
         if (attempt) byKey.set(attempt.key, row.observation);
       }
-      return byKey;
+      return { baselineDps: result.baseline.dps, byKey };
     }
 
     /**
@@ -780,48 +904,18 @@ export async function rankUpgrades(
 
       for (let s = 0; s < slotNames.length; s++) {
         const slotName = slotNames[s]!;
-        // A one-hander is only a legal off-hand candidate if the weapon
-        // already in the main hand is itself one-handed. `simSlotsForPoolSlot`
-        // filters the *candidate's* hand type and knows nothing about what is
-        // worn, so without this the ranker sims a one-hander into an empty off
-        // hand while a two-hander stays in the main hand — a pairing the game
-        // cannot equip, priced as an upgrade.
-        //
-        // Skipping is the minimal correct semantics. The alternative, letting
-        // the off-hand pick displace the worn two-hander, prices a two-item
-        // swap under a one-item row: the delta would silently include losing
-        // the two-hander, which is not what the row claims. A player holding a
-        // two-hander who wants to dual-wield gets that answer from the
-        // main-hand rows, which are ranked normally.
-        if (slotName === "offhand" && !mainHandIsOneHanded) continue;
-        const slotIndex = SIM_ORDER.indexOf(slotName);
-        if (slotIndex < 0) {
+        // Shared with the screening pass — see `attemptEligibility` for why the
+        // two routes must agree on the attempt set, and for the reasoning behind
+        // each guard.
+        const eligibility = attemptEligibility(entry, slotName);
+        if (eligibility.kind === "unmapped") {
           throw new Error(
             `slot mapping bug: ${entry.slot} -> ${slotName} is not in SIM_ORDER ` +
               `(item ${entry.itemId} ${entry.name})`
           );
         }
-        // A paired slot tries both placements and keeps the better one, so
-        // without this an item already worn in finger2 gets priced as an
-        // upgrade into finger1 as well — a second copy the player does not
-        // have. Skipping leaves the identity swap as the only outcome for a
-        // worn item, matching what every unpaired slot already does.
-        //
-        // Wearing a second copy of a *non-unique* ring or trinket is legal in
-        // TBC, and this guard blocks that row. Ticket 308 decided it is
-        // deliberately out of scope, because relaxing the guard here does not
-        // produce the missing row. This loop emits one row per *item*, not per
-        // placement: it keeps only the best swap across slots, so an unguarded
-        // second placement would not appear alongside the worn item's identity
-        // swap — it would win the comparison and overwrite it, turning "you
-        // already wear this" into "wear a second one" with nothing in the row
-        // saying so. The below-cutoff owned-row filter in upgrades_tab.tsx
-        // rests on this guard for the same reason. Producing the row honestly
-        // needs a per-placement row concept through the engine output, the
-        // view, and the UI; every item entry already carries `unique` for
-        // whoever builds it. Ticket 309 holds the redesign map.
-        const wornAt = equipment.findIndex((spec) => spec.id === entry.itemId);
-        if (wornAt >= 0 && wornAt !== slotIndex) continue;
+        if (eligibility.kind === "skip") continue;
+        const { slotIndex } = eligibility;
         let swapped: SimItemSpec[];
         let repairSwaps: readonly MetaRepairSwap[];
         try {
@@ -851,7 +945,34 @@ export async function rankUpgrades(
         // observation differs by route. `composeFor` still runs: it is pure and
         // pre-sim, and `winningRequests` (used by `replicateTopItems`) must hold
         // the same request either way.
-        let candObs = screened?.get(screenKey(entry.itemId, slotIndex));
+        // Which baseline this attempt's delta is taken against travels with the
+        // observation, because the two are only meaningful as a pair: a
+        // screened observation was measured by the bulk engine's own probe and
+        // must be differenced against it (see `screenCandidates` for the
+        // measured 65.3 DPS offset that makes mixing them wrong), while a
+        // looped or cached observation belongs to `baselineDps`.
+        let candBaselineDps = baselineDps;
+        let candObs = screened?.byKey.get(screenKey(entry.itemId, slotIndex));
+        if (candObs) {
+          candBaselineDps = screened!.baselineDps;
+          // Stored so a re-run screens from the store instead of re-simming;
+          // see `cacheScreenResult` for why this is its own key namespace.
+          await cacheScreenResult(deps, candReq, simVersion, runOpts, {
+            observation: candObs,
+            baselineDps: candBaselineDps,
+          });
+        } else {
+          const cachedScreen = await readCachedScreen(
+            deps,
+            candReq,
+            simVersion,
+            runOpts
+          );
+          if (cachedScreen) {
+            candObs = cachedScreen.observation;
+            candBaselineDps = cachedScreen.baselineDps;
+          }
+        }
         if (!candObs) {
           candObs = await readCachedSim(deps, candReq, simVersion, runOpts);
         }
@@ -870,12 +991,13 @@ export async function rankUpgrades(
           }
           await cacheSimResult(deps, candReq, simVersion, runOpts, candObs);
         }
-        const deltaDps = candObs.dps - baselineDps;
+        const deltaDps = candObs.dps - candBaselineDps;
         const note = setBreakNote(equipment, slotIndex, entry.itemId);
         if (!best || deltaDps > best.deltaDps) {
           const statDelta = statDeltaBetween(equipment, swapped);
           const next: BestSwap = {
             deltaDps,
+            baselineDps: candBaselineDps,
             stdev: candObs.stdev,
             request: candReq,
             slotIndex,
@@ -915,7 +1037,9 @@ export async function rankUpgrades(
       });
 
       const deltaPct =
-        baselineDps === 0 ? 0 : (best.deltaDps / baselineDps) * 100;
+        best.baselineDps === 0
+          ? 0
+          : (best.deltaDps / best.baselineDps) * 100;
       const belowCutoff = !meetsCutoff(best.deltaDps, deltaPct, cutoff);
       const item: RankedItem = {
         rank: null,
@@ -1658,6 +1782,65 @@ async function cacheSimResult(
 ): Promise<void> {
   await asInternal(() =>
     deps.store.put(simStoreKey(req, simVersion, opts), observation)
+  );
+}
+
+/**
+ * A screened observation is stored under its own key namespace, deliberately
+ * NOT under `simStoreKey`.
+ *
+ * The loop's key is `sim:<request>:<version>:<seed>:<iterations>` and says
+ * nothing about which engine measured the number. A bulk-measured observation
+ * filed there would be read back by two callers that must never see one: the
+ * per-candidate loop, which differences against the loop's own baseline, and —
+ * because `simFor` shares `readCachedSim` and replication re-sims at
+ * `seeds[0]`, the same seed `runOpts` carries — `replicateTopItems`, whose
+ * paired-seed contract is that candidate and baseline are measured by the same
+ * engine. Either would reintroduce the cross-engine offset `screenCandidates`
+ * documents, and the second would push it into the accurate final pass that the
+ * screening pass is specifically designed not to touch.
+ *
+ * Scoping the key to the screening route keeps the reuse (a re-run screens from
+ * the store instead of re-simming) while making the observation unreachable
+ * from the paths that would misread it. The stored value carries the baseline
+ * it was measured against for the same reason the in-memory result does: the
+ * observation and its baseline are only meaningful as a pair.
+ */
+type CachedScreenObservation = {
+  observation: SimObservation;
+  baselineDps: number;
+};
+
+function screenStoreKey(
+  req: RaidSimRequest,
+  simVersion: string,
+  opts: SimRunOpts
+): string {
+  return `screen:${simCacheKey(req, simVersion, opts)}`;
+}
+
+async function readCachedScreen(
+  deps: Deps,
+  req: RaidSimRequest,
+  simVersion: string,
+  opts: SimRunOpts
+): Promise<CachedScreenObservation | undefined> {
+  return asInternal(() =>
+    deps.store.get<CachedScreenObservation>(
+      screenStoreKey(req, simVersion, opts)
+    )
+  );
+}
+
+async function cacheScreenResult(
+  deps: Deps,
+  req: RaidSimRequest,
+  simVersion: string,
+  opts: SimRunOpts,
+  value: CachedScreenObservation
+): Promise<void> {
+  await asInternal(() =>
+    deps.store.put(screenStoreKey(req, simVersion, opts), value)
   );
 }
 

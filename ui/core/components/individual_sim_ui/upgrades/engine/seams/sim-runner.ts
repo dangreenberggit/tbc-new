@@ -46,6 +46,14 @@ export type BulkScreenRequest = {
   baseRequest: RaidSimRequest;
   candidates: readonly BulkScreenCandidate[];
   iterations: number;
+  /**
+   * The seed the batch is simulated at, carried explicitly rather than left to
+   * the request builder's own constant. The caller already chooses a seed for
+   * the per-candidate path (`SimRunOpts.seed`), and the screening pass must run
+   * at the same one — a builder-side default is only correct for as long as it
+   * happens to equal the caller's first seed.
+   */
+  seed: number;
 };
 
 /**
@@ -83,8 +91,11 @@ export function simCacheKey(
 /**
  * Stable key for a whole screening batch, same scheme as `simCacheKey` (D4):
  * canonical JSON, no digest. The candidate list is part of the key because a
- * different batch is a different question — but note the key is transport-blind
- * by *shape* only; `simVersion` is supplied by whichever runner recorded it.
+ * different batch is a different question, and so are the seed and iteration
+ * count — the same batch simulated at a different seed is a different
+ * measurement, and omitting the seed would let two of them collide on one
+ * recording. Note the key is transport-blind by *shape* only; `simVersion` is
+ * supplied by whichever runner recorded it.
  */
 export function bulkScreenCacheKey(
   req: BulkScreenRequest,
@@ -92,7 +103,7 @@ export function bulkScreenCacheKey(
 ): string {
   return `bulk:${stableStringify(req.baseRequest)}:${stableStringify(
     req.candidates
-  )}:${simVersion}:${req.iterations}`;
+  )}:${simVersion}:${req.seed}:${req.iterations}`;
 }
 
 function stableStringify(value: unknown): string {

@@ -53,8 +53,12 @@ export function buildBulkSimRequest(req: BulkScreenRequest): BulkSimRequest {
 		simOptions: {
 			iterations: req.iterations,
 			// protobuf-ts int64 accepts a numeric string on fromJson — same
-			// convention `wasm_sim_runner.ts` already uses for a seed.
-			randomSeed: '11',
+			// convention `wasm_sim_runner.ts` already uses for a seed. The value
+			// comes from the caller (`BulkScreenRequest.seed`), not a constant
+			// here: the screening pass must run at the seed the per-candidate path
+			// would have used, and a literal is only right for as long as it
+			// happens to equal the caller's first seed.
+			randomSeed: String(req.seed),
 			debugFirstIteration: false,
 		},
 	};

@@ -61,20 +61,33 @@ export class BulkHttpSimRunner extends WasmSimRunner {
 		const rows: { index: number; observation: SimObservation }[] = [];
 
 		for (const chunk of chunks) {
+			// A fresh `SimSignalManager` registration per chunk, so this signal
+			// cannot already be aborted: nothing holds a reference to it before this
+			// line. Inter-chunk cancellation therefore does not exist on this path
+			// yet — a caller's abort reaches neither the loop nor the in-flight
+			// request, because no caller signal is wired through to either. Ticket
+			// 347 owns that wiring; until it lands, a screening pass runs every
+			// chunk it started with.
 			const signals = this.bulkSignals.registerRunning(RequestTypes.BulkSim);
-			// Checked before dispatch, not only inside the request: an abort that
-			// arrives between chunks would otherwise still pay for every remaining
-			// chunk. `bulkSimAsync` aborts the in-flight one (`worker_pool.ts:214-216`).
-			if (signals.abort.isTriggered()) {
-				this.bulkSignals.unregisterRunning(signals);
-				break;
-			}
 			try {
 				const request = buildBulkSimRequest({ ...req, candidates: chunk });
 				// The chunk bound (25) keeps every batch inside the Go engine's
-				// single-stage regime — it engages its Medium cull stage at 26
-				// (`sim/core/bulk/stage.go`), so nothing is culled and every
-				// candidate comes back. That is the bound's whole job.
+				// single-stage regime, so nothing is culled and every candidate comes
+				// back. That is the bound's whole job.
+				//
+				// The operative gate is `shouldUseLegacyBulkSim` (`sim/core/bulk/
+				// estimate.go`), not the Medium stage's `MaxSurvivors: 25`
+				// (`stage.go`). The survivor limit is real but is not what decides
+				// whether the extra stages run at all: the estimator keeps a run
+				// single-stage well past 26. Measured on the packaged server at 5,000
+				// iterations, n = 26, 30 and 32 all come back single-stage with every
+				// row present, while n = 33 goes two-stage and returns 5 rows of 33 —
+				// so the flip sits at 32/33, identical to the TS tournament's measured
+				// boundary. 25 is inside both regimes with margin.
+				//
+				// That boundary is iteration-sensitive and moves DOWN as iterations
+				// rise, and nothing couples this bound to `req.iterations` (ticket
+				// 349).
 				//
 				// It is not, on its own, enough. `/asyncProgress` returns 204 once
 				// the server evicts a run's progress after 10 minutes

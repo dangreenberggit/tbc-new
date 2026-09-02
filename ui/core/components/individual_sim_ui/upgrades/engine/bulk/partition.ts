@@ -16,23 +16,29 @@ import type { BulkScreenCandidate } from "../seams/sim-runner.js";
  * The largest batch either engine screens without culling anything.
  *
  * Both engines run a single High-only stage below a threshold and only then
- * start culling, and the shared constant has to sit inside BOTH regimes:
+ * start culling, and the shared constant has to sit inside BOTH regimes.
  *
- * - Go engages its Medium stage at 26 candidates.
- * - The TS tournament stays High-only up to 32 at 5,000 iterations. That bound
- *   is iteration-sensitive and moves *down* as iterations rise (it is 39 at
- *   3,000), because `shouldUseLegacyBulkSim` compares an estimate of the
- *   pre-High stages against `highStageIterations * candidateCount`
- *   (`wasm/bulk_sim/estimate.ts:14-32`).
+ * On both engines the gate that decides whether the earlier stages run at all
+ * is `shouldUseLegacyBulkSim`, which compares an estimate of the pre-High stages
+ * against `highStageIterations * candidateCount` (`wasm/bulk_sim/estimate.ts:
+ * 14-32`; `sim/core/bulk/estimate.go` on the Go side). It is NOT the Medium
+ * stage's own survivor limit (`MaxSurvivors: 25` in `stage.go`) — that limit is
+ * real but only applies once the estimator has already decided to run more than
+ * one stage, so it does not set the no-culling boundary.
  *
- * The 32 is measured, not only derived: an n=32 batch returns one row per
- * candidate from a single stage with every candidate surviving, while n=33 runs
- * two stages and comes back with 5 rows of 33 — silently, with no error field
- * set, which is why the runner also asserts row completeness per chunk.
+ * Measured at 5,000 iterations, both engines flip between 32 and 33: n = 26, 30
+ * and 32 each come back single-stage with one row per candidate, while n = 33
+ * runs two stages and returns 5 rows of 33 — silently, with no error field set,
+ * which is why the runners also assert row completeness per chunk. The two
+ * boundaries being identical is measured on both engines, not assumed from one.
  *
- * 25 is the largest value inside both, so it is the shared constant. The web
- * side could carry 32; that headroom is deliberately left on the table rather
- * than letting the two transports use different batch sizes.
+ * That boundary is iteration-sensitive and moves *down* as iterations rise (the
+ * TS side sits at 39 for 3,000), and nothing here couples the bound to the
+ * caller's iteration count — see ticket 349.
+ *
+ * 25 is inside both regimes with margin, so it is the shared constant. Both
+ * sides could carry 32 at today's default; that headroom is deliberately left on
+ * the table rather than letting the two transports use different batch sizes.
  *
  * Culling is what this bound prevents. It does NOT guarantee a row per
  * candidate on its own — `wasm/bulk_sim/statistics.ts:107` drops any result

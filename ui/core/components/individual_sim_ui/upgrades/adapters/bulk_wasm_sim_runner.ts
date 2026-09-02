@@ -78,14 +78,28 @@ export function bulkPoolSizeFrom(setting: number | undefined, hardwareConcurrenc
 	return Math.max(2, Math.min(setting, hardwareConcurrency, memoryCap));
 }
 
+/**
+ * Reads the user's worker-count setting.
+ *
+ * Three outcomes, deliberately distinct. An *absent* key is a user who never
+ * chose, so the default applies. A *present and readable* value is the user's
+ * choice and is returned as-is — `0` means Off, never clamped upward
+ * (`sim.ts:175`). An *unreadable* store (localStorage throwing, or a value that
+ * does not parse to a finite number) is neither: it is an unknown setting, and
+ * returning the default there would silently override a user who had chosen Off
+ * — turning a deliberate "do not run workers" into a multi-worker bulk path on
+ * the strength of a storage failure. `undefined` instead, which `makeSimRunner`
+ * reads as no bulk capability, so an unknown setting fails to the quieter path
+ * rather than the louder one.
+ */
 function readWasmConcurrency(): number | undefined {
 	try {
 		const raw = localStorage.getItem(WASM_CONCURRENCY_KEY);
 		if (raw === null) return DEFAULT_WORKER_COUNT;
 		const parsed = Number(JSON.parse(raw));
-		return Number.isFinite(parsed) ? parsed : DEFAULT_WORKER_COUNT;
+		return Number.isFinite(parsed) ? parsed : undefined;
 	} catch {
-		return DEFAULT_WORKER_COUNT;
+		return undefined;
 	}
 }
 
@@ -146,6 +160,12 @@ export function makeSimRunner(): WasmSimRunner {
 	const setting = readWasmConcurrency();
 	const poolSize = bulkPoolSizeFrom(setting, navigator.hardwareConcurrency || DEFAULT_WORKER_COUNT, memoryCapFromDeviceMemory());
 	if (poolSize === undefined) {
+		// `setting` is undefined either because the user chose nothing readable or
+		// because the store could not be read; `bulkPoolSizeFrom` has already
+		// refused the bulk path for both. The plain runner still needs *a* worker
+		// count, and the default is the right guess for an unknown setting — it
+		// sizes a pool rather than enabling a capability, so guessing here cannot
+		// override an Off the way enabling bulk would.
 		return new WasmSimRunner(Math.max(1, setting ?? DEFAULT_WORKER_COUNT));
 	}
 	return new BulkWasmSimRunner(poolSize);

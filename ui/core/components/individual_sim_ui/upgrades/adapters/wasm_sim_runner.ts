@@ -15,12 +15,25 @@
  * (`sim/core/sim_concurrent.go`'s `SplitSimRequestForConcurrency`), which is
  * a different number for a different worker count (confirmed empirically in
  * `docs/plans/compute-topology.md` §3.1 — same seed, different core count,
- * different float in the last few digits). Plan §2.4 names the actual
- * upstream idiom for many small requests: "there is no bulk RPC — upstream's
- * own Batch tab loops one ordinary sim per combination client-side" — so
- * `raidSimAsync` is called once per candidate, unsharded, and the pool's own
- * least-busy-worker balancing (`WorkerPoolManager`) is what runs several
- * candidates concurrently.
+ * different float in the last few digits). So `raidSimAsync` is called once per
+ * candidate, unsharded, and the pool's own least-busy-worker balancing
+ * (`WorkerPoolManager`) is what runs several candidates concurrently.
+ *
+ * Plan §2.4 justified the per-candidate loop with "there is no bulk RPC —
+ * upstream's own Batch tab loops one ordinary sim per combination client-side".
+ * That is **no longer true of this tree**, and the correction matters to anyone
+ * reading this class as the only available shape. A bulk path now exists: the
+ * screening pass goes through `runBulkScreen` on the `SimRunner` seam, served by
+ * `BulkWasmSimRunner` and `BulkHttpSimRunner`. What remains true is narrower —
+ * the WASM *worker* still has no bulk RPC, because `sim_worker.ts:15-18,107`
+ * stubs `bulkSimAsync` to log and return an empty buffer, which is why the WASM
+ * runner drives upstream's in-browser TS tournament instead. The HTTP worker
+ * maps the RPC for real (`worker_http.ts:64`).
+ *
+ * This class keeps the per-candidate loop regardless, and that is deliberate
+ * rather than unconverted: `run()` serves the accurate final pass (paired-seed
+ * replication) and the set-bonus sims, which need one request per measurement.
+ * Only screening batches.
  */
 
 import { RaidSimRequest as RaidSimRequestProto } from '../../../../proto/api.js';
