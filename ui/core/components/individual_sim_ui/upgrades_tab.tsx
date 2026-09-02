@@ -446,12 +446,7 @@ export class UpgradesTab extends SimTab {
 	// expensive to spin up (each is a WASM instantiation), and MemoryStore's
 	// whole purpose (plan §2.5) is to dedupe identical sim requests *across*
 	// runs in the same page session, not just within one.
-	// The factory decides whether this tab gets the bulk screening capability:
-	// at worker concurrency Off or 1 it returns a plain WasmSimRunner with no
-	// `runBulkScreen`, and `rankUpgrades` then takes its per-candidate path
-	// unchanged. Never clamps a deliberate Off upward.
-	//
-	// That factory answers for the WASM transport only, because it is the only
+	// The factory answers for the WASM transport only, because it is the only
 	// answer available synchronously. Under the packaged local Go server the
 	// right runner is `BulkHttpSimRunner` instead, and which transport this page
 	// actually has is only knowable once a worker reports ready
@@ -459,6 +454,13 @@ export class UpgradesTab extends SimTab {
 	// `sim_worker.js` to `net_worker.js` (`sim/web/main.go:402-403`), so no
 	// synchronous check can see it. Hence `simRunner()` below: this field is the
 	// WASM-side answer and the fallback, resolved or replaced on first use.
+	//
+	// It is called with bulk screening OFF, so this runner has no
+	// `runBulkScreen` and `rankUpgrades` takes its per-candidate path unchanged.
+	// Bulk screening is an HTTP-transport capability: the in-browser tournament
+	// prices a whole 25-candidate chunk (332 s measured) before the first row
+	// lands, against 9.35 s per chunk on the Go server. `makeSimRunner`'s header
+	// carries the measurements and names ticket 346 as the revisit trigger.
 	private readonly sim = makeSimRunner();
 	// Memoised so the transport is probed once per tab, not once per run, and so
 	// two runs never hold different runners (each runner owns worker pools).
@@ -1134,14 +1136,19 @@ export class UpgradesTab extends SimTab {
 	 * (`sim/web/main.go:402-403`) — so a page served by vite gets WASM even when
 	 * a Go server happens to be running elsewhere, and that is the correct answer:
 	 * posting a bulk request to a server that did not serve the page is a
-	 * configuration this deliberately does not support. Both branches are native
-	 * bulk; only the transport differs.
+	 * configuration this deliberately does not support.
+	 *
+	 * The transport also decides whether bulk screening runs at all: the HTTP
+	 * branch screens in batches against the server's native bulk engine, while the
+	 * WASM branch takes the per-candidate loop because the in-browser tournament's
+	 * per-chunk cost is first-row latency (332 s vs 9.35 s per 25-candidate chunk;
+	 * see `makeSimRunner`'s header and ticket 346).
 	 *
 	 * The user's WASM concurrency setting does not gate the HTTP branch. Upstream
 	 * itself declines to apply that setting off-WASM — "Local sim has native
 	 * threading" (`ui/core/sim.ts:163-169`) — because the Go server threads one
-	 * request over NumCPU internally with no client-side knob. So Off/1, which
-	 * correctly withholds the WASM tournament, must not withhold this one.
+	 * request over NumCPU internally with no client-side knob. So a setting that
+	 * speaks only to in-browser workers must not withhold this path.
 	 *
 	 * On any failure — no workers, a ready message that never arrives — this falls
 	 * back to the factory's runner rather than failing the run: the fallback is a

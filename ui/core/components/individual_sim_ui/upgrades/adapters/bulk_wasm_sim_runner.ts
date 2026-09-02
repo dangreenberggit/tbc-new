@@ -147,26 +147,58 @@ export class BulkWasmSimRunner extends WasmSimRunner {
 }
 
 /**
- * Builds the runner the tab uses. Returns a plain `WasmSimRunner` — with no
- * bulk capability at all — when the user's setting is Off or 1, so
- * `deps.sim.runBulkScreen` is undefined and `rankUpgrades` takes its existing
- * per-candidate path unchanged.
+ * Builds the runner the tab uses. By default returns a plain `WasmSimRunner` —
+ * with no bulk capability at all — so `deps.sim.runBulkScreen` is undefined and
+ * `rankUpgrades` takes its existing per-candidate path unchanged. Pass
+ * `bulk = true` to opt into the in-browser tournament; even then the user's
+ * setting still decides, and Off or 1 still yields the plain runner (a
+ * deliberate Off is never clamped upward).
  *
  * The return type is the concrete class, not the `SimRunner` interface, because
  * the tab also reads `.concurrency` off it to size `rankUpgrades`'s own
  * dispatch pool.
+ *
+ * ## Why the WASM default is the per-candidate loop, not the bulk tournament
+ *
+ * `bulk` defaults to `false`, so on the WASM transport this returns the loop
+ * runner even when the user's worker count would support a tournament. The bulk
+ * capability is left to `BulkHttpSimRunner`, which the tab constructs itself
+ * once it knows the page is served by the packaged Go server.
+ *
+ * This is a transport decision backed by measurement, not a retreat from the
+ * batch path. One 25-candidate chunk costs **332 s** on the in-browser TS
+ * tournament (`execution-ledger-web.md`, Step 2/3 arm table, pool 4) against
+ * **9.35 s** for the same chunk on the Go server's native bulk RPC (ticket 347's
+ * chunk table) — a ~35x transport gap for identical work. And because
+ * `rank.ts`'s `screenCandidates` is a single `await` that prices every candidate
+ * before the ranking's first row is emitted, that per-chunk cost is *first-row
+ * latency*: the WASM bulk route shows an empty table for well over five minutes
+ * where the loop streams a row roughly every 40 s. The layout gate's run phase
+ * (`test-layout.mjs`, 120 s deadline for 5 rows) is the mechanical consequence,
+ * but the user-facing one is the reason.
+ *
+ * Ticket 346 is the revisit trigger: it re-measures bulk against the loop at
+ * matched accuracy, having found bulk 1.6x slower end-to-end at *unmatched*
+ * accuracy (the arms ran 5,000 flat vs 7,091 adaptive iterations, so that figure
+ * is explicitly not yet a verdict on batching). If 346 lands with the WASM
+ * tournament competitive, flipping `bulk` back on is a one-argument change —
+ * which is why `BulkWasmSimRunner` stays constructible here rather than deleted.
  */
-export function makeSimRunner(): WasmSimRunner {
+export function makeSimRunner(bulk = false): WasmSimRunner {
 	const setting = readWasmConcurrency();
 	const poolSize = bulkPoolSizeFrom(setting, navigator.hardwareConcurrency || DEFAULT_WORKER_COUNT, memoryCapFromDeviceMemory());
-	if (poolSize === undefined) {
+	if (!bulk || poolSize === undefined) {
 		// `setting` is undefined either because the user chose nothing readable or
 		// because the store could not be read; `bulkPoolSizeFrom` has already
 		// refused the bulk path for both. The plain runner still needs *a* worker
 		// count, and the default is the right guess for an unknown setting — it
 		// sizes a pool rather than enabling a capability, so guessing here cannot
 		// override an Off the way enabling bulk would.
-		return new WasmSimRunner(Math.max(1, setting ?? DEFAULT_WORKER_COUNT));
+		//
+		// `!bulk` reaches the same runner by the header's transport decision. The
+		// pool size is unaffected either way: it sizes `run()`'s worker pool, which
+		// the per-candidate path uses exactly as before.
+		return new WasmSimRunner(Math.max(1, poolSize ?? setting ?? DEFAULT_WORKER_COUNT));
 	}
 	return new BulkWasmSimRunner(poolSize);
 }
