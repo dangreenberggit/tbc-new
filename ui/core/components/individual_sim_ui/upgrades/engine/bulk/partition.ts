@@ -32,9 +32,30 @@ import type { BulkScreenCandidate } from "../seams/sim-runner.js";
  * which is why the runners also assert row completeness per chunk. The two
  * boundaries being identical is measured on both engines, not assumed from one.
  *
- * That boundary is iteration-sensitive and moves *down* as iterations rise (the
- * TS side sits at 39 for 3,000), and nothing here couples the bound to the
- * caller's iteration count — see ticket 349.
+ * The boundary moves *down* as iterations rise, but it floors. Running
+ * upstream's estimator over twelve iteration counts gives the first multi-stage
+ * n as:
+ *
+ *     3,000 → 40   10,000 → 30   28,001 → 27
+ *     5,000 → 33   15,000 → 28   30,000 → 27
+ *     7,500 → 31   20,000 → 28   50,000 → 27
+ *                  28,000 → 28   100,000 → 27   1,000,000 → 27
+ *
+ * so n = 25 and n = 26 are single-stage at every one of them. Two mechanisms,
+ * both identical on the Go side. At n ≤ 25 no pre-High stage runs at all —
+ * Medium needs `candidateCount > maxSurvivors` (25) and Low needs > 100
+ * (`stage.ts:69-76`) — so the estimate reduces to `high×(n+1) ≥ high×n`, true
+ * for any `high`. At n = 26 Medium does run, and the comparison becomes
+ * `1000×27 + high×26 ≥ high×26`, again true for any `high`. Only at n = 27 does
+ * the inequality start to depend on the iteration count, and it flips at 28,001.
+ *
+ * So 25 is iteration-invariant by construction, not by luck at today's default
+ * — the failure ticket 349 feared cannot happen at this constant. What could
+ * happen is a future raise to 27 culling silently above 28,000 iterations, so
+ * `adapters/bulk_request_builder.ts`'s `assertSingleStageChunk` checks every
+ * built request against upstream's estimator and throws rather than letting it
+ * pass. The table above is reproduced by
+ * `packages/core/test/bulk-boundary.test.ts`.
  *
  * 25 is inside both regimes with margin, so it is the shared constant. Both
  * sides could carry 32 at today's default; that headroom is deliberately left on

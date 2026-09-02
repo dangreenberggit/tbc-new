@@ -54,6 +54,13 @@ export type BulkScreenRequest = {
    * happens to equal the caller's first seed.
    */
   seed: number;
+  /**
+   * The caller's Stop (ticket 347). A runner that observes it aborts the
+   * in-flight chunk and issues no further chunk, then rejects with
+   * `BulkScreenAbortedError`. Optional so a runner without cancel support — and
+   * every recorded fixture — stays valid.
+   */
+  signal?: AbortSignal;
 };
 
 /**
@@ -63,7 +70,46 @@ export type BulkScreenRequest = {
 export type BulkScreenResult = {
   baseline: SimObservation;
   rows: ReadonlyArray<{ index: number; observation: SimObservation }>;
+  /**
+   * Chunks whose request failed for an engine-reported or transport reason
+   * (ticket 347's rider). Their candidates carry no row, and the caller sims
+   * them itself through the per-candidate loop. Absent when nothing failed, so
+   * a clean run's result shape is unchanged.
+   */
+  failures?: ReadonlyArray<{ indices: readonly number[]; reason: string }>;
 };
+
+/**
+ * The caller's `signal` fired: the in-flight chunk was aborted and no further
+ * chunk was issued. Distinct from every other failure because the caller asked
+ * for it — `rank.ts` treats it as an abort observed before the pass, not an
+ * error.
+ */
+export class BulkScreenAbortedError extends Error {
+  override readonly name = "BulkScreenAbortedError";
+
+  constructor() {
+    super("bulk screen aborted by the caller's signal");
+  }
+}
+
+/**
+ * A bulk response that is structurally wrong — a row shortfall, or no baseline.
+ * These are the checks that stand between a silent cull and a truncated
+ * ranking, so they must never degrade to the per-candidate loop the way an
+ * engine-reported or transport failure does; the driver rethrows this class
+ * unconditionally.
+ *
+ * It lives in the seam rather than beside the check that throws it because
+ * `rank.ts` names it, and the engine may not import from `adapters/`.
+ */
+export class BulkScreenIntegrityError extends Error {
+  override readonly name = "BulkScreenIntegrityError";
+
+  constructor(message: string) {
+    super(message);
+  }
+}
 
 export interface SimRunner {
   version(): Promise<string>;

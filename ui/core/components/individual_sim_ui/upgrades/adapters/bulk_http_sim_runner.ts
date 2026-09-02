@@ -3,9 +3,10 @@
  * Go server's HTTP transport.
  *
  * This is a *transport* sibling of `BulkWasmSimRunner`, not a second design.
- * Both partition with `partitionForBulkScreen`, build the identical typed
- * request with `buildBulkSimRequest`, and map the response with the shared
- * `bulkScreenResultFrom`. The only difference is where the tournament runs:
+ * Both hand the whole chunk loop — partitioning, the single-stage guard, cancel,
+ * response mapping and chunk-failure handling — to the shared
+ * `runBulkScreenChunks`, so neither transport can drift from the other on any of
+ * it. The only difference is where the tournament runs:
  * `BulkWasmSimRunner` drives upstream's TypeScript tournament in-browser
  * (`runConcurrentBulkSim`), because the WASM worker's `bulkSimAsync` is a stub
  * (`ui/worker/sim_worker.ts:15-18,107`); this runner calls the RPC for real,
@@ -33,12 +34,10 @@
  * and the user's WASM concurrency choice is not a statement about this path.
  */
 
-import { RequestTypes, SimSignalManager } from '../../../../sim_signal_manager.js';
+import { SimSignalManager } from '../../../../sim_signal_manager.js';
 import { WorkerPool } from '../../../../worker_pool.js';
-import { MAX_CANDIDATES_PER_BULK_REQUEST, partitionForBulkScreen } from '../engine/bulk/partition.js';
-import type { BulkScreenRequest, BulkScreenResult, SimObservation } from '../engine/seams/sim-runner.js';
-import { buildBulkSimRequest } from './bulk_request_builder.js';
-import { bulkScreenResultFrom } from './bulk_wasm_sim_runner.js';
+import type { BulkScreenRequest, BulkScreenResult } from '../engine/seams/sim-runner.js';
+import { runBulkScreenChunks } from './bulk_screen_driver.js';
 import { WasmSimRunner } from './wasm_sim_runner.js';
 
 export class BulkHttpSimRunner extends WasmSimRunner {
@@ -54,67 +53,24 @@ export class BulkHttpSimRunner extends WasmSimRunner {
 		this.bulkPool = new WorkerPool(1);
 	}
 
+	// The chunk bound that keeps every batch inside the Go engine's single-stage
+	// (no-culling) regime lives in `engine/bulk/partition.ts`, and the driver
+	// asserts it per built request against upstream's own estimator
+	// (`assertSingleStageChunk`, ticket 349).
 	async runBulkScreen(req: BulkScreenRequest): Promise<BulkScreenResult> {
-		const chunks = partitionForBulkScreen(req.candidates, MAX_CANDIDATES_PER_BULK_REQUEST);
-		const simVersion = await this.version();
-		let baseline: SimObservation | undefined;
-		const rows: { index: number; observation: SimObservation }[] = [];
-
-		for (const chunk of chunks) {
-			// A fresh `SimSignalManager` registration per chunk, so this signal
-			// cannot already be aborted: nothing holds a reference to it before this
-			// line. Inter-chunk cancellation therefore does not exist on this path
-			// yet — a caller's abort reaches neither the loop nor the in-flight
-			// request, because no caller signal is wired through to either. Ticket
-			// 347 owns that wiring; until it lands, a screening pass runs every
-			// chunk it started with.
-			const signals = this.bulkSignals.registerRunning(RequestTypes.BulkSim);
-			try {
-				const request = buildBulkSimRequest({ ...req, candidates: chunk });
-				// The chunk bound (25) keeps every batch inside the Go engine's
-				// single-stage regime, so nothing is culled and every candidate comes
-				// back. That is the bound's whole job.
-				//
-				// The operative gate is `shouldUseLegacyBulkSim` (`sim/core/bulk/
-				// estimate.go`), not the Medium stage's `MaxSurvivors: 25`
-				// (`stage.go`). The survivor limit is real but is not what decides
-				// whether the extra stages run at all: the estimator keeps a run
-				// single-stage well past 26. Measured on the packaged server at 5,000
-				// iterations, n = 26, 30 and 32 all come back single-stage with every
-				// row present, while n = 33 goes two-stage and returns 5 rows of 33 —
-				// so the flip sits at 32/33, identical to the TS tournament's measured
-				// boundary. 25 is inside both regimes with margin.
-				//
-				// That boundary is iteration-sensitive and moves DOWN as iterations
-				// rise, and nothing couples this bound to `req.iterations` (ticket
-				// 349).
-				//
-				// It is not, on its own, enough. `/asyncProgress` returns 204 once
-				// the server evicts a run's progress after 10 minutes
-				// (`sim/web/main.go:219,310`), and the HTTP worker treats 204 as
-				// normal completion — it simply `break`s out of its poll loop
-				// (`ui/worker/worker_http.ts:40-42`) and returns whatever it last
-				// received. A truncated screen would then read as a complete one and
-				// silently drop candidates from the ranking. `bulkScreenResultFrom`
-				// throws unless the chunk returned one row per candidate with
-				// `dpsMetrics`, which is what converts that silent path into a hard
-				// error. Shared with the WASM runner deliberately: the two transports
-				// must not disagree about what a bulk response means.
-				const result = await this.bulkPool.bulkSimAsync(request, () => {}, signals);
-				const mapped = bulkScreenResultFrom(result, chunk.length, simVersion);
-				// Each chunk re-probes its own baseline, so later chunks would
-				// otherwise overwrite the first. Keeping the first makes every
-				// screening delta in this batch share one reference point.
-				baseline ??= mapped.baseline;
-				rows.push(...mapped.rows);
-			} finally {
-				this.bulkSignals.unregisterRunning(signals);
-			}
-		}
-
-		if (!baseline) {
-			throw new Error('bulk screen produced no chunks');
-		}
-		return { baseline, rows };
+		return runBulkScreenChunks(req, {
+			signals: this.bulkSignals,
+			simVersion: await this.version(),
+			// `/asyncProgress` returns 204 once the server evicts a run's progress
+			// after 10 minutes (`sim/web/main.go:219,310`), and the HTTP worker
+			// treats 204 as normal completion — it simply `break`s out of its poll
+			// loop (`ui/worker/worker_http.ts:40-42`) and returns whatever it last
+			// received. A truncated screen would then read as a complete one and
+			// silently drop candidates from the ranking. The driver's shared
+			// `bulkScreenResultFrom` throws unless the chunk returned one row per
+			// candidate with `dpsMetrics`, which is what converts that silent path
+			// into a hard error.
+			dispatch: (request, signals) => this.bulkPool.bulkSimAsync(request, () => {}, signals),
+		});
 	}
 }

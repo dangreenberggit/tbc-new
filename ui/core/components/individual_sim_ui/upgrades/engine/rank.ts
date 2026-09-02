@@ -78,6 +78,9 @@ import {
 } from "./pool.js";
 import type { FightSummary, GearSource } from "./seams/gear-source.js";
 import {
+  // Value imports: these classes are tested with `instanceof`.
+  BulkScreenAbortedError,
+  BulkScreenIntegrityError,
   simCacheKey,
   type RaidSimRequest,
   type SimObservation,
@@ -175,9 +178,12 @@ export type Deps = {
    */
   concurrency?: number;
   /**
-   * Stop signal (candidate-pool.md §5.1.4). On abort, in-flight sims finish
-   * and the run returns a `PartialRanking` (`complete: false`); no further
-   * candidates are dispatched.
+   * Stop signal (candidate-pool.md §5.1.4). On abort, in-flight per-candidate
+   * sims finish and the run returns a `PartialRanking` (`complete: false`); no
+   * further candidates are dispatched. An in-flight bulk **screening chunk** is
+   * aborted rather than finished (ticket 347) — a chunk costs seconds on the Go
+   * transport and minutes on the in-browser one, which no honest reading of
+   * "in-flight work finishes" covers.
    */
   signal?: AbortSignal;
 };
@@ -319,6 +325,18 @@ export type Ranking = {
   setBonuses?: SetBonusValue[];
   plausibilityWarnings?: PlausibilityWarning[];
   /**
+   * Screening chunks that failed for an engine or transport reason, and whose
+   * candidates were priced by the per-candidate loop instead (ticket 347's
+   * rider). The ranking is unaffected in content — the loop measures the same
+   * question — but it cost more sims than it should have, and saying so is the
+   * difference between a slow run and an inexplicable one.
+   *
+   * Absent when nothing fell back, so a run that took the bulk route cleanly is
+   * byte-identical to one on a runner with no bulk capability at all — which is
+   * what the route-equivalence tests compare.
+   */
+  screeningFallbacks?: readonly { candidates: number; reason: string }[];
+  /**
    * `true` unless Stop cut this run short (candidate-pool.md §5.1.4).
    *
    * The literal type does real work at every consumer that names `Ranking`
@@ -374,9 +392,17 @@ type BestSwap = {
  * 339 — the two interact (adaptive is the mechanism that makes a higher base
  * affordable), so neither moves alone.
  *
- * Changing it is not local. The value is part of every ranking cache key, and
- * the no-culling batch bound in `bulk/partition.ts` was measured at this count
- * and moves DOWN as iterations rise (ticket 349).
+ * Changing it is not local: the value is part of every ranking cache key.
+ *
+ * It does not, however, threaten the no-culling batch bound in
+ * `bulk/partition.ts`. That boundary moves DOWN as iterations rise, but it
+ * floors: n = 25 and n = 26 are single-stage at every count measured up to
+ * 1,000,000, and the first multi-stage n settles at 27 above 28,000 iterations
+ * (upstream's own estimator, measured in
+ * `packages/core/test/bulk-boundary.test.ts`). The shipped bound of 25 is
+ * therefore iteration-invariant, and `assertSingleStageChunk` checks every
+ * built chunk against that estimator regardless, so a raised constant fails
+ * loudly instead of culling silently (ticket 349).
  */
 const DEFAULT_ITERATIONS = 5000;
 const DEFAULT_SEEDS = [11, 22, 33, 44, 55];
@@ -699,6 +725,12 @@ export async function rankUpgrades(
       slot: string;
       reason: string;
     }[] = [];
+    /**
+     * Screening chunks that failed for an engine or transport reason, whose
+     * candidates the per-candidate loop priced instead. Disclosed on the
+     * `Ranking` so a slow run is explicable rather than mysterious.
+     */
+    const screeningFallbacks: { candidates: number; reason: string }[] = [];
     const individualDeltasByItemId = new Map<number, IndividualDelta>();
 
     const talentsString = talentsStringFromRequest(request);
@@ -870,17 +902,45 @@ export async function rankUpgrades(
       }
       if (attempts.length === 0) return undefined;
 
-      const result = await runBulkScreen({
-        baseRequest: composeForBulk(attempts.map((attempt) => attempt.gear)),
-        candidates: attempts.map((attempt, index) => ({
-          index,
-          gear: { items: attempt.gear.map((item) => ({ ...item })) },
-        })),
-        iterations,
-        // The same seed the per-candidate path would have used, so the
-        // screening pass measures the question the loop asks.
-        seed: runOpts.seed,
-      });
+      let result;
+      try {
+        result = await runBulkScreen({
+          baseRequest: composeForBulk(attempts.map((attempt) => attempt.gear)),
+          candidates: attempts.map((attempt, index) => ({
+            index,
+            gear: { items: attempt.gear.map((item) => ({ ...item })) },
+          })),
+          iterations,
+          // The same seed the per-candidate path would have used, so the
+          // screening pass measures the question the loop asks.
+          seed: runOpts.seed,
+          // Ticket 347: the runner aborts the in-flight chunk on Stop and
+          // issues no further one.
+          signal: deps.signal,
+        });
+      } catch (err) {
+        // Stop: no screening numbers, and the caller's own abort handling
+        // takes it from here — the loop dispatches nothing either.
+        if (err instanceof BulkScreenAbortedError) return undefined;
+        // A structurally wrong bulk response is not something to work around
+        // quietly; it is exactly what the integrity checks exist to surface.
+        if (err instanceof BulkScreenIntegrityError) throw err;
+        // Everything else — an engine-reported failure, a dead worker, an HTTP
+        // status — costs speed, not correctness: every attempt falls through to
+        // `deps.sim.run` below, which measures the same question the batch
+        // would have. Disclosed rather than silent.
+        screeningFallbacks.push({
+          candidates: attempts.length,
+          reason: err instanceof Error ? err.message : String(err),
+        });
+        return undefined;
+      }
+      for (const failure of result.failures ?? []) {
+        screeningFallbacks.push({
+          candidates: failure.indices.length,
+          reason: failure.reason,
+        });
+      }
 
       const byKey = new Map<string, SimObservation>();
       for (const row of result.rows) {
@@ -1145,7 +1205,9 @@ export async function rankUpgrades(
     // baseline — is untouched, so the ranking's estimand does not change.
     //
     // Absent capability, or an abort already raised, means no screening pass and
-    // the loop runs exactly as before.
+    // the loop runs exactly as before. An abort raised *during* the pass
+    // surfaces as `BulkScreenAbortedError` and is handled the same way: no
+    // screening numbers, and the loop below dispatches nothing either.
     const screened = signal?.aborted
       ? undefined
       : await screenCandidates(simCandidates);
@@ -1343,6 +1405,7 @@ export async function rankUpgrades(
       items: ranked,
       ...(setBonuses.length > 0 ? { setBonuses } : {}),
       ...(warnings.length > 0 ? { plausibilityWarnings: warnings } : {}),
+      ...(screeningFallbacks.length > 0 ? { screeningFallbacks } : {}),
     };
 
     if (aborted) {

@@ -934,10 +934,14 @@ export class UpgradesTab extends SimTab {
 		// nothing else. That refresh now happens in the picker's own `setValue`,
 		// so there is no separate change listener for it.
 
-		// Stop's contract (candidate-pool.md §5.1.4) is "finish in-flight work,
-		// dispatch nothing new" — signalling the abort is all this button does;
+		// Stop's contract (candidate-pool.md §5.1.4) is "finish in-flight
+		// per-candidate sims, abort an in-flight screening chunk, dispatch
+		// nothing new" — signalling the abort is all this button does;
 		// rankUpgrades itself decides what "in-flight" means and returns the
 		// PartialRanking, so there is nothing else for the click handler to do.
+		// The screening chunk is the exception because it is not a sim but a
+		// batch of them: seconds on the Go transport, minutes in the browser
+		// (ticket 347).
 		this.stopButton.addEventListener('click', () => {
 			this.abortController?.abort();
 		});
@@ -1270,6 +1274,16 @@ export class UpgradesTab extends SimTab {
 				},
 			);
 			runAssumptions = ranking.assumptions;
+			// A screening chunk that failed for an engine or transport reason cost
+			// this run a batch's worth of speed; the ranking is unaffected because
+			// the per-candidate loop priced those candidates instead. Console
+			// rather than the page: it explains a slow run to whoever is looking,
+			// and says nothing a player would act on (ticket 347).
+			for (const fallback of ranking.screeningFallbacks ?? []) {
+				console.warn(
+					`[upgrades] screening fell back to per-candidate sims for ${fallback.candidates} candidates: ${fallback.reason}`,
+				);
+			}
 		} finally {
 			this.stopButton.disabled = true;
 			this.abortController = undefined;

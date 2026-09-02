@@ -11,8 +11,39 @@
 import { BulkGearCandidate, BulkSimRequest, RaidSimRequest as RaidSimRequestProto } from '../../../../proto/api.js';
 import { EquipmentSpec } from '../../../../proto/common.js';
 import { SimRequest } from '../../../../../worker/types.js';
+import { shouldUseLegacyBulkSim } from '../../../../wasm/bulk_sim/estimate.js';
 import { generateRequestId } from '../../../../worker_pool.js';
 import type { BulkScreenRequest } from '../engine/seams/sim-runner.js';
+
+/**
+ * Asserts that a built chunk will take the single-stage (High-only) path, where
+ * nothing is culled and every candidate comes back with a row (ticket 349).
+ *
+ * It calls **upstream's own** `shouldUseLegacyBulkSim` on the actual request
+ * rather than transcribing its formula: the estimator reads
+ * `highStageIterations`, the stage table's minimum iterations and survivor
+ * limits, and its own minimum-combinations floor, and a mirrored copy here
+ * would drift the first time any of those moved. `true` from that function is
+ * the legacy — that is, single-stage — path.
+ *
+ * It runs client-side on **both** transports, including the Go one, because
+ * Go's `sim/core/bulk/estimate.go` is the same formula over the same constants
+ * (minCombinations 20; Medium 1000/25; Low 100/100), and both engines were
+ * measured flipping at the same n. So checking the TypeScript estimator against
+ * the request that is about to be posted is a check on what the Go server will
+ * do with it.
+ *
+ * Today's `MAX_CANDIDATES_PER_BULK_REQUEST` of 25 is single-stage at every
+ * iteration count, so this can only fire if the constant is raised — which is
+ * the point: a future 27 would otherwise cull silently above 28,000 iterations.
+ */
+export function assertSingleStageChunk(request: BulkSimRequest, candidateCount: number): void {
+	if (shouldUseLegacyBulkSim(request, candidateCount)) return;
+	throw new Error(
+		`bulk chunk of ${candidateCount} candidates at ${request.highStageIterations} iterations would take ` +
+			`the multi-stage (culling) path; keep MAX_CANDIDATES_PER_BULK_REQUEST <= 26 — see engine/bulk/partition.ts`,
+	);
+}
 
 /**
  * Four things this must get right, each of which fails loudly-but-obscurely if

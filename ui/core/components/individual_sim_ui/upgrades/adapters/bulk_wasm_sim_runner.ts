@@ -8,12 +8,13 @@
  */
 
 import { BulkSimResult } from '../../../../proto/api.js';
-import { RequestTypes, SimSignalManager } from '../../../../sim_signal_manager.js';
+import { SimSignalManager } from '../../../../sim_signal_manager.js';
 import { WorkerPool } from '../../../../worker_pool.js';
 import { runConcurrentBulkSim } from '../../../../wasm/bulk_sim/index.js';
-import { MAX_CANDIDATES_PER_BULK_REQUEST, partitionForBulkScreen } from '../engine/bulk/partition.js';
-import type { BulkScreenRequest, BulkScreenResult, SimObservation, SimRunner } from '../engine/seams/sim-runner.js';
-import { buildBulkSimRequest } from './bulk_request_builder.js';
+// A value import, not `import type`: `BulkScreenIntegrityError` is thrown here.
+import { BulkScreenIntegrityError } from '../engine/seams/sim-runner.js';
+import type { BulkScreenRequest, BulkScreenResult, SimObservation } from '../engine/seams/sim-runner.js';
+import { runBulkScreenChunks } from './bulk_screen_driver.js';
 import { DEFAULT_WORKER_COUNT, memoryCapFromDeviceMemory, WasmSimRunner } from './wasm_sim_runner.js';
 
 /** The user's own worker-count choice; `0` is a deliberate "off". */
@@ -32,6 +33,13 @@ const WASM_CONCURRENCY_KEY = '__tbc_new_wasmconcurrency';
  * no error. Since screening deltas feed straight into the ranking, a missing row
  * would become a missing candidate rather than a failure; throwing is the only
  * honest option.
+ *
+ * Two error classes, deliberately (ticket 347's rider). An engine-reported
+ * `result.error` is a plain `Error`: it is what a panicking candidate collapses
+ * into (`index.ts:121-122`), the chunk driver degrades it to per-candidate
+ * simming, and the loop then names the bad candidate itself. The two integrity
+ * checks throw `BulkScreenIntegrityError`, which the driver never degrades —
+ * a structurally wrong response must surface, not quietly become 25 slower sims.
  */
 export function bulkScreenResultFrom(result: BulkSimResult, expectedCount: number, simVersion: string): BulkScreenResult {
 	if (result.error) {
@@ -40,11 +48,11 @@ export function bulkScreenResultFrom(result: BulkSimResult, expectedCount: numbe
 	// `baseline` is its own field (`index.ts:165`), never an n+1th row (`:166`).
 	const baselineDps = result.baseline?.dpsMetrics;
 	if (!baselineDps) {
-		throw new Error('bulk screen returned no baseline dpsMetrics');
+		throw new BulkScreenIntegrityError('bulk screen returned no baseline dpsMetrics');
 	}
 	const rows = result.topResults.filter(row => row.dpsMetrics);
 	if (result.topResults.length !== expectedCount || rows.length !== expectedCount) {
-		throw new Error(
+		throw new BulkScreenIntegrityError(
 			`bulk screen row shortfall: expected ${expectedCount} rows with dpsMetrics, ` +
 				`got ${result.topResults.length} rows of which ${rows.length} carry dpsMetrics`,
 		);
@@ -113,36 +121,16 @@ export class BulkWasmSimRunner extends WasmSimRunner {
 	}
 
 	async runBulkScreen(req: BulkScreenRequest): Promise<BulkScreenResult> {
-		const chunks = partitionForBulkScreen(req.candidates, MAX_CANDIDATES_PER_BULK_REQUEST);
-		const simVersion = await this.version();
-		let baseline: SimObservation | undefined;
-		const rows: { index: number; observation: SimObservation }[] = [];
-
-		for (const chunk of chunks) {
-			const request = buildBulkSimRequest({ ...req, candidates: chunk });
-			const signals = this.bulkSignals.registerRunning(RequestTypes.BulkSim);
-			try {
-				// Upstream's TS tournament, not `workerPool.bulkSimAsync`: the WASM
-				// worker's `bulkSimAsync` is a stub that logs "bulkSimAsync is only
-				// supported by the HTTP worker" and returns an empty buffer
-				// (`ui/worker/sim_worker.ts:15-18,107`). Switch to the RPC when
-				// upstream implements it in WASM.
-				const result = await runConcurrentBulkSim(request, this.bulkPool, () => {}, signals);
-				const mapped = bulkScreenResultFrom(result, chunk.length, simVersion);
-				// Each chunk re-probes its own baseline, so later chunks would
-				// otherwise overwrite the first. Keeping the first makes every
-				// screening delta in this batch share one reference point.
-				baseline ??= mapped.baseline;
-				rows.push(...mapped.rows);
-			} finally {
-				this.bulkSignals.unregisterRunning(signals);
-			}
-		}
-
-		if (!baseline) {
-			throw new Error('bulk screen produced no chunks');
-		}
-		return { baseline, rows };
+		return runBulkScreenChunks(req, {
+			signals: this.bulkSignals,
+			simVersion: await this.version(),
+			// Upstream's TS tournament, not `workerPool.bulkSimAsync`: the WASM
+			// worker's `bulkSimAsync` is a stub that logs "bulkSimAsync is only
+			// supported by the HTTP worker" and returns an empty buffer
+			// (`ui/worker/sim_worker.ts:15-18,107`). Switch to the RPC when
+			// upstream implements it in WASM.
+			dispatch: (request, signals) => runConcurrentBulkSim(request, this.bulkPool, () => {}, signals),
+		});
 	}
 }
 
