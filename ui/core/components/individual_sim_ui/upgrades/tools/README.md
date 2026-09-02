@@ -10,6 +10,11 @@ rules the sim already owns — see ticket 301, where a hand-ported copy of
 Nothing here is part of the site build. These files are not imported by any UI
 code and are not under `engine/`, so they carry no `PROVENANCE.md` row.
 
+`equiv-campaign.mts` is the one exception to "Node scripts": it runs in the
+browser, not under Node. It is kept here anyway because it is the same kind of
+thing — a measurement tool that is not part of the shipped tab. See its own
+header for what it does and why it instruments rather than re-implements.
+
 ## Why the harness exists
 
 `ui/core/proto_utils/utils.ts` cannot be imported under plain Node as-is: some
