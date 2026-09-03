@@ -13,6 +13,8 @@ import { EquipmentSpec } from '../../../../proto/common.js';
 import { SimRequest } from '../../../../../worker/types.js';
 import { shouldUseLegacyBulkSim } from '../../../../wasm/bulk_sim/estimate.js';
 import { generateRequestId } from '../../../../worker_pool.js';
+// A value import, not `import type`: `BulkScreenIntegrityError` is thrown here.
+import { BulkScreenIntegrityError } from '../engine/seams/sim-runner.js';
 import type { BulkScreenRequest } from '../engine/seams/sim-runner.js';
 
 /**
@@ -36,10 +38,17 @@ import type { BulkScreenRequest } from '../engine/seams/sim-runner.js';
  * Today's `MAX_CANDIDATES_PER_BULK_REQUEST` of 25 is single-stage at every
  * iteration count, so this can only fire if the constant is raised — which is
  * the point: a future 27 would otherwise cull silently above 28,000 iterations.
+ *
+ * It throws `BulkScreenIntegrityError`, the same class the response-side checks
+ * use, because that class is what makes a failure loud: the driver rethrows it
+ * unconditionally and `rank.ts` rethrows it rather than degrading. A bare
+ * `Error` here would land in the generic branch at both sites and turn a raised
+ * bound — the one condition this guard exists to catch — into a `screeningFallbacks`
+ * entry and a quiet fall back to the per-candidate loop.
  */
 export function assertSingleStageChunk(request: BulkSimRequest, candidateCount: number): void {
 	if (shouldUseLegacyBulkSim(request, candidateCount)) return;
-	throw new Error(
+	throw new BulkScreenIntegrityError(
 		`bulk chunk of ${candidateCount} candidates at ${request.highStageIterations} iterations would take ` +
 			`the multi-stage (culling) path; keep MAX_CANDIDATES_PER_BULK_REQUEST <= 26 — see engine/bulk/partition.ts`,
 	);

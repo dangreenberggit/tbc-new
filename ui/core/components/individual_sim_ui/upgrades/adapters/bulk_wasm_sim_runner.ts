@@ -37,9 +37,12 @@ const WASM_CONCURRENCY_KEY = '__tbc_new_wasmconcurrency';
  * Two error classes, deliberately (ticket 347's rider). An engine-reported
  * `result.error` is a plain `Error`: it is what a panicking candidate collapses
  * into (`index.ts:121-122`), the chunk driver degrades it to per-candidate
- * simming, and the loop then names the bad candidate itself. The two integrity
- * checks throw `BulkScreenIntegrityError`, which the driver never degrades —
- * a structurally wrong response must surface, not quietly become 25 slower sims.
+ * simming, and the loop then names the bad candidate itself. Note the blast
+ * radius — `index.ts:122` returns on the FIRST errored candidate, so no row of
+ * that chunk survives and one bad item costs its whole chunk of up to 25 a bulk
+ * pass, not just itself. The two integrity checks throw
+ * `BulkScreenIntegrityError`, which the driver never degrades — a structurally
+ * wrong response must surface, not quietly become 25 slower sims.
  */
 export function bulkScreenResultFrom(result: BulkSimResult, expectedCount: number, simVersion: string): BulkScreenResult {
 	if (result.error) {

@@ -86,10 +86,27 @@ export async function runBulkScreenChunks(req: BulkScreenRequest, deps: BulkScre
 			const request = buildBulkSimRequest({ ...req, candidates: chunk });
 			// Outside the inner try on purpose: a chunk that would be culled is a
 			// programming error in the partition bound, not a transport failure, so
-			// it must never degrade to the per-candidate loop.
+			// it must never degrade to the per-candidate loop. It throws
+			// `BulkScreenIntegrityError`, which both this loop and `rank.ts` rethrow
+			// unconditionally, so the throw leaves the pass rather than being caught
+			// below.
 			assertSingleStageChunk(request, chunk.length);
 			const signals = deps.signals.registerRunning(RequestTypes.BulkSim);
 			inFlight = signals;
+			// Re-checked after `inFlight` is set, not only at the top of the loop. An
+			// abort landing between the two checks sets `userAborted` but has no
+			// in-flight signals to trigger, so the chunk would dispatch and run to
+			// completion after Stop. Everything between them is synchronous today —
+			// the build, the guard and `registerRunning` all are — so no listener can
+			// interleave and the window is currently unreachable; this check is what
+			// keeps that true if any of those three ever gains an `await`. Untested
+			// for that reason: the condition cannot be produced deterministically
+			// without first introducing the defect it guards against.
+			if (userAborted) {
+				inFlight = undefined;
+				deps.signals.unregisterRunning(signals);
+				break;
+			}
 			try {
 				const mapped = bulkScreenResultFrom(await deps.dispatch(request, signals), chunk.length, deps.simVersion);
 				// Each chunk re-probes its own baseline, so later chunks would

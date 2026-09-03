@@ -843,9 +843,11 @@ export async function rankUpgrades(
      * shared offset cancels inside the subtraction — which is why the stored
      * delta needs no later re-scaling (see `individualDeltasByItemId.set`).
      *
-     * One baseline for the whole pass, not one per chunk. Both runners already
-     * keep the first chunk's probe (`baseline ??=`) and that is the correct
-     * choice: a single shared offset is invisible to the sort that produces the
+     * One baseline for the whole pass, not one per chunk. The shared chunk
+     * driver keeps the first probe it gets (`baseline ??=`) — the first
+     * SUCCESSFUL chunk's, since a chunk that fails contributes no probe and its
+     * candidates fall through to the loop — and that is the correct choice: a
+     * single shared offset is invisible to the sort that produces the
      * ranking, whereas a per-chunk baseline would apply a *different* noise
      * term to each disjoint subset of rows and make candidates from different
      * chunks non-comparable in exactly the global sort and absolute cutoff this
