@@ -13,7 +13,11 @@ code and are not under `engine/`, so they carry no `PROVENANCE.md` row.
 `equiv-campaign.mts` is the one exception to "Node scripts": it runs in the
 browser, not under Node. It is kept here anyway because it is the same kind of
 thing — a measurement tool that is not part of the shipped tab. See its own
-header for what it does and why it instruments rather than re-implements.
+header for what it does and why it instruments rather than re-implements. Its
+`runDiagnostic` export answers a narrower question — whether the bulk screening
+numbers are actually used, and whether the engine is deterministic at a fixed
+seed — which is what established that the two routes agree by determinism rather
+than by a caching bug.
 
 ## Why the harness exists
 

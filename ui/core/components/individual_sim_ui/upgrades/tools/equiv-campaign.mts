@@ -318,7 +318,12 @@ export async function runCampaignArm(opts: CampaignArmOptions): Promise<Campaign
 	let ranking: Ranking | PartialRanking;
 	try {
 		ranking = await rankUpgrades(
-			opts.input,
+			// `seeds` MUST go into the input, not just into the dump. `rank.ts:564`
+			// reads `input.seeds ?? DEFAULT_SEEDS` and takes `seeds[0]` as the
+			// screening seed, so an arm that only *records* its seeds runs at the
+			// default 11 regardless of what it claims — which is exactly the bug
+			// that made arm C a byte-identical repeat of arm B instead of a null.
+			{ ...opts.input, seeds: opts.seeds },
 			{
 				...(opts.deps as Record<string, unknown>),
 				sim: counting,
@@ -378,6 +383,17 @@ export async function runCampaignArm(opts: CampaignArmOptions): Promise<Campaign
 	// unscoreable — so an absent value is a harness bug, not a default.
 	if (opts.input.iterations === undefined) throw new Error('campaign arm requires an explicit iteration count (M2 pins every arm)');
 
+	// The dump's `seeds` must describe the seeds the arm actually ran at. The
+	// screening pass dispatches at `seeds[0]` (`rank.ts:572-573`), so if the
+	// recorded first seed and the observed one ever disagree, the arm is
+	// mislabelled — a control that is secretly a repeat of its own baseline.
+	// That happened once and produced a byte-identical "null" arm, so it fails
+	// loudly here rather than reaching the scorer.
+	const observedScreenSeeds = [...new Set(counting.runs.filter(record => !record.tail).map(record => record.seed))];
+	if (observedScreenSeeds.length > 1 || (observedScreenSeeds.length === 1 && observedScreenSeeds[0] !== opts.seeds[0])) {
+		throw new Error(`arm ${opts.armId} declares seeds[0]=${opts.seeds[0]} but screened at ${observedScreenSeeds.join(',')} — the seeds never reached rankUpgrades`);
+	}
+
 	return {
 		armId: opts.armId,
 		mode: opts.mode,
@@ -408,5 +424,98 @@ export async function runCampaignArm(opts: CampaignArmOptions): Promise<Campaign
 			belowCutoff: item.belowCutoff,
 		})),
 		complete: ranking.complete,
+	};
+}
+
+/**
+ * Diagnostic for the identical-deltas anomaly (Track B, D-1/D-2).
+ *
+ * Runs the REAL `rankUpgrades` twice at a small cap — once with the bulk
+ * capability exposed, once without — through a runner that records every
+ * `run()` request it is handed. That gives both discriminators from the code
+ * path the campaign actually measures, rather than from a re-composed request
+ * that might differ:
+ *
+ * - **D-1** (hit/miss): the bulk arm's `run()` count during screening. If the
+ *   screened map is used, screening costs ~0 `run()` calls; if every attempt
+ *   falls through, it costs one per attempt.
+ * - **D-2** (determinism): the recorded requests are replayed — the same
+ *   request twice through the loop route, and the bulk arm's screened DPS for
+ *   one attempt against that attempt's loop DPS.
+ */
+export async function runDiagnostic(opts: {
+	input: RankInput;
+	deps: Record<string, unknown>;
+	sim: WasmSimRunner | BulkHttpSimRunner;
+	isWasm: boolean;
+}): Promise<{ summary: Record<string, unknown>; detail: Record<string, unknown> }> {
+	type Seen = { req: RaidSimRequest; opts: SimRunOpts; obs: SimObservation; tail: boolean };
+
+	const runArm = async (withBulk: boolean) => {
+		const seen: Seen[] = [];
+		let tail = false;
+		const inner = opts.sim;
+		const recorder: SimRunner = {
+			version: () => inner.version(),
+			async run(req, runOpts) {
+				const obs = await inner.run(req, runOpts);
+				seen.push({ req, opts: runOpts, obs, tail });
+				return obs;
+			},
+		};
+		if (withBulk && 'runBulkScreen' in inner) {
+			(recorder as { runBulkScreen?: unknown }).runBulkScreen = (req: BulkScreenRequest) =>
+				(inner as BulkWasmSimRunner | BulkHttpSimRunner).runBulkScreen(req);
+		}
+		const ranking = await rankUpgrades(
+			opts.input,
+			{ ...opts.deps, sim: recorder, store: new MemoryStore(), concurrency: (inner as { concurrency: number }).concurrency } as never,
+			progress => {
+				if (progress && typeof progress === 'object' && 'stage' in progress && (progress as { stage: unknown }).stage === 'ranking') tail = true;
+			},
+		);
+		return { seen, items: ranking.items };
+	};
+
+	const bulk = await runArm(true);
+	const loop = await runArm(false);
+
+	// D-2: replay one screening-phase request twice through the loop route.
+	const sample = loop.seen.find(s => !s.tail);
+	let replayA: SimObservation | undefined;
+	let replayB: SimObservation | undefined;
+	if (sample) {
+		replayA = await opts.sim.run(sample.req, sample.opts);
+		replayB = await opts.sim.run(sample.req, sample.opts);
+	}
+
+	const screenRuns = (arm: { seen: Seen[] }) => arm.seen.filter(s => !s.tail).length;
+	const byId = (items: ReadonlyArray<{ itemId: number; deltaDps: number }>) => new Map(items.map(i => [i.itemId, i.deltaDps]));
+	const b = byId(bulk.items);
+	const l = byId(loop.items);
+	const shared = [...l.keys()].filter(id => b.has(id));
+	const differing = shared.filter(id => b.get(id) !== l.get(id));
+
+	return {
+		summary: {
+			bulkArmScreenRuns: screenRuns(bulk),
+			loopArmScreenRuns: screenRuns(loop),
+			rows: { bulk: bulk.items.length, loop: loop.items.length, shared: shared.length },
+			deltasDiffering: differing.length,
+			replayIdentical: replayA && replayB ? replayA.dps === replayB.dps : null,
+			replayDps: replayA && replayB ? [replayA.dps, replayB.dps] : null,
+			sampleOriginalDps: sample?.obs.dps ?? null,
+			verdict:
+				differing.length === 0 && screenRuns(bulk) < screenRuns(loop) / 2
+					? 'bulk arm screened via chunks yet matched the loop exactly'
+					: differing.length === 0
+						? 'both arms took the same path (bulk screening did not reduce run() calls)'
+						: 'arms differ as expected',
+		},
+		detail: {
+			firstDiffering: differing.slice(0, 5).map(id => ({ itemId: id, bulk: b.get(id), loop: l.get(id) })),
+			sampleSeed: sample?.opts.seed ?? null,
+			sampleIterations: sample?.opts.iterations ?? null,
+		},
 	};
 }
