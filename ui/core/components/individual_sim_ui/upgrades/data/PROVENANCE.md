@@ -271,3 +271,47 @@ pnpm fork-universes:check
 
 No engine file changed — `upgrades/engine/PROVENANCE.md` and every ported
 `.ts` are untouched, so `pnpm engine-port-drift:check` stays green.
+
+## Refresh, 2026-09-10 (ADR-0030 re-pin to `ec5c5f2`, slice B)
+
+All 44 `.universe.json` copies drifted and were refreshed with
+`python scripts/sync_fork_universes.py --write`, in the same session that
+moved `data/wowsims.lock.json`'s pin from `v0.0.119` to
+`ec5c5f205e61049d730e460967f8488774a7fe2a` (`feature/backend-reforge`) and
+regenerated `data/universes/*` from it.
+
+**The regen produced zero content movement in every universe** — confirmed
+by parsed-JSON comparison, not just the check's own summary:
+
+```bash
+git -C vendor/tbc-new-fork show HEAD:ui/.../data/<spec>-p<N>.universe.json | tr -d '\r' | sha256sum
+tr -d '\r' < ui/.../data/<spec>-p<N>.universe.json | sha256sum
+# identical, for every one of the 44 files
+```
+
+`sync_fork_universes.py --check`'s drift line
+(`0 local-only; 0 fork-only; 0 shared entries differ in content`) is
+therefore not describing a data change at all — the script compares
+`source.read_bytes() == copy.read_bytes()` (raw bytes, not parsed JSON), so
+it flags a pure line-ending mismatch the same way it flags a real drift.
+This session's `data/universes/*` regen wrote LF (the repo's own
+`.gitattributes` convention, `eol=lf`); the fork's bundled copies had
+drifted to CRLF at some point before this session (not from anything this
+session did to them) and `--write` normalised them back to LF along with
+copying across the pin move. Same mechanism as the
+`feral-p3.universe.json` CRLF note in the 2026-08-29 refresh above, this
+time across all 44 rather than one.
+
+No membership or stat changed in any universe — `db.json`'s five item
+phase-bucket corrections (see slice B's commit body: 32649, 32757 dropped
+p5->p3; 35317, 35319, 35320 rose p3->p4) did not move any universe's
+membership at any phase, meaning the phase-bucket correction and the
+universe's own phase-gating produced the same set either way. Verify:
+
+```bash
+pnpm fork-universes:check
+```
+
+No engine file changed here either — this refresh touches only
+`upgrades/data/*.universe.json`; `upgrades/engine/PROVENANCE.md` and every
+ported `.ts` are untouched.
