@@ -40,6 +40,27 @@ const OVERFLOW_TOL = 2; // px; sub-pixel rounding and scrollbar-less overflow sl
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
+// The machine-readable verdict, one tagged JSON line on stdout.
+//
+// This gate exits 1 for two unrelated things: geometry it MEASURED and found
+// wrong, and a crash before it measured anything (a missing prereq, a rotted
+// browser path, a build failure). A caller that reads only the exit code
+// cannot tell them apart, and reporting the second as "the layout is broken"
+// is a false accusation. So state which happened:
+//   outcome:"measured"   -- widths were rendered and asserted; `failed` counts
+//                           real geometry failures (0 means green).
+//   outcome:"unmeasured" -- nothing was measured; `reason` is the first line
+//                           of the error. Says nothing about the layout.
+const VERDICT_TAG = 'LAYOUT_GATE_VERDICT';
+
+function verdict(outcome, extra) {
+	try {
+		console.log(`${VERDICT_TAG} ${JSON.stringify({ outcome, ...extra })}`);
+	} catch {
+		// Never let reporting the verdict change the exit code.
+	}
+}
+
 function freePort() {
 	return new Promise((resolve, reject) => {
 		const srv = createServer();
@@ -95,9 +116,20 @@ function run(cmd, args, label) {
 	});
 }
 
+// The makefile's wasm recipe ends with `gzip -9 -f -n $(OUT_DIR)/lib.wasm`,
+// which REPLACES the uncompressed file -- so after a plain `make host` only
+// lib.wasm.gz is on disk, and the gzipped form is the one the app fetches
+// (SIM_WASM_URL in ui/core/worker_pool.ts). Requiring the uncompressed name
+// made this gate throw on every normal build. Either form proves the WASM
+// build completed; nothing here reads the bytes.
+const WASM_CANDIDATES = ['lib.wasm.gz', 'lib.wasm'];
+
 async function build() {
-	if (!fs.existsSync(path.join(OUT_DIR, 'lib.wasm')))
-		throw new Error(`dist/tbc/lib.wasm is missing -- run \`make host\` once to produce the WASM/assets this gate builds the bundle on top of`);
+	const wasmPresent = WASM_CANDIDATES.filter(name => fs.existsSync(path.join(OUT_DIR, name)));
+	if (wasmPresent.length === 0)
+		throw new Error(
+			`dist/tbc/lib.wasm.gz (or dist/tbc/lib.wasm) is missing -- run \`make host\` once to produce the WASM/assets this gate builds the bundle on top of`,
+		);
 	if (!fs.existsSync(path.join(OUT_DIR, 'assets')))
 		throw new Error(`dist/tbc/assets is missing -- run \`make host\` once to produce the assets the page loads`);
 
@@ -107,7 +139,12 @@ async function build() {
 	await run('npx', ['tsx', 'vite.build-workers.mts'], 'vite.build-workers');
 	console.log('building bundle (vite build)...');
 	await run('npx', ['vite', 'build'], 'vite build');
-	if (!fs.existsSync(path.join(OUT_DIR, 'lib.wasm'))) throw new Error('vite build emptied dist/tbc/lib.wasm -- expected it to be left in place');
+	// `vite build` was observed to empty the WASM out of dist/. Re-check the
+	// exact file(s) that were there before the build, not a fixed name, so the
+	// protection survives whichever form `make host` left behind.
+	const wasmLost = wasmPresent.filter(name => !fs.existsSync(path.join(OUT_DIR, name)));
+	if (wasmLost.length)
+		throw new Error(`vite build emptied ${wasmLost.map(n => `dist/tbc/${n}`).join(' and ')} -- expected it to be left in place`);
 	console.log('bundle built.');
 }
 
@@ -752,14 +789,21 @@ async function main() {
 		console.log('\n--- FAILED ---');
 		for (const f of failures) console.log('  FAIL ' + f);
 		console.error(`\nlayout gate: ${failures.length} failure(s) across widths ${WIDTHS.join(', ')}`);
+		verdict('measured', { passed: passes.length, failed: failures.length });
 		process.exit(1);
 	}
 
 	console.log(`\nlayout gate: OK -- ${passes.length} assertion(s) passed at widths ${WIDTHS.join(', ')}`);
+	verdict('measured', { passed: passes.length, failed: 0 });
 	process.exit(0);
 }
 
 main().catch(err => {
 	console.error('layout gate crashed:', err.stack || err.message);
+	// The gate never got as far as measuring geometry, so its exit 1 says
+	// nothing about the tab's layout. Say so in a form the caller can read
+	// without parsing a stack trace: scripts/check_layout_gate.py turns
+	// `unmeasured` into an honest SKIP instead of accusing the tab.
+	verdict('unmeasured', { reason: String((err && err.message) || err).split('\n')[0] });
 	process.exit(1);
 });
