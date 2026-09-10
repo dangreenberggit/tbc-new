@@ -54,7 +54,7 @@ export function buildStandingAssumptions(race: Race): StandingAssumption[] {
     {
       id: "weapon-imbue-omitted",
       detail:
-        "WCL temporaryEnchant (effect id) is omitted: no effectId→itemId imbue table in db.json. Constant across baseline and candidates, so deltas survive.",
+        "WCL temporaryEnchant (effect id) is omitted: no effectId→itemId imbue table in db.json. Any mhImbueId pinned by the skeleton is carried unchanged into every candidate — including weapon candidates of the other stone family and off-hand items — so a weapon-slot delta is measured under the baseline's imbue rather than the candidate's (ticket 351).",
     },
   ];
 }
