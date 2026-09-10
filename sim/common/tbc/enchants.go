@@ -141,14 +141,21 @@ func init() {
 		})
 	})
 
-	// Savage Guard - +10 Nature Resistance (item 22635)
-	core.NewEnchantEffect(2681, func(agent core.Agent) {
-		agent.GetCharacter().AddStat(stats.NatureResistance, 10)
-	})
+	// Enchant Weapon - Major Striking / Enchant 2H Weapon - Greater Impact
+	// EffectID: 963
+	// Permanently enchant a Melee Weapon to do +7 damage.
+	core.NewEnchantEffect(963, func(agent core.Agent) {
+		character := agent.GetCharacter()
 
-	// Ice Guard - +10 Frost Resistance (item 22636)
-	core.NewEnchantEffect(2682, func(agent core.Agent) {
-		agent.GetCharacter().AddStat(stats.FrostResistance, 10)
+		addWeaponDamage := func(item *core.Item, weapon *core.Weapon) {
+			if item.Enchant.EffectID == 963 {
+				weapon.BaseDamageMin += 7
+				weapon.BaseDamageMax += 7
+			}
+		}
+
+		addWeaponDamage(character.MainHand(), character.AutoAttacks.MH())
+		addWeaponDamage(character.OffHand(), character.AutoAttacks.OH())
 	})
 
 	// Scopes

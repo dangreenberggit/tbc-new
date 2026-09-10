@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
 import i18n from '../../../../i18n/config';
@@ -6,16 +7,16 @@ import { IndividualSimUI } from '../../../individual_sim_ui';
 import { TypedEvent } from '../../../typed_event';
 import { formatDeltaTextElem, formatToNumber } from '../../../utils';
 import { Component } from '../../component';
-import { ItemRenderer } from '../../gear_picker/gear_picker';
+import { ItemRenderer } from '../../gear_picker/item_renderer';
 import Toast from '../../toast';
 import { TopGearResult } from './types';
-import { RaidSimResultsManager } from '../../raid_sim_action';
+import { SimResultsManager } from '../../sim_action';
 import { ItemSlot, ItemSpec } from '../../../proto/common';
 
 export default class BulkSimResultRenderer extends Component {
 	readonly simUI: IndividualSimUI<any>;
 
-	constructor(parent: HTMLElement, simUI: IndividualSimUI<any>, result: TopGearResult, baseResult: TopGearResult) {
+	constructor(parent: HTMLElement | DocumentFragment, simUI: IndividualSimUI<any>, result: TopGearResult, baseResult: TopGearResult) {
 		super(parent, 'bulk-sim-result-root');
 
 		this.simUI = simUI;
@@ -26,6 +27,7 @@ export default class BulkSimResultRenderer extends Component {
 		const equipButtonRef = ref<HTMLButtonElement>();
 		const dpsDeltaRef = ref<HTMLDivElement>();
 		const itemsContainerRef = ref<HTMLDivElement>();
+		const marginRef = ref<HTMLSpanElement>();
 		this.rootElem.appendChild(
 			<>
 				<div className="results-sim">
@@ -49,10 +51,14 @@ export default class BulkSimResultRenderer extends Component {
 			</>,
 		);
 
+		if (marginRef.value) {
+			tippy(marginRef.value, { content: i18n.t('bulk_tab.results.margin_of_error') });
+		}
+
 		if (isBaseResult) return;
 
 		if (dpsDeltaRef.value) {
-			const isDiff = RaidSimResultsManager.applyZTestTooltip(
+			const isDiff = SimResultsManager.applyZTestTooltip(
 				dpsDeltaRef.value,
 				iterations,
 				result.dpsMetrics.avg,
@@ -86,7 +92,7 @@ export default class BulkSimResultRenderer extends Component {
 				itemContainer.style.border = '3px solid transparent';
 			}
 
-			const renderer = new ItemRenderer(items, itemContainer, simUI.player);
+			const renderer = new ItemRenderer(items, itemContainer, simUI.player, { slot: idx });
 
 			var shouldRenderItem: boolean;
 
@@ -108,12 +114,7 @@ export default class BulkSimResultRenderer extends Component {
 				shouldRenderItem = false;
 			}
 
-			if (shouldRenderItem) {
-				const item = simUI.sim.db.lookupItemSpec(spec);
-				renderer.update(item!);
-			} else {
-				renderer.clear(idx);
-			}
+			renderer.render(shouldRenderItem ? simUI.sim.db.lookupItemSpec(spec) : null);
 			items.appendChild(itemContainer);
 		}
 		itemsContainerRef.value!.appendChild(items);

@@ -9,9 +9,10 @@ export const cleanBulkSimDpsMetrics = (metrics: DistributionMetrics | undefined)
 	if (!metrics) return undefined;
 	// allValues is kept: selectBulkSimSurvivors needs the per-iteration values. It is
 	// stripped again in bulkSimCandidateResultToProto, so it never reaches the frontend.
-	const cleaned = DistributionMetrics.clone(metrics);
-	cleaned.hist = [];
-	return cleaned;
+	// Mutating in place is safe - the input is a freshly decoded worker result with no
+	// other referent - and skips cloning the allValues array (one float per iteration).
+	metrics.hist = [];
+	return metrics;
 };
 
 export const mergeBulkSimCandidateResults = (
@@ -92,8 +93,11 @@ export const bulkSimCandidateResultToProto = (result: ConcurrentBulkSimCandidate
 	if (!result) return undefined;
 	let dpsMetrics = result.dpsMetrics;
 	if (dpsMetrics && dpsMetrics.allValues.length > 0) {
-		dpsMetrics = DistributionMetrics.clone(dpsMetrics);
+		const allValues = dpsMetrics.allValues;
 		dpsMetrics.allValues = [];
+		const clone = DistributionMetrics.clone(dpsMetrics);
+		dpsMetrics.allValues = allValues;
+		dpsMetrics = clone;
 	}
 	return BulkGearResult.create({
 		candidateIndex: result.candidate.index,

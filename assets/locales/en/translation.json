@@ -6,9 +6,6 @@
 			"about": "About",
 			"toggle": "Toggle navigation"
 		},
-		"simulations": {
-			"full_raid": "Full Raid Sim"
-		},
 		"home": {
 			"title": "WoWSims - The Burning Crusade",
 			"description": "A powerful simulation tool for World of Warcraft: The Burning Crusade",
@@ -44,7 +41,6 @@
 			"5": "Phase 5"
 		},
 		"tanks": {
-			"title": "Tanks",
 			"main_tank": "Main Tank",
 			"tank_2": "Tank 2",
 			"tank_3": "Tank 3",
@@ -285,7 +281,7 @@
 			"old_sim_message": "You can find the old Sim for this spec here:"
 		},
 		"notifications": {
-			"raid_sim_cancelled": "Raid sim cancelled.",
+			"sim_cancelled": "Sim cancelled.",
 			"simulation_failed": "The Simulation failed. Generated an error report.",
 			"failed_to_file_report": "Failed to file report... try again another time:"
 		},
@@ -711,6 +707,10 @@
 				"adds_spawn_delay": {
 					"label": "Add(s) spawn delay",
 					"tooltip": "Initial delay before the add(s) spawn (in seconds)"
+				},
+				"fear_duration": {
+					"label": "Fear Duration",
+					"tooltip": "Time (in seconds) that Fear keeps players from acting. Fear lasts 8s, but is usually broken after ~3s. Set to 0 to disable."
 				}
 			},
 			"duration": {
@@ -746,10 +746,6 @@
 				"tooltip": "Selects a preset encounter configuration."
 			},
 			"advanced": "Advanced",
-			"use_health": {
-				"label": "Use Health",
-				"tooltip": "Uses a damage limit in place of a duration limit. Damage limit is equal to sum of all targets health."
-			},
 			"target": "Target",
 			"num_allies": {
 				"label": "Num Allies",
@@ -822,10 +818,6 @@
 			"settings": "Settings",
 			"settings_name": "Settings Name",
 			"save_settings": "Save Settings"
-		},
-		"external_buffs": {
-			"title": "External Buffs",
-			"tooltip": "Buffs provided by <strong>other</strong> party/raid members."
 		}
 	},
 	"talents_tab": {
@@ -1007,7 +999,8 @@
 			"high_iteration_rounds": "Running high iteration rounds",
 			"iterations_complete": "{{completed}} / {{total}}<br />iterations complete",
 			"seconds_remaining": "{{seconds}} seconds remaining",
-			"time_remaining": "{{time}} remaining"
+			"time_remaining": "{{time}} remaining",
+			"finalist_iteration_rounds": "Running finalist tie-breaker rounds"
 		},
 		"notifications": {
 			"bulk_sim_cancelled": "Bulk sim cancelled.",
@@ -1026,7 +1019,9 @@
 			"run_simulation": "Run a simulation to view results",
 			"equip_button": "Equip",
 			"gear_equipped": "Batch gear equipped!",
-			"current_gear": "Current Gear"
+			"current_gear": "Current Gear",
+			"margin_of_error": "95% confidence interval of the mean DPS. Rankings closer than this can change between runs.",
+			"tied_group": "Statistically tied — the order within this group can change between runs"
 		},
 		"import_modal": {
 			"title": "Bag Item Import",
@@ -1716,6 +1711,14 @@
 					"align_cd_end": "Align target spell to encounter end",
 					"align_cd_end_tooltip": "When checked will try to align the CD usage to the end of the encounter. This is useful for cooldowns/specs that benefit for example from execute."
 				},
+				"selected_potion": {
+					"label": "Selected Potion",
+					"tooltip": "Returns <b>True</b> if the selected potion is the character's default potion."
+				},
+				"selected_conjured": {
+					"label": "Selected Conjured",
+					"tooltip": "Returns <b>True</b> if the selected conjured item is the character's default conjured item."
+				},
 				"offset": {
 					"label": "Offset",
 					"tooltip": "The time offset from which when the cooldown will be triggered"
@@ -2040,7 +2043,6 @@
 			"sim_1_iteration": "Sim 1 Iteration",
 			"sim_1_death": "Simulate a Death",
 			"all_targets": "All Targets",
-			"all_players": "All Players",
 			"target_number": "Target {{number}}",
 			"damage": {
 				"dps_histogram": "DPS Histogram"
@@ -2072,6 +2074,7 @@
 			},
 			"logs": {
 				"top_button": "Top",
+				"export_button": "Export Log",
 				"time_column": "Time",
 				"event_column": "Event",
 				"show_debug": "Show Debug Statements"
@@ -2145,8 +2148,6 @@
 			},
 			"tooltips": {
 				"damage_avg_cast": "Average damage per cast",
-				"player_damage": "Player Damage / Raid Damage",
-				"player_damage_taken": "Player Damage Taken / Raid Damage Taken",
 				"damage_taken_per_encounter": "Damage Taken / Encounter Duration",
 				"healing_per_encounter": "Healing / Encounter Duration",
 				"threat_per_encounter": "Threat / Encounter Duration",

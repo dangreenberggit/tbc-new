@@ -494,6 +494,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestEnhancement-AllItems-Enchant2HWeapon-GreaterImpact-963"
+ value: {
+  dps: 1946.18748
+  tps: 1236.88094
+ }
+}
+dps_results: {
  key: "TestEnhancement-AllItems-EnchantBoots-Boar'sSpeed-2940"
  value: {
   dps: 1938.34904
@@ -722,13 +729,6 @@ dps_results: {
  value: {
   dps: 1924.27213
   tps: 1221.15369
- }
-}
-dps_results: {
- key: "TestEnhancement-AllItems-IceGuard-2682"
- value: {
-  dps: 1938.34904
-  tps: 1231.39403
  }
 }
 dps_results: {
@@ -1012,13 +1012,6 @@ dps_results: {
  }
 }
 dps_results: {
- key: "TestEnhancement-AllItems-SavageGuard-2681"
- value: {
-  dps: 1938.34904
-  tps: 1231.39403
- }
-}
-dps_results: {
  key: "TestEnhancement-AllItems-ScarabofDisplacement-30629"
  value: {
   dps: 1874.78399
@@ -1099,7 +1092,7 @@ dps_results: {
  key: "TestEnhancement-AllItems-SkyshatterHarness"
  value: {
   dps: 2030.12675
-  tps: 1288.56711
+  tps: 1295.82558
  }
 }
 dps_results: {

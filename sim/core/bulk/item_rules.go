@@ -15,7 +15,7 @@ func replaceItem(existing core.Item, option bulkSimCandidateOption) core.Item {
 	if !enchantAppliesToItem(itemSpec.GetEnchant(), option.item) {
 		itemSpec.Enchant = 0
 	}
-	itemSpec.Gems = applyMetaGem(existing, option.item)
+	itemSpec.Gems = mergeGems(existing, option, option.item)
 
 	return core.NewItem(core.ItemSpec{
 		ID:           itemSpec.GetId(),
@@ -34,39 +34,40 @@ func createSelectedItem(option bulkSimCandidateOption) core.Item {
 	})
 }
 
-// Gems are NOT carried over to the replacing item: the gem/reforge pre-pass re-gems every
-// candidate anyway, and inheriting the old item's gems would only guess at socket colours it
-// cannot satisfy. The head META gem is the exception - it is preserved across a head swap,
-// matching what clearGems keeps in the reforge optimizer.
-//
-// Mirrors MoP. NOTE the shared consequence: specs with no ReforgeOptimizer (druid/restoration,
-// paladin/holy, shaman/restoration here; five specs in MoP) get no pre-pass, so their bulk
-// candidates are simmed with only the head meta gem.
-func applyMetaGem(item core.Item, newItem core.Item) []int32 {
+// Gems picked for the bulk item win; the replaced item's gems are re-homed into the sockets
+// still free, preferring a color match over mere eligibility. Gems with no room are dropped.
+func mergeGems(existing core.Item, option bulkSimCandidateOption, newItem core.Item) []int32 {
 	newGems := make([]int32, len(newItem.GemSockets))
 
-	if item.Type != proto.ItemType_ItemTypeHead || newItem.Type != proto.ItemType_ItemTypeHead {
-		return newGems
-	}
-
-	metaGemID := int32(0)
-	for _, gem := range item.Gems {
-		if gem.ID != 0 && gem.Color == proto.GemColor_GemColorMeta {
-			metaGemID = gem.ID
+	for socketIdx, gemID := range option.spec.GetGems() {
+		if socketIdx >= len(newGems) {
 			break
 		}
-	}
-	if metaGemID == 0 {
-		return newGems
+		newGems[socketIdx] = gemID
 	}
 
-	for socketIdx, socketColor := range newItem.GemSockets {
-		if socketColor == proto.GemColor_GemColorMeta {
-			newGems[socketIdx] = metaGemID
-			break
+	for gemIdx, gem := range existing.Gems {
+		if gemIdx >= len(existing.GemSockets) || gem.ID == 0 {
+			continue
+		}
+		socketIdx := firstFreeSocket(newItem.GemSockets, newGems, gem.Color, core.GemMatchesSocket)
+		if socketIdx == -1 {
+			socketIdx = firstFreeSocket(newItem.GemSockets, newGems, gem.Color, core.GemEligibleForSocket)
+		}
+		if socketIdx != -1 {
+			newGems[socketIdx] = gem.ID
 		}
 	}
 	return newGems
+}
+
+func firstFreeSocket(socketColors []proto.GemColor, gems []int32, gemColor proto.GemColor, accepts func(proto.GemColor, proto.GemColor) bool) int {
+	for socketIdx, socketColor := range socketColors {
+		if gems[socketIdx] == 0 && accepts(gemColor, socketColor) {
+			return socketIdx
+		}
+	}
+	return -1
 }
 
 func enchantAppliesToItem(effectID int32, item core.Item) bool {
@@ -77,7 +78,7 @@ func enchantAppliesToItem(effectID int32, item core.Item) bool {
 	if enchant == nil {
 		return false
 	}
-	if !core.CheckSliceOverlap(getEligibleEnchantSlots(*enchant), getEligibleItemSlots(item)) {
+	if !core.CheckSliceOverlap(getEligibleEnchantSlots(*enchant), core.EligibleSlotsForItem(&item)) {
 		return false
 	}
 	if enchant.Type == proto.ItemType_ItemTypeRanged {
@@ -93,7 +94,7 @@ func getEligibleEnchantSlots(enchant core.Enchant) []proto.ItemSlot {
 	types := append([]proto.ItemType{enchant.Type}, enchant.ExtraTypes...)
 	slots := make([]proto.ItemSlot, 0, len(types)*2)
 	for _, itemType := range types {
-		if typeSlots, ok := itemTypeToSlotsMap[itemType]; ok {
+		if typeSlots, ok := core.ItemTypeToSlotsMap[itemType]; ok {
 			slots = append(slots, typeSlots...)
 			continue
 		}
@@ -102,23 +103,6 @@ func getEligibleEnchantSlots(enchant core.Enchant) []proto.ItemSlot {
 		}
 	}
 	return slots
-}
-
-func getEligibleItemSlots(item core.Item) []proto.ItemSlot {
-	if slots, ok := itemTypeToSlotsMap[item.Type]; ok {
-		return slots
-	}
-	if item.Type == proto.ItemType_ItemTypeWeapon {
-		switch item.HandType {
-		case proto.HandType_HandTypeMainHand:
-			return []proto.ItemSlot{proto.ItemSlot_ItemSlotMainHand}
-		case proto.HandType_HandTypeOffHand:
-			return []proto.ItemSlot{proto.ItemSlot_ItemSlotOffHand}
-		default:
-			return []proto.ItemSlot{proto.ItemSlot_ItemSlotMainHand, proto.ItemSlot_ItemSlotOffHand}
-		}
-	}
-	return nil
 }
 
 func canEquipItem(item core.Item, playerClass proto.Class, playerSpec proto.Spec, slot proto.ItemSlot) bool {

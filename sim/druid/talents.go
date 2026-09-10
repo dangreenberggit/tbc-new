@@ -168,12 +168,27 @@ func (druid *Druid) applyNaturesGrace() {
 		return
 	}
 
+	lastProcAt := time.Duration(-1)
+
 	aura := druid.RegisterAura(core.Aura{
 		Label:    "Nature's Grace",
 		ActionID: core.ActionID{SpellID: 16886},
-		Duration: time.Second * 3,
+		Duration: time.Second * 15,
+		OnReset: func(aura *core.Aura, sim *core.Simulation) {
+			lastProcAt = -1
+		},
 		OnCastComplete: func(aura *core.Aura, sim *core.Simulation, spell *core.Spell) {
 			if spell.CurCast.CastTime == 0 {
+				return
+			}
+			// Only consume if the aura was already active when this cast started;
+			// a cast in flight when the proc landed did not benefit from it.
+			if aura.TimeActive(sim) < spell.CurCast.CastTime {
+				return
+			}
+			// A proc that landed during this cast re-arms the buff for the next
+			// cast instead of being consumed by this one.
+			if lastProcAt > sim.CurrentTime-spell.CurCast.CastTime {
 				return
 			}
 
@@ -182,15 +197,17 @@ func (druid *Druid) applyNaturesGrace() {
 	}).AttachSpellMod(core.SpellModConfig{
 		ClassMask: DruidSpellStarfire | DruidSpellWrath,
 		Kind:      core.SpellMod_CastTime_Flat,
-		TimeValue: time.Millisecond * time.Duration(-500),
+		TimeValue: time.Millisecond * -500,
 	})
 
 	druid.MakeProcTriggerAura(core.ProcTrigger{
-		Name:           "Nature's Grace Trigger",
-		Duration:       core.NeverExpires,
-		ClassSpellMask: DruidSpellWrath | DruidSpellStarfire,
-		Outcome:        core.OutcomeCrit,
+		Name:               "Nature's Grace Trigger",
+		Callback:           core.CallbackOnSpellHitDealt,
+		ClassSpellMask:     DruidSpellWrath | DruidSpellStarfire,
+		Outcome:            core.OutcomeCrit,
+		TriggerImmediately: true,
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
+			lastProcAt = sim.CurrentTime
 			aura.Activate(sim)
 		},
 	})
@@ -476,30 +493,20 @@ func (druid *Druid) applyPrimalFury() {
 		ClassSpellMask: DruidSpellBuilder,
 		Outcome:        core.OutcomeCrit,
 		ProcChance:     procChance,
+		ExtraCondition: func(_ *core.Simulation, _ *core.Spell, _ *core.SpellResult) bool {
+			return druid.InForm(Cat)
+		},
 		Handler: func(sim *core.Simulation, _ *core.Spell, _ *core.SpellResult) {
 			druid.AddComboPoints(sim, 1, cpMetrics)
 		},
 	})
 
-	// Bear form: +5 rage on Mangle crits.
-	druid.MakeProcTriggerAura(core.ProcTrigger{
-		Name:           "Primal Fury (Bear Mangle)",
-		ActionID:       actionID,
-		Callback:       core.CallbackOnSpellHitDealt,
-		ClassSpellMask: DruidSpellMangleBear,
-		Outcome:        core.OutcomeCrit,
-		ProcChance:     procChance,
-		Handler: func(sim *core.Simulation, _ *core.Spell, _ *core.SpellResult) {
-			druid.AddRage(sim, 5, rageMetrics)
-		},
-	})
-
 	// Bear form: +5 rage on auto-attack crits.
 	druid.MakeProcTriggerAura(core.ProcTrigger{
-		Name:       "Primal Fury (Bear Auto)",
+		Name:       "Primal Fury (Bear)",
 		ActionID:   actionID,
 		Callback:   core.CallbackOnSpellHitDealt,
-		ProcMask:   core.ProcMaskMeleeMHAuto,
+		ProcMask:   core.ProcMaskMelee,
 		Outcome:    core.OutcomeCrit,
 		ProcChance: procChance,
 		ExtraCondition: func(_ *core.Simulation, _ *core.Spell, _ *core.SpellResult) bool {

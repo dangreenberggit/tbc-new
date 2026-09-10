@@ -16,7 +16,7 @@ import { Gear } from '../../proto_utils/gear';
 import { canEquipItem, getEligibleItemSlots, getGearIdentityKey, isSecondaryItemSlot } from '../../proto_utils/utils';
 import { RequestTypes } from '../../sim_signal_manager';
 import { TypedEvent } from '../../typed_event';
-import { formatDurationSeconds, formatToNumber, getEnumValues, isExternal } from '../../utils';
+import { formatDurationSeconds, formatToNumber, getEnumValues, isExternal, Z_95, zTest } from '../../utils';
 import SelectorModal from '../gear_picker/selector_modal';
 import { BooleanPicker } from '../pickers/boolean_picker';
 import { EnumPicker } from '../pickers/enum_picker';
@@ -39,6 +39,9 @@ import {
 import { BULK_SIM_ITEM_SLOT_TO_ITEM_SLOT_PAIRS, BulkSimReforgeCacheProgress, dedupeGearSets, getBulkItemSlotFromSlot } from './bulk/utils';
 import { BulkGearJsonImporter } from './importers';
 
+const BULK_SETTINGS_STORAGE_KEY = 'bulk-settings.v2';
+const LEGACY_BULK_SETTINGS_STORAGE_KEY = 'bulk-settings.v1';
+
 export class BulkTab extends SimTab {
 	readonly simUI: IndividualSimUI<any>;
 	readonly playerCanDualWield: boolean;
@@ -52,6 +55,7 @@ export class BulkTab extends SimTab {
 	private readonly bulkSimButton: HTMLButtonElement;
 	private readonly settingsContainer: HTMLElement;
 
+	private setupTab: Tab;
 	private resultsTab: Tab;
 	protected progressTrackerModal: ProgressTrackerModal;
 
@@ -172,7 +176,7 @@ export class BulkTab extends SimTab {
 		this.bulkSimButton = bulkSimBtnRef.value!;
 		this.settingsContainer = settingsContainerRef.value!;
 
-		new Tab(setupTabBtnRef.value!);
+		this.setupTab = new Tab(setupTabBtnRef.value!);
 		this.resultsTab = new Tab(resultsTabBtnRef.value!);
 
 		this.selectorModal = new SelectorModal(this.simUI.rootElem, this.simUI, this.simUI.player, undefined, {
@@ -236,10 +240,12 @@ export class BulkTab extends SimTab {
 	}
 
 	private getSettingsKey(): string {
-		return this.simUI.getStorageKey('bulk-settings.v1');
+		return this.simUI.getStorageKey(BULK_SETTINGS_STORAGE_KEY);
 	}
 
 	private loadSettings() {
+		window.localStorage.removeItem(this.simUI.getStorageKey(LEGACY_BULK_SETTINGS_STORAGE_KEY));
+
 		const storedSettings = window.localStorage.getItem(this.getSettingsKey());
 		if (storedSettings != null) {
 			let settings: BulkSettings;
@@ -299,11 +305,7 @@ export class BulkTab extends SimTab {
 		items.forEach(item => {
 			const equippedItem = this.simUI.sim.db.lookupItemSpec(item)?.withDynamicStats();
 			if (equippedItem) {
-				getEligibleItemSlots(equippedItem.item).forEach(slot => {
-					// Avoid duplicating rings/trinkets/weapons
-					if (this.isSecondaryItemSlot(slot) || !canEquipItem(equippedItem.item, this.simUI.player.getPlayerSpec(), slot)) return;
-
-					const bulkSlot = getBulkItemSlotFromSlot(slot, this.playerCanDualWield);
+				this.eligibleBulkSlots(equippedItem).forEach(bulkSlot => {
 					const group = this.pickerGroups.get(bulkSlot)!;
 					const idx = this.items.push(item) - 1;
 					if (!group.add(idx, equippedItem, silent)) {
@@ -336,17 +338,28 @@ export class BulkTab extends SimTab {
 		if (equippedItem) {
 			this.items[idx] = newItem;
 
-			getEligibleItemSlots(equippedItem.item).forEach(slot => {
-				// Avoid duplicating rings/trinkets/weapons
-				if (this.isSecondaryItemSlot(slot) || !canEquipItem(equippedItem.item, this.simUI.player.getPlayerSpec(), slot)) return;
-
-				const bulkSlot = getBulkItemSlotFromSlot(slot, this.playerCanDualWield);
+			this.eligibleBulkSlots(equippedItem).forEach(bulkSlot => {
 				const group = this.pickerGroups.get(bulkSlot)!;
 				group.update(idx, equippedItem);
 			});
 		}
 
 		this.itemsChangedEmitter.emit(TypedEvent.nextEventID());
+	}
+
+	// The bulk slots an item can be batched into, one entry each. Finger1/Finger2 - and both hands
+	// for a dual-wielder - share a bulk slot, so dedupe on the bulk slot instead of skipping the
+	// secondary physical slot: an off-hand-only item has no other eligible slot, and skipping it
+	// dropped shields and off-hand weapons from the batch entirely. Mirrors initSelectedItems.
+	private eligibleBulkSlots(equippedItem: EquippedItem): BulkSimItemSlot[] {
+		const bulkSlots: BulkSimItemSlot[] = [];
+		getEligibleItemSlots(equippedItem.item).forEach(slot => {
+			if (!canEquipItem(equippedItem.item, this.simUI.player.getPlayerSpec(), slot)) return;
+
+			const bulkSlot = getBulkItemSlotFromSlot(slot, this.playerCanDualWield);
+			if (!bulkSlots.includes(bulkSlot)) bulkSlots.push(bulkSlot);
+		});
+		return bulkSlots;
 	}
 
 	removeItem(item: ItemSpec) {
@@ -513,6 +526,7 @@ export class BulkTab extends SimTab {
 
 	private resetResultsTabContent() {
 		this.resultsTabElem.replaceChildren();
+		this.setupTab.show();
 	}
 
 	private buildResultsTabContent() {
@@ -520,9 +534,51 @@ export class BulkTab extends SimTab {
 			return;
 		}
 
+		const iterations = Math.max(1, this.simUI.sim.getIterations());
+		const isBaselineRow = (result: TopGearResult) => result === this.originalGearResults;
+		const pairTied = (upper: TopGearResult, lower: TopGearResult): boolean => {
+			let pairedError: number | undefined;
+			if (isBaselineRow(upper)) {
+				pairedError = lower.pairedErrorToBaseline;
+			} else if (isBaselineRow(lower)) {
+				pairedError = upper.pairedErrorToBaseline;
+			} else if (upper.backendRank !== undefined && lower.backendRank === upper.backendRank + 1) {
+				pairedError = upper.pairedErrorToNextResult;
+			}
+			if (pairedError) {
+				return Math.abs(upper.dpsMetrics.avg - lower.dpsMetrics.avg) <= Z_95 * pairedError;
+			}
+			return !zTest(iterations, upper.dpsMetrics.avg, upper.dpsMetrics.stdev, iterations, lower.dpsMetrics.avg, lower.dpsMetrics.stdev).isDiff;
+		};
+		const tieChains: TopGearResult[][] = [];
 		for (const topGearResult of this.topGearResults) {
-			new BulkSimResultRenderer(this.resultsTabElem, this.simUI, topGearResult, this.originalGearResults);
+			const currentChain = tieChains[tieChains.length - 1];
+			const previousResult = currentChain?.[currentChain.length - 1];
+			if (previousResult && pairTied(previousResult, topGearResult)) {
+				currentChain.push(topGearResult);
+			} else {
+				tieChains.push([topGearResult]);
+			}
 		}
+
+		// Build everything into a detached fragment and attach once: each renderer row is a
+		// sizeable subtree, and appending them live would relayout the tab per row.
+		const resultsFragment = document.createDocumentFragment();
+		for (const chain of tieChains) {
+			let container: HTMLElement | DocumentFragment = resultsFragment;
+			if (chain.length > 1) {
+				container = (
+					<div className="bulk-results-tie-group">
+						<span className="mb-4">{i18n.t('bulk_tab.results.tied_group')}</span>
+					</div>
+				) as HTMLElement;
+				resultsFragment.appendChild(container);
+			}
+			for (const topGearResult of chain) {
+				new BulkSimResultRenderer(container, this.simUI, topGearResult, this.originalGearResults);
+			}
+		}
+		this.resultsTabElem.appendChild(resultsFragment);
 
 		this.resultsTab.show();
 	}

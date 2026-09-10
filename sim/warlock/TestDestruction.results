@@ -298,6 +298,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestDestruction-AllItems-Bonereaver'sEdge-17076"
+ value: {
+  dps: 1881.39325
+  tps: 1170.88076
+ }
+}
+dps_results: {
  key: "TestDestruction-AllItems-BraidedEterniumChain-24114"
  value: {
   dps: 1837.35624
@@ -463,6 +470,13 @@ dps_results: {
  value: {
   dps: 1836.31158
   tps: 1142.03655
+ }
+}
+dps_results: {
+ key: "TestDestruction-AllItems-Enchant2HWeapon-GreaterImpact-963"
+ value: {
+  dps: 1845.13671
+  tps: 1147.34327
  }
 }
 dps_results: {
@@ -659,13 +673,6 @@ dps_results: {
  value: {
   dps: 1836.31158
   tps: 1142.03655
- }
-}
-dps_results: {
- key: "TestDestruction-AllItems-IceGuard-2682"
- value: {
-  dps: 1845.30974
-  tps: 1148.54799
  }
 }
 dps_results: {
@@ -932,13 +939,6 @@ dps_results: {
  value: {
   dps: 1836.31158
   tps: 1142.03655
- }
-}
-dps_results: {
- key: "TestDestruction-AllItems-SavageGuard-2681"
- value: {
-  dps: 1845.30974
-  tps: 1148.54799
  }
 }
 dps_results: {

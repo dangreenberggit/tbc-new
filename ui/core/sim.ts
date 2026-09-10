@@ -54,7 +54,7 @@ import { Raid } from './raid.js';
 import { runConcurrentSim, runConcurrentStatWeights } from './sim_concurrent';
 import { RequestTypes, SimSignalManager } from './sim_signal_manager';
 import { EventID, TypedEvent } from './typed_event.js';
-import { distinct, getEnumValues, isExternal, noop, sleep } from './utils.js';
+import { distinct, getEnumValues, hashString, isExternal, noop, sleep } from './utils.js';
 import { runConcurrentBulkSim } from './wasm';
 import {
 	getBulkSimReforgeCacheData,
@@ -65,11 +65,6 @@ import {
 	writeBulkSimReforgeCacheResults,
 } from './components/individual_sim_ui/bulk/utils';
 import { generateRequestId, WorkerPool, WorkerProgressCallback } from './worker_pool.js';
-
-export type RaidSimData = {
-	request: RaidSimRequest;
-	result: RaidSimResult;
-};
 
 export type StatWeightsData = {
 	request: StatWeightsRequest;
@@ -221,7 +216,9 @@ export class Sim {
 		try {
 			this.isNative = !(await this.isWasm());
 		} catch {
-			this.isNative = isExternal();
+			// Probe failed - fall back to the hostname heuristic (a local host runs the
+			// native sim, an external one runs wasm).
+			this.isNative = !isExternal();
 		}
 	}
 
@@ -406,8 +403,29 @@ export class Sim {
 
 			const baselineGear = prepareGear(this.raid.getActivePlayers()[0].getGear());
 			const bulkReforgeRequest = reforgeConfig ? this.makeBulkSimReforgeRequest(reforgeConfig) : undefined;
-			const useWasmConcurrency = await this.shouldUseWasmConcurrency();
-			const backendBuildCandidates = !useWasmConcurrency && !!bulkSettings;
+			if (!this.getFixedRngSeed()) {
+				// Derive the seed from the run's content instead of Math.random(): the same
+				// setup then reproduces bit-identical results (the whole pipeline is
+				// deterministic given a seed), while any change to the setup draws a fresh
+				// sample. An explicit fixed RNG seed still takes precedence above. The three
+				// parts are hashed individually (they are already JSON) and the digests
+				// combined, avoiding a second full serialization pass.
+				const contentHash = hashString(
+					hashString(EquipmentSpec.toJsonString(baselineGear.asSpec())) +
+						hashString(bulkSettings ? BulkSettings.toJsonString(bulkSettings) : String(gearSets.length)) +
+						hashString(
+							bulkReforgeRequest ? ReforgeOptimizeRequest.toJsonString(ReforgeOptimizer.cacheRelevantReforgeRequest(bulkReforgeRequest)) : '',
+						),
+				);
+				const contentSeed = Number(BigInt('0x' + contentHash.slice(0, 8)));
+				baseRequest.simOptions!.randomSeed = BigInt(contentSeed);
+				// makeRaidSimRequest already drew and recorded a random seed; overwrite the
+				// record too so getLastUsedRngSeed() reflects the seed actually used.
+				this.lastUsedRngSeed = contentSeed;
+				this.lastUsedRngSeedChangeEmitter.emit(TypedEvent.nextEventID());
+			}
+			const useWasmBulkSim = await this.isWasm();
+			const backendBuildCandidates = !useWasmBulkSim && !!bulkSettings;
 			let preparedGearSets = gearSets.map(prepareGear);
 			let preparedCandidateSpecs: EquipmentSpec[] | undefined = undefined;
 			let preparedCandidateGearKeys: string[] | undefined = undefined;
@@ -556,7 +574,7 @@ export class Sim {
 			});
 
 			let result: BulkSimResult;
-			if (useWasmConcurrency) {
+			if (useWasmBulkSim) {
 				const cacheWrites: Promise<void>[] = [];
 				const onReforgeCandidateOptimized = (candidate: BulkGearCandidate, optimizedGear: EquipmentSpec) => {
 					const cacheKey = bulkReforgeCacheData?.cacheKeysByCandidateIndex.get(candidate.index);

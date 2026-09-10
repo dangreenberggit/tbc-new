@@ -12,9 +12,8 @@ type HighsSolutionColumns = Record<string, { Primal: number }>;
 type SimRequestAsync = (data: Uint8Array, progress: (result: Uint8Array) => void, id: string) => Uint8Array;
 type SimRequestSync = (data: Uint8Array) => Uint8Array;
 
-const unsupportedBulkSimAsync = () => {
-	console.error('bulkSimAsync is only supported by the HTTP worker.');
-	return new Uint8Array();
+const unsupportedBulkSimAsync = (): Uint8Array => {
+	throw new Error('bulkSimAsync is only supported by the HTTP worker.');
 };
 
 let highs: Highs | null = null;
@@ -37,7 +36,10 @@ async function initHiGHS(): Promise<void> {
 		highs = await loadHighs({
 			locateFile: file => (file.endsWith('.wasm') ? 'highs.wasm' : file),
 		});
-	})();
+	})().catch(err => {
+		highsInitPromise = null;
+		throw err;
+	});
 	return highsInitPromise;
 }
 
@@ -120,10 +122,27 @@ function setupWorkerInterface() {
 const go = new Go();
 let inst: WebAssembly.Instance | null = null;
 
-WebAssembly.instantiateStreaming(fetch('lib.wasm'), go.importObject).then(async result => {
-	inst = result.instance;
-	// console.log("loading wasm...")
-	await go.run(inst);
-});
+// The sim module is fetched and compiled ONCE on the main thread and shared with every
+// wasm worker as a compiled WebAssembly.Module (structured clone) - spawning N workers
+// costs one download and one compile instead of N of each. See getSharedWasmModule in
+// ui/core/worker_pool.ts.
+const requestWasmModule = (): Promise<WebAssembly.Module> =>
+	new Promise(resolve => {
+		const onModule = ({ data }: MessageEvent<{ msg: string; module?: WebAssembly.Module }>) => {
+			if (data?.msg !== 'wasmModule' || !data.module) return;
+			removeEventListener('message', onModule);
+			resolve(data.module);
+		};
+		addEventListener('message', onModule);
+		postMessage({ msg: 'wasmModuleRequest' });
+	});
+
+requestWasmModule()
+	.then(module => WebAssembly.instantiate(module, go.importObject))
+	.then(async instance => {
+		inst = instance;
+		await go.run(inst);
+	})
+	.catch(error => console.error('Sim wasm worker failed to start:', error));
 
 export {};

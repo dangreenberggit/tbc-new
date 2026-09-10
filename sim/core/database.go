@@ -680,7 +680,7 @@ func ItemTypeToSlot(it proto.ItemType) proto.ItemSlot {
 }
 
 // See getEligibleItemSlots in proto_utils/utils.ts.
-var itemTypeToSlotsMap = map[proto.ItemType][]proto.ItemSlot{
+var ItemTypeToSlotsMap = map[proto.ItemType][]proto.ItemSlot{
 	proto.ItemType_ItemTypeHead:     {proto.ItemSlot_ItemSlotHead},
 	proto.ItemType_ItemTypeNeck:     {proto.ItemSlot_ItemSlotNeck},
 	proto.ItemType_ItemTypeShoulder: {proto.ItemSlot_ItemSlotShoulder},
@@ -697,11 +697,12 @@ var itemTypeToSlotsMap = map[proto.ItemType][]proto.ItemSlot{
 	// ItemType_ItemTypeWeapon is excluded intentionally - the slot cannot be decided based on type alone for weapons.
 }
 
-func eligibleSlotsForItem(item *Item) []proto.ItemSlot {
+// EligibleSlotsForItem returns the item slots an item can occupy.
+func EligibleSlotsForItem(item *Item) []proto.ItemSlot {
 	if item == nil {
 		return nil
 	}
-	if slots, ok := itemTypeToSlotsMap[item.Type]; ok {
+	if slots, ok := ItemTypeToSlotsMap[item.Type]; ok {
 		return slots
 	}
 
@@ -717,6 +718,35 @@ func eligibleSlotsForItem(item *Item) []proto.ItemSlot {
 	}
 
 	return nil
+}
+
+// GemEligibleForSocket reports whether a gem may be placed in a socket of the given color
+// (a meta socket takes only meta gems, and a meta gem fits nowhere else).
+func GemEligibleForSocket(gemColor proto.GemColor, socketColor proto.GemColor) bool {
+	if socketColor == proto.GemColor_GemColorMeta {
+		return gemColor == proto.GemColor_GemColorMeta
+	}
+	return gemColor != proto.GemColor_GemColorMeta
+}
+
+// GemMatchesSocket reports whether a gem's color counts as a match for the socket's color (for
+// the purpose of earning the item's socket bonus).
+func GemMatchesSocket(gemColor proto.GemColor, socketColor proto.GemColor) bool {
+	if gemColor == socketColor {
+		return true
+	}
+	switch socketColor {
+	case proto.GemColor_GemColorBlue:
+		return gemColor == proto.GemColor_GemColorPurple || gemColor == proto.GemColor_GemColorGreen || gemColor == proto.GemColor_GemColorPrismatic
+	case proto.GemColor_GemColorRed:
+		return gemColor == proto.GemColor_GemColorPurple || gemColor == proto.GemColor_GemColorOrange || gemColor == proto.GemColor_GemColorPrismatic
+	case proto.GemColor_GemColorYellow:
+		return gemColor == proto.GemColor_GemColorOrange || gemColor == proto.GemColor_GemColorGreen || gemColor == proto.GemColor_GemColorPrismatic
+	case proto.GemColor_GemColorPrismatic:
+		return gemColor == proto.GemColor_GemColorRed || gemColor == proto.GemColor_GemColorOrange || gemColor == proto.GemColor_GemColorYellow || gemColor == proto.GemColor_GemColorGreen || gemColor == proto.GemColor_GemColorBlue || gemColor == proto.GemColor_GemColorPurple
+	default:
+		return false
+	}
 }
 
 func ColorIntersects(g proto.GemColor, o proto.GemColor) bool {
