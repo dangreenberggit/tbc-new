@@ -17,7 +17,7 @@ import { TypedEvent } from '../../typed_event';
 import { SimTab } from '../sim_tab';
 import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
 import { currentPageSkeleton } from './upgrades/adapters/skeleton';
-import { simDatabaseFor } from './upgrades/adapters/sim_database';
+import { simDatabaseResolverFor } from './upgrades/adapters/sim_database';
 import { BulkHttpSimRunner } from './upgrades/adapters/bulk_http_sim_runner';
 import { makeSimRunner } from './upgrades/adapters/bulk_wasm_sim_runner';
 import { WasmSimRunner } from './upgrades/adapters/wasm_sim_runner';
@@ -1249,7 +1249,7 @@ export class UpgradesTab extends SimTab {
 					raidSimSkeleton: skeleton,
 					epWeights: epWeightsFor(specId),
 					pool: this.effectivePool(specId, maxPhase, pruned),
-					simDatabaseFor,
+					simDatabaseFor: simDatabaseResolverFor(this.simUI.player),
 					// `min(workers, memoryCap)` — WasmSimRunner derives this once at
 					// construction from the measured per-process memory cost
 					// (candidate-pool.md §5.1.2, wasm_sim_runner.ts).
