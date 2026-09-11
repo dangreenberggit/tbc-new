@@ -8975,6 +8975,9 @@
 						},
 						"heading_count": {
 							"type": "string"
+						},
+						"removes_worn": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
@@ -8996,7 +8999,8 @@
 						"empty_unsupported_spec_body",
 						"below_cutoff_group",
 						"heading",
-						"heading_count"
+						"heading_count",
+						"removes_worn"
 					]
 				},
 				"assumptions": {

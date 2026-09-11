@@ -2069,6 +2069,7 @@ export class UpgradesTab extends SimTab {
 		const deltaLabel = formatDelta(row.deltaDps);
 		const setLine = this.setBonusLine(row, noiseFloorDps);
 		const setPackageLine = this.setPackageLine(row, noiseFloorDps);
+		const removedLine = this.removedItemsLine(row);
 		const cutoffArmLine = cutoff && cutoffAdmittingArm(row.deltaDps, row.deltaPct, cutoff) === 'pct'
 			? (
 				<small className="upgrades-cutoff-arm" title={i18n.t('upgrades_tab.cutoff.pct_arm_title', { pct: formatDelta(cutoff.pct), abs: cutoff.absDps })}>
@@ -2085,6 +2086,7 @@ export class UpgradesTab extends SimTab {
 					{deltaLabel}
 					{setLine}
 					{setPackageLine}
+					{removedLine}
 					{cutoffArmLine}
 				</td>
 				<td>{sourceCell(row, this.simUI.sim)}</td>
@@ -2193,6 +2195,33 @@ export class UpgradesTab extends SimTab {
 	 *     (`rank.ts:1431-1440` only populates `prospectiveBonusDps` when the
 	 *     swap advances the piece count below a threshold) with nothing to say.
 	 */
+	/**
+	 * Names the worn item this swap takes off beyond the one it replaces --
+	 * today only the off-hand item a two-handed main-hand candidate leaves no
+	 * room for (ticket 350).
+	 *
+	 * A two-hander occupies both hands, so the row is a two-item change. Saying
+	 * which item it removes keeps the delta from reading as a one-for-one swap.
+	 * The name comes from the same `Database.getSync()` lookup `itemCell` uses,
+	 * and falls back to the id when the database has no row for it.
+	 */
+	private removedItemsLine(row: RankedItem): Node | null {
+		const removed = row.removedItems;
+		if (!removed?.length) return null;
+		return (
+			<>
+				{removed.map(entry => (
+					<small className="upgrades-removed-items">
+						{i18n.t('upgrades_tab.results.removes_worn', {
+							name: Database.getSync().getItemById(entry.itemId)?.name ?? String(entry.itemId),
+							slot: entry.slot,
+						})}
+					</small>
+				))}
+			</>
+		);
+	}
+
 	private setBonusLine(row: RankedItem, noiseFloorDps: number | undefined): Node | null {
 		const ctx = row.setContext;
 		if (!ctx) return null;

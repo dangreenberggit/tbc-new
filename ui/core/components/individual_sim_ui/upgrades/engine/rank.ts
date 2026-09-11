@@ -248,6 +248,7 @@ export type RankedItem = {
     from: number;
     to: number;
   }>;
+  removedItems?: Array<{ itemId: number; slot: SimSlotName }>;
   emptyMetaSocket?: boolean;
   owned?: boolean;
   /**
@@ -378,6 +379,8 @@ type BestSwap = {
   hitDriven: boolean;
   hitRegression: { lost: number; gapAfter: number } | null;
   repairSwaps: readonly MetaRepairSwap[];
+  /** Worn items the winning attempt took off beyond the swap itself (350). */
+  removed: readonly { slotIndex: number; itemId: number }[];
   candidateGems: readonly number[];
 };
 
@@ -990,6 +993,7 @@ export async function rankUpgrades(
         const { slotIndex } = eligibility;
         let swapped: SimItemSpec[];
         let repairSwaps: readonly MetaRepairSwap[];
+        let removed: readonly { slotIndex: number; itemId: number }[];
         try {
           const outcome = candidateSwapWithRepairs(
             equipment,
@@ -999,6 +1003,7 @@ export async function rankUpgrades(
           );
           swapped = outcome.equipment;
           repairSwaps = outcome.swaps;
+          removed = outcome.removed;
         } catch (err) {
           if (!(err instanceof MetaRepairError)) throw err;
           candidateSkips.push({
@@ -1087,6 +1092,7 @@ export async function rankUpgrades(
               input.spec
             ),
             repairSwaps,
+            removed,
             candidateGems: swapped[slotIndex]?.gems ?? [],
           };
           if (slotNames.length > 1) {
@@ -1164,6 +1170,12 @@ export async function rankUpgrades(
           socketIndex: s.socketIndex,
           from: s.from,
           to: s.to,
+        }));
+      }
+      if (best.removed.length > 0) {
+        item.removedItems = best.removed.map((r) => ({
+          itemId: r.itemId,
+          slot: SIM_ORDER[r.slotIndex] as SimSlotName,
         }));
       }
       if (owned) item.owned = true;
@@ -2006,8 +2018,21 @@ export function candidateSwapWithRepairs(
   slotIndex: number,
   itemId: number,
   gems: GemContext
-): { equipment: SimItemSpec[]; swaps: readonly MetaRepairSwap[] } {
-  const swapped = swapItemAt(equipment, slotIndex, itemId, gems);
+): {
+  equipment: SimItemSpec[];
+  swaps: readonly MetaRepairSwap[];
+  removed: readonly { slotIndex: number; itemId: number }[];
+} {
+  // Before the swap, and `swapItemAt` takes the cleared array: `swapItemAt`
+  // computes `fillOptsForSwap` from whatever array it is handed, so clearing
+  // afterwards would leave a unique gem on the removed off-hand item still
+  // counted in `usedUnique` and still blocking the candidate's own socket.
+  const { equipment: cleared, removed } = clearOffHandForTwoHander(
+    equipment,
+    slotIndex,
+    itemId
+  );
+  const swapped = swapItemAt(cleared, slotIndex, itemId, gems);
   const socketed: SocketedItem[] = swapped.map((spec) => ({
     itemId: spec.id ?? 0,
     gems: [...spec.gems],
@@ -2020,6 +2045,58 @@ export function candidateSwapWithRepairs(
   return {
     equipment: applyRepairedGems(swapped, minimized.items),
     swaps: minimized.swaps.filter((s) => s.itemIndex !== slotIndex),
+    removed,
+  };
+}
+
+/**
+ * Takes the worn off-hand item off when a two-handed candidate lands in the
+ * main hand, and names what it took (ticket 350).
+ *
+ * A two-hander occupies both hands, so pricing one beside a worn off-hand item
+ * composes gear the game cannot equip. Clearing the slot leaves a legal,
+ * ordinary two-hander build and an honest swap — the row then debits the
+ * off-hand item's stats through `statDeltaBetween` and discloses it through
+ * `RankedItem.removedItems`, so a reader cannot mistake the two-item change
+ * for a one-item one.
+ *
+ * This is a different case from the `offhand` guard in `attemptEligibility`,
+ * which covers a two-hander already WORN with a one-hander offered for the off
+ * hand. That trade is rejected there because displacing the worn two-hander
+ * would price a one-hander while silently costing a two-hander; this one is
+ * disclosed rather than rejected because the resulting build is legal and the
+ * cost is stated. See that guard's own scope paragraph.
+ *
+ * Returns the input array untouched, with no removals, in every other case.
+ */
+function clearOffHandForTwoHander(
+  equipment: readonly SimItemSpec[],
+  slotIndex: number,
+  itemId: number
+): {
+  equipment: readonly SimItemSpec[];
+  removed: readonly { slotIndex: number; itemId: number }[];
+} {
+  if (slotIndex !== SIM_ORDER.indexOf("mainhand")) {
+    return { equipment, removed: [] };
+  }
+  if (getItem(itemId)?.handType !== HandType.HandTypeTwoHand) {
+    return { equipment, removed: [] };
+  }
+  const offHandIndex = SIM_ORDER.indexOf("offhand");
+  const wornOffHandId = equipment[offHandIndex]?.id;
+  if (!wornOffHandId) return { equipment, removed: [] };
+
+  const cleared = equipment.map((spec, i) =>
+    // The bare-slot shape `equipmentFromLoggedGear` writes for an empty slot,
+    // so a cleared off hand is indistinguishable from one the player never
+    // filled — which is what every downstream gem and stat stage already
+    // handles.
+    i === offHandIndex ? { gems: [] } : spec
+  );
+  return {
+    equipment: cleared,
+    removed: [{ slotIndex: offHandIndex, itemId: wornOffHandId }],
   };
 }
 

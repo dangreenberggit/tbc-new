@@ -928,7 +928,8 @@
 			"empty_unsupported_spec_body": "Ranking data has not been built for this spec yet, so there is nothing to run.",
 			"below_cutoff_group": "{{count}} item(s) below the cutoff",
 			"heading": "Upgrades",
-			"heading_count": "{{count}} above the cutoff"
+			"heading_count": "{{count}} above the cutoff",
+			"removes_worn": "removes worn {{name}} ({{slot}})"
 		},
 		"assumptions": {
 			"substitutions_title": "Dropped candidates and substitutions ({{count}})",
