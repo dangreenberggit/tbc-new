@@ -12,10 +12,10 @@
  * enum, so there is nothing to drift.
  */
 
+import { GemColor } from "../../../../proto/common.js";
 import { getGem } from "./gems.js";
 import { socketsFor } from "./items.js";
 import { gemColorMatchesSocket } from "./meta.js";
-import { GemColor } from "../../../../proto/common.js";
 
 export function migrateGemsToItem(
   wornGems: readonly number[],

@@ -8,14 +8,14 @@
  * found by running the request, not by reading the proto.
  */
 
+import { SimRequest } from '../../../../../worker/types.js';
 import { BulkGearCandidate, BulkSimRequest, RaidSimRequest as RaidSimRequestProto } from '../../../../proto/api.js';
 import { EquipmentSpec } from '../../../../proto/common.js';
-import { SimRequest } from '../../../../../worker/types.js';
 import { shouldUseLegacyBulkSim } from '../../../../wasm/bulk_sim/estimate.js';
 import { generateRequestId } from '../../../../worker_pool.js';
+import type { BulkScreenRequest } from '../engine/seams/sim-runner.js';
 // A value import, not `import type`: `BulkScreenIntegrityError` is thrown here.
 import { BulkScreenIntegrityError } from '../engine/seams/sim-runner.js';
-import type { BulkScreenRequest } from '../engine/seams/sim-runner.js';
 
 /**
  * Asserts that a built chunk will take the single-stage (High-only) path, where

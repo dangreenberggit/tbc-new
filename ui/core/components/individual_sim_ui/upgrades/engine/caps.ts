@@ -6,18 +6,18 @@
  * facts about the pinned game build, not about which repo is asking, so they
  * carry over verbatim.
  */
-import { getItem } from "./items.js";
-import { getGem } from "./gems.js";
-import type { SimItemSpec } from "./slots.js";
-import type { SocketedItem } from "./meta-repair.js";
-import { Stat, statAt } from "./stats.js";
-import type { Race, SpecId } from "./types.js";
 import {
+  type CapProfile,
+  capProfileFor,
   PHYSICAL_HIT_CAP_PERCENT,
   PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
-  capProfileFor,
-  type CapProfile,
 } from "./cap-profile.js";
+import { getGem } from "./gems.js";
+import { getItem } from "./items.js";
+import type { SocketedItem } from "./meta-repair.js";
+import type { SimItemSpec } from "./slots.js";
+import { Stat, statAt } from "./stats.js";
+import type { Race, SpecId } from "./types.js";
 
 export {
   PHYSICAL_HIT_RATING_PER_HIT_PERCENT,

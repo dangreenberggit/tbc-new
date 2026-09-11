@@ -6,12 +6,12 @@
  * except for import paths.
  */
 
+import type { RecordedGearSourceData } from "../seams/gear-source.js";
+import type { CharacterRef } from "../types.js";
 import {
   buildOfflineRecordings,
   type ReportEventsRawFixture,
 } from "./report-events-offline.js";
-import type { RecordedGearSourceData } from "../seams/gear-source.js";
-import type { CharacterRef } from "../types.js";
 
 export type SlamaltmanRawFixture = ReportEventsRawFixture;
 

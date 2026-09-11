@@ -20,8 +20,8 @@
  * actual sim call.
  */
 
-import { RaidSimRequest as RaidSimRequestProto } from '../../../../proto/api.js';
 import type { IndividualSimUI } from '../../../../individual_sim_ui.js';
+import { RaidSimRequest as RaidSimRequestProto } from '../../../../proto/api.js';
 import type { RaidSimRequest } from '../engine/seams/sim-runner.js';
 
 export function currentPageSkeleton(simUI: IndividualSimUI<any>): RaidSimRequest {

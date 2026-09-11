@@ -16,7 +16,7 @@ import { IndividualSimUI } from '../../../individual_sim_ui.js';
 import { TypedEvent } from '../../../typed_event.js';
 import { BaseModal } from '../../base_modal.js';
 import Toast from '../../toast.js';
-import { HttpWclClient, parseReportUrl, resolveGearFromRoster, WclImportError, type WclFightSummary, type WclRosterEntry } from './adapters/wcl_gear_import.js';
+import { HttpWclClient, parseReportUrl, resolveGearFromRoster, type WclFightSummary, WclImportError, type WclRosterEntry } from './adapters/wcl_gear_import.js';
 
 /**
  * Reads the gitignored local credentials file lazily so a missing file

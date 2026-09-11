@@ -7,7 +7,7 @@
  * itself would reject. Ordering only changes *when* a row fills and what a
  * pre-M2 cap keeps; it never changes a displayed number (plan §0).
  */
-import { simSlotsForPoolSlot, type PoolEntry } from "./pool.js";
+import { type PoolEntry,simSlotsForPoolSlot } from "./pool.js";
 import { SIM_ORDER, type SimItemSpec } from "./slots.js";
 import { epScore, type EpWeights } from "./stats.js";
 import type { SpecId } from "./types.js";

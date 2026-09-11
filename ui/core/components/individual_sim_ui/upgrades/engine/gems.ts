@@ -12,8 +12,8 @@
  * pure over a `GemEntry[]`/`GemColour` and does not touch the data source.
  */
 
-import { Database } from "../../../../proto_utils/database.js";
 import { GemColor } from "../../../../proto/common.js";
+import { Database } from "../../../../proto_utils/database.js";
 
 export type GemColour = number;
 

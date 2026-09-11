@@ -9,11 +9,11 @@
 
 import { BulkSimResult } from '../../../../proto/api.js';
 import { SimSignalManager } from '../../../../sim_signal_manager.js';
-import { WorkerPool } from '../../../../worker_pool.js';
 import { runConcurrentBulkSim } from '../../../../wasm/bulk_sim/index.js';
+import { WorkerPool } from '../../../../worker_pool.js';
+import type { BulkScreenRequest, BulkScreenResult, SimObservation } from '../engine/seams/sim-runner.js';
 // A value import, not `import type`: `BulkScreenIntegrityError` is thrown here.
 import { BulkScreenIntegrityError } from '../engine/seams/sim-runner.js';
-import type { BulkScreenRequest, BulkScreenResult, SimObservation } from '../engine/seams/sim-runner.js';
 import { runBulkScreenChunks } from './bulk_screen_driver.js';
 import { DEFAULT_WORKER_COUNT, memoryCapFromDeviceMemory, WasmSimRunner } from './wasm_sim_runner.js';
 

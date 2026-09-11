@@ -14,11 +14,11 @@
  *
  */
 import {
+  type Cutoff,
   meetsCutoff,
   setBonusNoiseFloorDps,
-  type Cutoff,
 } from "./cutoff.js";
-import { sourceMatchesBoss, type ItemSource } from "./pool.js";
+import { type ItemSource,sourceMatchesBoss } from "./pool.js";
 import type { RankedItem, Ranking } from "./rank.js";
 
 /**

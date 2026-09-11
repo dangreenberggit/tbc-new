@@ -5,16 +5,16 @@
  * paths retargeted at this directory's adapters.
  */
 
-import { getGem, type GemEntry } from "./gems.js";
+import { GemColor } from "../../../../proto/common.js";
+import { type GemEntry,getGem } from "./gems.js";
 import { getItem } from "./items.js";
 import {
+  type GemColorCounts,
   gemColorCounts,
   metaDeficit,
   metaStatus,
   socketBonusActive,
-  type GemColorCounts,
 } from "./meta.js";
-import { GemColor } from "../../../../proto/common.js";
 import { epScore, type EpWeights } from "./stats.js";
 
 export type SocketedItem = {

@@ -37,10 +37,10 @@
  * unconditional merge costs a disabled page nothing.
  */
 
-import { Database } from '../../../../proto_utils/database.js';
+import type { Player } from '../../../../player.js';
 import { EquipmentSpec } from '../../../../proto/common.js';
 import { SimDatabase } from '../../../../proto/db.js';
-import type { Player } from '../../../../player.js';
+import { Database } from '../../../../proto_utils/database.js';
 import type { SimItemSpec } from '../engine/slots.js';
 
 /**

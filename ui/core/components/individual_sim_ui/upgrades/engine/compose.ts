@@ -8,9 +8,9 @@
  * is not used directly here.
  */
 
+import type { RaidSimRequest } from "./seams/sim-runner.js";
 import type { SimItemSpec } from "./slots.js";
 import type { Race } from "./types.js";
-import type { RaidSimRequest } from "./seams/sim-runner.js";
 
 export type ComposePlayer = {
   name: string;

@@ -6,7 +6,9 @@
  * import paths retargeted at this directory's Database-backed items.ts/
  * gems.ts/meta.ts adapters.
  */
-import { fillEligibleGems, getGem, type GemEntry } from "./gems.js";
+import { GemColor } from "../../../../proto/common.js";
+import { capProfileFor } from "./cap-profile.js";
+import { fillEligibleGems, type GemEntry,getGem } from "./gems.js";
 import { getItem, socketsFor } from "./items.js";
 import {
   gemColorCounts,
@@ -14,9 +16,7 @@ import {
   metaDeficit,
   socketBonusActive,
 } from "./meta.js";
-import { GemColor } from "../../../../proto/common.js";
-import { epScore, Stat, type EpWeights } from "./stats.js";
-import { capProfileFor } from "./cap-profile.js";
+import { epScore, type EpWeights,Stat } from "./stats.js";
 import type { DetectedSpecId, SpecId } from "./types.js";
 
 /**

@@ -16,8 +16,8 @@
  * promised.
  */
 
-import { Database } from "../../../../proto_utils/database.js";
 import { GemColor, ItemType } from "../../../../proto/common.js";
+import { Database } from "../../../../proto_utils/database.js";
 
 export type ItemEntry = {
   name: string;

@@ -36,12 +36,12 @@
  * Only screening batches.
  */
 
-import { RaidSimRequest as RaidSimRequestProto } from '../../../../proto/api.js';
-import { CURRENT_API_VERSION } from '../../../../constants/other.js';
-import { generateRequestId, WorkerPool } from '../../../../worker_pool.js';
 import { SimRequest } from '../../../../../worker/types.js';
+import { CURRENT_API_VERSION } from '../../../../constants/other.js';
+import { RaidSimRequest as RaidSimRequestProto } from '../../../../proto/api.js';
 import { RequestTypes, SimSignalManager } from '../../../../sim_signal_manager.js';
-import type { RaidSimRequest, SimObservation, SimRunOpts, SimRunner } from '../engine/seams/sim-runner.js';
+import { generateRequestId, WorkerPool } from '../../../../worker_pool.js';
+import type { RaidSimRequest, SimObservation, SimRunner,SimRunOpts } from '../engine/seams/sim-runner.js';
 
 /** Matches upstream's own default (`ui/core/sim.ts`'s WorkerPool(1) plus its
  * wasm-concurrency auto-sizing, capped at 4 — see that file's constructor). */

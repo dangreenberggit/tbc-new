@@ -6,9 +6,9 @@
  * paths.
  */
 
-import { SIM_ORDER, type SimItemSpec } from "./slots.js";
-import type { LoggedGear } from "./seams/gear-source.js";
 import type { SocketedItem } from "./meta-repair.js";
+import type { LoggedGear } from "./seams/gear-source.js";
+import { SIM_ORDER, type SimItemSpec } from "./slots.js";
 
 export function equipmentFromLoggedGear(gear: LoggedGear): SimItemSpec[] {
   const bySlot = new Map<string, SimItemSpec>();

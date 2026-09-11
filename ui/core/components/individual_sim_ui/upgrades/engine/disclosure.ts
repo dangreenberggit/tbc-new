@@ -6,9 +6,9 @@
  * dependency to adapt.
  */
 
-import type { ContentPhase, Race } from "./types.js";
-import type { MetaRepairSwap } from "./meta-repair.js";
 import type { TalentHitAssumption } from "./caps.js";
+import type { MetaRepairSwap } from "./meta-repair.js";
+import type { ContentPhase, Race } from "./types.js";
 
 export type StandingAssumptionId =
   | "race"

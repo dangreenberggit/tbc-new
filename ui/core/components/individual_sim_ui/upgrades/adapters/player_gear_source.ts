@@ -34,8 +34,8 @@
  */
 
 import type { IndividualSimUI } from '../../../../individual_sim_ui.js';
+import type { FightSummary, GearSource, LoggedGear, LoggedItem } from '../engine/seams/gear-source.js';
 import { SIM_ORDER } from '../engine/slots.js';
-import type { GearSource, FightSummary, LoggedGear, LoggedItem } from '../engine/seams/gear-source.js';
 import type { CharacterRef, FightRef, SpecId } from '../engine/types.js';
 
 /** The one synthetic fight this surface ever has: "current gear on this page". */

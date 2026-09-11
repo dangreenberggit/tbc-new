@@ -17,12 +17,12 @@
  * primitives above, not present in the fork's gems.ts.
  */
 
-import { getGem, type GemColour } from "./gems.js";
 import { GemColor } from "../../../../proto/common.js";
 import {
   gemColorMatchesSocket as upstreamGemColorMatchesSocket,
   getMetaGemCondition,
 } from "../../../../proto_utils/gems.js";
+import { type GemColour,getGem } from "./gems.js";
 
 export type GemColorCounts = { red: number; yellow: number; blue: number };
 

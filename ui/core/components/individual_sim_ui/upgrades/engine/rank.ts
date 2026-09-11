@@ -29,95 +29,95 @@
  * synergy, disclosure assembly — is unchanged from packages/core.
  */
 
+import { HandType } from "../../../../proto/common.js";
 import {
   fillEmptyCandidateGems,
+  type FillEmptyOpts,
+  type GemContext,
   gemContext,
   metaSocketUnpriced,
   missingMetaPreferenceNote,
-  type FillEmptyOpts,
-  type GemContext,
 } from "./candidate-gems.js";
 import { orderCandidatesByEp } from "./candidate-order.js";
-import { migrateGemsToItem } from "./migrate-gems.js";
-import { promisePool } from "./promise-pool.js";
-import { compose } from "./compose.js";
-import { canonicalJson, ENGINE_VERSION, type HashedGearItem } from "./content-hash.js";
 import {
+  type CapState,
   capStateFrom,
   hitRegression,
   isHitDriven,
   statDeltaBetween,
-  type CapState,
 } from "./caps.js";
-import { cutoffForSpec, meetsCutoff, type Cutoff } from "./cutoff.js";
+import { compose } from "./compose.js";
+import { canonicalJson, ENGINE_VERSION, type HashedGearItem } from "./content-hash.js";
+import { type Cutoff,cutoffForSpec, meetsCutoff } from "./cutoff.js";
 import {
-  buildStandingAssumptions,
-  substitutionsFromMetaRepair,
   type Assumptions,
+  buildStandingAssumptions,
   type Substitution,
+  substitutionsFromMetaRepair,
 } from "./disclosure.js";
-import { findMetaGemId, gemsForPhase, getGem, type GemEntry } from "./gems.js";
 import { enchantAppliesToItem } from "./enchants.js";
+import { findMetaGemId, type GemEntry,gemsForPhase, getGem } from "./gems.js";
+import { getItem } from "./items.js";
+import { isKaelTempLegendary } from "./kael-temp.js";
 import {
   equipmentFromLoggedGear,
   socketedItemsFromLoggedGear,
 } from "./logged-gear.js";
 import {
   MetaRepairError,
-  repairAndMinimize,
   type MetaRepairSwap,
+  repairAndMinimize,
   type SocketedItem,
 } from "./meta-repair.js";
-import { isKaelTempLegendary } from "./kael-temp.js";
+import { migrateGemsToItem } from "./migrate-gems.js";
+import {
+  type PlausibilityWarning,
+  plausibilityWarnings,
+} from "./plausibility.js";
 import {
   filterPoolByPhase,
-  simSlotsForPoolSlot,
   type ItemSource,
   type PoolEntry,
   type SimSlotName,
+  simSlotsForPoolSlot,
 } from "./pool.js";
+import { promisePool } from "./promise-pool.js";
+import {
+  assertUsableSeeds,
+  DegenerateSeedsError,
+  PAIRED_REPLICATE_TOP_N,
+  pairedReplicateSe,
+  usesPairedReplication,
+} from "./se.js";
 import type { FightSummary, GearSource } from "./seams/gear-source.js";
 import {
   // Value imports: these classes are tested with `instanceof`.
   BulkScreenAbortedError,
   BulkScreenIntegrityError,
-  simCacheKey,
   type RaidSimRequest,
+  simCacheKey,
   type SimObservation,
-  type SimRunOpts,
   type SimRunner,
+  type SimRunOpts,
 } from "./seams/sim-runner.js";
 import type { Store } from "./seams/store.js";
-import {
-  assertUsableSeeds,
-  DegenerateSeedsError,
-  pairedReplicateSe,
-  PAIRED_REPLICATE_TOP_N,
-  usesPairedReplication,
-} from "./se.js";
 import { setBreakNote } from "./set-bonus.js";
 import {
+  type BrokenSetBonus,
   brokenSetBonuses,
   computeSynergy,
+  type DpsSample,
+  type IndividualDelta,
   isBonusImplemented,
   nextMeasurableThreshold,
   selectPackage,
+  type SelfSetConfound,
+  SET_THRESHOLDS,
   setCounts,
   setLabel,
-  SET_THRESHOLDS,
-  type BrokenSetBonus,
-  type DpsSample,
-  type IndividualDelta,
-  type SelfSetConfound,
   type SetThreshold,
   type UnmeasuredReason,
 } from "./set-value.js";
-import {
-  plausibilityWarnings,
-  type PlausibilityWarning,
-} from "./plausibility.js";
-import { getItem } from "./items.js";
-import { HandType } from "../../../../proto/common.js";
 import { SIM_ORDER, type SimItemSpec } from "./slots.js";
 import type {
   CharacterRef,
