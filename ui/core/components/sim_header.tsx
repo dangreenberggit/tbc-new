@@ -62,9 +62,10 @@ export class SimHeader extends Component {
 	// tab actually being added (and removed). The scroll listener
 	// separately covers the user scrolling to the end.
 	private wireTabStripScrollAffordance() {
-		const container = this.rootElem.querySelector<HTMLElement>('.sim-header-container')!;
-		const tabsContent = this.rootElem.querySelector<HTMLElement>('.sim-tabs')!;
-		const wrap = this.rootElem.querySelector<HTMLElement>('.sim-header-container-wrap')!;
+		const container = this.rootElem.querySelector<HTMLElement>('.sim-header-container');
+		const tabsContent = this.rootElem.querySelector<HTMLElement>('.sim-tabs');
+		const wrap = this.rootElem.querySelector<HTMLElement>('.sim-header-container-wrap');
+		if (!container || !tabsContent || !wrap) return;
 
 		const update = () => {
 			const atEnd = container.scrollLeft + container.clientWidth >= container.scrollWidth - 1;
