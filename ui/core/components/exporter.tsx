@@ -2,7 +2,7 @@ import { ref } from 'tsx-vanilla';
 
 import { SimUI } from '../sim_ui';
 import { TypedEvent } from '../typed_event';
-import { downloadString } from '../utils';
+import { downloadString, kebabCase } from '../utils';
 import { BaseModal } from './base_modal';
 import { CopyButton } from './copy_button';
 import i18n from '../../i18n/config';
@@ -11,6 +11,8 @@ import { trackPageView } from '../../tracking/utils';
 export interface ExporterOptions {
 	title: string;
 	allowDownload?: boolean;
+	downloadFileName?: string;
+	downloadMimeType?: string;
 	header?: boolean;
 }
 
@@ -44,13 +46,13 @@ export abstract class Exporter extends BaseModal {
 			const downloadButton = downloadBtnRef.value!;
 			downloadButton.addEventListener('click', _event => {
 				const data = this.textElem.textContent!;
-				downloadString(data, 'wowsims.json');
+				downloadString(data, options.downloadFileName ?? 'wowsims.json', options.downloadMimeType);
 			});
 		}
 	}
 
 	open() {
-		const titleAsSlug = this.header?.title.toLowerCase().replaceAll(' ', '-');
+		const titleAsSlug = this.header && kebabCase(this.header.title);
 		trackPageView(this.header!.title, `/export/${titleAsSlug}`);
 		super.open();
 		this.init();

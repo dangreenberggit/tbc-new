@@ -33,11 +33,12 @@ import {
 } from './proto/api.js';
 import {
 	ArmorType,
+	EquipmentSpec,
 	Faction,
+	ItemSlot,
 	Profession,
 	PseudoStat,
 	RangedWeaponType,
-	EquipmentSpec,
 	Stat,
 	UnitReference,
 	UnitReference_Type as UnitType,
@@ -92,6 +93,18 @@ export type ReforgeOptimizeConfig = {
 const WASM_CONCURRENCY_STORAGE_KEY = `${LOCAL_STORAGE_PREFIX}_wasmconcurrency`;
 
 // Core Sim module which deals only with api types, no UI-related stuff.
+// The backend needs an inactive meta gem left in its socket so the item's socket bonus still
+// applies, while ignoring the gem's own stats and effect. Gear.asSpec() is deliberately left
+// alone so this derived flag never reaches saved settings or shared gear links.
+const gearAsBackendSpec = (gear: Gear): EquipmentSpec => {
+	const spec = gear.asSpec();
+	const headIdx = gear.getItemSlots().indexOf(ItemSlot.ItemSlotHead);
+	if (headIdx >= 0 && gear.hasInactiveMetaGem()) {
+		spec.items[headIdx].metaGemDisabled = true;
+	}
+	return spec;
+};
+
 export class Sim {
 	private readonly workerPool: WorkerPool;
 
@@ -262,20 +275,16 @@ export class Sim {
 
 				const isEnchanter = [player.profession1, player.profession2].includes(Profession.Enchanting);
 
-				// Disable meta gem if inactive.
-				if (gear.hasInactiveMetaGem()) {
-					gear = gear.withoutMetaGem();
-					gearChanged = true;
-				}
-
 				// Remove Ring Enchants if not enchanter
 				if (!isEnchanter) {
 					gear = gear.withoutEnchanting();
 					gearChanged = true;
 				}
 
-				if (gearChanged) {
-					player.equipment = gear.asSpec();
+				// An inactive meta gem is flagged rather than removed, so that flag still has to
+				// reach the backend even when nothing else about the gear changed.
+				if (gearChanged || gear.hasInactiveMetaGem()) {
+					player.equipment = gearAsBackendSpec(gear);
 				}
 
 				extendPlayerProtoWithMissingEffects(player, this.db);
@@ -718,14 +727,8 @@ export class Sim {
 			const request = this.makeRaidSimRequest(false);
 			const player = request.raid!.parties[0].players[0];
 
-			// Remove any inactive meta gems, since the backend doesn't have its own validation.
-			// Disable meta gem if inactive.
-			if (gear.hasInactiveMetaGem()) {
-				gear = gear.withoutMetaGem();
-			}
-
 			player.database = gear.toDatabase(this.db);
-			player.equipment = gear.asSpec();
+			player.equipment = gearAsBackendSpec(gear);
 			if (player.consumables) player.consumables = gear.adjustImbues(player.consumables);
 
 			request.raid!.parties[0].players[0] = player;
@@ -841,14 +844,8 @@ export class Sim {
 
 		const player = raidProto.parties[0].players[0];
 
-		// Remove any inactive meta gems, since the backend doesn't have its own validation.
-		// Disable meta gem if inactive.
-		if (gear.hasInactiveMetaGem()) {
-			gear = gear.withoutMetaGem();
-		}
-
 		player.database = gear.toDatabase(this.db);
-		player.equipment = gear.asSpec();
+		player.equipment = gearAsBackendSpec(gear);
 
 		extendPlayerProtoWithMissingEffects(player, this.db);
 		raidProto.parties[0].players[0] = player;

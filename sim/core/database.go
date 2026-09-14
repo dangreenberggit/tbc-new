@@ -204,6 +204,9 @@ func (item *Item) ToItemSpecProto() *proto.ItemSpec {
 		RandomSuffix: item.RandomSuffix.ID,
 		Enchant:      item.Enchant.EffectID,
 		Gems:         MapSlice(item.Gems, func(gem Gem) int32 { return gem.ID }),
+		MetaGemDisabled: slices.ContainsFunc(item.Gems, func(gem Gem) bool {
+			return gem.Disabled && gem.Color == proto.GemColor_GemColorMeta
+		}),
 	}
 
 	return itemSpec
@@ -250,6 +253,9 @@ type Gem struct {
 	Name  string
 	Stats stats.Stats
 	Color proto.GemColor
+	// Set per equipped instance, not from the DB: a meta gem whose requirements are not met stays
+	// socketed (so the item's socket bonus still applies) but grants no stats and no effect.
+	Disabled bool
 }
 
 func GemFromProto(pData *proto.SimGem) Gem {
@@ -262,10 +268,11 @@ func GemFromProto(pData *proto.SimGem) Gem {
 }
 
 type ItemSpec struct {
-	ID           int32
-	RandomSuffix int32
-	Enchant      int32
-	Gems         []int32
+	ID              int32
+	RandomSuffix    int32
+	Enchant         int32
+	Gems            []int32
+	MetaGemDisabled bool
 }
 
 type Equipment [NumItemSlots]Item
@@ -466,10 +473,11 @@ func ProtoToEquipmentSpec(es *proto.EquipmentSpec) EquipmentSpec {
 	var coreEquip EquipmentSpec
 	for i, item := range es.Items {
 		coreEquip[i] = ItemSpec{
-			ID:           item.Id,
-			RandomSuffix: item.RandomSuffix,
-			Enchant:      item.Enchant,
-			Gems:         item.Gems,
+			ID:              item.Id,
+			RandomSuffix:    item.RandomSuffix,
+			Enchant:         item.Enchant,
+			Gems:            item.Gems,
+			MetaGemDisabled: item.MetaGemDisabled,
 		}
 	}
 	return coreEquip
@@ -523,6 +531,7 @@ func NewItem(itemSpec ItemSpec) Item {
 		item.Gems = make([]Gem, numGems)
 		for gemIdx, gemID := range itemSpec.Gems {
 			if gem, ok := gemsByID[gemID]; ok {
+				gem.Disabled = itemSpec.MetaGemDisabled && gem.Color == proto.GemColor_GemColorMeta
 				item.Gems[gemIdx] = gem
 			} else {
 				if gemID != 0 {
@@ -613,6 +622,11 @@ func ItemEquipmentGemAndEnchantStats(item Item) stats.Stats {
 	equipStats = equipStats.Add(item.Enchant.Stats)
 
 	for _, gem := range item.Gems {
+		// A disabled meta gem keeps its color below so the socket bonus still matches.
+		if gem.Disabled {
+			continue
+		}
+
 		equipStats = equipStats.Add(gem.Stats)
 	}
 

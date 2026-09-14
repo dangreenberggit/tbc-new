@@ -1,6 +1,5 @@
 import {
 	BulkGearCandidate,
-	BulkGearResult,
 	BulkSimRequest,
 	BulkSimResult,
 	BulkSimStage,

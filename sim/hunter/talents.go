@@ -275,7 +275,7 @@ func (hunter *Hunter) registerEfficiency() {
 	}
 
 	hunter.AddStaticMod(core.SpellModConfig{
-		Kind:       core.SpellMod_PowerCost_Pct,
+		Kind:       core.SpellMod_PowerCost_Pct_Add,
 		ClassMask:  HunterSpellsShotsAndStings,
 		FloatValue: -0.02 * float64(hunter.Talents.Efficiency),
 	})
@@ -371,7 +371,7 @@ func (hunter *Hunter) registerImprovedStings() {
 	}
 
 	hunter.AddStaticMod(core.SpellModConfig{
-		Kind:       core.SpellMod_DamageDone_Pct,
+		Kind:       core.SpellMod_DamageDone_Flat,
 		ClassMask:  HunterSpellSerpentSting,
 		FloatValue: 0.06 * float64(hunter.Talents.ImprovedStings),
 	})
@@ -395,7 +395,7 @@ func (hunter *Hunter) registerBarrage() {
 	}
 
 	hunter.AddStaticMod(core.SpellModConfig{
-		Kind:       core.SpellMod_DamageDone_Pct,
+		Kind:       core.SpellMod_DamageDone_Flat,
 		ClassMask:  HunterSpellMultiShot | HunterSpellVolley,
 		FloatValue: 0.04 * float64(hunter.Talents.Barrage),
 	})
@@ -549,7 +549,7 @@ func (hunter *Hunter) registerResourcefulness() {
 	}
 
 	hunter.AddStaticMod(core.SpellModConfig{
-		Kind:       core.SpellMod_PowerCost_Pct,
+		Kind:       core.SpellMod_PowerCost_Pct_Add,
 		ClassMask:  HunterSpellRaptorStrike,
 		FloatValue: -0.2 * float64(hunter.Talents.Resourcefulness),
 	})

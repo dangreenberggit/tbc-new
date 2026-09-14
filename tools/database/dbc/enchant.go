@@ -97,7 +97,8 @@ func (enchant *Enchant) ToProto() *proto.UIEnchant {
 			uiEnchant.EnchantType = proto.EnchantType_EnchantTypeOffHand
 			uiEnchant.Type = proto.ItemType_ItemTypeWeapon
 		}
-		if enchant.SubClassMask == ITEM_SUBCLASS_BIT_ARMOR_SHIELD || enchant.SubClassMask == 64 { // idk where the 64 comes from but shield spikes are this
+		// Shield enchants target the shield subclass alone; shield spikes also set the obsolete buckler bit (mask 96).
+		if enchant.SubClassMask&ITEM_SUBCLASS_BIT_ARMOR_SHIELD != 0 {
 			uiEnchant.EnchantType = proto.EnchantType_EnchantTypeShield
 			uiEnchant.Type = proto.ItemType_ItemTypeWeapon
 		}

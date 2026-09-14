@@ -417,6 +417,12 @@ export const Bloodthistle = makeBooleanConsumeInput({
 	showWhen: (player: Player<any>) => player.getRace() === Race.RaceBloodElf,
 });
 
+export const BoglingRoot = makeBooleanConsumeInput({
+	actionId: () => ActionId.fromItemId(5206),
+	fieldName: 'boglingRoot',
+	showWhen: (player: Player<any>) => player.getEpWeights().getStat(Stat.StatAttackPower) > 0,
+});
+
 ///////////////////////////////////////////////////////////////////////////
 
 export interface ConsumableInputOptions {

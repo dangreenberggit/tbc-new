@@ -317,6 +317,7 @@ var ConsumableAllowList = []int32{
 	22797, // Nightmare Seed
 	23334, // Cracked Power Core
 	23381, // Chipped Power Core
+	5206,  // Bogling Root
 }
 var ConsumableDenyList = []int32{
 	32762, // Rulkster's Brain Juice
@@ -644,6 +645,7 @@ var EnchantDenyList = map[int32]struct{}{
 
 var EnchantAllowList = []int32{
 	368,  // Enchant Cloak - Greater Agility
+	804,  // Enchant Cloak - Lesser Shadow Resistance
 	369,  // Enchant Bracer - Major Intellect
 	684,  // Enchant Gloves - Major Strength
 	963,  // Enchant Weapon - Major Striking

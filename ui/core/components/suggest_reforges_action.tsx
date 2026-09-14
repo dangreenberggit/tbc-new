@@ -3,35 +3,34 @@ import tippy, { hideAll } from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
 import i18n from '../../i18n/config.js';
+import { translateItemQuality, translateSlotName } from '../../i18n/localization';
+import { trackEvent, trackPageView } from '../../tracking/utils';
+import { CURRENT_PHASE, Phase } from '../constants/other';
 import { SimSettingCategories } from '../constants/sim_settings';
 import { IndividualSimUI } from '../individual_sim_ui';
 import { Player } from '../player';
 import { Player as PlayerProtoMessageType, ReforgeOptimizeMode, ReforgeOptimizeRequest, ReforgeSettings, StatCapType } from '../proto/api';
 import { Class, Debuffs, GemColor, ItemQuality, ItemSlot, PartyBuffs, Profession, PseudoStat, RaidBuffs, Spec, Stat } from '../proto/common';
 import { UIGem as Gem } from '../proto/ui';
-import { ReforgeGearCache } from '../reforge_cache';
 import { EquippedItem } from '../proto_utils/equipped_item';
 import { Gear } from '../proto_utils/gear';
-import { getEmptyGemSocketIconUrl } from '../proto_utils/gems';
 import { statCapTypeNames } from '../proto_utils/names';
-import { getReforgeCacheGearKey } from '../proto_utils/utils';
-import { translateItemQuality, translateSlotName } from '../../i18n/localization';
 import { StatCap, Stats, UnitStat, UnitStatPresets } from '../proto_utils/stats';
+import { getReforgeCacheGearKey } from '../proto_utils/utils';
+import { ReforgeGearCache } from '../reforge_cache';
 import { ReforgeOptimizeConfig, Sim } from '../sim';
-import { ActionGroupItem } from '../sim_ui';
 import { RequestTypes } from '../sim_signal_manager';
+import { ActionGroupItem } from '../sim_ui';
 import { EventID, TypedEvent } from '../typed_event';
 import { distinct, isDevMode, phasesEnumToNumber } from '../utils';
+import { CharacterStats } from './character_stats';
+import { buildGearChangeIcon } from './gear_change_icon';
 import { BooleanPicker } from './pickers/boolean_picker';
 import { EnumPicker } from './pickers/enum_picker';
 import { NumberPicker, NumberPickerConfig } from './pickers/number_picker';
+import { ProgressTrackerModal } from './progress_tracker_modal';
 import { renderSavedEPWeights } from './saved_data_managers/ep_weights';
 import Toast from './toast';
-import { trackEvent, trackPageView } from '../../tracking/utils';
-import { ProgressTrackerModal } from './progress_tracker_modal';
-import { buildGearChangeIcon } from './gear_change_icon';
-import { CURRENT_PHASE, Phase } from '../constants/other';
-import { CharacterStats } from './character_stats';
 
 const INCLUDED_STATS: UnitStat[] = [
 	UnitStat.fromStat(Stat.StatSpellHitRating),

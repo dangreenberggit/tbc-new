@@ -7,6 +7,7 @@ import (
 
 	"github.com/wowsims/tbc/sim/core"
 	"github.com/wowsims/tbc/sim/core/proto"
+	"github.com/wowsims/tbc/sim/core/stats"
 	googleProto "google.golang.org/protobuf/proto"
 )
 
@@ -50,7 +51,7 @@ func (o *reforgeOptimizer) applyLPSolution(selectedVars []string) *proto.Equipme
 // minimizeRegems cuts the number of gems the player must actually buy. For each socket the
 // solver changed, it locates where that socket's original gem now lives and swaps the two gems
 // back — reusing a gem the player already owns instead of buying a new one — unless doing so would
-// drop a socket-color match the solver found.
+// cost the socket bonuses the solver claimed.
 func (o *reforgeOptimizer) minimizeRegems(newGear *core.Equipment) {
 	if o.originalEquipment == nil {
 		return
@@ -65,7 +66,7 @@ func (o *reforgeOptimizer) minimizeRegems(newGear *core.Equipment) {
 			continue
 		}
 
-		for socketIdx, socketColor := range currentSocketColors(*newItem) {
+		for socketIdx := range currentSocketColors(*newItem) {
 			socketKey := reforgeSocketKey{slot: slot, socketIdx: socketIdx}
 			if finalizedSocketKeys[socketKey] {
 				continue
@@ -77,8 +78,6 @@ func (o *reforgeOptimizer) minimizeRegems(newGear *core.Equipment) {
 			if newGemID == 0 || originalGemID == 0 || newGemID == originalGemID {
 				continue
 			}
-			newGem := gemFromID(newGemID)
-			originalGem := gemFromID(originalGemID)
 
 			for _, loc := range o.findGem(newGear, originalGemID) {
 				if o.frozenSlots[loc.slot] {
@@ -89,28 +88,24 @@ func (o *reforgeOptimizer) minimizeRegems(newGear *core.Equipment) {
 					continue
 				}
 				matchedItem := newGear.GetItemBySlot(loc.slot)
-				matchedColors := currentSocketColors(*matchedItem)
-				if loc.socketIdx >= len(matchedColors) {
+				if loc.socketIdx >= len(currentSocketColors(*matchedItem)) {
 					continue
 				}
-				matchedSocketColor := matchedColors[loc.socketIdx]
-				// Restore the original gem here only if it does not reduce the total socket-color
-				// matches across BOTH sockets involved. Weighing both sockets (not just the one the
-				// gem moved to) preserves a genuine color-match upgrade the solver found while still
-				// undoing a match-neutral shuffle that would otherwise be a pointless regem.
-				matchesIfSwapped := boolToInt(core.GemMatchesSocket(originalGem.Color, socketColor)) + boolToInt(core.GemMatchesSocket(newGem.Color, matchedSocketColor))
-				matchesIfKept := boolToInt(core.GemMatchesSocket(newGem.Color, socketColor)) + boolToInt(core.GemMatchesSocket(originalGem.Color, matchedSocketColor))
-				if matchesIfSwapped < matchesIfKept {
-					continue
-				}
-
-				// A socket bonus is all-or-nothing per item, so a match-count-neutral swap can still
-				// deactivate one item's bonus while gaining a match on another. Apply the swap, then
-				// keep it only if no socket bonus was lost.
-				bonusesBefore := boolToInt(socketBonusActive(newItem)) + boolToInt(socketBonusActive(matchedItem))
+				// A swap moves gems between sockets without changing which gems are equipped, so
+				// the only stats at stake are the two items' socket bonuses. Those are all-or-
+				// nothing per ITEM, which is why a per-socket color-match count is not a safe
+				// guard: shuffling one match off a fully-matched item onto a partly-matched one is
+				// match-neutral yet loses a bonus outright. Require instead that the two items'
+				// earned bonuses come out IDENTICAL, which is the condition under which the swap
+				// is provably free. Scoring the two arrangements by EP would not be safe here: the
+				// solver's caps live in the LP's constraints, not in its weights, so a pre-cap EP
+				// comparison would happily trade an Intellect bonus for a Hit one the player is
+				// already capped on.
+				bonusIfKept := o.socketBonusStats(newItem).Add(o.socketBonusStats(matchedItem))
 				setGemIDAt(newItem, socketIdx, originalGemID)
 				setGemIDAt(matchedItem, loc.socketIdx, newGemID)
-				if boolToInt(socketBonusActive(newItem))+boolToInt(socketBonusActive(matchedItem)) < bonusesBefore {
+				bonusIfSwapped := o.socketBonusStats(newItem).Add(o.socketBonusStats(matchedItem))
+				if bonusIfSwapped != bonusIfKept {
 					setGemIDAt(newItem, socketIdx, newGemID)
 					setGemIDAt(matchedItem, loc.socketIdx, originalGemID)
 					continue
@@ -151,30 +146,20 @@ func (o *reforgeOptimizer) findGem(equipment *core.Equipment, gemID int32) []gem
 	return locations
 }
 
-func boolToInt(b bool) int {
-	if b {
-		return 1
-	}
-	return 0
-}
-
-// socketBonusActive reports whether an item's socket bonus is currently earned: the item must have
-// a socket bonus and every gemmable socket must hold a colour-matching gem. The bonus is
-// all-or-nothing, which is why a single mismatched gem forfeits it entirely.
-func socketBonusActive(item *core.Item) bool {
-	if item == nil || item.ID == 0 || !hasSocketBonus(*item) {
-		return false
-	}
+// socketBonusStats returns an item's socket bonus, or zero stats when the bonus is not earned.
+// The bonus applies only when every colored socket holds a color-matching gem, mirroring the
+// all-or-nothing rule the LP models via its SocketBonusLink constraints.
+func (o *reforgeOptimizer) socketBonusStats(item *core.Item) stats.Stats {
 	for socketIdx, socketColor := range currentSocketColors(*item) {
 		if !isColoredSocket(socketColor) {
 			continue
 		}
-		gemID := gemIDAt(item, socketIdx)
-		if gemID == 0 || !core.GemMatchesSocket(gemFromID(gemID).Color, socketColor) {
-			return false
+		gem, ok := core.GetGemByID(gemIDAt(item, socketIdx))
+		if !ok || !core.GemMatchesSocket(gem.Color, socketColor) {
+			return stats.Stats{}
 		}
 	}
-	return true
+	return item.SocketBonus
 }
 
 func cloneEquipmentSpec(equipment *proto.EquipmentSpec) *proto.EquipmentSpec {
@@ -233,15 +218,6 @@ func frozenItemSlots(settings *proto.ReforgeSettings) map[proto.ItemSlot]bool {
 		frozen[item] = true
 	}
 	return frozen
-}
-
-func hasSocketBonus(item core.Item) bool {
-	for _, value := range item.SocketBonus {
-		if value != 0 {
-			return true
-		}
-	}
-	return false
 }
 
 func currentSocketColors(item core.Item) []proto.GemColor {

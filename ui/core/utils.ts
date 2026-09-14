@@ -14,13 +14,10 @@ export const existsInDOM = (element: HTMLElement | null) => document.body.contai
 
 export const cloneChildren = (element: HTMLElement) => [...(element.childNodes || [])].map(child => child.cloneNode(true));
 
-export const fragmentToString = (element: Node | Element) => {
-	const div = document.createElement('div');
-	div.appendChild(element.cloneNode(true));
-	return div.innerHTML;
-};
-
 export const sanitizeId = (id: string) => id.split(' ').join('').toLocaleLowerCase();
+
+/** Lower-cases and hyphenates a display name, for use as a CSS class or slug. */
+export const kebabCase = (text: string): string => text.toLowerCase().replaceAll(' ', '-');
 
 export const omitDeep = <T>(collection: T, excludeKeys: string[]): T => {
 	const clonedCollection = cloneDeep(collection);
@@ -169,11 +166,6 @@ export function zTest(
 	return { z, isDiff: z > Z_95 };
 }
 
-// Returns the index of maximum value, or null if empty.
-export function maxIndex(arr: Array<number>): number | null {
-	return arr.reduce((cur, v, i, arr) => (v > arr[cur] ? i : cur), 0);
-}
-
 // Swaps two elements in the given array.
 export function swap<T>(arr: Array<T>, i: number, j: number) {
 	[arr[i], arr[j]] = [arr[j], arr[i]];
@@ -266,8 +258,19 @@ export function camelToSnakeCase(str: string): string {
 export function downloadJson(json: any, fileName: string) {
 	downloadString(JSON.stringify(json, null, 2), fileName);
 }
-export function downloadString(data: string, fileName: string) {
-	const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(data);
+// Nearest ancestor the user can scroll vertically, or null when the page itself is it. An
+// overflow-y: hidden box is skipped: it clips but never scrolls, and the log's sideways scroller
+// is one, sitting between the rows and the pane that really moves them.
+export function findScrollParent(elem: HTMLElement): HTMLElement | null {
+	for (let node = elem.parentElement; node && node !== document.body && node !== document.documentElement; node = node.parentElement) {
+		const overflowY = getComputedStyle(node).overflowY;
+		if (overflowY === 'auto' || overflowY === 'scroll') return node;
+	}
+	return null;
+}
+
+export function downloadString(data: string, fileName: string, mimeType = 'text/json') {
+	const dataStr = `data:${mimeType};charset=utf-8,` + encodeURIComponent(data);
 	const downloadAnchorNode = document.createElement('a');
 	downloadAnchorNode.setAttribute('href', dataStr);
 	downloadAnchorNode.setAttribute('download', fileName);

@@ -3,6 +3,7 @@ package tbc
 import (
 	"time"
 
+	"github.com/wowsims/tbc/sim/common/shared"
 	"github.com/wowsims/tbc/sim/core"
 	"github.com/wowsims/tbc/sim/core/proto"
 	"github.com/wowsims/tbc/sim/core/stats"
@@ -48,45 +49,12 @@ func init() {
 		})
 	})
 
-	// Figurine - Nightseye Panther
-	// Use: Increases attack power by 320 for 12 sec. (3 Min Cooldown)
-	core.NewItemEffect(24128, func(agent core.Agent) {
-		character := agent.GetCharacter()
-		duration := time.Second * 12
-		aura := character.NewTemporaryStatsAura(
-			"Nightseye Panther",
-			core.ActionID{SpellID: 31047},
-			stats.Stats{stats.AttackPower: 320, stats.RangedAttackPower: 320},
-			duration,
-		)
-
-		spell := character.RegisterSpell(core.SpellConfig{
-			ActionID:    core.ActionID{ItemID: 24128},
-			SpellSchool: core.SpellSchoolPhysical,
-			ProcMask:    core.ProcMaskEmpty,
-
-			Cast: core.CastConfig{
-				CD: core.Cooldown{
-					Timer:    character.NewTimer(),
-					Duration: time.Minute * 3,
-				},
-				SharedCD: core.Cooldown{
-					Timer:    character.GetOffensiveTrinketCD(),
-					Duration: duration,
-				},
-			},
-
-			ApplyEffects: func(sim *core.Simulation, _ *core.Unit, _ *core.Spell) {
-				aura.Activate(sim)
-			},
-		})
-
-		character.AddMajorCooldown(core.MajorCooldown{
-			Spell:    spell,
-			Type:     core.CooldownTypeDPS,
-			BuffAura: aura,
-		})
-	})
+	// Summoning figurines. The generator skips a spell with a summon effect (type 28) outright,
+	// which also drops the stat buff the same spell carries. Only the buff is simulated.
+	shared.NewSimpleStatActive(24126) // Figurine - Living Ruby Serpent - https://www.wowhead.com/tbc/spell=31040
+	shared.NewSimpleStatActive(24128) // Figurine - Nightseye Panther - https://www.wowhead.com/tbc/spell=31047
+	shared.NewSimpleStatActive(35700) // Figurine - Crimson Serpent - https://www.wowhead.com/tbc/spell=46783
+	shared.NewSimpleStatActive(35702) // Figurine - Shadowsong Panther - https://www.wowhead.com/tbc/spell=46784
 
 	// Jom Gabbar
 	// Use: Increases attack power by 65 and an additional 65 every 2 sec. Lasts 20 sec. (2 Min Cooldown)
@@ -265,7 +233,7 @@ func init() {
 			ActionID:    core.ActionID{SpellID: 34587},
 			SpellSchool: core.SpellSchoolNature,
 
-			ProcMask: core.ProcMaskEmpty,
+			ProcMask: core.ProcMaskSpellProc | core.ProcMaskSpellDamageProc,
 			Flags:    core.SpellFlagPassiveSpell | core.SpellFlagNoOnCastComplete,
 
 			DamageMultiplier: 1,
@@ -280,6 +248,7 @@ func init() {
 		procAura := character.MakeProcTriggerAura(core.ProcTrigger{
 			Name:               "Romulo's Poison Vial",
 			ActionID:           core.ActionID{ItemID: 28579},
+			SpellFlagsExclude:  core.SpellFlagSuppressEquipProcs,
 			DPM:                character.NewLegacyPPMManager(1, core.ProcMaskMeleeOrRanged),
 			RequireDamageDealt: true,
 			Outcome:            core.OutcomeLanded,
@@ -309,8 +278,8 @@ func init() {
 			ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
 				spell.WaitTravelTime(sim, func(s *core.Simulation) {
 					baseDamage := sim.Roll(694, 806)
-					//https://www.wowhead.com/tbc/item=28785/the-lightning-capacitor#comments
-					//It can crit, may need some testing
+					// https://www.wowhead.com/tbc/item=28785/the-lightning-capacitor#comments
+					// It can crit, may need some testing
 					spell.CalcAndDealDamage(sim, target, baseDamage, spell.OutcomeMagicHitAndCrit)
 				})
 
@@ -369,11 +338,12 @@ func init() {
 		)
 
 		procAura := character.MakeProcTriggerAura(core.ProcTrigger{
-			Name:            "Eye of Magtheridon",
-			ActionID:        core.ActionID{ItemID: 28789},
-			ClassSpellsOnly: true,
-			Outcome:         core.OutcomeMiss,
-			Callback:        core.CallbackOnSpellHitDealt,
+			Name:              "Eye of Magtheridon",
+			ActionID:          core.ActionID{ItemID: 28789},
+			SpellFlagsExclude: core.SpellFlagSuppressEquipProcs,
+			ClassSpellsOnly:   true,
+			Outcome:           core.OutcomeMiss,
+			Callback:          core.CallbackOnSpellHitDealt,
 			Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 				aura.Activate(sim)
 			},
@@ -392,7 +362,7 @@ func init() {
 			ActionID:    core.ActionID{ItemID: 30620},
 			SpellSchool: core.SpellSchoolNature,
 
-			ProcMask: core.ProcMaskEmpty,
+			ProcMask: core.ProcMaskSpellProc | core.ProcMaskSpellDamageProc,
 			Flags:    core.SpellFlagNoOnCastComplete,
 
 			Cast: core.CastConfig{
@@ -487,11 +457,12 @@ func init() {
 		})
 
 		meleeProcAura := character.MakeProcTriggerAura(core.ProcTrigger{
-			Name:     "Darkmoon Card: Crusade (Melee)",
-			ActionID: core.ActionID{SpellID: 39438},
-			ProcMask: core.ProcMaskMeleeOrRanged,
-			Outcome:  core.OutcomeLanded,
-			Callback: core.CallbackOnSpellHitDealt,
+			Name:              "Darkmoon Card: Crusade (Melee)",
+			ActionID:          core.ActionID{SpellID: 39438},
+			SpellFlagsExclude: core.SpellFlagSuppressEquipProcs,
+			ProcMask:          core.ProcMaskMeleeOrRanged,
+			Outcome:           core.OutcomeLanded,
+			Callback:          core.CallbackOnSpellHitDealt,
 			Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 				meleeAura.Activate(sim)
 				meleeAura.AddStack(sim)
@@ -533,11 +504,12 @@ func init() {
 		})
 
 		procAura := character.MakeProcTriggerAura(core.ProcTrigger{
-			Name:     "Darkmoon Card: Wrath",
-			ActionID: core.ActionID{ItemID: 31857},
-			ProcMask: core.ProcMaskDirect,
-			Outcome:  core.OutcomeLanded,
-			Callback: core.CallbackOnSpellHitDealt,
+			Name:              "Darkmoon Card: Wrath",
+			ActionID:          core.ActionID{ItemID: 31857},
+			SpellFlagsExclude: core.SpellFlagSuppressEquipProcs,
+			ProcMask:          core.ProcMaskDirect,
+			Outcome:           core.OutcomeLanded,
+			Callback:          core.CallbackOnSpellHitDealt,
 			Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 				if result.Outcome.Matches(core.OutcomeCrit) {
 					aura.Deactivate(sim)

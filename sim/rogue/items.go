@@ -89,9 +89,9 @@ var Tier5 = core.NewItemSet(core.ItemSet{
 					}
 				},
 			}).AttachSpellMod(core.SpellModConfig{
-				Kind:       core.SpellMod_PowerCost_Pct,
+				Kind:       core.SpellMod_PowerCost_Pct_Add,
 				ClassMask:  RogueSpellFinisher,
-				FloatValue: -2,
+				FloatValue: -1,
 			})
 			setBonusAura.AttachProcTrigger(core.ProcTrigger{
 				Name:     "Deathmantle Proc Trigger",
@@ -144,7 +144,7 @@ func init() {
 		procAura := character.MakeProcTriggerAura(core.ProcTrigger{
 			Name:               "Perceived Weakness",
 			ActionID:           core.ActionID{ItemID: 30450},
-			ProcMask:           core.ProcMaskMeleeSpecial,
+			ProcMask:           core.ProcMaskMeleeSpecial | core.ProcMaskMeleeProc,
 			ICD:                time.Second * 30,
 			RequireDamageDealt: true,
 			Outcome:            core.OutcomeLanded,

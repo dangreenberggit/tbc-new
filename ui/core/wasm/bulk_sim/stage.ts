@@ -3,7 +3,7 @@ import { SimSignals } from '../../sim_signal_manager';
 import { isDevMode } from '../../utils';
 import { WorkerPool, WorkerProgressCallback } from '../../worker_pool';
 import { BulkSimCandidateTransport, runBulkSimCandidateBatchOnWorkers, runSingleBulkSimCandidate } from './batch';
-import { ConcurrentBulkSimStageCarryOver, bulkSimCarriedResults, bulkSimCarryOverCovers } from './carry_over';
+import { bulkSimCarriedResults, bulkSimCarryOverCovers, ConcurrentBulkSimStageCarryOver } from './carry_over';
 import {
 	BULK_SIM_ADAPTIVE_MAX_ITERATION_MULTIPLIER,
 	BULK_SIM_FINALIST_MAX_EXTRA_ITERATION_MULTIPLIER,
@@ -15,8 +15,8 @@ import {
 } from './constants_auto_gen';
 import { hasBulkSimStageError, mergeBulkSimCandidateResults } from './merge';
 import {
-	BulkSimStageProgressEmitter,
 	bulkSimStageLogName,
+	BulkSimStageProgressEmitter,
 	formatBulkSimStageStart,
 	formatBulkSimStageSummary,
 	makeBulkSimStageProgressEmitter,

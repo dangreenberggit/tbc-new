@@ -1,4 +1,5 @@
 import { queue } from 'async';
+
 import { BulkGearCandidate, BulkSimRequest, BulkSimStage, ReforgeOptimizeMode, ReforgeOptimizeRequest } from '../../proto/api';
 import { EquipmentSpec } from '../../proto/common';
 import { SimSignals } from '../../sim_signal_manager';
@@ -203,5 +204,3 @@ const withReforgedCandidates = (request: BulkSimRequest, candidates: BulkGearCan
 	optimizedCandidates,
 	reforgeRequest: undefined,
 });
-
-

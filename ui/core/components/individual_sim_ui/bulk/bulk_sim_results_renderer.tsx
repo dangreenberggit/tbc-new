@@ -4,14 +4,14 @@ import { ref } from 'tsx-vanilla';
 
 import i18n from '../../../../i18n/config';
 import { IndividualSimUI } from '../../../individual_sim_ui';
+import { ItemSlot, ItemSpec } from '../../../proto/common';
 import { TypedEvent } from '../../../typed_event';
 import { formatDeltaTextElem, formatToNumber } from '../../../utils';
 import { Component } from '../../component';
 import { ItemRenderer } from '../../gear_picker/item_renderer';
+import { SimResultsManager } from '../../sim_action';
 import Toast from '../../toast';
 import { TopGearResult } from './types';
-import { SimResultsManager } from '../../sim_action';
-import { ItemSlot, ItemSpec } from '../../../proto/common';
 
 export default class BulkSimResultRenderer extends Component {
 	readonly simUI: IndividualSimUI<any>;

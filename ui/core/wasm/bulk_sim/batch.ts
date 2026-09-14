@@ -1,13 +1,14 @@
 import { queue } from 'async';
+
 import { BulkSimRequest, ErrorOutcome, ErrorOutcomeType, ProgressMetrics, RaidSimRequest, RaidSimResult } from '../../proto/api';
 import { Database } from '../../proto_utils/database';
 import { SimSignals } from '../../sim_signal_manager';
 import { noop } from '../../utils';
-import { WorkerPool, WorkerProgressCallback } from '../../worker_pool';
+import { WorkerPool } from '../../worker_pool';
 import { runConcurrentSim } from '../sim';
 import { cleanBulkSimDpsMetrics, mergeBulkSimCandidateResults } from './merge';
 import { BulkSimStageProgressEmitter } from './progress';
-import { ConcurrentBulkSimCandidate, ConcurrentBulkSimCandidateResult, ConcurrentBulkSimCandidateTask, ConcurrentBulkSimStageConfig } from './types';
+import { ConcurrentBulkSimCandidate, ConcurrentBulkSimCandidateResult, ConcurrentBulkSimCandidateTask } from './types';
 
 export type ConcurrentBulkSimCandidateBatchConfig = {
 	completedSimsBase: number;

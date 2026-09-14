@@ -136,7 +136,7 @@ func (priest *Priest) applySurgeOfLight() {
 		ClassMask:  PriestSpellSmite,
 	})
 	manaCostMod := priest.AddDynamicMod(core.SpellModConfig{
-		Kind:       core.SpellMod_PowerCost_Pct,
+		Kind:       core.SpellMod_PowerCost_Pct_Add,
 		FloatValue: -1.0, // -100% = free
 		ClassMask:  PriestSpellSmite,
 	})
@@ -172,10 +172,11 @@ func (priest *Priest) applySurgeOfLight() {
 	procChance := 0.25 * float64(priest.Talents.SurgeOfLight)
 
 	priest.MakeProcTriggerAura(core.ProcTrigger{
-		Name:       "Surge of Light Trigger",
-		Callback:   core.CallbackOnSpellHitDealt,
-		Outcome:    core.OutcomeCrit,
-		ProcChance: procChance,
+		Name:            "Surge of Light Trigger",
+		ClassSpellsOnly: true,
+		Outcome:         core.OutcomeCrit,
+		ProcChance:      procChance,
+		Callback:        core.CallbackOnSpellHitDealt,
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			solAura.Activate(sim)
 		},
@@ -301,7 +302,7 @@ func (priest *Priest) applyMentalAgility() {
 	}
 
 	priest.AddStaticMod(core.SpellModConfig{
-		Kind:       core.SpellMod_PowerCost_Pct,
+		Kind:       core.SpellMod_PowerCost_Pct_Add,
 		FloatValue: -0.02 * float64(priest.Talents.MentalAgility),
 		ClassMask:  PriestSpellInstant,
 	})
@@ -346,7 +347,7 @@ func (priest *Priest) applyFocusedMind() {
 	}
 
 	priest.AddStaticMod(core.SpellModConfig{
-		Kind:       core.SpellMod_PowerCost_Pct,
+		Kind:       core.SpellMod_PowerCost_Pct_Add,
 		FloatValue: -0.05 * float64(priest.Talents.FocusedMind),
 		ClassMask:  PriestSpellMindBlast | PriestSpellMindFlay,
 	})

@@ -1,4 +1,6 @@
 import i18n from '../../../../i18n/config';
+import { getBulkSlotI18nKey } from '../../../../i18n/entity_mapping';
+import { translateBulkSlotName } from '../../../../i18n/localization';
 import { IndividualSimUI } from '../../../individual_sim_ui';
 import { HandType } from '../../../proto/common';
 import { EquippedItem } from '../../../proto_utils/equipped_item';
@@ -6,8 +8,6 @@ import { ContentBlock } from '../../content_block';
 import Toast from '../../toast';
 import { BulkTab } from '../bulk_tab';
 import BulkItemPicker from './bulk_item_picker';
-import { translateBulkSlotName } from '../../../../i18n/localization';
-import { getBulkSlotI18nKey } from '../../../../i18n/entity_mapping';
 import { BulkSimItemSlot } from './constants_auto_gen';
 
 export default class BulkItemPickerGroup extends ContentBlock {

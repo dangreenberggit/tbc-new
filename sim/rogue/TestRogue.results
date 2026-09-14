@@ -564,10 +564,24 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestRogue-AllItems-FelsteelShieldSpike-2714"
+ value: {
+  dps: 1803.58441
+  tps: 896.38145
+ }
+}
+dps_results: {
  key: "TestRogue-AllItems-FieryRetributer-19968"
  value: {
   dps: 1877.41481
   tps: 933.07516
+ }
+}
+dps_results: {
+ key: "TestRogue-AllItems-Figurine-CrimsonSerpent-35700"
+ value: {
+  dps: 1825.76274
+  tps: 907.40408
  }
 }
 dps_results: {
@@ -585,10 +599,24 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestRogue-AllItems-Figurine-LivingRubySerpent-24126"
+ value: {
+  dps: 1825.76274
+  tps: 907.40408
+ }
+}
+dps_results: {
  key: "TestRogue-AllItems-Figurine-NightseyePanther-24128"
  value: {
   dps: 1855.82769
   tps: 922.34636
+ }
+}
+dps_results: {
+ key: "TestRogue-AllItems-Figurine-ShadowsongPanther-35702"
+ value: {
+  dps: 1876.37506
+  tps: 932.55841
  }
 }
 dps_results: {

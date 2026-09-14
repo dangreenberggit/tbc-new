@@ -94,10 +94,10 @@ func applyConsumeEffects(agent Agent, partyBuffs *proto.PartyBuffs) {
 
 	// Static Imbues
 	if consumables.MhImbueId != 0 && partyBuffs.WindfuryTotem == proto.TristateEffect_TristateEffectMissing {
-		registerStaticImbue(agent, consumables.MhImbueId, true)
+		registerStaticImbue(agent, consumables.MhImbueId)
 	}
 	if consumables.OhImbueId != 0 {
-		registerStaticImbue(agent, consumables.OhImbueId, false)
+		registerStaticImbue(agent, consumables.OhImbueId)
 	}
 
 	// Scrolls
@@ -121,6 +121,11 @@ func applyConsumeEffects(agent Agent, partyBuffs *proto.PartyBuffs) {
 	if consumables.Bloodthistle && character.Race == proto.Race_RaceBloodElf {
 		character.AddStat(stats.SpellDamage, 10)
 		character.AddStat(stats.HealingPower, 10)
+	}
+
+	// Bogling Root: +1 physical damage for 10 min (item 5206, spell 5665).
+	if consumables.BoglingRoot {
+		character.AddStat(stats.PhysicalDamage, 1)
 	}
 
 	// Pet Consumes
@@ -370,7 +375,8 @@ func registerConjuredCD(agent Agent, consumes *proto.ConsumesSpec) {
 			flameCapProc := character.RegisterSpell(SpellConfig{
 				ActionID:    conjuredMCD.Spell.ActionID,
 				SpellSchool: SpellSchoolFire,
-				ProcMask:    ProcMaskEmpty,
+				ProcMask:    ProcMaskSpellDamageProc | ProcMaskSpellProc,
+				Flags:       SpellFlagSuppressEquipProcs,
 
 				DamageMultiplier: 1,
 				CritMultiplier:   character.DefaultSpellCritMultiplier(),
@@ -382,13 +388,14 @@ func registerConjuredCD(agent Agent, consumes *proto.ConsumesSpec) {
 			})
 
 			procTrigger := character.MakeProcTriggerAura(ProcTrigger{
-				Name:       "Flame Cap - Proc",
-				ActionID:   conjuredMCD.Spell.ActionID,
-				Duration:   time.Minute * 1,
-				ProcChance: 0.185,
-				ProcMask:   ProcMaskMeleeOrRanged,
-				Outcome:    OutcomeLanded,
-				Callback:   CallbackOnSpellHitDealt,
+				Name:              "Flame Cap - Proc",
+				SpellFlagsExclude: SpellFlagSuppressEquipProcs,
+				ActionID:          conjuredMCD.Spell.ActionID,
+				Duration:          time.Minute * 1,
+				ProcChance:        0.185,
+				ProcMask:          ProcMaskMeleeWhiteHit | ProcMaskRangedAuto,
+				Outcome:           OutcomeLanded,
+				Callback:          CallbackOnSpellHitDealt,
 				Handler: func(sim *Simulation, spell *Spell, result *SpellResult) {
 					flameCapProc.Cast(sim, result.Target)
 				},
@@ -694,7 +701,7 @@ func registerDrumsCD(agent Agent, consumables *proto.ConsumesSpec, sharedTimer *
 	}
 }
 
-func registerStaticImbue(agent Agent, imbueId int32, isMH bool) {
+func registerStaticImbue(agent Agent, imbueId int32) {
 	character := agent.GetCharacter()
 	switch imbueId {
 	case 25123: // Mana Oil
@@ -705,55 +712,16 @@ func registerStaticImbue(agent Agent, imbueId int32, isMH bool) {
 		character.AddStat(stats.SpellCritRating, 14)
 	case 28017: // Superior Wizard Oil
 		character.AddStat(stats.SpellDamage, 42)
-	case 29453: // Addy Sharpstone
+	case 29453, 34340: // Adamantite Sharpening Stone / Adamantite Weightstone
 		character.AddStat(stats.MeleeCritRating, 14)
-		if isMH {
-			character.AutoAttacks.MH().BaseDamageMax += 12
-			character.AutoAttacks.MH().BaseDamageMin += 12
-
-			if character.AutoAttacks.OH() != nil {
-				character.AutoAttacks.OH().BaseDamageMax += 12
-				character.AutoAttacks.OH().BaseDamageMin += 12
+		for _, weapon := range []*Weapon{character.AutoAttacks.MH(), character.AutoAttacks.OH(), character.AutoAttacks.Ranged()} {
+			if weapon != nil {
+				weapon.BaseDamageMin += 12
+				weapon.BaseDamageMax += 12
 			}
-		} else {
-			character.AutoAttacks.OH().BaseDamageMax += 12
-			character.AutoAttacks.OH().BaseDamageMin += 12
-
-			if character.AutoAttacks.MH() != nil {
-				character.AutoAttacks.MH().BaseDamageMax += 12
-				character.AutoAttacks.MH().BaseDamageMin += 12
-			}
-		}
-		if character.AutoAttacks.Ranged() != nil {
-			character.AutoAttacks.Ranged().BaseDamageMin += 12
-			character.AutoAttacks.Ranged().BaseDamageMax += 12
 		}
 		// Keep Ranged Crit the same
 		character.AddStat(stats.RangedCritPercent, -(14 / PhysicalCritRatingPerCritPercent))
-
-	case 34340: // Addy Weightstone
-		character.AddStat(stats.MeleeCritRating, 14)
-		if isMH {
-			character.AutoAttacks.MH().BaseDamageMax += 12
-			character.AutoAttacks.MH().BaseDamageMin += 12
-
-			if character.AutoAttacks.OH() != nil {
-				character.AutoAttacks.OH().BaseDamageMax += 12
-				character.AutoAttacks.OH().BaseDamageMin += 12
-			}
-		} else {
-			character.AutoAttacks.OH().BaseDamageMax += 12
-			character.AutoAttacks.OH().BaseDamageMin += 12
-
-			if character.AutoAttacks.MH() != nil {
-				character.AutoAttacks.MH().BaseDamageMax += 12
-				character.AutoAttacks.MH().BaseDamageMin += 12
-			}
-		}
-		if character.AutoAttacks.Ranged() != nil {
-			character.AutoAttacks.Ranged().BaseDamageMin += 12
-			character.AutoAttacks.Ranged().BaseDamageMax += 12
-		}
 	case 28891: // Consecrated Sharpening Stone
 		character.Env.RegisterPostFinalizeEffect(func() {
 			for _, at := range character.AttackTables {

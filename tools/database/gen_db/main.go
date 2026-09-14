@@ -357,7 +357,7 @@ func ApplyGlobalFilters(db *database.WowDatabase) {
 		if len(item.ScalingOptions) <= 0 {
 			return false
 		}
-		if item.ScalingOptions[0].Ilvl > core.MaxIlvl || item.ScalingOptions[0].Ilvl < core.MinIlvl {
+		if item.ScalingOptions[0].Ilvl > core.MaxIlvl {
 			return false
 		}
 		for _, pattern := range database.DenyListNameRegexes {

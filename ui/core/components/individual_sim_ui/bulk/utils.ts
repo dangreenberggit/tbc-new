@@ -1,6 +1,4 @@
 import type { Player } from '../../../player';
-import { ReforgeOptimizer } from '../../suggest_reforges_action';
-import { ReforgeGearCache } from '../../../reforge_cache';
 import { BulkGearCandidate, BulkSimResult, BulkSimStage, DistributionMetrics, ReforgeOptimizeRequest } from '../../../proto/api';
 import { Debuffs, EquipmentSpec, ItemRandomSuffix, ItemSlot, ItemSpec, PartyBuffs, RaidBuffs } from '../../../proto/common';
 import { ItemEffectRandPropPoints, SimDatabase, SimEnchant, SimGem, SimItem } from '../../../proto/db';
@@ -9,7 +7,9 @@ import { Database } from '../../../proto_utils/database';
 import { EquippedItem } from '../../../proto_utils/equipped_item';
 import { Gear } from '../../../proto_utils/gear';
 import { getGearIdentityKey, getReforgeCacheGearKey } from '../../../proto_utils/utils';
+import { ReforgeGearCache } from '../../../reforge_cache';
 import { sleep } from '../../../utils';
+import { ReforgeOptimizer } from '../../suggest_reforges_action';
 import {
 	BULK_SIM_ITEM_SLOT_TO_ITEM_SLOT_PAIRS,
 	BULK_SIM_ITEM_SLOT_TO_SINGLE_ITEM_SLOT,

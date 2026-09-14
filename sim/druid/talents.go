@@ -18,7 +18,7 @@ func (druid *Druid) ApplyTalents() {
 	druid.applyStarlightWrath()
 	druid.applyFocusedStarlight()
 	druid.applyImprovedMoonfire()
-	druid.applyBrambles()
+	// Brambles: applied as Thorns aura points in thorns.go
 	druid.applyInsectSwarm()
 	druid.applyNaturesReach()
 	druid.applyVengeance()
@@ -159,7 +159,7 @@ func (druid *Druid) applyMoonglow() {
 	druid.AddStaticMod(core.SpellModConfig{
 		ClassMask:  DruidSpellMoonfire | DruidSpellStarfire | DruidSpellWrath | DruidSpellHealingTouch | DruidSpellRegrowth | DruidSpellRejuvenation,
 		FloatValue: -0.03 * float64(druid.Talents.Moonglow),
-		Kind:       core.SpellMod_PowerCost_Pct,
+		Kind:       core.SpellMod_PowerCost_Pct_Add,
 	})
 }
 
@@ -260,18 +260,6 @@ func (druid *Druid) applyInsectSwarm() {
 	druid.registerInsectSwarmSpell()
 }
 
-func (druid *Druid) applyBrambles() {
-	if druid.Talents.Brambles == 0 {
-		return
-	}
-
-	druid.AddStaticMod(core.SpellModConfig{
-		ClassMask:  DruidSpellThorns | DruidSpellEntanglingRoots,
-		Kind:       core.SpellMod_DamageDone_Pct,
-		FloatValue: 0.25 * float64(druid.Talents.Brambles),
-	})
-}
-
 func (druid *Druid) applyStarlightWrath() {
 	if druid.Talents.StarlightWrath == 0 {
 		return
@@ -336,7 +324,7 @@ func (druid *Druid) applyNaturalShapeshifter() {
 
 	druid.AddStaticMod(core.SpellModConfig{
 		ClassMask:  DruidSpellCatForm | DruidSpellBearForm,
-		Kind:       core.SpellMod_PowerCost_Pct,
+		Kind:       core.SpellMod_PowerCost_Pct_Add,
 		FloatValue: -0.1 * float64(druid.Talents.NaturalShapeshifter),
 	})
 }

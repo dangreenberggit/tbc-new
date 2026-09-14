@@ -316,7 +316,7 @@ func (paladin *Paladin) applyDivineIntellect() {
 // Improved Seal of Righteousness - Increases the damage done by your Seal of Righteousness and its Judgement by 3/6/9/12/15%
 func (paladin *Paladin) applyImprovedSealOfRighteousness() {
 	paladin.AddStaticMod(core.SpellModConfig{
-		Kind:       core.SpellMod_DamageDone_Pct,
+		Kind:       core.SpellMod_DamageDone_Flat,
 		FloatValue: 0.03 * float64(paladin.Talents.ImprovedSealOfRighteousness),
 		ClassMask:  SpellMaskSealOfRighteousness | SpellMaskJudgementOfRighteousness,
 	})
@@ -325,7 +325,7 @@ func (paladin *Paladin) applyImprovedSealOfRighteousness() {
 // Healing Light - Increases the amount healed by your Holy Light and Flash of Light spells by 4/8/12%
 func (paladin *Paladin) applyHealingLight() {
 	paladin.AddStaticMod(core.SpellModConfig{
-		Kind:       core.SpellMod_DamageDone_Pct,
+		Kind:       core.SpellMod_DamageDone_Flat,
 		FloatValue: 0.04 * float64(paladin.Talents.HealingLight),
 		ClassMask:  SpellMaskHolyLight | SpellMaskFlashOfLight,
 	})
@@ -353,7 +353,7 @@ func (paladin *Paladin) applySanctifiedLight() {
 // Purifying Power - Reduces the mana cost of your Cleanse and Consecration spells by 5/10%, and increases the critical strike chance of your Exorcism and Holy Wrath spells by 10/20%
 func (paladin *Paladin) applyPurifyingPower() {
 	paladin.AddStaticMod(core.SpellModConfig{
-		Kind:       core.SpellMod_PowerCost_Pct,
+		Kind:       core.SpellMod_PowerCost_Pct_Add,
 		FloatValue: -0.05 * float64(paladin.Talents.PurifyingPower),
 		ClassMask:  SpellMaskConsecration, // Cleanse not modeled
 	})
@@ -562,7 +562,7 @@ func (paladin *Paladin) applyOneHandedWeaponSpecialization() {
 func (paladin *Paladin) applyImprovedHolyShield() {
 	// Number of charges handled in holy_shield.go
 	paladin.AddStaticMod(core.SpellModConfig{
-		Kind:       core.SpellMod_DamageDone_Pct,
+		Kind:       core.SpellMod_DamageDone_Flat,
 		ClassMask:  SpellMaskHolyShieldProc,
 		FloatValue: 0.1 * float64(paladin.Talents.ImprovedHolyShield),
 	})
@@ -590,7 +590,7 @@ func (paladin *Paladin) applyImprovedBlessingOfMight() {
 func (paladin *Paladin) applyBenediction() {
 	paladin.AddStaticMod(core.SpellModConfig{
 		ClassMask:  SpellMaskAllSeals | SpellMaskJudgement,
-		Kind:       core.SpellMod_PowerCost_Pct,
+		Kind:       core.SpellMod_PowerCost_Pct_Add,
 		FloatValue: -.03 * float64(paladin.Talents.Benediction),
 	})
 }
@@ -632,10 +632,22 @@ func (paladin *Paladin) applyCrusade() {
 
 // Two-Handed Weapon Specialization - Increases the damage you deal with two-handed melee weapons by 2/4/6%
 func (paladin *Paladin) applyTwoHandedWeaponSpecialization() {
-	paladin.AddStaticMod(core.SpellModConfig{
+	weaponMod := paladin.AddDynamicMod(core.SpellModConfig{
 		Kind:       core.SpellMod_DamageDone_Pct,
 		ProcMask:   core.ProcMaskMeleeOrMeleeProc,
 		FloatValue: 0.02 * float64(paladin.Talents.TwoHandedWeaponSpecialization),
+	})
+
+	if paladin.GetMainHandType() == proto.HandType_HandTypeTwoHand {
+		weaponMod.Activate()
+	}
+
+	paladin.RegisterItemSwapCallback(core.AllMeleeWeaponSlots(), func(sim *core.Simulation, slot proto.ItemSlot) {
+		if paladin.GetMainHandType() == proto.HandType_HandTypeTwoHand {
+			weaponMod.Activate()
+		} else {
+			weaponMod.Deactivate()
+		}
 	})
 }
 

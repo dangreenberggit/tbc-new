@@ -25,7 +25,7 @@ message ProtoVersion {
 	// protos need to define an api_version field so that the UI code knows
 	// to up-convert these protos to the new format whenever api_version is
 	// missing (0) or lower than current_version_number.
-	option (current_version_number) = 15;
+	option (current_version_number) = 14;
 
 	// The actual field value is only used within unit tests.
 	int32 saved_version_number = 1;
@@ -589,6 +589,7 @@ message ConsumesSpec {
 	bool superSapper = 8;
 	bool goblinSapper = 9;
 	bool bloodthistle = 24;
+	bool bogling_root = 25;
 	int32 mhImbue_id = 10;
 	int32 ohImbue_id = 11;
 	Drums drums_id = 12;
@@ -730,6 +731,9 @@ message ItemSpec {
 	int32 random_suffix = 2;
 	int32 enchant = 3;
 	repeated int32 gems = 4;
+	// Set by the UI when the socketed meta gem's requirements are not met. The gem stays in its
+	// socket so the item's socket bonus still applies, but contributes no stats and no effect.
+	bool meta_gem_disabled = 5;
 }
 
 

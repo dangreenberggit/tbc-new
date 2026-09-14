@@ -59,6 +59,8 @@ export const ROTATION_PRESET_ARCANEBRAID = PresetUtils.makePresetAPLRotation('Br
 		);
 	},
 });
+
+
 export const BLANK_GEARSET = PresetUtils.makePresetGear('Blank', BlankGear);
 
 export const ArcaneMageSimpleRotation = Mage_Rotation.create({
@@ -163,7 +165,7 @@ export const DefaultConsumables = ConsumesSpec.create({
 	battleElixirId: 28103, // Adept's Elixir
 	foodId: 27657, // Blackened Basilisk
 	mhImbueId: 25122, // Brilliant Wizard Oil
-	potId: 22839, // Destruction Potion
+	potId: 22832, // Super Mana Potion
 });
 
 export const DefaultRaidBuffs = RaidBuffs.create({

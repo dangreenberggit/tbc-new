@@ -4,7 +4,7 @@ import { BulkSettings, DistributionMetrics, ProgressMetrics } from '../../../pro
 import { Gear } from '../../../proto_utils/gear';
 import { ReforgeOptimizeConfig } from '../../../sim';
 import { BulkSimProgressConfig, TopGearResult } from './types';
-import { bulkSimStageToOptimisationStage, BulkSimReforgeCacheProgress, cleanBulkDpsMetrics, getCoreBulkSimTrackingMetrics } from './utils';
+import { BulkSimReforgeCacheProgress, bulkSimStageToOptimisationStage, cleanBulkDpsMetrics, getCoreBulkSimTrackingMetrics } from './utils';
 
 export interface CoreBulkSimContext {
 	simUI: IndividualSimUI<any>;

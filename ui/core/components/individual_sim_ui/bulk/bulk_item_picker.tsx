@@ -8,11 +8,11 @@ import { EquippedItem } from '../../../proto_utils/equipped_item';
 import { getEligibleItemSlots } from '../../../proto_utils/utils';
 import { TypedEvent } from '../../../typed_event';
 import { Component } from '../../component';
-import { ItemRenderer } from '../../gear_picker/item_renderer';
 import { GearData } from '../../gear_picker/item_list';
+import { ItemRenderer } from '../../gear_picker/item_renderer';
 import { SelectorModalTabs } from '../../gear_picker/selector_modal';
 import { BulkTab } from '../bulk_tab';
-import { BulkSimItemSlot, BULK_SIM_ITEM_SLOT_TO_ITEM_SLOT_PAIRS } from './constants_auto_gen';
+import { BULK_SIM_ITEM_SLOT_TO_ITEM_SLOT_PAIRS, BulkSimItemSlot } from './constants_auto_gen';
 
 export default class BulkItemPicker extends Component {
 	private readonly itemElem: ItemRenderer;

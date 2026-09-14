@@ -174,6 +174,22 @@ export class ActionId {
 		return this.equalsIgnoringTag(other) && this.tag == other.tag;
 	}
 
+	// Every field these read is readonly and set in the constructor, so the string cannot go stale.
+	private cachedEqualityKey?: string;
+	private cachedEqualityKeyIgnoringTag?: string;
+
+	// A string form of exactly what equals() compares, for use as a Map/Set key. Keep in step
+	// with equalsIgnoringTag below; toString() is not a substitute, as it reports only the
+	// first non-zero of itemId/spellId/otherId and drops randomSuffixId.
+	equalityKey(): string {
+		return (this.cachedEqualityKey ??= `${this.equalityKeyIgnoringTag()}|${this.tag}`);
+	}
+
+	// equalityKey() without the tag, matching equalsIgnoringTag below.
+	equalityKeyIgnoringTag(): string {
+		return (this.cachedEqualityKeyIgnoringTag ??= `${this.itemId}|${this.randomSuffixId}|${this.spellId}|${this.otherId}`);
+	}
+
 	equalsIgnoringTag(other: ActionId): boolean {
 		return this.itemId == other.itemId && this.randomSuffixId == other.randomSuffixId && this.spellId == other.spellId && this.otherId == other.otherId;
 	}
@@ -238,17 +254,12 @@ export class ActionId {
 		}
 	}
 
-	async setWowheadDataset(
-		elem: HTMLElement | HTMLElement[],
-		params?: Omit<WowheadTooltipItemParams, 'itemId'> | Omit<WowheadTooltipSpellParams, 'spellId'>,
-	) {
-		(this.itemId
+	async setWowheadDataset(elem: HTMLElement | HTMLElement[], params?: Omit<WowheadTooltipItemParams, 'itemId'> | Omit<WowheadTooltipSpellParams, 'spellId'>) {
+		const url = await (this.itemId
 			? ActionId.makeItemTooltipData(this.itemId, params)
-			: ActionId.makeSpellTooltipData(this.spellIdTooltipOverride || this.spellId, params)
-		).then(url => {
-			(Array.isArray(elem) ? elem : [elem]).forEach(e => {
-				if (e) e.dataset.wowhead = url;
-			});
+			: ActionId.makeSpellTooltipData(this.spellIdTooltipOverride || this.spellId, params));
+		(Array.isArray(elem) ? elem : [elem]).forEach(e => {
+			if (e) e.dataset.wowhead = url;
 		});
 	}
 
@@ -1012,6 +1023,5 @@ export const resourceTypeToIcon: Record<ResourceType, string> = {
 // Use this to connect a buff row to a cast row in the timeline view
 export const buffAuraToSpellIdMap: Record<number, ActionId> = {
 	34471: ActionId.fromSpellId(19574), // Bestial Wrath -> The Beast Within
-	31047: ActionId.fromItemId(24128), // Nightseye Panther -> Figurine - Nightseye Panther
 	37198: ActionId.fromItemId(30447), // Blessing of Righteousness -> Tome of Fiery Redemption
 };

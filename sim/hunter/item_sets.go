@@ -139,7 +139,7 @@ var ItemSetDemonStalkerArmor = core.NewItemSet(core.ItemSet{
 		},
 		4: func(agent core.Agent, setBonusAura *core.Aura) {
 			setBonusAura.AttachSpellMod(core.SpellModConfig{
-				Kind:       core.SpellMod_PowerCost_Pct,
+				Kind:       core.SpellMod_PowerCost_Pct_Add,
 				ClassMask:  HunterSpellMultiShot,
 				FloatValue: -0.1,
 			}).ExposeToAPL(37485)
@@ -198,7 +198,7 @@ var ItemSetGronnstalkersArmor = core.NewItemSet(core.ItemSet{
 		},
 		4: func(agent core.Agent, setBonusAura *core.Aura) {
 			setBonusAura.AttachSpellMod(core.SpellModConfig{
-				Kind:       core.SpellMod_DamageDone_Pct,
+				Kind:       core.SpellMod_DamageDone_Flat,
 				ClassMask:  HunterSpellSteadyShot,
 				FloatValue: 0.1,
 			}).ExposeToAPL(38392)
@@ -206,14 +206,23 @@ var ItemSetGronnstalkersArmor = core.NewItemSet(core.ItemSet{
 	},
 })
 
+// The bows and the mail shoulders below can be equipped by other classes, whose agents are not
+// HunterAgents. Their hunter-specific effects simply do not apply to them.
+func hunterFromAgent(agent core.Agent) (*Hunter, bool) {
+	hunterAgent, ok := agent.(HunterAgent)
+	if !ok {
+		return nil, false
+	}
+	return hunterAgent.GetHunter(), true
+}
+
 func init() {
 	// Thori'dal, the Star's Fury
 	core.NewItemEffect(ThoridalTheStarsFuryItemID, func(agent core.Agent) {
-		hunterAgent, ok := agent.(HunterAgent)
+		hunter, ok := hunterFromAgent(agent)
 		if !ok {
 			return
 		}
-		hunter := hunterAgent.GetHunter()
 
 		isEquipped := hunter.HasItemEquipped(ThoridalTheStarsFuryItemID, []proto.ItemSlot{proto.ItemSlot_ItemSlotRanged})
 		buildPhase := core.Ternary(isEquipped, core.CharacterBuildPhaseGear, core.CharacterBuildPhaseNone)
@@ -270,11 +279,10 @@ func init() {
 
 	// Beast-tamer's Shoulders
 	core.NewItemEffect(30892, func(agent core.Agent) {
-		hunterAgent, ok := agent.(HunterAgent)
+		hunter, ok := hunterFromAgent(agent)
 		if !ok {
 			return
 		}
-		hunter := hunterAgent.GetHunter()
 
 		hunter.Pet.PseudoStats.DamageDealtMultiplier *= 1.03
 		hunter.Pet.AddStat(stats.PhysicalCritPercent, 3)
@@ -283,20 +291,20 @@ func init() {
 	// Black Bow of the Betrayer
 	const BlackBowOfTheBetrayerItemID = 32336
 	core.NewItemEffect(BlackBowOfTheBetrayerItemID, func(agent core.Agent) {
-		hunterAgent, ok := agent.(HunterAgent)
+		hunter, ok := hunterFromAgent(agent)
 		if !ok {
 			return
 		}
-		hunter := hunterAgent.GetHunter()
 
 		manaMetrics := hunter.NewManaMetrics(core.ActionID{SpellID: 29471})
 
 		procAura := hunter.MakeProcTriggerAura(core.ProcTrigger{
-			Name:            "Black Bow of the Betrayer",
-			MetricsActionID: core.ActionID{ItemID: 46939},
-			Callback:        core.CallbackOnSpellHitDealt,
-			Outcome:         core.OutcomeLanded,
-			ProcMask:        core.ProcMaskRanged,
+			Name:              "Black Bow of the Betrayer",
+			MetricsActionID:   core.ActionID{ItemID: 46939},
+			SpellFlagsExclude: core.SpellFlagSuppressWeaponProcs,
+			Callback:          core.CallbackOnSpellHitDealt,
+			Outcome:           core.OutcomeLanded,
+			ProcMask:          core.ProcMaskRanged,
 
 			Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 				hunter.AddMana(sim, 8, manaMetrics)
@@ -391,7 +399,7 @@ func (hunter *Hunter) addPvpGloves() {
 	hunter.RegisterPvPGloveMod(
 		pvpGloveItemIDs,
 		core.SpellModConfig{
-			Kind:       core.SpellMod_DamageDone_Pct,
+			Kind:       core.SpellMod_DamageDone_Flat,
 			ClassMask:  HunterSpellMultiShot,
 			FloatValue: 0.05,
 		})
