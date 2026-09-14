@@ -5072,6 +5072,22 @@
       "curationHint": 7.68
     },
     {
+      "itemId": 35320,
+      "name": "Vindicator's Band of Subjugation",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.2
+    },
+    {
       "itemId": 18543,
       "name": "Ring of Entropy",
       "slot": "finger",
@@ -9262,6 +9278,22 @@
       "curationHint": 13.5
     },
     {
+      "itemId": 35319,
+      "name": "Vindicator's Pendant of Subjugation",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 13.5
+    },
+    {
       "itemId": 21504,
       "name": "Charm of the Shifting Sands",
       "slot": "neck",
@@ -9430,6 +9462,22 @@
     {
       "itemId": 33922,
       "name": "Vindicator's Pendant of Salvation",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 9.76
+    },
+    {
+      "itemId": 35317,
+      "name": "Vindicator's Pendant of Reprieve",
       "slot": "neck",
       "armorType": null,
       "handType": null,

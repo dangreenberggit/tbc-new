@@ -3765,6 +3765,22 @@
       "curationHint": 42.75
     },
     {
+      "itemId": 35320,
+      "name": "Vindicator's Band of Subjugation",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 40.9
+    },
+    {
       "itemId": 33958,
       "name": "The Horseman's Signet Ring",
       "slot": "finger",
@@ -8508,6 +8524,22 @@
       "curationHint": 63.05
     },
     {
+      "itemId": 35319,
+      "name": "Vindicator's Pendant of Subjugation",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 53.53
+    },
+    {
       "itemId": 28762,
       "name": "Adornment of Stolen Souls",
       "slot": "neck",
@@ -8528,6 +8560,22 @@
         "p1_a",
         "p1_h"
       ]
+    },
+    {
+      "itemId": 35317,
+      "name": "Vindicator's Pendant of Reprieve",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 48.14
     },
     {
       "itemId": 32370,

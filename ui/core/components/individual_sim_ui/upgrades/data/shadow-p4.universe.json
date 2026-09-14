@@ -2865,7 +2865,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -5986,14 +5986,7 @@
       "curationHint": 51.0,
       "curatedSets": [
         "p1",
-        "p2",
-        "p3"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3"
+        "p2"
       ]
     },
     {
@@ -6037,14 +6030,23 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
-          "origin": "db"
+          "origin": "curated"
         }
       ],
-      "curationHint": 44.38
+      "curationHint": 44.38,
+      "curatedSets": [
+        "p3"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3"
+      ]
     },
     {
       "itemId": 35317,
@@ -6053,7 +6055,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -7157,7 +7159,16 @@
           "origin": "db"
         }
       ],
-      "curationHint": 42.55
+      "curationHint": 42.55,
+      "curatedSets": [
+        "p3"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3"
+      ]
     },
     {
       "itemId": 29982,
@@ -7177,14 +7188,7 @@
       ],
       "curationHint": 40.51,
       "curatedSets": [
-        "p2",
-        "p3"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3"
+        "p2"
       ]
     },
     {

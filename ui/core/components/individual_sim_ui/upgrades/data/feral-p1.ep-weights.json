@@ -3,7 +3,7 @@
   "pin": "8aa378b3",
   "notes": [
     "Phase 1, not phase 2. Upstream ships exactly one EP preset for feral cat and it is named P1; there is no P2_EP_PRESET under ui/druid/feralcat/, unlike ui/paladin/retribution/. The filename tracks upstream's own name rather than the phase this repo defaults to, so the mismatch is visible instead of hidden.",
-    "EP only chooses gems here: meta repair (packages/core/src/meta-repair.ts) and empty-socket fill (packages/core/src/candidate-gems.ts). The sim decides the ranking, so a phase-1 gem preference does not rank items.",
+    "EP chooses gems here -- meta repair (packages/core/src/meta-repair.ts) and empty-socket fill (packages/core/src/candidate-gems.ts) -- AND orders candidates: packages/core/src/candidate-order.ts:36-67 ranks the whole eligible pool by EP, and rank.ts:1100 caps that order. On a capped run these phase-1 weights therefore decide which candidates are never simmed at all, so a P3 item can be dropped before measurement. Both defaults are safe today (the CLI never caps; the tab defaults to no cap), which makes this a disclosure point rather than a wrong number -- but EP does reach the ranking, contrary to what this note used to say.",
     "Stat 19 (FeralAttackPower) has no ret analogue and 49 items in the pinned db.json carry it. Ret weights score those items 0 on that stat, which is why feral must never borrow data/presets/ret/p2.ep-weights.json.",
     "Upstream puts PhysicalDamage (41) in the stats map, where ret puts MainHandDps in pseudoWeights. Copied as upstream wrote it; pseudoWeights is empty rather than absent because scripts/assemble_universe.py:590 reads it with `or {}`."
   ],

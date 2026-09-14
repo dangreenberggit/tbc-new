@@ -3720,6 +3720,22 @@
       "curationHint": 0.33
     },
     {
+      "itemId": 35320,
+      "name": "Vindicator's Band of Subjugation",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.33
+    },
+    {
       "itemId": 29384,
       "name": "Ring of Unyielding Force",
       "slot": "finger",
@@ -7271,6 +7287,22 @@
       "curationHint": 0.31
     },
     {
+      "itemId": 35319,
+      "name": "Vindicator's Pendant of Subjugation",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.31
+    },
+    {
       "itemId": 33068,
       "name": "Veteran's Pendant of Salvation",
       "slot": "neck",
@@ -7431,6 +7463,22 @@
       "handType": null,
       "quality": 4,
       "phase": 2,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.22
+    },
+    {
+      "itemId": 35317,
+      "name": "Vindicator's Pendant of Reprieve",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",

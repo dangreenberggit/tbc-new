@@ -3489,7 +3489,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -6897,7 +6897,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -7010,7 +7010,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -8089,18 +8089,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 43.12,
-      "curatedSets": [
-        "p3_staff",
-        "p3_sword"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_staff",
-        "p3_sword"
-      ]
+      "curationHint": 43.12
     },
     {
       "itemId": 28783,
@@ -8121,7 +8110,16 @@
       "curationHint": 41.19,
       "curatedSets": [
         "p1",
-        "p2"
+        "p2",
+        "p3_staff",
+        "p3_sword"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3_staff",
+        "p3_sword"
       ]
     },
     {

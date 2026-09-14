@@ -5690,7 +5690,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -11993,7 +11993,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -12025,7 +12025,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",

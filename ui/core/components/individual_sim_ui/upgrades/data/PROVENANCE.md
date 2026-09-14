@@ -315,3 +315,40 @@ pnpm fork-universes:check
 No engine file changed here either — this refresh touches only
 `upgrades/data/*.universe.json`; `upgrades/engine/PROVENANCE.md` and every
 ported `.ts` are untouched.
+
+## Refresh, 2026-09-14 (ADR-0033 re-pin to `master` `17a8fb2`)
+
+The engine pin moved from `ec5c5f205e61049d730e460967f8488774a7fe2a` to upstream
+`master` `17a8fb28c5ad14b649acecdaacd488594048f467` (ADR-0033), and
+`data/universes/*` was regenerated against the refreshed `db.json`.
+
+`sync_fork_universes.py --write` reported **30 refreshed, 33 already matching, 63
+listed here**. Unlike the 2026-09-10 refresh, **none of this is line endings**:
+`git diff --stat` and `git diff --stat --ignore-cr-at-eol` over
+`upgrades/data/` are byte-identical (592 insertions, 154 deletions either way),
+and the set difference of their `--name-only` lists is empty. Every one of the 30
+carries a real content change.
+
+Two causes, both traceable:
+
+1. **Three items gained a source in the refreshed `db.json`** — 35317, 35319 and
+   35320 — so they now enter the universes that phase-gate them in. For example
+   `shadow-p3.universe.json` gains `Vindicator's Band of Subjugation` (35320,
+   `phase` 3, `sources: [{kind: "unknown", origin: "db"}]`), and
+   `shadow-p3.report.json` moves `excludedNoSource` 514 -> 511 and
+   `universeTotal` 628 -> 631. This is membership growth with a named cause, not
+   drift.
+2. **`feral-p1.ep-weights.json`** carries the ticket-358 note correction. Its
+   `notes[1]` used to say EP "only chooses gems here"; it now records that EP also
+   orders candidates (`packages/core/src/candidate-order.ts:36-67`, capped by
+   `rank.ts:1100`), which on a capped run decides which candidates are never
+   simmed. Data values are unchanged — only the disclosure note.
+
+No engine file changed: this refresh touches only `upgrades/data/*`.
+`upgrades/engine/PROVENANCE.md` and every ported `.ts` are untouched.
+
+Verify:
+
+```bash
+pnpm fork-universes:check
+```

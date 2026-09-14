@@ -2723,6 +2723,22 @@
       "curationHint": 46.08
     },
     {
+      "itemId": 35320,
+      "name": "Vindicator's Band of Subjugation",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 45.32
+    },
+    {
       "itemId": 33056,
       "name": "Veteran's Band of Dominance",
       "slot": "finger",
@@ -5470,6 +5486,22 @@
       "curationHint": 56.2
     },
     {
+      "itemId": 35319,
+      "name": "Vindicator's Pendant of Subjugation",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 56.2
+    },
+    {
       "itemId": 30018,
       "name": "Lord Sanguinar's Claim",
       "slot": "neck",
@@ -5547,6 +5579,22 @@
         }
       ],
       "curationHint": 51.53
+    },
+    {
+      "itemId": 35317,
+      "name": "Vindicator's Pendant of Reprieve",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 50.61
     },
     {
       "itemId": 33067,
@@ -6452,18 +6500,7 @@
           "origin": "db"
         }
       ],
-      "curationHint": 43.12,
-      "curatedSets": [
-        "p3_staff",
-        "p3_sword"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3_staff",
-        "p3_sword"
-      ]
+      "curationHint": 43.12
     },
     {
       "itemId": 28783,
@@ -6484,7 +6521,16 @@
       "curationHint": 41.19,
       "curatedSets": [
         "p1",
-        "p2"
+        "p2",
+        "p3_staff",
+        "p3_sword"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3_staff",
+        "p3_sword"
       ]
     },
     {

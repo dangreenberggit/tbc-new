@@ -5911,6 +5911,22 @@
       "curationHint": 0.0
     },
     {
+      "itemId": 35320,
+      "name": "Vindicator's Band of Subjugation",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
       "itemId": 32608,
       "name": "Pillager's Gauntlets",
       "slot": "hands",
@@ -10799,6 +10815,38 @@
     {
       "itemId": 33922,
       "name": "Vindicator's Pendant of Salvation",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 35317,
+      "name": "Vindicator's Pendant of Reprieve",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 35319,
+      "name": "Vindicator's Pendant of Subjugation",
       "slot": "neck",
       "armorType": null,
       "handType": null,

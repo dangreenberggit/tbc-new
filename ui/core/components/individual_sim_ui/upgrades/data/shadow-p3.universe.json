@@ -2563,6 +2563,22 @@
       "curationHint": 27.82
     },
     {
+      "itemId": 35320,
+      "name": "Vindicator's Band of Subjugation",
+      "slot": "finger",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 27.72
+    },
+    {
       "itemId": 21209,
       "name": "Signet Ring of the Bronze Dragonflight",
       "slot": "finger",
@@ -5469,14 +5485,7 @@
       "curationHint": 51.0,
       "curatedSets": [
         "p1",
-        "p2",
-        "p3"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3"
+        "p2"
       ]
     },
     {
@@ -5512,6 +5521,47 @@
         }
       ],
       "curationHint": 46.52
+    },
+    {
+      "itemId": 35319,
+      "name": "Vindicator's Pendant of Subjugation",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "curated"
+        }
+      ],
+      "curationHint": 44.38,
+      "curatedSets": [
+        "p3"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3"
+      ]
+    },
+    {
+      "itemId": 35317,
+      "name": "Vindicator's Pendant of Reprieve",
+      "slot": "neck",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 38.2
     },
     {
       "itemId": 278833,
@@ -6574,7 +6624,16 @@
           "origin": "db"
         }
       ],
-      "curationHint": 42.55
+      "curationHint": 42.55,
+      "curatedSets": [
+        "p3"
+      ],
+      "bisTags": [
+        "BiS"
+      ],
+      "bisSets": [
+        "p3"
+      ]
     },
     {
       "itemId": 29982,
@@ -6594,14 +6653,7 @@
       ],
       "curationHint": 40.51,
       "curatedSets": [
-        "p2",
-        "p3"
-      ],
-      "bisTags": [
-        "BiS"
-      ],
-      "bisSets": [
-        "p3"
+        "p2"
       ]
     },
     {
