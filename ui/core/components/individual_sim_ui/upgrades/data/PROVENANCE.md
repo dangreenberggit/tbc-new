@@ -409,6 +409,10 @@ the core repo and argues committed bytes are safe there because of the
 has no such file. Ticket 167 is the same failure class on the sibling gate
 `check_engine_port_drift.py`.
 
+> **Superseded by the 2026-09-15 entry below**, which did both halves of that
+> durable fix. The census and the "no `.gitattributes` at all" claim above
+> describe the state before it.
+
 Ticket 211 is **not** this. 211 is `Status: closed`; it owned the *absence* of
 a comparison mechanism and was closed by building `sync_fork_universes.py`.
 The stale "211 owns the red gate" pointer appears in this branch's decision log
@@ -421,4 +425,50 @@ Verify:
 
 ```bash
 pnpm fork-universes:check
+```
+
+## Pin, 2026-09-15 (both halves of the durable fix; ticket 399)
+
+The entry above left the cause in place. This one closes it from both sides, so
+the gate stops going red on line endings.
+
+**Fork side — this directory now has a `.gitattributes`** pinning `* text eol=lf`,
+staged with `git add --renormalize` in the same commit. Before it,
+`git check-attr text eol` on these copies reported both **unspecified**;
+after, `text: set` / `eol: lf`. The renormalize is what moves the *committed*
+blobs: 15 copies were committed as CRLF (`ret-p2` 5603 CR, `warrior-p2` 15350 CR,
+and 13 others), and a worktree refresh alone would have left those blobs CRLF.
+
+It is scoped to this directory rather than the fork root deliberately. This is a
+fork-local file that every future merge from `wowsims/tbc-new` carries, and only
+these copies need the guarantee.
+
+**Core side — the generators no longer write CRLF.** Ticket 283's cause was 13
+`write_text(` call sites across 11 scripts in `tbc-gear-prio` that omitted
+`newline=`, so Windows text mode translated `\n` to `\r\n`.
+`scripts/assemble_universe.py` is the one that feeds this directory; all 13 now
+pass `newline="\n"`. The 44 universes and 44 reports were regenerated
+afterwards, taking `data/universes/` from **47 CRLF / 41 LF to 0 CRLF / 88 LF**.
+
+**Nothing but line endings changed, measured the same two ways as above.** Across
+every file the regen touched: stripping CR from both sides makes each pair
+byte-equal, and `json.loads` on both sides compares equal — 0 mismatches by
+either method. `describe_delta` reported `0 local-only; 0 fork-only; 0 shared
+entries differ in content` on all 15 drifted copies. The staged fork diff is
+149428 insertions against 149416 deletions over 16 files, and the 12-line excess
+is this `.gitattributes`; the rest is the line-ending rewrite.
+
+Sequence, for anyone reproducing it: the core regen flipped `data/universes/` to
+LF, which turned the gate **red at exactly the 15 copies committed as CRLF** —
+that red is the fix surfacing, not a new fault. `--write` then refreshed those
+15, and the renormalize pinned them.
+
+No engine file changed: this touches only `upgrades/data/`.
+`upgrades/engine/PROVENANCE.md` and every ported `.ts` are untouched.
+
+Verify:
+
+```bash
+pnpm fork-universes:check
+git -C . check-attr text eol -- ret-p2.universe.json
 ```

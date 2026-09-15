@@ -1,0 +1,12 @@
+# These files are byte-for-byte copies of data/universes/ and data/presets/
+# in dgreenberggit/tbc-gear-prio, and that repo's sync_fork_universes.py gate
+# compares the two sides as raw bytes. Nothing else in this clone pins line
+# endings, so without this the copies commit as whatever the syncing machine's
+# checkout happened to hold -- 15 of them were committed CRLF against LF
+# sources, and the gate then went red on a pure line-ending diff with no data
+# change. Scoped to this directory rather than the repo root: this is a
+# fork-local file that every future upstream merge carries, and only these
+# copies need the guarantee.
+#
+# See tbc-gear-prio ticket 399.
+* text eol=lf
