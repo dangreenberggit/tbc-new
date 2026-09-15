@@ -56,3 +56,43 @@ Each spec's id array is written on a single line — the file holds ~79k ids, an
 a line per id would cost a megabyte and swamp the diff of any commit near it
 while telling a reader nothing the checker's own error output does not already
 name.
+
+## `run-tab-cdp.mjs`
+
+The durable CDP harness for the desktop-transport gate, promoted from Chunk 1's
+throwaway `ret-p5-run.mjs`. It drives a full or capped ret upgrades run against
+**any origin the caller already serves** — the WASM page under `http-server`, or
+the packaged desktop binary on `:3333` — and writes a readback JSON recording
+what the tab actually did, not what the origin implies. The outer repo's
+`scripts/check_desktop_tab.py` (`pnpm desktop-gate:check`) drives it and judges
+the four transport signals; the harness only measures.
+
+The four signals in the JSON:
+
+- **S1 `runner`** — the runner class the tab chose, from the `data-runner`
+  attribute the tab writes on `.upgrades-status` (`BulkHttpSimRunner` on the HTTP
+  transport, `WasmSimRunner` on WASM or a forced fallback).
+- **S2 `requests`** — counts of completed 200 sim responses per endpoint,
+  summed over the page session **and every auto-attached worker session**. Every
+  `/bulkSimAsync` and `/raidSimAsync` fetch is issued inside a dedicated Web
+  Worker, which is its own CDP target, so the harness arms
+  `Target.setAutoAttach` and enables `Network` on each worker session — a
+  page-session `Network.enable` alone sees none of the sim traffic.
+- **S3 `servedWorker`** — a plain `fetch` of `sim_worker.js`, recording
+  `wasmRefs` and `readyFalse` (the embedded server rewrites it to
+  `net_worker.js`).
+- **S4 `screeningFallbackWarnings`** — count of page-console messages starting
+  `[upgrades] screening fell back`; must be 0 on a clean screened run.
+
+Run it from anywhere (Node 22+, no npm deps):
+
+```sh
+node run-tab-cdp.mjs --origin http://localhost:3333 --candidates 40 --out out.json
+```
+
+Flags: `--origin <url>` (required), `--page` (default
+`/tbc/paladin/retribution/`), `--phase` (default 5), `--candidates N` (0 =
+uncapped), `--timeout-ms` (default 2 700 000), `--out <json>` (stdout if
+omitted), and `--force-fallback`, which installs a one-shot `window.Worker`
+throw so the tab's transport probe fails and it falls back to the WASM runner
+over HTTP — the gate's screen-check twin and its forced-fallback negative.

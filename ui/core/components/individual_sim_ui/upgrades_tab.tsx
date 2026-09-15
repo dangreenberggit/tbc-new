@@ -1184,6 +1184,9 @@ export class UpgradesTab extends SimTab {
 	}
 
 	private async run(): Promise<void> {
+		// Desktop-gate S1: cleared here so a read of `data-runner` after any run
+		// reflects that run's transport choice and never a stale prior value.
+		this.statusElem.removeAttribute('data-runner');
 		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
 		if (!specId) {
 			this.setState({ kind: 'unsupported-spec' });
@@ -1230,6 +1233,10 @@ export class UpgradesTab extends SimTab {
 		// only knowable once a worker reports ready (see `simRunner`). Memoised,
 		// so only the first run pays the probe.
 		const sim = await this.simRunner();
+		// Desktop-gate S1: record the runner class the tab actually chose. A
+		// literal keyed on `instanceof`, not `constructor.name` — Vite minifies
+		// class names in production, so the name is unusable; the literal is not.
+		this.statusElem.setAttribute('data-runner', sim instanceof BulkHttpSimRunner ? 'BulkHttpSimRunner' : 'WasmSimRunner');
 
 		this.stopButton.disabled = false;
 		let ranking: Ranking | PartialRanking;
