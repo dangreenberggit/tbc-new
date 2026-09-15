@@ -352,3 +352,73 @@ Verify:
 ```bash
 pnpm fork-universes:check
 ```
+
+## Refresh, 2026-09-15 (line endings only; clears the `verify` blocker)
+
+`pnpm fork-universes:check` was red on 29 of 63 copies, blocking
+`pnpm merge-to-dev` on `feat/desktop-transport-gate`. Refreshed with
+`python scripts/sync_fork_universes.py --write`: **29 refreshed, 34 already
+matching, 63 listed here**. The check is green afterwards (`63 bundled copies
+byte-match their data/ sources`).
+
+**Nothing but line endings changed.** All 29 were measured two independent
+ways before the write, and both agree on every file: stripping CR from both
+sides makes the pair byte-equal, and `json.loads` on both sides compares
+equal. `describe_delta` reported `0 local-only; 0 fork-only; 0 shared entries
+differ in content` on all 29. After the write, `git diff --ignore-cr-at-eol`
+over this directory is **empty** while the plain `git diff --stat` reports
+463442 insertions and 463442 deletions across 29 files — identical counts,
+which is the signature of a pure line-ending rewrite. Each file's CR count
+also exactly accounted for its excess bytes over the source
+(`fork_bytes - core_bytes == fork_CR`) on all 29.
+
+### Why this keeps coming back — the gate compares two unpinned working trees
+
+Earlier entries describe this as the fork's copies drifting to CRLF. The
+measurement this time says something more specific, and it explains the
+recurrence better.
+
+`sync_fork_universes.py:168` compares **working-tree bytes** on both sides.
+Neither side's line endings are pinned:
+
+- The core's `.gitattributes` ends in `* text=auto eol=lf`, so the *committed
+  blob* is always LF (`git show HEAD:data/universes/ret-p2.json` has 0 CR)
+  — but the *working tree* is whatever the generator last wrote.
+- **The fork clone has no `.gitattributes` at all**, so nothing normalises its
+  side, in the tree or in the commit.
+
+The core working tree is currently split, and the split is by regeneration
+batch rather than by content: of 88 files under `data/universes/`, **47 have
+CRLF and every one of them is stamped `2026-09-14 09:59`; 41 are LF and every
+one is stamped `2026-09-14 15:22`.** No file crosses batches. That is ticket
+283 (Python generators omit `newline=` and write CRLF on Windows) visible as a
+timestamp.
+
+So the gate goes green whenever both sides happen to agree, **at whichever
+ending**. This refresh made 29 pairs agree at LF; the other 34 were already
+agreeing, 15 of them at CRLF on both sides (e.g. `ret-p2`, core and fork both
+5603 CR, byte-equal). A later regen that writes the other ending re-reds the
+gate without any data changing. That is why clearing it has not held.
+
+**This refresh clears the symptom; it does not fix the cause.** A durable fix
+is a `.gitattributes` in the fork pinning `eol=lf` (with
+`git add --renormalize` in the same commit), or fixing 283 at the generator
+write sites so the core tree stops alternating. Ticket 283 scopes itself to
+the core repo and argues committed bytes are safe there because of the
+`.gitattributes` catch-all — that argument does not extend to this fork, which
+has no such file. Ticket 167 is the same failure class on the sibling gate
+`check_engine_port_drift.py`.
+
+Ticket 211 is **not** this. 211 is `Status: closed`; it owned the *absence* of
+a comparison mechanism and was closed by building `sync_fork_universes.py`.
+The stale "211 owns the red gate" pointer appears in this branch's decision log
+and review and should not be carried forward.
+
+No engine file changed: this refresh touches only `upgrades/data/*.universe.json`.
+`upgrades/engine/PROVENANCE.md` and every ported `.ts` are untouched.
+
+Verify:
+
+```bash
+pnpm fork-universes:check
+```
