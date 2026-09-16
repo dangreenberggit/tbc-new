@@ -9,7 +9,6 @@ import { Spec } from '../../proto/common.js';
 import { ActionId } from '../../proto_utils/action_id';
 import { Database } from '../../proto_utils/database.js';
 import { TypedEvent } from '../../typed_event';
-import { WorkerPool } from '../../worker_pool';
 import { CopyButton } from '../copy_button';
 import { getSourceInfo } from '../gear_picker/item_list';
 import { makePhaseSelector } from '../inputs/other_inputs';
@@ -444,21 +443,11 @@ export class UpgradesTab extends SimTab {
 	// expensive to spin up (each is a WASM instantiation), and MemoryStore's
 	// whole purpose (plan §2.5) is to dedupe identical sim requests *across*
 	// runs in the same page session, not just within one.
-	// The factory answers for the WASM transport only, because it is the only
-	// answer available synchronously. Under the packaged local Go server the
-	// right runner is `BulkHttpSimRunner` instead, and which transport this page
-	// actually has is only knowable once a worker reports ready
-	// (`worker_pool.ts:315`) — the serving server decides it, by rewriting
-	// `sim_worker.js` to `net_worker.js` (`sim/web/main.go:402-403`), so no
-	// synchronous check can see it. Hence `simRunner()` below: this field is the
-	// WASM-side answer and the fallback, resolved or replaced on first use.
+	// Both transports use this runner: `simRunner()` below returns it
+	// unconditionally (ticket 403).
 	//
 	// It is called with bulk screening OFF, so this runner has no
 	// `runBulkScreen` and `rankUpgrades` takes its per-candidate path unchanged.
-	// Bulk screening is an HTTP-transport capability: the in-browser tournament
-	// prices a whole 25-candidate chunk (332 s measured) before the first row
-	// lands, against 9.35 s per chunk on the Go server. `makeSimRunner`'s header
-	// carries the measurements and names ticket 346 as the revisit trigger.
 	private readonly sim = makeSimRunner();
 	// Memoised so the transport is probed once per tab, not once per run, and so
 	// two runs never hold different runners (each runner owns worker pools).
@@ -1128,43 +1117,13 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * Picks the runner for this tab's transport, extending `makeSimRunner`'s
-	 * branch with the one case that factory cannot answer synchronously.
-	 *
-	 * `isWasm()` reports the transport the pool *actually has*, resolved from the
-	 * worker's own ready message (`worker_pool.ts:315`) rather than guessed from
-	 * the URL. It is false only under the packaged `wowsimtbc` server, which
-	 * serves `net_worker.js` in place of `sim_worker.js`
-	 * (`sim/web/main.go:402-403`) — so a page served by vite gets WASM even when
-	 * a Go server happens to be running elsewhere, and that is the correct answer:
-	 * posting a bulk request to a server that did not serve the page is a
-	 * configuration this deliberately does not support.
-	 *
-	 * The transport also decides whether bulk screening runs at all: the HTTP
-	 * branch screens in batches against the server's native bulk engine, while the
-	 * WASM branch takes the per-candidate loop because the in-browser tournament's
-	 * per-chunk cost is first-row latency (332 s vs 9.35 s per 25-candidate chunk;
-	 * see `makeSimRunner`'s header and ticket 346).
-	 *
-	 * The user's WASM concurrency setting does not gate the HTTP branch. Upstream
-	 * itself declines to apply that setting off-WASM — "Local sim has native
-	 * threading" (`ui/core/sim.ts:163-169`) — because the Go server threads one
-	 * request over NumCPU internally with no client-side knob. So a setting that
-	 * speaks only to in-browser workers must not withhold this path.
-	 *
-	 * On any failure — no workers, a ready message that never arrives — this falls
-	 * back to the factory's runner rather than failing the run: the fallback is a
-	 * working per-candidate path, and a transport probe is not worth a dead tab.
+	 * The desktop transport uses the per-candidate loop, not the Go bulk RPC.
+	 * Bulk screening measured 263 s against 19 s at cap 40 (ticket 403); its
+	 * finalist stage refines every candidate because `topResults` must equal the
+	 * chunk size. `BulkHttpSimRunner` stays in the tree — see 403 before re-enabling.
 	 */
 	private simRunner(): Promise<WasmSimRunner | BulkHttpSimRunner> {
-		this.simRunnerPromise ??= (async () => {
-			try {
-				if (await new WorkerPool(1).isWasm()) return this.sim;
-			} catch {
-				return this.sim;
-			}
-			return new BulkHttpSimRunner(this.sim.concurrency);
-		})();
+		this.simRunnerPromise ??= (async () => this.sim)();
 		return this.simRunnerPromise;
 	}
 

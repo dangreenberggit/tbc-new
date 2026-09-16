@@ -66,7 +66,8 @@ export function assertSingleStageChunk(request: BulkSimRequest, candidateCount: 
  * 2. **`topResults`** — defaults to 5 (`wasm/bulk_sim/constants.ts:1`) and
  *    truncates the response independently of culling
  *    (`wasm/bulk_sim/statistics.ts:104-111`), so it must be the candidate count
- *    or most rows silently vanish.
+ *    or most rows silently vanish. On the Go server it also sizes the finalist
+ *    stage, so that forced equality refines every candidate (ticket 403).
  * 3. **`requestId`** — every per-candidate worker task id is derived from it
  *    (`wasm/bulk_sim/batch.ts:67`), and `SimWorker.doApiCall` throws
  *    `ApiCall with empty id!` on a falsy id (`worker_pool.ts:407`).
