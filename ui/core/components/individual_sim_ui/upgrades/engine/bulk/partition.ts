@@ -13,6 +13,15 @@
 import type { BulkScreenCandidate } from "../seams/sim-runner.js";
 
 /**
+ * Nothing at runtime reaches this constant's callers today. Since ticket 403
+ * (2026-09-16) the upgrades tab takes the per-candidate loop on both transports,
+ * and the bulk path is switched off at `makeSimRunner(bulk = false)` in
+ * `adapters/bulk_wasm_sim_runner.ts`. Check it with:
+ * `grep -rn 'makeSimRunner(\|new BulkHttpSimRunner\|new BulkWasmSimRunner' ui --include=*.ts --include=*.tsx --include=*.mts | grep -v node_modules`
+ * — the only `true`-capable caller is `tools/equiv-campaign.mts`. Everything
+ * below is the correctness record for re-enabling the path, kept on purpose
+ * (ticket 406, owner decision: keep).
+ *
  * The largest batch either engine screens without culling anything.
  *
  * Both engines run a single High-only stage below a threshold and only then
