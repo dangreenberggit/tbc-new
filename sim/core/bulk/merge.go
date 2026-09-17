@@ -72,6 +72,52 @@ func bulkSimDistributionMetricsAggregatorData(metrics *proto.DistributionMetrics
 	}
 }
 
+// bulkSimFinalistCount sizes the finalist refinement set. request.FinalistResults decouples the
+// finalist-set size from top_results, which otherwise carries two meanings at once: it both sizes
+// this refinement set and truncates the HTTP response (ticket 403/411). Zero (every upstream
+// caller) falls back to top_results, so upstream behaviour is unchanged; a positive value is
+// clamped to top_results because refining more rows than are displayed is meaningless.
+func bulkSimFinalistCount(request *proto.BulkSimRequest, topResults int) int {
+	if request.FinalistResults <= 0 {
+		return topResults
+	}
+	return min(int(request.FinalistResults), topResults)
+}
+
+// mergeBulkSimFinalists overlays the refined finalists back onto the full result list. The
+// finalist stage returns only its refined subset (stage.go), but the client rejects a chunk whose
+// response has fewer rows than candidates (C4), so every row must survive. Non-finalist rows keep
+// their pre-stage metrics and original order; a finalist index absent from results is appended.
+func mergeBulkSimFinalists(results, finalists []*BulkSimCandidateResult) []*BulkSimCandidateResult {
+	refined := make(map[int32]*BulkSimCandidateResult, len(finalists))
+	for _, finalist := range finalists {
+		if finalist != nil {
+			refined[finalist.Candidate.Index] = finalist
+		}
+	}
+
+	merged := make([]*BulkSimCandidateResult, 0, len(results)+len(finalists))
+	seen := make(map[int32]bool, len(finalists))
+	for _, result := range results {
+		if result == nil {
+			merged = append(merged, result)
+			continue
+		}
+		if refinedResult, ok := refined[result.Candidate.Index]; ok {
+			merged = append(merged, refinedResult)
+			seen[result.Candidate.Index] = true
+		} else {
+			merged = append(merged, result)
+		}
+	}
+	for _, finalist := range finalists {
+		if finalist != nil && !seen[finalist.Candidate.Index] {
+			merged = append(merged, finalist)
+		}
+	}
+	return merged
+}
+
 func hasBulkSimStageError(baseline *BulkSimCandidateResult, results []*BulkSimCandidateResult) bool {
 	if baseline != nil && baseline.Error != nil {
 		return true

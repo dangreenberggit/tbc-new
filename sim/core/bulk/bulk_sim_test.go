@@ -125,3 +125,75 @@ func assertFloatEqual(t *testing.T, name string, actual float64, expected float6
 		t.Fatalf("expected %s %.12f, got %.12f", name, expected, actual)
 	}
 }
+
+func TestBulkSimFinalistCount(t *testing.T) {
+	testCases := []struct {
+		name            string
+		finalistResults int32
+		topResults      int
+		want            int
+	}{
+		{name: "zero falls back to topResults", finalistResults: 0, topResults: 25, want: 25},
+		{name: "smaller than topResults kept", finalistResults: 5, topResults: 25, want: 5},
+		{name: "larger than topResults clamped", finalistResults: 30, topResults: 25, want: 25},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			request := &proto.BulkSimRequest{FinalistResults: testCase.finalistResults}
+			if got := bulkSimFinalistCount(request, testCase.topResults); got != testCase.want {
+				t.Fatalf("finalist count for FinalistResults=%d topResults=%d = %d, want %d",
+					testCase.finalistResults, testCase.topResults, got, testCase.want)
+			}
+		})
+	}
+}
+
+func TestMergeBulkSimFinalists(t *testing.T) {
+	// 25 pre-stage results, each carrying its index as its Avg so a refined overlay is detectable.
+	results := make([]*BulkSimCandidateResult, 0, 25)
+	for i := int32(0); i < 25; i++ {
+		results = append(results, &BulkSimCandidateResult{
+			Candidate:  BulkSimCandidate{Index: i},
+			DpsMetrics: newBulkSimTestDistributionMetrics([]float64{float64(i)}),
+		})
+	}
+
+	// 5 refined finalists (indices 0..4) with a distinct Avg and a longer AllValues than the
+	// originals, standing in for the extra lockstep iterations the stage adds.
+	finalists := make([]*BulkSimCandidateResult, 0, 5)
+	for i := int32(0); i < 5; i++ {
+		refined := &proto.DistributionMetrics{
+			Avg:            1000 + float64(i),
+			AllValues:      []float64{1, 2, 3, 4},
+			AggregatorData: &proto.AggregatorData{N: 4},
+		}
+		finalists = append(finalists, &BulkSimCandidateResult{
+			Candidate:  BulkSimCandidate{Index: i},
+			DpsMetrics: refined,
+		})
+	}
+
+	merged := mergeBulkSimFinalists(results, finalists)
+
+	if len(merged) != 25 {
+		t.Fatalf("expected 25 merged results, got %d", len(merged))
+	}
+	for i, result := range merged {
+		if result.Candidate.Index != int32(i) {
+			t.Fatalf("result %d has index %d, want %d (order not preserved)", i, result.Candidate.Index, i)
+		}
+		if i < 5 {
+			if got := result.DpsMetrics.Avg; got != 1000+float64(i) {
+				t.Fatalf("finalist %d Avg = %v, want refined %v", i, got, 1000+float64(i))
+			}
+			if got := len(result.DpsMetrics.AllValues); got != 4 {
+				t.Fatalf("finalist %d AllValues len = %d, want refined 4", i, got)
+			}
+		} else {
+			if got := result.DpsMetrics.Avg; got != float64(i) {
+				t.Fatalf("non-finalist %d Avg = %v, want original %v", i, got, float64(i))
+			}
+		}
+	}
+}

@@ -92,7 +92,19 @@ node run-tab-cdp.mjs --origin http://localhost:3333 --candidates 40 --out out.js
 
 Flags: `--origin <url>` (required), `--page` (default
 `/tbc/paladin/retribution/`), `--phase` (default 5), `--candidates N` (0 =
-uncapped), `--timeout-ms` (default 2 700 000), `--out <json>` (stdout if
-omitted), and `--force-fallback`, which installs a one-shot `window.Worker`
-throw so the tab's transport probe fails and it falls back to the WASM runner
-over HTTP — the gate's screen-check twin and its forced-fallback negative.
+uncapped), `--iterations N` (0 = leave the picker at its default 3000),
+`--timeout-ms` (default 2 700 000), `--out <json>` (stdout if omitted),
+`--force-fallback`, which installs a one-shot `window.Worker` throw so the tab's
+transport probe fails and it falls back to the WASM runner over HTTP — the
+gate's screen-check twin and its forced-fallback negative — and `--bulk-http`,
+which sets the `upgradesTab.runner` localStorage key before navigation so the
+tab selects the Go bulk runner. `--bulk-http` and `--iterations` exist for ticket
+411's wall-clock measurement only; the shipped default is the per-candidate loop
+at 3000 iterations, and a fresh Chromium profile per launch keeps the key from
+leaking between runs.
+
+Two timing fields are recorded on every run: **`firstRowS`** — Run click to the
+first `.upgrades-results table.upgrades-results-table tbody tr` (via a
+`MutationObserver` installed before the click; `null` if no row lands) — and
+**`clickToDoneS`** — click to the `Took` status. Two request-selection fields
+echo the flags: **`iterationsRequested`** and **`bulkHttpRequested`**.

@@ -17,6 +17,13 @@ import type { BulkScreenRequest } from '../engine/seams/sim-runner.js';
 // A value import, not `import type`: `BulkScreenIntegrityError` is thrown here.
 import { BulkScreenIntegrityError } from '../engine/seams/sim-runner.js';
 
+// Sizes the Go finalist refinement set independently of the truncation size (see item 2 below).
+// This is upstream's own `BulkSimDefaultTopResults` — the size the finalist stage was designed
+// for. It must stay >= 2: the stage exits at `len(finalists) < 2` (stage.go), so 1 would skip
+// (bypass) it, which is the exact defect ticket 403/411 fixes. 5 is the smallest value that keeps
+// the stage running while refining far fewer rows than the full chunk.
+export const BULK_FINALIST_RESULTS = 5;
+
 /**
  * Asserts that a built chunk will take the single-stage (High-only) path, where
  * nothing is culled and every candidate comes back with a row (ticket 349).
@@ -63,11 +70,16 @@ export function assertSingleStageChunk(request: BulkSimRequest, candidateCount: 
  *    `validateBulkSimRequest` rejects a request without it
  *    (`wasm/bulk_sim/index.ts:49`) and the tournament reads
  *    `baseRequest.simOptions.iterations` for its baseline probe (`:91,:157`).
- * 2. **`topResults`** — defaults to 5 (`wasm/bulk_sim/constants.ts:1`) and
- *    truncates the response independently of culling
+ * 2. **`topResults` and `finalistResults`** — `topResults` carried two meanings
+ *    at once. It truncates the response independently of culling
  *    (`wasm/bulk_sim/statistics.ts:104-111`), so it must be the candidate count
- *    or most rows silently vanish. On the Go server it also sizes the finalist
- *    stage, so that forced equality refines every candidate (ticket 403).
+ *    or most rows silently vanish; and on the Go server it also sized the
+ *    finalist stage, so that forced equality refined every candidate (ticket
+ *    403). `finalistResults` (proto field 9) now carries the second meaning: the
+ *    Go stage reads it as the finalist-set size and falls back to `topResults`
+ *    only when it is zero (every upstream caller). So `topResults` stays the
+ *    candidate count for truncation while `finalistResults: BULK_FINALIST_RESULTS`
+ *    refines just the top few — fixed, not bypassed (ticket 411).
  * 3. **`requestId`** — every per-candidate worker task id is derived from it
  *    (`wasm/bulk_sim/batch.ts:67`), and `SimWorker.doApiCall` throws
  *    `ApiCall with empty id!` on a falsy id (`worker_pool.ts:407`).
@@ -114,6 +126,7 @@ export function buildBulkSimRequest(req: BulkScreenRequest): BulkSimRequest {
 			}),
 		),
 		topResults: req.candidates.length,
+		finalistResults: BULK_FINALIST_RESULTS,
 		highStageIterations: req.iterations,
 		requestId: generateRequestId(SimRequest.bulkSimAsync),
 	});

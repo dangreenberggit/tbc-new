@@ -20,8 +20,15 @@
 //
 // Usage:
 //   node run-tab-cdp.mjs --origin http://localhost:3333 [--page /tbc/paladin/retribution/]
-//        [--phase 5] [--candidates N] [--timeout-ms 2700000] [--out out.json]
-//        [--force-fallback]
+//        [--phase 5] [--candidates N] [--iterations N] [--timeout-ms 2700000]
+//        [--out out.json] [--force-fallback] [--bulk-http]
+//
+// --bulk-http sets the `upgradesTab.runner` localStorage key before navigation so
+//   the tab selects the Go bulk runner (ticket 411 measurement only; the default
+//   is the per-candidate loop). Readback: bulkHttpRequested.
+// --iterations N sets the iterations NumberPicker at click time (default 3000).
+//   Readback: iterationsRequested. Two timings are always recorded: firstRowS
+//   (Run click to the first results-table row) and clickToDoneS (click to Took).
 
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
@@ -39,9 +46,11 @@ function parseArgs(argv) {
 		page: '/tbc/paladin/retribution/',
 		phase: 5,
 		candidates: 0, // 0 = uncapped
+		iterations: 0, // 0 = leave the picker at its default (3000)
 		timeoutMs: 2700000,
 		out: null,
 		forceFallback: false,
+		bulkHttp: false,
 	};
 	for (let i = 0; i < argv.length; i++) {
 		const a = argv[i];
@@ -49,9 +58,11 @@ function parseArgs(argv) {
 		else if (a === '--page') args.page = argv[++i];
 		else if (a === '--phase') args.phase = parseInt(argv[++i], 10);
 		else if (a === '--candidates') args.candidates = parseInt(argv[++i], 10);
+		else if (a === '--iterations') args.iterations = parseInt(argv[++i], 10);
 		else if (a === '--timeout-ms') args.timeoutMs = parseInt(argv[++i], 10);
 		else if (a === '--out') args.out = argv[++i];
 		else if (a === '--force-fallback') args.forceFallback = true;
+		else if (a === '--bulk-http') args.bulkHttp = true;
 		else {
 			throw new Error(`unknown arg: ${a}`);
 		}
@@ -235,6 +246,51 @@ const setCandidates = n => `(async () => {
 	return {ok:true, candidatesSet: settled};
 })()`;
 
+// Set the iterations NumberPicker's input. Same native-setter + input/change
+// idiom as setCandidates; the picker (id 'upgrades-iterations') is read at click
+// time and drives both the loop's per-candidate sims and highStageIterations
+// (rank.ts, C10). Read the value back and assert it stuck.
+const setIterations = n => `(async () => {
+	const wf = async (fn,ms)=>{const e=Date.now()+ms;while(Date.now()<e){const v=fn();if(v)return v;await new Promise(r=>setTimeout(r,100));}return fn();};
+	const input = await wf(()=>document.querySelector('.upgrades-iterations-picker input'),15000);
+	if(!input) return {error:'no iterations input'};
+	const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
+	nativeSetter.call(input,'${n}');
+	input.dispatchEvent(new Event('input',{bubbles:true}));
+	input.dispatchEvent(new Event('change',{bubbles:true}));
+	await new Promise(r=>setTimeout(r,400));
+	const settled = document.querySelector('.upgrades-iterations-picker input').value;
+	if (String(settled) !== '${n}') return {error:'iterations did not stick: settled='+settled};
+	return {ok:true, iterationsSet: settled};
+})()`;
+
+// Sets the runner localStorage key before navigation (ticket 411, --bulk-http).
+const bulkHttpSource = `try{localStorage.setItem('upgradesTab.runner','bulk-http')}catch{}`;
+
+// Install a MutationObserver before the Run click that records performance.now()
+// at the first results-table row. firstRowS is (firstRowAt - clickAt); on the
+// screening path the first row cannot land before both chunks finish (C20).
+const installFirstRowObserver = `(() => {
+	window.__harnessFirstRowAt = null;
+	const sel = '.upgrades-results table.upgrades-results-table tbody tr';
+	if (document.querySelector(sel)) { window.__harnessFirstRowAt = performance.now(); return {ok:true, already:true}; }
+	const obs = new MutationObserver(() => {
+		if (window.__harnessFirstRowAt == null && document.querySelector(sel)) {
+			window.__harnessFirstRowAt = performance.now();
+			obs.disconnect();
+		}
+	});
+	obs.observe(document.body, { subtree: true, childList: true });
+	return {ok:true, already:false};
+})()`;
+
+// Read the three timing marks after the run settles.
+const readTimings = `(() => ({
+	clickAt: window.__harnessClickAt ?? null,
+	firstRowAt: window.__harnessFirstRowAt ?? null,
+	doneAt: window.__harnessDoneAt ?? null,
+}))()`;
+
 // Read the eligible-candidate count from the Candidates placeholder (C13) and
 // the runner attribute before the run (expected null on a fresh page, F4).
 const preRun = `(() => {
@@ -252,6 +308,7 @@ const preRun = `(() => {
 const clickRun = `(async () => {
 	const btn = document.querySelector('.upgrades-run-button');
 	if(!btn) return {error:'no run button'};
+	window.__harnessClickAt = performance.now();
 	btn.click();
 	return {ok:true};
 })()`;
@@ -261,7 +318,7 @@ const pollDone = ms => `(async () => {
 	const statusText = () => (document.querySelector('.upgrades-status')?.innerText ?? '');
 	while (Date.now() < deadline) {
 		const t = statusText();
-		if (/Took\\s/i.test(t)) return {done:true, status:t};
+		if (/Took\\s/i.test(t)) { window.__harnessDoneAt = performance.now(); return {done:true, status:t}; }
 		if (/Ranking failed/i.test(t)) return {done:false, failed:true, status:t};
 		await new Promise(r=>setTimeout(r,500));
 	}
@@ -466,6 +523,9 @@ async function main() {
 		if (args.forceFallback) {
 			await psend('Page.addScriptToEvaluateOnNewDocument', { source: blockWorkerSource });
 		}
+		if (args.bulkHttp) {
+			await psend('Page.addScriptToEvaluateOnNewDocument', { source: bulkHttpSource });
+		}
 		await psend('Target.setAutoAttach', {
 			autoAttach: true,
 			waitForDebuggerOnStart: true,
@@ -492,6 +552,11 @@ async function main() {
 			if (!cand?.ok) throw new Error(`candidates set failed: ${cand?.error ?? 'unknown'}`);
 		}
 
+		if (args.iterations > 0) {
+			const iters = await evaluate(psend, pageSession, setIterations(args.iterations));
+			if (!iters?.ok) throw new Error(`iterations set failed: ${iters?.error ?? 'unknown'}`);
+		}
+
 		const pre = await evaluate(psend, pageSession, preRun);
 		const pool = await evaluate(psend, pageSession, readPoolSize);
 
@@ -501,6 +566,8 @@ async function main() {
 			await evaluate(psend, pageSession, 'window.__harnessBlockWorkers = 1; true');
 		}
 
+		await evaluate(psend, pageSession, installFirstRowObserver);
+
 		const run = await evaluate(psend, pageSession, clickRun);
 		if (!run?.ok) throw new Error(`run click failed: ${run?.error ?? 'unknown'}`);
 
@@ -508,6 +575,13 @@ async function main() {
 
 		const results = await evaluate(psend, pageSession, readResults);
 		if (results?.error) throw new Error(`read results failed: ${results.error}`);
+
+		const timings = await evaluate(psend, pageSession, readTimings);
+		const clickAt = typeof timings?.clickAt === 'number' ? timings.clickAt : null;
+		const firstRowAt = typeof timings?.firstRowAt === 'number' ? timings.firstRowAt : null;
+		const doneAt = typeof timings?.doneAt === 'number' ? timings.doneAt : null;
+		const firstRowS = clickAt != null && firstRowAt != null ? +((firstRowAt - clickAt) / 1000).toFixed(3) : null;
+		const clickToDoneS = clickAt != null && doneAt != null ? +((doneAt - clickAt) / 1000).toFixed(3) : null;
 
 		let forceFallbackRemaining = null;
 		if (args.forceFallback) {
@@ -520,6 +594,10 @@ async function main() {
 			page: args.page,
 			eligibleCount: pre?.eligibleCount ?? null,
 			candidatesRequested: args.candidates,
+			iterationsRequested: args.iterations > 0 ? args.iterations : null,
+			bulkHttpRequested: args.bulkHttp,
+			firstRowS,
+			clickToDoneS,
 			runnerBeforeRun: pre?.runnerBeforeRun ?? null,
 			runner: results.runner ?? null,
 			servedWorker,
@@ -556,7 +634,8 @@ async function main() {
 		`origin=${out.origin} runner=${out.runner} rows=${out.rowCount} ` +
 			`bulk=${out.requests.bulkSimAsync} raid=${out.requests.raidSimAsync} ` +
 			`workerSessions=${out.workerSessionsAttached} poolSize=${out.poolSize} ` +
-			`fallbackWarnings=${out.screeningFallbackWarnings} done=${out.done} elapsedS=${out.elapsedS}`,
+			`fallbackWarnings=${out.screeningFallbackWarnings} done=${out.done} elapsedS=${out.elapsedS} ` +
+			`firstRowS=${out.firstRowS} clickToDoneS=${out.clickToDoneS}`,
 	);
 	// Exit 0 only when the run completed, did not panic, and the tab wrote the
 	// attribute. The harness measures; the Python gate judges.

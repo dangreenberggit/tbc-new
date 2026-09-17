@@ -1121,9 +1121,23 @@ export class UpgradesTab extends SimTab {
 	 * Bulk screening measured 263 s against 19 s at cap 40 (ticket 403); its
 	 * finalist stage refines every candidate because `topResults` must equal the
 	 * chunk size. `BulkHttpSimRunner` stays in the tree — see 403 before re-enabling.
+	 *
+	 * The `upgradesTab.runner` localStorage key exists only for ticket 411's
+	 * measurement harness: set to `bulk-http` it selects the Go bulk runner so the
+	 * two transports can be timed side by side. The default (no key, any other
+	 * value, or a storage throw) is the loop, so the shipped path is unchanged.
 	 */
 	private simRunner(): Promise<WasmSimRunner | BulkHttpSimRunner> {
-		this.simRunnerPromise ??= (async () => this.sim)();
+		this.simRunnerPromise ??= (async () => {
+			try {
+				if (window.localStorage.getItem('upgradesTab.runner') === 'bulk-http') {
+					return new BulkHttpSimRunner(this.sim.concurrency);
+				}
+			} catch {
+				// Storage unavailable (private mode, blocked): fall through to the default loop.
+			}
+			return this.sim;
+		})();
 		return this.simRunnerPromise;
 	}
 

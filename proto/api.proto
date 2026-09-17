@@ -435,6 +435,8 @@ message BulkSimRequest {
 	int32 high_stage_iterations = 6;
 	ReforgeOptimizeRequest reforge_request = 7;
 	BulkSettings bulk_settings = 8;
+	// Size of the finalist refinement set; 0 means top_results, which is the upstream behaviour.
+	int32 finalist_results = 9;
 }
 
 // RPC ReforgeOptimize

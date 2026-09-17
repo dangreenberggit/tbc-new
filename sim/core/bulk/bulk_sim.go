@@ -88,6 +88,7 @@ func runBulkSim(request *proto.BulkSimRequest, progress chan *proto.ProgressMetr
 	if topResults <= 0 {
 		topResults = BulkSimDefaultTopResults
 	}
+	finalistResults := bulkSimFinalistCount(request, topResults)
 
 	result := &proto.BulkSimResult{
 		Timings:             &proto.BulkSimTimings{},
@@ -183,8 +184,14 @@ func runBulkSim(request *proto.BulkSimRequest, progress chan *proto.ProgressMetr
 	// ranking is statistically separated (or the budget runs out), so near-ties do not flip
 	// order between runs with different seeds.
 	var finalistMetrics *proto.BulkSimStageMetrics
-	latestBaseline, latestResults, finalistMetrics = runBulkSimFinalistStage(request, latestBaseline, latestResults, topResults, progress, signals)
+	preFinalist := latestResults
+	var finalistResultsList []*BulkSimCandidateResult
+	latestBaseline, finalistResultsList, finalistMetrics = runBulkSimFinalistStage(request, latestBaseline, latestResults, finalistResults, progress, signals)
 	if finalistMetrics != nil {
+		// The finalist stage refines only its (finalistResults-sized) subset and returns just
+		// those rows (stage.go), but the client needs every candidate row (C4). Merge the
+		// refined finalists back over the full pre-stage list before truncating to topResults.
+		latestResults = mergeBulkSimFinalists(preFinalist, finalistResultsList)
 		result.StageMetrics = append(result.StageMetrics, finalistMetrics)
 		setBulkSimStageTiming(result.Timings, proto.BulkSimStage_BulkSimStageFinalist, finalistMetrics.DurationSeconds)
 	}
