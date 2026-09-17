@@ -19,8 +19,10 @@ import type { BulkScreenCandidate } from "../seams/sim-runner.js";
  * `adapters/bulk_wasm_sim_runner.ts`. Check it with:
  * `grep -rn 'makeSimRunner(\|new BulkHttpSimRunner\|new BulkWasmSimRunner' ui --include=*.ts --include=*.tsx --include=*.mts | grep -v node_modules`
  * — the only `true`-capable caller is `tools/equiv-campaign.mts`. Everything
- * below is the correctness record for re-enabling the path, kept on purpose
- * (ticket 406, owner decision: keep).
+ * below is the correctness record for re-enabling the path. Ticket 406 holds
+ * the open question of whether to keep or delete it; an agent recommended keep
+ * and the owner has not ruled, so treat that as rebuttable and read 406's
+ * Resolution before relying on it.
  *
  * The largest batch either engine screens without culling anything.
  *
