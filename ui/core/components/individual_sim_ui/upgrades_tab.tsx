@@ -2135,31 +2135,6 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * How much of this row's figure is set bonus (ticket 313). The text is
-	 * informational and renders in BOTH toggle states with identical wording
-	 * (owner revision 2): the set-potential toggle governs only whether
-	 * prospective bonuses affect the ranking/sort, not whether the text shows.
-	 *
-	 * The number shown is the raw `prospectiveBonusDps`, which is exactly what
-	 * the view adds to `deltaDps` when the toggle is on (`view.ts:163,169-172`).
-	 * The report path discounts its own figure through `SET_POTENTIAL_WEIGHTS`;
-	 * that weighting does not apply here, and showing a discounted number would
-	 * fail to reconcile with the on-screen ordering.
-	 *
-	 * Four states, which must not be able to be read as one another:
-	 *
-	 * (a) prospective — the bonus is *not* yet inside `deltaDps`, so it is shown
-	 *     as a separate figure with the piece counts that would earn it.
-	 * (b) crossing — the bonus is already inside `deltaDps`. No second number,
-	 *     or a reader would add it to the delta a second time.
-	 * (c) confounded — the figure is inflated by breaking another set bonus and
-	 *     the view refuses to rank on it (ticket 90), so it is disclosed with
-	 *     that said plainly rather than presented as a clean gain.
-	 * (d) a set context with no populated bonus and no crossing — a real state
-	 *     (`rank.ts:1431-1440` only populates `prospectiveBonusDps` when the
-	 *     swap advances the piece count below a threshold) with nothing to say.
-	 */
-	/**
 	 * Names the worn item this swap takes off beyond the one it replaces --
 	 * today only the off-hand item a two-handed main-hand candidate leaves no
 	 * room for (ticket 350).
@@ -2186,6 +2161,31 @@ export class UpgradesTab extends SimTab {
 		);
 	}
 
+	/**
+	 * How much of this row's figure is set bonus (ticket 313). The text is
+	 * informational and renders in BOTH toggle states with identical wording
+	 * (owner revision 2): the set-potential toggle governs only whether
+	 * prospective bonuses affect the ranking/sort, not whether the text shows.
+	 *
+	 * The number shown is the raw `prospectiveBonusDps`, which is exactly what
+	 * the view adds to `deltaDps` when the toggle is on (`view.ts:163,169-172`).
+	 * The report path discounts its own figure through `SET_POTENTIAL_WEIGHTS`;
+	 * that weighting does not apply here, and showing a discounted number would
+	 * fail to reconcile with the on-screen ordering.
+	 *
+	 * Four states, which must not be able to be read as one another:
+	 *
+	 * (a) prospective — the bonus is *not* yet inside `deltaDps`, so it is shown
+	 *     as a separate figure with the piece counts that would earn it.
+	 * (b) crossing — the bonus is already inside `deltaDps`. No second number,
+	 *     or a reader would add it to the delta a second time.
+	 * (c) confounded — the figure is inflated by breaking another set bonus and
+	 *     the view refuses to rank on it (ticket 90), so it is disclosed with
+	 *     that said plainly rather than presented as a clean gain.
+	 * (d) a set context with no populated bonus and no crossing — a real state
+	 *     (`rank.ts:1431-1440` only populates `prospectiveBonusDps` when the
+	 *     swap advances the piece count below a threshold) with nothing to say.
+	 */
 	private setBonusLine(row: RankedItem, noiseFloorDps: number | undefined): Node | null {
 		const ctx = row.setContext;
 		if (!ctx) return null;
