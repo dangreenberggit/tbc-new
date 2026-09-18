@@ -12,7 +12,7 @@
  * and the result *is* the cache key rather than a hash of one.
  *
  * `HashedGearItem` and `ENGINE_VERSION` are ported unchanged — both are
- * plain data shapes/constants with nothing to adapt.
+ * plain data types and constants with nothing to adapt.
  *
  * candidate-pool.md M2 once added racing fields to `rank.ts`'s inline
  * `canonicalJson(...)` call site rather than here, because this file has no

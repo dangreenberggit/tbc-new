@@ -47,9 +47,9 @@ export const REPORT_EVENTS_REF: CharacterRef = {
  * PORTED from packages/core/src/slots.ts's `mapWclGearToSim` +
  * `WCL_ORDER`/`SIM_ORDER` mapping — the 19→17 WCL translation plan §2.1
  * excludes from the *production* port surface (the page's `Gear` is already
- * sim-native) but which the raw fixture itself is still shaped for, since
+ * sim-native) but which the raw fixture itself is still built for, since
  * `slamaltman.raw.json` is a genuine WCL capture. E-W3 needs this to turn
- * the fixture into the same `SimItemSpec[]` shape production code consumes,
+ * the fixture into the same `SimItemSpec[]` type production code consumes,
  * so it lives here, scoped to the fixture loader rather than the engine.
  */
 const WCL_ORDER = [

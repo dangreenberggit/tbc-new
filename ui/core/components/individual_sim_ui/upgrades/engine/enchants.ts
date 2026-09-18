@@ -8,8 +8,8 @@
  * live `Database`, built and maintained by upstream. Re-deriving our own copy
  * here would be exactly the kind of drift-prone duplication plan §3 warns
  * about, one level down from the fork/packages-core split — so this module
- * is a thin bridge from the ported call sites' `(effectId, itemId)` shape to
- * upstream's `(Enchant, Item)` shape, not a second implementation.
+ * is a thin bridge from the ported call sites' `(effectId, itemId)` form to
+ * upstream's `(Enchant, Item)` form, not a second implementation.
  */
 
 import { Database } from "../../../../proto_utils/database.js";
@@ -18,8 +18,8 @@ import { getItem } from "./items.js";
 
 /**
  * Every ported caller (rank.ts's `swapItemAt`) only ever needs the boolean
- * verdict, keyed by the WCL-shaped `(effectId, itemId)` pair packages/core's
- * seam carries. `effectId` doubles as `enchant.effectId` in the fork's own
+ * verdict, keyed by the WCL-style `(effectId, itemId)` pair packages/core's
+ * seam uses. `effectId` doubles as `enchant.effectId` in the fork's own
  * proto, so the lookup is a straight scan of the item's eligible slots'
  * enchant lists — small (TBC ships a few hundred enchants total) and run at
  * most once per candidate slot attempt.
@@ -32,7 +32,7 @@ export function enchantAppliesToItem(effectId: number, itemId: number): boolean 
 
   // Database.getEnchants(slot) is keyed by ItemSlot, which the ported call
   // sites don't carry — they have the item's ItemType instead. Scanning
-  // every slot's enchant list and matching on effectId is the same shape
+  // every slot's enchant list and matching on effectId is the same approach
   // getEnchant() takes in packages/core/src/enchants.ts, just against the
   // live Database instead of the generated snapshot.
   for (const slot of ALL_ITEM_SLOTS) {

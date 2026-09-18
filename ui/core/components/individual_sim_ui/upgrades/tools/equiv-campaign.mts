@@ -11,7 +11,7 @@
  *
  * An earlier design re-implemented `BulkWasmSimRunner.runBulkScreen`'s body so
  * the per-chunk `stageMetrics` could be captured. That is no longer the right
- * shape: the chunk loop now lives in the shared `runBulkScreenChunks`, which
+ * approach: the chunk loop now lives in the shared `runBulkScreenChunks`, which
  * both runners delegate to, and re-implementing it would mean measuring a copy
  * of the code path instead of the one that ships — and would bypass
  * `assertSingleStageChunk` and the cancel wiring that live inside the driver.

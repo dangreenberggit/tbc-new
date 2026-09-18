@@ -4,14 +4,14 @@
  * exactly one "fight" on this surface — the character as currently configured
  * on the page — so it returns one synthetic FightSummary and `readGear`
  * ignores the FightRef it is handed back (the ref exists only to satisfy the
- * seam's two-method shape, which packages/core needs for its WCL transport).
+ * seam's two methods, which packages/core needs for its WCL transport).
  *
  * Field-by-field verification against `Player` state (plan §2.2's "open
  * verification item"):
  *  - `talentPointsByTree`: `player.getTalentTreePoints()`
  *    (`ui/core/proto_utils/utils.ts`'s `getTalentTreePoints`, summing digits
  *    of the page's own talents string per tree) returns exactly the
- *    `[number, number, number]` shape this field needs, sourced from the
+ *    `[number, number, number]` type this field needs, sourced from the
  *    page's live talents — not a stand-in. This resolves the plan's
  *    "untested" flag; it was answered, not worked around.
  *  - `items[].id/enchant/gems`: `EquippedItem.id` / `.enchant?.effectId` /
@@ -91,7 +91,7 @@ export class PlayerGearSource implements GearSource {
  * arbitrary-length talents-string split on `-`), but `LoggedGear` needs
  * exactly 3. TBC has exactly 3 talent trees per spec; a length other than 3
  * means the page's talents string itself is malformed, which is a real
- * problem to surface rather than paper over with a default.
+ * problem to report rather than paper over with a default.
  */
 function talentPointsByTree(points: number[]): [number, number, number] {
 	if (points.length !== 3) {

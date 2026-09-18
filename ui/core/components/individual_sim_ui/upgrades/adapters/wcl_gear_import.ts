@@ -3,7 +3,7 @@
  * report/fight and apply one roster member's gear to the current player via
  * `player.setGear` — nothing else on the page changes.
  *
- * Fetch code (OAuth2 client-credentials flow, GraphQL query shape, report-URL
+ * Fetch code (OAuth2 client-credentials flow, GraphQL query, report-URL
  * regex) is adapted from `ui/raid/components/importers/raid_wcl_importer.tsx`
  * (the in-repo reference plan §6 names) — same endpoints, same query idiom,
  * but reading one player's `data.gear` into an `EquipmentSpec` instead of
@@ -80,7 +80,7 @@ export interface WclClient {
 	readRoster(fight: WclFightRef): Promise<WclRosterEntry[]>;
 }
 
-/** Real WCL API v2 client, browser-direct (same auth shape as `raid_wcl_importer.tsx`, different credentials — see this file's top comment). */
+/** Real WCL API v2 client, browser-direct (same auth flow as `raid_wcl_importer.tsx`, different credentials — see this file's top comment). */
 export class HttpWclClient implements WclClient {
 	private token = '';
 

@@ -72,10 +72,10 @@ import warriorP5Universe from "./warrior-p5.universe.json";
  * JSON imports always widen to `string`/`number` (AGENTS.md "Never derive a
  * type from a JSON import" — resolveJsonModule + `as const` on a JSON import
  * is TS1355, so any narrower type here would typecheck vacuously). These
- * casts assert the shape once, at the one place raw JSON crosses into the
+ * casts assert the type once, at the one place raw JSON crosses into the
  * engine's `UniverseEntry`/pool vocabulary, rather than threading `any`
  * through `poolFromUniverse`. The engine itself validates nothing further —
- * a malformed entry surfaces downstream as a missing/wrong pool row, the
+ * a malformed entry appears downstream as a missing/wrong pool row, the
  * same failure mode packages/core's own JSON-backed universes have.
  */
 type RawUniverse = { entries: UniverseEntry[] };
@@ -229,7 +229,7 @@ export function poolSourceFor(
 /**
  * The phase each spec's bundled EP weights was written for.
  *
- * `undefined` means the file carries no phase at all — elemental ships a
+ * `undefined` means the file records no phase at all — elemental ships a
  * single preset labelled "Default" — which still gets disclosed, as
  * "unphased default". Saying nothing because a file has no phase number
  * would be the same silent degradation the disclosure exists to prevent.
@@ -312,7 +312,7 @@ function curatedSetPhase(label: string): number | undefined {
  *
  * Read off the rows' own `bisSets` labels rather than from a bundled report:
  * the assembler scopes every surviving tag to one phase, so any tagged row
- * carries the same answer, and the universes are already bundled.
+ * gives the same answer, and the universes are already bundled.
  *
  * Where upstream's curated sets stop short of the phase being ranked, this is
  * earlier than `maxPhase` and the tags mean "BiS as of the latest set we
@@ -383,8 +383,8 @@ export function cutoffIsUnmeasuredFor(spec: SpecId): boolean {
  * comes from.
  *
  * The test is on **`origin`**, not on `kind`. `kind: "unknown"` is also what
- * a *curated* force-include carries — ret's ticket-157 items are exactly that
- * shape — and counting those made ret disclose "8 items admitted by their
+ * a *curated* force-include has — ret's ticket-157 items are exactly that
+ * case — and counting those made ret disclose "8 items admitted by their
  * database phase" when its db-phase count is zero. A curated row is a claim
  * somebody made deliberately, which is the opposite of the missing
  * attribution this line reports.

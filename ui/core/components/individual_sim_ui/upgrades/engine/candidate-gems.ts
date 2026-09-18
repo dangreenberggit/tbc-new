@@ -33,7 +33,7 @@ function rankableSpec(spec: DetectedSpecId | undefined): SpecId | undefined {
 
 /**
  * Record-only weights. Narrower than `stats.ts`'s `EpWeights` union — this
- * module never receives the dense-array form, so keep the record shape
+ * module never receives the dense-array form, so keep the record type
  * explicit here rather than importing the wider union.
  */
 type EpWeightRecord = Readonly<Record<string, number>>;
@@ -43,7 +43,7 @@ type EpWeightRecord = Readonly<Record<string, number>>;
  * separate parameters through the whole candidate-swap chain (ticket 24's
  * data clump).
  *
- * `weights` and `weightRecord` are the *same* weights in the two shapes the
+ * `weights` and `weightRecord` are the *same* weights in the two forms the
  * code below needs: `epScore` in `stats.ts` accepts the dense-array form, the
  * gem fillers only ever want the record. Deriving the record once at
  * construction is why this is a context object and not just a tuple — callers
@@ -194,7 +194,7 @@ const PREFERRED_META_IDS: readonly number[] = [32409];
  * spec's **highest-phase** vendored gear set, by gem colour rather than array
  * position: the meta is not reliably `gems[0]`, since the array follows the
  * head item's own socket order (Cowl of Gul'dan, id 34332, sockets `[4,1]`,
- * carries its meta second). Every one of the nine is stable across every phase
+ * holds its meta second). Every one of the nine is stable across every phase
  * of that spec that seats a meta at all — no spec changes meta between phases.
  * Two carry a wrinkle worth knowing rather than a disagreement: priest's
  * pre-raid and p1 sets wear the socketless Spellstrike Hood (24266), and only
@@ -257,7 +257,7 @@ export function missingMetaPreferenceNote(
  *
  * Reads `gems` — the array the candidate was actually priced with — rather
  * than deciding from socket colours and the spec table alone. `swapItemAt`
- * fills from `migrateGemsToItem`, which carries a worn meta onto the
+ * fills from `migrateGemsToItem`, which brings a worn meta onto the
  * candidate, so a spec with no recorded preference can still end up with a
  * full socket. Ticket 139: the colour-only test printed "priced with an empty
  * meta socket" over a seated gem, which is the failure this flag exists to

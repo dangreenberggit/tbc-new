@@ -42,7 +42,7 @@ const WASM_CONCURRENCY_KEY = '__tbc_new_wasmconcurrency';
  * that chunk survives and one bad item costs its whole chunk of up to 25 a bulk
  * pass, not just itself. The two integrity checks throw
  * `BulkScreenIntegrityError`, which the driver never degrades — a structurally
- * wrong response must surface, not quietly become 25 slower sims.
+ * wrong response must be reported, not quietly become 25 slower sims.
  */
 export function bulkScreenResultFrom(result: BulkSimResult, expectedCount: number, simVersion: string): BulkScreenResult {
 	if (result.error) {
@@ -171,7 +171,7 @@ export class BulkWasmSimRunner extends WorkerPoolSimRunner {
  * Ticket 346 is the revisit trigger: it re-measures bulk against the loop at
  * matched accuracy, having found bulk 1.6x slower end-to-end at *unmatched*
  * accuracy (the arms ran 5,000 flat vs 7,091 adaptive iterations, so that figure
- * is explicitly not yet a verdict on batching). If 346 lands with the WASM
+ * is explicitly not yet a verdict on batching). If 346 arrives with the WASM
  * tournament competitive, flipping `bulk` back on is a one-argument change —
  * which is why `BulkWasmSimRunner` stays constructible here rather than deleted.
  */

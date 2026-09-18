@@ -2,7 +2,7 @@
  * Cheap sanity checks on a finished ranking.
  *
  * PORTED from packages/core/src/plausibility.ts, unchanged. Pure over
- * dead-slots.ts and rank.ts's SetBonusValue shape — no data-source
+ * dead-slots.ts and rank.ts's SetBonusValue type — no data-source
  * dependency to adapt.
  */
 

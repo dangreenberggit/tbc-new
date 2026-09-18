@@ -78,7 +78,7 @@ async function main(): Promise<void> {
 		.filter(([, value]) => isPlayerSpec(value))
 		.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
 
-	// A shape change in PlayerSpecs would otherwise yield an empty-but-green
+	// A change to the PlayerSpecs enum would otherwise yield an empty-but-green
 	// export, which the outer checker would then happily diff against itself.
 	if (entries.length === 0) throw new Error('no PlayerSpecs entries matched the spec shape -- has PlayerSpecs changed?');
 	if (db.items.length === 0) throw new Error('db.json parsed to zero items');

@@ -43,7 +43,7 @@ export async function promisePool<T>(
       } catch (err) {
         // Lowest index wins, not whichever rejected first in wall-clock
         // order: with two tasks failing in one drain, a time-ordered winner
-        // makes the surfaced error depend on pool size and sim latency, and
+        // makes the reported error depend on pool size and sim latency, and
         // the caller's "same error at any concurrency" guarantee is exactly
         // what a bounded pool is supposed to preserve.
         if (index < firstErrorIndex) {

@@ -175,7 +175,7 @@ export function capStateFrom(
       : { rating: 0 };
   const hitRating = gearHitRating + talentHit.rating;
   // A spec that cannot be dodged or parried has no expertise line to sum; the
-  // entry still exists so the shape stays one type, reading a flat zero.
+  // entry still exists so the result stays one type, reading a flat zero.
   const expertiseRating = profile.trackExpertise
     ? sumStat(equipment, socketed, Stat.StatExpertiseRating)
     : 0;
@@ -239,7 +239,7 @@ const STAT_COUNT =
 
 /**
  * Simple majority. Nothing in TBC makes 0.5 special — it is the threshold that
- * needs no defending, and the flag is advisory rather than load-bearing on the
+ * needs no defending, and the flag is advisory rather than binding on the
  * ranking, so a sharper number would imply precision this does not have.
  */
 const HIT_DRIVEN_SHARE = 0.5;

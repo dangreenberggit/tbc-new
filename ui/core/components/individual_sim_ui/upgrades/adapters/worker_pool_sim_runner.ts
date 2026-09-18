@@ -22,7 +22,7 @@
  * Plan §2.4 justified the per-candidate loop with "there is no bulk RPC —
  * upstream's own Batch tab loops one ordinary sim per combination client-side".
  * That is **no longer true of this tree**, and the correction matters to anyone
- * reading this class as the only available shape. A bulk path now exists: the
+ * reading this class as the only path available. A bulk path now exists: the
  * screening pass goes through `runBulkScreen` on the `SimRunner` seam, served by
  * `BulkWasmSimRunner` and `BulkHttpSimRunner`. What remains true is narrower —
  * the WASM *worker* still has no bulk RPC, because `sim_worker.ts:15-18,107`

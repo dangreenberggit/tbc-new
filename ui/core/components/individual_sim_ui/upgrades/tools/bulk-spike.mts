@@ -27,14 +27,14 @@
  * `isWasm()` before any arm and refuses to run if it is false.
  *
  * THE EMBEDDED DATABASE MUST COVER EVERY CANDIDATE ITEM. A bulk request
- * carries ONE `player.database` for all candidates, while the per-candidate
+ * sends ONE `player.database` for all candidates, while the per-candidate
  * loop composes a fresh request (and so a fresh database) per candidate. Since
  * `simDatabaseFor` builds rows from exactly the equipment handed to it
  * (`adapters/sim_database.ts:42-44`) and `lib.wasm` is built without `with_db`,
  * a candidate item absent from that one database makes the sim panic with
  * "No item with id: N" — the deliberate behaviour documented at
  * `adapters/sim_database.ts:19-22`. Measured: this is what made the tournament
- * look like a hang. The panic surfaces only after the whole candidate queue
+ * look like a hang. The panic appears only after the whole candidate queue
  * drains (`wasm/bulk_sim/batch.ts:132-133` aborts on the first candidate error
  * but the error is returned by `index.ts:121-122` only once the batch settles),
  * so at n=19 @5,000 the failure takes many minutes to appear and reads as a
@@ -59,7 +59,7 @@ export type SpikeArm = {
 	poolSize: number;
 };
 
-/** A1-2: every emitted line carries the transport provenance on its face. */
+/** A1-2: every emitted line prints the transport provenance on its face. */
 export type SpikeProvenance = {
 	isWasm: boolean;
 	numWorkers: number;
@@ -284,7 +284,7 @@ export async function runSpike(
 	}
 
 	// A single cheap arm (n=2 @200) for smoke-testing the harness end to end
-	// without paying for the full grid. Used to confirm the request-shape fixes;
+	// without paying for the full grid. Used to confirm the request-field fixes;
 	// the real measurement is the arm list below.
 	if (new URLSearchParams(window.location.search).get('bulkProbe') === '1') {
 		const probeArm: SpikeArm = { label: 'probe-n2', candidateCount: 2, highStageIterations: 200, poolSize: probePool.getNumWorkers() };

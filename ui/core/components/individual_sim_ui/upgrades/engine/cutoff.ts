@@ -52,7 +52,7 @@ export const CUTOFF: Cutoff = { absDps: 3.4, pct: 0.15 };
  * than hide: raising it would filter more real bonuses out, and the cutoff runs
  * before replication precisely to be coarse-and-inclusive (ADR-0021). Measured:
  * across every committed fixture carrying `prospectiveBonusDps`, no 4pc bonus
- * (and no bonus of any threshold) lands in the (4.81, 5.89) under-filtered band —
+ * (and no bonus of any threshold) falls in the (4.81, 5.89) under-filtered band —
  * distinct 4pc values are ≤ −3.88 or ≥ 17.14 — so the flat floor changes no
  * observed row's tier today (ticket 335, re-runnable via the band scan in that
  * ticket over the six `.scratch/**` fixtures with `prospectiveBonusDps`).
@@ -80,7 +80,7 @@ export const CUTOFF_FERAL: Cutoff = { absDps: 3.6, pct: 0.15 };
 /**
  * Per-spec cutoff lookup, **total** over `SpecId`.
  *
- * Totality is the point: the previous `Partial` + `?? CUTOFF` shape meant a
+ * Totality is the point: the previous `Partial` + `?? CUTOFF` typing meant a
  * newly added spec silently inherited ret's noise floor, and nothing in the
  * type system or the output said so. A spec that has not had its own five-seed
  * spread run still gets the ret-derived numbers — there is no better value to
@@ -92,7 +92,7 @@ const CUTOFF_BY_SPEC: Readonly<Record<SpecId, Cutoff>> = {
   feral: CUTOFF_FERAL,
 
   // untested: no five-seed spread has been run for any spec below, so each
-  // carries ret's derived numbers. That is the same value they would have got
+  // uses ret's derived numbers. That is the same value they would have got
   // from the old `?? CUTOFF` fallback — the difference is that the debt is
   // written down here instead of hiding in an operator. Feral's spread came
   // out 6% higher than ret's on the same method, so a noisier rotation than
@@ -126,7 +126,7 @@ export function cutoffForSpec(spec: SpecId): Cutoff {
 /**
  * Lives here rather than in `rank.ts` so that `CUTOFF` and the predicate that
  * reads it stay one definition. `rank.ts` is the only caller: the cutoff is
- * absolute, so the view carries `belowCutoff` rather than re-deriving it
+ * absolute, so the view holds `belowCutoff` rather than re-deriving it
  * (ADR-0020).
  */
 export function meetsCutoff(

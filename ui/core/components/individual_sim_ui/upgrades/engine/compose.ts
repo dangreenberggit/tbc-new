@@ -3,7 +3,7 @@
  * name / race / equipment.
  *
  * PORTED from packages/core/src/compose.ts, unchanged. Operates on the same
- * protojson-shaped `RaidSimRequest` (seams/sim-runner.ts) as packages/core;
+ * `RaidSimRequest` in protojson form (seams/sim-runner.ts) as packages/core;
  * see that seam file's doc comment for why the fork's typed proto interface
  * is not used directly here.
  */
@@ -19,7 +19,7 @@ export type ComposePlayer = {
   /**
    * Per-request item rows for the WASM sim, which is built without
    * `with_db` and so starts with an empty registry (ticket 212). Opaque
-   * protojson, like RaidSimRequest — the shape belongs to the sim's
+   * protojson, like RaidSimRequest — the type belongs to the sim's
    * SimDatabase, and deriving a type for it here would buy nothing.
    * Omitted by CLI callers, whose binary is built with_db.
    */

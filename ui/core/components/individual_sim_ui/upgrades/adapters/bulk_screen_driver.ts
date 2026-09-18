@@ -5,8 +5,8 @@
  * transports must not differ on cancel or on failure handling: ticket 347's
  * whole complaint was that a fix applied to one runner would leave the other
  * behaving differently. With the loop here, each runner shrinks to a
- * constructor plus a one-line `dispatch`, so identical behaviour is a property
- * of the code shape rather than of two edits staying in step.
+ * constructor plus a one-line `dispatch`, so identical behaviour comes from the
+ * shared loop rather than from two edits staying in step.
  *
  * ## How cancel works
  *

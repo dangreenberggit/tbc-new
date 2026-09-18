@@ -5,7 +5,7 @@
  * snapshot (plan §2.1: explicitly not ported). The fork already has this
  * data loaded — the page's own `Database` (`sim.db`, `ui/core/proto_utils/
  * database.ts`) is populated before any tab can run. This module is a thin
- * `ItemEntry`-shaped wrapper over `Database.getSync().getItemById`, so every
+ * `ItemEntry`-typed wrapper over `Database.getSync().getItemById`, so every
  * ported module downstream (meta-repair, set-bonus, set-value, caps, …) can
  * keep calling `getItem(id)` exactly as it does in packages/core.
  *

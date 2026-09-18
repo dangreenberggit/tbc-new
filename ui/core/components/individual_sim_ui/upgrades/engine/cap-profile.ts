@@ -54,7 +54,7 @@ export type TalentHitDescriptor = {
  * here.
  */
 export type CapProfile = {
-  /** The rating stat the spec's gear carries for hit. */
+  /** The rating stat the spec's gear uses for hit. */
   readonly hitStat: Stat;
   /** Percent of hit needed against a raid boss (level 73). */
   readonly hitCapPercent: number;
@@ -362,7 +362,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
 export const DEFAULT_CAP_PROFILE: CapProfile = CAP_PROFILE_BY_SPEC.ret;
 
 /**
- * The `?? DEFAULT_CAP_PROFILE` is not the `Partial`-shaped fallback this design
+ * The `?? DEFAULT_CAP_PROFILE` is not the `Partial`-typed fallback this design
  * set out to delete. The Record is total, so a *typed* `SpecId` always hits a
  * row and the compiler is still the thing that forces new specs to be filled.
  * The coalesce covers the untyped path only: `DetectedSpecId` values that are

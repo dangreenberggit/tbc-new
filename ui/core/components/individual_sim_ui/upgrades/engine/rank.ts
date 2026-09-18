@@ -23,7 +23,7 @@
  *
  * candidate-pool.md M1 (candidates cap, concurrency, EP ordering, Stop,
  * row-landed progress) is ported alongside these two pre-existing
- * adaptations, unchanged in shape from packages/core/src/rank.ts.
+ * adaptations, unchanged in form from packages/core/src/rank.ts.
  *
  * Everything else — the eight-stage pipeline, cutoff/replication logic, set
  * synergy, disclosure assembly — is unchanged from packages/core.
@@ -195,7 +195,7 @@ export type Progress =
   | { stage: "building-pool" }
   | { stage: "simming"; done: number; total: number }
   /**
-   * A single candidate's row finished — fired as each sim lands, ahead of
+   * A single candidate's row finished — fired as each sim finishes, ahead of
    * the "ranking" stage, so a caller can fill a skeleton row incrementally
    * rather than waiting for the whole run (candidate-pool.md §5.1.5). No
    * `stage` field: this is a side channel alongside the stage sequence
@@ -254,7 +254,7 @@ export type RankedItem = {
   /**
    * `false` only on a row Stop left unsimmed (candidate-pool.md §5.1.4) —
    * absent otherwise, never `true`, so an ordinary complete run never
-   * carries the field at all and a reader can tell "simmed" from "this
+   * has the field at all and a reader can tell "simmed" from "this
    * `Ranking` predates Stop" apart from "this row was skipped by Stop".
    * Such a row's `deltaDps`/`se`/etc. are placeholders, excluded from
    * cutoff classification and tie groups.
@@ -616,7 +616,7 @@ export async function rankUpgrades(
   // eligible set down to what actually gets a full sim — hashing here rather
   // than at entry because the logged gear is the
   // largest input to every delta, and it is not known until readGear
-  // resolves. The check still lands before the sim loop, which is the
+  // resolves. The check still happens before the sim loop, which is the
   // expensive part.
   const contentHash = canonicalJson({
     character: {
@@ -753,7 +753,7 @@ export async function rankUpgrades(
      * One implementation for both routes on purpose. The screening pass and the
      * pricing loop each walk the same candidates and must agree *exactly* on the
      * resulting attempt set, because `screenKey` is only `itemId:slotIndex` — it
-     * carries no fingerprint of the gear the observation was measured on. If the
+     * holds no fingerprint of the gear the observation was measured on. If the
      * two routes ever disagreed about which attempts exist while both still
      * continued past the disagreement, the loop could read a screened DPS that
      * was measured on different gear than the `candReq` it records into
@@ -810,7 +810,7 @@ export async function rankUpgrades(
       // second one" with nothing in the row saying so. The below-cutoff owned-row
       // filter in upgrades_tab.tsx rests on this guard for the same reason.
       // Producing the row honestly needs a per-placement row concept through the
-      // engine output, the view, and the UI; every item entry already carries
+      // engine output, the view, and the UI; every item entry already has
       // `unique` for whoever builds it. Ticket 309 holds the redesign map.
       const wornAt = equipment.findIndex((spec) => spec.id === entry.itemId);
       if (wornAt >= 0 && wornAt !== slotIndex) return { kind: "skip" };
@@ -928,7 +928,7 @@ export async function rankUpgrades(
         // takes it from here — the loop dispatches nothing either.
         if (err instanceof BulkScreenAbortedError) return undefined;
         // A structurally wrong bulk response is not something to work around
-        // quietly; it is exactly what the integrity checks exist to surface.
+        // quietly; it is exactly what the integrity checks exist to report.
         if (err instanceof BulkScreenIntegrityError) throw err;
         // Everything else — an engine-reported failure, a dead worker, an HTTP
         // status — costs speed, not correctness: every attempt falls through to
@@ -959,7 +959,7 @@ export async function rankUpgrades(
      * One candidate's full slot-attempt loop, unchanged from the old serial
      * body except that it is now a `promisePool` task rather than one turn
      * of a `for` loop (candidate-pool.md §5.1.2) — every mutation below
-     * still lands on the shared `ranked`/`candidateSkips`/
+     * still writes to the shared `ranked`/`candidateSkips`/
      * `individualDeltasByItemId`/`winningRequests` collections, which is
      * safe because JS interleaves at `await` points only, never inside a
      * synchronous stretch of code. Ordering downstream never depends on
@@ -1220,7 +1220,7 @@ export async function rankUpgrades(
     //
     // Absent capability, or an abort already raised, means no screening pass and
     // the loop runs exactly as before. An abort raised *during* the pass
-    // surfaces as `BulkScreenAbortedError` and is handled the same way: no
+    // is reported as `BulkScreenAbortedError` and is handled the same way: no
     // screening numbers, and the loop below dispatches nothing either.
     const screened = signal?.aborted
       ? undefined
@@ -1269,7 +1269,7 @@ export async function rankUpgrades(
         )
       : [];
     for (const entry of unsimmedCandidates) {
-      // A row Stop never reached — placeholder numbers so the shape stays a
+      // A row Stop never reached — placeholder numbers so the row stays a
       // RankedItem, but `simmed: false` pulls it out of cutoff
       // classification and tie groups below rather than letting a zeroed
       // deltaDps masquerade as a measured one.
@@ -1907,7 +1907,7 @@ async function cacheSimResult(
  * there would be read back by two callers that must never see one: the
  * per-candidate loop, which differences against the loop's own baseline, and —
  * because `simFor` shares `readCachedSim` and replication re-sims at
- * `seeds[0]`, the same seed `runOpts` carries — `replicateTopItems`, whose
+ * `seeds[0]`, the same seed `runOpts` holds — `replicateTopItems`, whose
  * paired-seed contract is that candidate and baseline come from the same run.
  * Either would pair an observation with a baseline it was not measured against,
  * reintroducing the gap `screenCandidates` documents, and the second would push
@@ -1915,7 +1915,7 @@ async function cacheSimResult(
  *
  * Scoping the key to the screening route keeps the reuse (a re-run screens from
  * the store instead of re-simming) while making the observation unreachable
- * from the paths that would misread it. The stored value carries the baseline
+ * from the paths that would misread it. The stored value keeps the baseline
  * it was measured against for the same reason the in-memory result does: the
  * observation and its baseline are only meaningful as a pair.
  */
@@ -2050,7 +2050,7 @@ export function candidateSwapWithRepairs(
 }
 
 /**
- * Takes the worn off-hand item off when a two-handed candidate lands in the
+ * Takes the worn off-hand item off when a two-handed candidate goes in the
  * main hand, and names what it took (ticket 350).
  *
  * A two-hander occupies both hands, so pricing one beside a worn off-hand item
@@ -2088,7 +2088,7 @@ function clearOffHandForTwoHander(
   if (!wornOffHandId) return { equipment, removed: [] };
 
   const cleared = equipment.map((spec, i) =>
-    // The bare-slot shape `equipmentFromLoggedGear` writes for an empty slot,
+    // The bare-slot value `equipmentFromLoggedGear` writes for an empty slot,
     // so a cleared off hand is indistinguishable from one the player never
     // filled — which is what every downstream gem and stat stage already
     // handles.

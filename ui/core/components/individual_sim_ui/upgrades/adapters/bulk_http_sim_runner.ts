@@ -26,7 +26,7 @@
  * `bulkPoolSizeFrom` refuses fewer than 2 workers on the WASM side for a real
  * reason: that tournament's baseline probe splits one request across workers,
  * so a 1-worker pool has nothing to split across. None of that applies here.
- * One HTTP request carries the whole batch to a server that threads it over
+ * One HTTP request sends the whole batch to a server that threads it over
  * NumCPU internally (`sim/core/bulk/stage.go`), with no client-side knob —
  * which is exactly why upstream itself refuses to apply the user's WASM
  * concurrency setting when the pool is not WASM: "Local sim has native

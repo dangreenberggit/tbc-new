@@ -4,7 +4,7 @@
  * ADAPTED from packages/core/src/meta.ts. packages/core re-derives
  * `gemColorMatchesSocket` and every meta condition (`data/gems/
  * meta-conditions.json`) because the CLI has nothing else to ask. The fork's
- * own `ui/core/proto_utils/gems.ts` already carries both — the same colour
+ * own `ui/core/proto_utils/gems.ts` already provides both — the same colour
  * table (including the Prismatic-matches-all-three rule this repo's comment
  * calls out as a deliberate divergence from upstream's Go constraint code)
  * and the same per-gem-id `MetaGemCondition` table, upstream-maintained. This

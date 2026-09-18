@@ -13,12 +13,12 @@
  * `Gear.toDatabase(db)` produces the `SimDatabase` upstream itself attaches
  * beside the equipment on every sim (`ui/core/sim.ts` — `toProto` /
  * `makeRaidSimRequest`). Going through it means gems, enchants, random
- * suffixes and itemEffectRandPropPoints are all carried exactly as a normal
- * page sim carries them.
+ * suffixes and itemEffectRandPropPoints are all included exactly as a normal
+ * page sim includes them.
  *
  * An item the Database cannot resolve produces no row, and the sim then
  * panics on that id — deliberately. A silent fallback would turn a data gap
- * into a wrong number; the per-row disclosure (ticket 156 slice A) surfaces
+ * into a wrong number; the per-row disclosure (ticket 156 slice A) reports
  * the panic instead.
  *
  * Item-swap gear is merged in beside the composed equipment (ticket 362).
@@ -26,7 +26,7 @@
  * (`sim/core/item_swaps.go`) resolves every swap entry at character
  * construction, before a single iteration runs, so an id it cannot find
  * panics the run — which is what the enhancement page's shipped default swap
- * did. The skeleton the tab captures already carries those rows in
+ * did. The skeleton the tab captures already holds those rows in
  * `player.database`, but compose() replaces that field wholesale with this
  * resolver's result, so the rows have to be re-supplied here or they are
  * lost. Merging them unconditionally, worn-then-swap, is upstream's own
@@ -48,7 +48,7 @@ import type { SimItemSpec } from '../engine/slots.js';
  * (`Deps.simDatabaseFor`). Returns protojson, matching the engine's opaque
  * `Readonly<Record<string, unknown>>` — the engine never inspects it.
  *
- * Closes over the page's `Player` so every request carries that player's
+ * Closes over the page's `Player` so every request includes that player's
  * item-swap rows. A factory rather than a bare function because the engine
  * hands the resolver only the equipment array, and widening that signature
  * would mean editing a ported engine file (ticket 362).

@@ -4,8 +4,8 @@
  * This is the one place protojson becomes a typed proto for the bulk path. The
  * WASM runner hands the result straight to `runConcurrentBulkSim`; the Go runner
  * serialises the same object over HTTP. Single-sourcing it is the point — the
- * two transports must not drift on request shape, and every obligation below was
- * found by running the request, not by reading the proto.
+ * two transports must not drift on request fields, and every obligation below
+ * was found by running the request, not by reading the proto.
  */
 
 import { SimRequest } from '../../../../../worker/types.js';
@@ -75,7 +75,7 @@ export function assertSingleStageChunk(request: BulkSimRequest, candidateCount: 
  *    (`wasm/bulk_sim/statistics.ts:104-111`), so it must be the candidate count
  *    or most rows silently vanish; and on the Go server it also sized the
  *    finalist stage, so that forced equality refined every candidate (ticket
- *    403). `finalistResults` (proto field 9) now carries the second meaning: the
+ *    403). `finalistResults` (proto field 9) now holds the second meaning: the
  *    Go stage reads it as the finalist-set size and falls back to `topResults`
  *    only when it is zero (every upstream caller). So `topResults` stays the
  *    candidate count for truncation while `finalistResults: BULK_FINALIST_RESULTS`
@@ -84,11 +84,11 @@ export function assertSingleStageChunk(request: BulkSimRequest, candidateCount: 
  *    (`wasm/bulk_sim/batch.ts:67`), and `SimWorker.doApiCall` throws
  *    `ApiCall with empty id!` on a falsy id (`worker_pool.ts:407`).
  * 4. **The embedded `SimDatabase` must already cover every candidate item.**
- *    A bulk request carries ONE `player.database` for all candidates, while the
+ *    A bulk request sends ONE `player.database` for all candidates, while the
  *    per-candidate loop composes a fresh one per request. `lib.wasm` is built
  *    without `with_db`, so an item absent from that database makes the sim panic
  *    with "No item with id: N" (`adapters/sim_database.ts:19-22`) — and the
- *    panic surfaces only after the whole candidate queue drains
+ *    panic appears only after the whole candidate queue drains
  *    (`batch.ts:131-133` aborts, `index.ts:121-122` reports after the batch
  *    settles), so it presents as a wedged run rather than an error. This builder
  *    cannot fix that by itself: the database rides on `baseRequest`, so the

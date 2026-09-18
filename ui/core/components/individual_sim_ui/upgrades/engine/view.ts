@@ -176,7 +176,7 @@ function belowCutoffUnderView(
  * so it contributes nothing: it must not move the sort key or the cutoff
  * verdict. The floor arrives as a parameter — the caller derives it from the
  * frozen per-spec cutoff — so this predicate stays ignorant of the `Cutoff`
- * shape. The comparison is strict (`>`), matching the display gate's strict
+ * type. The comparison is strict (`>`), matching the display gate's strict
  * `> setBonusNoiseFloorDps(cutoff)` on the same frozen cutoff so a boundary
  * value behaves identically in both layers — no row sorts on a bonus the
  * display hides (tickets 331, 332).

@@ -1,6 +1,6 @@
 /**
  * Skeleton serialization (plan §2.3, decision D5) — the page's *current* sim
- * state, protojson-shaped, without `simOptions`. D5: our sim must match the
+ * state, in protojson form, without `simOptions`. D5: our sim must match the
  * user's by construction, so the skeleton is never anything the user did not
  * themselves configure on the page.
  *

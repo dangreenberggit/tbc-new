@@ -11,8 +11,8 @@
  *
  * `RaidSimRequest` is left as `Readonly<Record<string, unknown>>` rather
  * than the fork's typed proto interface of the same name (`ui/core/proto/
- * api.ts`) — the ported `compose()` (compose.ts) still emits protojson-shaped
- * plain objects, matching how packages/core's CLI and this fork's own
+ * api.ts`) — the ported `compose()` (compose.ts) still emits plain protojson
+ * objects, matching how packages/core's CLI and this fork's own
  * `WorkerPoolSimRunner` (slice 3) exchange requests with `wasmSimRequest`/
  * `sim_worker.ts`. Slice 3's adapter is what bridges to the fork's real
  * typed `RaidSimRequest` before handing off to `WorkerPool`.
@@ -72,9 +72,9 @@ export type BulkScreenResult = {
   rows: ReadonlyArray<{ index: number; observation: SimObservation }>;
   /**
    * Chunks whose request failed for an engine-reported or transport reason
-   * (ticket 347's rider). Their candidates carry no row, and the caller sims
+   * (ticket 347's rider). Their candidates have no row, and the caller sims
    * them itself through the per-candidate loop. Absent when nothing failed, so
-   * a clean run's result shape is unchanged.
+   * a clean run's result type is unchanged.
    */
   failures?: ReadonlyArray<{ indices: readonly number[]; reason: string }>;
 };
@@ -140,7 +140,7 @@ export function simCacheKey(
  * different batch is a different question, and so are the seed and iteration
  * count — the same batch simulated at a different seed is a different
  * measurement, and omitting the seed would let two of them collide on one
- * recording. Note the key is transport-blind by *shape* only; `simVersion` is
+ * recording. Note the key is transport-blind by its fields only; `simVersion` is
  * supplied by whichever runner recorded it.
  */
 export function bulkScreenCacheKey(

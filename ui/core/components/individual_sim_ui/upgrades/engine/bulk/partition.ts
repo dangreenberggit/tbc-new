@@ -5,7 +5,7 @@
  * tournament, the Go runner posts the same chunks over HTTP. One constant and
  * one function, so the two engines cannot drift apart on batch size.
  *
- * Not ported from `packages/core` — it has no ancestor there, so it carries no
+ * Not ported from `packages/core` — it has no ancestor there, so it has no
  * `PROVENANCE.md` row (`tools/README.md:11`; the drift checker is table-driven
  * over that file's rows, so an absent file is never hashed).
  */
