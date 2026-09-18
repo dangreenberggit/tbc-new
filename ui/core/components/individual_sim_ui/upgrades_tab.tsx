@@ -20,7 +20,7 @@ import { makeSimRunner } from './upgrades/adapters/bulk_wasm_sim_runner';
 import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
 import { simDatabaseResolverFor } from './upgrades/adapters/sim_database';
 import { currentPageSkeleton } from './upgrades/adapters/skeleton';
-import { WasmSimRunner } from './upgrades/adapters/wasm_sim_runner';
+import { WorkerPoolSimRunner } from './upgrades/adapters/worker_pool_sim_runner';
 import { bisTagPhaseFor, cutoffIsUnmeasuredFor, epWeightsDisclosureFor, epWeightsFor, poolFor, poolSourceFor, unsourcedCountFor } from './upgrades/data/data';
 import { type Cutoff,cutoffAdmittingArm, setBonusNoiseFloorDps } from './upgrades/engine/cutoff';
 import type { Assumptions } from './upgrades/engine/disclosure';
@@ -451,7 +451,7 @@ export class UpgradesTab extends SimTab {
 	private readonly sim = makeSimRunner();
 	// Memoised so the transport is probed once per tab, not once per run, and so
 	// two runs never hold different runners (each runner owns worker pools).
-	private simRunnerPromise: Promise<WasmSimRunner | BulkHttpSimRunner> | undefined;
+	private simRunnerPromise: Promise<WorkerPoolSimRunner | BulkHttpSimRunner> | undefined;
 	private readonly store = new MemoryStore();
 
 	// Rebuilt each run (an AbortController cannot be reused after abort) —
@@ -1127,7 +1127,7 @@ export class UpgradesTab extends SimTab {
 	 * two transports can be timed side by side. The default (no key, any other
 	 * value, or a storage throw) is the loop, so the shipped path is unchanged.
 	 */
-	private simRunner(): Promise<WasmSimRunner | BulkHttpSimRunner> {
+	private simRunner(): Promise<WorkerPoolSimRunner | BulkHttpSimRunner> {
 		this.simRunnerPromise ??= (async () => {
 			try {
 				if (window.localStorage.getItem('upgradesTab.runner') === 'bulk-http') {
@@ -1209,7 +1209,7 @@ export class UpgradesTab extends SimTab {
 		// Desktop-gate S1: record the runner class the tab actually chose. A
 		// literal keyed on `instanceof`, not `constructor.name` — Vite minifies
 		// class names in production, so the name is unusable; the literal is not.
-		this.statusElem.setAttribute('data-runner', sim instanceof BulkHttpSimRunner ? 'BulkHttpSimRunner' : 'WasmSimRunner');
+		this.statusElem.setAttribute('data-runner', sim instanceof BulkHttpSimRunner ? 'BulkHttpSimRunner' : 'WorkerPoolSimRunner');
 
 		this.stopButton.disabled = false;
 		let ranking: Ranking | PartialRanking;
@@ -1228,9 +1228,9 @@ export class UpgradesTab extends SimTab {
 					epWeights: epWeightsFor(specId),
 					pool: this.effectivePool(specId, maxPhase, pruned),
 					simDatabaseFor: simDatabaseResolverFor(this.simUI.player),
-					// `min(workers, memoryCap)` — WasmSimRunner derives this once at
+					// `min(workers, memoryCap)` — WorkerPoolSimRunner derives this once at
 					// construction from the measured per-process memory cost
-					// (candidate-pool.md §5.1.2, wasm_sim_runner.ts).
+					// (candidate-pool.md §5.1.2, worker_pool_sim_runner.ts).
 					concurrency: sim.concurrency,
 					signal: this.abortController.signal,
 				},

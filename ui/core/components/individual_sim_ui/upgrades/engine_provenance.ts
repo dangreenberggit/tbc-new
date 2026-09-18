@@ -4,7 +4,7 @@
  *
  * The fork has no build-time git-info plumbing (no `git describe` step in
  * `vite.config.mts` or the worker build), so this cannot be read at runtime
- * the way `WasmSimRunner.version()` reads `CURRENT_API_VERSION` from an
+ * the way `WorkerPoolSimRunner.version()` reads `CURRENT_API_VERSION` from an
  * already-exported constant. This is a hand-maintained literal instead of an
  * invented one.
  *

@@ -1,6 +1,6 @@
 /**
- * WasmSimRunner — SimRunner over the site's own in-browser WASM simulator
- * (plan §2.4).
+ * WorkerPoolSimRunner — SimRunner over the site's own WorkerPool (WASM workers
+ * on the web build, HTTP net workers on the desktop build) (plan §2.4).
  *
  * Owns an independent `WorkerPool`, rather than reaching into `Sim`'s
  * private `workerPool` field — `Sim.workerPool` has no public accessor
@@ -82,7 +82,7 @@ export function memoryCapFromDeviceMemory(deviceMemoryGiB: number | undefined = 
 	return Math.max(1, cap);
 }
 
-export class WasmSimRunner implements SimRunner {
+export class WorkerPoolSimRunner implements SimRunner {
 	private readonly pool: WorkerPool;
 	private readonly signalManager = new SimSignalManager();
 

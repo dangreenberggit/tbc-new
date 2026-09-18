@@ -71,7 +71,7 @@ The four signals in the JSON:
 
 - **S1 `runner`** — the runner class the tab chose, from the `data-runner`
   attribute the tab writes on `.upgrades-status` (`BulkHttpSimRunner` on the HTTP
-  transport, `WasmSimRunner` on WASM or a forced fallback).
+  transport, `WorkerPoolSimRunner` on WASM or a forced fallback).
 - **S2 `requests`** — counts of completed 200 sim responses per endpoint,
   summed over the page session **and every auto-attached worker session**. Every
   `/bulkSimAsync` and `/raidSimAsync` fetch is issued inside a dedicated Web

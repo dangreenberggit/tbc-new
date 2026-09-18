@@ -103,7 +103,7 @@ export function buildSpikeRequest(
 	// (`engine/seams/sim-runner.ts:12-21` — the engine stays proto-unaware), but
 	// protobuf-ts's `fromJson` wants a `JsonValue`, which an index signature of
 	// `unknown` does not satisfy. The two describe the same protojson object;
-	// only the static types disagree. `wasm_sim_runner.ts:112` never hits this
+	// only the static types disagree. `worker_pool_sim_runner.ts:112` never hits this
 	// because it passes a fresh object literal, so the cast is new at this
 	// boundary — Step 6's builder inherits it and should carry the same note.
 	// `compose()` deliberately strips `simOptions` (`engine/compose.ts:32`) —

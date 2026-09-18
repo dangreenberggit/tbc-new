@@ -13,7 +13,7 @@
  * than the fork's typed proto interface of the same name (`ui/core/proto/
  * api.ts`) — the ported `compose()` (compose.ts) still emits protojson-shaped
  * plain objects, matching how packages/core's CLI and this fork's own
- * `WasmSimRunner` (slice 3) exchange requests with `wasmSimRequest`/
+ * `WorkerPoolSimRunner` (slice 3) exchange requests with `wasmSimRequest`/
  * `sim_worker.ts`. Slice 3's adapter is what bridges to the fork's real
  * typed `RaidSimRequest` before handing off to `WorkerPool`.
  */

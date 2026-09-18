@@ -61,7 +61,7 @@ import { runConcurrentBulkSim } from '../../../../wasm/bulk_sim/index.js';
 import { BulkHttpSimRunner } from '../adapters/bulk_http_sim_runner.js';
 import { runBulkScreenChunks } from '../adapters/bulk_screen_driver.js';
 import { BulkWasmSimRunner, makeSimRunner } from '../adapters/bulk_wasm_sim_runner.js';
-import type { WasmSimRunner } from '../adapters/wasm_sim_runner.js';
+import type { WorkerPoolSimRunner } from '../adapters/worker_pool_sim_runner.js';
 import { cutoffForSpec } from '../engine/cutoff.js';
 import { rankUpgrades, type RankInput, type Ranking, type PartialRanking } from '../engine/rank.js';
 import type { BulkScreenRequest, BulkScreenResult, RaidSimRequest, SimObservation, SimRunOpts, SimRunner } from '../engine/seams/sim-runner.js';
@@ -142,7 +142,7 @@ class CountingRunner implements SimRunner {
 	baseline: { dps: number; stdev: number } | undefined;
 
 	constructor(
-		private readonly inner: WasmSimRunner | BulkHttpSimRunner,
+		private readonly inner: WorkerPoolSimRunner | BulkHttpSimRunner,
 		/** Absent on arm B/C: no bulk capability is exposed at all. */
 		private readonly bulkDriver?: (req: BulkScreenRequest, record: (chunk: ChunkRecord) => void) => Promise<BulkScreenResult>,
 	) {
@@ -235,7 +235,7 @@ function instrumentedDriver(
 }
 
 /** The bulk-capable runner for this transport, with its dispatch instrumented. */
-function bulkRunnerFor(inner: WasmSimRunner | BulkHttpSimRunner, isWasm: boolean, mode: ArmMode) {
+function bulkRunnerFor(inner: WorkerPoolSimRunner | BulkHttpSimRunner, isWasm: boolean, mode: ArmMode) {
 	const signals = new SimSignalManager();
 	const simVersion = () => inner.version();
 
@@ -285,7 +285,7 @@ export async function runCampaignArm(opts: CampaignArmOptions): Promise<Campaign
 	const isBulkArm = opts.armId === 'A';
 
 	const base = makeSimRunner(false);
-	const inner: WasmSimRunner | BulkHttpSimRunner = opts.isWasm
+	const inner: WorkerPoolSimRunner | BulkHttpSimRunner = opts.isWasm
 		? isBulkArm
 			? new BulkWasmSimRunner(base.concurrency)
 			: base
@@ -446,7 +446,7 @@ export async function runCampaignArm(opts: CampaignArmOptions): Promise<Campaign
 export async function runDiagnostic(opts: {
 	input: RankInput;
 	deps: Record<string, unknown>;
-	sim: WasmSimRunner | BulkHttpSimRunner;
+	sim: WorkerPoolSimRunner | BulkHttpSimRunner;
 	isWasm: boolean;
 }): Promise<{ summary: Record<string, unknown>; detail: Record<string, unknown> }> {
 	type Seen = { req: RaidSimRequest; opts: SimRunOpts; obs: SimObservation; tail: boolean };

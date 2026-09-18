@@ -2,7 +2,7 @@
  * BulkWasmSimRunner — a `SimRunner` that adds the bulk screening capability on
  * top of the ordinary per-candidate one.
  *
- * `run()` is inherited unchanged from `WasmSimRunner`: the accurate final pass
+ * `run()` is inherited unchanged from `WorkerPoolSimRunner`: the accurate final pass
  * (paired-seed replication) and the set-bonus sims still go one request at a
  * time, exactly as before. Only the screening pass batches.
  */
@@ -15,7 +15,7 @@ import type { BulkScreenRequest, BulkScreenResult, SimObservation } from '../eng
 // A value import, not `import type`: `BulkScreenIntegrityError` is thrown here.
 import { BulkScreenIntegrityError } from '../engine/seams/sim-runner.js';
 import { runBulkScreenChunks } from './bulk_screen_driver.js';
-import { DEFAULT_WORKER_COUNT, memoryCapFromDeviceMemory, WasmSimRunner } from './wasm_sim_runner.js';
+import { DEFAULT_WORKER_COUNT, memoryCapFromDeviceMemory, WorkerPoolSimRunner } from './worker_pool_sim_runner.js';
 
 /** The user's own worker-count choice; `0` is a deliberate "off". */
 const WASM_CONCURRENCY_KEY = '__tbc_new_wasmconcurrency';
@@ -114,7 +114,7 @@ function readWasmConcurrency(): number | undefined {
 	}
 }
 
-export class BulkWasmSimRunner extends WasmSimRunner {
+export class BulkWasmSimRunner extends WorkerPoolSimRunner {
 	private readonly bulkPool: WorkerPool;
 	private readonly bulkSignals = new SimSignalManager();
 
@@ -138,7 +138,7 @@ export class BulkWasmSimRunner extends WasmSimRunner {
 }
 
 /**
- * Builds the runner the tab uses. By default returns a plain `WasmSimRunner` —
+ * Builds the runner the tab uses. By default returns a plain `WorkerPoolSimRunner` —
  * with no bulk capability at all — so `deps.sim.runBulkScreen` is undefined and
  * `rankUpgrades` takes its existing per-candidate path unchanged. Pass
  * `bulk = true` to opt into the in-browser tournament; even then the user's
@@ -175,7 +175,7 @@ export class BulkWasmSimRunner extends WasmSimRunner {
  * tournament competitive, flipping `bulk` back on is a one-argument change —
  * which is why `BulkWasmSimRunner` stays constructible here rather than deleted.
  */
-export function makeSimRunner(bulk = false): WasmSimRunner {
+export function makeSimRunner(bulk = false): WorkerPoolSimRunner {
 	const setting = readWasmConcurrency();
 	const poolSize = bulkPoolSizeFrom(setting, navigator.hardwareConcurrency || DEFAULT_WORKER_COUNT, memoryCapFromDeviceMemory());
 	if (!bulk || poolSize === undefined) {
@@ -189,7 +189,7 @@ export function makeSimRunner(bulk = false): WasmSimRunner {
 		// `!bulk` reaches the same runner by the header's transport decision. The
 		// pool size is unaffected either way: it sizes `run()`'s worker pool, which
 		// the per-candidate path uses exactly as before.
-		return new WasmSimRunner(Math.max(1, poolSize ?? setting ?? DEFAULT_WORKER_COUNT));
+		return new WorkerPoolSimRunner(Math.max(1, poolSize ?? setting ?? DEFAULT_WORKER_COUNT));
 	}
 	return new BulkWasmSimRunner(poolSize);
 }

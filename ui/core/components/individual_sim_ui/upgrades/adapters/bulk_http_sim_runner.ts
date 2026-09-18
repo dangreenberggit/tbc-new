@@ -15,7 +15,7 @@
  * native bulk engine at NumCPU concurrency.
  *
  * `run()` — the accurate final pass (paired-seed replication) and the set-bonus
- * sims — is inherited unchanged from `WasmSimRunner`. Only screening batches.
+ * sims — is inherited unchanged from `WorkerPoolSimRunner`. Only screening batches.
  * The class name says WASM but the code is transport-blind: it builds a
  * `WorkerPool` and calls `raidSimAsync`, and under the packaged server those
  * workers are `net_worker.js` (the server rewrites the script path,
@@ -38,9 +38,9 @@ import { SimSignalManager } from '../../../../sim_signal_manager.js';
 import { WorkerPool } from '../../../../worker_pool.js';
 import type { BulkScreenRequest, BulkScreenResult } from '../engine/seams/sim-runner.js';
 import { runBulkScreenChunks } from './bulk_screen_driver.js';
-import { WasmSimRunner } from './wasm_sim_runner.js';
+import { WorkerPoolSimRunner } from './worker_pool_sim_runner.js';
 
-export class BulkHttpSimRunner extends WasmSimRunner {
+export class BulkHttpSimRunner extends WorkerPoolSimRunner {
 	private readonly bulkPool: WorkerPool;
 	private readonly bulkSignals = new SimSignalManager();
 

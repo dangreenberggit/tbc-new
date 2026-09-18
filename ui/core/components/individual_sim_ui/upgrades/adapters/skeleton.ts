@@ -15,8 +15,8 @@
  * `simOptions` and `requestId` are stripped, mirroring engine/compose.ts's
  * own `delete req.simOptions; delete req.requestId` — compose() is what
  * patches this skeleton per candidate, and PLAN.md §7 [R6] requires the
- * cache key to be formed before seed/iterations are injected. `WasmSimRunner`
- * (wasm_sim_runner.ts) is what injects them back, once, right before the
+ * cache key to be formed before seed/iterations are injected. `WorkerPoolSimRunner`
+ * (worker_pool_sim_runner.ts) is what injects them back, once, right before the
  * actual sim call.
  */
 
