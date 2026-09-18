@@ -188,9 +188,9 @@ func runBulkSim(request *proto.BulkSimRequest, progress chan *proto.ProgressMetr
 	var finalistResultsList []*BulkSimCandidateResult
 	latestBaseline, finalistResultsList, finalistMetrics = runBulkSimFinalistStage(request, latestBaseline, latestResults, finalistResults, progress, signals)
 	if finalistMetrics != nil {
-		// The finalist stage refines only its (finalistResults-sized) subset and returns just
-		// those rows (stage.go), but the client needs every candidate row (C4). Merge the
-		// refined finalists back over the full pre-stage list before truncating to topResults.
+		// The finalist stage refined only its subset, so merge those rows back over the
+		// full pre-stage list before truncating to topResults; the client needs a row per
+		// candidate.
 		latestResults = mergeBulkSimFinalists(preFinalist, finalistResultsList)
 		result.StageMetrics = append(result.StageMetrics, finalistMetrics)
 		setBulkSimStageTiming(result.Timings, proto.BulkSimStage_BulkSimStageFinalist, finalistMetrics.DurationSeconds)

@@ -72,11 +72,9 @@ func bulkSimDistributionMetricsAggregatorData(metrics *proto.DistributionMetrics
 	}
 }
 
-// bulkSimFinalistCount sizes the finalist refinement set. request.FinalistResults decouples the
-// finalist-set size from top_results, which otherwise carries two meanings at once: it both sizes
-// this refinement set and truncates the HTTP response (ticket 403/411). Zero (every upstream
-// caller) falls back to top_results, so upstream behaviour is unchanged; a positive value is
-// clamped to top_results because refining more rows than are displayed is meaningless.
+// bulkSimFinalistCount returns the finalist-set size for a request. FinalistResults
+// sets it apart from top_results, which also truncates the HTTP response. Zero, which
+// every upstream caller sends, falls back to top_results and keeps upstream behaviour.
 func bulkSimFinalistCount(request *proto.BulkSimRequest, topResults int) int {
 	if request.FinalistResults <= 0 {
 		return topResults
@@ -84,10 +82,10 @@ func bulkSimFinalistCount(request *proto.BulkSimRequest, topResults int) int {
 	return min(int(request.FinalistResults), topResults)
 }
 
-// mergeBulkSimFinalists overlays the refined finalists back onto the full result list. The
-// finalist stage returns only its refined subset (stage.go), but the client rejects a chunk whose
-// response has fewer rows than candidates (C4), so every row must survive. Non-finalist rows keep
-// their pre-stage metrics and original order; a finalist index absent from results is appended.
+// mergeBulkSimFinalists puts the refined finalists back onto the full result list.
+// The finalist stage returns only its refined subset, but the client rejects a
+// response with fewer rows than candidates, so every candidate keeps a row. A
+// non-finalist keeps its earlier metrics and order.
 func mergeBulkSimFinalists(results, finalists []*BulkSimCandidateResult) []*BulkSimCandidateResult {
 	refined := make(map[int32]*BulkSimCandidateResult, len(finalists))
 	for _, finalist := range finalists {

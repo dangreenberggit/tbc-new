@@ -244,10 +244,9 @@ func getBulkSimStageMaxSurvivors(config BulkSimStageConfig, candidateCount int) 
 // worth ranking"; this one makes the displayed ranking itself trustworthy - without it, the
 // order of near-tied top results flips between runs with different seeds.
 //
-// When the stage runs, the returned results are the refined, DPS-sorted finalists sized by the
-// topResults argument. That argument now carries the finalist-set size (request.FinalistResults),
-// which may be smaller than the displayed set, so the caller merges the refined finalists back
-// over the full result list before truncating to the displayed size (see bulk_sim.go / merge.go).
+// The returned results are the refined, DPS-sorted finalists, sized by the topResults
+// argument, which holds the finalist-set size and may be smaller than the displayed set.
+// The caller merges them back over the full result list before truncating.
 func runBulkSimFinalistStage(request *proto.BulkSimRequest, baseline *BulkSimCandidateResult, results []*BulkSimCandidateResult, topResults int, progress chan *proto.ProgressMetrics, signals simsignals.Signals) (*BulkSimCandidateResult, []*BulkSimCandidateResult, *proto.BulkSimStageMetrics) {
 	finalists := topBulkSimResults(results, topResults)
 	if len(finalists) < 2 || baseline == nil || baseline.DpsMetrics == nil {
