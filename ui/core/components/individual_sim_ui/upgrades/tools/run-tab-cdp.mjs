@@ -132,12 +132,11 @@ async function launchChrome() {
 	return { proc, wsUrl, userDataDir };
 }
 
-// Flat-protocol CDP client. Every message carries a `sessionId` on its
+// Flat-protocol CDP client. Every message has a `sessionId` on its
 // envelope (Target.setAutoAttach {flatten:true}); replies are matched by `id`
 // as before, but id-less events are dispatched to listeners registered per
-// (sessionId, method). This is the F1 fix: the sim POSTs live on worker
-// sessions, not the page session, so the harness must route by sessionId to see
-// them at all (C25).
+// (sessionId, method). The sim POSTs live on worker sessions, not the page
+// session, so the harness must route by sessionId to see them at all (C25).
 function cdp(wsUrl) {
 	const ws = new WebSocket(wsUrl);
 	let nextId = 1;
