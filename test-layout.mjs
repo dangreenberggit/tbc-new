@@ -607,7 +607,42 @@ function legibilityProbeExpression() {
 		// Every rendered cell in the sampled rows, for the clip check.
 		const allCells = rows.flatMap(tr => [...tr.querySelectorAll('td')].map(cellInfo));
 		const wrapInfo = wrap ? (() => { const s = getComputedStyle(wrap); return { overflowX: s.overflowX, clientW: wrap.clientWidth, scrollW: wrap.scrollWidth, tableScrollW: table.scrollWidth }; })() : null;
-		return { innerWidth: window.innerWidth, bodyLh, rowRects, slotCells, dpsCells, allCells, wrapInfo };
+
+		// Column alignment (ticket 423): the header cell and its body cell must
+		// share a text-align, and their box edges (right for a right-aligned
+		// column, left otherwise) must sit on the same line -- so a right-aligned
+		// DPS header reads over its right-aligned numbers, not the left. Measured
+		// on Rank (col 1), Slot (col 3) and DPS (col 4) against the first body row.
+		const headRow = table.querySelector('thead tr');
+		const bodyRow = rows[0];
+		const alignFor = n => {
+			const th = headRow ? headRow.querySelector('th:nth-child(' + n + ')') : null;
+			const td = bodyRow.querySelector('td:nth-child(' + n + ')');
+			if (!th || !td) return { col: n, missing: true };
+			const thAlign = getComputedStyle(th).textAlign;
+			const tdAlign = getComputedStyle(td).textAlign;
+			const thR = th.getBoundingClientRect();
+			const tdR = td.getBoundingClientRect();
+			const rightish = tdAlign === 'right' || tdAlign === 'end';
+			const edge = rightish ? Math.abs(thR.right - tdR.right) : Math.abs(thR.left - tdR.left);
+			return { col: n, thAlign, tdAlign, rightish, edge };
+		};
+		const columnAlign = [1, 3, 4].map(alignFor);
+
+		// BiS-badge crowding (ticket 423): a "★ BiS" badge that has wrapped BELOW
+		// the item name (its top past the name's bottom) must clear the name by at
+		// least 2px, so the tag does not sit flush against the text.
+		const badgeGaps = [];
+		for (const tr of rows) {
+			const name = tr.querySelector('.upgrades-item-name');
+			const badge = tr.querySelector('.upgrades-bis-badge');
+			if (!name || !badge) continue;
+			const nr = name.getBoundingClientRect();
+			const br = badge.getBoundingClientRect();
+			if (br.top >= nr.bottom) badgeGaps.push({ text: name.innerText, gap: br.top - nr.bottom });
+		}
+
+		return { innerWidth: window.innerWidth, bodyLh, rowRects, slotCells, dpsCells, allCells, wrapInfo, columnAlign, badgeGaps };
 	})()`;
 }
 
@@ -682,6 +717,50 @@ function assertLegibility(width, m) {
 					? `[${width}] tbody row height ${tallRow.height.toFixed(1)} > ${LINE_MULTIPLE_ROW}x line-height ${lh.toFixed(1)}`
 					: `[${width}] gap ${bigGap.gap.toFixed(1)}px between rows ${bigGap.i - 1} and ${bigGap.i} (expected adjacent)`,
 		});
+	}
+
+	// (9),(10) Narrow-width alignment (ticket 423). Only below the md breakpoint,
+	// where the Step-7 mobile SCSS applies; at 768/1280 the desktop block governs
+	// and this shape is not asserted.
+	if (width < 768) {
+		// (9) Header/body column alignment for Rank, Slot, DPS: same text-align,
+		// and the shared edge (right for a right-aligned column, left otherwise)
+		// within 1px, so a header sits over its own column's content edge.
+		const COL_NAME = { 1: 'Rank', 3: 'Slot', 4: 'DPS' };
+		const EDGE_TOL = 1; // px
+		for (const c of m.columnAlign ?? []) {
+			if (c.missing) {
+				results.push({ ok: false, msg: `[${width}] col ${c.col} alignment: header or body cell missing` });
+				continue;
+			}
+			const aligned = c.thAlign === c.tdAlign;
+			const edgeOk = c.edge <= EDGE_TOL;
+			const ok = aligned && edgeOk;
+			const side = c.rightish ? 'right' : 'left';
+			results.push({
+				ok,
+				msg: ok
+					? `[${width}] ${COL_NAME[c.col]} alignment: header/body text-align ${c.thAlign}, ${side} edges within ${c.edge.toFixed(2)}px`
+					: !aligned
+						? `[${width}] ${COL_NAME[c.col]} alignment: header text-align ${c.thAlign} != body ${c.tdAlign}`
+						: `[${width}] ${COL_NAME[c.col]} alignment: ${side} edges differ by ${c.edge.toFixed(2)}px (> ${EDGE_TOL}px)`,
+			});
+		}
+
+		// (10) BiS-tag spacing: a badge wrapped below the item name clears it by
+		// >= 2px. Passes vacuously when no badge wrapped in the sampled rows --
+		// the crowding only exists when the tag drops onto its own line.
+		{
+			const BADGE_GAP_MIN = 2; // px
+			const tight = (m.badgeGaps ?? []).find(g => g.gap < BADGE_GAP_MIN);
+			const ok = !tight;
+			results.push({
+				ok,
+				msg: ok
+					? `[${width}] BiS-tag spacing: ${(m.badgeGaps ?? []).length} wrapped badge(s), all >= ${BADGE_GAP_MIN}px below the name`
+					: `[${width}] BiS-tag "${tight.text}" only ${tight.gap.toFixed(2)}px below the item name (< ${BADGE_GAP_MIN}px)`,
+			});
+		}
 	}
 
 	return results;

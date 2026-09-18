@@ -127,6 +127,15 @@
 	margin-bottom: 0;
 }
 
+// Pre-run there are no results to filter, so the "View options" heading is an
+// empty label (ticket 415). Hide its ink with `visibility: hidden` rather than
+// `display: none` so the 2.25rem row `.upgrades-view-controls` reserves stays
+// reserved and nothing below it shifts when a run finishes (the anti-jitter
+// reservation this file's `min-height` rule depends on -- C24).
+.upgrades-view-controls--empty .upgrades-view-controls-title {
+	visibility: hidden;
+}
+
 // The phase a BiS list belongs to is a qualifier on the control, not its name,
 // so it follows the name on its own line at a smaller weight. The label stacks
 // its own text (the checkbox stays beside it via `align-items: center` on the
@@ -152,10 +161,16 @@
 	// Monospace because the content is JSON, and `resize: vertical` because a
 	// reader may want to see more of a long payload without the box being able
 	// to break the column width.
+	//
+	// Capped at 36rem (ticket 422): the payload is short `{"items":[{"id":n},…]}`
+	// lines, and six rows at 36rem show it without the box spanning the whole
+	// panel. `width: 100%` keeps it filling that cap on a narrower panel.
 	.upgrades-export-area {
 		font-family: var(--bs-font-monospace);
 		font-size: var(--bs-body-font-size);
 		resize: vertical;
+		max-width: 36rem;
+		width: 100%;
 	}
 
 	.upgrades-export-actions {
@@ -179,6 +194,16 @@
 // `.upgrades-text-secondary` uses -- not a second grey, and not
 // `--bs-secondary-color`, which renders near-black against this background.
 .upgrades-set-bonus {
+	display: block;
+	color: var(--bs-gray-500);
+	line-height: 1.2;
+}
+
+// The with-set-bonus total's "incl. Npc bonus; base +X DPS" sub-line (ticket
+// 419), under the DPS cell's main figure when set potential is on. Same
+// muted-grey sub-line treatment as `.upgrades-set-bonus` above -- it names how
+// the shown total was reached, so it reads as the same kind of secondary line.
+.upgrades-set-total {
 	display: block;
 	color: var(--bs-gray-500);
 	line-height: 1.2;
@@ -421,6 +446,16 @@
 	}
 }
 
+// The current-gear baseline summary under the ranked table (ticket 416). It
+// sits below the results as a footer, in the same de-emphasised grey the rest
+// of this tab uses for secondary text, with a little space off the table above
+// it. `.text-warning` is toggled onto it for the stopped-early tone, which wins
+// over this colour by specificity + source order as the utility is meant to.
+.upgrades-baseline-summary {
+	color: var(--bs-gray-500);
+	margin-top: var(--spacer-2);
+}
+
 // Holds one line of status in every state, so the results block below does not
 // move when statusContent() swaps one DOM shape for another (ticket 304 item
 // 5). One line of this text measured 17.5px in idle, running and done alike;
@@ -438,15 +473,6 @@
 	--bs-progress-height: 8px;
 	width: 100%;
 	max-width: 200px;
-}
-
-// The finished table sits in the site's own `.content-block`, so the header's
-// bold `h6` and its bottom border come from `_content_block.scss` and nothing
-// is redeclared here. Only the count beside the title needs a rule: it is
-// secondary to the title it follows, and uses the same `--bs-gray-500` the rest
-// of this tab uses for de-emphasised text rather than a second grey.
-.upgrades-results-count {
-	color: var(--bs-gray-500);
 }
 
 // The bulk renderer's divider, borrowed rule for rule
@@ -578,6 +604,25 @@
 			padding: var(--spacer-1);
 		}
 
+		// The item cell wraps to several lines at narrow width (name + BiS/set
+		// tags); the single-line Rank/Slot/DPS cells share its top edge rather
+		// than centring against the tall cell, so a wrapped row reads as one row
+		// (ticket 423). Symmetric intent with the desktop block's `middle`.
+		th,
+		td {
+			vertical-align: top;
+		}
+
+		// Rank is a one- or two-digit number: pare it to its content and
+		// right-align it, mirroring the desktop block so the column reads the same
+		// at both widths (ticket 423).
+		th:first-child,
+		td:first-child {
+			width: 1%;
+			white-space: nowrap;
+			text-align: right;
+		}
+
 		// Slot ("Trinket 1" is the longest label) holds a short predictable
 		// string; keeping it on one line stops a two-word label breaking at the
 		// space under width pressure. Symmetric with the desktop block.
@@ -603,6 +648,11 @@
 	.upgrades-item-cell {
 		display: flex;
 		flex-wrap: wrap;
+		// A wrapped "★ BiS" badge (and 424's set tags) needs vertical breathing
+		// room from the item name it wraps under, and the name + tags line up on
+		// their shared centre line (ticket 423).
+		row-gap: var(--spacer-1);
+		align-items: center;
 	}
 
 	.upgrades-item-link {
@@ -620,8 +670,25 @@
 	// button's padding plus its label already flexes the header row taller
 	// than 40px in `auto` layout, and pinning `height` would clip that instead
 	// of just guaranteeing a floor.
+	//
+	// `padding: 0` and `text-align: inherit` (ticket 423): the base rule pads the
+	// button by `--spacer-2`, which pushed the header label off the cell edge its
+	// body cells align to. Dropping the pad puts the header text on the same edge
+	// as its column at narrow width.
 	.upgrades-results-sort-button {
 		min-height: 40px;
+		padding: 0;
+		display: inline-flex;
+		align-items: center;
+		text-align: inherit;
+	}
+
+	// The DPS column is right-aligned (`th:nth-child(4)` above), so its header
+	// button fills the cell and pushes its label to the right edge, sitting the
+	// header text on the same edge as the numbers below it (ticket 423).
+	.upgrades-results-table th:nth-child(4) .upgrades-results-sort-button {
+		justify-content: flex-end;
+		width: 100%;
 	}
 }
 

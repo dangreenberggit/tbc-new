@@ -869,7 +869,7 @@
 			"running_rows": "{{label}} ({{count}} rows landed)"
 		},
 		"view": {
-			"title": "Filter results",
+			"title": "View options",
 			"set_potential": "Set potential",
 			"set_potential_tooltip": "When on, a row's DPS gain includes a set bonus the swap would earn. Bonuses too small to change the ranking are ignored.",
 			"only_bis": "BiS only",
@@ -880,12 +880,12 @@
 			"raid_filter_group_other": "Other sources"
 		},
 		"export": {
-			"title": "ThatsMyBis export",
-			"caveat": "Copy these raid-drop upgrades as JSON to import into a loot-priority tool.",
+			"title": "JSON export",
+			"caveat": "Copy the upgrades above as JSON.",
 			"count": "{{count}} items",
 			"copy": "Copy JSON",
 			"copied": "Copied",
-			"flavour_toggle": "Use raid-drop ids (tier tokens)",
+			"flavour_toggle": "Use tier token ids (for a loot-priority tool, e.g. ThatsMyBis)",
 			"flavour_tokens": "Emitting the token id for tier pieces — what drops in the raid.",
 			"flavour_gear": "Emitting the gear item id for every row."
 		},
@@ -893,7 +893,8 @@
 			"prospective": "{{threshold}}pc bonus ({{worn}}/{{threshold}}) (+{{dps}})",
 			"crosses": "{{threshold}}pc bonus: activated",
 			"confounded": "{{threshold}}pc bonus (+{{dps}}) breaks {{broken}} {{brokenThreshold}}pc",
-			"package_disclosure": "{{threshold}}pc bonus ({{worn}}/{{threshold}}) (+{{dps}})"
+			"package_disclosure": "{{threshold}}pc bonus ({{worn}}/{{threshold}}) (+{{dps}})",
+			"total": "incl. {{threshold}}pc bonus; base {{base}}"
 		},
 		"cutoff": {
 			"pct_arm": "cleared by %-arm",
@@ -928,7 +929,6 @@
 			"empty_unsupported_spec_body": "Ranking data has not been built for this spec yet, so there is nothing to run.",
 			"below_cutoff_group": "{{count}} item(s) below the cutoff",
 			"heading": "Upgrades",
-			"heading_count": "{{count}} above the cutoff",
 			"removes_worn": "removes worn {{name}} ({{slot}})"
 		},
 		"assumptions": {

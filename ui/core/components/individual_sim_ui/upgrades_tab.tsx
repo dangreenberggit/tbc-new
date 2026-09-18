@@ -1,4 +1,5 @@
 import { Tab } from 'bootstrap';
+import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
 import i18n from '../../../i18n/config';
@@ -30,7 +31,7 @@ import { type PartialRanking, type Progress, type RankedItem, type Ranking, type
 import { MemoryStore } from './upgrades/engine/seams/store';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
-import { applyView, raidFilterGroups, SOURCE_LABELS, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
+import { applyView, raidFilterGroups, rankableSetPotential, SOURCE_LABELS, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
 import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
 
 /**
@@ -168,7 +169,6 @@ class ViewToggle {
 		this.picker = new BooleanPicker<ViewToggle>(host, this, {
 			id: config.id,
 			label: config.label,
-			labelTooltip: config.labelTooltip,
 			extraCssClasses: config.extraCssClasses,
 			inline: true,
 			changedEvent: () => this.emitter,
@@ -178,6 +178,13 @@ class ViewToggle {
 				config.onChange();
 			},
 		});
+		// The tooltip hangs off the picker's `.form-check` root, not its
+		// `<label>` (ticket 420): `Input` attaches `labelTooltip` to the label
+		// alone (input.tsx:91-93), so hovering the checkbox showed nothing. The
+		// whole checkbox+label wrapper is one hover region here instead.
+		if (config.labelTooltip) {
+			tippy(this.picker.rootElem, { content: config.labelTooltip });
+		}
 		// The picker appends its root INTO the host; toggle `.d-none` on that
 		// root (not the host) so the class carrying the `.form-check` layout is
 		// the same one visibility acts on.
@@ -338,14 +345,20 @@ function resultsSortColumnLabel(column: ResultsSortColumn): string {
  * cell. The Rank column carries no key of its own — it is a display
  * position, not a value to sort by (see `RESULTS_SORT_COLUMNS`).
  */
-function resultsSortKey(column: ResultsSortColumn, row: ViewRow): string | number {
+function resultsSortKey(column: ResultsSortColumn, row: ViewRow, deltaKey: (row: ViewRow) => number): string | number {
 	switch (column) {
 		case 'item':
 			return row.name.toLowerCase();
 		case 'slot':
 			return slotLabel(effectiveSlot(row)).toLowerCase();
 		case 'delta_dps':
-			return row.deltaDps;
+			// The DPS column sorts on whatever figure the cell shows. With set
+			// potential on, the cell shows `deltaDps + rankableSetPotential`
+			// (ticket 419), so the header sort must key on the same total or a
+			// click would reorder the rows away from the numbers on screen (C28).
+			// `deltaKey` carries that choice from the caller, which knows the
+			// toggle state and the per-spec floor.
+			return deltaKey(row);
 		case 'source':
 			return sourceLabel(row.source).toLowerCase();
 	}
@@ -361,11 +374,11 @@ function resultsSortKey(column: ResultsSortColumn, row: ViewRow): string | numbe
  * shows each row's 1-based position in the order this function returns, so
  * sorting by another column renumbers Rank rather than leaving it fixed.
  */
-function sortRows(rows: readonly ViewRow[], sort: ResultsSort): ViewRow[] {
+function sortRows(rows: readonly ViewRow[], sort: ResultsSort, deltaKey: (row: ViewRow) => number): ViewRow[] {
 	const dir = sort.direction === 'asc' ? 1 : -1;
 	return [...rows].sort((a, b) => {
-		const ak = resultsSortKey(sort.column, a);
-		const bk = resultsSortKey(sort.column, b);
+		const ak = resultsSortKey(sort.column, a, deltaKey);
+		const bk = resultsSortKey(sort.column, b, deltaKey);
 		if (ak === bk) return 0;
 		return ak < bk ? -dir : dir;
 	});
@@ -377,6 +390,8 @@ export class UpgradesTab extends SimTab {
 	protected shoppingListElem: HTMLElement;
 	protected settingsCardElem: HTMLElement;
 	protected viewControlsHostElem: HTMLElement;
+	/** The view-controls row, so `render()` can hide its title pre-run (ticket 415). */
+	protected viewControlsElem!: HTMLElement;
 	protected eligibleCountElem!: HTMLElement;
 
 	// The run settings the pickers write through to. They are tab state, not
@@ -419,6 +434,8 @@ export class UpgradesTab extends SimTab {
 	protected statusAnnounceElem!: HTMLElement;
 	protected errorAlertElem!: HTMLElement;
 	protected resultsElem!: HTMLElement;
+	/** The baseline-summary element under the ranked table (ticket 416). */
+	protected baselineSummaryElem!: HTMLElement;
 	protected substitutionsHostElem!: HTMLElement;
 	protected exportBoxElem!: HTMLElement;
 	protected exportAreaElem!: HTMLTextAreaElement;
@@ -430,6 +447,10 @@ export class UpgradesTab extends SimTab {
 	// flavour is kept for the wowsims-shaped importer, and the caption names
 	// whichever is active. Off = gear ids, on = token ids.
 	private exportTokenFlavour = true;
+	// The export flavour picker's own change channel (ticket 422). A bare
+	// `TypedEvent`, exactly as the run-settings pickers bind to their fields, so
+	// the `BooleanPicker` re-syncs its display from `exportTokenFlavour`.
+	private readonly exportFlavourChangedEmitter = new TypedEvent<void>();
 
 	// Sub-tab nav + pane container refs, built once; panes are re-rendered by
 	// content, not recreated, so Bootstrap's Tab instances (and their active
@@ -581,6 +602,7 @@ export class UpgradesTab extends SimTab {
 		const bisPrunePickerRef = ref<HTMLDivElement>();
 		const settingsToggleRef = ref<HTMLButtonElement>();
 		const settingsBodyRef = ref<HTMLDivElement>();
+		const viewControlsRef = ref<HTMLDivElement>();
 		const setPotentialPickerRef = ref<HTMLDivElement>();
 		const bisOnlyPickerRef = ref<HTMLDivElement>();
 		const raidFilterSelectRef = ref<HTMLSelectElement>();
@@ -590,12 +612,13 @@ export class UpgradesTab extends SimTab {
 		const statusAnnounceRef = ref<HTMLDivElement>();
 		const errorAlertRef = ref<HTMLDivElement>();
 		const resultsRef = ref<HTMLDivElement>();
+		const baselineSummaryRef = ref<HTMLDivElement>();
 		const substitutionsHostRef = ref<HTMLDivElement>();
 		const exportBoxRef = ref<HTMLDivElement>();
 		const exportAreaRef = ref<HTMLTextAreaElement>();
 		const exportCountRef = ref<HTMLSpanElement>();
 		const exportCopyHostRef = ref<HTMLSpanElement>();
-		const exportFlavourToggleRef = ref<HTMLInputElement>();
+		const exportFlavourPickerRef = ref<HTMLDivElement>();
 		const exportFlavourCaptionRef = ref<HTMLParagraphElement>();
 
 		this.settingsCardElem.appendChild(
@@ -661,7 +684,7 @@ export class UpgradesTab extends SimTab {
 		);
 
 		this.viewControlsHostElem.appendChild(
-			<div className="upgrades-view-controls">
+			<div ref={viewControlsRef} className="upgrades-view-controls">
 				{/*
 				 * Named as what it does to rows already computed, so the row cannot
 				 * be read as more run settings -- the confusion that made the owner
@@ -733,6 +756,15 @@ export class UpgradesTab extends SimTab {
 				 */}
 				<div ref={resultsRef} className="upgrades-results" />
 				{/*
+				 * The baseline summary (ticket 416): "Your current gear: N DPS. Took
+				 * Ns." moved out of the top status line to sit directly under the
+				 * ranked table, so a reader gets the ranking first and the current-gear
+				 * figure as a footer rather than a header. Permanent in the DOM;
+				 * `baselineSummaryContent()` fills it on every render and leaves it
+				 * empty except in the done/stopped states.
+				 */}
+				<div ref={baselineSummaryRef} className="upgrades-baseline-summary upgrades-status-line" />
+				{/*
 				 * The ThatsMyBis export (ticket 314), with the results rather than
 				 * with the run settings: it exports what is displayed, so it belongs
 				 * next to the rows it mirrors and follows the same reasoning that
@@ -747,13 +779,13 @@ export class UpgradesTab extends SimTab {
 					 * what actually drops in the raid — the class token, not the
 					 * tier piece — so this defaults on and the caption below names
 					 * the active flavour. Off falls back to the wowsims-shaped gear
-					 * ids. A plain checkbox rather than a ViewToggle: it changes the
-					 * export FORMAT, not the ranking or which rows show.
+					 * ids. A native `BooleanPicker` (`inline: true`) rather than the
+					 * hand-rolled `<label><input>` (ticket 422): the site's own
+					 * checkbox row spaces the box from its text, the gap the
+					 * hand-rolled markup lacked. It changes the export FORMAT, not the
+					 * ranking or which rows show.
 					 */}
-					<label className="upgrades-export-flavour">
-						<input ref={exportFlavourToggleRef} type="checkbox" checked={this.exportTokenFlavour} />
-						{i18n.t('upgrades_tab.export.flavour_toggle')}
-					</label>
+					<div ref={exportFlavourPickerRef} className="upgrades-export-flavour" />
 					<p ref={exportFlavourCaptionRef} className="upgrades-export-flavour-caption" />
 					<textarea ref={exportAreaRef} className="upgrades-export-area form-control" rows={6} />
 					<div className="upgrades-export-actions">
@@ -771,6 +803,7 @@ export class UpgradesTab extends SimTab {
 			</div>,
 		);
 
+		this.viewControlsElem = viewControlsRef.value!;
 		this.eligibleCountElem = eligibleCountRef.value!;
 		this.runButton = runButtonRef.value!;
 		this.stopButton = stopButtonRef.value!;
@@ -780,9 +813,9 @@ export class UpgradesTab extends SimTab {
 		// manual `change` listener is wired below.
 		//
 		// The set-potential toggle needs an explanation of what it does to the
-		// ranking (ticket 328 item 4). `labelTooltip` attaches the site's tippy to
-		// the picker's `<label>` — the same label-element hover target the old
-		// hand-attached tippy used.
+		// ranking (ticket 328 item 4). `ViewToggle` attaches the site's tippy to
+		// the picker's `.form-check` root, so the whole checkbox+label wrapper is
+		// the hover target rather than the label alone (ticket 420).
 		this.setPotentialControl = new ViewToggle(setPotentialPickerRef.value!, {
 			id: 'upgrades-set-potential',
 			label: i18n.t('upgrades_tab.view.set_potential'),
@@ -805,6 +838,7 @@ export class UpgradesTab extends SimTab {
 		this.statusAnnounceElem = statusAnnounceRef.value!;
 		this.errorAlertElem = errorAlertRef.value!;
 		this.resultsElem = resultsRef.value!;
+		this.baselineSummaryElem = baselineSummaryRef.value!;
 		this.substitutionsHostElem = substitutionsHostRef.value!;
 		this.exportBoxElem = exportBoxRef.value!;
 		this.exportAreaElem = exportAreaRef.value!;
@@ -814,13 +848,23 @@ export class UpgradesTab extends SimTab {
 		this.exportCountElem = exportCountRef.value!;
 		this.exportFlavourCaptionElem = exportFlavourCaptionRef.value!;
 
-		// The token/gear-id flavour toggle (ticket 126). A change re-renders,
-		// which recomputes the payload through `updateExport` with the new
-		// flavour and repaints the caption — the same render-on-change pattern
-		// the view toggles use, but this one touches only the export format.
-		exportFlavourToggleRef.value!.addEventListener('change', (ev) => {
-			this.exportTokenFlavour = (ev.currentTarget as HTMLInputElement).checked;
-			this.render();
+		// The token/gear-id flavour toggle (ticket 126, ticket 422). A native
+		// `BooleanPicker` (`inline: true`) so the checkbox and its label carry the
+		// site's own spacing rather than the hand-rolled `<label><input>`'s. A
+		// change re-renders, which recomputes the payload through `updateExport`
+		// with the new flavour and repaints the caption — the same render-on-change
+		// pattern the view toggles use, but this one touches only the export format.
+		new BooleanPicker<UpgradesTab>(exportFlavourPickerRef.value!, this, {
+			id: 'upgrades-export-flavour',
+			label: i18n.t('upgrades_tab.export.flavour_toggle'),
+			inline: true,
+			changedEvent: _ => this.exportFlavourChangedEmitter,
+			getValue: _ => this.exportTokenFlavour,
+			setValue: (eventID, _obj, newValue: boolean) => {
+				this.exportTokenFlavour = newValue;
+				this.exportFlavourChangedEmitter.emit(eventID);
+				this.render();
+			},
 		});
 
 		// The site's own copy control (ticket 328): filled `btn-secondary`, the
@@ -1304,6 +1348,15 @@ export class UpgradesTab extends SimTab {
 	private render() {
 		this.runButton.disabled = this.state.kind === 'running';
 		this.stopButton.disabled = this.state.kind !== 'running';
+		// Pre-run there is nothing to filter and no results to sub-tab, so the
+		// "View options" heading and the lone "Shopping List" tab strip would be
+		// empty labels (ticket 415). Hide the title's ink (its 2.25rem row still
+		// reserves height, so nothing shifts when results arrive -- C24) and drop
+		// the nav out of flow until a run is done. `.upgrades-tab-tabs` itself
+		// stays in the DOM because the layout gate measures it (C24).
+		const done = this.state.kind === 'done';
+		this.viewControlsElem.classList.toggle('upgrades-view-controls--empty', !done);
+		this.tabNavElem.classList.toggle('d-none', !done);
 		this.refreshViewControlVisibility();
 		this.refreshRaidFilter();
 		// Hidden up front on every render; the shortlist path shows it again
@@ -1312,6 +1365,10 @@ export class UpgradesTab extends SimTab {
 		// leaves no stale payload on screen.
 		setControlVisible(this.exportBoxElem, false);
 		this.statusElem.replaceChildren(this.statusContent());
+		// Filled before `renderAnnouncement` reads it: the done/stopped summary
+		// now lives in this element rather than the top status line, so the live
+		// region announces its text (ticket 416).
+		this.baselineSummaryElem.replaceChildren(this.baselineSummaryContent());
 		this.renderAnnouncement();
 		this.renderSubTabs();
 		this.substitutionsHostElem.replaceChildren(this.substitutionsContent());
@@ -1334,7 +1391,12 @@ export class UpgradesTab extends SimTab {
 		if (kind === this.announcedKind) return;
 		this.announcedKind = kind;
 
-		const message = kind === 'error' ? i18n.t('upgrades_tab.status.error', { message: this.state.message }) : (this.statusElem.textContent?.trim() ?? '');
+		// The done/stopped summary moved to `baselineSummaryElem` (ticket 416), so
+		// the announced text is read from there for those states -- reading the
+		// now-empty top status line would announce nothing (C27). The top line
+		// still carries the announcement for idle/running and the stale warning.
+		const announceSource = kind === 'done' || kind === 'stopped' ? this.baselineSummaryElem : this.statusElem;
+		const message = kind === 'error' ? i18n.t('upgrades_tab.status.error', { message: this.state.message }) : (announceSource.textContent?.trim() ?? '');
 		const isError = kind === 'error';
 		this.errorAlertElem.replaceChildren(isError ? message : '');
 		this.statusAnnounceElem.replaceChildren(isError ? '' : message);
@@ -1364,30 +1426,57 @@ export class UpgradesTab extends SimTab {
 			}
 			case 'error':
 				return <div className="upgrades-status-line text-danger">{i18n.t('upgrades_tab.status.error', { message: this.state.message })}</div>;
+			case 'stopped':
+				// The stopped baseline moved under the table (ticket 416); the top
+				// status line has nothing left to say for this state.
+				return <></>;
+			case 'done':
+				// The done baseline ("Your current gear: N DPS. Took Ns.") moved
+				// under the table (ticket 416). Only the staleness warning stays in
+				// the top slot, because it is a caution about the results the reader
+				// is about to act on, not a footer summarising them.
+				return this.state.stale ? (
+					<div className="upgrades-status-line text-warning">
+						<strong>{i18n.t('upgrades_tab.status.stale')}</strong>
+					</div>
+				) : (
+					<></>
+				);
+		}
+	}
+
+	/**
+	 * The current-gear baseline, under the ranked table (ticket 416): "Your
+	 * current gear: N DPS. Took Ns." for a completed run, the stopped-early
+	 * variant for a Stop. Empty in every other state. Rendered into
+	 * `baselineSummaryElem` (which already carries `.upgrades-status-line`) on
+	 * every `render()`, before `renderAnnouncement` reads its text. The
+	 * stopped-early tone is a warning, so `.text-warning` is toggled on the host
+	 * rather than being a nested line.
+	 */
+	private baselineSummaryContent(): Node {
+		const stopped = this.state.kind === 'stopped';
+		this.baselineSummaryElem.classList.toggle('text-warning', stopped);
+		switch (this.state.kind) {
 			case 'stopped': {
 				const label = i18n.t('upgrades_tab.status.stopped', { dps: this.state.ranking.baseline.dps.toFixed(1) });
 				return (
-					<div className="upgrades-status-line text-warning">
+					<>
 						<span>{label}</span>
 						{this.elapsedContent()}
-					</div>
+					</>
 				);
 			}
 			case 'done': {
 				const label = i18n.t('upgrades_tab.status.done', { dps: this.state.ranking.baseline.dps.toFixed(1) });
-				return this.state.stale ? (
-					<div className="upgrades-status-line text-warning">
-						<span>{label}</span>
-						<span>—</span>
-						<strong>{i18n.t('upgrades_tab.status.stale')}</strong>
-						{this.elapsedContent()}
-					</div>
-				) : (
-					<div className="upgrades-status-line">
+				return (
+					<>
 						{label} {this.elapsedContent()}
-					</div>
+					</>
 				);
 			}
+			default:
+				return <></>;
 		}
 	}
 
@@ -1693,6 +1782,20 @@ export class UpgradesTab extends SimTab {
 		};
 	}
 
+	/**
+	 * The DPS-column sort key for the header sort (ticket 419, C28). With set
+	 * potential on and a per-spec floor in hand, the key is the same
+	 * `deltaDps + rankableSetPotential` total the cell shows and the engine sorted
+	 * on (view.ts's `sortKeyFor`); otherwise it is the bare `deltaDps`. Passed
+	 * into `sortRows`/`resultsSortKey`, which are module-level and cannot reach
+	 * the toggle or the floor themselves.
+	 */
+	private deltaSortKey(noiseFloorDps: number | undefined): (row: ViewRow) => number {
+		const withSetPotential = this.setPotentialControl.checked && noiseFloorDps !== undefined;
+		if (!withSetPotential) return row => row.deltaDps;
+		return row => row.deltaDps + rankableSetPotential(row, noiseFloorDps);
+	}
+
 	private resultsContent(view: ViewResult | undefined, noiseFloorDps: number | undefined): Node {
 		if (this.state.kind === 'running') {
 			// Skeleton fill (candidate-pool.md §5.1.5): show rows as they land
@@ -1734,9 +1837,9 @@ export class UpgradesTab extends SimTab {
 		//
 		// The same sort the table applies is applied here, so the payload order
 		// is the displayed order including a column-sort click.
-		const exported = this.resultsSort ? sortRows(view.shortlist, this.resultsSort) : view.shortlist;
+		const exported = this.resultsSort ? sortRows(view.shortlist, this.resultsSort, this.deltaSortKey(noiseFloorDps)) : view.shortlist;
 		this.updateExport(exported);
-		return this.resultsBlock(this.rowsTable(view.shortlist, view.rows, noiseFloorDps), view.shortlist.length);
+		return this.resultsBlock(this.rowsTable(view.shortlist, view.rows, noiseFloorDps));
 	}
 
 	/**
@@ -1752,12 +1855,11 @@ export class UpgradesTab extends SimTab {
 	 * second one above them would say the same thing twice, and the running
 	 * skeleton has no final count to name yet.
 	 */
-	private resultsBlock(table: Node, shortlistCount: number): Node {
+	private resultsBlock(table: Node): Node {
 		return (
 			<div className="upgrades-results-block content-block">
 				<div className="content-block-header">
 					<h6 className="content-block-title">{i18n.t('upgrades_tab.results.heading')}</h6>
-					<span className="upgrades-results-count">{i18n.t('upgrades_tab.results.heading_count', { count: shortlistCount })}</span>
 				</div>
 				<div className="content-block-body">{table}</div>
 			</div>
@@ -1872,7 +1974,7 @@ export class UpgradesTab extends SimTab {
 			// gives the same answer, so the body points at the filters instead.
 			return this.emptyState(i18n.t('upgrades_tab.results.empty_no_upgrades'), i18n.t('upgrades_tab.results.empty_no_upgrades_body'));
 		}
-		const sortedShortlist = this.resultsSort ? sortRows(shortlist, this.resultsSort) : shortlist;
+		const sortedShortlist = this.resultsSort ? sortRows(shortlist, this.resultsSort, this.deltaSortKey(noiseFloorDps)) : shortlist;
 		const table = (
 			<table className="upgrades-results-table table table-sm">
 				{this.sortableResultsTableHead()}
@@ -2005,7 +2107,7 @@ export class UpgradesTab extends SimTab {
 		// header buttons live on the shortlist table only, but a below-cutoff
 		// row group under a sorted shortlist reading in the old engine order
 		// would look like the sort silently stopped at the fold.
-		const sorted = this.resultsSort ? sortRows(rows, this.resultsSort) : rows;
+		const sorted = this.resultsSort ? sortRows(rows, this.resultsSort, this.deltaSortKey(noiseFloorDps)) : rows;
 		// Numbered 1..N within this table, independent of the shortlist above it
 		// (owner ruling, ticket 287 follow-through): the below-cutoff group is
 		// its own set of displayed items, not a continuation of the shortlist's
@@ -2044,7 +2146,26 @@ export class UpgradesTab extends SimTab {
 	 * correctness fix; its visual polish is a follow-up (styling wave).
 	 */
 	private resultRow(row: RankedItem, display: { rankText: string }, noiseFloorDps: number | undefined, cutoff?: Cutoff): Node {
-		const deltaLabel = formatDelta(row.deltaDps);
+		// With set potential on, the DPS cell's main figure is the same total the
+		// ranking sorted on -- `deltaDps + rankableSetPotential` (ticket 419) --
+		// with the bare delta named underneath so the two figures cannot be
+		// confused. The engine adds exactly this bonus to `deltaDps` when the
+		// toggle is on (view.ts's `sortKeyFor`), so showing the total here makes
+		// the number match the row's position. Off, or on a row with no rankable
+		// bonus (or the mid-run skeleton, where `noiseFloorDps` is absent), the
+		// cell is exactly what it was.
+		const setBonus =
+			this.setPotentialControl.checked && noiseFloorDps !== undefined ? rankableSetPotential(row, noiseFloorDps) : 0;
+		const showSetTotal = setBonus > 0;
+		const deltaLabel = formatDelta(showSetTotal ? row.deltaDps + setBonus : row.deltaDps);
+		const setTotalLine = showSetTotal ? (
+			<small className="upgrades-set-total">
+				{i18n.t('upgrades_tab.set_bonus.total', {
+					threshold: row.setContext?.nextThreshold ?? 0,
+					base: formatDelta(row.deltaDps),
+				})}
+			</small>
+		) : null;
 		const setLine = this.setBonusLine(row, noiseFloorDps);
 		const setPackageLine = this.setPackageLine(row, noiseFloorDps);
 		const removedLine = this.removedItemsLine(row);
@@ -2062,6 +2183,7 @@ export class UpgradesTab extends SimTab {
 				<td>{slotLabel(effectiveSlot(row))}</td>
 				<td>
 					{deltaLabel}
+					{setTotalLine}
 					{setLine}
 					{setPackageLine}
 					{removedLine}
