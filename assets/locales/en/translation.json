@@ -905,7 +905,7 @@
 			"total_inline": "with {{threshold}}pc bonus (+{{dps}})",
 			"available": "{{threshold}}pc bonus possible",
 			"hover_cue": "hover for {{threshold}}pc bonus",
-			"inline": "+{{dps}} from {{threshold}}pc",
+			"inline": "{{threshold}}pc: +{{dps}} DPS",
 			"tip_base": "Before set bonus: {{base}}",
 			"tip_total": "Total with set bonus: {{total}} (what the rows are ranked by)"
 		},
