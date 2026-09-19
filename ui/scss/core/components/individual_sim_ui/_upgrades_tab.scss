@@ -34,6 +34,22 @@
 	padding-top: var(--gap-width);
 }
 
+// Let a tall settings panel scroll itself (ticket 439). At `xl` and up the panel
+// is the sticky sidebar beside the results; once its content is taller than the
+// viewport below the header, its lower part is unreachable and a wheel over it
+// scrolls the results (`.sim-ui`) instead. Bounding it to the visible height and
+// giving it its own overflow mirrors the native sidebar's
+// `.sim-sidebar-content { overflow-y: auto }` (`sim_ui/_sidebar.scss:20-25`).
+// Scoped to `xl` only: below it the panel stacks above the results
+// (`media-breakpoint-down(xl)` above) and should scroll with the page, not carry
+// an inner scrollbar.
+@include media-breakpoint-up(xl) {
+	.upgrades-settings-outer-container {
+		max-height: calc(100vh - var(--sim-header-height));
+		overflow-y: auto;
+	}
+}
+
 .upgrades-settings-container {
 	padding: var(--spacer-3);
 	border: var(--border-default);
