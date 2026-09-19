@@ -23,7 +23,8 @@
 		"fmt:fix": "npx oxfmt ui",
 		"type-check": "node_modules/typescript/bin/tsc --noEmit",
 		"test:locales": "node ./test-locales.mjs",
-		"test:layout": "node ./test-layout.mjs"
+		"test:layout": "node ./test-layout.mjs",
+		"test:review": "node ./test-review.mjs"
 	},
 	"dependencies": {
 		"@popperjs/core": "^2.11.8",
@@ -58,6 +59,7 @@
 		"@types/minimist": "^1.2.5",
 		"@types/node": "^22.0.0",
 		"@types/uuid": "^10.0.0",
+		"axe-core": "4.13.0",
 		"cross-env": "^7.0.3",
 		"eslint-plugin-simple-import-sort": "^14.0.0",
 		"glob": "^13.0.6",

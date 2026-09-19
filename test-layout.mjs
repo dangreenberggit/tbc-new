@@ -1,4 +1,4 @@
-// A DOM-geometry layout gate for the Upgrades tab (ticket 322).
+// A DOM-geometry + accessibility layout gate for the Upgrades tab (ticket 322).
 //
 // The five fork gates are all static (test:locales, lint:css, type-check,
 // lint:js, fmt): none renders the page, so a layout regression -- an element
@@ -9,272 +9,56 @@
 // widths and asserts a handful of structural facts by measuring the live DOM.
 //
 // It drives an on-disk Chromium (Playwright's, already present) over raw CDP on
-// Node 22's global WebSocket -- no puppeteer, no playwright, no jsdom, nothing
-// added to package.json. The scout's probe proved ~40 lines of session plumbing
-// is enough; that plumbing is `cdp()` below.
+// Node 22's global WebSocket -- no puppeteer, no playwright, no jsdom. The
+// shared plumbing (build/serve/launch/attach/evaluate) lives in
+// test-tab-harness.mjs so test-review.mjs can reuse it; this file keeps the
+// assertions and main().
 //
 // The assertions are measured against the pre-run shell, which every viewport
 // renders without a sim: the Upgrades tab builds its whole structure
 // (settings card, view-controls host, sub-tab strip) in its constructor, so no
 // WASM run is needed to see the layout the SCSS promises.
+//
+// Accessibility (visual-a11y-reviewer stage): after each pre-run probe and each
+// post-run legibility probe, axe-core runs on #upgrades-tab and a keyboard focus
+// walk runs pre-run. A violation with impact critical/serious and a WCAG tag,
+// not in the baseline (TBC_A11Y_BASELINE), fails the gate; moderate/minor,
+// best-practice-only and baselined entries print as WARN. The verdict line
+// carries a11yFailed / a11yWarned so check_layout_gate.py's contract is
+// unchanged (it already blocks on any measured nonzero exit).
 
-import { spawn } from 'node:child_process';
-import { createServer } from 'node:net';
+import {
+	__dirname,
+	OUT_DIR,
+	PAGE_PATH,
+	WIDTHS,
+	HEIGHT,
+	sleep,
+	verdict,
+	freePort,
+	findChromium,
+	run,
+	WASM_CANDIDATES,
+	build,
+	startServer,
+	launchChrome,
+	cdp,
+	attachPage,
+	evaluate,
+	RUN_WIDTH,
+	RUN_DEADLINE_MS,
+	MIN_ROWS,
+	startRunExpression,
+	rowCountExpression,
+	axeRun,
+	focusWalk,
+	a11yClassify,
+} from './test-tab-harness.mjs';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OUT_ROOT = path.join(__dirname, 'dist'); // http-server root: the app uses absolute /tbc/... paths
-const OUT_DIR = path.join(OUT_ROOT, 'tbc');
-const PAGE_PATH = '/tbc/paladin/retribution/'; // the scout's spec
-const WIDTHS = [375, 653, 768, 1280]; // 375 phone, 653 narrow (covers the sub-768 legibility band), 768 tablet, 1280 above xl=1200 where the grid is active
-const HEIGHT = 900;
 const OVERFLOW_TOL = 2; // px; sub-pixel rounding and scrollbar-less overflow slack
-
-// ---------------------------------------------------------------------------
-// Small helpers
-// ---------------------------------------------------------------------------
-
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-// The machine-readable verdict, one tagged JSON line on stdout.
-//
-// This gate exits 1 for two unrelated things: geometry it MEASURED and found
-// wrong, and a crash before it measured anything (a missing prereq, a rotted
-// browser path, a build failure). A caller that reads only the exit code
-// cannot tell them apart, and reporting the second as "the layout is broken"
-// is a false accusation. So state which happened:
-//   outcome:"measured"   -- widths were rendered and asserted; `failed` counts
-//                           real geometry failures (0 means green).
-//   outcome:"unmeasured" -- nothing was measured; `reason` is the first line
-//                           of the error. Says nothing about the layout.
-const VERDICT_TAG = 'LAYOUT_GATE_VERDICT';
-
-function verdict(outcome, extra) {
-	try {
-		console.log(`${VERDICT_TAG} ${JSON.stringify({ outcome, ...extra })}`);
-	} catch {
-		// Never let reporting the verdict change the exit code.
-	}
-}
-
-function freePort() {
-	return new Promise((resolve, reject) => {
-		const srv = createServer();
-		srv.on('error', reject);
-		srv.listen(0, '127.0.0.1', () => {
-			const { port } = srv.address();
-			srv.close(() => resolve(port));
-		});
-	});
-}
-
-function findChromium() {
-	const explicit = 'C:\\Users\\dgree\\AppData\\Local\\ms-playwright\\chromium-1200\\chrome-win64\\chrome.exe';
-	if (fs.existsSync(explicit)) return explicit;
-	// The pinned build can move; fall back to any chromium under ms-playwright.
-	const base = path.join(os.homedir(), 'AppData', 'Local', 'ms-playwright');
-	if (fs.existsSync(base)) {
-		for (const dir of fs.readdirSync(base)) {
-			if (!dir.startsWith('chromium-')) continue;
-			const exe = path.join(base, dir, 'chrome-win64', 'chrome.exe');
-			if (fs.existsSync(exe)) return exe;
-		}
-	}
-	throw new Error(`no Chromium found under ${base} -- expected a Playwright chromium-*/chrome-win64/chrome.exe`);
-}
-
-// ---------------------------------------------------------------------------
-// Build: refresh the JS/CSS bundle from the current tab source.
-//
-// The committed dist bundle is stale the moment any tab source or SCSS file
-// changes, and a gate run against stale dist proves nothing about the code that
-// changed. lib.wasm and assets/ are produced by the standard `make host` and
-// are layout-irrelevant (the shell renders without a sim), so this refreshes
-// only the three steps that turn tab source into the bundle: tsc --noEmit, the
-// worker build, and `vite build`. It fails loudly if lib.wasm or assets/ are
-// absent, because those must already be on disk from a prior full build.
-// ---------------------------------------------------------------------------
-
-function run(cmd, args, label) {
-	return new Promise((resolve, reject) => {
-		const p = spawn(cmd, args, { cwd: __dirname, shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
-		let tail = '';
-		const keep = d => {
-			tail = (tail + d.toString()).slice(-4000);
-		};
-		p.stdout.on('data', keep);
-		p.stderr.on('data', keep);
-		p.on('error', reject);
-		p.on('exit', code => {
-			if (code === 0) resolve();
-			else reject(new Error(`${label} exited ${code}\n${tail}`));
-		});
-	});
-}
-
-// The makefile's wasm recipe ends with `gzip -9 -f -n $(OUT_DIR)/lib.wasm`,
-// which REPLACES the uncompressed file -- so after a plain `make host` only
-// lib.wasm.gz is on disk, and the gzipped form is the one the app fetches
-// (SIM_WASM_URL in ui/core/worker_pool.ts). Requiring the uncompressed name
-// made this gate throw on every normal build. Either form proves the WASM
-// build completed; nothing here reads the bytes.
-const WASM_CANDIDATES = ['lib.wasm.gz', 'lib.wasm'];
-
-async function build() {
-	const wasmPresent = WASM_CANDIDATES.filter(name => fs.existsSync(path.join(OUT_DIR, name)));
-	if (wasmPresent.length === 0)
-		throw new Error(
-			`dist/tbc/lib.wasm.gz (or dist/tbc/lib.wasm) is missing -- run \`make host\` once to produce the WASM/assets this gate builds the bundle on top of`,
-		);
-	if (!fs.existsSync(path.join(OUT_DIR, 'assets')))
-		throw new Error(`dist/tbc/assets is missing -- run \`make host\` once to produce the assets the page loads`);
-
-	console.log('building bundle (tsc --noEmit)...');
-	await run('node', ['node_modules/typescript/bin/tsc', '--noEmit'], 'tsc');
-	console.log('building bundle (workers)...');
-	await run('npx', ['tsx', 'vite.build-workers.mts'], 'vite.build-workers');
-	console.log('building bundle (vite build)...');
-	await run('npx', ['vite', 'build'], 'vite build');
-	// `vite build` was observed to empty the WASM out of dist/. Re-check the
-	// exact file(s) that were there before the build, not a fixed name, so the
-	// protection survives whichever form `make host` left behind.
-	const wasmLost = wasmPresent.filter(name => !fs.existsSync(path.join(OUT_DIR, name)));
-	if (wasmLost.length)
-		throw new Error(`vite build emptied ${wasmLost.map(n => `dist/tbc/${n}`).join(' and ')} -- expected it to be left in place`);
-	console.log('bundle built.');
-}
-
-// ---------------------------------------------------------------------------
-// http-server: serve dist/ (the fork's already-present dependency).
-// ---------------------------------------------------------------------------
-
-async function startServer() {
-	const port = await freePort();
-	const p = spawn('npx', ['http-server', OUT_ROOT, '-p', String(port), '-a', '127.0.0.1', '--silent', '-c-1'], {
-		cwd: __dirname,
-		shell: true,
-		stdio: 'ignore',
-	});
-	// Wait until it answers.
-	const deadline = Date.now() + 15000;
-	while (Date.now() < deadline) {
-		try {
-			const res = await fetch(`http://127.0.0.1:${port}${PAGE_PATH}`);
-			if (res.ok) return { proc: p, port };
-		} catch {
-			// not up yet
-		}
-		await sleep(150);
-	}
-	p.kill();
-	throw new Error('http-server did not answer in time');
-}
-
-// ---------------------------------------------------------------------------
-// CDP session over the global WebSocket.
-// ---------------------------------------------------------------------------
-
-async function launchChrome() {
-	const port = await freePort();
-	const exe = findChromium();
-	const userDataDir = await fsp.mkdtemp(path.join(os.tmpdir(), 'tbc-layout-'));
-	const proc = spawn(
-		exe,
-		[
-			'--headless=new',
-			'--no-sandbox',
-			'--disable-gpu',
-			'--hide-scrollbars',
-			'--disable-dev-shm-usage',
-			`--remote-debugging-port=${port}`,
-			`--user-data-dir=${userDataDir}`,
-			'about:blank',
-		],
-		{ stdio: 'ignore' },
-	);
-	// Poll /json/version for the browser-level WebSocket URL.
-	const deadline = Date.now() + 20000;
-	let wsUrl;
-	while (Date.now() < deadline) {
-		try {
-			const res = await fetch(`http://127.0.0.1:${port}/json/version`);
-			if (res.ok) {
-				wsUrl = (await res.json()).webSocketDebuggerUrl;
-				if (wsUrl) break;
-			}
-		} catch {
-			// not up yet
-		}
-		await sleep(150);
-	}
-	if (!wsUrl) {
-		proc.kill();
-		throw new Error('Chromium CDP endpoint did not come up');
-	}
-	return { proc, port, wsUrl, userDataDir };
-}
-
-// A minimal CDP client: send(method, params) -> result, with event waiting.
-function cdp(wsUrl) {
-	const ws = new WebSocket(wsUrl);
-	let nextId = 1;
-	const pending = new Map();
-	const listeners = new Set();
-	ws.addEventListener('message', ev => {
-		const msg = JSON.parse(ev.data);
-		if (msg.id != null && pending.has(msg.id)) {
-			const { resolve, reject } = pending.get(msg.id);
-			pending.delete(msg.id);
-			if (msg.error) reject(new Error(`${msg.error.message} (${JSON.stringify(msg.params ?? {})})`));
-			else resolve(msg.result);
-		} else if (msg.method) {
-			for (const l of listeners) l(msg);
-		}
-	});
-	const ready = new Promise((resolve, reject) => {
-		ws.addEventListener('open', resolve, { once: true });
-		ws.addEventListener('error', () => reject(new Error('CDP WebSocket error')), { once: true });
-	});
-	function send(method, params = {}, sessionId) {
-		const id = nextId++;
-		const payload = { id, method, params };
-		if (sessionId) payload.sessionId = sessionId;
-		return new Promise((resolve, reject) => {
-			pending.set(id, { resolve, reject });
-			ws.send(JSON.stringify(payload));
-		});
-	}
-	function onEvent(fn) {
-		listeners.add(fn);
-		return () => listeners.delete(fn);
-	}
-	return { ready, send, onEvent, close: () => ws.close() };
-}
-
-// Attach to a fresh page target and return a session-scoped send().
-async function attachPage(client) {
-	const { targetId } = await client.send('Target.createTarget', { url: 'about:blank' });
-	const { sessionId } = await client.send('Target.attachToTarget', { targetId, flatten: true });
-	const send = (method, params) => client.send(method, params, sessionId);
-	await send('Page.enable', {});
-	await send('Runtime.enable', {});
-	return { send, targetId };
-}
-
-// Evaluate an expression in the page and return its JSON value.
-async function evaluate(send, expression) {
-	const { result, exceptionDetails } = await send('Runtime.evaluate', {
-		expression,
-		returnByValue: true,
-		awaitPromise: true,
-	});
-	if (exceptionDetails) throw new Error(`page eval threw: ${exceptionDetails.text} ${exceptionDetails.exception?.description ?? ''}`);
-	return result.value;
-}
 
 // ---------------------------------------------------------------------------
 // The assertions.
@@ -513,15 +297,10 @@ function assertAll(width, m) {
 // assertions the owner asked for target the results table, which does not
 // exist until a run lands rows. So this phase drives a real headless WASM run
 // -- the gate's own Chromium runs the sim with no Go backend (probed feasible:
-// 5 rows in ~42s) -- then measures the landed cells. The sim runs ONCE, on one
-// page at 653px; the widths are re-emulated on that same page (rows survive a
-// device-metrics change without reload -- verified), so the ~40s cost is paid
-// a single time.
+// 5 rows in ~42s) -- then measures the landed cells. RUN_WIDTH / RUN_DEADLINE_MS
+// / MIN_ROWS come from the harness.
 // ---------------------------------------------------------------------------
 
-const RUN_WIDTH = 653; // narrow enough to reproduce the sub-md legibility defect
-const RUN_DEADLINE_MS = 120000; // ~3x the measured 42s to first 5 rows
-const MIN_ROWS = 5;
 const LINE_MULTIPLE_ONE_LINE = 1.5; // content height <= 1.5x line-height == one line
 // A tbody row's height is set by its tallest cell, not by the Slot/DPS text:
 // the Item cell carries a 1.5rem icon and its item name is content-sized with
@@ -534,23 +313,6 @@ const LINE_MULTIPLE_ONE_LINE = 1.5; // content height <= 1.5x line-height == one
 // (that is what assertion 6 asserts, on the cells directly).
 const LINE_MULTIPLE_ROW = 7; // a tbody row <= 7x line-height (icon + wrapped item name)
 const CLIP_TOL = 2; // px slack for scroll/clientWidth comparison
-
-// Activate the Upgrades tab and click Run. Returns { ok } or { error }.
-function startRunExpression() {
-	return `(async () => {
-		const waitFor = async (fn, ms) => { const end = Date.now()+ms; while (Date.now()<end) { const v=fn(); if (v) return v; await new Promise(r=>setTimeout(r,100)); } return fn(); };
-		const navBtn = await waitFor(() => document.querySelector('button[data-bs-target="#upgrades-tab"]'), 30000);
-		if (!navBtn) return { error: 'upgrades-tab nav button never appeared (app did not boot?)' };
-		navBtn.click();
-		const runBtn = await waitFor(() => document.querySelector('.upgrades-run-button'), 15000);
-		if (!runBtn) return { error: 'upgrades run button never appeared' };
-		runBtn.click();
-		return { ok: true };
-	})()`;
-}
-
-// Count landed result rows. Polled until >= MIN_ROWS or the deadline.
-const rowCountExpression = `document.querySelectorAll('.upgrades-results-table tbody tr').length`;
 
 // Measure the first MIN_ROWS rows' Slot (col 3) and DPS (col 4) cells plus the
 // scroller state, at the current emulated width. Returns a plain object so all
@@ -772,6 +534,35 @@ function assertLegibility(width, m) {
 }
 
 // ---------------------------------------------------------------------------
+// Accessibility helpers (visual-a11y-reviewer stage).
+// ---------------------------------------------------------------------------
+
+// The baseline of known/accepted a11y violations, read from TBC_A11Y_BASELINE.
+// Absent env -> empty baseline (strict: every critical/serious WCAG violation
+// then fails). Shape: { _comment, entries: [{ ruleId, selector, ticket?, reason? }] }.
+function readA11yBaseline() {
+	const p = process.env.TBC_A11Y_BASELINE;
+	if (!p) return [];
+	try {
+		const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+		return Array.isArray(data.entries) ? data.entries : [];
+	} catch (err) {
+		console.error(`a11y baseline: could not read ${p} (${err.message}); running strict (empty baseline)`);
+		return [];
+	}
+}
+
+// The fork HEAD, for the dump's provenance. A git absence returns null rather
+// than crashing the gate.
+function gitForkHead() {
+	try {
+		return execFileSync('git', ['-C', __dirname, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
+	} catch {
+		return null;
+	}
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -788,6 +579,35 @@ async function main() {
 
 	const failures = [];
 	const passes = [];
+
+	// a11y state (visual-a11y-reviewer stage).
+	const baseline = readA11yBaseline();
+	const a11yFailures = [];
+	const a11yWarnings = [];
+	const a11yDump = []; // every raw violation, for baseline seeding via TBC_A11Y_DUMP
+	const baselineMatched = new Set();
+	let focusUnmeasured = false;
+
+	const collectAxe = async (send, state, width) => {
+		const res = await axeRun(send, '#upgrades-tab');
+		for (const v of res.violations || []) {
+			for (const n of v.nodes || []) {
+				a11yDump.push({
+					state,
+					width,
+					ruleId: v.id,
+					impact: v.impact,
+					help: v.help,
+					helpUrl: v.helpUrl,
+					tags: v.tags,
+					selector: (n.target || []).join(' '),
+					html: n.html,
+					failureSummary: n.failureSummary,
+				});
+			}
+		}
+		return res;
+	};
 
 	try {
 		for (const width of WIDTHS) {
@@ -814,6 +634,19 @@ async function main() {
 				if (r.ok) passes.push(r.msg);
 				else failures.push(r.msg);
 			}
+
+			// a11y: axe + focus walk on the pre-run shell at this width.
+			const axeRes = await collectAxe(send, 'pre-run', width);
+			const walk = await focusWalk(send, '#upgrades-tab');
+			if (walk.unmeasured) focusUnmeasured = true;
+			const cls = a11yClassify(axeRes.violations, walk, baseline, { state: 'pre-run', width });
+			for (const i of cls.matched) baselineMatched.add(i);
+			for (const f of cls.fail) a11yFailures.push(f);
+			for (const w of cls.warn) a11yWarnings.push(w);
+			if (cls.fail.length === 0)
+				passes.push(
+					`a11y [pre-run ${width}] no unbaselined critical/serious violations (axe ${axeRes.ms}ms${walk.unmeasured ? ', focus-walk unmeasured' : `, ${walk.missed.length} focus miss`})`,
+				);
 		}
 
 		// Run phase: one real WASM run at RUN_WIDTH, then re-emulate each width
@@ -851,6 +684,16 @@ async function main() {
 							if (r.ok) passes.push(r.msg);
 							else failures.push(r.msg);
 						}
+
+						// a11y: axe only on the post-run results at this width (no
+						// focus walk post-run -- the pre-run walk covers operability).
+						const axeRes = await collectAxe(send, 'post-run', width);
+						const cls = a11yClassify(axeRes.violations, null, baseline, { state: 'post-run', width });
+						for (const i of cls.matched) baselineMatched.add(i);
+						for (const f of cls.fail) a11yFailures.push(f);
+						for (const w of cls.warn) a11yWarnings.push(w);
+						if (cls.fail.length === 0)
+							passes.push(`a11y [post-run ${width}] no unbaselined critical/serious violations (axe ${axeRes.ms}ms)`);
 					}
 				}
 			}
@@ -866,19 +709,61 @@ async function main() {
 		}
 	}
 
+	// Stale-baseline warnings: entries that never fired this run.
+	for (let i = 0; i < baseline.length; i++) {
+		if (!baselineMatched.has(i)) {
+			const e = baseline[i];
+			a11yWarnings.push(`WARN a11y stale-baseline ${e.ruleId} ${e.selector} (never fired this run -- remove it)`);
+		}
+	}
+
+	// Opt-in dump of every raw violation, for seeding the baseline (Step 10).
+	if (process.env.TBC_A11Y_DUMP) {
+		try {
+			const forkHead = gitForkHead();
+			fs.writeFileSync(
+				process.env.TBC_A11Y_DUMP,
+				JSON.stringify({ forkHead, generatedAt: new Date().toISOString(), violations: a11yDump }, null, 2) + '\n',
+			);
+			console.log(`a11y dump: wrote ${a11yDump.length} raw violation(s) to ${process.env.TBC_A11Y_DUMP}`);
+		} catch (err) {
+			console.error(`a11y dump: could not write ${process.env.TBC_A11Y_DUMP} (${err.message})`);
+		}
+	}
+
 	console.log('\n--- passed ---');
 	for (const p of passes) console.log('  PASS ' + p);
 
-	if (failures.length) {
-		console.log('\n--- FAILED ---');
-		for (const f of failures) console.log('  FAIL ' + f);
-		console.error(`\nlayout gate: ${failures.length} failure(s) across widths ${WIDTHS.join(', ')}`);
-		verdict('measured', { passed: passes.length, failed: failures.length });
+	if (a11yWarnings.length) {
+		console.log('\n--- a11y warnings ---');
+		for (const w of a11yWarnings) console.log('  ' + w);
+	}
+
+	if (focusUnmeasured) {
+		console.log(
+			'\n  WARN a11y focus-walk unmeasured -- synthetic Tab did not move DOM focus in this headless browser; operability was not checked (C23).',
+		);
+	}
+
+	const anyFail = failures.length || a11yFailures.length;
+	if (anyFail) {
+		if (failures.length) {
+			console.log('\n--- FAILED (layout) ---');
+			for (const f of failures) console.log('  FAIL ' + f);
+		}
+		if (a11yFailures.length) {
+			console.log('\n--- FAILED (a11y) ---');
+			for (const f of a11yFailures) console.log('  ' + f);
+		}
+		console.error(
+			`\nlayout gate: ${failures.length} layout failure(s) and ${a11yFailures.length} a11y failure(s) across widths ${WIDTHS.join(', ')}`,
+		);
+		verdict('measured', { passed: passes.length, failed: failures.length, a11yFailed: a11yFailures.length, a11yWarned: a11yWarnings.length });
 		process.exit(1);
 	}
 
 	console.log(`\nlayout gate: OK -- ${passes.length} assertion(s) passed at widths ${WIDTHS.join(', ')}`);
-	verdict('measured', { passed: passes.length, failed: 0 });
+	verdict('measured', { passed: passes.length, failed: 0, a11yFailed: 0, a11yWarned: a11yWarnings.length });
 	process.exit(0);
 }
 
