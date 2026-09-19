@@ -314,7 +314,13 @@ const clickRun = `(async () => {
 
 const pollDone = ms => `(async () => {
 	const deadline = Date.now() + ${ms};
-	const statusText = () => (document.querySelector('.upgrades-status')?.innerText ?? '');
+	// Ticket 416 moved the "Your current gear: N DPS. Took Ns." done line out of
+	// .upgrades-status into .upgrades-baseline-summary, so the done signal is read
+	// from both. "Ranking failed" still renders in .upgrades-status.
+	const statusText = () => [
+		document.querySelector('.upgrades-status')?.innerText ?? '',
+		document.querySelector('.upgrades-baseline-summary')?.innerText ?? '',
+	].join(' ');
 	while (Date.now() < deadline) {
 		const t = statusText();
 		if (/Took\\s/i.test(t)) { window.__harnessDoneAt = performance.now(); return {done:true, status:t}; }
