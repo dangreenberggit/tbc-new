@@ -1484,8 +1484,11 @@ export class UpgradesTab extends SimTab {
 		// now lives in this element rather than the top status line, so the live
 		// region announces its text (ticket 416).
 		this.baselineSummaryElem.replaceChildren(this.baselineSummaryContent());
-		this.renderAnnouncement();
 		this.renderSubTabs();
+		// Announce AFTER the results host is populated (ticket 427, F5): the idle /
+		// unsupported-spec text now lives only in the empty state that
+		// `renderSubTabs` writes, so announcing before it exists would speak "".
+		this.renderAnnouncement();
 		this.substitutionsHostElem.replaceChildren(this.substitutionsContent());
 	}
 
@@ -1506,11 +1509,20 @@ export class UpgradesTab extends SimTab {
 		if (kind === this.announcedKind) return;
 		this.announcedKind = kind;
 
-		// The done/stopped summary moved to `baselineSummaryElem` (ticket 416), so
-		// the announced text is read from there for those states -- reading the
-		// now-empty top status line would announce nothing (C27). The top line
-		// still carries the announcement for idle/running and the stale warning.
-		const announceSource = kind === 'done' || kind === 'stopped' ? this.baselineSummaryElem : this.statusElem;
+		// The done/stopped summary moved to `baselineSummaryElem` (ticket 416) and
+		// the idle / unsupported-spec purpose moved to the empty state (ticket 427),
+		// so the announced text is read from wherever the state's copy now lives --
+		// reading the now-blank top status line would announce nothing (C27, F5).
+		// The top line still carries the announcement for running and the stale
+		// warning.
+		let announceSource: HTMLElement;
+		if (kind === 'done' || kind === 'stopped') {
+			announceSource = this.baselineSummaryElem;
+		} else if (kind === 'idle' || kind === 'unsupported-spec') {
+			announceSource = this.resultsElem.querySelector<HTMLElement>('.upgrades-empty-state') ?? this.statusElem;
+		} else {
+			announceSource = this.statusElem;
+		}
 		const message = kind === 'error' ? i18n.t('upgrades_tab.status.error', { message: this.state.message }) : (announceSource.textContent?.trim() ?? '');
 		const isError = kind === 'error';
 		this.errorAlertElem.replaceChildren(isError ? message : '');
@@ -1520,9 +1532,18 @@ export class UpgradesTab extends SimTab {
 	private statusContent(): Node {
 		switch (this.state.kind) {
 			case 'idle':
-				return <div className="upgrades-status-line">{i18n.t('upgrades_tab.status.idle')}</div>;
 			case 'unsupported-spec':
-				return <div className="upgrades-status-line">{i18n.t('upgrades_tab.status.unsupported_spec')}</div>;
+				// The pre-run purpose and the Run CTA live in the centred empty
+				// state (`resultsContent`, ticket 427) so the tab says why it
+				// exists exactly once. The top status slot stays blank here; its
+				// `.upgrades-status` min-height reserves the row so nothing shifts
+				// when a run fills it (C18). The idle top-line key is no longer
+				// rendered but stays in the locale and schema (still required, C25a);
+				// ticket 432 decides its long-term fate. The empty state draws its
+				// own copy from `results.empty_no_ranking(_body)` and, for
+				// unsupported specs, the top-line unsupported key plus
+				// `results.empty_unsupported_spec_body`.
+				return <></>;
 			case 'running': {
 				// Row-landed count (candidate-pool.md §5.1.5), not just the stage
 				// label — "Simming 12/246" is more useful mid-run than the stage
