@@ -468,6 +468,11 @@ export class UpgradesTab extends SimTab {
 	// say (ticket 424). Page-session state; the run captures nothing extra, it
 	// just unions these back into `effectivePool`.
 	private guaranteedSetKeys = new Set<string>();
+	// The specId:maxPhase the current default selection was resolved for (ticket
+	// 433). refreshSetChips re-applies the universe-BiS default only when this
+	// changes, so a user untick survives a gear-change refresh but a phase or
+	// spec change re-resolves to the new phase's default.
+	private defaultSetsScope: string | undefined;
 	protected statusElem!: HTMLElement;
 	/** Last kind written to a live region, so a re-render within one state stays silent. */
 	private announcedKind: RunState['kind'] | undefined;
@@ -1814,6 +1819,35 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
+	 * The preset set keys the universe's "BiS" tag speaks for at this spec/phase
+	 * (ticket 433) -- the default selection restored on load and on every
+	 * spec/phase change, matching what the old yellow "BiS" badge marked.
+	 *
+	 * A preset qualifies when it leads the phase the tag resolves to
+	 * (`bisTagPhaseFor().tagsFromPhase`, which is the newest vendored curated
+	 * phase <= maxPhase and can be older than maxPhase when the curated set
+	 * degrades) AND every one of its in-pool items is bisTags-tagged, with at
+	 * least one in the pool. Both conditions are load-bearing: the id test alone
+	 * over-selects (feral P3's ids also satisfy the P4 BiS pair), and the phase
+	 * test alone admits same-phase non-BiS presets (feral P3 "Alt", ret P3
+	 * "Bulwark"). Saved sets carry no phase and never default.
+	 */
+	private defaultGuaranteedSetKeys(specId: SpecId, maxPhase: ContentPhase): Set<string> {
+		const tagPhase = bisTagPhaseFor(specId, maxPhase)?.tagsFromPhase;
+		if (tagPhase === undefined) return new Set<string>();
+		const pool = poolFor(specId, maxPhase);
+		const poolIds = new Set(pool.map(e => e.itemId));
+		const bisIds = new Set(pool.filter(e => e.bisTags?.includes('BiS')).map(e => e.itemId));
+		const keys = new Set<string>();
+		for (const set of this.guaranteedSetsAvailable()) {
+			if (!set.key.startsWith('preset:') || set.phase !== tagPhase) continue;
+			const inPool = [...set.itemIds].filter(id => poolIds.has(id));
+			if (inPool.length > 0 && inPool.every(id => bisIds.has(id))) keys.add(set.key);
+		}
+		return keys;
+	}
+
+	/**
 	 * The item ids kept in the pool by the currently-selected sets (ticket 424),
 	 * across every available set whose key is selected. Empty when nothing is
 	 * selected, so the union in `effectivePool` is then a no-op.
@@ -1854,6 +1888,16 @@ export class UpgradesTab extends SimTab {
 		// unioning items invisibly.
 		const liveKeys = new Set(sets.map(s => s.key));
 		for (const key of [...this.guaranteedSetKeys]) if (!liveKeys.has(key)) this.guaranteedSetKeys.delete(key);
+
+		// Restore the universe-BiS default whenever the spec/phase changes (ticket
+		// 433). The scope guard runs the default once per specId:maxPhase, so a
+		// user untick survives the gear-change refreshes that also reach here (C39),
+		// while a phase or spec change re-resolves to the new phase's default.
+		const scope = `${specId}:${maxPhase}`;
+		if (scope !== this.defaultSetsScope) {
+			this.guaranteedSetKeys = this.defaultGuaranteedSetKeys(specId, maxPhase as ContentPhase);
+			this.defaultSetsScope = scope;
+		}
 
 		for (const set of sets) {
 			const inPool = [...set.itemIds].filter(id => poolIds.has(id)).length;
