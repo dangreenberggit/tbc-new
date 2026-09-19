@@ -922,7 +922,7 @@
 			"delta_dps_value": "{{delta}} DPS",
 			"source": "Source",
 			"owned": "Owned",
-			"bis_badge": "★ BiS",
+			"bis_badge": "BiS",
 			"alt_badge": "Alt",
 			"empty_no_ranking": "No ranking yet",
 			"empty_no_ranking_body": "This tab ranks gear upgrades against the character and settings on this page. Press Run to start.",

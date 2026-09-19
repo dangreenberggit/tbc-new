@@ -129,13 +129,9 @@
 	margin-bottom: 0;
 }
 
-// The per-row set tag (ticket 424). A neutral grey badge, deliberately distinct
-// from the BiS badge's `--bs-warning`, so a set tag and a BiS badge read as two
-// different things on the same row.
-.upgrades-set-tag {
-	background-color: var(--bs-gray-600);
-	color: var(--bs-body-color);
-}
+// (Ticket 430 removed the old grey second-badge rule: a row now carries one tag
+// vocabulary in one class, `.upgrades-bis-badge` -- the set name when a selected
+// set holds the row, else the generic BiS/Alt.)
 
 // Stop and Import are secondary to Run, so they share a row below it at
 // outline weight -- the action-cluster idiom of `.bulk-gear-actions`
@@ -627,9 +623,11 @@
 	flex-shrink: 0;
 }
 
-// BiS/Alt badges, the site's own `badge rounded-pill` idiom (saved-gear-set
-// chips: gear_tab.ts, preset_configuration_picker.tsx) rather than the
-// inline "★ BiS"/"Alt" text this replaces.
+// The single per-row tag class (ticket 430): the set name when a selected set
+// holds the row, else the generic "BiS"/"Alt" from bisTags. The site's own
+// `badge rounded-pill` idiom (saved-gear-set chips: gear_tab.ts,
+// preset_configuration_picker.tsx). One vocabulary, one warning-yellow colour --
+// the old grey second badge was dropped in ticket 430.
 .upgrades-bis-badge {
 	background-color: var(--bs-warning);
 	color: var(--bs-dark);

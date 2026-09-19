@@ -411,9 +411,11 @@ function sortRows(rows: readonly ViewRow[], sort: ResultsSort, deltaKey: (row: V
  * A gear set the user can guarantee into the sim (ticket 424): a phase-BiS
  * preset or a saved gear set, reduced to the item ids it contains so a result
  * row's membership is an exact id test. `phase` is the preset's numeric `Phase`
- * (absent for saved sets, which carry none); `label` is the display tag.
+ * (absent for saved sets, which carry none); `label` is the chip's display text
+ * ("P3 - BiS 9%"); `name` is the bare set name ("BiS 9%") the gear tab shows,
+ * used as a result row's tag (ticket 430) rather than the phase-prefixed label.
  */
-type GuaranteedSet = { key: string; label: string; phase?: number; itemIds: Set<number> };
+type GuaranteedSet = { key: string; label: string; name: string; phase?: number; itemIds: Set<number> };
 
 export class UpgradesTab extends SimTab {
 	readonly simUI: IndividualSimUI<any>;
@@ -1788,7 +1790,7 @@ export class UpgradesTab extends SimTab {
 			// end-of-string, so a bare "P2" name is kept as-is (not "P2 - P2").
 			const encodesPhase = phase !== undefined && new RegExp(`^p${phase}($|[^0-9])`, 'i').test(preset.name);
 			const label = phase === undefined || encodesPhase ? preset.name : `P${phase} - ${preset.name}`;
-			sets.push({ key: `preset:${phase ?? ''}:${preset.name}`, label, phase, itemIds: idsOf(preset.gear) });
+			sets.push({ key: `preset:${phase ?? ''}:${preset.name}`, label, name: preset.name, phase, itemIds: idsOf(preset.gear) });
 		}
 
 		try {
@@ -1798,7 +1800,7 @@ export class UpgradesTab extends SimTab {
 				for (const [name, value] of Object.entries(stored)) {
 					try {
 						const saved = SavedGearSet.fromJson(value as any);
-						sets.push({ key: `saved:${name}`, label: name, itemIds: idsOf(saved.gear) });
+						sets.push({ key: `saved:${name}`, label: name, name, itemIds: idsOf(saved.gear) });
 					} catch {
 						// A malformed saved entry is skipped, matching loadUserData.
 						console.warn(`[upgrades] skipping malformed saved gear set "${name}"`);
@@ -2758,26 +2760,51 @@ export class UpgradesTab extends SimTab {
 	 * tooltip-link markup so the browser's wowhead script picks it up
 	 * identically to any other item link on the page.
 	 */
+	/**
+	 * The yellow tag text for one result row (ticket 430): the name of each
+	 * SELECTED set whose items include the row, as the gear tab shows it (the bare
+	 * `name`, "BiS 9%", not the phase-prefixed chip `label`). Set membership, not
+	 * the universe's `bisTags`, defines "BiS" here -- `bisTags` is a bare enum with
+	 * no set identity and its sibling `bisSets` holds phase tokens, never a preset
+	 * name (C7/C8), so it cannot say which same-phase preset an item is in. When
+	 * two selected sets share a `name` (e.g. P2 and P3 "BiS 9%"), the tags are
+	 * disambiguated to "P{phase} {name}" so they do not read identically; a set
+	 * with no phase (a saved set) keeps its bare name. Empty when no selected set
+	 * contains the row -- the caller then falls back to the generic bisTags badge.
+	 */
+	private rowTagLabels(row: RankedItem): string[] {
+		const selected = this.guaranteedSetsAvailable().filter(set => this.guaranteedSetKeys.has(set.key) && set.itemIds.has(row.itemId));
+		return selected.map(set => {
+			const shared = selected.some(other => other !== set && other.name === set.name);
+			return shared && set.phase !== undefined ? `P${set.phase} ${set.name}` : set.name;
+		});
+	}
+
 	private itemCell(row: RankedItem): Node {
 		const nameElem = ref<HTMLElement>();
 		const iconElem = ref<HTMLImageElement>();
 		const anchorElem = ref<HTMLAnchorElement>();
-		const bisLabel = row.bisTags.includes('BiS')
-			? i18n.t('upgrades_tab.results.bis_badge')
-			: row.bisTags.includes('Alt')
-				? i18n.t('upgrades_tab.results.alt_badge')
-				: undefined;
 
-		// Always-sim set tags (ticket 424): one badge per selected set whose items
-		// include this row, formatted with the set's label. Item membership is an
-		// exact id test against the set's `itemIds` -- the universe's set tokens are
-		// phase strings, not set names, so they cannot name which same-phase preset
-		// an item belongs to (C20/C21).
-		const setTags = this.guaranteedSetsAvailable()
-			.filter(set => this.guaranteedSetKeys.has(set.key) && set.itemIds.has(row.itemId))
-			.map(set => (
-				<span className="badge rounded-pill upgrades-set-tag ms-1">{set.label}</span>
-			));
+		// One tag vocabulary, one class, one colour (ticket 430, the unified rule):
+		//  (a)/(b) a row in >=1 selected set gets one yellow `.upgrades-bis-badge`
+		//          per selected set containing it, labelled from the set's own name;
+		//          the generic bisTags badge is suppressed. Set membership defines
+		//          "BiS" -- the universe's bisTags is a phase-scoped derivation from
+		//          an older pin of the same preset files (C12), so any disagreement
+		//          is data lag, not a second concept.
+		//  (c) a row in no selected set falls back to a single generic "BiS"/"Alt"
+		//          from bisTags, in the SAME badge class, because that flag still
+		//          drives the "BiS only" view filter and the BiS prune (C13). The
+		//          `.upgrades-bis-badge` class is deliberately kept (not renamed) so
+		//          the layout gate's `.upgrades-bis-badge` probe stays live (C23).
+		const tags = this.rowTagLabels(row);
+		const bisLabel = row.bisTags.includes('BiS') ? i18n.t('upgrades_tab.results.bis_badge') : row.bisTags.includes('Alt') ? i18n.t('upgrades_tab.results.alt_badge') : undefined;
+		const badges =
+			tags.length > 0
+				? tags.map(tag => <span className="badge rounded-pill upgrades-bis-badge ms-1">{tag}</span>)
+				: bisLabel
+					? [<span className="badge rounded-pill upgrades-bis-badge ms-1">{bisLabel}</span>]
+					: [];
 
 		const cell = (
 			<span className="upgrades-item-cell">
@@ -2787,8 +2814,7 @@ export class UpgradesTab extends SimTab {
 						{row.name}
 					</span>
 				</a>
-				{bisLabel ? <span className="badge rounded-pill upgrades-bis-badge ms-1">{bisLabel}</span> : null}
-				{setTags}
+				{badges}
 				{row.owned ? <span className="upgrades-text-secondary ms-1">{`(${i18n.t('upgrades_tab.results.owned')})`}</span> : null}
 			</span>
 		);
