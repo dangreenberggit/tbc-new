@@ -869,7 +869,7 @@
 			"idle": "Ranks upgrades against your current gear and settings on this page.",
 			"unsupported_spec": "This spec has no ranking data yet.",
 			"error": "Ranking failed: {{message}}",
-			"error_engine_unreachable": "Couldn't load the sim engine. Reload the page; if it keeps happening, the server isn't serving the sim worker.",
+			"error_sim_unavailable": "Couldn't run the sim. Refresh the page and try again.",
 			"done": "Your current gear: {{dps}} DPS.",
 			"elapsed": "Took {{seconds}}s.",
 			"stale": "settings changed since this ranking — results may be out of date",
