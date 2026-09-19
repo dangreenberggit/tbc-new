@@ -897,7 +897,10 @@
 			"crosses": "{{threshold}}pc bonus: activated",
 			"confounded": "{{threshold}}pc bonus (+{{dps}}) breaks {{broken}} {{brokenThreshold}}pc",
 			"package_disclosure": "{{threshold}}pc bonus ({{worn}}/{{threshold}}) (+{{dps}})",
-			"total": "incl. {{threshold}}pc bonus; base {{base}}"
+			"total": "with {{threshold}}pc bonus",
+			"available": "{{threshold}}pc bonus possible",
+			"tip_base": "Base: {{base}}",
+			"tip_total": "Total with set bonus: {{total}} (the ranked figure)"
 		},
 		"cutoff": {
 			"pct_arm": "cleared by %-arm",

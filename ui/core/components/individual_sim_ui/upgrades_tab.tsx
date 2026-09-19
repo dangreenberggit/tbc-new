@@ -1870,7 +1870,7 @@ export class UpgradesTab extends SimTab {
 				<button
 					type="button"
 					className={`saved-data-set-chip badge rounded-pill upgrades-set-chip${active ? ' active' : ''}${unavailable ? ' upgrades-set-chip--unavailable' : ''}`}
-					attributes={{ 'aria-pressed': String(active), ...(unavailable ? { 'aria-disabled': 'true' } : {}) }}>
+					attributes={{ 'aria-pressed': active ? 'true' : 'false', ...(unavailable ? { 'aria-disabled': 'true' } : {}) }}>
 					<span className="saved-data-set-name" attributes={{ role: 'button' }} ref={nameRef}>
 						{set.label}
 					</span>
@@ -2236,7 +2236,7 @@ export class UpgradesTab extends SimTab {
 			<table className="upgrades-results-table upgrades-results-table-provisional table table-sm">
 				{resultsTableHead()}
 				{/* Mid-run skeleton: no ranking yet, so no per-spec floor exists —
-				    pass undefined and `setBonusLine` skips the prospective line. */}
+				    pass undefined and `setBonusPresentation` shows nothing. */}
 				<tbody>{sorted.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }, undefined))}</tbody>
 			</table>
 		);
@@ -2451,8 +2451,8 @@ export class UpgradesTab extends SimTab {
 	 *
 	 * `noiseFloorDps` is the per-spec set-bonus floor from the done ranking's
 	 * frozen cutoff, or `undefined` on the mid-run skeleton path (no ranking
-	 * exists yet); it is threaded straight to `setBonusLine`, which skips the
-	 * prospective-bonus line when the floor is absent (tickets 331, 332).
+	 * exists yet); it is threaded straight to `setBonusPresentation`, which shows
+	 * no set-bonus qualifier or tooltip when the floor is absent (tickets 331, 332).
 	 *
 	 * `cutoff` is the same done ranking's frozen cutoff (or `undefined` mid-run),
 	 * threaded so a row admitted above the fold by the percentage arm alone can
@@ -2474,16 +2474,11 @@ export class UpgradesTab extends SimTab {
 			this.setPotentialControl.checked && noiseFloorDps !== undefined ? rankableSetPotential(row, noiseFloorDps) : 0;
 		const showSetTotal = setBonus > 0;
 		const deltaLabel = formatDelta(showSetTotal ? row.deltaDps + setBonus : row.deltaDps);
-		const setTotalLine = showSetTotal ? (
-			<small className="upgrades-set-total">
-				{i18n.t('upgrades_tab.set_bonus.total', {
-					threshold: row.setContext?.nextThreshold ?? 0,
-					base: formatDelta(row.deltaDps),
-				})}
-			</small>
-		) : null;
-		const setLine = this.setBonusLine(row, noiseFloorDps);
-		const setPackageLine = this.setPackageLine(row, noiseFloorDps);
+		// The DPS cell shows the ranked figure plus at most one short sub-line; the
+		// base-delta / per-threshold breakdown moves into a tippy tooltip on the
+		// cell (ticket 431). `deltaLabel` (the total the row sorted on, C16) is
+		// unchanged.
+		const setBonus_ = this.setBonusPresentation(row, noiseFloorDps, showSetTotal, deltaLabel);
 		const removedLine = this.removedItemsLine(row);
 		const cutoffArmLine = cutoff && cutoffAdmittingArm(row.deltaDps, row.deltaPct, cutoff) === 'pct'
 			? (
@@ -2492,19 +2487,25 @@ export class UpgradesTab extends SimTab {
 				</small>
 			)
 			: null;
+		const dpsCellRef = ref<HTMLTableCellElement>();
+		const dpsCell = (
+			// `tabIndex=0` only when a tooltip exists, so keyboard focus opens the
+			// breakdown (F6: a focusable trigger, not a hover-only fallback); a cell
+			// with no tip stays out of the tab order.
+			<td ref={dpsCellRef} attributes={setBonus_.tip ? { tabindex: '0' } : {}}>
+				{deltaLabel}
+				{setBonus_.line}
+				{removedLine}
+				{cutoffArmLine}
+			</td>
+		) as HTMLTableCellElement;
+		if (setBonus_.tip) tippy(dpsCellRef.value!, { content: setBonus_.tip });
 		return (
 			<tr className={row.owned ? 'upgrades-row-owned' : ''}>
 				<td>{display.rankText}</td>
 				<td>{this.itemCell(row)}</td>
 				<td>{slotLabel(effectiveSlot(row))}</td>
-				<td>
-					{deltaLabel}
-					{setTotalLine}
-					{setLine}
-					{setPackageLine}
-					{removedLine}
-					{cutoffArmLine}
-				</td>
+				{dpsCell}
 				<td>{sourceCell(row, this.simUI.sim)}</td>
 			</tr>
 		);
@@ -2614,38 +2615,48 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * How much of this row's figure is set bonus (ticket 313). The text is
-	 * informational and renders in BOTH toggle states with identical wording
-	 * (owner revision 2): the set-potential toggle governs only whether
-	 * prospective bonuses affect the ranking/sort, not whether the text shows.
+	 * The DPS cell's set-bonus presentation (ticket 431): at most one short
+	 * `<small>` qualifier line for the cell, and a tippy tooltip carrying the full
+	 * base-delta / per-threshold breakdown. Splits what were `setBonusLine` (313)
+	 * and `setPackageLine` (336) so the cell stays one line and the detail moves
+	 * behind hover/focus. The 330-approved strings (`prospective`, `crosses`,
+	 * `confounded`, `package_disclosure`) are reused verbatim; the gating that
+	 * decides when each renders is unchanged.
 	 *
-	 * The number shown is the raw `prospectiveBonusDps`, which is exactly what
-	 * the view adds to `deltaDps` when the toggle is on (`view.ts:163,169-172`).
-	 * The report path discounts its own figure through `SET_POTENTIAL_WEIGHTS`;
-	 * that weighting does not apply here, and showing a discounted number would
-	 * fail to reconcile with the on-screen ordering.
+	 * The figure the toggle governs is the sort key, not this text: the qualifier
+	 * and tooltip render in both toggle states with the same wording (owner rev
+	 * 2). `prospectiveBonusDps` is the raw figure the view adds to `deltaDps`
+	 * (`view.ts:163,169-172`), never the report's `SET_POTENTIAL_WEIGHTS`-
+	 * discounted one, so it reconciles with the on-screen order.
 	 *
-	 * Four states, which must not be able to be read as one another:
+	 * The confounded and crossing states each carry their own single line and no
+	 * tooltip: confounded is a disclosure the view refuses to rank on (ticket 90),
+	 * and crossing's bonus is already inside `deltaDps` (a second figure would be
+	 * double-counted). The tooltip exists only when a prospective or package line
+	 * would have rendered -- the states that have a base / total to break down.
 	 *
-	 * (a) prospective — the bonus is *not* yet inside `deltaDps`, so it is shown
-	 *     as a separate figure with the piece counts that would earn it.
-	 * (b) crossing — the bonus is already inside `deltaDps`. No second number,
-	 *     or a reader would add it to the delta a second time.
-	 * (c) confounded — the figure is inflated by breaking another set bonus and
-	 *     the view refuses to rank on it (ticket 90), so it is disclosed with
-	 *     that said plainly rather than presented as a clean gain.
-	 * (d) a set context with no populated bonus and no crossing — a real state
-	 *     (`rank.ts:1431-1440` only populates `prospectiveBonusDps` when the
-	 *     swap advances the piece count below a threshold) with nothing to say.
+	 * `packages[]` disclosure (ticket 336) surfaces a reachable HIGHER-threshold
+	 * bonus the nearest-threshold prospective line does not show (a 2pc-
+	 * implemented set silent about a real 4pc). It is disclosure, never credit:
+	 * it reads `packages[]` only, adds nothing to `deltaDps`, and the sort keys
+	 * off `prospectiveBonusDps` in `view.ts`, never `packages[]`. Gated to
+	 * packages above the shown threshold whose measured `deltaDps` clears the same
+	 * per-spec noise floor, and never in the confounded/crossing states.
 	 */
-	private setBonusLine(row: RankedItem, noiseFloorDps: number | undefined): Node | null {
+	private setBonusPresentation(
+		row: RankedItem,
+		noiseFloorDps: number | undefined,
+		showSetTotal: boolean,
+		deltaLabel: string,
+	): { line: Node | null; tip: HTMLElement | null } {
 		const ctx = row.setContext;
-		if (!ctx) return null;
+		if (!ctx) return { line: null, tip: null };
 
+		// Confounded and crossing: one line, no breakdown tooltip.
 		const breaks = ctx.prospectiveBonusBreaks;
 		if (breaks?.length) {
 			const broken = breaks[0];
-			return (
+			const line = (
 				<small className="upgrades-set-bonus upgrades-set-bonus-confounded">
 					{i18n.t('upgrades_tab.set_bonus.confounded', {
 						dps: (ctx.prospectiveBonusDps ?? 0).toFixed(1),
@@ -2655,111 +2666,76 @@ export class UpgradesTab extends SimTab {
 					})}
 				</small>
 			);
+			return { line, tip: null };
 		}
-
 		if (ctx.crossesThreshold) {
-			return (
-				<small className="upgrades-set-bonus">{i18n.t('upgrades_tab.set_bonus.crosses', { threshold: ctx.piecesAfterSwap })}</small>
-			);
+			const line = <small className="upgrades-set-bonus">{i18n.t('upgrades_tab.set_bonus.crosses', { threshold: ctx.piecesAfterSwap })}</small>;
+			return { line, tip: null };
 		}
 
-		// Only surface a bonus that clears sim noise. The floor is per-spec
-		// (`setBonusNoiseFloorDps` of the ranking's OWN frozen cutoff), threaded
-		// in as a parameter so display and ranking gate every displayed row on
-		// the same number — never a live picker lookup, which may have moved
-		// since the run (tickets 331, 332). When the floor is absent the row came
-		// from the mid-run skeleton, which carries no ranking; it has no honest
-		// floor to gate against yet, so the prospective line is skipped entirely.
-		// A near-zero measurement shown raw reads as a real figure -- "-4.1 set
-		// bonus" looks like a negative bonus when the honest statement is
-		// "nothing measurable". Noise reduction is a separate item (ticket 105).
-		if (
+		// Prospective and package breakdown. Only surface figures that clear the
+		// per-spec sim-noise floor of the ranking's OWN frozen cutoff (threaded in,
+		// never a live picker lookup that may have moved since the run -- tickets
+		// 331/332). An absent floor means the mid-run skeleton, which has no honest
+		// floor yet, so nothing is disclosed. A near-zero raw figure ("-4.1") reads
+		// as a real negative bonus when the honest statement is "nothing
+		// measurable"; noise reduction is a separate item (ticket 105).
+		const hasProspective =
 			noiseFloorDps !== undefined &&
 			ctx.prospectiveBonusDps !== undefined &&
 			ctx.prospectiveBonusDps > noiseFloorDps &&
-			ctx.nextThreshold !== null
-		) {
-			return (
-				<small className="upgrades-set-bonus">
-					{i18n.t('upgrades_tab.set_bonus.prospective', {
-						worn: ctx.piecesWornBefore,
-						dps: ctx.prospectiveBonusDps.toFixed(1),
-						threshold: ctx.nextThreshold,
-					})}
-				</small>
-			);
-		}
-
-		return null;
-	}
-
-	/**
-	 * Discloses a reachable HIGHER-threshold set bonus the row's own line does
-	 * not show (ticket 336). `setBonusLine` shows the nearest measurable
-	 * threshold only — for a 2pc-implemented tier set that stops at the 2pc and
-	 * the row is silent about a 4pc that is a real, reachable upgrade (feral
-	 * Thunderheart 4pc measures +64 DPS in committed data). The 4pc figure
-	 * already rides on the row as `setContext.packages[]`; the tab just never
-	 * rendered it.
-	 *
-	 * This is DISCLOSURE, never credit. It re-implements the report path's
-	 * package-as-card idea locally — `packages/core/src/rank-report.ts:136-142`
-	 * (the per-row `pkg` span) and `rank-report-rules.ts:669-686`
-	 * (`formatPackageMembershipLine`) — which the fork cannot import
-	 * (upgrades_tab.tsx:262-263). Ticket 91 deliberately rejected smearing 4pc
-	 * credit onto the row number, and this line does the same: it reads
-	 * `packages[]` only, writes no number the sort consults (the sort keys off
-	 * `prospectiveBonusDps` in `view.ts`, never `packages[]`), and adds nothing
-	 * to `deltaDps`.
-	 *
-	 * Gating, so a disclosed figure never reads as a clean measured gain the row
-	 * did not earn (the text itself renders in both toggle states, owner rev 2):
-	 * - Only packages ABOVE the threshold the row already shows
-	 *   (`ctx.nextThreshold`), so this never duplicates that line.
-	 * - Only packages whose measured `deltaDps` clears the same per-spec noise
-	 *   floor the prospective line uses, so a sub-noise or negative package (ret
-	 *   4pc is noise-around-zero) is not surfaced as a real bonus.
-	 * - Never in the confounded or crossing states: those carry their own line,
-	 *   and a confounded package is not a clean disclosure (ticket 90).
-	 */
-	private setPackageLine(row: RankedItem, noiseFloorDps: number | undefined): Node | null {
-		if (noiseFloorDps === undefined) return null;
-		const ctx = row.setContext;
-		if (!ctx || !ctx.packages || ctx.packages.length === 0) return null;
-		if (ctx.crossesThreshold || ctx.prospectiveBonusBreaks?.length) return null;
-
+			ctx.nextThreshold !== null;
 		const shownThreshold = ctx.nextThreshold ?? 0;
-		const reachable = ctx.packages
-			.filter(pkg => pkg.threshold > shownThreshold && pkg.deltaDps > noiseFloorDps)
-			.sort((a, b) => a.threshold - b.threshold);
-		if (reachable.length === 0) return null;
+		const packages =
+			noiseFloorDps !== undefined && ctx.packages?.length
+				? ctx.packages.filter(pkg => pkg.threshold > shownThreshold && pkg.deltaDps > noiseFloorDps).sort((a, b) => a.threshold - b.threshold)
+				: [];
 
-		return (
-			<>
-				{reachable.map(pkg => (
-					<small className="upgrades-set-package">
+		if (!hasProspective && packages.length === 0) return { line: null, tip: null };
+
+		// The one cell line: the total qualifier when the toggle folded a bonus
+		// into the shown figure, else the "possible" qualifier at the lowest
+		// reachable threshold (the prospective threshold if present, else the
+		// lowest disclosed package).
+		const lowestReachable = hasProspective ? (ctx.nextThreshold as number) : packages[0].threshold;
+		const line = (
+			<small className="upgrades-set-bonus">
+				{showSetTotal
+					? i18n.t('upgrades_tab.set_bonus.total', { threshold: ctx.nextThreshold ?? 0 })
+					: i18n.t('upgrades_tab.set_bonus.available', { threshold: lowestReachable })}
+			</small>
+		);
+
+		// The tooltip: base, then the 330 prospective and package lines verbatim
+		// (same gating as the old cell lines), then the total when it is shown.
+		const tip = (
+			<div className="upgrades-set-bonus-tip">
+				<div>{i18n.t('upgrades_tab.set_bonus.tip_base', { base: formatDelta(row.deltaDps) })}</div>
+				{hasProspective ? (
+					<div>
+						{i18n.t('upgrades_tab.set_bonus.prospective', {
+							worn: ctx.piecesWornBefore,
+							dps: (ctx.prospectiveBonusDps as number).toFixed(1),
+							threshold: ctx.nextThreshold,
+						})}
+					</div>
+				) : null}
+				{packages.map(pkg => (
+					<div>
 						{i18n.t('upgrades_tab.set_bonus.package_disclosure', {
 							worn: ctx.piecesWornBefore,
 							dps: pkg.deltaDps.toFixed(1),
 							threshold: pkg.threshold,
 						})}
-					</small>
+					</div>
 				))}
-			</>
-		);
+				{showSetTotal ? <div>{i18n.t('upgrades_tab.set_bonus.tip_total', { total: deltaLabel })}</div> : null}
+			</div>
+		) as HTMLElement;
+
+		return { line, tip };
 	}
 
-	/**
-	 * The Item cell: icon + quality-coloured name + wowhead tooltip link, the
-	 * same idiom `item_list.tsx`'s `createItemElem` uses for every other item
-	 * row on the site (WP3). `RankedItem` carries only `itemId`/`name`, not
-	 * quality or an icon URL, so both come from `ActionId.fromItemId` --
-	 * `.fill()` resolves them the same way the gear picker's own list items do
-	 * (icon URL and canonical name from wowhead/local data), and
-	 * `setWowheadHref` + the `whtticon: false` dataset flag reproduce the same
-	 * tooltip-link markup so the browser's wowhead script picks it up
-	 * identically to any other item link on the page.
-	 */
 	/**
 	 * The yellow tag text for one result row (ticket 430): the name of each
 	 * SELECTED set whose items include the row, as the gear tab shows it (the bare
@@ -2780,6 +2756,17 @@ export class UpgradesTab extends SimTab {
 		});
 	}
 
+	/**
+	 * The Item cell: icon + quality-coloured name + wowhead tooltip link, the
+	 * same idiom `item_list.tsx`'s `createItemElem` uses for every other item
+	 * row on the site (WP3). `RankedItem` carries only `itemId`/`name`, not
+	 * quality or an icon URL, so both come from `ActionId.fromItemId` --
+	 * `.fill()` resolves them the same way the gear picker's own list items do
+	 * (icon URL and canonical name from wowhead/local data), and
+	 * `setWowheadHref` + the `whtticon: false` dataset flag reproduce the same
+	 * tooltip-link markup so the browser's wowhead script picks it up
+	 * identically to any other item link on the page.
+	 */
 	private itemCell(row: RankedItem): Node {
 		const nameElem = ref<HTMLElement>();
 		const iconElem = ref<HTMLImageElement>();

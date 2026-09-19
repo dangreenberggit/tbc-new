@@ -8956,10 +8956,19 @@
 						},
 						"total": {
 							"type": "string"
+						},
+						"available": {
+							"type": "string"
+						},
+						"tip_base": {
+							"type": "string"
+						},
+						"tip_total": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["prospective", "crosses", "confounded", "package_disclosure", "total"]
+					"required": ["prospective", "crosses", "confounded", "package_disclosure", "total", "available", "tip_base", "tip_total"]
 				},
 				"cutoff": {
 					"type": "object",

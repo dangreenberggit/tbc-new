@@ -254,17 +254,13 @@
 // `--bs-gray-500` is the tab's own muted-text colour, the same one
 // `.upgrades-text-secondary` uses -- not a second grey, and not
 // `--bs-secondary-color`, which renders near-black against this background.
+// The DPS cell's single set-bonus qualifier line (ticket 431): "with Npc bonus"
+// when set potential folded a bonus into the shown figure, else "Npc bonus
+// possible". `line-height: 1.2` is load-bearing -- the layout gate measures the
+// landed DPS cell against 1.5x line-height, so the figure plus this one sub-line
+// must stay within that budget (C30). The base-delta / per-threshold breakdown
+// moved into the cell's tooltip.
 .upgrades-set-bonus {
-	display: block;
-	color: var(--bs-gray-500);
-	line-height: 1.2;
-}
-
-// The with-set-bonus total's "incl. Npc bonus; base +X DPS" sub-line (ticket
-// 419), under the DPS cell's main figure when set potential is on. Same
-// muted-grey sub-line treatment as `.upgrades-set-bonus` above -- it names how
-// the shown total was reached, so it reads as the same kind of secondary line.
-.upgrades-set-total {
 	display: block;
 	color: var(--bs-gray-500);
 	line-height: 1.2;
@@ -277,14 +273,11 @@
 	color: var(--bs-warning-text-emphasis, var(--bs-warning));
 }
 
-// The reachable higher-threshold line (ticket 336) reads as the same kind of
-// progress line as the next-threshold one above it ("4pc bonus (0/4)" beside
-// "2pc bonus (0/2)"), so it shares that line's muted-grey styling — no italic,
-// which only made sense when this was framed as a separate aside.
-.upgrades-set-package {
-	display: block;
-	color: var(--bs-gray-500);
-	line-height: 1.2;
+// The DPS cell's set-bonus breakdown tooltip (ticket 431): base, the 330
+// prospective/package lines, and the total. Left-aligned so the stacked figures
+// read as a list rather than tippy's centred default.
+.upgrades-set-bonus-tip {
+	text-align: left;
 }
 
 // Containment for the row's new home (ticket 312, F11). `.tab-panel-left` is
