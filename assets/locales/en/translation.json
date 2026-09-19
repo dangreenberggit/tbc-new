@@ -880,7 +880,7 @@
 			"title": "View options",
 			"set_potential": "Set potential",
 			"set_potential_tooltip": "When on, a row's DPS gain includes a set bonus the swap would earn. Bonuses too small to change the ranking are ignored.",
-			"set_potential_unavailable": "No set-bonus upgrades in these results.",
+			"set_potential_unavailable": "No upgrades here gain a set bonus.",
 			"only_bis": "BiS only",
 			"only_bis_qualifier": "{{phase}} list"
 		},
