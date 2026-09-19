@@ -230,6 +230,26 @@ function isBisTagged(entry: { bisTags?: readonly string[] }): boolean {
 }
 
 /**
+ * The status-line message for a failed run (ticket 437). A worker/WASM load
+ * failure surfaced the raw "Ranking failed: Failed to fetch" — the browser
+ * `fetch` `TypeError` from an unreachable sim worker (worker_pool.ts:47), or
+ * `worker_pool.ts:49`'s own "Failed to fetch sim wasm module: HTTP …" — which
+ * reads like a crash, not "the page is being served without the sim engine
+ * behind it" (the Vite-only :5173 case). Both origins are caught by the
+ * `TypeError` check plus the "Failed to fetch" message prefix; every other
+ * error keeps the existing "Ranking failed: {{message}}" so a real sim error
+ * still shows its message. The raw cause is still `console.error`'d at the call
+ * site, so nothing is lost for diagnosis.
+ */
+function describeRunError(err: unknown): string {
+	const message = err instanceof Error ? err.message : String(err);
+	if (err instanceof TypeError || message.startsWith('Failed to fetch')) {
+		return i18n.t('upgrades_tab.status.error_engine_unreachable');
+	}
+	return i18n.t('upgrades_tab.status.error', { message });
+}
+
+/**
  * The content-source key a pool entry files under -- its first zone, else its
  * `SOURCE_LABELS` bucket. Mirrors engine/view.ts's module-private `sourcesOf`
  * (view.ts:58-60) and `zoneKeyOf` (view.ts:87-92) over a `PoolEntry` instead of
@@ -1041,7 +1061,12 @@ export class UpgradesTab extends SimTab {
 
 		this.runButton.addEventListener('click', () => {
 			this.run().catch(err => {
-				this.setState({ kind: 'error', message: err instanceof Error ? err.message : String(err) });
+				// `describeRunError` returns the display-ready line: a plain
+				// engine-unreachable sentence for a worker/WASM load failure
+				// (ticket 437), else the wrapped "Ranking failed: {{message}}". The
+				// raw cause stays diagnosable in the console.
+				console.error(err);
+				this.setState({ kind: 'error', message: describeRunError(err) });
 			});
 		});
 
@@ -1547,7 +1572,9 @@ export class UpgradesTab extends SimTab {
 		} else {
 			announceSource = this.statusElem;
 		}
-		const message = kind === 'error' ? i18n.t('upgrades_tab.status.error', { message: this.state.message }) : (announceSource.textContent?.trim() ?? '');
+		// `state.message` is already the display-ready line from `describeRunError`
+		// (ticket 437), so it is not re-wrapped in `status.error` here.
+		const message = kind === 'error' ? this.state.message : (announceSource.textContent?.trim() ?? '');
 		const isError = kind === 'error';
 		this.errorAlertElem.replaceChildren(isError ? message : '');
 		this.statusAnnounceElem.replaceChildren(isError ? '' : message);
@@ -1585,7 +1612,9 @@ export class UpgradesTab extends SimTab {
 				);
 			}
 			case 'error':
-				return <div className="upgrades-status-line text-danger">{i18n.t('upgrades_tab.status.error', { message: this.state.message })}</div>;
+				// `state.message` is the display-ready line from `describeRunError`
+				// (ticket 437), already wrapped or plain as appropriate.
+				return <div className="upgrades-status-line text-danger">{this.state.message}</div>;
 			case 'stopped':
 				// The stopped baseline moved under the table (ticket 416); the top
 				// status line has nothing left to say for this state.

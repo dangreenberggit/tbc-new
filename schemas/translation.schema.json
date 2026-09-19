@@ -8867,6 +8867,9 @@
 						"error": {
 							"type": "string"
 						},
+						"error_engine_unreachable": {
+							"type": "string"
+						},
 						"done": {
 							"type": "string"
 						},
@@ -8884,7 +8887,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["idle", "unsupported_spec", "error", "done", "elapsed", "stale", "stopped", "running_rows"]
+					"required": ["idle", "unsupported_spec", "error", "error_engine_unreachable", "done", "elapsed", "stale", "stopped", "running_rows"]
 				},
 				"view": {
 					"type": "object",
