@@ -266,15 +266,19 @@ function isBisTagged(entry: { bisTags?: readonly string[] }): boolean {
  * `fetch` `TypeError` from an unreachable sim worker (worker_pool.ts:47), or
  * `worker_pool.ts:49`'s own "Failed to fetch sim wasm module: HTTP …" — which
  * reads like a crash to a user who has no concept of a worker or a server.
- * Both origins are caught by the `TypeError` check plus the "Failed to fetch"
- * message prefix and mapped to one plain "couldn't run the sim, refresh"
- * sentence; every other error keeps "Ranking failed: {{message}}" so a real sim
- * error still shows its message. The raw cause is still `console.error`'d at the
- * call site, so nothing is lost for diagnosis.
+ * Both origins start their message with "Failed to fetch", so that prefix is the
+ * whole test: the browser `fetch` `TypeError` is `"Failed to fetch"` and
+ * `worker_pool.ts:49` is `"Failed to fetch sim wasm module: HTTP …"`. Matching on
+ * the whole `TypeError` class would be wrong -- `run()` wraps the entire ranking
+ * pipeline (fetch, sim, result parse, row assembly), so a downstream bug that
+ * throws a `TypeError` (a null-deref while reading a result) would be relabelled
+ * "refresh the page", advice that re-hits the same deterministic bug. That error
+ * keeps "Ranking failed: {{message}}" so its message still shows; the raw cause
+ * is `console.error`'d at the call site regardless.
  */
 function describeRunError(err: unknown): string {
 	const message = err instanceof Error ? err.message : String(err);
-	if (err instanceof TypeError || message.startsWith('Failed to fetch')) {
+	if (message.startsWith('Failed to fetch')) {
 		return i18n.t('upgrades_tab.status.error_sim_unavailable');
 	}
 	return i18n.t('upgrades_tab.status.error', { message });
