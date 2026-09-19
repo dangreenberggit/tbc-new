@@ -8833,6 +8833,28 @@
 				"eligible_count_unknown": {
 					"type": "string"
 				},
+				"settings": {
+					"type": "object",
+					"properties": {
+						"sources_title": {
+							"type": "string"
+						},
+						"sets_title": {
+							"type": "string"
+						},
+						"sets_caption": {
+							"type": "string"
+						},
+						"sets_in_pool": {
+							"type": "string"
+						},
+						"sets_cap_note": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["sources_title", "sets_title", "sets_caption", "sets_in_pool", "sets_cap_note"]
+				},
 				"status": {
 					"type": "object",
 					"properties": {
@@ -8881,22 +8903,10 @@
 						},
 						"only_bis_qualifier": {
 							"type": "string"
-						},
-						"raid_filter": {
-							"type": "string"
-						},
-						"raid_filter_all": {
-							"type": "string"
-						},
-						"raid_filter_group_zone": {
-							"type": "string"
-						},
-						"raid_filter_group_other": {
-							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "set_potential", "set_potential_tooltip", "only_bis", "only_bis_qualifier", "raid_filter", "raid_filter_all", "raid_filter_group_zone", "raid_filter_group_other"]
+					"required": ["title", "set_potential", "set_potential_tooltip", "only_bis", "only_bis_qualifier"]
 				},
 				"export": {
 					"type": "object",
@@ -8943,10 +8953,13 @@
 						},
 						"package_disclosure": {
 							"type": "string"
+						},
+						"total": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["prospective", "crosses", "confounded", "package_disclosure"]
+					"required": ["prospective", "crosses", "confounded", "package_disclosure", "total"]
 				},
 				"cutoff": {
 					"type": "object",
@@ -9050,9 +9063,6 @@
 						"heading": {
 							"type": "string"
 						},
-						"heading_count": {
-							"type": "string"
-						},
 						"removes_worn": {
 							"type": "string"
 						}
@@ -9076,7 +9086,6 @@
 						"empty_unsupported_spec_body",
 						"below_cutoff_group",
 						"heading",
-						"heading_count",
 						"removes_worn"
 					]
 				},
@@ -9095,7 +9104,7 @@
 				}
 			},
 			"additionalProperties": false,
-			"required": ["title", "subtabs", "run", "stop", "settings_title", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "export", "set_bonus", "cutoff", "prune", "progress", "results", "assumptions"]
+			"required": ["title", "subtabs", "run", "stop", "settings_title", "settings", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "export", "set_bonus", "cutoff", "prune", "progress", "results", "assumptions"]
 		}
 	},
 	"additionalProperties": false,
