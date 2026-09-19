@@ -1,5 +1,5 @@
 import { Tab } from 'bootstrap';
-import tippy from 'tippy.js';
+import tippy, { Instance as TippyInstance } from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
 import i18n from '../../../i18n/config';
@@ -141,9 +141,12 @@ type RunState =
  */
 class ViewToggle {
 	private value = false;
+	private enabled = true;
 	private readonly emitter = new TypedEvent<void>();
 	private readonly picker: BooleanPicker<ViewToggle>;
 	private readonly qualifierElem?: HTMLElement;
+	private readonly tip?: TippyInstance;
+	private readonly baseTooltip?: string;
 
 	constructor(
 		host: HTMLElement,
@@ -161,6 +164,11 @@ class ViewToggle {
 			label: config.label,
 			extraCssClasses: config.extraCssClasses,
 			inline: true,
+			// `update()` re-reads this to add/remove `.disabled` and the input's
+			// `disabled` attribute (input.tsx:105-115); `setEnabled` flips the flag
+			// then calls `update()` so a run with no rankable set bonus can show the
+			// toggle disabled rather than hiding it (ticket 441).
+			enableWhen: () => this.enabled,
 			changedEvent: () => this.emitter,
 			getValue: () => this.value,
 			setValue: (_eventID, _obj, newValue) => {
@@ -171,9 +179,14 @@ class ViewToggle {
 		// The tooltip hangs off the picker's `.form-check` root, not its
 		// `<label>` (ticket 420): `Input` attaches `labelTooltip` to the label
 		// alone (input.tsx:91-93), so hovering the checkbox showed nothing. The
-		// whole checkbox+label wrapper is one hover region here instead.
+		// whole checkbox+label wrapper is one hover region here instead. The
+		// instance handle is kept (F4) so `setEnabled` can swap the content to a
+		// "why disabled" reason and restore the base text on re-enable.
+		this.baseTooltip = config.labelTooltip;
 		if (config.labelTooltip) {
-			tippy(this.picker.rootElem, { content: config.labelTooltip });
+			// `tippy` with a single element reference returns one `Instance`; the
+			// declared return is a union with the array form, so it is narrowed here.
+			this.tip = tippy(this.picker.rootElem, { content: config.labelTooltip }) as TippyInstance;
 		}
 		// The picker appends its root INTO the host; toggle `.d-none` on that
 		// root (not the host) so the class carrying the `.form-check` layout is
@@ -201,6 +214,24 @@ class ViewToggle {
 
 	setVisible(visible: boolean): void {
 		setControlVisible(this.picker.rootElem, visible);
+	}
+
+	/**
+	 * Enable or disable the toggle in place (ticket 441). Disabling keeps the
+	 * control visible — the native `Input.update()` adds `.disabled` and the
+	 * input's `disabled` attribute (input.tsx:105-115) — and, when a `reason` is
+	 * given, swaps the hover tooltip to it so the reader learns why. Disabling
+	 * also forces the value off through `update()`'s value sync, so a stale "on"
+	 * from a previous run cannot silently hide rows. Re-enabling restores the
+	 * base tooltip text.
+	 */
+	setEnabled(enabled: boolean, reason?: string): void {
+		this.enabled = enabled;
+		if (!enabled) this.value = false;
+		this.picker.update();
+		if (this.tip) {
+			this.tip.setContent(!enabled && reason ? reason : this.baseTooltip ?? '');
+		}
 	}
 
 	setText(text: string): void {
@@ -471,6 +502,7 @@ export class UpgradesTab extends SimTab {
 	/** The candidates picker's root, so its placeholder can be kept current. */
 	protected candidatesPickerElem!: HTMLElement;
 	protected setPotentialControl!: ViewToggle;
+	protected setBonusInlineControl!: ViewToggle;
 	protected bisOnlyControl!: ViewToggle;
 	/** The source-filter group's mount, so `refreshSourceFilter` can rebuild it (ticket 417). */
 	protected sourcesGroupElem!: HTMLElement;
@@ -676,6 +708,7 @@ export class UpgradesTab extends SimTab {
 		const settingsBodyRef = ref<HTMLDivElement>();
 		const viewControlsRef = ref<HTMLDivElement>();
 		const setPotentialPickerRef = ref<HTMLDivElement>();
+		const setBonusInlinePickerRef = ref<HTMLDivElement>();
 		const bisOnlyPickerRef = ref<HTMLDivElement>();
 		const sourcesGroupRef = ref<HTMLDivElement>();
 		const setsGroupRef = ref<HTMLDivElement>();
@@ -821,6 +854,7 @@ export class UpgradesTab extends SimTab {
 					 * inside the click/hover target the label's `htmlFor` toggles.
 					 */}
 					<div ref={setPotentialPickerRef} />
+					<div ref={setBonusInlinePickerRef} />
 					<div ref={bisOnlyPickerRef} />
 				</div>
 			</div>,
@@ -932,6 +966,17 @@ export class UpgradesTab extends SimTab {
 			label: i18n.t('upgrades_tab.view.set_potential'),
 			labelTooltip: i18n.t('upgrades_tab.view.set_potential_tooltip'),
 			extraCssClasses: ['upgrades-set-potential-control'],
+			onChange: () => this.render(),
+		});
+		// Switches the set-bonus sub-line between a hover cue (off, default) and an
+		// inline DPS figure (on) — ticket 443. Default off keeps the desktop-gate
+		// golden's fresh-load readback unchanged (it defaults to the hover-cue
+		// wording, which carries no `<n> DPS` token for `parseDelta` to catch).
+		this.setBonusInlineControl = new ViewToggle(setBonusInlinePickerRef.value!, {
+			id: 'upgrades-set-bonus-inline',
+			label: i18n.t('upgrades_tab.view.set_bonus_inline'),
+			labelTooltip: i18n.t('upgrades_tab.view.set_bonus_inline_tooltip'),
+			extraCssClasses: ['upgrades-set-bonus-inline-control'],
 			onChange: () => this.render(),
 		});
 		this.bisOnlyControl = new ViewToggle(bisOnlyPickerRef.value!, {
@@ -1718,6 +1763,7 @@ export class UpgradesTab extends SimTab {
 		// the compiler can see `ranking` exists on the branch that reads it.
 		if (this.state.kind !== 'done') {
 			this.setPotentialControl.setVisible(false);
+			this.setBonusInlineControl.setVisible(false);
 			this.bisOnlyControl.setVisible(false);
 			return;
 		}
@@ -1726,7 +1772,18 @@ export class UpgradesTab extends SimTab {
 		// frozen cutoff (in scope and non-null under the guard above) — tickets
 		// 331, 332.
 		const noiseFloorDps = setBonusNoiseFloorDps(this.state.ranking.cutoff);
-		this.setPotentialControl.setVisible(items.some(i => hasRankableSetPotential(i, noiseFloorDps)));
+		// Set-potential and the inline-figures toggle share one gate: both act on
+		// set-bonus sub-lines, so both are meaningless when no row has a rankable
+		// set bonus. Rather than vanish after a run (ticket 441 — the owner read
+		// the disappearance as a bug), they stay visible and go disabled with a
+		// tooltip saying why. `setEnabled(false)` also forces the value off, so a
+		// stale "on" cannot hide rows on the next results.
+		const hasRankable = items.some(i => hasRankableSetPotential(i, noiseFloorDps));
+		const unavailableReason = i18n.t('upgrades_tab.view.set_potential_unavailable');
+		this.setPotentialControl.setVisible(true);
+		this.setPotentialControl.setEnabled(hasRankable, unavailableReason);
+		this.setBonusInlineControl.setVisible(true);
+		this.setBonusInlineControl.setEnabled(hasRankable, unavailableReason);
 		this.bisOnlyControl.setVisible(items.some(isBisTagged));
 	}
 
@@ -2551,7 +2608,7 @@ export class UpgradesTab extends SimTab {
 		// base-delta / per-threshold breakdown moves into a tippy tooltip on the
 		// cell (ticket 431). `deltaLabel` (the total the row sorted on, C16) is
 		// unchanged.
-		const setBonus_ = this.setBonusPresentation(row, noiseFloorDps, showSetTotal, deltaLabel);
+		const setBonus_ = this.setBonusPresentation(row, noiseFloorDps, showSetTotal, deltaLabel, this.setBonusInlineControl.checked);
 		const removedLine = this.removedItemsLine(row);
 		const cutoffArmLine = cutoff && cutoffAdmittingArm(row.deltaDps, row.deltaPct, cutoff) === 'pct'
 			? (
@@ -2721,6 +2778,7 @@ export class UpgradesTab extends SimTab {
 		noiseFloorDps: number | undefined,
 		showSetTotal: boolean,
 		deltaLabel: string,
+		inline: boolean,
 	): { line: Node | null; tip: HTMLElement | null } {
 		const ctx = row.setContext;
 		if (!ctx) return { line: null, tip: null };
@@ -2767,17 +2825,25 @@ export class UpgradesTab extends SimTab {
 		if (!hasProspective && packages.length === 0) return { line: null, tip: null };
 
 		// The one cell line: the total qualifier when the toggle folded a bonus
-		// into the shown figure, else the "possible" qualifier at the lowest
-		// reachable threshold (the prospective threshold if present, else the
-		// lowest disclosed package).
+		// into the shown figure, else the "possible"/hover-cue qualifier at the
+		// lowest reachable threshold (the prospective threshold if present, else
+		// the lowest disclosed package). The inline toggle (ticket 443) swaps the
+		// wording so the DPS figure the tooltip carries also shows on the line: the
+		// prospective figure when present, else the lowest disclosed package's.
+		// `line-height: 1.2` and `white-space: nowrap` keep any one-line string
+		// inside the layout gate's height budget; a longer inline string widens
+		// the DPS column instead of wrapping, so the SME-chosen strings are picked
+		// to fit at 375 (the gate's no-clip / no-horizontal-scroll checks decide).
 		const lowestReachable = hasProspective ? (ctx.nextThreshold as number) : packages[0].threshold;
-		const line = (
-			<small className="upgrades-set-bonus">
-				{showSetTotal
-					? i18n.t('upgrades_tab.set_bonus.total', { threshold: ctx.nextThreshold ?? 0 })
-					: i18n.t('upgrades_tab.set_bonus.available', { threshold: lowestReachable })}
-			</small>
-		);
+		const inlineDps = (hasProspective ? (ctx.prospectiveBonusDps as number) : packages[0].deltaDps).toFixed(1);
+		const lineText = showSetTotal
+			? inline
+				? i18n.t('upgrades_tab.set_bonus.total_inline', { threshold: ctx.nextThreshold ?? 0, dps: inlineDps })
+				: i18n.t('upgrades_tab.set_bonus.total', { threshold: ctx.nextThreshold ?? 0 })
+			: inline
+				? i18n.t('upgrades_tab.set_bonus.inline', { threshold: lowestReachable, dps: inlineDps })
+				: i18n.t('upgrades_tab.set_bonus.hover_cue', { threshold: lowestReachable });
+		const line = <small className="upgrades-set-bonus">{lineText}</small>;
 
 		// The tooltip: base, then the 330 prospective and package lines verbatim
 		// (same gating as the old cell lines), then the total when it is shown.

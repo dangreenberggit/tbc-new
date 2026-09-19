@@ -880,6 +880,9 @@
 			"title": "View options",
 			"set_potential": "Set potential",
 			"set_potential_tooltip": "When on, a row's DPS gain includes a set bonus the swap would earn. Bonuses too small to change the ranking are ignored.",
+			"set_potential_unavailable": "No set-bonus upgrades in these results.",
+			"set_bonus_inline": "Show set-bonus figures inline",
+			"set_bonus_inline_tooltip": "When on, a set-bonus sub-line shows the DPS figure inline instead of a hover cue.",
 			"only_bis": "BiS only",
 			"only_bis_qualifier": "{{phase}} list"
 		},
@@ -899,7 +902,10 @@
 			"confounded": "{{threshold}}pc bonus (+{{dps}}) breaks {{broken}} {{brokenThreshold}}pc",
 			"package_disclosure": "{{threshold}}pc bonus ({{worn}}/{{threshold}}) (+{{dps}})",
 			"total": "with {{threshold}}pc bonus",
+			"total_inline": "with {{threshold}}pc bonus (+{{dps}})",
 			"available": "{{threshold}}pc bonus possible",
+			"hover_cue": "hover for {{threshold}}pc bonus",
+			"inline": "+{{dps}} from {{threshold}}pc",
 			"tip_base": "Before set bonus: {{base}}",
 			"tip_total": "Total with set bonus: {{total}} (what the rows are ranked by)"
 		},
