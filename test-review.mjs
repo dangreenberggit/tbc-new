@@ -95,23 +95,32 @@ function factExpression(spec) {
 	return `(() => { throw new Error('unknown fact op: ' + ${JSON.stringify(op)}); })()`;
 }
 
-// The rect of a selector in document (page) coordinates, for a screenshot clip.
-function documentRectExpression(sel) {
-	return `(() => {
-		const el = document.querySelector(${JSON.stringify(sel)});
-		if (!el) return null;
-		const r = el.getBoundingClientRect();
-		return { x: r.left + window.scrollX, y: r.top + window.scrollY, width: r.width, height: r.height };
-	})()`;
-}
-
 // Capture a clip of `sel` to `<out>/<ticket>-<state>-<width>-<n>.png`. Returns
 // the filename written, or an { error } if the selector was not found.
+//
+// The element is scrolled into view first and the clip is taken in DOCUMENT
+// coordinates (viewport rect + scroll offset) with captureBeyondViewport. On
+// the full wowsims page the #upgrades-tab pane sits ~1300px down at a narrow
+// width, past the emulated 900px viewport; capturing that offset without first
+// scrolling to it returned a correctly-sized but empty (dark) clip, because the
+// pane had never painted. scrollIntoView forces the paint, then the document-
+// coordinate clip lands on the now-rendered element.
 async function captureClip(send, outDir, ticket, state, width, n, sel) {
-	const rect = await evaluate(send, documentRectExpression(sel));
+	const rect = await evaluate(
+		send,
+		`(() => {
+			const el = document.querySelector(${JSON.stringify(sel)});
+			if (!el) return null;
+			el.scrollIntoView({ block: 'start', inline: 'nearest' });
+			const r = el.getBoundingClientRect();
+			return { x: r.left + window.scrollX, y: r.top + window.scrollY, width: r.width, height: r.height };
+		})()`,
+	);
 	if (!rect || rect.width === 0 || rect.height === 0) {
 		return { error: `capture selector missing or zero-size: ${sel}` };
 	}
+	// A beat for the scroll to settle and the newly-visible region to paint.
+	await sleep(150);
 	const { data } = await send('Page.captureScreenshot', {
 		format: 'png',
 		clip: { x: rect.x, y: rect.y, width: rect.width, height: rect.height, scale: 1 },
