@@ -3053,7 +3053,13 @@ function sourceLabel(source: ItemSource): string {
 function sourceCell(row: Pick<RankedItem, 'itemId' | 'source'>, sim: IndividualSimUI<any>['sim']): Node {
 	const item = Database.getSync().getItemById(row.itemId);
 	const rendered = item ? getSourceInfo(item, sim) : null;
-	if (rendered === null || isEmptyElement(rendered)) return <>{sourceLabel(row.source)}</>;
+	// The native anchor is `<a><small>` (item_list.tsx:648-654); the fallback was
+	// bare text, so it rendered a step larger and in link-white next to the muted
+	// `<small>` anchors (ticket 440). Wrap it in the same `<small>` at the tab's
+	// muted colour so a non-link source reads as text of one size, not a link.
+	// `sourceLabel`'s text is unchanged, so the desktop-gate golden's `td[4]`
+	// readback is unaffected.
+	if (rendered === null || isEmptyElement(rendered)) return <small className="upgrades-source-fallback">{sourceLabel(row.source)}</small>;
 	return rendered;
 }
 

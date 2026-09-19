@@ -210,10 +210,33 @@
 	color: var(--bs-gray-500);
 }
 
+// The non-link Source fallback (ticket 440). The native source anchor is
+// `<a><small>`, so it renders muted and a step smaller; the bare-text fallback
+// read a size larger and in link-white. `<small>` matches the size and
+// `--bs-gray-500` (the tab's muted colour, as above) marks it as plain text
+// rather than a link the reader could click.
+.upgrades-source-fallback {
+	color: var(--bs-gray-500);
+}
+
 // The ThatsMyBis export (ticket 314). `.content-block` is the site's own
 // block idiom, so the box inherits the same padding and `--block-spacer`
 // rhythm as the results it sits under rather than inventing a second look.
 .upgrades-export {
+	// Every child of the export box shares the textarea's 36rem cap (ticket 422,
+	// extended by 442): the caveat, the flavour caption, the textarea and the
+	// actions row all read as one unit under a single left-aligned column instead
+	// of the caption and the count+Copy row spanning the full panel while the
+	// textarea stops at 36rem. `width: 100%` keeps each filling that cap on a
+	// panel narrower than 36rem, where all four are panel-width.
+	.upgrades-export-caveat,
+	.upgrades-export-flavour-caption,
+	.upgrades-export-area,
+	.upgrades-export-actions {
+		max-width: 36rem;
+		width: 100%;
+	}
+
 	.upgrades-export-caveat {
 		margin-bottom: 0;
 		color: var(--bs-gray-500);
@@ -222,16 +245,10 @@
 	// Monospace because the content is JSON, and `resize: vertical` because a
 	// reader may want to see more of a long payload without the box being able
 	// to break the column width.
-	//
-	// Capped at 36rem (ticket 422): the payload is short `{"items":[{"id":n},…]}`
-	// lines, and six rows at 36rem show it without the box spanning the whole
-	// panel. `width: 100%` keeps it filling that cap on a narrower panel.
 	.upgrades-export-area {
 		font-family: var(--bs-font-monospace);
 		font-size: var(--bs-body-font-size);
 		resize: vertical;
-		max-width: 36rem;
-		width: 100%;
 	}
 
 	.upgrades-export-actions {
