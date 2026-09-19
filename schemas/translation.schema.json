@@ -8904,12 +8904,6 @@
 						"set_potential_unavailable": {
 							"type": "string"
 						},
-						"set_bonus_inline": {
-							"type": "string"
-						},
-						"set_bonus_inline_tooltip": {
-							"type": "string"
-						},
 						"only_bis": {
 							"type": "string"
 						},
@@ -8918,7 +8912,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "set_potential", "set_potential_tooltip", "set_potential_unavailable", "set_bonus_inline", "set_bonus_inline_tooltip", "only_bis", "only_bis_qualifier"]
+					"required": ["title", "set_potential", "set_potential_tooltip", "set_potential_unavailable", "only_bis", "only_bis_qualifier"]
 				},
 				"export": {
 					"type": "object",
@@ -8966,16 +8960,7 @@
 						"package_disclosure": {
 							"type": "string"
 						},
-						"total": {
-							"type": "string"
-						},
 						"total_inline": {
-							"type": "string"
-						},
-						"available": {
-							"type": "string"
-						},
-						"hover_cue": {
 							"type": "string"
 						},
 						"inline": {
@@ -8989,7 +8974,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["prospective", "crosses", "confounded", "package_disclosure", "total", "total_inline", "available", "hover_cue", "inline", "tip_base", "tip_total"]
+					"required": ["prospective", "crosses", "confounded", "package_disclosure", "total_inline", "inline", "tip_base", "tip_total"]
 				},
 				"cutoff": {
 					"type": "object",
