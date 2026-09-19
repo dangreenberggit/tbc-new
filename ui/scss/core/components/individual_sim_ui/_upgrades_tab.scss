@@ -102,37 +102,27 @@
 	gap: var(--spacer-2);
 }
 
-// The always-sim gear-set chips (ticket 424). The chips reuse the gear tab's
-// `.saved-data-set-chip` class (styled at top level in _saved_data_manager.scss:
-// border + `.active { background: --bs-primary }`), toggled as a multi-select.
-.upgrades-set-guarantee-group {
-	display: grid;
-	gap: var(--spacer-1);
-}
-
+// The always-sim gear-set chips (tickets 424/429). The chips reuse the gear
+// tab's full `.saved-data-set-chip` markup -- the label in a padded inner
+// `.saved-data-set-name` span, styled at top level in _saved_data_manager.scss
+// (border + `.active { background: --bs-primary }`), toggled as a multi-select.
+// The group's layout comes from its `.content-block` wrap (429), so no local
+// grid here.
 .upgrades-set-guarantee {
 	display: flex;
 	flex-wrap: wrap;
 	gap: var(--spacer-1);
 }
 
-// The base chip has `padding: 0` (it expects a padded `.saved-data-set-name`
-// child); our chip holds its text directly, so it needs its own padding. The
-// disabled chip (its items are all out of this phase's pool) stays visible but
-// muted -- unlike the manager's `.disabled` class, which hides the chip -- so the
-// reader can see the "0/m in pool" reason it cannot be picked.
-.upgrades-set-chip {
-	padding: var(--spacer-1) var(--spacer-2);
-
-	.upgrades-set-chip-count {
-		margin-left: var(--spacer-1);
-		opacity: 0.75;
-	}
-
-	&:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
+// The chip now carries no padding or count of its own -- the padded inner
+// `.saved-data-set-name` span comes from the shared class, and the "n/m in pool"
+// count moved into a hover tooltip (429). A set with nothing in this phase's
+// pool stays visible but muted (its click handler bails) rather than hidden the
+// way the manager's `.disabled` class would (C21), so the reader can hover for
+// the reason it cannot be picked.
+.upgrades-set-chip--unavailable {
+	opacity: 0.5;
+	cursor: not-allowed;
 }
 
 .upgrades-set-guarantee-caption {

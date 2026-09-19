@@ -854,8 +854,8 @@
 		"settings_title": "Run settings",
 		"settings": {
 			"sources_title": "Content",
-			"sets_title": "Always sim these sets",
-			"sets_caption": "Their items stay in the pool whatever the filters above say. Items not in this phase's pool are skipped.",
+			"sets_title": "Sim sets",
+			"sets_caption": "Items in these sets are always simmed, whatever the filters above say.",
 			"sets_in_pool": "{{n}}/{{m}} in pool",
 			"sets_cap_note": "A candidate cap still applies after this."
 		},

@@ -739,16 +739,26 @@ export class UpgradesTab extends SimTab {
 							</div>
 						</div>
 						{/*
-						 * The always-sim gear sets (ticket 424): a chip per phase-BiS
-						 * preset and saved gear set; a selected set's items stay in the
-						 * pool whatever the source/prune filters above say, and matching
-						 * result rows carry the set's label as a tag. Chips are the gear
-						 * tab's own `saved-data-set-chip` class toggled as a multi-select.
+						 * The always-sim gear sets, titled "Sim sets" (tickets 424/429):
+						 * a chip per phase-BiS preset and saved gear set; a selected set's
+						 * items stay in the pool whatever the source/prune filters above
+						 * say, and matching result rows carry the set's name as a tag.
+						 * Same `.content-block` wrap as the Content filter (428) so the
+						 * title reads bold with a bottom rule. Chips are the gear tab's own
+						 * `saved-data-set-chip` markup (a padded inner
+						 * `.saved-data-set-name` span, C10) toggled as a multi-select. The
+						 * caption is site `form-text` size (429), tinted with this tab's
+						 * `--bs-gray-500` secondary colour rather than form-text's
+						 * AA-failing gray-600 (C22).
 						 */}
-						<div className="upgrades-set-guarantee-group">
-							<span className="content-block-header">{i18n.t('upgrades_tab.settings.sets_title')}</span>
-							<div ref={setsGroupRef} className="upgrades-set-guarantee" />
-							<p ref={setsCaptionRef} className="upgrades-set-guarantee-caption upgrades-text-secondary" />
+						<div className="upgrades-set-guarantee-group content-block">
+							<div className="content-block-header">
+								<h6 className="content-block-title">{i18n.t('upgrades_tab.settings.sets_title')}</h6>
+							</div>
+							<div className="content-block-body">
+								<div ref={setsGroupRef} className="upgrades-set-guarantee" />
+								<p ref={setsCaptionRef} className="form-text upgrades-set-guarantee-caption upgrades-text-secondary" />
+							</div>
 						</div>
 						{/* Not a <label>: the picker self-names through its options, so the
 						    wrapper exists only to give the selector the same treatment
@@ -1816,12 +1826,14 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * Rebuilds the always-sim set chips for the current spec/phase (ticket 424).
-	 * Presets before saved sets; each chip shows "{label} <small>n/m in pool</small>"
-	 * where m is the set's item count and n is how many are in this phase's pool,
-	 * and a chip with n === 0 is disabled (its items are not in the phase universe,
-	 * which the tab cannot add without the engine's slot mapping). Clicking toggles
-	 * the key and the `.active` state, then refreshes the count and marks a done
+	 * Rebuilds the always-sim set chips for the current spec/phase (tickets
+	 * 424/429). Presets before saved sets; each chip is the gear tab's
+	 * `saved-data-set-chip` markup -- the label in a padded inner
+	 * `.saved-data-set-name` span (C10) -- and the "n/m in pool" count sits in a
+	 * hover tooltip on the button rather than in the chip text. A set with n === 0
+	 * is muted (`--unavailable`) and `aria-disabled` but still shown, so the reader
+	 * can hover for the reason. Clicking the inner span toggles the key, the
+	 * `.active` state and `aria-pressed`, then refreshes the count and marks a done
 	 * result stale -- the same run-input behaviour as the source checkboxes. The
 	 * caption gains a cap note when a non-zero candidate cap is set and any set is
 	 * selected, because the cap still applies engine-side after the union.
@@ -1844,20 +1856,33 @@ export class UpgradesTab extends SimTab {
 		for (const set of sets) {
 			const inPool = [...set.itemIds].filter(id => poolIds.has(id)).length;
 			const total = set.itemIds.size;
-			const disabled = inPool === 0;
+			// A set with nothing in this phase's pool cannot be picked, but it stays
+			// visible and muted rather than hidden (unlike the manager's `.disabled`,
+			// C21) so the reader can see the "0/m in pool" reason on hover. It is
+			// `aria-disabled` rather than a real `disabled` button so the tippy still
+			// opens and the chip keeps the gear-tab markup; the click handler bails.
+			const unavailable = inPool === 0;
 			const active = this.guaranteedSetKeys.has(set.key);
+			const nameRef = ref<HTMLSpanElement>();
 			const chip = (
 				<button
 					type="button"
-					className={`saved-data-set-chip badge rounded-pill upgrades-set-chip${active ? ' active' : ''}`}
-					disabled={disabled}>
-					{set.label} <small className="upgrades-set-chip-count">{i18n.t('upgrades_tab.settings.sets_in_pool', { n: inPool, m: total })}</small>
+					className={`saved-data-set-chip badge rounded-pill upgrades-set-chip${active ? ' active' : ''}${unavailable ? ' upgrades-set-chip--unavailable' : ''}`}
+					attributes={{ 'aria-pressed': String(active), ...(unavailable ? { 'aria-disabled': 'true' } : {}) }}>
+					<span className="saved-data-set-name" attributes={{ role: 'button' }} ref={nameRef}>
+						{set.label}
+					</span>
 				</button>
 			) as HTMLButtonElement;
-			chip.addEventListener('click', () => {
+			// Count moves off the chip text into a hover tooltip on the button (429),
+			// matching the gear chip's tippy-on-the-button idiom (C10, C26).
+			tippy(chip, { content: i18n.t('upgrades_tab.settings.sets_in_pool', { n: inPool, m: total }) });
+			nameRef.value!.addEventListener('click', () => {
+				if (unavailable) return;
 				if (this.guaranteedSetKeys.has(set.key)) this.guaranteedSetKeys.delete(set.key);
 				else this.guaranteedSetKeys.add(set.key);
-				chip.classList.toggle('active');
+				const nowActive = chip.classList.toggle('active');
+				chip.setAttribute('aria-pressed', String(nowActive));
 				// Count only, not refreshCandidatesPlaceholder -- that rebuilds this
 				// chip group and would drop the button mid-click.
 				this.updateEligibleCount();
