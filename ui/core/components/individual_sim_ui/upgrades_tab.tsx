@@ -7,6 +7,7 @@ import { CURRENT_API_VERSION } from '../../constants/other.js';
 import { setItemQualityCssClass } from '../../css_utils';
 import { IndividualSimUI } from '../../individual_sim_ui';
 import { Spec } from '../../proto/common.js';
+import { SavedGearSet } from '../../proto/ui.js';
 import { ActionId } from '../../proto_utils/action_id';
 import { Database } from '../../proto_utils/database.js';
 import { TypedEvent } from '../../typed_event';
@@ -406,6 +407,14 @@ function sortRows(rows: readonly ViewRow[], sort: ResultsSort, deltaKey: (row: V
 	});
 }
 
+/**
+ * A gear set the user can guarantee into the sim (ticket 424): a phase-BiS
+ * preset or a saved gear set, reduced to the item ids it contains so a result
+ * row's membership is an exact id test. `phase` is the preset's numeric `Phase`
+ * (absent for saved sets, which carry none); `label` is the display tag.
+ */
+type GuaranteedSet = { key: string; label: string; phase?: number; itemIds: Set<number> };
+
 export class UpgradesTab extends SimTab {
 	readonly simUI: IndividualSimUI<any>;
 
@@ -449,6 +458,14 @@ export class UpgradesTab extends SimTab {
 	// on by default rather than silently excluded. Page-session state like the
 	// BiS prune, not persisted.
 	private excludedSources = new Set<string>();
+	/** The set-guarantee chip group's mount (ticket 424). */
+	protected setsGroupElem!: HTMLElement;
+	/** The set-guarantee caption, whose cap note appears when a cap is set (ticket 424). */
+	protected setsCaptionElem!: HTMLElement;
+	// Keys of the gear sets whose items are kept in the pool whatever the filters
+	// say (ticket 424). Page-session state; the run captures nothing extra, it
+	// just unions these back into `effectivePool`.
+	private guaranteedSetKeys = new Set<string>();
 	protected statusElem!: HTMLElement;
 	/** Last kind written to a live region, so a re-render within one state stays silent. */
 	private announcedKind: RunState['kind'] | undefined;
@@ -612,6 +629,13 @@ export class UpgradesTab extends SimTab {
 
 		this.buildTabContent();
 		this.wireStalenessListeners();
+
+		// Re-read the always-sim set chips when this top-level tab is shown (ticket
+		// 424, C33): a saved gear set created on the Gear tab after this tab was
+		// built is only in localStorage, so refreshing on show picks it up.
+		// `SimTab.navLink` is the tab's own nav button, which Bootstrap fires
+		// `shown.bs.tab` on when the tab is switched to.
+		this.navLink.addEventListener('shown.bs.tab', () => this.refreshSetChips());
 	}
 
 	protected buildTabContent() {
@@ -627,6 +651,8 @@ export class UpgradesTab extends SimTab {
 		const setPotentialPickerRef = ref<HTMLDivElement>();
 		const bisOnlyPickerRef = ref<HTMLDivElement>();
 		const sourcesGroupRef = ref<HTMLDivElement>();
+		const setsGroupRef = ref<HTMLDivElement>();
+		const setsCaptionRef = ref<HTMLParagraphElement>();
 		const phaseSelectorRef = ref<HTMLDivElement>();
 		const statusRef = ref<HTMLDivElement>();
 		const statusAnnounceRef = ref<HTMLDivElement>();
@@ -704,6 +730,18 @@ export class UpgradesTab extends SimTab {
 						<div className="upgrades-source-filter-group">
 							<span className="content-block-header">{i18n.t('upgrades_tab.settings.sources_title')}</span>
 							<div ref={sourcesGroupRef} className="upgrades-source-filter" />
+						</div>
+						{/*
+						 * The always-sim gear sets (ticket 424): a chip per phase-BiS
+						 * preset and saved gear set; a selected set's items stay in the
+						 * pool whatever the source/prune filters above say, and matching
+						 * result rows carry the set's label as a tag. Chips are the gear
+						 * tab's own `saved-data-set-chip` class toggled as a multi-select.
+						 */}
+						<div className="upgrades-set-guarantee-group">
+							<span className="content-block-header">{i18n.t('upgrades_tab.settings.sets_title')}</span>
+							<div ref={setsGroupRef} className="upgrades-set-guarantee" />
+							<p ref={setsCaptionRef} className="upgrades-set-guarantee-caption upgrades-text-secondary" />
 						</div>
 						{/* Not a <label>: the picker self-names through its options, so the
 						    wrapper exists only to give the selector the same treatment
@@ -862,6 +900,8 @@ export class UpgradesTab extends SimTab {
 		this.bisPruneElem = bisPrunePickerRef.value!;
 		this.candidatesPickerElem = candidatesPickerRef.value!;
 		this.sourcesGroupElem = sourcesGroupRef.value!;
+		this.setsGroupElem = setsGroupRef.value!;
+		this.setsCaptionElem = setsCaptionRef.value!;
 		this.statusElem = statusRef.value!;
 		this.statusAnnounceElem = statusAnnounceRef.value!;
 		this.errorAlertElem = errorAlertRef.value!;
@@ -1066,6 +1106,9 @@ export class UpgradesTab extends SimTab {
 		// A source picker's OWN change never routes here (it calls
 		// updateEligibleCount instead), so this never rebuilds a picker mid-event.
 		this.refreshSourceFilter();
+		// The always-sim set chips follow spec/phase the same way (ticket 424); a
+		// chip's own click updates the count directly, so this is not re-entered.
+		this.refreshSetChips();
 		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
 		if (!specId) {
 			setControlVisible(this.bisPruneElem, false);
@@ -1213,7 +1256,24 @@ export class UpgradesTab extends SimTab {
 		// its source key is excluded, so an empty exclusion set is a no-op.
 		const options = this.sourceOptions(specId, maxPhase);
 		const sourceKept = (e: PoolEntry) => options.some(key => !this.excludedSources.has(key) && sourceMatches(e, key));
-		return pool.filter(e => (!pruned || isBisTagged(e)) && sourceKept(e));
+		const filtered = pool.filter(e => (!pruned || isBisTagged(e)) && sourceKept(e));
+		// Always-sim sets (ticket 424): union back every pool entry whose itemId is
+		// in a selected set, regardless of the prune and source filters above. A
+		// set item absent from this phase's pool cannot be added (no PoolEntry
+		// exists for it), which is the disabled-chip limit the UI states. Deduped
+		// by itemId+slot so a source-kept entry is not doubled.
+		const guaranteed = this.guaranteedItemIds();
+		if (guaranteed.size === 0) return filtered;
+		const seen = new Set(filtered.map(e => `${e.itemId}:${e.slot}`));
+		const unioned = [...filtered];
+		for (const e of pool) {
+			if (!guaranteed.has(e.itemId)) continue;
+			const dedupe = `${e.itemId}:${e.slot}`;
+			if (seen.has(dedupe)) continue;
+			seen.add(dedupe);
+			unioned.push(e);
+		}
+		return unioned;
 	}
 
 	/**
@@ -1661,6 +1721,137 @@ export class UpgradesTab extends SimTab {
 				},
 			});
 		}
+	}
+
+	/**
+	 * The gear sets the user can guarantee into the sim (ticket 424): the spec's
+	 * phase-BiS presets first, then the saved gear sets under the page's saved-gear
+	 * storage key. Presets come straight off `individualConfig.presets.gear` (a
+	 * public readonly field) and saved sets are parsed from
+	 * `localStorage[getSavedGearStorageKey()]` with `SavedGearSet.fromJson`, the
+	 * same read `SavedDataManager.loadUserData` does -- neither crosses the
+	 * byte-gated engine boundary or re-implements a set list.
+	 *
+	 * Label: a preset is `P{phase} - {name}` unless its name already leads with
+	 * its P-token (ret's presets are literally "P1"/"P2"/"P3"), in which case the
+	 * name stands alone, so ret shows "P2" and "P3 - Bulwark" rather than
+	 * "P2 - P2"; a preset with no phase, and every saved set, uses the name.
+	 */
+	private guaranteedSetsAvailable(): GuaranteedSet[] {
+		const sets: GuaranteedSet[] = [];
+		const idsOf = (spec: { items: { id: number }[] } | undefined): Set<number> =>
+			new Set((spec?.items ?? []).map(i => i.id).filter(id => id > 0));
+
+		for (const preset of this.simUI.individualConfig.presets.gear) {
+			const phase = preset.phase as number | undefined;
+			// The label leads with "P{phase} - " unless the name already encodes
+			// that phase as a leading P-token. `($|[^0-9])` stops "P1" matching a
+			// "P12"-style name and, unlike a word-boundary group, does not fail at
+			// end-of-string, so a bare "P2" name is kept as-is (not "P2 - P2").
+			const encodesPhase = phase !== undefined && new RegExp(`^p${phase}($|[^0-9])`, 'i').test(preset.name);
+			const label = phase === undefined || encodesPhase ? preset.name : `P${phase} - ${preset.name}`;
+			sets.push({ key: `preset:${phase ?? ''}:${preset.name}`, label, phase, itemIds: idsOf(preset.gear) });
+		}
+
+		try {
+			const raw = window.localStorage.getItem(this.simUI.getSavedGearStorageKey());
+			if (raw) {
+				const stored = JSON.parse(raw) as Record<string, unknown>;
+				for (const [name, value] of Object.entries(stored)) {
+					try {
+						const saved = SavedGearSet.fromJson(value as any);
+						sets.push({ key: `saved:${name}`, label: name, itemIds: idsOf(saved.gear) });
+					} catch {
+						// A malformed saved entry is skipped, matching loadUserData.
+						console.warn(`[upgrades] skipping malformed saved gear set "${name}"`);
+					}
+				}
+			}
+		} catch {
+			// localStorage unavailable (private mode, blocked): no saved sets.
+		}
+		return sets;
+	}
+
+	/**
+	 * The item ids kept in the pool by the currently-selected sets (ticket 424),
+	 * across every available set whose key is selected. Empty when nothing is
+	 * selected, so the union in `effectivePool` is then a no-op.
+	 */
+	private guaranteedItemIds(): Set<number> {
+		const ids = new Set<number>();
+		for (const set of this.guaranteedSetsAvailable()) {
+			if (!this.guaranteedSetKeys.has(set.key)) continue;
+			for (const id of set.itemIds) ids.add(id);
+		}
+		return ids;
+	}
+
+	/**
+	 * Rebuilds the always-sim set chips for the current spec/phase (ticket 424).
+	 * Presets before saved sets; each chip shows "{label} <small>n/m in pool</small>"
+	 * where m is the set's item count and n is how many are in this phase's pool,
+	 * and a chip with n === 0 is disabled (its items are not in the phase universe,
+	 * which the tab cannot add without the engine's slot mapping). Clicking toggles
+	 * the key and the `.active` state, then refreshes the count and marks a done
+	 * result stale -- the same run-input behaviour as the source checkboxes. The
+	 * caption gains a cap note when a non-zero candidate cap is set and any set is
+	 * selected, because the cap still applies engine-side after the union.
+	 */
+	private refreshSetChips(): void {
+		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
+		this.setsGroupElem.replaceChildren();
+		if (!specId) {
+			this.setsCaptionElem.textContent = '';
+			return;
+		}
+		const maxPhase = this.simUI.sim.getPhase() as RankInput['maxPhase'];
+		const poolIds = new Set(poolFor(specId, maxPhase).map(e => e.itemId));
+		const sets = this.guaranteedSetsAvailable();
+		// Drop selections for sets no longer offered, so a stale key cannot keep
+		// unioning items invisibly.
+		const liveKeys = new Set(sets.map(s => s.key));
+		for (const key of [...this.guaranteedSetKeys]) if (!liveKeys.has(key)) this.guaranteedSetKeys.delete(key);
+
+		for (const set of sets) {
+			const inPool = [...set.itemIds].filter(id => poolIds.has(id)).length;
+			const total = set.itemIds.size;
+			const disabled = inPool === 0;
+			const active = this.guaranteedSetKeys.has(set.key);
+			const chip = (
+				<button
+					type="button"
+					className={`saved-data-set-chip badge rounded-pill upgrades-set-chip${active ? ' active' : ''}`}
+					disabled={disabled}>
+					{set.label} <small className="upgrades-set-chip-count">{i18n.t('upgrades_tab.settings.sets_in_pool', { n: inPool, m: total })}</small>
+				</button>
+			) as HTMLButtonElement;
+			chip.addEventListener('click', () => {
+				if (this.guaranteedSetKeys.has(set.key)) this.guaranteedSetKeys.delete(set.key);
+				else this.guaranteedSetKeys.add(set.key);
+				chip.classList.toggle('active');
+				// Count only, not refreshCandidatesPlaceholder -- that rebuilds this
+				// chip group and would drop the button mid-click.
+				this.updateEligibleCount();
+				this.refreshSetsCaption();
+				this.settingsChangedEmitter.emit(TypedEvent.nextEventID());
+				if (this.state.kind === 'done') this.setState({ ...this.state, stale: true });
+			});
+			this.setsGroupElem.appendChild(chip);
+		}
+		this.refreshSetsCaption();
+	}
+
+	/**
+	 * The set-guarantee caption: the base explanation, plus a cap note when a
+	 * non-zero candidate cap is set and at least one set is selected -- because the
+	 * cap still applies engine-side after the union, so a guaranteed item can still
+	 * fall outside the cap (ticket 424, C16/C17).
+	 */
+	private refreshSetsCaption(): void {
+		const base = i18n.t('upgrades_tab.settings.sets_caption');
+		const capActive = this.readCandidateCap() !== undefined && this.guaranteedSetKeys.size > 0;
+		this.setsCaptionElem.textContent = capActive ? `${base} ${i18n.t('upgrades_tab.settings.sets_cap_note')}` : base;
 	}
 
 	/**
@@ -2524,6 +2715,17 @@ export class UpgradesTab extends SimTab {
 				? i18n.t('upgrades_tab.results.alt_badge')
 				: undefined;
 
+		// Always-sim set tags (ticket 424): one badge per selected set whose items
+		// include this row, formatted with the set's label. Item membership is an
+		// exact id test against the set's `itemIds` -- the universe's set tokens are
+		// phase strings, not set names, so they cannot name which same-phase preset
+		// an item belongs to (C20/C21).
+		const setTags = this.guaranteedSetsAvailable()
+			.filter(set => this.guaranteedSetKeys.has(set.key) && set.itemIds.has(row.itemId))
+			.map(set => (
+				<span className="badge rounded-pill upgrades-set-tag ms-1">{set.label}</span>
+			));
+
 		const cell = (
 			<span className="upgrades-item-cell">
 				<a className="upgrades-item-link" ref={anchorElem} dataset={{ whtticon: 'false' }}>
@@ -2533,6 +2735,7 @@ export class UpgradesTab extends SimTab {
 					</span>
 				</a>
 				{bisLabel ? <span className="badge rounded-pill upgrades-bis-badge ms-1">{bisLabel}</span> : null}
+				{setTags}
 				{row.owned ? <span className="upgrades-text-secondary ms-1">{`(${i18n.t('upgrades_tab.results.owned')})`}</span> : null}
 			</span>
 		);
@@ -2594,6 +2797,9 @@ export class UpgradesTab extends SimTab {
 		// The content-source filter the run used (ticket 417). Names the excluded
 		// sources, or "all" when nothing was unticked.
 		lines.push(this.excludedSources.size === 0 ? 'sources: all' : `sources: excluded ${[...this.excludedSources].join(', ')}`);
+		// The always-sim sets the run guaranteed in (ticket 424).
+		const guaranteedLabels = this.guaranteedSetsAvailable().filter(s => this.guaranteedSetKeys.has(s.key)).map(s => s.label);
+		lines.push(guaranteedLabels.length === 0 ? 'sets: none' : `sets: ${guaranteedLabels.join(', ')}`);
 
 		console.info(`[upgrades] assumptions — ${lines.join(' · ')}`);
 	}

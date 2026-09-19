@@ -853,7 +853,11 @@
 		"stop": "Stop",
 		"settings_title": "Run settings",
 		"settings": {
-			"sources_title": "Content"
+			"sources_title": "Content",
+			"sets_title": "Always sim these sets",
+			"sets_caption": "Their items stay in the pool whatever the filters above say. Items not in this phase's pool are skipped.",
+			"sets_in_pool": "{{n}}/{{m}} in pool",
+			"sets_cap_note": "A candidate cap still applies after this."
 		},
 		"iterations_label": "Iterations",
 		"candidates_label": "Candidates",

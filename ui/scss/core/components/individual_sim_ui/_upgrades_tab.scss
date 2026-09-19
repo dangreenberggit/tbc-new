@@ -104,6 +104,51 @@
 	gap: var(--spacer-2);
 }
 
+// The always-sim gear-set chips (ticket 424). The chips reuse the gear tab's
+// `.saved-data-set-chip` class (styled at top level in _saved_data_manager.scss:
+// border + `.active { background: --bs-primary }`), toggled as a multi-select.
+.upgrades-set-guarantee-group {
+	display: grid;
+	gap: var(--spacer-1);
+}
+
+.upgrades-set-guarantee {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--spacer-1);
+}
+
+// The base chip has `padding: 0` (it expects a padded `.saved-data-set-name`
+// child); our chip holds its text directly, so it needs its own padding. The
+// disabled chip (its items are all out of this phase's pool) stays visible but
+// muted -- unlike the manager's `.disabled` class, which hides the chip -- so the
+// reader can see the "0/m in pool" reason it cannot be picked.
+.upgrades-set-chip {
+	padding: var(--spacer-1) var(--spacer-2);
+
+	.upgrades-set-chip-count {
+		margin-left: var(--spacer-1);
+		opacity: 0.75;
+	}
+
+	&:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+}
+
+.upgrades-set-guarantee-caption {
+	margin-bottom: 0;
+}
+
+// The per-row set tag (ticket 424). A neutral grey badge, deliberately distinct
+// from the BiS badge's `--bs-warning`, so a set tag and a BiS badge read as two
+// different things on the same row.
+.upgrades-set-tag {
+	background-color: var(--bs-gray-600);
+	color: var(--bs-body-color);
+}
+
 // Stop and Import are secondary to Run, so they share a row below it at
 // outline weight -- the action-cluster idiom of `.bulk-gear-actions`
 // (`_bulk_tab.scss:140-144`).
