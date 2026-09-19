@@ -72,15 +72,13 @@
 	margin-bottom: 0;
 }
 
-// The Content source filter in the run settings (ticket 417): a labelled group
-// whose body is a vertical stack of `.form-check` checkbox rows, one per source.
-// `--spacer-1` between rows matches the tight rhythm of a checkbox list; each
-// row is a `.upgrades-source-row[data-source]` so ticket 418's per-profession
-// gate can append a companion control beside a checkbox.
-.upgrades-source-filter-group {
-	display: grid;
-	gap: var(--spacer-1);
-}
+// The Content source filter in the run settings (ticket 417): now a site
+// `.content-block` (ticket 428), so its layout and header rule come from
+// `_content_block.scss` -- the local `display:grid`/`gap` is gone rather than
+// fighting the block's flex + `--block-spacer`. The body is a vertical stack of
+// `.form-check` checkbox rows, one per source; each row is a
+// `.upgrades-source-row[data-source]` so ticket 418's per-profession gate can
+// append a companion control beside a checkbox.
 
 .upgrades-source-filter {
 	display: flex;

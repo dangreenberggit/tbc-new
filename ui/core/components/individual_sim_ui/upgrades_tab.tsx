@@ -722,14 +722,21 @@ export class UpgradesTab extends SimTab {
 						 * The Content source filter (ticket 417): a checkbox per source
 						 * that narrows the candidate pool BEFORE the sim, the same place
 						 * and the same way the BiS prune does, rather than the old
-						 * post-run <select>. Headed by the site's `.content-block-header`
-						 * label. `refreshSourceFilter()` fills it from the pool for the
-						 * current spec/phase. Each row carries `data-source` so ticket
-						 * 418's per-profession gate can attach a companion control.
+						 * post-run <select>. Wrapped in the site's own `.content-block`
+						 * (the same markup `resultsBlock` writes -- `h6.content-block-title`
+						 * inside `.content-block-header`) so the group gets the bold title
+						 * and bottom rule the bare header lacked (ticket 428, C20).
+						 * `refreshSourceFilter()` fills it from the pool for the current
+						 * spec/phase. Each row carries `data-source` so ticket 418's
+						 * per-profession gate can attach a companion control.
 						 */}
-						<div className="upgrades-source-filter-group">
-							<span className="content-block-header">{i18n.t('upgrades_tab.settings.sources_title')}</span>
-							<div ref={sourcesGroupRef} className="upgrades-source-filter" />
+						<div className="upgrades-source-filter-group content-block">
+							<div className="content-block-header">
+								<h6 className="content-block-title">{i18n.t('upgrades_tab.settings.sources_title')}</h6>
+							</div>
+							<div className="content-block-body">
+								<div ref={sourcesGroupRef} className="upgrades-source-filter" />
+							</div>
 						</div>
 						{/*
 						 * The always-sim gear sets (ticket 424): a chip per phase-BiS
