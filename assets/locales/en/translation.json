@@ -854,6 +854,11 @@
 		"settings_title": "Run settings",
 		"settings": {
 			"sources_title": "Sources",
+			"sources_button": "Sources…",
+			"sources_summary": "{{n}} of {{m}} sources excluded",
+			"sources_summary_none": "All {{m}} sources included",
+			"sources_section_raids": "Raids",
+			"sources_section_other": "Other sources",
 			"sets_title": "Sim sets",
 			"sets_caption": "Items in these sets are always included in the sim, even if the filters above would exclude them.",
 			"sets_in_pool": "{{n}}/{{m}} in pool",

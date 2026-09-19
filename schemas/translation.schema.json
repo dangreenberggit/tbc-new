@@ -8839,6 +8839,21 @@
 						"sources_title": {
 							"type": "string"
 						},
+						"sources_button": {
+							"type": "string"
+						},
+						"sources_summary": {
+							"type": "string"
+						},
+						"sources_summary_none": {
+							"type": "string"
+						},
+						"sources_section_raids": {
+							"type": "string"
+						},
+						"sources_section_other": {
+							"type": "string"
+						},
 						"sets_title": {
 							"type": "string"
 						},
@@ -8853,7 +8868,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["sources_title", "sets_title", "sets_caption", "sets_in_pool", "sets_cap_note"]
+					"required": ["sources_title", "sources_button", "sources_summary", "sources_summary_none", "sources_section_raids", "sources_section_other", "sets_title", "sets_caption", "sets_in_pool", "sets_cap_note"]
 				},
 				"status": {
 					"type": "object",

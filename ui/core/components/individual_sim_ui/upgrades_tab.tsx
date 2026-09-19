@@ -11,6 +11,7 @@ import { SavedGearSet } from '../../proto/ui.js';
 import { ActionId } from '../../proto_utils/action_id';
 import { Database } from '../../proto_utils/database.js';
 import { TypedEvent } from '../../typed_event';
+import { BaseModal } from '../base_modal';
 import { CopyButton } from '../copy_button';
 import { getSourceInfo } from '../gear_picker/item_list';
 import { makePhaseSelector } from '../inputs/other_inputs';
@@ -507,8 +508,13 @@ export class UpgradesTab extends SimTab {
 	protected candidatesPickerElem!: HTMLElement;
 	protected setPotentialControl!: ViewToggle;
 	protected bisOnlyControl!: ViewToggle;
-	/** The source-filter group's mount, so `refreshSourceFilter` can rebuild it (ticket 417). */
+	/** The source-filter modal's body -- where `refreshSourceFilter` builds the grouped checkboxes (tickets 417/447). */
 	protected sourcesGroupElem!: HTMLElement;
+	/** The "Sources…" button and the exclusion-summary line under it (ticket 447). */
+	protected sourcesButtonElem!: HTMLButtonElement;
+	protected sourcesSummaryElem!: HTMLElement;
+	/** The `BaseModal` the button opens; the checkboxes live in its body (ticket 447). */
+	protected sourcesModal!: BaseModal;
 	// Content-source EXCLUSIONS, applied to the candidate pool before the sim
 	// (ticket 417). Stored as exclusions so the default -- an empty set -- means
 	// "every source on", and a source that first appears after a phase change is
@@ -712,7 +718,8 @@ export class UpgradesTab extends SimTab {
 		const viewControlsRef = ref<HTMLDivElement>();
 		const setPotentialPickerRef = ref<HTMLDivElement>();
 		const bisOnlyPickerRef = ref<HTMLDivElement>();
-		const sourcesGroupRef = ref<HTMLDivElement>();
+		const sourcesButtonRef = ref<HTMLButtonElement>();
+		const sourcesSummaryRef = ref<HTMLParagraphElement>();
 		const setsGroupRef = ref<HTMLDivElement>();
 		const setsCaptionRef = ref<HTMLParagraphElement>();
 		const phaseSelectorRef = ref<HTMLDivElement>();
@@ -781,15 +788,17 @@ export class UpgradesTab extends SimTab {
 						<div ref={candidatesPickerRef} className="upgrades-candidates-picker" />
 						<div ref={bisPrunePickerRef} className="upgrades-bis-prune-picker d-none" />
 						{/*
-						 * The Content source filter (ticket 417): a checkbox per source
-						 * that narrows the candidate pool BEFORE the sim, the same place
-						 * and the same way the BiS prune does, rather than the old
-						 * post-run <select>. Wrapped in the site's own `.content-block`
-						 * (the same markup `resultsBlock` writes -- `h6.content-block-title`
-						 * inside `.content-block-header`) so the group gets the bold title
-						 * and bottom rule the bare header lacked (ticket 428, C20).
-						 * `refreshSourceFilter()` fills it from the pool for the current
-						 * spec/phase. Each row carries `data-source` so ticket 418's
+						 * The Content source filter (ticket 417) narrows the candidate
+						 * pool BEFORE the sim. Ticket 447 moved it out of a flat checkbox
+						 * stack -- which stood ~43% of the settings card and pushed the
+						 * primary action down the phone screen -- into the native wowsims
+						 * filters idiom: a "Sources…" button opening a `BaseModal` of
+						 * grouped 2-col checkboxes (the same control the gear picker uses
+						 * to filter items by source), plus a one-line summary that keeps
+						 * the exclusion state visible without opening the modal. The block,
+						 * button and summary stay in this `.content-block`; the checkboxes
+						 * are built into the modal body by `refreshSourceFilter()`. Each
+						 * checkbox row still carries `data-source` so ticket 418's
 						 * per-profession gate can attach a companion control.
 						 */}
 						<div className="upgrades-source-filter-group content-block">
@@ -797,7 +806,10 @@ export class UpgradesTab extends SimTab {
 								<h6 className="content-block-title">{i18n.t('upgrades_tab.settings.sources_title')}</h6>
 							</div>
 							<div className="content-block-body">
-								<div ref={sourcesGroupRef} className="upgrades-source-filter" />
+								<button ref={sourcesButtonRef} type="button" className="btn btn-outline-primary upgrades-sources-button">
+									{i18n.t('upgrades_tab.settings.sources_button')}
+								</button>
+								<p ref={sourcesSummaryRef} className="form-text upgrades-text-secondary upgrades-sources-summary mt-1" />
 							</div>
 						</div>
 						{/*
@@ -978,7 +990,20 @@ export class UpgradesTab extends SimTab {
 		});
 		this.bisPruneElem = bisPrunePickerRef.value!;
 		this.candidatesPickerElem = candidatesPickerRef.value!;
-		this.sourcesGroupElem = sourcesGroupRef.value!;
+		this.sourcesButtonElem = sourcesButtonRef.value!;
+		this.sourcesSummaryElem = sourcesSummaryRef.value!;
+		// The source checkboxes now live in a native filters modal (ticket 447)
+		// rather than a stack in the card. `filters-menu` on the dialog reuses the
+		// gear picker's 2-col grid and section spacing (no new SCSS); the modal is
+		// parented inside the settings card so it stays within the tab's axe scope.
+		this.sourcesModal = new BaseModal(this.settingsCardElem, 'filters-menu', {
+			size: 'md',
+			title: i18n.t('upgrades_tab.settings.sources_title'),
+			disposeOnClose: false,
+		});
+		this.sourcesModal.rootElem.classList.add('upgrades-sources-modal');
+		this.sourcesGroupElem = this.sourcesModal.body;
+		this.sourcesButtonElem.addEventListener('click', () => this.sourcesModal.open());
 		this.setsGroupElem = setsGroupRef.value!;
 		this.setsCaptionElem = setsCaptionRef.value!;
 		this.statusElem = statusRef.value!;
@@ -1781,7 +1806,7 @@ export class UpgradesTab extends SimTab {
 	 * are the zoneless bucket keys; anything else is a zone.
 	 */
 	private sourceOptions(specId: SpecId, maxPhase: RankInput['maxPhase']): string[] {
-		const zoneless = new Set(Object.values(SOURCE_LABELS));
+		const zoneless = this.zonelessSourceKeys();
 		const zones: string[] = [];
 		const buckets: string[] = [];
 		const seen = new Set<string>();
@@ -1795,49 +1820,116 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * Rebuilds the Content source checkboxes for the current spec/phase (ticket
-	 * 417). Called from `refreshCandidatesPlaceholder`, so it follows spec and
-	 * phase changes exactly as the eligible-count readout does. One
-	 * `BooleanPicker` per option -- the same `filters_menu.tsx` multi-checkbox
-	 * idiom the gear picker uses -- each in a `.upgrades-source-row[data-source]`
-	 * so ticket 418's per-profession gate can append a companion control to a row.
-	 * `getValue` reads the negated exclusion set, so a source is on unless
-	 * explicitly excluded and a newly-appearing source defaults on.
+	 * The zoneless source-bucket keys -- `SOURCE_LABELS`'s values (Badge vendor,
+	 * Crafted, Reputation vendor, ...). A key not in this set is a raid zone. Both
+	 * `sourceOptions` (order) and `refreshSourceFilter` (the Raids/Other split)
+	 * read it, so the taxonomy lives in one place.
+	 */
+	private zonelessSourceKeys(): Set<string> {
+		return new Set(Object.values(SOURCE_LABELS));
+	}
+
+	/**
+	 * A `menu-section` in the sources modal, built to match the gear picker's
+	 * `FiltersMenu.newSection` markup (`filters_menu.tsx:298-309`) so the
+	 * `filters-menu` grid rules apply with no new SCSS. `newSection` is private on
+	 * `FiltersMenu`, so the markup is copied rather than subclassed (subclassing
+	 * would also build the gear picker's own sections). `data-section` lets the
+	 * captures and tests target a section by name rather than by position, which
+	 * is unstable because an empty section is skipped (C27).
+	 */
+	private newMenuSection(title: string, sectionKey: string): HTMLElement {
+		const section = document.createElement('div');
+		section.classList.add('menu-section', `${sectionKey}-section`);
+		section.dataset.section = sectionKey;
+		section.innerHTML = `
+			<div class="menu-section-header">
+				<h6 class="menu-section-title"></h6>
+			</div>
+			<div class="menu-section-content filters-menu-section-bool-list"></div>
+		`;
+		section.querySelector('.menu-section-title')!.textContent = title;
+		this.sourcesGroupElem.appendChild(section);
+		return section.querySelector('.menu-section-content') as HTMLElement;
+	}
+
+	/**
+	 * Rebuilds the Content source checkboxes for the current spec/phase (tickets
+	 * 417/447). Called from `refreshCandidatesPlaceholder`, so it follows spec and
+	 * phase changes exactly as the eligible-count readout does. The checkboxes are
+	 * split into a "Raids" section (zone keys) and an "Other sources" section
+	 * (the zoneless `SOURCE_LABELS` buckets), each a `BooleanPicker` in a
+	 * `.upgrades-source-row[data-source]` so ticket 418's per-profession gate can
+	 * append a companion control. `getValue` reads the negated exclusion set, so a
+	 * source is on unless explicitly excluded and a newly-appearing source
+	 * defaults on. An empty section is skipped (C27).
 	 */
 	private refreshSourceFilter(): void {
 		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
+		this.sourcesGroupElem.replaceChildren();
 		if (!specId) {
-			this.sourcesGroupElem.replaceChildren();
+			this.sourcesButtonElem.disabled = true;
+			this.refreshSourcesSummary();
 			return;
 		}
+		this.sourcesButtonElem.disabled = false;
 		const maxPhase = this.simUI.sim.getPhase() as RankInput['maxPhase'];
 		const options = this.sourceOptions(specId, maxPhase);
 		// Drop exclusions for sources that no longer exist in this spec/phase, so
 		// a stale exclusion cannot silently narrow a pool it is invisible in.
 		const live = new Set(options);
 		for (const key of [...this.excludedSources]) if (!live.has(key)) this.excludedSources.delete(key);
-		this.sourcesGroupElem.replaceChildren();
-		for (const key of options) {
-			const row = (<div className="upgrades-source-row" dataset={{ source: key }} />) as HTMLElement;
-			this.sourcesGroupElem.appendChild(row);
-			new BooleanPicker<UpgradesTab>(row, this, {
-				id: `upgrades-source-${key}`,
-				label: key,
-				inline: true,
-				changedEvent: _ => this.settingsChangedEmitter,
-				getValue: _ => !this.excludedSources.has(key),
-				setValue: (eventID, _obj, newValue: boolean) => {
-					if (newValue) this.excludedSources.delete(key);
-					else this.excludedSources.add(key);
-					// Update the eligible count only -- NOT refreshCandidatesPlaceholder,
-					// which rebuilds this very picker group and would destroy the picker
-					// whose setValue is running. The option set is unchanged by a tick.
-					this.updateEligibleCount();
-					this.settingsChangedEmitter.emit(eventID);
-					if (this.state.kind === 'done') this.setState({ ...this.state, stale: true });
-				},
-			});
+
+		const zoneless = this.zonelessSourceKeys();
+		const raidKeys = options.filter(key => !zoneless.has(key));
+		const otherKeys = options.filter(key => zoneless.has(key));
+		const addKeysTo = (content: HTMLElement, keys: string[]) => {
+			for (const key of keys) {
+				const row = (<div className="upgrades-source-row" dataset={{ source: key }} />) as HTMLElement;
+				content.appendChild(row);
+				new BooleanPicker<UpgradesTab>(row, this, {
+					id: `upgrades-source-${key}`,
+					label: key,
+					inline: true,
+					changedEvent: _ => this.settingsChangedEmitter,
+					getValue: _ => !this.excludedSources.has(key),
+					setValue: (eventID, _obj, newValue: boolean) => {
+						if (newValue) this.excludedSources.delete(key);
+						else this.excludedSources.add(key);
+						// Update the eligible count only -- NOT refreshCandidatesPlaceholder,
+						// which rebuilds this very picker group and would destroy the picker
+						// whose setValue is running. The option set is unchanged by a tick.
+						this.updateEligibleCount();
+						this.refreshSourcesSummary();
+						this.settingsChangedEmitter.emit(eventID);
+						if (this.state.kind === 'done') this.setState({ ...this.state, stale: true });
+					},
+				});
+			}
+		};
+		if (raidKeys.length) addKeysTo(this.newMenuSection(i18n.t('upgrades_tab.settings.sources_section_raids'), 'raids'), raidKeys);
+		if (otherKeys.length) addKeysTo(this.newMenuSection(i18n.t('upgrades_tab.settings.sources_section_other'), 'other'), otherKeys);
+		this.refreshSourcesSummary();
+	}
+
+	/**
+	 * The one-line exclusion summary under the "Sources…" button (ticket 447), so
+	 * the filter state reads without opening the modal. Empty and the button
+	 * disabled when no spec is selected.
+	 */
+	private refreshSourcesSummary(): void {
+		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
+		if (!specId) {
+			this.sourcesSummaryElem.textContent = '';
+			return;
 		}
+		const maxPhase = this.simUI.sim.getPhase() as RankInput['maxPhase'];
+		const m = this.sourceOptions(specId, maxPhase).length;
+		const n = this.excludedSources.size;
+		this.sourcesSummaryElem.textContent =
+			n === 0
+				? i18n.t('upgrades_tab.settings.sources_summary_none', { m })
+				: i18n.t('upgrades_tab.settings.sources_summary', { n, m });
 	}
 
 	/**
