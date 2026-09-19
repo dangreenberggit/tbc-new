@@ -114,6 +114,49 @@
 	gap: var(--spacer-1);
 }
 
+// The off-phase Sim-sets disclosure (ticket 448). The button reuses the tab's
+// own summary reset + rotating caret (the run-settings idiom at ::after), but
+// NOT its `media-breakpoint-down(xl)` wrap: this collapse is a grouping control
+// at every width, not a narrow-only affordance. It is the tab's button-plus-
+// class idiom rather than <details> (the run-settings note records why <details>
+// measured broken). `.upgrades-set-more` also carries `.upgrades-set-guarantee`,
+// so it inherits the flex-wrap chip layout; it stays hidden until `--open`.
+.upgrades-set-more-summary {
+	display: flex;
+	align-items: center;
+	gap: var(--spacer-2);
+	padding: 0;
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	font-size: var(--form-text-font-size, 0.875em);
+	text-align: left;
+	cursor: pointer;
+
+	&::after {
+		content: '';
+		width: 0.5rem;
+		height: 0.5rem;
+		border-right: 1px solid currentcolor;
+		border-bottom: 1px solid currentcolor;
+		transform: rotate(-45deg);
+		transition: transform 0.15s ease-in-out;
+	}
+
+	&[aria-expanded='true']::after {
+		transform: rotate(45deg);
+	}
+}
+
+.upgrades-set-more {
+	display: none;
+}
+
+.upgrades-set-more--open {
+	display: flex;
+}
+
 // The chip now carries no padding or count of its own -- the padded inner
 // `.saved-data-set-name` span comes from the shared class, and the "n/m in pool"
 // count moved into a hover tooltip (429). A set with nothing in this phase's

@@ -521,8 +521,15 @@ export class UpgradesTab extends SimTab {
 	// on by default rather than silently excluded. Page-session state like the
 	// BiS prune, not persisted.
 	private excludedSources = new Set<string>();
-	/** The set-guarantee chip group's mount (ticket 424). */
+	/** The set-guarantee chip group's mount for the always-shown chips (ticket 424). */
 	protected setsGroupElem!: HTMLElement;
+	/** The "Other phases (n)" disclosure toggle and its off-phase chip mount (ticket 448). */
+	protected setsMoreToggleElem!: HTMLButtonElement;
+	protected setsMoreElem!: HTMLElement;
+	// Whether the off-phase disclosure is open. Kept on the instance, not the DOM,
+	// so it survives the refreshSetChips rebuilds that fire on every tab show and
+	// settings change (ticket 448); default collapsed each page load.
+	private otherPhasesOpen = false;
 	/** The set-guarantee caption, whose cap note appears when a cap is set (ticket 424). */
 	protected setsCaptionElem!: HTMLElement;
 	// Keys of the gear sets whose items are kept in the pool whatever the filters
@@ -721,6 +728,8 @@ export class UpgradesTab extends SimTab {
 		const sourcesButtonRef = ref<HTMLButtonElement>();
 		const sourcesSummaryRef = ref<HTMLParagraphElement>();
 		const setsGroupRef = ref<HTMLDivElement>();
+		const setsMoreToggleRef = ref<HTMLButtonElement>();
+		const setsMoreRef = ref<HTMLDivElement>();
 		const setsCaptionRef = ref<HTMLParagraphElement>();
 		const phaseSelectorRef = ref<HTMLDivElement>();
 		const statusRef = ref<HTMLDivElement>();
@@ -831,6 +840,13 @@ export class UpgradesTab extends SimTab {
 							</div>
 							<div className="content-block-body">
 								<div ref={setsGroupRef} className="upgrades-set-guarantee" />
+								{/* Off-phase preset chips collapse behind this disclosure (ticket
+								    448). The button + collapse class is the tab's own idiom, not
+								    <details> (the run-settings note above records why <details>
+								    measured broken); it collapses at every width, so its SCSS omits
+								    the run-settings media wrap. */}
+								<button ref={setsMoreToggleRef} type="button" className="upgrades-set-more-summary d-none" attributes={{ 'aria-expanded': 'false' }} />
+								<div ref={setsMoreRef} className="upgrades-set-guarantee upgrades-set-more d-none" />
 								<p ref={setsCaptionRef} className="form-text upgrades-set-guarantee-caption upgrades-text-secondary" />
 							</div>
 						</div>
@@ -1005,6 +1021,8 @@ export class UpgradesTab extends SimTab {
 		this.sourcesGroupElem = this.sourcesModal.body;
 		this.sourcesButtonElem.addEventListener('click', () => this.sourcesModal.open());
 		this.setsGroupElem = setsGroupRef.value!;
+		this.setsMoreToggleElem = setsMoreToggleRef.value!;
+		this.setsMoreElem = setsMoreRef.value!;
 		this.setsCaptionElem = setsCaptionRef.value!;
 		this.statusElem = statusRef.value!;
 		this.statusAnnounceElem = statusAnnounceRef.value!;
@@ -1162,6 +1180,15 @@ export class UpgradesTab extends SimTab {
 		settingsToggleRef.value!.addEventListener('click', () => {
 			const expanded = settingsBodyRef.value!.classList.toggle('upgrades-run-settings-body--open');
 			settingsToggleRef.value!.setAttribute('aria-expanded', String(expanded));
+		});
+
+		// The off-phase Sim-sets disclosure (ticket 448), same button-plus-class
+		// idiom. The open state lives on the instance so refreshSetChips can restore
+		// it after a rebuild; this handler flips it and mirrors the DOM.
+		this.setsMoreToggleElem.addEventListener('click', () => {
+			this.otherPhasesOpen = !this.otherPhasesOpen;
+			this.setsMoreElem.classList.toggle('upgrades-set-more--open', this.otherPhasesOpen);
+			this.setsMoreToggleElem.setAttribute('aria-expanded', String(this.otherPhasesOpen));
 		});
 
 		// Before this, the field showed its raw `{{count}}` template until a
@@ -2037,10 +2064,28 @@ export class UpgradesTab extends SimTab {
 	 * result stale -- the same run-input behaviour as the source checkboxes. The
 	 * caption gains a cap note when a non-zero candidate cap is set and any set is
 	 * selected, because the cap still applies engine-side after the union.
+	 *
+	 * Off-phase preset chips collapse behind an "Other phases (n)" disclosure
+	 * (ticket 448). A chip goes in the always-shown row when it is current-phase
+	 * (`set.phase === maxPhase`), a saved set (`set.phase === undefined`), or
+	 * currently selected; everything else goes behind the disclosure. "Selected"
+	 * is a separate clause because a default-selected preset can be off-phase: the
+	 * universe BiS tag can resolve to a phase below maxPhase (ticket 433), so
+	 * `defaultGuaranteedSetKeys` may pick an off-phase preset that must still show.
+	 * Both mount points are cleared and hidden at the top of every rebuild, before
+	 * the `!specId` return, because refreshSetChips fires on every tab show and
+	 * settings change (C12) -- without the clear the off-phase chips would
+	 * duplicate and the "(n)" label would inflate.
 	 */
 	private refreshSetChips(): void {
 		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
 		this.setsGroupElem.replaceChildren();
+		// Clear + hide the disclosure on every rebuild, before any early return, so
+		// no off-phase chip or stale "(n)" survives a spec with no sets (C28).
+		this.setsMoreElem.replaceChildren();
+		this.setsMoreElem.classList.add('d-none');
+		this.setsMoreElem.classList.remove('upgrades-set-more--open');
+		this.setsMoreToggleElem.classList.add('d-none');
 		if (!specId) {
 			this.setsCaptionElem.textContent = '';
 			return;
@@ -2063,6 +2108,7 @@ export class UpgradesTab extends SimTab {
 			this.defaultSetsScope = scope;
 		}
 
+		let hidden = 0;
 		for (const set of sets) {
 			const inPool = [...set.itemIds].filter(id => poolIds.has(id)).length;
 			const total = set.itemIds.size;
@@ -2099,8 +2145,30 @@ export class UpgradesTab extends SimTab {
 				this.refreshSetsCaption();
 				this.settingsChangedEmitter.emit(TypedEvent.nextEventID());
 				if (this.state.kind === 'done') this.setState({ ...this.state, stale: true });
+				// Ticking/unticking does NOT move the chip between rows now -- that
+				// would rebuild the group mid-click and drop this very button (the
+				// count-only reason above). A newly-ticked off-phase chip stays behind
+				// the disclosure, a newly-unticked one stays in the main row, until the
+				// next refreshSetChips (a tab show or spec/phase change) re-sorts them.
 			});
-			this.setsGroupElem.appendChild(chip);
+			// Current-phase or saved chips, and any selected chip, sit in the always-
+			// shown row; the rest go behind the "Other phases (n)" disclosure (448).
+			const visible = set.phase === undefined || set.phase === maxPhase || this.guaranteedSetKeys.has(set.key);
+			if (visible) {
+				this.setsGroupElem.appendChild(chip);
+			} else {
+				this.setsMoreElem.appendChild(chip);
+				hidden++;
+			}
+		}
+		// Show the disclosure only when something is behind it; keep its open state
+		// across rebuilds from the instance flag, not the DOM (C12).
+		if (hidden > 0) {
+			this.setsMoreToggleElem.classList.remove('d-none');
+			this.setsMoreElem.classList.remove('d-none');
+			this.setsMoreToggleElem.textContent = i18n.t('upgrades_tab.settings.sets_other_phases', { n: hidden });
+			this.setsMoreToggleElem.setAttribute('aria-expanded', String(this.otherPhasesOpen));
+			this.setsMoreElem.classList.toggle('upgrades-set-more--open', this.otherPhasesOpen);
 		}
 		this.refreshSetsCaption();
 	}
