@@ -852,6 +852,9 @@
 		"run": "Run",
 		"stop": "Stop",
 		"settings_title": "Run settings",
+		"settings": {
+			"sources_title": "Content"
+		},
 		"iterations_label": "Iterations",
 		"candidates_label": "Candidates",
 		"candidates_placeholder": "all {{count}} eligible",
@@ -873,11 +876,7 @@
 			"set_potential": "Set potential",
 			"set_potential_tooltip": "When on, a row's DPS gain includes a set bonus the swap would earn. Bonuses too small to change the ranking are ignored.",
 			"only_bis": "BiS only",
-			"only_bis_qualifier": "{{phase}} list",
-			"raid_filter": "Content",
-			"raid_filter_all": "All",
-			"raid_filter_group_zone": "Content",
-			"raid_filter_group_other": "Other sources"
+			"only_bis_qualifier": "{{phase}} list"
 		},
 		"export": {
 			"title": "JSON export",

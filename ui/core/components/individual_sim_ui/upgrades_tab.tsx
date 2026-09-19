@@ -26,12 +26,12 @@ import { bisTagPhaseFor, cutoffIsUnmeasuredFor, epWeightsDisclosureFor, epWeight
 import { type Cutoff,cutoffAdmittingArm, setBonusNoiseFloorDps } from './upgrades/engine/cutoff';
 import type { Assumptions } from './upgrades/engine/disclosure';
 import { isKaelTempLegendary } from './upgrades/engine/kael-temp';
-import { filterPoolByPhase, type ItemSource, simSlotsForPoolSlot } from './upgrades/engine/pool';
+import { filterPoolByPhase, type ItemSource, type PoolEntry,simSlotsForPoolSlot } from './upgrades/engine/pool';
 import { type PartialRanking, type Progress, type RankedItem, type Ranking, type RankInput,rankUpgrades } from './upgrades/engine/rank';
 import { MemoryStore } from './upgrades/engine/seams/store';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
-import { applyView, raidFilterGroups, rankableSetPotential, SOURCE_LABELS, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
+import { applyView, rankableSetPotential, SOURCE_LABELS, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
 import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
 
 /**
@@ -41,17 +41,6 @@ import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
  * different `DetectedSpecId` value the engine never produces here (see
  * engine/types.ts's doc comment on `DetectedSpecId`).
  */
-/**
- * Content-filter value meaning "no filter".
- *
- * Deliberately outside the filter's own value space. Every real option
- * comes from `raidFilterGroups`, which returns a zone name or a
- * `SOURCE_LABELS` bucket -- never the empty string. A sentinel
- * inside the value space, such as the earlier `all`, would silently mean
- * "no filter" for a zone or bucket that happened to be named that way.
- */
-const NO_RAID_FILTER = '';
-
 /**
  * Which proto spec the engine can rank, and under what name.
  *
@@ -240,6 +229,39 @@ function isBisTagged(entry: { bisTags?: readonly string[] }): boolean {
 }
 
 /**
+ * The content-source key a pool entry files under -- its first zone, else its
+ * `SOURCE_LABELS` bucket. Mirrors engine/view.ts's module-private `sourcesOf`
+ * (view.ts:58-60) and `zoneKeyOf` (view.ts:87-92) over a `PoolEntry` instead of
+ * a `RankedItem`; both carry the same `ItemSource` `source`/`sources` shape
+ * (C30), and the engine helpers are not exported and the engine dir is
+ * byte-gated, so this is a transcription, not an import. If those change, this
+ * must change with them.
+ */
+function poolSourcesOf(entry: PoolEntry): readonly ItemSource[] {
+	return entry.sources ?? [entry.source];
+}
+
+function sourceKeyOf(entry: PoolEntry): string {
+	for (const s of poolSourcesOf(entry)) {
+		if ('zone' in s) return s.zone;
+	}
+	return SOURCE_LABELS[entry.source.kind] ?? entry.source.kind;
+}
+
+/**
+ * Whether a pool entry belongs to the given source key. Mirrors
+ * engine/view.ts's module-private `matchesZone` (view.ts:62-64) and
+ * `matchesRaidFilter` (view.ts:117-121): a zone matches any source carrying that
+ * zone; a zoneless bucket matches only an entry with no zone whose bucket key
+ * equals it.
+ */
+function sourceMatches(entry: PoolEntry, key: string): boolean {
+	const sources = poolSourcesOf(entry);
+	if (sources.some(s => 'zone' in s && s.zone === key)) return true;
+	return sourceKeyOf(entry) === key && !sources.some(s => 'zone' in s);
+}
+
+/**
  * A delta in the results tables, with its unit: "+104.9 DPS".
  *
  * Both renderers used to hardcode the `+`, so a negative delta rendered as
@@ -419,15 +441,14 @@ export class UpgradesTab extends SimTab {
 	protected candidatesPickerElem!: HTMLElement;
 	protected setPotentialControl!: ViewToggle;
 	protected bisOnlyControl!: ViewToggle;
-	protected raidFilterSelect!: HTMLSelectElement;
-	protected raidFilterLabel!: HTMLElement;
-	// Tracks the user's choice independent of the DOM: `refreshRaidFilter()`
-	// rebuilds `raidFilterSelect` (including a full clear while non-'done')
-	// on every render, and rebuilding a <select> resets `.value` to `""`.
-	// Reading the field back, rather than the element, is what lets the
-	// selection survive the hundreds of clear-and-rebuild cycles a run's
-	// row-landed progress callbacks trigger before the state reaches 'done'.
-	private pendingRaidFilter: string = NO_RAID_FILTER;
+	/** The source-filter group's mount, so `refreshSourceFilter` can rebuild it (ticket 417). */
+	protected sourcesGroupElem!: HTMLElement;
+	// Content-source EXCLUSIONS, applied to the candidate pool before the sim
+	// (ticket 417). Stored as exclusions so the default -- an empty set -- means
+	// "every source on", and a source that first appears after a phase change is
+	// on by default rather than silently excluded. Page-session state like the
+	// BiS prune, not persisted.
+	private excludedSources = new Set<string>();
 	protected statusElem!: HTMLElement;
 	/** Last kind written to a live region, so a re-render within one state stays silent. */
 	private announcedKind: RunState['kind'] | undefined;
@@ -605,8 +626,7 @@ export class UpgradesTab extends SimTab {
 		const viewControlsRef = ref<HTMLDivElement>();
 		const setPotentialPickerRef = ref<HTMLDivElement>();
 		const bisOnlyPickerRef = ref<HTMLDivElement>();
-		const raidFilterSelectRef = ref<HTMLSelectElement>();
-		const raidFilterLabelRef = ref<HTMLLabelElement>();
+		const sourcesGroupRef = ref<HTMLDivElement>();
 		const phaseSelectorRef = ref<HTMLDivElement>();
 		const statusRef = ref<HTMLDivElement>();
 		const statusAnnounceRef = ref<HTMLDivElement>();
@@ -672,6 +692,19 @@ export class UpgradesTab extends SimTab {
 						<div ref={iterationsPickerRef} className="upgrades-iterations-picker" />
 						<div ref={candidatesPickerRef} className="upgrades-candidates-picker" />
 						<div ref={bisPrunePickerRef} className="upgrades-bis-prune-picker d-none" />
+						{/*
+						 * The Content source filter (ticket 417): a checkbox per source
+						 * that narrows the candidate pool BEFORE the sim, the same place
+						 * and the same way the BiS prune does, rather than the old
+						 * post-run <select>. Headed by the site's `.content-block-header`
+						 * label. `refreshSourceFilter()` fills it from the pool for the
+						 * current spec/phase. Each row carries `data-source` so ticket
+						 * 418's per-profession gate can attach a companion control.
+						 */}
+						<div className="upgrades-source-filter-group">
+							<span className="content-block-header">{i18n.t('upgrades_tab.settings.sources_title')}</span>
+							<div ref={sourcesGroupRef} className="upgrades-source-filter" />
+						</div>
 						{/* Not a <label>: the picker self-names through its options, so the
 						    wrapper exists only to give the selector the same treatment
 						    the other run inputs get from their label elements. */}
@@ -707,10 +740,6 @@ export class UpgradesTab extends SimTab {
 					 */}
 					<div ref={setPotentialPickerRef} />
 					<div ref={bisOnlyPickerRef} />
-					<label ref={raidFilterLabelRef} className="upgrades-raid-filter-label d-none">
-						{i18n.t('upgrades_tab.view.raid_filter')}
-						<select ref={raidFilterSelectRef} className="upgrades-raid-filter form-select" />
-					</label>
 				</div>
 			</div>,
 		);
@@ -832,8 +861,7 @@ export class UpgradesTab extends SimTab {
 		});
 		this.bisPruneElem = bisPrunePickerRef.value!;
 		this.candidatesPickerElem = candidatesPickerRef.value!;
-		this.raidFilterSelect = raidFilterSelectRef.value!;
-		this.raidFilterLabel = raidFilterLabelRef.value!;
+		this.sourcesGroupElem = sourcesGroupRef.value!;
 		this.statusElem = statusRef.value!;
 		this.statusAnnounceElem = statusAnnounceRef.value!;
 		this.errorAlertElem = errorAlertRef.value!;
@@ -955,11 +983,10 @@ export class UpgradesTab extends SimTab {
 
 		// The two view toggles re-render on change through their picker's own
 		// `setValue` (`onChange: () => this.render()` at construction), so no
-		// manual `change` listener is wired for them here.
-		this.raidFilterSelect.addEventListener('change', () => {
-			this.pendingRaidFilter = this.raidFilterSelect.value;
-			this.render();
-		});
+		// manual `change` listener is wired for them here. The Content source
+		// filter is now a pre-sim run input (ticket 417), so it lives in the run
+		// settings and its pickers refresh the pool through their own `setValue`,
+		// not a view-controls listener here.
 		// The prune control is a run input, not a view option: it changes what the
 		// *next* run sims, so it refreshes the count the placeholder promises and
 		// nothing else. That refresh now happens in the picker's own `setValue`,
@@ -1034,6 +1061,11 @@ export class UpgradesTab extends SimTab {
 	 */
 	private refreshCandidatesPlaceholder() {
 		this.refreshPhaseLabels();
+		// Rebuild the source checkboxes for the current spec/phase (ticket 417),
+		// before the count is read so a spec/phase change's option set is live.
+		// A source picker's OWN change never routes here (it calls
+		// updateEligibleCount instead), so this never rebuilds a picker mid-event.
+		this.refreshSourceFilter();
 		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
 		if (!specId) {
 			setControlVisible(this.bisPruneElem, false);
@@ -1045,6 +1077,23 @@ export class UpgradesTab extends SimTab {
 		// Availability is decided on the unpruned pool: asking whether the
 		// pruned pool has tags would be circular once the toggle is on.
 		setControlVisible(this.bisPruneElem, poolFor(specId, maxPhase).some(isBisTagged));
+		this.updateEligibleCount();
+	}
+
+	/**
+	 * Writes the eligible count into the readout and the Candidates placeholder,
+	 * without rebuilding any control. Split from `refreshCandidatesPlaceholder`
+	 * (ticket 417) so a source checkbox can update the count from inside its own
+	 * change handler without `replaceChildren`-ing the group it lives in.
+	 */
+	private updateEligibleCount(): void {
+		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
+		if (!specId) {
+			this.setCandidatesPlaceholder(i18n.t('upgrades_tab.candidates_placeholder_uncapped'));
+			this.eligibleCountElem.textContent = i18n.t('upgrades_tab.eligible_count_unknown');
+			return;
+		}
+		const maxPhase = this.simUI.sim.getPhase() as RankInput['maxPhase'];
 		const eligible = this.eligibleCount(specId, maxPhase);
 		this.setCandidatesPlaceholder(i18n.t('upgrades_tab.candidates_placeholder', { count: eligible }));
 		// The count the Run button acts on, sitting with it in the card -- the
@@ -1157,7 +1206,14 @@ export class UpgradesTab extends SimTab {
 	 */
 	private effectivePool(specId: SpecId, maxPhase: RankInput['maxPhase'], pruned: boolean) {
 		const pool = poolFor(specId, maxPhase);
-		return pruned ? pool.filter(isBisTagged) : pool;
+		// Content-source filter (ticket 417): keep only entries whose source is
+		// still ticked. Computed alongside the BiS prune at the one place both
+		// callers (`eligibleCount` and `run`) go through, so the eligible count
+		// and the pool the run actually sims stay equal. An entry is kept unless
+		// its source key is excluded, so an empty exclusion set is a no-op.
+		const options = this.sourceOptions(specId, maxPhase);
+		const sourceKept = (e: PoolEntry) => options.some(key => !this.excludedSources.has(key) && sourceMatches(e, key));
+		return pool.filter(e => (!pruned || isBisTagged(e)) && sourceKept(e));
 	}
 
 	/**
@@ -1358,7 +1414,6 @@ export class UpgradesTab extends SimTab {
 		this.viewControlsElem.classList.toggle('upgrades-view-controls--empty', !done);
 		this.tabNavElem.classList.toggle('d-none', !done);
 		this.refreshViewControlVisibility();
-		this.refreshRaidFilter();
 		// Hidden up front on every render; the shortlist path shows it again
 		// when it has rows to export. A state with no shortlist -- running,
 		// error, or a run that cleared the cutoff with nothing -- therefore
@@ -1542,51 +1597,70 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * Fills and shows the content filter, on the same hide-when-absent rule as
-	 * the other two view controls. It is a `<select>`, not a toggle, so it
-	 * borrows only `setControlVisible` from the shared control shape and keeps
-	 * its own populate-with-value-preservation logic.
-	 *
-	 * Options come from the engine's `raidFilterGroups`, so the values -- and
-	 * their grouping into zones vs. zoneless buckets -- are the same split
-	 * `groupBy: 'raid'` would file rows under. Every row is therefore
-	 * reachable under exactly one option, including badge and crafted gear
-	 * that a zone-only filter would hide with no way to see it. Each group
-	 * renders as an `<optgroup>` so zones and buckets read as the two
-	 * different kinds of thing they are, not as one flat list of peers.
-	 *
-	 * Derived from the *unfiltered* ranking, not the current view: options
-	 * computed from the filtered rows would collapse to the one already
-	 * selected, and there would be no way back to another zone.
-	 *
-	 * A selection that no longer exists after a re-run falls back to "All"
-	 * rather than silently filtering to nothing.
+	 * The content-source options for a spec/phase, zones first then zoneless
+	 * buckets, in first-seen order over the pool -- the same split
+	 * `raidFilterGroups` makes over ranked rows, but computed over `poolFor`
+	 * because the filter now runs pre-sim (ticket 417). `SOURCE_LABELS`'s values
+	 * are the zoneless bucket keys; anything else is a zone.
 	 */
-	private refreshRaidFilter(): void {
-		// Narrowed on `this.state` directly rather than through a boolean, so
-		// the compiler can see `ranking` exists on the branch that reads it.
-		if (this.state.kind !== 'done') {
-			setControlVisible(this.raidFilterLabel, false);
-			this.raidFilterSelect.replaceChildren();
+	private sourceOptions(specId: SpecId, maxPhase: RankInput['maxPhase']): string[] {
+		const zoneless = new Set(Object.values(SOURCE_LABELS));
+		const zones: string[] = [];
+		const buckets: string[] = [];
+		const seen = new Set<string>();
+		for (const entry of poolFor(specId, maxPhase)) {
+			const key = sourceKeyOf(entry);
+			if (seen.has(key)) continue;
+			seen.add(key);
+			(zoneless.has(key) ? buckets : zones).push(key);
+		}
+		return [...zones, ...buckets];
+	}
+
+	/**
+	 * Rebuilds the Content source checkboxes for the current spec/phase (ticket
+	 * 417). Called from `refreshCandidatesPlaceholder`, so it follows spec and
+	 * phase changes exactly as the eligible-count readout does. One
+	 * `BooleanPicker` per option -- the same `filters_menu.tsx` multi-checkbox
+	 * idiom the gear picker uses -- each in a `.upgrades-source-row[data-source]`
+	 * so ticket 418's per-profession gate can append a companion control to a row.
+	 * `getValue` reads the negated exclusion set, so a source is on unless
+	 * explicitly excluded and a newly-appearing source defaults on.
+	 */
+	private refreshSourceFilter(): void {
+		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
+		if (!specId) {
+			this.sourcesGroupElem.replaceChildren();
 			return;
 		}
-		setControlVisible(this.raidFilterLabel, true);
-		const groups = raidFilterGroups(this.state.ranking.items);
-		const options = groups.flatMap(group => group.options);
-		const previous = this.pendingRaidFilter;
-		const keep = options.includes(previous) ? previous : NO_RAID_FILTER;
-		this.pendingRaidFilter = keep;
-		this.raidFilterSelect.replaceChildren(
-			<option value={NO_RAID_FILTER}>{i18n.t('upgrades_tab.view.raid_filter_all')}</option>,
-			...groups.map(group => (
-				<optgroup label={i18n.t(`upgrades_tab.view.raid_filter_group_${group.key === 'zone' ? 'zone' : 'other'}`)}>
-					{group.options.map(option => (
-						<option value={option}>{option}</option>
-					))}
-				</optgroup>
-			)),
-		);
-		this.raidFilterSelect.value = keep;
+		const maxPhase = this.simUI.sim.getPhase() as RankInput['maxPhase'];
+		const options = this.sourceOptions(specId, maxPhase);
+		// Drop exclusions for sources that no longer exist in this spec/phase, so
+		// a stale exclusion cannot silently narrow a pool it is invisible in.
+		const live = new Set(options);
+		for (const key of [...this.excludedSources]) if (!live.has(key)) this.excludedSources.delete(key);
+		this.sourcesGroupElem.replaceChildren();
+		for (const key of options) {
+			const row = (<div className="upgrades-source-row" dataset={{ source: key }} />) as HTMLElement;
+			this.sourcesGroupElem.appendChild(row);
+			new BooleanPicker<UpgradesTab>(row, this, {
+				id: `upgrades-source-${key}`,
+				label: key,
+				inline: true,
+				changedEvent: _ => this.settingsChangedEmitter,
+				getValue: _ => !this.excludedSources.has(key),
+				setValue: (eventID, _obj, newValue: boolean) => {
+					if (newValue) this.excludedSources.delete(key);
+					else this.excludedSources.add(key);
+					// Update the eligible count only -- NOT refreshCandidatesPlaceholder,
+					// which rebuilds this very picker group and would destroy the picker
+					// whose setValue is running. The option set is unchanged by a tick.
+					this.updateEligibleCount();
+					this.settingsChangedEmitter.emit(eventID);
+					if (this.state.kind === 'done') this.setState({ ...this.state, stale: true });
+				},
+			});
+		}
 	}
 
 	/**
@@ -1767,18 +1841,14 @@ export class UpgradesTab extends SimTab {
 		// The set-potential toggle is read here and nowhere else, and is never
 		// persisted: a later three-state control (off / full / weighted) has to
 		// be able to replace the checkbox without any other call site changing.
-		// The empty string is the no-filter sentinel, not a value the filter
-		// could ever legitimately carry: zoneKeyOf returns a zone name or a
-		// SOURCE_LABELS bucket, and neither is empty. Core keeps its
-		// own `all` handling, which is untouched here.
-		// `raid` carries a zone name or a zoneless bucket label; the engine's
-		// filter understands both, so badge and crafted gear stay reachable
-		// under their own option instead of vanishing under every zone.
-		const raid = this.raidFilterSelect.value;
+		//
+		// No `raid` here any more (ticket 417): the content-source filter moved to
+		// the run settings and now narrows the candidate pool BEFORE the sim
+		// (`effectivePool`), rather than filtering ranked rows after it, so
+		// `applyView` sees only the sources the run was asked for.
 		return {
 			hideOwned: false,
 			withSetPotential: this.setPotentialControl.checked,
-			...(raid === NO_RAID_FILTER ? {} : { raid }),
 		};
 	}
 
@@ -2521,6 +2591,9 @@ export class UpgradesTab extends SimTab {
 		if (specId && cutoffIsUnmeasuredFor(specId)) lines.push('cutoff: borrowed from Retribution Paladin, unmeasured for this spec');
 		if (unsourced > 0) lines.push(`source attribution: partial, ${unsourced} items admitted by database phase only`);
 		if (cap !== undefined) lines.push(`candidate cap: top ${cap} simmed in full, plus anything you already own`);
+		// The content-source filter the run used (ticket 417). Names the excluded
+		// sources, or "all" when nothing was unticked.
+		lines.push(this.excludedSources.size === 0 ? 'sources: all' : `sources: excluded ${[...this.excludedSources].join(', ')}`);
 
 		console.info(`[upgrades] assumptions — ${lines.join(' · ')}`);
 	}

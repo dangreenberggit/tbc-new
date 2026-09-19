@@ -72,6 +72,38 @@
 	margin-bottom: 0;
 }
 
+// The Content source filter in the run settings (ticket 417): a labelled group
+// whose body is a vertical stack of `.form-check` checkbox rows, one per source.
+// `--spacer-1` between rows matches the tight rhythm of a checkbox list; each
+// row is a `.upgrades-source-row[data-source]` so ticket 418's per-profession
+// gate can append a companion control beside a checkbox.
+.upgrades-source-filter-group {
+	display: grid;
+	gap: var(--spacer-1);
+}
+
+.upgrades-source-filter {
+	display: flex;
+	flex-direction: column;
+	gap: var(--spacer-1);
+
+	// The pickers default to a full-width space-between row (label and control at
+	// opposite ends); a checkbox list reads better with the box beside its label,
+	// so size each row to its content and pull the two together.
+	.boolean-picker-root {
+		width: auto;
+		justify-content: flex-start;
+		gap: var(--spacer-1);
+		margin-bottom: 0;
+	}
+}
+
+.upgrades-source-row {
+	display: flex;
+	align-items: center;
+	gap: var(--spacer-2);
+}
+
 // Stop and Import are secondary to Run, so they share a row below it at
 // outline weight -- the action-cluster idiom of `.bulk-gear-actions`
 // (`_bulk_tab.scss:140-144`).
@@ -302,13 +334,12 @@
 	// source order, which is exactly how this block's interleaving hid a
 	// layout decision before.
 	//
-	// The two checkboxes are native `BooleanPicker`s now (ticket 334), so their
+	// The two checkboxes are native `BooleanPicker`s (ticket 334), so their
 	// roots carry `.input-root.boolean-picker-root.form-check.input-inline`. The
-	// raid filter is still a hand-rolled `<label>` (a `<select>`, not a
-	// checkbox — out of scope), so it keeps the flex rule it always had.
+	// content-source filter (ticket 417) moved out of this view row and into the
+	// run settings card as its own checkbox group, so it is no longer listed here.
 	.upgrades-set-potential-control,
-	.upgrades-bis-only-control,
-	.upgrades-raid-filter-label {
+	.upgrades-bis-only-control {
 		display: flex;
 		align-items: center;
 		gap: var(--spacer-1);
