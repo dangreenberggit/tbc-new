@@ -853,9 +853,9 @@
 		"stop": "Stop",
 		"settings_title": "Run settings",
 		"settings": {
-			"sources_title": "Content",
+			"sources_title": "Sources",
 			"sets_title": "Sim sets",
-			"sets_caption": "Items in these sets are always simmed, whatever the filters above say.",
+			"sets_caption": "Items in these sets are always included in the sim, even if the filters above would exclude them.",
 			"sets_in_pool": "{{n}}/{{m}} in pool",
 			"sets_cap_note": "A candidate cap still applies after this."
 		},
@@ -889,8 +889,8 @@
 			"copy": "Copy JSON",
 			"copied": "Copied",
 			"flavour_toggle": "Use tier token ids (for a loot-priority tool, e.g. ThatsMyBis)",
-			"flavour_tokens": "Emitting the token id for tier pieces — what drops in the raid.",
-			"flavour_gear": "Emitting the gear item id for every row."
+			"flavour_tokens": "Exporting the token ID for tier pieces — the item that actually drops.",
+			"flavour_gear": "Exporting the gear item ID for every row."
 		},
 		"set_bonus": {
 			"prospective": "{{threshold}}pc bonus ({{worn}}/{{threshold}}) (+{{dps}})",
@@ -899,8 +899,8 @@
 			"package_disclosure": "{{threshold}}pc bonus ({{worn}}/{{threshold}}) (+{{dps}})",
 			"total": "with {{threshold}}pc bonus",
 			"available": "{{threshold}}pc bonus possible",
-			"tip_base": "Base: {{base}}",
-			"tip_total": "Total with set bonus: {{total}} (the ranked figure)"
+			"tip_base": "Before set bonus: {{base}}",
+			"tip_total": "Total with set bonus: {{total}} (what the rows are ranked by)"
 		},
 		"cutoff": {
 			"pct_arm": "cleared by %-arm",
