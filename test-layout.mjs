@@ -728,12 +728,17 @@ function assertLegibility(width, m) {
 		// within 1px, so a header sits over its own column's content edge.
 		const COL_NAME = { 1: 'Rank', 3: 'Slot', 4: 'DPS' };
 		const EDGE_TOL = 1; // px
+		// `start`/`end` are the logical spellings of `left`/`right` in this LTR
+		// table -- a <th> can compute `left` while its <td> computes `start` for
+		// the same rendered edge -- so canonicalise before comparing, or an
+		// unstyled column (Slot) false-fails on the spelling alone.
+		const canonAlign = a => (a === 'start' ? 'left' : a === 'end' ? 'right' : a);
 		for (const c of m.columnAlign ?? []) {
 			if (c.missing) {
 				results.push({ ok: false, msg: `[${width}] col ${c.col} alignment: header or body cell missing` });
 				continue;
 			}
-			const aligned = c.thAlign === c.tdAlign;
+			const aligned = canonAlign(c.thAlign) === canonAlign(c.tdAlign);
 			const edgeOk = c.edge <= EDGE_TOL;
 			const ok = aligned && edgeOk;
 			const side = c.rightish ? 'right' : 'left';
