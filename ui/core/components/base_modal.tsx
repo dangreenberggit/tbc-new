@@ -1,6 +1,7 @@
 import { Modal } from 'bootstrap';
 import { ref } from 'tsx-vanilla';
 
+import { randomUUID } from '../utils';
 import { Component } from './component';
 
 type ModalSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -62,11 +63,21 @@ export class BaseModal extends Component {
 		this.rootElem.classList.add('fade');
 		if (this.modalConfig.preventClose) this.rootElem.classList.add('modal-static');
 
+		// Bootstrap marks rootElem role="dialog" aria-modal="true" on show, but never
+		// names it — a visible title is not a programmatic name. Point aria-labelledby
+		// at the title so screen readers announce the dialog (axe aria-dialog-name).
+		const titleId = this.modalConfig.title ? `modal-title-${randomUUID()}` : undefined;
+		if (titleId) this.rootElem.setAttribute('aria-labelledby', titleId);
+
 		this.rootElem.appendChild(
 			<div className={`modal-dialog ${cssClass} ${modalSizeKlass} ${this.modalConfig.scrollContents ? 'modal-overflow-scroll' : ''}`} ref={dialogRef}>
 				<div className="modal-content">
 					<div className={`modal-header ${this.modalConfig.header || this.modalConfig.title ? '' : 'p-0 border-0'}`} ref={headerRef}>
-						{this.modalConfig.title && <h5 className="modal-title">{this.modalConfig.title}</h5>}
+						{this.modalConfig.title && (
+							<h5 className="modal-title" id={titleId}>
+								{this.modalConfig.title}
+							</h5>
+						)}
 						{!this.modalConfig.preventClose && (
 							<button
 								type="button"
