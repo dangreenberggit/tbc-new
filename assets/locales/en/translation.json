@@ -887,6 +887,11 @@
 			"set_potential": "Set potential",
 			"set_potential_tooltip": "When on, a row's DPS gain includes a set bonus the swap would earn. Bonuses too small to change the ranking are ignored.",
 			"set_potential_unavailable": "None of these upgrades gain a set bonus.",
+			"set_credit": "Set credit",
+			"set_credit_full": "Full set",
+			"set_credit_split": "Split share",
+			"set_credit_disabled_off": "Turn on Set potential to split the set-bonus credit.",
+			"set_credit_disabled_none": "No row here has a set-bonus credit to split.",
 			"only_bis": "BiS only",
 			"only_bis_qualifier": "{{phase}} list"
 		},
@@ -901,14 +906,20 @@
 			"flavour_gear": "Exporting the gear item ID for every row."
 		},
 		"set_bonus": {
-			"prospective": "{{threshold}}pc bonus ({{worn}}/{{threshold}}) (+{{dps}})",
-			"crosses": "{{threshold}}pc bonus: activated",
-			"confounded": "{{threshold}}pc bonus (+{{dps}}) breaks {{broken}} {{brokenThreshold}}pc",
-			"package_disclosure": "{{threshold}}pc bonus ({{worn}}/{{threshold}}) (+{{dps}})",
-			"total_inline": "{{threshold}}pc bonus: +{{dps}}",
-			"inline": "{{threshold}}pc bonus: +{{dps}}",
-			"tip_base": "Before set bonus: {{base}}",
-			"tip_total": "Total with set bonus: {{total}} (what the rows are ranked by)"
+			"hover_hint": "hover for set-bonus detail",
+			"not_counted": "set bonus not counted (unmeasured)",
+			"tip_mode_full": "Set credit: full set",
+			"tip_mode_split": "Set credit: split share",
+			"tip_item_alone": "This piece alone: {{dps}}",
+			"tip_activates_included": "activates {{threshold}}pc (included in this number)",
+			"tip_breaks": "breaks {{set}} {{threshold}}pc: -{{dps}}",
+			"tip_unmeasured": "breaks {{set}} {{threshold}}pc: value not measured",
+			"tip_future": "{{threshold}}pc, {{needed}} more: +{{dps}} (share +{{share}})",
+			"tip_break_on_complete": "completing breaks {{set}} {{threshold}}pc: -{{dps}}",
+			"tip_package_total": "Full set end state: {{dps}}",
+			"tip_total_full": "Total (full set): {{total}}{{ranked}}",
+			"tip_total_split": "Total (split share): {{total}}{{ranked}}",
+			"ranked_marker": " (ranked)"
 		},
 		"cutoff": {
 			"pct_arm": "cleared by %-arm",

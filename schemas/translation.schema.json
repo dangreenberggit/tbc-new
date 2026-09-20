@@ -8922,6 +8922,21 @@
 						"set_potential_unavailable": {
 							"type": "string"
 						},
+						"set_credit": {
+							"type": "string"
+						},
+						"set_credit_full": {
+							"type": "string"
+						},
+						"set_credit_split": {
+							"type": "string"
+						},
+						"set_credit_disabled_off": {
+							"type": "string"
+						},
+						"set_credit_disabled_none": {
+							"type": "string"
+						},
 						"only_bis": {
 							"type": "string"
 						},
@@ -8930,7 +8945,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "set_potential", "set_potential_tooltip", "set_potential_unavailable", "only_bis", "only_bis_qualifier"]
+					"required": ["title", "set_potential", "set_potential_tooltip", "set_potential_unavailable", "set_credit", "set_credit_full", "set_credit_split", "set_credit_disabled_off", "set_credit_disabled_none", "only_bis", "only_bis_qualifier"]
 				},
 				"export": {
 					"type": "object",
@@ -8966,33 +8981,51 @@
 				"set_bonus": {
 					"type": "object",
 					"properties": {
-						"prospective": {
+						"hover_hint": {
 							"type": "string"
 						},
-						"crosses": {
+						"not_counted": {
 							"type": "string"
 						},
-						"confounded": {
+						"tip_mode_full": {
 							"type": "string"
 						},
-						"package_disclosure": {
+						"tip_mode_split": {
 							"type": "string"
 						},
-						"total_inline": {
+						"tip_item_alone": {
 							"type": "string"
 						},
-						"inline": {
+						"tip_activates_included": {
 							"type": "string"
 						},
-						"tip_base": {
+						"tip_breaks": {
 							"type": "string"
 						},
-						"tip_total": {
+						"tip_unmeasured": {
+							"type": "string"
+						},
+						"tip_future": {
+							"type": "string"
+						},
+						"tip_break_on_complete": {
+							"type": "string"
+						},
+						"tip_package_total": {
+							"type": "string"
+						},
+						"tip_total_full": {
+							"type": "string"
+						},
+						"tip_total_split": {
+							"type": "string"
+						},
+						"ranked_marker": {
 							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["prospective", "crosses", "confounded", "package_disclosure", "total_inline", "inline", "tip_base", "tip_total"]
+					"required": ["hover_hint", "not_counted", "tip_mode_full", "tip_mode_split", "tip_item_alone", "tip_activates_included", "tip_breaks", "tip_unmeasured", "tip_future", "tip_break_on_complete", "tip_package_total", "tip_total_full", "tip_total_split", "ranked_marker"]
 				},
 				"cutoff": {
 					"type": "object",

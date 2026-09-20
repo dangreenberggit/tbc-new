@@ -33,7 +33,7 @@ import { type PartialRanking, type Progress, type RankedItem, type Ranking, type
 import { MemoryStore } from './upgrades/engine/seams/store';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
-import { applyView, rankableSetPotential, SOURCE_LABELS, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
+import { applyView, rankableSetPotential, type SetCreditView, SOURCE_LABELS, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
 import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
 
 /**
@@ -237,6 +237,90 @@ class ViewToggle {
 
 	setText(text: string): void {
 		if (this.qualifierElem) this.qualifierElem.textContent = text;
+	}
+}
+
+/**
+ * The ON-view set-bonus credit control (ticket 467): a two-option segmented
+ * radio group "Full set" | "Split share" inline after the Set-potential toggle.
+ * A radio pair (not a checkbox) names both states so "split" is not a negative
+ * of the default; a dropdown would hide the alternative. Enabled only when Set
+ * potential is on and at least one row has a non-null, non-zero ON credit;
+ * otherwise both inputs are disabled, the value is forced to "full", and a tippy
+ * reason hangs off the fieldset (441 idiom). Never persisted — read on render.
+ */
+class SetCreditControl {
+	private value: SetCreditView = 'full';
+	private enabled = false;
+	private readonly fieldset: HTMLFieldSetElement;
+	private readonly fullInput: HTMLInputElement;
+	private readonly splitInput: HTMLInputElement;
+	private readonly tip: TippyInstance;
+
+	constructor(
+		host: HTMLElement,
+		config: { onChange: () => void },
+	) {
+		const fullRef = ref<HTMLInputElement>();
+		const splitRef = ref<HTMLInputElement>();
+		this.fieldset = (
+			<fieldset className="upgrades-set-credit d-none" attributes={{ role: 'radiogroup' }}>
+				<legend className="upgrades-set-credit-legend">{i18n.t('upgrades_tab.view.set_credit')}</legend>
+				<label className="upgrades-set-credit-option">
+					<input ref={fullRef} type="radio" />
+					{i18n.t('upgrades_tab.view.set_credit_full')}
+				</label>
+				<label className="upgrades-set-credit-option">
+					<input ref={splitRef} type="radio" />
+					{i18n.t('upgrades_tab.view.set_credit_split')}
+				</label>
+			</fieldset>
+		) as HTMLFieldSetElement;
+		this.fullInput = fullRef.value!;
+		this.splitInput = splitRef.value!;
+		// name/value/checked set imperatively: the tsx factory's typed `attributes`
+		// does not include them for <input>.
+		this.fullInput.name = 'upgrades-set-credit';
+		this.fullInput.value = 'full';
+		this.fullInput.checked = true;
+		this.splitInput.name = 'upgrades-set-credit';
+		this.splitInput.value = 'split';
+		const onInput = (next: SetCreditView) => {
+			if (!this.enabled) return;
+			this.value = next;
+			config.onChange();
+		};
+		this.fullInput.addEventListener('change', () => onInput('full'));
+		this.splitInput.addEventListener('change', () => onInput('split'));
+		this.tip = tippy(this.fieldset, { content: '' }) as TippyInstance;
+		this.setEnabled(false, i18n.t('upgrades_tab.view.set_credit_disabled_off'));
+		host.appendChild(this.fieldset);
+	}
+
+	get credit(): SetCreditView {
+		return this.enabled ? this.value : 'full';
+	}
+
+	setVisible(visible: boolean): void {
+		this.fieldset.classList.toggle('d-none', !visible);
+	}
+
+	/**
+	 * Enable or disable the pair in place. Disabling forces the value back to
+	 * "full" and its radio checked, so a stale "split" cannot survive into a run
+	 * where nothing splits, and swaps the fieldset tooltip to the reason.
+	 */
+	setEnabled(enabled: boolean, reason?: string): void {
+		this.enabled = enabled;
+		this.fullInput.disabled = !enabled;
+		this.splitInput.disabled = !enabled;
+		this.fieldset.classList.toggle('disabled', !enabled);
+		if (!enabled) {
+			this.value = 'full';
+			this.fullInput.checked = true;
+			this.splitInput.checked = false;
+		}
+		this.tip.setContent(!enabled && reason ? reason : '');
 	}
 }
 
@@ -509,6 +593,7 @@ export class UpgradesTab extends SimTab {
 	/** The candidates picker's root, so its placeholder can be kept current. */
 	protected candidatesPickerElem!: HTMLElement;
 	protected setPotentialControl!: ViewToggle;
+	protected setCreditControl!: SetCreditControl;
 	protected bisOnlyControl!: ViewToggle;
 	/** The source-filter modal's body -- where `refreshSourceFilter` builds the grouped checkboxes (tickets 417/447). */
 	protected sourcesGroupElem!: HTMLElement;
@@ -737,6 +822,7 @@ export class UpgradesTab extends SimTab {
 		const settingsBodyRef = ref<HTMLDivElement>();
 		const viewControlsRef = ref<HTMLDivElement>();
 		const setPotentialPickerRef = ref<HTMLDivElement>();
+		const setCreditPickerRef = ref<HTMLDivElement>();
 		const bisOnlyPickerRef = ref<HTMLDivElement>();
 		const sourcesButtonRef = ref<HTMLButtonElement>();
 		const sourcesSummaryRef = ref<HTMLParagraphElement>();
@@ -910,6 +996,7 @@ export class UpgradesTab extends SimTab {
 					 * inside the click/hover target the label's `htmlFor` toggles.
 					 */}
 					<div ref={setPotentialPickerRef} />
+					<div ref={setCreditPickerRef} />
 					<div ref={bisOnlyPickerRef} />
 				</div>
 			</div>,
@@ -1021,6 +1108,9 @@ export class UpgradesTab extends SimTab {
 			label: i18n.t('upgrades_tab.view.set_potential'),
 			labelTooltip: i18n.t('upgrades_tab.view.set_potential_tooltip'),
 			extraCssClasses: ['upgrades-set-potential-control'],
+			onChange: () => this.render(),
+		});
+		this.setCreditControl = new SetCreditControl(setCreditPickerRef.value!, {
 			onChange: () => this.render(),
 		});
 		this.bisOnlyControl = new ViewToggle(bisOnlyPickerRef.value!, {
@@ -1579,6 +1669,11 @@ export class UpgradesTab extends SimTab {
 					// (candidate-pool.md §5.1.2, worker_pool_sim_runner.ts).
 					concurrency: sim.concurrency,
 					signal: this.abortController.signal,
+					// Measure the standalone value of any worn set bonus a candidate
+					// breaks, so the ON credit is a true net (ticket 467). The E-W3
+					// parity harness leaves this unset, keeping its request list
+					// identical.
+					measureBrokenSetValue: true,
 				},
 				progress => {
 					// Row-landed events (candidate-pool.md §5.1.5) are a side
@@ -1870,6 +1965,7 @@ export class UpgradesTab extends SimTab {
 		// the compiler can see `ranking` exists on the branch that reads it.
 		if (this.state.kind !== 'done') {
 			this.setPotentialControl.setVisible(false);
+			this.setCreditControl.setVisible(false);
 			this.bisOnlyControl.setVisible(false);
 			return;
 		}
@@ -1888,6 +1984,23 @@ export class UpgradesTab extends SimTab {
 		this.setPotentialControl.setVisible(true);
 		this.setPotentialControl.setEnabled(hasRankable, unavailableReason);
 		this.bisOnlyControl.setVisible(items.some(isBisTagged));
+
+		// The credit control means something only when Set potential is on and at
+		// least one row's ON credit is a non-null, non-zero number to split
+		// (ticket 467). Otherwise it stays visible but disabled with a reason
+		// (441 idiom), and its value is forced back to "Full set".
+		const canSplit =
+			items.some(
+				i =>
+					rankableSetPotential(i, noiseFloorDps, 'full') !== 0 ||
+					rankableSetPotential(i, noiseFloorDps, 'split') !== 0,
+			);
+		const creditEnabled = this.setPotentialControl.checked && canSplit;
+		const creditReason = this.setPotentialControl.checked
+			? i18n.t('upgrades_tab.view.set_credit_disabled_none')
+			: i18n.t('upgrades_tab.view.set_credit_disabled_off');
+		this.setCreditControl.setVisible(true);
+		this.setCreditControl.setEnabled(creditEnabled, creditReason);
 	}
 
 	/**
@@ -2430,6 +2543,7 @@ export class UpgradesTab extends SimTab {
 		return {
 			hideOwned: false,
 			withSetPotential: this.setPotentialControl.checked,
+			setCredit: this.setCreditControl.credit,
 		};
 	}
 
@@ -2444,7 +2558,8 @@ export class UpgradesTab extends SimTab {
 	private deltaSortKey(noiseFloorDps: number | undefined): (row: ViewRow) => number {
 		const withSetPotential = this.setPotentialControl.checked && noiseFloorDps !== undefined;
 		if (!withSetPotential) return row => row.deltaDps;
-		return row => row.deltaDps + rankableSetPotential(row, noiseFloorDps);
+		const setCredit = this.setCreditControl.credit;
+		return row => row.deltaDps + rankableSetPotential(row, noiseFloorDps, setCredit);
 	}
 
 	private resultsContent(view: ViewResult | undefined, noiseFloorDps: number | undefined): Node {
@@ -2826,14 +2941,24 @@ export class UpgradesTab extends SimTab {
 		// bonus (or the mid-run skeleton, where `noiseFloorDps` is absent), the
 		// cell is exactly what it was.
 		const setBonus =
-			this.setPotentialControl.checked && noiseFloorDps !== undefined ? rankableSetPotential(row, noiseFloorDps) : 0;
-		const showSetTotal = setBonus > 0;
+			this.setPotentialControl.checked && noiseFloorDps !== undefined
+				? rankableSetPotential(row, noiseFloorDps, this.setCreditControl.credit)
+				: 0;
+		// The ON credit can be negative (loss > gains), so a nonzero credit — not a
+		// positive one — folds into the cell total (ticket 467).
+		const showSetTotal = setBonus !== 0;
 		const deltaLabel = formatDelta(showSetTotal ? row.deltaDps + setBonus : row.deltaDps);
 		// The DPS cell shows the ranked figure plus at most one short sub-line; the
 		// base-delta / per-threshold breakdown moves into a tippy tooltip on the
 		// cell (ticket 431). `deltaLabel` (the total the row sorted on, C16) is
 		// unchanged.
-		const setBonus_ = this.setBonusPresentation(row, noiseFloorDps, showSetTotal, deltaLabel);
+		const setBonus_ = this.setBonusPresentation(
+			row,
+			noiseFloorDps,
+			this.setPotentialControl.checked && noiseFloorDps !== undefined,
+			this.setCreditControl.credit,
+			deltaLabel,
+		);
 		const removedLine = this.removedItemsLine(row);
 		const cutoffArmLine = cutoff && cutoffAdmittingArm(row.deltaDps, row.deltaPct, cutoff) === 'pct'
 			? (
@@ -2970,128 +3095,154 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * The DPS cell's set-bonus presentation (ticket 431): at most one short
-	 * `<small>` qualifier line for the cell, and a tippy tooltip carrying the full
-	 * base-delta / per-threshold breakdown. Splits what were `setBonusLine` (313)
-	 * and `setPackageLine` (336) so the cell stays one line and the detail moves
-	 * behind hover/focus. The 330-approved strings (`prospective`, `crosses`,
-	 * `confounded`, `package_disclosure`) are reused verbatim; the gating that
-	 * decides when each renders is unchanged.
+	 * The DPS cell's set-bonus presentation (tickets 431, 467): at most one short
+	 * `<small>` hover-hint line for the cell, and a tippy tooltip that itemises
+	 * every gain and every loss with a DPS figure — the NET model the owner asked
+	 * for. The inline cell figure is the row's signed total (`deltaLabel`, built
+	 * by the caller from `deltaDps + credit`); this sub-line only tells the reader
+	 * a breakdown is available.
 	 *
-	 * The figure the toggle governs is the sort key, not this text: the qualifier
-	 * and tooltip render in both toggle states with the same wording (owner rev
-	 * 2). `prospectiveBonusDps` is the raw figure the view adds to `deltaDps`
-	 * (`view.ts:163,169-172`), never the report's `SET_POTENTIAL_WEIGHTS`-
-	 * discounted one, so it reconciles with the on-screen order.
-	 *
-	 * The confounded and crossing states each carry their own single line and no
-	 * tooltip: confounded is a disclosure the view refuses to rank on (ticket 90),
-	 * and crossing's bonus is already inside `deltaDps` (a second figure would be
-	 * double-counted). The tooltip exists only when a prospective or package line
-	 * would have rendered -- the states that have a base / total to break down.
-	 *
-	 * `packages[]` disclosure (ticket 336) surfaces a reachable HIGHER-threshold
-	 * bonus the nearest-threshold prospective line does not show (a 2pc-
-	 * implemented set silent about a real 4pc). It is disclosure, never credit:
-	 * it reads `packages[]` only, adds nothing to `deltaDps`, and the sort keys
-	 * off `prospectiveBonusDps` in `view.ts`, never `packages[]`. Gated to
-	 * packages above the shown threshold whose measured `deltaDps` clears the same
-	 * per-spec noise floor, and never in the confounded/crossing states.
+	 * OFF: shows only what this one piece changes now — its own delta and any set
+	 * bonus it activates or breaks by itself (`singleBreaks`, inside `deltaDps`).
+	 * ON: adds the future bonuses committing to the set would gain
+	 * (`futureBonuses`, credited full or split) minus the bonuses completing it
+	 * would break beyond the row's own (`commitBreaks`). Each figure is floored at
+	 * the ranking's own per-spec noise floor (tickets 331/332); an absent floor is
+	 * the mid-run skeleton and suppresses every figure. A break whose value could
+	 * not be measured is named without a number (`tip_unmeasured`); when that
+	 * makes the ON credit unrankable the sub-line says `not_counted`.
 	 */
 	private setBonusPresentation(
 		row: RankedItem,
 		noiseFloorDps: number | undefined,
-		showSetTotal: boolean,
+		on: boolean,
+		setCredit: SetCreditView,
 		deltaLabel: string,
 	): { line: Node | null; tip: HTMLElement | null } {
 		const ctx = row.setContext;
 		if (!ctx) return { line: null, tip: null };
 
-		// Confounded and crossing: one line, no breakdown tooltip.
-		const breaks = ctx.prospectiveBonusBreaks;
-		if (breaks?.length) {
-			const broken = breaks[0];
-			const line = (
-				<small className="upgrades-set-bonus upgrades-set-bonus-confounded">
-					{i18n.t('upgrades_tab.set_bonus.confounded', {
-						dps: (ctx.prospectiveBonusDps ?? 0).toFixed(1),
-						threshold: ctx.nextThreshold,
-						broken: broken.setName,
-						brokenThreshold: broken.threshold,
-					})}
-				</small>
+		const floorOk = (v: number | undefined): boolean =>
+			noiseFloorDps !== undefined && v !== undefined && v > noiseFloorDps;
+
+		const singleBreaks = ctx.singleBreaks ?? [];
+		// ON-view terms only exist when the toggle is on and a floor is in hand.
+		const futureBonuses = on ? ctx.futureBonuses ?? [] : [];
+		const commitBreaks = on ? ctx.commitBreaks ?? [] : [];
+		const creditUnmeasured =
+			on && futureBonuses.length > 0 && futureBonuses.some(f => f.dps === undefined);
+
+		// Nothing to disclose: no break, no crossing, and (ON) no future/commit.
+		const anyDisclosure =
+			singleBreaks.length > 0 ||
+			ctx.crossesThreshold ||
+			futureBonuses.length > 0 ||
+			commitBreaks.length > 0;
+		if (!anyDisclosure) return { line: null, tip: null };
+
+		const line = (
+			<small className="upgrades-set-bonus">
+				{creditUnmeasured
+					? i18n.t('upgrades_tab.set_bonus.not_counted')
+					: i18n.t('upgrades_tab.set_bonus.hover_hint')}
+			</small>
+		);
+
+		// Item alone: the delta with this piece's own breaks added back, so the
+		// tooltip's first line is "what the piece does before any set accounting".
+		const itemAlone =
+			row.deltaDps + singleBreaks.reduce((sum, b) => sum + (b.dps ?? 0), 0);
+
+		const rows: Node[] = [];
+		if (on) {
+			rows.push(
+				<div>
+					{setCredit === 'split'
+						? i18n.t('upgrades_tab.set_bonus.tip_mode_split')
+						: i18n.t('upgrades_tab.set_bonus.tip_mode_full')}
+				</div>,
 			);
-			return { line, tip: null };
 		}
+		rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_item_alone', { dps: formatDelta(itemAlone) })}</div>);
 		if (ctx.crossesThreshold) {
-			const line = <small className="upgrades-set-bonus">{i18n.t('upgrades_tab.set_bonus.crosses', { threshold: ctx.piecesAfterSwap })}</small>;
-			return { line, tip: null };
+			rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_activates_included', { threshold: ctx.piecesAfterSwap })}</div>);
 		}
+		for (const b of singleBreaks) {
+			rows.push(
+				<div>
+					{b.dps !== undefined
+						? i18n.t('upgrades_tab.set_bonus.tip_breaks', {
+								set: b.setName,
+								threshold: b.threshold,
+								dps: b.dps.toFixed(1),
+							})
+						: i18n.t('upgrades_tab.set_bonus.tip_unmeasured', {
+								set: b.setName,
+								threshold: b.threshold,
+							})}
+				</div>,
+			);
+		}
+		for (const f of futureBonuses) {
+			if (f.dps === undefined) continue;
+			if (!floorOk(f.dps)) continue;
+			rows.push(
+				<div>
+					{i18n.t('upgrades_tab.set_bonus.tip_future', {
+						threshold: f.threshold,
+						needed: f.piecesNeeded,
+						dps: f.dps.toFixed(1),
+						share: (f.dps / f.threshold).toFixed(1),
+					})}
+				</div>,
+			);
+		}
+		for (const b of commitBreaks) {
+			rows.push(
+				<div>
+					{b.dps !== undefined
+						? i18n.t('upgrades_tab.set_bonus.tip_break_on_complete', {
+								set: b.setName,
+								threshold: b.threshold,
+								dps: b.dps.toFixed(1),
+							})
+						: i18n.t('upgrades_tab.set_bonus.tip_unmeasured', {
+								set: b.setName,
+								threshold: b.threshold,
+							})}
+				</div>,
+			);
+		}
+		if (on && ctx.commitPackageDeltaDps !== undefined) {
+			rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_package_total', { dps: formatDelta(ctx.commitPackageDeltaDps) })}</div>);
+		}
+		if (on) {
+			// Both totals, the active one marked "(ranked)". The active figure equals
+			// the cell's total (`deltaLabel`); the inactive one is recomputed here.
+			const fullCredit = rankableSetPotential(row, noiseFloorDps ?? 0, 'full');
+			const splitCredit = rankableSetPotential(row, noiseFloorDps ?? 0, 'split');
+			const fullTotal = formatDelta(row.deltaDps + fullCredit);
+			const splitTotal = formatDelta(row.deltaDps + splitCredit);
+			rows.push(
+				<div>
+					{i18n.t('upgrades_tab.set_bonus.tip_total_full', {
+						total: fullTotal,
+						ranked: setCredit === 'full' ? i18n.t('upgrades_tab.set_bonus.ranked_marker') : '',
+					})}
+				</div>,
+			);
+			rows.push(
+				<div>
+					{i18n.t('upgrades_tab.set_bonus.tip_total_split', {
+						total: splitTotal,
+						ranked: setCredit === 'split' ? i18n.t('upgrades_tab.set_bonus.ranked_marker') : '',
+					})}
+				</div>,
+			);
+		}
+		void deltaLabel;
 
-		// Prospective and package breakdown. Only surface figures that clear the
-		// per-spec sim-noise floor of the ranking's OWN frozen cutoff (threaded in,
-		// never a live picker lookup that may have moved since the run -- tickets
-		// 331/332). An absent floor means the mid-run skeleton, which has no honest
-		// floor yet, so nothing is disclosed. A near-zero raw figure ("-4.1") reads
-		// as a real negative bonus when the honest statement is "nothing
-		// measurable"; noise reduction is a separate item (ticket 105).
-		const hasProspective =
-			noiseFloorDps !== undefined &&
-			ctx.prospectiveBonusDps !== undefined &&
-			ctx.prospectiveBonusDps > noiseFloorDps &&
-			ctx.nextThreshold !== null;
-		const shownThreshold = ctx.nextThreshold ?? 0;
-		const packages =
-			noiseFloorDps !== undefined && ctx.packages?.length
-				? ctx.packages.filter(pkg => pkg.threshold > shownThreshold && pkg.deltaDps > noiseFloorDps).sort((a, b) => a.threshold - b.threshold)
-				: [];
-
-		if (!hasProspective && packages.length === 0) return { line: null, tip: null };
-
-		// The one cell line always shows the DPS figure inline (ticket 443 — the
-		// hover-cue mode was dropped because "hover for 4pc bonus" was as long as
-		// just showing the number, so it earned nothing). The figure is the one the
-		// tooltip carries: the prospective figure when present, else the lowest
-		// disclosed package's. `total_inline` when set potential folded the bonus
-		// into the shown DPS figure, else `inline` at the lowest reachable
-		// threshold. `line-height: 1.2` and `white-space: nowrap` keep the one-line
-		// string inside the layout gate's height budget; a longer string widens the
-		// DPS column instead of wrapping, so the SME-chosen strings are picked to
-		// fit at 375 (the gate's no-clip / no-horizontal-scroll checks decide).
-		const lowestReachable = hasProspective ? (ctx.nextThreshold as number) : packages[0].threshold;
-		const inlineDps = (hasProspective ? (ctx.prospectiveBonusDps as number) : packages[0].deltaDps).toFixed(1);
-		const lineText = showSetTotal
-			? i18n.t('upgrades_tab.set_bonus.total_inline', { threshold: ctx.nextThreshold ?? 0, dps: inlineDps })
-			: i18n.t('upgrades_tab.set_bonus.inline', { threshold: lowestReachable, dps: inlineDps });
-		const line = <small className="upgrades-set-bonus">{lineText}</small>;
-
-		// The tooltip: base, then the 330 prospective and package lines verbatim
-		// (same gating as the old cell lines), then the total when it is shown.
-		const tip = (
-			<div className="upgrades-set-bonus-tip">
-				<div>{i18n.t('upgrades_tab.set_bonus.tip_base', { base: formatDelta(row.deltaDps) })}</div>
-				{hasProspective ? (
-					<div>
-						{i18n.t('upgrades_tab.set_bonus.prospective', {
-							worn: ctx.piecesWornBefore,
-							dps: (ctx.prospectiveBonusDps as number).toFixed(1),
-							threshold: ctx.nextThreshold,
-						})}
-					</div>
-				) : null}
-				{packages.map(pkg => (
-					<div>
-						{i18n.t('upgrades_tab.set_bonus.package_disclosure', {
-							worn: ctx.piecesWornBefore,
-							dps: pkg.deltaDps.toFixed(1),
-							threshold: pkg.threshold,
-						})}
-					</div>
-				))}
-				{showSetTotal ? <div>{i18n.t('upgrades_tab.set_bonus.tip_total', { total: deltaLabel })}</div> : null}
-			</div>
-		) as HTMLElement;
-
+		const tip = (<div className="upgrades-set-bonus-tip">{rows}</div>) as HTMLElement;
 		return { line, tip };
 	}
 
@@ -3323,23 +3474,16 @@ function effectiveSlot(row: Pick<RankedItem, 'slot' | 'slotChoice'>): SimOrderNa
 /**
  * Whether a row has set-bonus potential the view would actually rank on.
  *
- * Deliberate drift: this mirrors `rankableSetPotential(item, noiseFloorDps) > 0`
- * in `view.ts`, which is private to that module. Exporting it would be an engine
- * edit, and every engine edit costs a PROVENANCE re-hash and an E-W3 run — too
- * much for a predicate that only decides whether a checkbox is on screen. If
- * `view.ts`'s definition changes, this must change with it. The floor is now
- * per-spec (`setBonusNoiseFloorDps` of the ranking's frozen cutoff, tickets
- * 331/332); the caller derives it and passes it in, so this predicate gates on
- * the same number the ranking did.
- *
- * The `prospectiveBonusBreaks` half is not an optimisation: a row whose bonus
- * is confounded by breaking another set gets no credit from the view either
- * (the `(k-1)*B` inflation argument, PLAN.md ticket 90), so counting it here
- * would offer a toggle that changes nothing.
+ * A row is "rankable" when its full-credit ON potential is non-zero at the
+ * given floor — the same `rankableSetPotential` the sort key and cell use
+ * (ticket 467 made it a named export, so this no longer hand-mirrors a private
+ * predicate). A negative net counts: a row where committing to the set is a net
+ * loss is exactly a row the toggle changes, so the toggle must be offered. The
+ * floor is per-spec (`setBonusNoiseFloorDps` of the ranking's frozen cutoff,
+ * tickets 331/332); the caller derives it and passes it in.
  */
 function hasRankableSetPotential(item: Ranking['items'][number], noiseFloorDps: number): boolean {
-	if (item.setContext?.prospectiveBonusBreaks?.length) return false;
-	return (item.setContext?.prospectiveBonusDps ?? 0) > noiseFloorDps;
+	return rankableSetPotential(item, noiseFloorDps, 'full') !== 0;
 }
 
 /** Slots with at least one ranked candidate, in SIM_ORDER (stable, matches the page's own gear ordering). */
