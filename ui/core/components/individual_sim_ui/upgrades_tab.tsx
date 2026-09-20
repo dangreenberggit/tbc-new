@@ -1037,16 +1037,18 @@ export class UpgradesTab extends SimTab {
 		// The source checkboxes now live in a native filters modal (ticket 447)
 		// rather than a stack in the card. `filters-menu` on the dialog reuses the
 		// gear picker's 2-col grid and section spacing (no new SCSS). The modal is
-		// parented to the tab root (`#upgrades-tab`), not the settings card: the
-		// card sits in `.upgrades-settings-outer-container`, which is
-		// `position: sticky` and so establishes a stacking context, and the sticky
-		// header (`z-index: 100`) is that context's sibling -- inside the card the
-		// dialog's `z-index: 1055` is ranked against the card's own auto level, so
-		// header items painted over it (ticket 458). The tab root is not a stacking
-		// context, and it is still inside the tab's axe scope the 447 note wanted,
-		// matching the Batch tab, which parents its modal to `simUI.rootElem`
-		// (`bulk_tab.tsx:182`).
-		this.sourcesModal = new BaseModal(this.rootElem, 'filters-menu', {
+		// parented to `simUI.rootElem` (`.sim-ui`), the same parent the Batch tab
+		// uses (`bulk_tab.tsx:182`), so the dialog's `z-index: 1055` outranks the
+		// sticky header (`z-index: 100`) and the header no longer paints over it
+		// (ticket 458). Two closer parents both trap the dialog below the header
+		// and were measured doing so at 1280: the settings card sits inside
+		// `.upgrades-settings-outer-container`, which is `position: sticky` and so
+		// establishes a stacking context; and the tab root `#upgrades-tab` is a
+		// `.tab-pane fade` whose opacity establishes one too. `.sim-ui` establishes
+		// neither (opacity 1, static, z auto) and is still inside the tab's axe
+		// scope, so it is the parent that both fixes the paint order and keeps 447's
+		// scope.
+		this.sourcesModal = new BaseModal(this.simUI.rootElem, 'filters-menu', {
 			size: 'md',
 			title: i18n.t('upgrades_tab.settings.sources_title'),
 			disposeOnClose: false,
@@ -1163,7 +1165,7 @@ export class UpgradesTab extends SimTab {
 		// picker row in the card it wraps normally instead (ticket 312).
 		new BooleanPicker<UpgradesTab>(bisPrunePickerRef.value!, this, {
 			id: 'upgrades-bis-prune',
-			label: i18n.t('upgrades_tab.prune.only_bis', { phase: i18n.t(`common.phases.${this.simUI.sim.getPhase()}`) }),
+			label: i18n.t('upgrades_tab.prune.only_bis'),
 			inline: true,
 			changedEvent: _ => this.settingsChangedEmitter,
 			getValue: _ => this.bisPrune,
@@ -1256,6 +1258,18 @@ export class UpgradesTab extends SimTab {
 		this.simUI.player.gearChangeEmitter.on(markStale);
 		this.simUI.player.talentsChangeEmitter.on(markStale);
 		this.simUI.sim.changeEmitter.on(markStale);
+		// The run-input pickers (iterations, candidates, prune) emit through
+		// settingsChangedEmitter. Changing one after a completed run has to mark
+		// that run stale so the disabled Simulate button re-enables (ticket 465) --
+		// otherwise a user who wants more iterations than the last run is stuck. A
+		// stale-only listener, NOT markStale: markStale also runs
+		// refreshCandidatesPlaceholder, which rebuilds the set chips, and a chip's
+		// own click emits this event mid-handler (it would drop the button it is on,
+		// the reason refreshSetChips is never called from there). render() alone
+		// touches no chip, and the chip click already marks stale through it.
+		this.settingsChangedEmitter.on(() => {
+			if (this.state.kind === 'done') this.setState({ ...this.state, stale: true });
+		});
 	}
 
 	/**
@@ -2555,6 +2569,23 @@ export class UpgradesTab extends SimTab {
 		// say so, alongside the running status line's own "N rows landed".
 		return (
 			<table className="upgrades-results-table upgrades-results-table-provisional table table-sm">
+				{/* Pin the column widths so the provisional table does not reflow as
+				    wider rows land (ticket 463): with `table-layout: fixed` (the SCSS
+				    partial scopes it to `.upgrades-results-table-provisional`) these
+				    <col> widths are the layout, and a late long item name wraps inside
+				    its cell (`overflow-wrap: anywhere`) instead of widening the column
+				    and pushing every column after it sideways. The percentages are the
+				    settled table's own column proportions measured at 1280 (Rank /
+				    Item / Slot / DPS / Source), so the running table already sits where
+				    the finished one will. The settled table and the `<md` block are
+				    untouched. */}
+				<colgroup>
+					<col style={{ width: '7%' }} />
+					<col style={{ width: '32%' }} />
+					<col style={{ width: '11%' }} />
+					<col style={{ width: '36%' }} />
+					<col style={{ width: '14%' }} />
+				</colgroup>
 				{resultsTableHead()}
 				{/* Mid-run skeleton: no ranking yet, so no per-spec floor exists —
 				    pass undefined and `setBonusPresentation` shows nothing. */}

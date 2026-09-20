@@ -864,6 +864,34 @@
 			text-align: right;
 		}
 	}
+
+	// Stop the mid-run table reflowing as wider rows land (ticket 463). The
+	// desktop rules above deliberately leave the settled table on
+	// `table-layout: auto` so a long item name can widen its column; but the
+	// provisional table re-renders on every landed row, and a late row carrying a
+	// longer name (measured on feral: the item column grew ~65px between 11 and 98
+	// rows, shoving Slot/DPS/Source sideways with it). Only the provisional table
+	// is pinned to `table-layout: fixed`, so its `<colgroup>` percentages are the
+	// layout regardless of what lands, and a long name wraps inside the Item cell
+	// instead of widening the column. The settled table (no `-provisional`) and
+	// the `<md` block are untouched, so the finished layout the layout gate
+	// measures is exactly as before.
+	.upgrades-results-table-provisional {
+		table-layout: fixed;
+		// A definite table width is what makes `table-layout: fixed` stable: the
+		// `<colgroup>` percentages resolve against it, so without this the table
+		// still sizes to its content and the whole thing (and every column with it)
+		// grows as wider rows land. Bootstrap's `.table` sets this, but the fixed
+		// layout needs it stated here so the percentages have a fixed base.
+		width: 100%;
+
+		.upgrades-item-cell {
+			// The Item column is now a fixed width; a name longer than it wraps
+			// within the cell rather than pushing the column wider. `anywhere`
+			// (not `break-word`) so a single long token can break too.
+			overflow-wrap: anywhere;
+		}
+	}
 }
 
 // De-emphasised text, ticket 304 item 1.
@@ -1109,7 +1137,13 @@
 	// panel's `flex: 4`; bumping this tab's own right panel to `flex: 1.5` takes
 	// it from ~23.8% to ~27.3% of the content row (1.5/5.5) without touching the
 	// shared file or the below-`xl` column stack.
-	.upgrades-tab-right {
+	//
+	// Scoped under `#upgrades-tab` deliberately: the shared rule is
+	// `.tab-pane-content-container .tab-panel-right { flex: 1.25 }` (a two-class
+	// descendant selector, specificity 0,2,0), so a bare `.upgrades-tab-right`
+	// (0,1,0) loses to it whatever the source order or the media query. The id
+	// prefix (1,1,0) is what actually wins, measured live at 1280.
+	#upgrades-tab .upgrades-tab-right {
 		flex: 1.5;
 	}
 }
