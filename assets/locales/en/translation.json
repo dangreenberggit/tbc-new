@@ -846,7 +846,7 @@
 	},
 	"upgrades_tab": {
 		"title": "Upgrades (<span class=\"text-success\">New</span>)",
-		"description": "<span className=\"bold\">Upgrades</span> ranks every item your filters allow by the DPS it would add if you equipped it in place of what you wear now, one item at a time. Pick your sources and sets, then Simulate. Rows land as each sim finishes.",
+		"description": "<span className=\"bold\">Upgrades</span> ranks every item your filters allow by the DPS it would add if you equipped it in place of what you wear now, one item at a time. Pick your sources and sets, then Simulate. Each row appears as its sim finishes.",
 		"subtabs": {
 			"shopping_list": "Shopping List"
 		},
