@@ -29,24 +29,17 @@
 // (ticket 453). The left panel then re-adds its own top padding below.
 #upgrades-tab {
 	padding: 0;
-
-	// One column, not `.tab-panel-left`'s `repeat(auto-fit, minmax(220px, 1fr))`.
-	// The Batch tab pins its own left panel the same way, but through a selector
-	// nested under `#bulk-tab` (`#bulk-tab .tab-pane-content-container
-	// .bulk-tab-left`, `_bulk_tab.scss:5-8`) -- that ID-plus-two-classes
-	// specificity is what actually beats `.tab-pane-content-container
-	// .tab-panel-left` (`_sim_tab.scss:14-23`), which also carries two classes.
-	// A flat `.upgrades-tab-left { grid-template-columns: auto }` compiles later
-	// in the stylesheet but loses the specificity tie-break, so the base rule's
-	// multi-column auto-fit kept winning and the description rendered in a
-	// ~220px sliver beside the sub-tabs instead of spanning the panel -- caught
-	// by comparing `getComputedStyle` against the matched CSSOM rules live, not
-	// by reading the SCSS alone. Nesting under `#upgrades-tab` the same way
-	// Batch nests under `#bulk-tab` is what makes the override actually apply.
-	.tab-pane-content-container .upgrades-tab-left {
-		grid-template-columns: auto;
-	}
 }
+
+// The panel keeps `.tab-panel-left`'s multi-column `repeat(auto-fit,
+// minmax(220px, 1fr))` -- collapsing it to one column was tried and reverted.
+// `.upgrades-tab-tabs` already spans `grid-column: 1 / -1` across however many
+// tracks that resolves to (below), which is what the layout gate's F11
+// assertion checks for (ticket 326: it asserts the span directly at <2 tracks
+// rather than accepting width parity as a proxy, specifically so a collapse
+// to one track can no longer hide a dropped span). Reducing the panel to one
+// track passed that width-parity fallback locally but failed the gate's real
+// assertion. The description now spans the same way, immediately below.
 
 .upgrades-tab-left {
 	padding-top: var(--gap-width);
@@ -388,12 +381,23 @@
 //
 // `_sim_tab.scss` is shared with every other tab and is deliberately not edited.
 //
-// BOTH children need the span, not just the new one. `auto-fit` opens a track
-// per child, so with two children the panel resolves to several 229px columns
-// here: without the span the filters would sit beside the sub-tab area, and
-// with it on the filters alone the *sub-tab area* is left holding a single
-// 229px track and its content wraps a word per line. Measured at 1824px, where
-// the panel resolves to four 229px tracks.
+// ALL THREE children need the span, not just the sub-tabs. `auto-fit` opens a
+// track per child, so with several children the panel resolves to several
+// 229px columns here: without the span the filters (or the description) would
+// sit beside the sub-tab area, and with it on the filters alone the *sub-tab
+// area* is left holding a single 229px track and its content wraps a word per
+// line. Measured at 1824px, where the panel resolves to four 229px tracks.
+//
+// The description was briefly given its own single-column grid instead of a
+// span, on the reasoning that it and the view-controls host (row 1's other
+// occupant, never itself `d-none` -- see the row-sizing rule below) needed to
+// share one cell. That reads plausibly but breaks the layout gate: the F11
+// assertion checks the *span* directly, not just full width, specifically
+// because width parity used to pass even with the span dropped (ticket 326).
+// A collapsed one-track grid removes the very thing being asserted. Spanning
+// all tracks the same way the host and sub-tabs already do is what actually
+// keeps the gate honest AND fills the panel width.
+.upgrades-description,
 .upgrades-view-controls-host,
 .upgrades-tab-left > .upgrades-tab-tabs {
 	grid-column: 1 / -1;
@@ -423,33 +427,26 @@
 // `max-content` on the first row and `auto` on the second says what the layout
 // actually means: the filter row is as tall as the filters, and the sub-tab
 // area takes the rest. Scoped to this tab's own panel class, so the shared
-// `_sim_tab.scss` stays unedited. The column sizing (collapsing `.tab-panel-left`'s
-// multi-column auto-fit to one column, ticket 461's follow-up) lives on the
-// higher-specificity `#upgrades-tab .tab-pane-content-container .upgrades-tab-left`
-// selector above, not here -- see that rule's comment for why.
+// `_sim_tab.scss` stays unedited.
 .upgrades-tab-left {
 	grid-template-rows: max-content auto;
 
-	// The pre-run description (ticket 461) and the view-controls host both sit in
-	// the first (pinned, max-content) track's single cell, not in cells of their
-	// own: the grid must stay two rows so the filter row's height is pinned and
-	// the results below it do not jump (ticket 304 item 5, asserted by the layout
+	// The pre-run description and the view-controls host both sit in the first
+	// (pinned, max-content) track's single cell, not in cells of their own: the
+	// grid must stay two rows so the filter row's height is pinned and the
+	// results below it do not jump (ticket 304 item 5, asserted by the layout
 	// gate). The description is `d-none` the moment a run leaves idle, but the
 	// view-controls host itself is never `d-none` -- only its title text is
-	// (`.upgrades-view-controls--empty .upgrades-view-controls-title`, this file)
-	// -- because its row height is a deliberate anti-jitter reservation (ticket
-	// 415, C24) kept even while it has nothing to show. So during idle both boxes
-	// are visible at once, and without an explicit column each, auto-placement
-	// gave the second one (whichever DOM order put there) its own implicit
-	// column instead of stacking it into cell (1,1) -- which is what actually
-	// pushed the description into a ~220px sliver, not the multi-column
-	// `.tab-panel-left` grid this rule already collapses to one column. Pinning
-	// both to column 1 explicitly, not just row 1, is what makes them share the
-	// one cell the comment already described.
+	// (`.upgrades-view-controls--empty .upgrades-view-controls-title`, this
+	// file) -- because its row height is a deliberate anti-jitter reservation
+	// (ticket 415, C24) kept even while it has nothing to show. So during idle
+	// both boxes are visible at once; each already spans every column (the
+	// `grid-column: 1 / -1` rule above), so pinning both to row 1 here is what
+	// makes them overlap into the one full-width cell instead of stacking into
+	// separate rows.
 	.upgrades-description,
 	.upgrades-view-controls-host {
 		grid-row: 1;
-		grid-column: 1;
 	}
 }
 
