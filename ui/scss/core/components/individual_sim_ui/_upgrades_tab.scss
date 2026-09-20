@@ -348,6 +348,10 @@
 	display: block;
 	color: var(--bs-gray-500);
 	line-height: 1.2;
+	// The hint is one short line under the DPS total; nowrap keeps it inside the
+	// layout gate's 1.5x line-height budget at 375 (ticket 467, C21/C30). The
+	// hint string is kept short so nowrap does not force horizontal scroll.
+	white-space: nowrap;
 }
 
 // The DPS cell's set-bonus breakdown tooltip (tickets 431, 467): mode line,

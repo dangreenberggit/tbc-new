@@ -906,8 +906,8 @@
 			"flavour_gear": "Exporting the gear item ID for every row."
 		},
 		"set_bonus": {
-			"hover_hint": "hover for set-bonus detail",
-			"not_counted": "set bonus not counted (unmeasured)",
+			"hover_hint": "hover for detail",
+			"not_counted": "set bonus not counted",
 			"tip_mode_full": "Set credit: full set",
 			"tip_mode_split": "Set credit: split share",
 			"tip_item_alone": "This piece alone: {{dps}}",
