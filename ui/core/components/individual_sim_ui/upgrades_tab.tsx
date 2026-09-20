@@ -479,6 +479,8 @@ export class UpgradesTab extends SimTab {
 	protected shoppingListElem: HTMLElement;
 	protected settingsCardElem: HTMLElement;
 	protected viewControlsHostElem: HTMLElement;
+	/** The pre-run explanation paragraph, hidden by `render()` once a run leaves idle (ticket 461). */
+	protected descriptionElem!: HTMLElement;
 	/** The view-controls row, so `render()` can hide its title pre-run (ticket 415). */
 	protected viewControlsElem!: HTMLElement;
 	protected eligibleCountElem!: HTMLElement;
@@ -632,10 +634,20 @@ export class UpgradesTab extends SimTab {
 		const tabContentRef = ref<HTMLDivElement>();
 		const settingsCardRef = ref<HTMLDivElement>();
 		const viewControlsHostRef = ref<HTMLDivElement>();
+		const descriptionRef = ref<HTMLParagraphElement>();
 
 		this.contentContainer.appendChild(
 			<>
 				<div className="upgrades-tab-left tab-panel-left">
+					{/*
+					 * The pre-run explanation, mirroring the Batch tab's own
+					 * `<p className="mb-0" innerHTML={bulk_tab.description}>`
+					 * (`bulk_tab.tsx:482`, ticket 461). First child of the left
+					 * panel so it reads before the controls; hidden by `render()`
+					 * once a run leaves the idle state, since the results below it
+					 * then say what the tab does.
+					 */}
+					<p ref={descriptionRef} className="upgrades-description mb-0" innerHTML={i18n.t('upgrades_tab.description')} />
 					{/*
 					 * The post-run filters sit here -- a direct child of the left
 					 * panel, before the sub-tab area -- rather than inside the
@@ -691,6 +703,7 @@ export class UpgradesTab extends SimTab {
 		this.shoppingListElem = shoppingListRef.value!;
 		this.settingsCardElem = settingsCardRef.value!;
 		this.viewControlsHostElem = viewControlsHostRef.value!;
+		this.descriptionElem = descriptionRef.value!;
 		this.tabNavElem = tabNavRef.value!;
 		this.tabContentElem = tabContentRef.value!;
 		this.paneContentElems.set('shopping-list', document.createElement('div'));
@@ -1010,9 +1023,17 @@ export class UpgradesTab extends SimTab {
 		this.sourcesSummaryElem = sourcesSummaryRef.value!;
 		// The source checkboxes now live in a native filters modal (ticket 447)
 		// rather than a stack in the card. `filters-menu` on the dialog reuses the
-		// gear picker's 2-col grid and section spacing (no new SCSS); the modal is
-		// parented inside the settings card so it stays within the tab's axe scope.
-		this.sourcesModal = new BaseModal(this.settingsCardElem, 'filters-menu', {
+		// gear picker's 2-col grid and section spacing (no new SCSS). The modal is
+		// parented to the tab root (`#upgrades-tab`), not the settings card: the
+		// card sits in `.upgrades-settings-outer-container`, which is
+		// `position: sticky` and so establishes a stacking context, and the sticky
+		// header (`z-index: 100`) is that context's sibling -- inside the card the
+		// dialog's `z-index: 1055` is ranked against the card's own auto level, so
+		// header items painted over it (ticket 458). The tab root is not a stacking
+		// context, and it is still inside the tab's axe scope the 447 note wanted,
+		// matching the Batch tab, which parents its modal to `simUI.rootElem`
+		// (`bulk_tab.tsx:182`).
+		this.sourcesModal = new BaseModal(this.rootElem, 'filters-menu', {
 			size: 'md',
 			title: i18n.t('upgrades_tab.settings.sources_title'),
 			disposeOnClose: false,
@@ -1611,6 +1632,9 @@ export class UpgradesTab extends SimTab {
 		// the nav out of flow until a run is done. `.upgrades-tab-tabs` itself
 		// stays in the DOM because the layout gate measures it (C24).
 		const done = this.state.kind === 'done';
+		// The pre-run explanation is only for the idle state; once a run starts
+		// the results and status below say what the tab is doing (ticket 461).
+		this.descriptionElem.classList.toggle('d-none', this.state.kind !== 'idle');
 		this.viewControlsElem.classList.toggle('upgrades-view-controls--empty', !done);
 		this.tabNavElem.classList.toggle('d-none', !done);
 		this.refreshViewControlVisibility();
@@ -1739,11 +1763,13 @@ export class UpgradesTab extends SimTab {
 		this.baselineSummaryElem.classList.toggle('text-warning', stopped);
 		switch (this.state.kind) {
 			case 'stopped': {
+				// No elapsed figure on a stopped run: the "Took Ns" was a partial
+				// wall-clock for a run the user cut short, and reading it as the
+				// cost of a full ranking is misleading (ticket 460).
 				const label = i18n.t('upgrades_tab.status.stopped', { dps: this.state.ranking.baseline.dps.toFixed(1) });
 				return (
 					<>
 						<span>{label}</span>
-						{this.elapsedContent()}
 					</>
 				);
 			}
@@ -2193,10 +2219,12 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * The finished run's wall-clock, appended to the done/stopped status. Empty
-	 * when no run has finished in this page session. Integer seconds: the figure
-	 * is compared against a minutes-scale budget, and sub-second precision would
-	 * imply a resolution the surface (a foregrounded browser tab) does not have.
+	 * The finished run's wall-clock, appended to the done status. Empty
+	 * when no run has finished in this page session. Not shown on a stopped run:
+	 * a partial elapsed misreads as the cost of a full ranking (ticket 460).
+	 * Integer seconds: the figure is compared against a minutes-scale budget, and
+	 * sub-second precision would imply a resolution the surface (a foregrounded
+	 * browser tab) does not have.
 	 */
 	private elapsedContent(): Node {
 		if (this.lastRunSeconds === undefined) return <></>;

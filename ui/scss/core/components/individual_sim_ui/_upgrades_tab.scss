@@ -21,6 +21,20 @@
 // settings card, the view controls to the left panel above the sub-tabs. Each
 // row's layout is declared at its own class below, with no ancestor to lose.
 
+// Cancel the shared `.tab-pane { padding-top: var(--gap-width) }`
+// (`_main.scss:11-14`) the same way the Batch tab does (`#bulk-tab { padding: 0 }`,
+// `_bulk_tab.scss:1-2`). Without this the pane padding stacks on top of the
+// settings card's own `.upgrades-settings-outer-container` padding-top, so the
+// Upgrades settings card sat one `--gap-width` lower than the Batch card
+// (ticket 453). The left panel then re-adds its own top padding below.
+#upgrades-tab {
+	padding: 0;
+}
+
+.upgrades-tab-left {
+	padding-top: var(--gap-width);
+}
+
 // The run settings card, in its own panel outside the sub-tab panes (ticket
 // 312). Structure borrowed verbatim from the Batch tab's settings card
 // (`_bulk_tab.scss:11-23`) apart from the class names: sticky under the sim
@@ -1088,6 +1102,15 @@
 
 	.upgrades-run-settings-summary {
 		display: none;
+	}
+
+	// Widen the settings panel a little at desktop widths (ticket 454). The
+	// shared `_sim_tab.scss` gives the right panel `flex: 1.25` against the left
+	// panel's `flex: 4`; bumping this tab's own right panel to `flex: 1.5` takes
+	// it from ~23.8% to ~27.3% of the content row (1.5/5.5) without touching the
+	// shared file or the below-`xl` column stack.
+	.upgrades-tab-right {
+		flex: 1.5;
 	}
 }
 

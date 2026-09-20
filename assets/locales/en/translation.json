@@ -845,7 +845,8 @@
 		}
 	},
 	"upgrades_tab": {
-		"title": "Upgrades",
+		"title": "Upgrades (<span class=\"text-success\">New</span>)",
+		"description": "<span className=\"bold\">Upgrades</span> ranks every item your filters allow by the DPS it would add if you equipped it in place of what you wear now, one item at a time. Pick your sources and sets, then Simulate. Rows land as each sim finishes.",
 		"subtabs": {
 			"shopping_list": "Shopping List"
 		},
@@ -855,7 +856,7 @@
 		"settings": {
 			"phase_label": "Phase",
 			"sources_title": "Sources",
-			"sources_button": "Sources…",
+			"sources_button": "Select item sources",
 			"sources_summary": "{{n}} of {{m}} sources excluded",
 			"sources_summary_none": "All {{m}} sources included",
 			"sources_section_raids": "Raids",
@@ -906,8 +907,8 @@
 			"crosses": "{{threshold}}pc bonus: activated",
 			"confounded": "{{threshold}}pc bonus (+{{dps}}) breaks {{broken}} {{brokenThreshold}}pc",
 			"package_disclosure": "{{threshold}}pc bonus ({{worn}}/{{threshold}}) (+{{dps}})",
-			"total_inline": "with {{threshold}}pc bonus (+{{dps}})",
-			"inline": "{{threshold}}pc: +{{dps}} DPS",
+			"total_inline": "{{threshold}}pc bonus: +{{dps}}",
+			"inline": "{{threshold}}pc bonus: +{{dps}}",
 			"tip_base": "Before set bonus: {{base}}",
 			"tip_total": "Total with set bonus: {{total}} (what the rows are ranked by)"
 		},

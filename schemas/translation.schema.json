@@ -8796,6 +8796,9 @@
 				"title": {
 					"type": "string"
 				},
+				"description": {
+					"type": "string"
+				},
 				"subtabs": {
 					"type": "object",
 					"properties": {
@@ -9143,7 +9146,7 @@
 				}
 			},
 			"additionalProperties": false,
-			"required": ["title", "subtabs", "run", "stop", "settings_title", "settings", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "export", "set_bonus", "cutoff", "prune", "progress", "results", "assumptions"]
+			"required": ["title", "description", "subtabs", "run", "stop", "settings_title", "settings", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "export", "set_bonus", "cutoff", "prune", "progress", "results", "assumptions"]
 		}
 	},
 	"additionalProperties": false,
