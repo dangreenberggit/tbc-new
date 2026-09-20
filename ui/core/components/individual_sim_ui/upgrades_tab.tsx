@@ -525,18 +525,18 @@ export class UpgradesTab extends SimTab {
 	private excludedSources = new Set<string>();
 	/** The set-guarantee chip group's mount for the always-shown chips (ticket 424). */
 	protected setsGroupElem!: HTMLElement;
-	/** The "Other phases (n)" disclosure toggle and its off-phase chip mount (ticket 448). */
+	/** The "Other sets (n)" disclosure toggle and its off-phase chip mount (ticket 448, relabelled 459). */
 	protected setsMoreToggleElem!: HTMLButtonElement;
 	protected setsMoreElem!: HTMLElement;
 	// Whether the off-phase disclosure is open. Kept on the instance, not the DOM,
 	// so it survives the refreshSetChips rebuilds that fire on every tab show and
 	// settings change (ticket 448); default collapsed each page load.
 	private otherPhasesOpen = false;
-	/** The set-guarantee caption, whose cap note appears when a cap is set (ticket 424). */
-	protected setsCaptionElem!: HTMLElement;
-	// Keys of the gear sets whose items are kept in the pool whatever the filters
-	// say (ticket 424). Page-session state; the run captures nothing extra, it
-	// just unions these back into `effectivePool`.
+	// Keys of the selected Sim sets (tickets 424/456). Page-session state; the
+	// run captures nothing extra. These define the selected-set prune in
+	// `effectivePool` (when the prune is on the pool is exactly these sets'
+	// source-kept items) and tag matching result rows; they no longer union
+	// items past the Sources filter (ticket 456).
 	private guaranteedSetKeys = new Set<string>();
 	// The specId:maxPhase the current default selection was resolved for (ticket
 	// 433). refreshSetChips re-applies the universe-BiS default only when this
@@ -743,7 +743,6 @@ export class UpgradesTab extends SimTab {
 		const setsGroupRef = ref<HTMLDivElement>();
 		const setsMoreToggleRef = ref<HTMLButtonElement>();
 		const setsMoreRef = ref<HTMLDivElement>();
-		const setsCaptionRef = ref<HTMLParagraphElement>();
 		const phaseSelectorRef = ref<HTMLDivElement>();
 		const statusRef = ref<HTMLDivElement>();
 		const statusAnnounceRef = ref<HTMLDivElement>();
@@ -807,7 +806,22 @@ export class UpgradesTab extends SimTab {
 					</button>
 					<div ref={settingsBodyRef} className="upgrades-run-settings-body">
 						<div ref={iterationsPickerRef} className="upgrades-iterations-picker" />
-						<div ref={candidatesPickerRef} className="upgrades-candidates-picker" />
+						{/*
+						 * The Candidates cap is hidden from the user surface (ticket 466):
+						 * a smaller N is a pre-sim cut of the EP order that silently drops
+						 * real upgrades the sim exists to find, and the user cannot audit
+						 * what was cut (unlike Sources and the selected-set prune, which
+						 * both name what they drop). The row stays in the DOM -- the
+						 * desktop-gate harness sets the cap by writing
+						 * `.upgrades-candidates-picker input` located by selector, which
+						 * works on a `display:none` element -- but is `d-none` unless the
+						 * page URL carries `?upgrades-dev`. The default cap is 0 (no cap),
+						 * so a hidden control caps nothing.
+						 */}
+						<div
+							ref={candidatesPickerRef}
+							className={`upgrades-candidates-picker${new URLSearchParams(window.location.search).has('upgrades-dev') ? '' : ' d-none'}`}
+						/>
 						<div ref={bisPrunePickerRef} className="upgrades-bis-prune-picker d-none" />
 						{/*
 						 * The Content source filter (ticket 417) narrows the candidate
@@ -860,7 +874,6 @@ export class UpgradesTab extends SimTab {
 								    the run-settings media wrap. */}
 								<button ref={setsMoreToggleRef} type="button" className="upgrades-set-more-summary d-none" attributes={{ 'aria-expanded': 'false' }} />
 								<div ref={setsMoreRef} className="upgrades-set-guarantee upgrades-set-more d-none" />
-								<p ref={setsCaptionRef} className="form-text upgrades-set-guarantee-caption upgrades-text-secondary" />
 							</div>
 						</div>
 						{/* Not a <label>: the picker self-names through its options, so the
@@ -1044,7 +1057,6 @@ export class UpgradesTab extends SimTab {
 		this.setsGroupElem = setsGroupRef.value!;
 		this.setsMoreToggleElem = setsMoreToggleRef.value!;
 		this.setsMoreElem = setsMoreRef.value!;
-		this.setsCaptionElem = setsCaptionRef.value!;
 		this.statusElem = statusRef.value!;
 		this.statusAnnounceElem = statusAnnounceRef.value!;
 		this.errorAlertElem = errorAlertRef.value!;
@@ -1277,10 +1289,12 @@ export class UpgradesTab extends SimTab {
 			this.eligibleCountElem.textContent = i18n.t('upgrades_tab.eligible_count_unknown');
 			return;
 		}
-		const maxPhase = this.simUI.sim.getPhase() as RankInput['maxPhase'];
-		// Availability is decided on the unpruned pool: asking whether the
-		// pruned pool has tags would be circular once the toggle is on.
-		setControlVisible(this.bisPruneElem, poolFor(specId, maxPhase).some(isBisTagged));
+		// The prune ("Sim only selected set items") is available only when at
+		// least one set is selected -- with nothing selected it would empty the
+		// pool, so the toggle is hidden and `pruneEffective` reads false (ticket
+		// 455/456). `refreshSetChips` above has already resolved the current
+		// spec/phase's default selection, so this reads the settled set.
+		setControlVisible(this.bisPruneElem, this.guaranteedItemIds().size > 0);
 		this.updateEligibleCount();
 	}
 
@@ -1316,14 +1330,21 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * Writes the selected phase into the two controls that used to say "this
-	 * phase".
+	 * Writes the selected phase into the view qualifier, and (re)writes the
+	 * prune-toggle label.
 	 *
-	 * "Sim only BiS-list items (this phase)" left the reader to work out which
-	 * phase that was, and it changes under them from the Gear tab. Both labels
-	 * now name it. `common.phases.N` is the page's own spelling of a phase
-	 * ("Phase 3 (2.2 - T6)"), so the tab agrees with every other phase control
-	 * on the page instead of inventing a second wording.
+	 * The prune label no longer carries a phase: after ticket 455 it reads
+	 * "Sim only selected set items", naming the selected sets rather than a
+	 * phase's BiS list. The write stays here because the prune control is a
+	 * picker that renders its label once from config, so the text is written
+	 * onto that label element rather than through the picker's value channel,
+	 * and the picker is rebuilt on spec/phase change.
+	 *
+	 * The view qualifier ("{{phase}} list") still names the phase, since the
+	 * BiS-only view control still filters by the phase's BiS tags.
+	 * `common.phases.N` is the page's own spelling of a phase ("Phase 3
+	 * (2.2 - T6)"), so the tab agrees with every other phase control on the
+	 * page instead of inventing a second wording.
 	 *
 	 * Called from `refreshCandidatesPlaceholder`, which the staleness listener
 	 * already runs on `sim.changeEmitter` -- the emitter a phase change arrives
@@ -1332,12 +1353,9 @@ export class UpgradesTab extends SimTab {
 	 */
 	private refreshPhaseLabels(): void {
 		const phase = i18n.t(`common.phases.${this.simUI.sim.getPhase()}`);
-		// The prune control is a picker, which renders its label once from
-		// config, so the phase is written into that label element rather than
-		// through the picker's value channel.
 		const pruneLabel = this.bisPruneElem.querySelector('.form-label');
 		if (pruneLabel) {
-			const text = i18n.t('upgrades_tab.prune.only_bis', { phase });
+			const text = i18n.t('upgrades_tab.prune.only_bis');
 			pruneLabel.textContent = text;
 			pruneLabel.setAttribute('title', text);
 		}
@@ -1347,12 +1365,12 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * Whether the next run should prune to BIS-tagged candidates.
+	 * Whether the next run should prune to the selected sets' items (ticket 456).
 	 *
 	 * The single read of the prune checkbox. Gated on visibility so a hidden
-	 * control cannot apply an invisible filter — the safety the old force-off
-	 * provided, without discarding the user's choice while the control is
-	 * away (see `ViewToggle`).
+	 * control cannot apply an invisible filter — the toggle is hidden when no
+	 * set is selected, so this reads false and `effectivePool` never prunes to
+	 * an empty selection.
 	 */
 	private pruneEffective(): boolean {
 		return !this.bisPruneElem.classList.contains('d-none') && this.bisPrune;
@@ -1390,51 +1408,44 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * The candidate pool the next run will use: the whole universe, or only its
-	 * BIS-tagged entries when the pre-sim prune is on.
+	 * The candidate pool the next run will use:
+	 * `pool(spec, phase).filter(sourceKept ∧ (¬pruned ∨ inSelectedSets))`.
 	 *
-	 * The tag filter is applied to the raw `poolFor` result, before any phase
+	 * Two filters, applied to the raw `poolFor` result before any phase
 	 * filtering, at the one place both callers go through. `eligibleCount`
 	 * wraps this in the phase and Kael filters; `run()` hands the result to the
-	 * engine, which applies its own phase filter. Filtering tags first at both
-	 * sites is what keeps the count in the Candidates placeholder equal to the
-	 * total the run then reports.
+	 * engine, which applies its own phase filter. Filtering first at both sites
+	 * is what keeps the count in the Candidates placeholder equal to the total
+	 * the run then reports.
 	 *
-	 * The prune is deliberately tags-only. It narrows which candidates get
-	 * simmed, not what they are compared against: the baseline is the gear read
-	 * off the page either way, so every delta means the same thing. The only
-	 * visible difference is that an untagged item the player is wearing gets no
-	 * greyed "already have it" row of its own, which is what "BiS-list items"
-	 * already says. The assumptions console line names the pool a result came
-	 * from.
+	 * The Sim-sets selection no longer unions items back past the Sources
+	 * filter (ticket 456): the owner wanted the sets to *define* the prune, not
+	 * to override the filters. So a selected set now only matters through the
+	 * prune -- when the prune is on, the pool is exactly the selected sets'
+	 * items that survive the Sources filter; when it is off, the sets do not
+	 * touch the candidate pool at all (they still tag result rows, `:3067`).
+	 * The union iterated the phase-bounded pool, so it only ever overrode
+	 * Sources anyway; removing it leaves the default run (no source excluded)
+	 * unchanged.
+	 *
+	 * The baseline is the gear read off the page either way, so every delta
+	 * means the same thing whichever items are simmed. The assumptions console
+	 * line names the pool a result came from.
 	 */
 	private effectivePool(specId: SpecId, maxPhase: RankInput['maxPhase'], pruned: boolean) {
 		const pool = poolFor(specId, maxPhase);
 		// Content-source filter (ticket 417): keep only entries whose source is
-		// still ticked. Computed alongside the BiS prune at the one place both
-		// callers (`eligibleCount` and `run`) go through, so the eligible count
-		// and the pool the run actually sims stay equal. An entry is kept unless
-		// its source key is excluded, so an empty exclusion set is a no-op.
+		// still ticked. An entry is kept unless its source key is excluded, so an
+		// empty exclusion set is a no-op.
 		const options = this.sourceOptions(specId, maxPhase);
 		const sourceKept = (e: PoolEntry) => options.some(key => !this.excludedSources.has(key) && sourceMatches(e, key));
-		const filtered = pool.filter(e => (!pruned || isBisTagged(e)) && sourceKept(e));
-		// Always-sim sets (ticket 424): union back every pool entry whose itemId is
-		// in a selected set, regardless of the prune and source filters above. A
-		// set item absent from this phase's pool cannot be added (no PoolEntry
-		// exists for it), which is the disabled-chip limit the UI states. Deduped
-		// by itemId+slot so a source-kept entry is not doubled.
-		const guaranteed = this.guaranteedItemIds();
-		if (guaranteed.size === 0) return filtered;
-		const seen = new Set(filtered.map(e => `${e.itemId}:${e.slot}`));
-		const unioned = [...filtered];
-		for (const e of pool) {
-			if (!guaranteed.has(e.itemId)) continue;
-			const dedupe = `${e.itemId}:${e.slot}`;
-			if (seen.has(dedupe)) continue;
-			seen.add(dedupe);
-			unioned.push(e);
-		}
-		return unioned;
+		// Selected-set prune (tickets 455/456): when on, keep only items in a
+		// selected set. `guaranteedItemIds()` is empty when no set is ticked, and
+		// the prune toggle is hidden in that case (`refreshCandidatesPlaceholder`),
+		// so `pruneEffective()` reads false and this branch is not reached with an
+		// empty set.
+		const selected = this.guaranteedItemIds();
+		return pool.filter(e => sourceKept(e) && (!pruned || selected.has(e.itemId)));
 	}
 
 	/**
@@ -1623,7 +1634,14 @@ export class UpgradesTab extends SimTab {
 	}
 
 	private render() {
-		this.runButton.disabled = this.state.kind === 'running';
+		// Disable Simulate while a run is in flight, and after a completed run
+		// until a setting or gear change marks it stale (ticket 465). Clicking it
+		// again with nothing changed only replays the cached ranking
+		// (`rankUpgrades` returns the stored result on a matching input hash), so
+		// it looked like a dead button; the stale flag (set by the settings and
+		// gear/talent listeners) re-enables it. A 'stopped' or 'error' state is
+		// never `done && !stale`, so the button stays live to re-run after either.
+		this.runButton.disabled = this.state.kind === 'running' || (this.state.kind === 'done' && !this.state.stale);
 		this.stopButton.disabled = this.state.kind !== 'running';
 		// Pre-run there is nothing to filter and no results to sub-tab, so the
 		// "View options" heading and the lone "Shopping List" tab strip would be
@@ -2093,12 +2111,13 @@ export class UpgradesTab extends SimTab {
 	 * hover tooltip on the button rather than in the chip text. A set with n === 0
 	 * is muted (`--unavailable`) and `aria-disabled` but still shown, so the reader
 	 * can hover for the reason. Clicking the inner span toggles the key, the
-	 * `.active` state and `aria-pressed`, then refreshes the count and marks a done
-	 * result stale -- the same run-input behaviour as the source checkboxes. The
-	 * caption gains a cap note when a non-zero candidate cap is set and any set is
-	 * selected, because the cap still applies engine-side after the union.
+	 * `.active` state and `aria-pressed`, then re-runs the prune toggle's
+	 * visibility, refreshes the count and marks a done result stale -- the same
+	 * run-input behaviour as the source checkboxes. The selected sets now define
+	 * the prune (ticket 456): they no longer union items past the Sources filter,
+	 * so there is no always-included caption to keep.
 	 *
-	 * Off-phase preset chips collapse behind an "Other phases (n)" disclosure
+	 * Off-phase preset chips collapse behind an "Other sets (n)" disclosure
 	 * (ticket 448). A chip goes in the always-shown row when it is current-phase
 	 * (`set.phase === maxPhase`), a saved set (`set.phase === undefined`), or
 	 * currently selected; everything else goes behind the disclosure. "Selected"
@@ -2120,7 +2139,6 @@ export class UpgradesTab extends SimTab {
 		this.setsMoreElem.classList.remove('upgrades-set-more--open');
 		this.setsMoreToggleElem.classList.add('d-none');
 		if (!specId) {
-			this.setsCaptionElem.textContent = '';
 			return;
 		}
 		const maxPhase = this.simUI.sim.getPhase() as RankInput['maxPhase'];
@@ -2172,10 +2190,15 @@ export class UpgradesTab extends SimTab {
 				else this.guaranteedSetKeys.add(set.key);
 				const nowActive = chip.classList.toggle('active');
 				chip.setAttribute('aria-pressed', String(nowActive));
+				// The prune ("Sim only selected set items") is available only while a
+				// set is selected (ticket 455/456): re-run its visibility here so
+				// unticking the last set hides the toggle and ticking the first
+				// reveals it. A hidden toggle reads as off (`pruneEffective`), so the
+				// pool falls back to the full source-filtered universe.
+				setControlVisible(this.bisPruneElem, this.guaranteedItemIds().size > 0);
 				// Count only, not refreshCandidatesPlaceholder -- that rebuilds this
 				// chip group and would drop the button mid-click.
 				this.updateEligibleCount();
-				this.refreshSetsCaption();
 				this.settingsChangedEmitter.emit(TypedEvent.nextEventID());
 				if (this.state.kind === 'done') this.setState({ ...this.state, stale: true });
 				// Ticking/unticking does NOT move the chip between rows now -- that
@@ -2185,7 +2208,7 @@ export class UpgradesTab extends SimTab {
 				// next refreshSetChips (a tab show or spec/phase change) re-sorts them.
 			});
 			// Current-phase or saved chips, and any selected chip, sit in the always-
-			// shown row; the rest go behind the "Other phases (n)" disclosure (448).
+			// shown row; the rest go behind the "Other sets (n)" disclosure (448/459).
 			const visible = set.phase === undefined || set.phase === maxPhase || this.guaranteedSetKeys.has(set.key);
 			if (visible) {
 				this.setsGroupElem.appendChild(chip);
@@ -2203,19 +2226,6 @@ export class UpgradesTab extends SimTab {
 			this.setsMoreToggleElem.setAttribute('aria-expanded', String(this.otherPhasesOpen));
 			this.setsMoreElem.classList.toggle('upgrades-set-more--open', this.otherPhasesOpen);
 		}
-		this.refreshSetsCaption();
-	}
-
-	/**
-	 * The set-guarantee caption: the base explanation, plus a cap note when a
-	 * non-zero candidate cap is set and at least one set is selected -- because the
-	 * cap still applies engine-side after the union, so a guaranteed item can still
-	 * fall outside the cap (ticket 424, C16/C17).
-	 */
-	private refreshSetsCaption(): void {
-		const base = i18n.t('upgrades_tab.settings.sets_caption');
-		const capActive = this.readCandidateCap() !== undefined && this.guaranteedSetKeys.size > 0;
-		this.setsCaptionElem.textContent = capActive ? `${base} ${i18n.t('upgrades_tab.settings.sets_cap_note')}` : base;
 	}
 
 	/**

@@ -850,7 +850,7 @@
 		"subtabs": {
 			"shopping_list": "Shopping List"
 		},
-		"run": "Run",
+		"run": "Simulate",
 		"stop": "Stop",
 		"settings_title": "Run settings",
 		"settings": {
@@ -862,10 +862,8 @@
 			"sources_section_raids": "Raids",
 			"sources_section_other": "Other sources",
 			"sets_title": "Sim sets",
-			"sets_caption": "Items in these sets are always included in the sim, even if the filters above would exclude them.",
 			"sets_in_pool": "{{n}}/{{m}} in pool",
-			"sets_cap_note": "A candidate cap still applies after this.",
-			"sets_other_phases": "Other phases ({{n}})"
+			"sets_other_phases": "Other sets ({{n}})"
 		},
 		"iterations_label": "Iterations",
 		"candidates_label": "Candidates",
@@ -917,7 +915,7 @@
 			"pct_arm_title": "Above the cutoff via the percentage arm ({{pct}}%): its absolute DPS is below the {{abs}} DPS threshold."
 		},
 		"prune": {
-			"only_bis": "Sim only {{phase}} BiS-list items"
+			"only_bis": "Sim only selected set items"
 		},
 		"progress": {
 			"aria_label": "Ranking progress",
