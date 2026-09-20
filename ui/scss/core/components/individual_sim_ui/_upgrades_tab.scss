@@ -395,19 +395,29 @@
 	align-self: start;
 }
 
-// The panel's own row sizing, pinned so the filter row cannot change height
-// with the content below it. `.tab-panel-left`'s `auto-fit` track sizing is
-// written for a single child; with two spanning children the implicit rows are
-// sized from the whole panel's content, and the first row was measured growing
-// from 31.5px to 81.875px when the sub-tab pane's content shrank at run start
-// -- pushing the results block down ~50px and back, the jump the height
-// reservation exists to prevent (ticket 304 item 5).
+// The panel's own column and row sizing, pinned so the filter row cannot
+// change height with the content below it. `.tab-panel-left`'s base
+// `grid-template-columns: repeat(auto-fit, minmax(220px, 1fr))` is written to
+// spread several same-height cards across a row; with this panel's two stacked
+// children (the description/filter row, then the sub-tabs) it let the auto-fit
+// engine open a second column whenever the viewport was wide enough, so the
+// description rendered in a ~220px sliver beside the sub-tab area instead of
+// spanning the panel -- unlike the Batch tab, which pins its own left panel to
+// one column the same way (`grid-template-columns: auto`, `_bulk_tab.scss:7`).
+// Collapsing to one column here matches that and is what makes the description
+// span full width like Batch's does.
 //
+// The row sizing is pinned for a related reason: with two spanning children
+// the implicit rows are sized from the whole panel's content, and the first
+// row was measured growing from 31.5px to 81.875px when the sub-tab pane's
+// content shrank at run start -- pushing the results block down ~50px and back,
+// the jump the height reservation exists to prevent (ticket 304 item 5).
 // `max-content` on the first row and `auto` on the second says what the layout
 // actually means: the filter row is as tall as the filters, and the sub-tab
 // area takes the rest. Scoped to this tab's own panel class, so the shared
 // `_sim_tab.scss` stays unedited.
 .upgrades-tab-left {
+	grid-template-columns: auto;
 	grid-template-rows: max-content auto;
 
 	// The pre-run description (ticket 461) and the view-controls host both sit in
