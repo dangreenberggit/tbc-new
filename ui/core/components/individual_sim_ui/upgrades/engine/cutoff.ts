@@ -44,18 +44,18 @@ export const CUTOFF: Cutoff = { absDps: 3.4, pct: 0.15 };
  * This flat `√2` bar is applied to **every** prospective bonus, 2pc and 4pc
  * alike, and that is deliberate — it is a conservative-low ranking bar, not a
  * per-piece-count-tuned one. A 4pc bonus folds six sims (base + package + four
- * singles, one sample per added piece; see rank.ts where `prospectiveBonusDps`
- * is set from the threshold's measured bonus), so its own noise is ≈ √6×1.678 —
+ * singles, one sample per added piece; see rank.ts where a threshold's net
+ * bonus is attached as a row's `futureBonuses` entry), so its own noise is ≈ √6×1.678 —
  * a √3-vs-single ratio, ~1.22× this floor (≈5.9 ret). Holding 4pc bonuses to the
  * lower 2pc bar therefore *under*-filters 4pc noise in a narrow window (≈4.8–5.9
  * ret). This is the intended direction for a bar whose job is to admit rather
  * than hide: raising it would filter more real bonuses out, and the cutoff runs
  * before replication precisely to be coarse-and-inclusive (ADR-0021). Measured:
- * across every committed fixture carrying `prospectiveBonusDps`, no 4pc bonus
+ * across every committed fixture carrying a measured set-bonus value, no 4pc bonus
  * (and no bonus of any threshold) falls in the (4.81, 5.89) under-filtered band —
  * distinct 4pc values are ≤ −3.88 or ≥ 17.14 — so the flat floor changes no
  * observed row's tier today (ticket 335, re-runnable via the band scan in that
- * ticket over the six `.scratch/**` fixtures with `prospectiveBonusDps`).
+ * ticket over the six `.scratch/**` fixtures with measured set-bonus values).
  *
  * The nine untested specs inherit ret's floor via `CUTOFF_BY_SPEC`
  * (see `cutoffForSpec`), so the untested-spec debt stays annotated in one place.

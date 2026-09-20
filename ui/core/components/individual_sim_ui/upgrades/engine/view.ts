@@ -2,15 +2,13 @@
  * The view layer. Pure: a re-render of a `Ranking` that already exists. No
  * seam, no I/O, no sim, and nothing here reaches `contentHash`.
  *
- * PORTED from packages/core/src/view.ts. `setPotentialIsConfounded` is
- * inlined here rather than imported from a ported `rank-report-rules.ts`:
- * that file is packages/core's CLI/HTML report renderer (`formatSetBonusLine`,
- * `SLOT_ORDER`, wowsims-JSON export, …), which is out of scope per plan §2.1
- * — the fork's tab is its own renderer (`upgrades_tab.tsx`, slice 4), not a
- * consumer of packages/core's HTML report. `setPotentialIsConfounded` is the
- * one pure predicate `view.ts` itself depends on (ticket 90's confound
- * guard), so it is carried over verbatim rather than pulling in the whole
- * report-formatting module for one function.
+ * PORTED from packages/core/src/view.ts. The Set-potential credit (ticket 467)
+ * reads the corrected `setContext.futureBonuses` / `commitBreaks` the engine
+ * attaches — a true net (gains minus the measured broken-bonus losses) — rather
+ * than the old single nearest-threshold prospective bonus. The ticket-90
+ * confound guard is gone: `bonusDpsNet` is already corrected for that inflation,
+ * and a row whose loss could not be measured drops to disclosure-only here by
+ * the missing-`dps` fallback below.
  *
  */
 import {
@@ -21,17 +19,7 @@ import {
 import { type ItemSource,sourceMatchesBoss } from "./pool.js";
 import type { RankedItem, Ranking } from "./rank.js";
 
-/**
- * PORTED verbatim from packages/core/src/rank-report-rules.ts's
- * `setPotentialIsConfounded`. See that file (or PLAN.md ticket 90) for the
- * full `(k−1)·B` inflation argument this guards against.
- */
-function setPotentialIsConfounded(
-  item: Pick<RankedItem, "setContext">
-): boolean {
-  const breaks = item.setContext?.prospectiveBonusBreaks;
-  return breaks !== undefined && breaks.length > 0;
-}
+export type SetCreditView = "full" | "split";
 
 export type ViewOptions = {
   pinBis?: boolean;
@@ -40,6 +28,7 @@ export type ViewOptions = {
   groupBy?: "rank" | "slot" | "raid";
   hideOwned?: boolean;
   withSetPotential?: boolean;
+  setCredit?: SetCreditView;
 };
 
 export type ViewRow = RankedItem & {
@@ -159,10 +148,15 @@ function belowCutoffUnderView(
   item: RankedItem,
   withSetPotential: boolean,
   baselineDps: number,
-  cutoff: Cutoff
+  cutoff: Cutoff,
+  setCredit: SetCreditView
 ): boolean {
   if (!withSetPotential) return item.belowCutoff;
-  const prospective = rankableSetPotential(item, setBonusNoiseFloorDps(cutoff));
+  const prospective = rankableSetPotential(
+    item,
+    setBonusNoiseFloorDps(cutoff),
+    setCredit
+  );
   if (prospective === 0) return item.belowCutoff;
   const effectiveDps = item.deltaDps + prospective;
   const effectivePct =
@@ -171,31 +165,51 @@ function belowCutoffUnderView(
 }
 
 /**
- * A figure at or below the per-spec noise floor (`setBonusNoiseFloorDps` of the
- * ranking's own `Cutoff`, ≈4.81 ret / ≈5.09 feral) is noise around a true zero,
- * so it contributes nothing: it must not move the sort key or the cutoff
- * verdict. The floor arrives as a parameter — the caller derives it from the
- * frozen per-spec cutoff — so this predicate stays ignorant of the `Cutoff`
- * type. The comparison is strict (`>`), matching the display gate's strict
- * `> setBonusNoiseFloorDps(cutoff)` on the same frozen cutoff so a boundary
- * value behaves identically in both layers — no row sorts on a bonus the
- * display hides (tickets 331, 332).
+ * The ON-view set-potential credit for a row: every corrected future set bonus
+ * gained by committing to the set (`futureBonuses`, divided by the bonus's FULL
+ * piece count in the split view), minus every worn bonus completing it would
+ * break beyond the row's own break (`commitBreaks`). May be negative — when the
+ * loss exceeds the gains, ON is honestly lower than OFF.
+ *
+ * Each component is floored at the per-spec noise floor (`setBonusNoiseFloorDps`
+ * of the ranking's own `Cutoff`, ≈4.81 ret / ≈5.09 feral): a figure at or below
+ * it is noise around a true zero and contributes nothing, so no row sorts on a
+ * bonus the display hides (tickets 331, 332). The floor arrives as a parameter,
+ * so this stays ignorant of the `Cutoff` type; the comparison is strict (`>`),
+ * matching the display gate.
+ *
+ * Fallback (ticket 467 N5): if any future bonus lacks a measured `dps` — the
+ * no-neutral-candidates case where `B` could not be measured — the whole credit
+ * is 0, reverting the row to today's disclosure-only. This suppresses the gain
+ * as well as the loss; it is honest and disclosed, not half-credited.
  */
 export function rankableSetPotential(
   item: Pick<RankedItem, "setContext">,
-  noiseFloorDps: number
+  noiseFloorDps: number,
+  setCredit: SetCreditView = "full"
 ): number {
-  if (setPotentialIsConfounded(item)) return 0;
-  const bonus = item.setContext?.prospectiveBonusDps ?? 0;
-  return bonus > noiseFloorDps ? bonus : 0;
+  const future = item.setContext?.futureBonuses ?? [];
+  if (future.length === 0) return 0;
+  if (future.some((f) => f.dps === undefined)) return 0;
+  const floored = (v: number): number => (v > noiseFloorDps ? v : 0);
+  let credit = 0;
+  for (const f of future) {
+    const value = setCredit === "split" ? f.dps! / f.threshold : f.dps!;
+    credit += floored(value);
+  }
+  for (const brk of item.setContext?.commitBreaks ?? []) {
+    if (brk.dps !== undefined) credit -= floored(brk.dps);
+  }
+  return credit;
 }
 
 function sortKeyFor(
   withSetPotential: boolean,
-  noiseFloorDps: number
+  noiseFloorDps: number,
+  setCredit: SetCreditView = "full"
 ): (r: ViewRow) => number {
   return withSetPotential
-    ? (r) => r.deltaDps + rankableSetPotential(r, noiseFloorDps)
+    ? (r) => r.deltaDps + rankableSetPotential(r, noiseFloorDps, setCredit)
     : (r) => r.deltaDps;
 }
 
@@ -223,7 +237,12 @@ export function applyView(r: Ranking, v: ViewOptions = {}): ViewResult {
   const zone = v.raid === undefined || v.raid === "all" ? undefined : v.raid;
   const boss = v.boss === undefined || v.boss === "all" ? undefined : v.boss;
   const noiseFloorDps = setBonusNoiseFloorDps(r.cutoff);
-  const sortKey = sortKeyFor(v.withSetPotential ?? false, noiseFloorDps);
+  const setCredit = v.setCredit ?? "full";
+  const sortKey = sortKeyFor(
+    v.withSetPotential ?? false,
+    noiseFloorDps,
+    setCredit
+  );
 
   const rows: ViewRow[] = r.items
     .filter((item) => {
@@ -238,7 +257,8 @@ export function applyView(r: Ranking, v: ViewOptions = {}): ViewResult {
         item,
         v.withSetPotential ?? false,
         r.baseline.dps,
-        r.cutoff
+        r.cutoff,
+        setCredit
       ),
     }));
 
