@@ -846,7 +846,7 @@
 	},
 	"upgrades_tab": {
 		"title": "Upgrades (<span class=\"text-success\">New</span>)",
-		"description": "<span className=\"bold\">Upgrades</span> ranks every item you allow by the DPS it would add if you equipped it in place of what you wear now, one item at a time.<br />This is an <span className=\"text-brand\">Alpha</span> feature, so if you have feedback or find a bug, please report it!",
+		"description": "<span className=\"bold\">Upgrades</span> sim swaps in each included item one at a time, comparing the result to your current gear. Run it to get a ranked list of upgrades.<br />This is an <span className=\"text-brand\">Alpha</span> feature (currently DPS-only), so if you have feedback or find a bug, please report it!",
 		"subtabs": {
 			"shopping_list": "Shopping List"
 		},
