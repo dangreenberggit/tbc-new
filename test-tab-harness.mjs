@@ -494,9 +494,11 @@ export async function focusWalk(send, scope) {
 // Returns { fail, warn, matched } where `matched` is a Set of baseline entry
 // indices that fired this run. Key = ruleId + selector, selector being the
 // node's target joined by ' '. A focus miss is a synthetic violation with
-// ruleId 'focus-walk', impact 'serious', selector the missed path.
+// ruleId 'focus-walk', impact 'serious', selector the missed path; an
+// unmeasured walk is itself a FAIL (ticket 450).
 //
-//   fail = impact critical/serious with a WCAG tag AND no baseline match
+//   fail = impact critical/serious with a WCAG tag AND no baseline match;
+//          also an unmeasured focus walk (operability unverifiable)
 //   warn = moderate/minor, best-practice-only rules, and baseline-matched
 //          entries (the ratchet: known debt does not block, but is reported)
 //
@@ -538,9 +540,20 @@ export function a11yClassify(violations, walk, baseline, ctx) {
 		}
 	}
 
-	if (walk && !walk.unmeasured) {
-		for (const missed of walk.missed || []) {
-			consider('focus-walk', 'serious', missed, ['wcag2a'], 'https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html');
+	if (walk) {
+		if (walk.unmeasured) {
+			// The gate promises keyboard operability; a walk that measured nothing
+			// (synthetic Tab left focus on body, C23) cannot keep that promise. This
+			// repo's Playwright Chromium DOES move focus, so unmeasured here means the
+			// focus emulation regressed to a no-op -- FAIL rather than degrade the
+			// guarantee to a silent WARN (ticket 450). A genuinely focus-incapable env
+			// crashes before geometry and is a whole-gate SKIP, a separate path.
+			const why = walk.error ? ` (${walk.error})` : '';
+			fail.push(`FAIL a11y [${ctx.state} ${ctx.width}] focus-walk unmeasured${why} -- keyboard operability was not verified (C23); the gate cannot pass without it`);
+		} else {
+			for (const missed of walk.missed || []) {
+				consider('focus-walk', 'serious', missed, ['wcag2a'], 'https://www.w3.org/WAI/WCAG21/Understanding/keyboard.html');
+			}
 		}
 	}
 

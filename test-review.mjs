@@ -253,6 +253,21 @@ async function main() {
 		indexEntries.push({ ticket: entry.ticket, state: entry.state, width, files: r.files, errors: r.errors });
 	};
 
+	// A manifest entry with no widths captures nothing, so the per-width loops
+	// below never touch it and it would leave errorCount at 0 -- a green run with
+	// zero evidence for that ticket (ticket 451). Fail it as its own error row.
+	for (const entry of manifest.entries) {
+		if (!(entry.widths || []).length) {
+			indexEntries.push({
+				ticket: entry.ticket,
+				state: entry.state,
+				width: null,
+				files: [],
+				errors: [`manifest entry ${entry.ticket} (${entry.state}) has no widths -- nothing to capture`],
+			});
+		}
+	}
+
 	try {
 		// pre-run entries: a fresh page per (entry, width). No sim.
 		for (const entry of pre) {
