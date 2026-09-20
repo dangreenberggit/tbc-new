@@ -2574,16 +2574,19 @@ export class UpgradesTab extends SimTab {
 				    partial scopes it to `.upgrades-results-table-provisional`) these
 				    <col> widths are the layout, and a late long item name wraps inside
 				    its cell (`overflow-wrap: anywhere`) instead of widening the column
-				    and pushing every column after it sideways. The percentages are the
-				    settled table's own column proportions measured at 1280 (Rank /
-				    Item / Slot / DPS / Source), so the running table already sits where
-				    the finished one will. The settled table and the `<md` block are
-				    untouched. */}
+				    and pushing every column after it sideways. The percentages are
+				    tuned to the *provisional* table's narrower width (it fills the
+				    ~585px results wrap, not the settled table's content-driven 951px):
+				    Rank/Slot/DPS hold single-line content (`white-space: nowrap` from
+				    the desktop block), so each is given enough width to not clip its
+				    own text ("Main Hand" is the widest Slot); the Item and Source
+				    columns take the rest and wrap. The settled table and the `<md`
+				    block are untouched. */}
 				<colgroup>
-					<col style={{ width: '7%' }} />
-					<col style={{ width: '32%' }} />
-					<col style={{ width: '11%' }} />
-					<col style={{ width: '36%' }} />
+					<col style={{ width: '9%' }} />
+					<col style={{ width: '30%' }} />
+					<col style={{ width: '18%' }} />
+					<col style={{ width: '29%' }} />
 					<col style={{ width: '14%' }} />
 				</colgroup>
 				{resultsTableHead()}

@@ -409,6 +409,18 @@
 // `_sim_tab.scss` stays unedited.
 .upgrades-tab-left {
 	grid-template-rows: max-content auto;
+
+	// The pre-run description (ticket 461) and the view-controls host both sit in
+	// the first (pinned, max-content) track, not in tracks of their own: the grid
+	// must stay two tracks so the filter row's height is pinned and the results
+	// below it do not jump (ticket 304 item 5, asserted by the layout gate). They
+	// never render together -- the description is `d-none` the moment a run leaves
+	// idle, and the view controls only fill once a run is done -- so sharing the
+	// cell shows exactly one of them at a time.
+	.upgrades-description,
+	.upgrades-view-controls-host {
+		grid-row: 1;
+	}
 }
 
 .upgrades-run-controls,
@@ -885,10 +897,16 @@
 		// layout needs it stated here so the percentages have a fixed base.
 		width: 100%;
 
-		.upgrades-item-cell {
-			// The Item column is now a fixed width; a name longer than it wraps
-			// within the cell rather than pushing the column wider. `anywhere`
-			// (not `break-word`) so a single long token can break too.
+		// The columns are now fixed, so any wrapping cell (Item, Source) must wrap
+		// its content -- including a single long token like a raid name
+		// ("Serpentshrine Cavern") -- inside its column rather than overflowing it
+		// and pushing the table's scrollWidth past the results wrap (the layout
+		// gate reads that overflow as clipping). `anywhere` breaks a long word;
+		// Slot and DPS keep the desktop block's `white-space: nowrap` and their
+		// columns are sized to fit their one-line content, so this does not touch
+		// them.
+		th,
+		td {
 			overflow-wrap: anywhere;
 		}
 	}
