@@ -1076,6 +1076,10 @@ export class UpgradesTab extends SimTab {
 		// overriding it: a tab-local phase could silently disagree with the
 		// page's, and the pool this tab ranks is chosen by exactly this value.
 		makePhaseSelector(phaseSelectorRef.value!, this.simUI.sim);
+		// The upstream EnumPicker renders a bare <select> with no name (ticket 445,
+		// axe select-name). We don't edit the upstream widget; name it from our side
+		// after it mounts into our own container.
+		phaseSelectorRef.value!.querySelector('select')?.setAttribute('aria-label', i18n.t('upgrades_tab.settings.phase_label'));
 
 		// The three run inputs, as the pickers the rest of the site uses. Each
 		// binds to a tab field through `settingsChangedEmitter` -- a bare
@@ -1780,9 +1784,12 @@ export class UpgradesTab extends SimTab {
 				attributes={{ role: 'progressbar' }}
 			/>
 		);
-		// aria-value* set imperatively, matching progress_tracker_modal.tsx —
+		// aria-value* and the name set imperatively, matching progress_tracker_modal.tsx —
 		// this JSX helper's `attributes` type only covers `role` for a bare
-		// div, not the aria-value* trio.
+		// div, not the aria-value* trio. A progressbar needs a name of its own; the
+		// stage text beside it changes each tick, so a stable label is the name
+		// (ticket 446, axe aria-progressbar-name).
+		barRef.value?.setAttribute('aria-label', i18n.t('upgrades_tab.progress.aria_label'));
 		barRef.value?.setAttribute('aria-valuemin', '0');
 		barRef.value?.setAttribute('aria-valuemax', '100');
 		if (pct !== undefined) barRef.value?.setAttribute('aria-valuenow', pct.toString());
@@ -3076,7 +3083,10 @@ export class UpgradesTab extends SimTab {
 		const cell = (
 			<span className="upgrades-item-cell">
 				<a className="upgrades-item-link" ref={anchorElem} dataset={{ whtticon: 'false' }}>
-					<img className="upgrades-item-icon" ref={iconElem} />
+					{/* Decorative: the item name follows as text in the same link, so an
+					    empty alt lets a screen reader skip the icon rather than read its
+					    URL or repeat the name (ticket 444, axe image-alt). */}
+					<img className="upgrades-item-icon" ref={iconElem} alt="" />
 					<span className="upgrades-item-name" ref={nameElem}>
 						{row.name}
 					</span>

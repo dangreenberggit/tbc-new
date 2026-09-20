@@ -8836,6 +8836,9 @@
 				"settings": {
 					"type": "object",
 					"properties": {
+						"phase_label": {
+							"type": "string"
+						},
 						"sources_title": {
 							"type": "string"
 						},
@@ -8871,7 +8874,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["sources_title", "sources_button", "sources_summary", "sources_summary_none", "sources_section_raids", "sources_section_other", "sets_title", "sets_caption", "sets_in_pool", "sets_cap_note", "sets_other_phases"]
+					"required": ["phase_label", "sources_title", "sources_button", "sources_summary", "sources_summary_none", "sources_section_raids", "sources_section_other", "sets_title", "sets_caption", "sets_in_pool", "sets_cap_note", "sets_other_phases"]
 				},
 				"status": {
 					"type": "object",
@@ -9020,6 +9023,9 @@
 				"progress": {
 					"type": "object",
 					"properties": {
+						"aria_label": {
+							"type": "string"
+						},
 						"resolving": {
 							"type": "string"
 						},
@@ -9040,7 +9046,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["resolving", "reading_gear", "composing", "building_pool", "simming", "ranking"]
+					"required": ["aria_label", "resolving", "reading_gear", "composing", "building_pool", "simming", "ranking"]
 				},
 				"results": {
 					"type": "object",

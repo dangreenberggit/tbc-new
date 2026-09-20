@@ -853,6 +853,7 @@
 		"stop": "Stop",
 		"settings_title": "Run settings",
 		"settings": {
+			"phase_label": "Phase",
 			"sources_title": "Sources",
 			"sources_button": "Sources…",
 			"sources_summary": "{{n}} of {{m}} sources excluded",
@@ -918,6 +919,7 @@
 			"only_bis": "Sim only {{phase}} BiS-list items"
 		},
 		"progress": {
+			"aria_label": "Ranking progress",
 			"resolving": "Starting…",
 			"reading_gear": "Reading your gear…",
 			"composing": "Preparing your character…",
