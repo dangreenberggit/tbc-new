@@ -2687,22 +2687,34 @@ export class UpgradesTab extends SimTab {
 				{/* Pin the column widths so the provisional table does not reflow as
 				    wider rows land (ticket 463): with `table-layout: fixed` (the SCSS
 				    partial scopes it to `.upgrades-results-table-provisional`) these
-				    <col> widths are the layout, and a late long item name wraps inside
-				    its cell (`overflow-wrap: anywhere`) instead of widening the column
-				    and pushing every column after it sideways. The percentages are
-				    tuned to the *provisional* table's narrower width (it fills the
-				    ~585px results wrap, not the settled table's content-driven 951px):
-				    Rank/Slot/DPS hold single-line content (`white-space: nowrap` from
-				    the desktop block), so each is given enough width to not clip its
-				    own text ("Main Hand" is the widest Slot); the Item and Source
-				    columns take the rest and wrap. The settled table and the `<md`
-				    block are untouched. */}
+				    <col> widths are the layout. The percentages are tuned to the
+				    *provisional* table's narrower width (measured live at 592px, the
+				    same wrap the ticket-463 comment recorded, not the settled table's
+				    content-driven 951px). Rank/Slot hold single-line content
+				    (`white-space: nowrap` from the desktop block), so each is pared to
+				    what its own text needs ("Main Hand" is the widest Slot) rather than
+				    given headroom to spare.
+
+				    Item and Source are the two columns with genuinely variable-length
+				    content, and both wrap onto more than one line by design now
+				    (ticket 468 round 2): Item's name stays on its own single
+				    ellipsizing line while BiS/set badges and "(Owned)" wrap onto lines
+				    below it (`.upgrades-item-cell`'s `flex-wrap: wrap`, SCSS), and
+				    Source wraps its raid/boss text between words
+				    (`overflow-wrap: normal`, SCSS -- NOT `anywhere`, which was
+				    shattering "Serpentshrine Cavern (N) Leotheras the Blind" into a
+				    vertical letter-stack at the old 10%). DPS holds a short fixed-shape
+				    value ("+40.3 DPS") and has slack to give up, so this round pulls
+				    width from DPS (29%->18%) into both Item (30%->38%, the ticket-468
+				    round-1 fix) and Source (14%->20%, so 2-3 lines of whole-word wrap
+				    reads comfortably instead of shattering). The settled table and the
+				    `<md` block are untouched. */}
 				<colgroup>
 					<col style={{ width: '9%' }} />
-					<col style={{ width: '30%' }} />
+					<col style={{ width: '38%' }} />
+					<col style={{ width: '15%' }} />
 					<col style={{ width: '18%' }} />
-					<col style={{ width: '29%' }} />
-					<col style={{ width: '14%' }} />
+					<col style={{ width: '20%' }} />
 				</colgroup>
 				{resultsTableHead()}
 				{/* Mid-run skeleton: no ranking yet, so no per-spec floor exists —
@@ -3310,7 +3322,10 @@ export class UpgradesTab extends SimTab {
 					    empty alt lets a screen reader skip the icon rather than read its
 					    URL or repeat the name (ticket 444, axe image-alt). */}
 					<img className="upgrades-item-icon" ref={iconElem} alt="" />
-					<span className="upgrades-item-name" ref={nameElem}>
+					{/* title (ticket 468): the name now truncates with an ellipsis in the
+					    provisional table's fixed-width Item column, so this is the only
+					    way to read a long name before the run settles. */}
+					<span className="upgrades-item-name" ref={nameElem} title={row.name}>
 						{row.name}
 					</span>
 				</a>

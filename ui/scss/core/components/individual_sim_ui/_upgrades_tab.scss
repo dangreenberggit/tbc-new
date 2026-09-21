@@ -954,18 +954,80 @@
 		// layout needs it stated here so the percentages have a fixed base.
 		width: 100%;
 
-		// The columns are now fixed, so any wrapping cell (Item, Source) must wrap
-		// its content -- including a single long token like a raid name
-		// ("Serpentshrine Cavern") -- inside its column rather than overflowing it
-		// and pushing the table's scrollWidth past the results wrap (the layout
-		// gate reads that overflow as clipping). `anywhere` breaks a long word;
-		// Slot and DPS keep the desktop block's `white-space: nowrap` and their
-		// columns are sized to fit their one-line content, so this does not touch
-		// them.
+		// The columns are now fixed, so any wrapping cell must wrap its content
+		// between words rather than overflowing it and pushing the table's
+		// scrollWidth past the results wrap (the layout gate reads that overflow
+		// as clipping). Slot and DPS keep the desktop block's `white-space:
+		// nowrap` and their columns are sized to fit their one-line content, so
+		// this does not touch them.
+		//
+		// This used to be `overflow-wrap: anywhere`, which breaks mid-word --
+		// fine for a single long token with no spaces (there is nowhere else to
+		// wrap), but it was also shattering ordinary space-separated content
+		// (Source's "Serpentshrine Cavern (N) Leotheras the Blind") into a tall
+		// stack of a few letters per line, and review round 2 called that out as
+		// exactly the bug the name fix (ticket 468) had just been fixed to avoid.
+		// `overflow-wrap: normal` wraps only at allowed break points (spaces,
+		// hyphens) and never inside a word; `word-break: normal` is the same
+		// instruction for the older property some browsers still consult. A
+		// single token wider than its column (rare -- item names are the only
+		// realistic case, and they opt out below) will overflow rather than
+		// break, which is the same trade-off `anywhere` made in reverse.
 		th,
 		td {
-			overflow-wrap: anywhere;
+			overflow-wrap: normal;
+			word-break: normal;
 		}
+
+		// The item NAME is the one piece of this table that must stay on
+		// exactly one line with an ellipsis rather than wrap (ticket 468): a
+		// name is the row's identity, and letting it wrap or shrink to a few
+		// characters (review round 1) makes the row unscannable. Everything
+		// else in the cell -- icon, BiS/set badges, "(Owned)" -- is allowed to
+		// wrap onto a second line instead (round 2's owner rule), so the cell
+		// is FIRST a flex row holding the icon + name (which never wraps), then
+		// wraps its remaining children onto following lines.
+		//
+		// `flex-wrap: wrap` plus giving the icon+name `<a>` `flex-basis: 100%`
+		// forces it to take the entire first line by itself (a 100%-basis flex
+		// child always starts a fresh line when wrapping is on), so badges and
+		// "(Owned)" -- the cell's other flex children -- are pushed to the line(s)
+		// below rather than competing with the name for the first line's width.
+		.upgrades-item-cell {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: baseline;
+			row-gap: var(--spacer-1);
+			width: 100%;
+		}
+
+		.upgrades-item-link {
+			flex: 1 1 100%;
+			min-width: 0;
+		}
+
+		// `min-width: 0` overrides flex's default `min-width: auto`, which
+		// otherwise refuses to shrink a flex item below its content size and
+		// would keep the text pushing the link (and the row under it) wide
+		// regardless of `overflow: hidden`. The full name survives as the
+		// element's `title` (upgrades_tab.tsx) for whenever it does truncate.
+		.upgrades-item-name {
+			flex-shrink: 1;
+			min-width: 0;
+			overflow: hidden;
+			overflow-wrap: normal;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
+
+		// Badges and "(Owned)" sit on the wrapped line(s) below the name. Round
+		// 1 of this fix gave them the same one-line-ellipsis treatment as the
+		// name to stop them crowding it out -- round 2 corrected that: a
+		// truncated "BiS …" hides which set/threshold badge this is (real data,
+		// not decoration), and a clipped "(Own…" is simply wrong. With the name
+		// now on its own line, these no longer compete with it for width at
+		// all, so they need no shrinking or ellipsis -- ordinary inline flex
+		// content that wraps to a new line when the row runs out of room.
 	}
 }
 
