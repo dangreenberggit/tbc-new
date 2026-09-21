@@ -16,6 +16,12 @@
 //       state:        "pre-run" | "post-run",
 //       widths:       number[],
 //       interactions: [ { hover: sel } | { click: sel } ]  (optional),
+//       pane:         boolean   (optional, default true). true = clip
+//                     #upgrades-tab first and run axe on it. false = clip only
+//                     the `capture` selectors and run axe on capture[0]; this
+//                     is how an entry photographs something outside the
+//                     Upgrades pane (the Gear item list, ticket 472) without
+//                     the zero-size #upgrades-tab clip that would fail the run.
 //       capture:      string[]   (selectors to clip, besides #upgrades-tab),
 //       facts:        { key: "<op>:<sel>[:<prop>]" },
 //       acceptance:   string,
@@ -162,8 +168,10 @@ async function captureEntryAtWidth(send, outDir, entry, width) {
 		if (err) errors.push(err);
 	}
 
-	// Capture 0 is always the pane; then each named selector.
-	const selectors = ['#upgrades-tab', ...(entry.capture || [])];
+	// Capture 0 is the pane, then each named selector — unless the entry opts
+	// out of the pane (pane: false), in which case only its own selectors.
+	const pane = entry.pane !== false;
+	const selectors = pane ? ['#upgrades-tab', ...(entry.capture || [])] : [...(entry.capture || [])];
 	for (let n = 0; n < selectors.length; n++) {
 		const res = await captureClip(send, outDir, entry.ticket, entry.state, width, n, selectors[n]);
 		if (res.error) errors.push(res.error);
@@ -182,9 +190,10 @@ async function captureEntryAtWidth(send, outDir, entry, width) {
 	}
 
 	// a11y at this exact state/width.
+	const axeRoot = pane ? '#upgrades-tab' : selectors[0];
 	let axe = null;
 	try {
-		axe = await axeRun(send, '#upgrades-tab');
+		axe = await axeRun(send, axeRoot);
 	} catch (err) {
 		errors.push(`axe at ${width} threw: ${err.message}`);
 	}
