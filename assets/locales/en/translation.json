@@ -944,6 +944,8 @@
 			"delta_dps": "DPS",
 			"delta_dps_value": "{{delta}} DPS",
 			"source": "Source",
+			"favorite": "Favorite",
+			"batch": "Batch sim",
 			"owned": "Owned",
 			"bis_badge": "BiS",
 			"alt_badge": "Alt",

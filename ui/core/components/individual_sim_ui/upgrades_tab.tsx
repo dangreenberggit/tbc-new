@@ -14,6 +14,7 @@ import { TypedEvent } from '../../typed_event';
 import { BaseModal } from '../base_modal';
 import { CopyButton } from '../copy_button';
 import { getSourceInfo } from '../gear_picker/item_list';
+import { createBatchToggle, createFavoriteToggle, isFavorited, refreshToggles } from '../gear_picker/item_toggles';
 import { makePhaseSelector } from '../inputs/other_inputs';
 import { BooleanPicker } from '../pickers/boolean_picker';
 import { NumberPicker } from '../pickers/number_picker';
@@ -468,6 +469,19 @@ const RESULTS_SORT_COLUMNS = ['item', 'slot', 'delta_dps', 'source'] as const;
 type ResultsSortColumn = (typeof RESULTS_SORT_COLUMNS)[number];
 
 /**
+ * The trailing action columns: a favorite star and an add-to-Batch-Sim button
+ * (ticket 472). Not sortable — they hold a control, not a value.
+ *
+ * These are **appended after Source, one `<td>` per column**, and that order is
+ * a contract, not a preference. `upgrades/tools/run-tab-cdp.mjs` reads a result
+ * row positionally — `tds[0..4]` for rank, item, slot, dps, source, with a
+ * `tds.length < 5` guard — and the desktop gate compares that readback against
+ * a committed golden. Inserting an action cell before index 4, or merging the
+ * two into one cell, silently corrupts the golden comparison.
+ */
+const RESULTS_ACTION_COLUMNS = ['favorite', 'batch'] as const;
+
+/**
  * The Rank column's header label. Not part of `RESULTS_SORT_COLUMNS`: the
  * cell shows a row's position in its own table's current display order (not
  * `RankedItem.rank`), so sorting by it would be a tautology — there is
@@ -484,6 +498,9 @@ function rankColumnLabel(): string {
  * done-state tables cannot drift into different column sets, which is how
  * the mid-run table ended up four columns wide with no Rank (ticket 278),
  * and how a sortable variant reintroduced that same drift risk (ticket 289).
+ * Both also append `RESULTS_ACTION_COLUMNS` through `resultsActionHeaders()`,
+ * for the same reason and under that constant's cell-order contract: the action
+ * cells come after Source, one `<td>` each.
  *
  * Plain, non-interactive header for tables with no stable row set to sort —
  * the mid-run skeleton fill and the Stop-truncated result render straight
@@ -499,9 +516,23 @@ function resultsTableHead(): Node {
 				{RESULTS_SORT_COLUMNS.map(column => (
 					<th>{resultsSortColumnLabel(column)}</th>
 				))}
+				{resultsActionHeaders()}
 			</tr>
 		</thead>
 	);
+}
+
+/**
+ * The action columns' headers, for both table heads. The label is
+ * visually-hidden: the column shows an icon button, so a visible heading would
+ * be noise, but a screen reader still needs the column named.
+ */
+function resultsActionHeaders(): Node[] {
+	return RESULTS_ACTION_COLUMNS.map(column => (
+		<th className="upgrades-results-action-header">
+			<span className="visually-hidden">{i18n.t(`upgrades_tab.results.${column}`)}</span>
+		</th>
+	));
 }
 
 type ResultsSort = { column: ResultsSortColumn; direction: 'asc' | 'desc' };
@@ -814,6 +845,7 @@ export class UpgradesTab extends SimTab {
 
 		this.buildTabContent();
 		this.wireStalenessListeners();
+		this.wireToggleRefresh();
 
 		// Re-read the always-sim set chips when this top-level tab is shown (ticket
 		// 424, C33): a saved gear set created on the Gear tab after this tab was
@@ -1372,6 +1404,36 @@ export class UpgradesTab extends SimTab {
 		this.settingsChangedEmitter.on(() => {
 			if (this.state.kind === 'done') this.setState({ ...this.state, stale: true });
 		});
+	}
+
+	/**
+	 * Keeps the rows' favorite and batch buttons showing current state
+	 * (ticket 472).
+	 *
+	 * Two subscriptions here, not one per row. `resultRow` runs for the
+	 * provisional table on every landed row, and for the shortlist, the
+	 * below-cutoff group and every slot pane on every render, so a per-row
+	 * `.on()` would pile up listeners for rows that no longer exist — which is
+	 * what the gear picker does, kept as-is there for parity. `refreshToggles`
+	 * instead finds whatever buttons are in the DOM right now and repaints them.
+	 *
+	 * `contentContainer` is the root because every results host hangs off it:
+	 * the tab appends its whole shell there, and that shell holds the results
+	 * element, the shopping list and the slot-pane nav. (`rootElem` is never
+	 * referenced in this file.)
+	 *
+	 * A star clicked on one of these rows repaints itself inside its own click
+	 * handler, before either emitter fires. These subscriptions are for the other
+	 * direction: a favorite toggled in the gear modal, or an item removed in the
+	 * Batch tab, while Upgrades rows are on screen. A favorite toggle also marks
+	 * a completed run stale through `sim.changeEmitter` and re-renders the rows,
+	 * which is pre-existing behaviour and harmless — a rebuilt row reads current
+	 * state when it is built.
+	 */
+	private wireToggleRefresh() {
+		const refresh = () => refreshToggles(this.contentContainer, this.simUI.sim, this.simUI.bt);
+		this.simUI.bt?.itemsChangedEmitter.on(refresh);
+		this.simUI.sim.filtersChangeEmitter.on(refresh);
 	}
 
 	/**
@@ -2720,13 +2782,20 @@ export class UpgradesTab extends SimTab {
 				    width from DPS (29%->18%) into both Item (30%->38%, the ticket-468
 				    round-1 fix) and Source (14%->20%, so 2-3 lines of whole-word wrap
 				    reads comfortably instead of shattering). The settled table and the
-				    `<md` block are untouched. */}
+				    `<md` block are untouched.
+
+				    Ticket 472 adds the two action columns. Each holds one icon button
+				    that cannot wrap, so 5% each is enough; the 10% comes off Rank,
+				    Slot, Source and Item, which keeps Item the widest column and leaves
+				    Source enough room to go on wrapping between whole words. */}
 				<colgroup>
-					<col style={{ width: '9%' }} />
-					<col style={{ width: '38%' }} />
-					<col style={{ width: '15%' }} />
+					<col style={{ width: '7%' }} />
+					<col style={{ width: '36%' }} />
+					<col style={{ width: '13%' }} />
+					<col style={{ width: '16%' }} />
 					<col style={{ width: '18%' }} />
-					<col style={{ width: '20%' }} />
+					<col style={{ width: '5%' }} />
+					<col style={{ width: '5%' }} />
 				</colgroup>
 				{resultsTableHead()}
 				{/* Mid-run skeleton: no ranking yet, so no per-spec floor exists —
@@ -2796,7 +2865,7 @@ export class UpgradesTab extends SimTab {
 						sortedShortlist.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }, noiseFloorDps, this.state.kind === 'done' ? this.state.ranking.cutoff : undefined))
 					) : (
 						<tr>
-							<td colSpan={5} className="upgrades-text-secondary">
+							<td colSpan={7} className="upgrades-text-secondary">
 								{i18n.t('upgrades_tab.results.empty_no_upgrades')}
 							</td>
 						</tr>
@@ -2872,6 +2941,7 @@ export class UpgradesTab extends SimTab {
 				<tr>
 					{rankCell}
 					{cells}
+					{resultsActionHeaders()}
 				</tr>
 			</thead>
 		);
@@ -3004,6 +3074,16 @@ export class UpgradesTab extends SimTab {
 			</td>
 		) as HTMLTableCellElement;
 		if (setBonus_.tip) tippy(dpsCellRef.value!, { content: setBonus_.tip });
+		// The same controls the gear picker's item list renders, from the shared
+		// module (ticket 472). `subscribe: false`: these rows are rebuilt on every
+		// landed row mid-run, so a per-row listener would accumulate — the tab
+		// subscribes once in its constructor and refreshes by DOM query instead.
+		const favorite = createFavoriteToggle({
+			sim: this.simUI.sim,
+			key: { method: 'favoriteItems', id: row.itemId },
+			initial: isFavorited(this.simUI.sim.getFilters(), { method: 'favoriteItems', id: row.itemId }),
+		});
+		const batch = createBatchToggle({ simUI: this.simUI, itemId: row.itemId, subscribe: false });
 		return (
 			<tr className={row.owned ? 'upgrades-row-owned' : ''}>
 				<td>{display.rankText}</td>
@@ -3011,6 +3091,9 @@ export class UpgradesTab extends SimTab {
 				<td>{slotLabel(effectiveSlot(row))}</td>
 				{dpsCell}
 				<td>{sourceCell(row, this.simUI.sim)}</td>
+				{/* Last two cells, one control each — see RESULTS_ACTION_COLUMNS. */}
+				<td className="upgrades-action-cell">{favorite.container}</td>
+				<td className="upgrades-action-cell">{batch.container}</td>
 			</tr>
 		);
 	}

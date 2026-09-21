@@ -732,6 +732,14 @@
 }
 
 .upgrades-results-table {
+	// The gear item list's zebra and hover, from the shared partial
+	// (ticket 472). The mixin is given `--bs-table-bg` rather than `background`
+	// because Bootstrap's cells paint themselves from that variable and would
+	// cover a background set on the row — see _item_row.scss.
+	tbody tr {
+		@include item-row-zebra-hover(--bs-table-bg);
+	}
+
 	// The mid-run table's Rank column holds a position in the rows landed so
 	// far, not the engine's final rank. Muting it says "not final yet" without
 	// a second label to read.
@@ -740,6 +748,14 @@
 			opacity: 0.65;
 		}
 	}
+}
+
+// The two trailing action cells (ticket 472): each holds one icon button, so
+// the cell takes only what the button needs and never wraps.
+.upgrades-action-cell {
+	width: 1%;
+	white-space: nowrap;
+	text-align: center;
 }
 
 .upgrades-below-cutoff-group {
@@ -781,8 +797,11 @@
 }
 
 // The Item cell (WP3): icon + quality-coloured link, the same idiom
-// `.selector-modal-list-item-*` uses in the gear picker (_item_list.scss),
-// sized down for a dense results row instead of that picker's 3rem icon.
+// `.selector-modal-list-item-*` uses in the gear picker (_item_list.scss).
+// Ticket 472 dropped the "sized down for a dense results row" treatment at
+// `>=md`: the owner wanted the gear list's own 3rem icon and 1.125rem name, so
+// both now come from the shared `item-row-icon` / `item-row-name` mixins in the
+// `>=md` block below. The `<md` icon stays at 1.125rem.
 .upgrades-item-cell {
 	display: inline-flex;
 	align-items: center;
@@ -796,8 +815,6 @@
 
 .upgrades-item-icon {
 	@include wowhead-background-icon;
-	width: 1.5rem;
-	height: 1.5rem;
 	border: var(--border-default);
 	// Prevents the icon from being squeezed by `table-layout: fixed` below --
 	// without this, flex gives the icon and the name equal claim on the Item
@@ -927,6 +944,13 @@
 		text-align: inherit;
 	}
 
+	// Same 40px touch-target floor for the two action buttons (ticket 472):
+	// they are `btn btn-link p-0`, so their hit box is the glyph alone.
+	.upgrades-action-cell .btn {
+		min-width: 40px;
+		min-height: 40px;
+	}
+
 	// The DPS column is right-aligned (`th:nth-child(4)` above), so its header
 	// button fills the cell and pushes its label to the right edge, sitting the
 	// header text on the same edge as the numbers below it (ticket 423).
@@ -1010,6 +1034,17 @@
 		// desktop counterpart of that mobile rule, same column, same intent.
 		th:nth-child(4) .upgrades-results-sort-button {
 			justify-content: flex-end;
+		}
+
+		// The gear item list's icon and name, from the shared partial
+		// (ticket 472). Scoped to `>=md` so the `<md` block's 1.125rem icon and
+		// the rest of the mobile row treatment are untouched.
+		.upgrades-item-icon {
+			@include item-row-icon;
+		}
+
+		.upgrades-item-name {
+			@include item-row-name;
 		}
 	}
 
