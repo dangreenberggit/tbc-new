@@ -31,6 +31,23 @@
 	padding: 0;
 }
 
+// The results table sits 24px right of the controls above it (owner-reported
+// offset): both `.upgrades-shopping-list` and the slot-pane wrapper carry the
+// shared `.p-gap` utility (`_global.scss:155-162`), which sets
+// `padding-left: var(--gap-width)` (1.5rem) through `.px-gap`
+// (`_variables.scss:219`). The sibling controls above -- `.upgrades-view-
+// controls-host` and `.upgrades-tab-tabs`, both under `.upgrades-tab-left` --
+// carry no matching left padding, so the table's left edge sits one
+// `--gap-width` right of theirs. `.p-gap` itself is shared across the whole
+// app and deliberately not edited; these two wrappers are the only ones that
+// need their left padding cancelled, so the override is scoped to them by
+// name. Right and vertical padding from `.p-gap` are left alone -- only the
+// left side was wrong.
+.upgrades-shopping-list,
+.upgrades-slot-pane {
+	padding-left: 0;
+}
+
 // The panel keeps `.tab-panel-left`'s multi-column `repeat(auto-fit,
 // minmax(220px, 1fr))` -- collapsing it to one column was tried and reverted.
 // `.upgrades-tab-tabs` already spans `grid-column: 1 / -1` across however many
@@ -931,6 +948,39 @@
 		th:nth-child(4),
 		td:nth-child(4) {
 			text-align: right;
+		}
+
+		// Sortable headers (`sortableResultsTableHead`) put a `<button>` inside
+		// the `<th>`, and the button supplies its own symmetric
+		// `padding: var(--spacer-2)` (`.upgrades-results-sort-button`, unset
+		// here). That never matched this block's asymmetric body-cell padding
+		// (`padding: var(--spacer-2) var(--spacer-3)`, above), so a header
+		// label sat closer to the cell edge than the data beneath it. Matching
+		// the button's horizontal padding to the body cell's puts both edges on
+		// the same line.
+		//
+		// The mobile block below (`media-breakpoint-down(md)`) already zeroes
+		// this padding and right-aligns the DPS button -- that fix was scoped
+		// to `<md` only, so desktop never got it (this ticket's root cause).
+		// Reusing the same padding this block already gives `<td>` -- rather
+		// than reintroducing the mobile block's zero-padding idiom -- keeps one
+		// definition of "the body's padding" for the sort button to match at
+		// every width, instead of a second disconnected variant.
+		.upgrades-results-sort-button {
+			padding-top: 0;
+			padding-bottom: 0;
+			padding-left: var(--spacer-3);
+			padding-right: var(--spacer-3);
+		}
+
+		// The DPS header button fills its `<th>` (`width: 100%` on
+		// `.upgrades-results-sort-button`) but never got the row-aligning
+		// `justify-content: flex-end` the mobile block gives it at `:887-890` --
+		// so at desktop the label stayed pinned to the button's left edge while
+		// the column and its numbers read right-aligned beneath it. This is the
+		// desktop counterpart of that mobile rule, same column, same intent.
+		th:nth-child(4) .upgrades-results-sort-button {
+			justify-content: flex-end;
 		}
 	}
 

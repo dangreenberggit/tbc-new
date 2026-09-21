@@ -2727,7 +2727,7 @@ export class UpgradesTab extends SimTab {
 	private slotPaneContent(slot: SimOrderName, view: ViewResult, noiseFloorDps: number | undefined): Node {
 		const rowsForSlot = view.rows.filter(r => effectiveSlot(r) === slot);
 		const shortlistForSlot = rowsForSlot.filter(r => !r.belowCutoffInView);
-		return <div className="p-gap">{this.rowsTable(shortlistForSlot, rowsForSlot, noiseFloorDps)}</div>;
+		return <div className="upgrades-slot-pane p-gap">{this.rowsTable(shortlistForSlot, rowsForSlot, noiseFloorDps)}</div>;
 	}
 
 	/**
