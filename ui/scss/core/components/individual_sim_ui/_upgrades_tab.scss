@@ -762,6 +762,18 @@
 	text-align: center;
 }
 
+// The scroller is not a narrow-width concession any more (ticket 472). It used
+// to live in the `<md` block alone, because only there did content sizing push
+// the table past its panel. The two action columns do the same at desktop --
+// measured 624px of table in a 613px host at 1280, 738 in 733 at 768 -- and the
+// layout gate's assertion 7b requires a table wider than `.upgrades-results` to
+// scroll rather than clip, at whatever width that happens. One rule for every
+// width says what was always meant: the table scrolls inside its panel instead
+// of losing its right-hand columns.
+.upgrades-results {
+	overflow-x: auto;
+}
+
 .upgrades-below-cutoff-group {
 	> summary {
 		cursor: pointer;
@@ -852,14 +864,11 @@
 // `white-space: nowrap` so each renders on one line, symmetric with the desktop
 // block (`:648-663`) -- DPS right-aligned as a number column. Content sizing
 // can make the table wider than its narrow container (measured 424px content in
-// a 319px panel at 375px), so `.upgrades-results` gains `overflow-x: auto`
-// below: the table scrolls horizontally inside the panel instead of shattering,
-// and stays legible one line per cell at every width.
+// a 319px panel at 375px), so `.upgrades-results` carries `overflow-x: auto`:
+// the table scrolls horizontally inside the panel instead of shattering, and
+// stays legible one line per cell at every width. That rule started here and now
+// applies at every width (see `.upgrades-results` above, ticket 472).
 @include media-breakpoint-down(md) {
-	.upgrades-results {
-		overflow-x: auto;
-	}
-
 	.upgrades-results-table {
 		table-layout: auto;
 		width: 100%;
