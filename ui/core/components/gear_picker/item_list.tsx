@@ -2,12 +2,11 @@ import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
 import i18n from '../../../i18n/config';
-import { trackEvent } from '../../../tracking/utils';
 import { SortDirection } from '../../constants/other';
 import { setItemQualityCssClass } from '../../css_utils';
 import { IndividualSimUI } from '../../individual_sim_ui';
 import { Player } from '../../player';
-import { Class, GemColor, ItemQuality, ItemRandomSuffix, ItemSlot, ItemSpec } from '../../proto/common';
+import { Class, GemColor, ItemQuality, ItemRandomSuffix, ItemSlot } from '../../proto/common';
 import { DatabaseFilters, RepFaction, UIEnchant as Enchant, UIGem as Gem, UIItem as Item, UIItem_FactionRestriction } from '../../proto/ui';
 import { ActionId } from '../../proto_utils/action_id';
 import { getUniqueEnchantString } from '../../proto_utils/enchants';
@@ -28,6 +27,7 @@ import {
 import { ItemNotice } from '../item_notice/item_notice';
 import { VirtualList } from '../virtual_scroll/virtual_list';
 import { FiltersMenu } from './filters_menu';
+import { createBatchToggle, createFavoriteToggle, FavoriteKey, isFavorited } from './item_toggles';
 import { getTranslatedTabLabel, SelectorModalTabs } from './selector_modal';
 import { createNameDescriptionLabel } from './utils';
 
@@ -461,10 +461,23 @@ export default class ItemList<T extends ItemListType> {
 		const nameElem = ref<HTMLLabelElement>();
 		const anchorElem = ref<HTMLAnchorElement>();
 		const iconElem = ref<HTMLImageElement>();
-		const favoriteElem = ref<HTMLButtonElement>();
-		const favoriteIconElem = ref<HTMLElement>();
-		const compareContainer = ref<HTMLDivElement>();
-		const compareButton = ref<HTMLButtonElement>();
+
+		// The star and the batch button are built by the shared module the
+		// Upgrades tab also uses (ticket 472), so both tables render the same
+		// markup, copy and analytics.
+		const isFavorite = this.isItemFavorited(itemData);
+		// A label with no favorites list gets a star whose click does nothing, as
+		// before: the old closure returned from its switch default.
+		const favoriteToggle = createFavoriteToggle({
+			sim: this.player.sim,
+			key: this.favoriteKey(itemData),
+			initial: isFavorite,
+		});
+		const individualSimUI = this.simUI instanceof IndividualSimUI ? this.simUI : null;
+		const batchToggle =
+			this.label === SelectorModalTabs.Items && individualSimUI
+				? createBatchToggle({ simUI: individualSimUI, itemId: itemData.id, subscribe: true })
+				: null;
 
 		const listItemElem = (
 			<li className={`selector-modal-list-item ${equippedItemID === itemData.id ? 'active' : ''}`} dataset={{ idx: item.idx.toString() }}>
@@ -494,111 +507,25 @@ export default class ItemList<T extends ItemListType> {
 						/>
 					</div>
 				)}
-				<div className="selector-modal-list-item-favorite-container">
-					<button className="selector-modal-list-item-favorite btn btn-link p-0" ref={favoriteElem}>
-						<i ref={favoriteIconElem} className="far fa-star fa-xl" />
-					</button>
-				</div>
-				<div ref={compareContainer} className="selector-modal-list-item-compare-container hide">
-					<button className="selector-modal-list-item-compare btn btn-link p-0" ref={compareButton}>
-						<i className="fas fa-arrow-right-arrow-left fa-xl" />
-					</button>
-				</div>
+				{favoriteToggle.container}
+				{batchToggle ? batchToggle.container : <div className="selector-modal-list-item-compare-container hide" />}
 			</li>
 		);
 
-		const toggleFavorite = (isFavorite: boolean) => {
-			const filters = this.player.sim.getFilters();
+		// `dataset.fav` is read by nothing else here, but it is part of the row's
+		// public DOM shape, so it stays in step with the star.
+		listItemElem.dataset.fav = isFavorite.toString();
+		favoriteToggle.button.addEventListener('click', () => {
+			listItemElem.dataset.fav = favoriteToggle.isOn().toString();
+		});
 
-			let favMethodName: keyof DatabaseFilters;
-			let favId;
-			switch (this.label) {
-				case SelectorModalTabs.Items:
-					favMethodName = 'favoriteItems';
-					favId = itemData.id;
-					break;
-				case SelectorModalTabs.Enchants:
-					favMethodName = 'favoriteEnchants';
-					favId = getUniqueEnchantString(itemData.item as unknown as Enchant);
-					break;
-				case SelectorModalTabs.Gem1:
-				case SelectorModalTabs.Gem2:
-				case SelectorModalTabs.Gem3:
-					favMethodName = 'favoriteGems';
-					favId = itemData.id;
-					break;
-				case SelectorModalTabs.RandomSuffixes:
-					favMethodName = 'favoriteRandomSuffixes';
-					favId = itemData.id;
-					break;
-				default:
-					return;
-			}
-
-			if (isFavorite) {
-				filters[favMethodName].push(favId as never);
-			} else {
-				const favIdx = filters[favMethodName].indexOf(favId as never);
-				if (favIdx !== -1) {
-					filters[favMethodName].splice(favIdx, 1);
-				}
-			}
-
-			favoriteElem.value!.classList.toggle('text-brand');
-			favoriteIconElem.value!.classList.toggle('fas');
-			favoriteIconElem.value!.classList.toggle('far');
-			listItemElem.dataset.fav = isFavorite.toString();
-			this.player.sim.setFilters(TypedEvent.nextEventID(), filters);
-		};
-		favoriteElem.value!.addEventListener('click', () => toggleFavorite(listItemElem.dataset.fav === 'false'));
-
-		const isFavorite = this.isItemFavorited(itemData);
-		if (isFavorite) {
-			favoriteElem.value!.classList.add('text-brand');
-			favoriteIconElem.value?.classList.add('fas');
-			listItemElem.dataset.fav = 'true';
-		} else {
-			favoriteIconElem.value?.classList.add('far');
-			listItemElem.dataset.fav = 'false';
-		}
-
-		const favoriteTooltip = tippy(favoriteElem.value!);
-		const toggleFavoriteTooltipContent = (isFavorited: boolean) => favoriteTooltip.setContent(isFavorited ? 'Remove from favorites' : 'Add to favorites');
-		toggleFavoriteTooltipContent(listItemElem.dataset.fav === 'true');
-
-		if (this.label === SelectorModalTabs.Items) {
-			const batchSimTooltip = tippy(compareButton.value!);
-
-			this.bindToggleCompare(compareContainer.value!);
-			const simUI = this.simUI instanceof IndividualSimUI ? this.simUI : null;
-			if (simUI) {
-				const checkHasItem = () => simUI.bt?.hasItem(ItemSpec.create({ id: itemData.id }));
-				const toggleCompareButtonState = () => {
-					const hasItem = checkHasItem();
-					batchSimTooltip.setContent(hasItem ? 'Remove from Batch Sim' : 'Add to Batch Sim');
-					compareButton.value!.classList[hasItem ? 'add' : 'remove']('text-brand');
-				};
-
-				toggleCompareButtonState();
-				simUI.bt?.itemsChangedEmitter.on(() => {
-					toggleCompareButtonState();
-				});
-
-				compareButton.value!.addEventListener('click', () => {
-					const hasItem = checkHasItem();
-					simUI.bt?.[hasItem ? 'removeItem' : 'addItem'](ItemSpec.create({ id: itemData.id }));
-					trackEvent({
-						action: 'click',
-						category: 'batch',
-						label: hasItem ? 'remove-item' : 'add-item',
-					});
-				});
-			}
+		if (this.label === SelectorModalTabs.Items && batchToggle) {
+			this.bindToggleCompare(batchToggle.container);
 		}
 
 		anchorElem.value!.addEventListener('click', (event: Event) => {
 			event.preventDefault();
-			if (event.target === favoriteElem.value) return false;
+			if (event.target === favoriteToggle.button) return false;
 			this.onItemClick(itemData);
 		});
 
@@ -615,9 +542,31 @@ export default class ItemList<T extends ItemListType> {
 		return listItemElem;
 	}
 
+	/**
+	 * Which favorites list this tab's rows belong in. Returns null for a label
+	 * with no favorites list, which is what the old `toggleFavorite` closure's
+	 * `default: return` did.
+	 */
+	private favoriteKey(itemData: ItemData<T>): FavoriteKey | null {
+		switch (this.label) {
+			case SelectorModalTabs.Items:
+				return { method: 'favoriteItems', id: itemData.id };
+			case SelectorModalTabs.Enchants:
+				return { method: 'favoriteEnchants', id: getUniqueEnchantString(itemData.item as unknown as Enchant) };
+			case SelectorModalTabs.Gem1:
+			case SelectorModalTabs.Gem2:
+			case SelectorModalTabs.Gem3:
+				return { method: 'favoriteGems', id: itemData.id };
+			case SelectorModalTabs.RandomSuffixes:
+				return { method: 'favoriteRandomSuffixes', id: itemData.id };
+			default:
+				return null;
+		}
+	}
+
 	private isItemFavorited(itemData: ItemData<T>): boolean {
 		if (this.label === SelectorModalTabs.Items) {
-			return this.currentFilters.favoriteItems.includes(itemData.id);
+			return isFavorited(this.currentFilters, { method: 'favoriteItems', id: itemData.id });
 		} else if (this.label === SelectorModalTabs.Enchants) {
 			return this.currentFilters.favoriteEnchants.includes(getUniqueEnchantString(itemData.item as unknown as Enchant));
 		} else if (this.label.startsWith('Gem')) {
