@@ -420,6 +420,18 @@ function formatDelta(deltaDps: number): string {
 }
 
 /**
+ * The same signed figure as `formatDelta`, without the " DPS" unit (ticket
+ * 471/#5). The set-bonus tooltip's own break/future lines already render bare
+ * numbers via `.toFixed(1)`; this keeps `tip_item_alone`/`tip_package_total`
+ * consistent with them without touching `delta_dps_value`, which the main
+ * results column still uses.
+ */
+function tipDelta(deltaDps: number): string {
+	const sign = deltaDps > 0 ? '+' : '';
+	return `${sign}${deltaDps.toFixed(1)}`;
+}
+
+/**
  * Trims a substitution detail to its first line for display (ticket 311).
  *
  * A substitution caused by a sim crash carries the whole Go stack trace in its
@@ -3138,9 +3150,13 @@ export class UpgradesTab extends SimTab {
 			noiseFloorDps !== undefined && v !== undefined && v > noiseFloorDps;
 
 		const singleBreaks = ctx.singleBreaks ?? [];
-		// ON-view terms only exist when the toggle is on and a floor is in hand.
-		const futureBonuses = on ? ctx.futureBonuses ?? [] : [];
-		const commitBreaks = on ? ctx.commitBreaks ?? [] : [];
+		// Prospective disclosure (future bonuses / commit breaks) is shown on ANY
+		// set item that has it, regardless of the Set-potential toggle (ticket
+		// 471/#4): a row whose only disclosure is prospective must still get a
+		// hover. The toggle keeps affecting ranking/sort only (`view.ts`'s
+		// `ViewOptions.withSetPotential`), not what this tooltip discloses.
+		const futureBonuses = ctx.futureBonuses ?? [];
+		const commitBreaks = ctx.commitBreaks ?? [];
 		const creditUnmeasured =
 			on && futureBonuses.length > 0 && futureBonuses.some(f => f.dps === undefined);
 
@@ -3166,16 +3182,10 @@ export class UpgradesTab extends SimTab {
 			row.deltaDps + singleBreaks.reduce((sum, b) => sum + (b.dps ?? 0), 0);
 
 		const rows: Node[] = [];
-		if (on) {
-			rows.push(
-				<div>
-					{setCredit === 'split'
-						? i18n.t('upgrades_tab.set_bonus.tip_mode_split')
-						: i18n.t('upgrades_tab.set_bonus.tip_mode_full')}
-				</div>,
-			);
-		}
-		rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_item_alone', { dps: formatDelta(itemAlone) })}</div>);
+		// Set credit mode label ("Set credit: full set/split share") intentionally
+		// not shown (ticket 471/#5): it named a ranking-internal mode the tooltip
+		// doesn't need to explain.
+		rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_item_alone', { dps: tipDelta(itemAlone) })}</div>);
 		if (ctx.crossesThreshold) {
 			rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_activates_included', { threshold: ctx.piecesAfterSwap })}</div>);
 		}
@@ -3198,13 +3208,16 @@ export class UpgradesTab extends SimTab {
 		for (const f of futureBonuses) {
 			if (f.dps === undefined) continue;
 			if (!floorOk(f.dps)) continue;
+			// `have` = pieces already worn toward this threshold. `piecesNeeded` is
+			// built in engine `rank.ts` as `threshold - piecesWornBefore`, so
+			// `threshold - piecesNeeded` recovers `piecesWornBefore` (confirmed by
+			// reading rank.ts, not assumed).
 			rows.push(
 				<div>
 					{i18n.t('upgrades_tab.set_bonus.tip_future', {
 						threshold: f.threshold,
-						needed: f.piecesNeeded,
+						have: f.threshold - f.piecesNeeded,
 						dps: f.dps.toFixed(1),
-						share: (f.dps / f.threshold).toFixed(1),
 					})}
 				</div>,
 			);
@@ -3213,7 +3226,11 @@ export class UpgradesTab extends SimTab {
 			rows.push(
 				<div>
 					{b.dps !== undefined
-						? i18n.t('upgrades_tab.set_bonus.tip_break_on_complete', {
+						? // Reuses `tip_break_on_complete`, whose value now reads
+							// identically to `tip_breaks` ("breaks ..."), by design: the
+							// owner wants the same wording in both the single-break and
+							// commit-break cases (ticket 471/#5).
+							i18n.t('upgrades_tab.set_bonus.tip_break_on_complete', {
 								set: b.setName,
 								threshold: b.threshold,
 								dps: b.dps.toFixed(1),
@@ -3225,33 +3242,16 @@ export class UpgradesTab extends SimTab {
 				</div>,
 			);
 		}
-		if (on && ctx.commitPackageDeltaDps !== undefined) {
-			rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_package_total', { dps: formatDelta(ctx.commitPackageDeltaDps) })}</div>);
+		// "Full set end state" is informative regardless of the toggle (ticket
+		// 471/#4), so its gate is dropped along with the others above.
+		if (ctx.commitPackageDeltaDps !== undefined) {
+			rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_package_total', { dps: tipDelta(ctx.commitPackageDeltaDps) })}</div>);
 		}
-		if (on) {
-			// Both totals, the active one marked "(ranked)". The active figure equals
-			// the cell's total (`deltaLabel`); the inactive one is recomputed here.
-			const fullCredit = rankableSetPotential(row, noiseFloorDps ?? 0, 'full');
-			const splitCredit = rankableSetPotential(row, noiseFloorDps ?? 0, 'split');
-			const fullTotal = formatDelta(row.deltaDps + fullCredit);
-			const splitTotal = formatDelta(row.deltaDps + splitCredit);
-			rows.push(
-				<div>
-					{i18n.t('upgrades_tab.set_bonus.tip_total_full', {
-						total: fullTotal,
-						ranked: setCredit === 'full' ? i18n.t('upgrades_tab.set_bonus.ranked_marker') : '',
-					})}
-				</div>,
-			);
-			rows.push(
-				<div>
-					{i18n.t('upgrades_tab.set_bonus.tip_total_split', {
-						total: splitTotal,
-						ranked: setCredit === 'split' ? i18n.t('upgrades_tab.set_bonus.ranked_marker') : '',
-					})}
-				</div>,
-			);
-		}
+		// Full/split credit TOTALS and the "(ranked)" marker intentionally not
+		// shown (ticket 471/#5): `setCredit` and `rankableSetPotential` (see
+		// `resultRow`) still compute them for ranking; this tooltip just no
+		// longer renders them.
+		void setCredit;
 		void deltaLabel;
 
 		const tip = (<div className="upgrades-set-bonus-tip">{rows}</div>) as HTMLElement;
