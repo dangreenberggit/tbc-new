@@ -1,0 +1,69 @@
+// The item-row look, shared by the gear picker's item list and the Upgrades
+// tab's results tables (ticket 472). Both used to carry their own icon size,
+// name size and row colours; the gear picker's version was the one the owner
+// wanted, and _item_list.scss line 78 had asked for this file by name.
+//
+// Mixins rather than a shared class: the gear row is a flex `<li>` and the
+// Upgrades row is a `<tr>`, so the same tokens have to be applied to whichever
+// element actually paints in each host.
+
+// Cell widths shared by both tables' trailing cells.
+:root {
+	--ilvl-cell-width: 3rem;
+	--source-cell-width: 16rem;
+	--ep-cell-width: 6rem;
+	--icon-cell-width: 2rem;
+}
+
+// Zebra striping and hover, from _item_list.scss:85-95.
+//
+// `$prop` is the property the host sets for all three rules, because the two
+// hosts paint differently. The gear `<li>` sets `background` directly. A table
+// row cannot: Bootstrap 5.3 paints every cell twice, `background-color:
+// var(--bs-table-bg)` plus an inset box-shadow layer reading
+// `--bs-table-bg-state`/`--bs-table-bg-type`/`--bs-table-accent-bg`, so a
+// `background` on the `<tr>` is covered by the cells' own paint. Setting
+// `--bs-table-bg` on the row instead inherits to every `<td>` and is what the
+// cells paint, for the hover state as well as the zebra.
+//
+// This depends on the box-shadow layer staying inert, which it is only while
+// the table carries neither `.table-striped` nor `.table-hover` (both set
+// `--bs-table-bg-type`/`-state`). The three Upgrades tables carry `table
+// table-sm` only. Adding either class to them would re-enable that layer and
+// silently take the hover colour over; revisit this mixin first.
+@mixin item-row-zebra-hover($prop) {
+	&:nth-child(2n) {
+		#{$prop}: var(--bs-table-row-even-bg);
+	}
+
+	&:nth-child(2n + 1) {
+		#{$prop}: var(--bs-table-row-odd-bg);
+	}
+
+	&:hover {
+		#{$prop}: var(--bs-gray-800);
+	}
+}
+
+// The row's item icon, from _item_list.scss:148-153.
+@mixin item-row-icon {
+	@include wowhead-background-icon;
+	width: 3rem;
+	height: 3rem;
+	border: var(--border-default);
+}
+
+// The row's item name, from _item_list.scss:155-161. Colour is not set here:
+// each host paints the name by item quality.
+@mixin item-row-name {
+	font-size: 1.125rem;
+	letter-spacing: normal;
+	font-weight: normal;
+}
+
+// Both tables render the same favorite and batch buttons (item_toggles.tsx),
+// so these apply by class name with no mixin.
+.selector-modal-list-item-favorite,
+.selector-modal-list-item-compare {
+	width: var(--icon-cell-width);
+}

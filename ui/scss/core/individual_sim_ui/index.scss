@@ -5,6 +5,8 @@
 @import './shared';
 
 // Import component styles
+// Ahead of gear_picker and individual_sim_ui: both include its row mixins.
+@import '../components/item_row';
 @import '../components/input';
 @import '../components/boolean_picker';
 @import '../components/character_stats';
