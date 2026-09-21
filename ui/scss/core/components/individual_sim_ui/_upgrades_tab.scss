@@ -267,9 +267,38 @@
 }
 
 // The row acts on results already computed, so it is labelled as a filter
-// group rather than left to read as more run settings.
+// group rather than left to read as more run settings. `.content-block-header`
+// gives this span the row's border-bottom idiom but never emits the nested
+// `.content-block-title` that idiom relies on for bold weight, so the heading
+// rendered at the same weight as the control labels below it -- set the
+// weight directly rather than add markup for one property. The row's own
+// `gap: var(--spacer-2)` (between this heading and `.upgrades-view-controls-
+// group`) is narrower than the `--spacer-3` gap the group uses *between*
+// controls, which reads backwards -- the heading should sit apart from the
+// cluster it labels more than the cluster's members sit apart from each
+// other. `padding-right` + `border-right` (the row's own idiom, borrowed from
+// `.content-block-header`'s `border-bottom`) push the visible gap past
+// `--spacer-3` and mark the boundary the same way `_content_block.scss` marks
+// its own header/body boundary.
 .upgrades-view-controls-title {
 	margin-bottom: 0;
+	font-weight: bold;
+	padding-right: var(--spacer-3);
+	border-right: var(--border-default);
+
+	// A border that survives the row wrapping onto its own line reads as a
+	// stray vertical rule with nothing to its right, so it is dropped below
+	// the breakpoint where `.upgrades-view-controls` can wrap (`flex-wrap:
+	// wrap` above) -- the `--spacer-3` padding still stands the heading apart
+	// from the controls that drop to the line below it. 767px matches
+	// Bootstrap's `md` breakpoint; this file has no working `$grid-
+	// breakpoints` map import to reference it symbolically (the one other
+	// reference to that map in this codebase, `_global.scss:11`, is commented
+	// out), so the value is written literally like `_stat_weights_action.scss`
+	// does for its own narrow-width rule.
+	@media (max-width: 767px) {
+		border-right: none;
+	}
 }
 
 // Pre-run there are no results to filter, so the "View options" heading is an
