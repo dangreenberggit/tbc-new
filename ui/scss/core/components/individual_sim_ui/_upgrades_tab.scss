@@ -733,11 +733,15 @@
 
 .upgrades-results-table {
 	// The gear item list's zebra and hover, from the shared partial
-	// (ticket 472). The mixin is given `--bs-table-bg` rather than `background`
-	// because Bootstrap's cells paint themselves from that variable and would
-	// cover a background set on the row — see _item_row.scss.
+	// (ticket 472). `background` on the row, the same property the gear `<li>`
+	// sets: this app does not import `bootstrap/scss/tables` (ui/scss/index.scss
+	// lists every Bootstrap partial it does take, and tables is not among them),
+	// so nothing paints the cells over the row and `table table-sm` on these
+	// tables are inert class names. Measured: a `td`'s `box-shadow` is `none`
+	// and its `background-color` is unset, where Bootstrap's own cell rule would
+	// give both.
 	tbody tr {
-		@include item-row-zebra-hover(--bs-table-bg);
+		@include item-row-zebra-hover(background);
 	}
 
 	// The mid-run table's Rank column holds a position in the rows landed so

@@ -17,20 +17,16 @@
 
 // Zebra striping and hover, from _item_list.scss:85-95.
 //
-// `$prop` is the property the host sets for all three rules, because the two
-// hosts paint differently. The gear `<li>` sets `background` directly. A table
-// row cannot: Bootstrap 5.3 paints every cell twice, `background-color:
-// var(--bs-table-bg)` plus an inset box-shadow layer reading
-// `--bs-table-bg-state`/`--bs-table-bg-type`/`--bs-table-accent-bg`, so a
-// `background` on the `<tr>` is covered by the cells' own paint. Setting
-// `--bs-table-bg` on the row instead inherits to every `<td>` and is what the
-// cells paint, for the hover state as well as the zebra.
-//
-// This depends on the box-shadow layer staying inert, which it is only while
-// the table carries neither `.table-striped` nor `.table-hover` (both set
-// `--bs-table-bg-type`/`-state`). The three Upgrades tables carry `table
-// table-sm` only. Adding either class to them would re-enable that layer and
-// silently take the hover colour over; revisit this mixin first.
+// `$prop` is the property the host sets for all three rules. Both hosts pass
+// `background` today — the gear `<li>` and the Upgrades `<tr>` — and the
+// parameter exists because a table row's colour is not always safe to set that
+// way: where Bootstrap's table CSS is loaded, `bootstrap/scss/_tables.scss`
+// paints every cell from `--bs-table-bg` plus an inset box-shadow layer, which
+// covers a `background` on the row. This app does not import that partial
+// (ui/scss/index.scss lists the Bootstrap partials it takes; tables is not one),
+// so `table table-sm` on the Upgrades tables are inert and the row's own
+// `background` is what shows. A host that does load Bootstrap's tables should
+// pass `--bs-table-bg` instead, which inherits to the cells.
 @mixin item-row-zebra-hover($prop) {
 	&:nth-child(2n) {
 		#{$prop}: var(--bs-table-row-even-bg);
