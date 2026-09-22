@@ -9075,6 +9075,12 @@
 						"source": {
 							"type": "string"
 						},
+						"favorite": {
+							"type": "string"
+						},
+						"batch": {
+							"type": "string"
+						},
 						"owned": {
 							"type": "string"
 						},
@@ -9120,6 +9126,8 @@
 						"delta_dps",
 						"delta_dps_value",
 						"source",
+						"favorite",
+						"batch",
 						"owned",
 						"bis_badge",
 						"alt_badge",
