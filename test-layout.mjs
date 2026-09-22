@@ -321,7 +321,9 @@ function legibilityProbeExpression() {
 	return `(() => {
 		const table = document.querySelector('.upgrades-results-table');
 		if (!table) return { error: 'no results table' };
-		const wrap = document.querySelector('.upgrades-results');
+		// Each table scrolls inside its own host (ticket 483); the shared
+		// \`.upgrades-results\` wrapper no longer scrolls.
+		const wrap = table.closest('.upgrades-table-scroll');
 		const rows = [...table.querySelectorAll('tbody tr')].slice(0, ${MIN_ROWS});
 		if (rows.length < ${MIN_ROWS}) return { error: 'only ' + rows.length + ' rows' };
 		// Content height of a cell, independent of its vertical padding: measured
@@ -435,7 +437,7 @@ function assertLegibility(width, m) {
 
 	// (7) No clipped text. A cell whose content overflows its box WHILE an
 	// ancestor hides overflow is invisible text -- fail. The sanctioned
-	// `.upgrades-results` scroller is exempt (it is overflow-x:auto, not hidden)
+	// `.upgrades-table-scroll` scroller is exempt (it is overflow-x:auto, not hidden)
 	// and is instead required to be scrollable when the table is wider than it.
 	{
 		const clipped = m.allCells.find(c => c.hidden && (c.scrollW > c.clientW + CLIP_TOL || c.scrollH > c.clientH + CLIP_TOL));
@@ -457,7 +459,7 @@ function assertLegibility(width, m) {
 			ok,
 			msg: ok
 				? `[${width}] scroller ok: table ${m.wrapInfo.tableScrollW} vs wrap ${m.wrapInfo.clientW}, overflow-x ${m.wrapInfo.overflowX}`
-				: `[${width}] table (${m.wrapInfo.tableScrollW}px) wider than .upgrades-results (${m.wrapInfo.clientW}px) but overflow-x is ${m.wrapInfo.overflowX} -- content clips instead of scrolling`,
+				: `[${width}] table (${m.wrapInfo.tableScrollW}px) wider than its .upgrades-table-scroll host (${m.wrapInfo.clientW}px) but overflow-x is ${m.wrapInfo.overflowX} -- content clips instead of scrolling`,
 		});
 	}
 

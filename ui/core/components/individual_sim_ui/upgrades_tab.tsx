@@ -446,6 +446,29 @@ function resultsTableHead(): Node {
 }
 
 /**
+ * One column scheme for every results table (ticket 483). The shortlist and
+ * below-cutoff tables are separate `<table>`s, so under `table-layout: auto`
+ * each sized its columns from its own content and the two never lined up. With
+ * `table-layout: fixed` (SCSS, `>=md`) these classed `<col>`s are the layout,
+ * so all three tables share one set of widths. Item has no width class: it
+ * takes whatever the fixed columns leave.
+ */
+function resultsColgroup(): Node {
+	return (
+		<colgroup>
+			<col className="upgrades-col-rank" />
+			<col />
+			<col className="upgrades-col-slot" />
+			<col className="upgrades-col-dps" />
+			<col className="upgrades-col-source" />
+			{RESULTS_ACTION_COLUMNS.map(() => (
+				<col className="upgrades-col-action" />
+			))}
+		</colgroup>
+	);
+}
+
+/**
  * The action columns' headers, for both table heads. The label is
  * visually-hidden: the column shows an icon button, so a visible heading would
  * be noise, but a screen reader still needs the column named.
@@ -2654,52 +2677,18 @@ export class UpgradesTab extends SimTab {
 		// rows landed *so far*, not the engine's final `rank`, and a row that
 		// has not been simmed yet is simply absent. The class lets the styling
 		// say so, alongside the running status line's own "N rows landed".
+		// The shared fixed column scheme also stops this table reflowing as
+		// wider rows land (ticket 463).
 		return (
-			<table className="upgrades-results-table upgrades-results-table-provisional table table-sm">
-				{/* Pin the column widths so the provisional table does not reflow as
-				    wider rows land (ticket 463): with `table-layout: fixed` (the SCSS
-				    partial scopes it to `.upgrades-results-table-provisional`) these
-				    <col> widths are the layout. The percentages are tuned to the
-				    *provisional* table's narrower width (measured live at 592px, the
-				    same wrap the ticket-463 comment recorded, not the settled table's
-				    content-driven 951px). Rank/Slot hold single-line content
-				    (`white-space: nowrap` from the desktop block), so each is pared to
-				    what its own text needs ("Main Hand" is the widest Slot) rather than
-				    given headroom to spare.
-
-				    Item and Source are the two columns with genuinely variable-length
-				    content, and both wrap onto more than one line by design now
-				    (ticket 468 round 2): Item's name stays on its own single
-				    ellipsizing line while BiS/set badges and "(Owned)" wrap onto lines
-				    below it (`.upgrades-item-cell`'s `flex-wrap: wrap`, SCSS), and
-				    Source wraps its raid/boss text between words
-				    (`overflow-wrap: normal`, SCSS -- NOT `anywhere`, which was
-				    shattering "Serpentshrine Cavern (N) Leotheras the Blind" into a
-				    vertical letter-stack at the old 10%). DPS holds a short fixed-shape
-				    value ("+40.3 DPS") and has slack to give up, so this round pulls
-				    width from DPS (29%->18%) into both Item (30%->38%, the ticket-468
-				    round-1 fix) and Source (14%->20%, so 2-3 lines of whole-word wrap
-				    reads comfortably instead of shattering). The settled table and the
-				    `<md` block are untouched.
-
-				    Ticket 472 adds the two action columns. Each holds one icon button
-				    that cannot wrap, so 5% each is enough; the 10% comes off Rank,
-				    Slot, Source and Item, which keeps Item the widest column and leaves
-				    Source enough room to go on wrapping between whole words. */}
-				<colgroup>
-					<col style={{ width: '7%' }} />
-					<col style={{ width: '36%' }} />
-					<col style={{ width: '13%' }} />
-					<col style={{ width: '16%' }} />
-					<col style={{ width: '18%' }} />
-					<col style={{ width: '5%' }} />
-					<col style={{ width: '5%' }} />
-				</colgroup>
-				{resultsTableHead()}
-				{/* Mid-run skeleton: no ranking yet, so no per-spec floor exists —
-				    pass undefined and `setBonusPresentation` shows nothing. */}
-				<tbody>{sorted.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }, undefined))}</tbody>
-			</table>
+			<div className="upgrades-table-scroll">
+				<table className="upgrades-results-table upgrades-results-table-provisional table table-sm">
+					{resultsColgroup()}
+					{resultsTableHead()}
+					{/* Mid-run skeleton: no ranking yet, so no per-spec floor exists —
+					    pass undefined and `setBonusPresentation` shows nothing. */}
+					<tbody>{sorted.map((row, i) => this.resultRow(row, { rankText: String(i + 1) }, undefined))}</tbody>
+				</table>
+			</div>
 		);
 	}
 
@@ -2754,6 +2743,7 @@ export class UpgradesTab extends SimTab {
 		const sortedShortlist = this.resultsSort ? sortRows(shortlist, this.resultsSort, this.deltaSortKey(noiseFloorDps)) : shortlist;
 		const table = (
 			<table className="upgrades-results-table table table-sm">
+				{resultsColgroup()}
 				{this.sortableResultsTableHead()}
 				<tbody>
 					{sortedShortlist.length > 0 ? (
@@ -2787,7 +2777,9 @@ export class UpgradesTab extends SimTab {
 				 * table, and its emphasis of a first result does not exist to
 				 * borrow (round-3 review S2, ticket 307).
 				 */}
-				<div className="upgrades-result-group">{table}</div>
+				<div className="upgrades-result-group">
+					<div className="upgrades-table-scroll">{table}</div>
+				</div>
 				{belowCutoffRows.length > 0 ? <div className="upgrades-result-group">{this.expandableRowGroup(belowCutoffRows, noiseFloorDps)}</div> : null}
 			</>
 		);
@@ -2876,9 +2868,12 @@ export class UpgradesTab extends SimTab {
 		const details = (
 			<details className="upgrades-below-cutoff-group">
 				<summary>{i18n.t('upgrades_tab.results.below_cutoff_group', { count: rows.length })}</summary>
-				<table className="upgrades-results-table upgrades-below-cutoff-table table table-sm">
-					<tbody ref={tbodyRef} />
-				</table>
+				<div className="upgrades-table-scroll">
+					<table className="upgrades-results-table upgrades-below-cutoff-table table table-sm">
+						{resultsColgroup()}
+						<tbody ref={tbodyRef} />
+					</table>
+				</div>
 			</details>
 		);
 		// Same shared sort as the shortlist table above it (ticket 280) — the
@@ -2981,13 +2976,17 @@ export class UpgradesTab extends SimTab {
 			key: { method: 'favoriteItems', id: row.itemId },
 		});
 		const batch = createBatchToggle({ simUI: this.simUI, itemId: row.itemId, subscribe: false });
+		// Source is capped and ellipsized at `>=md` (ticket 483); the title keeps
+		// the full text reachable.
+		const sourceTd = (<td>{sourceCell(row, this.simUI.sim)}</td>) as HTMLTableCellElement;
+		sourceTd.title = sourceTd.textContent ?? '';
 		return (
 			<tr className={row.owned ? 'upgrades-row-owned' : ''}>
 				<td>{display.rankText}</td>
 				<td>{this.itemCell(row)}</td>
 				<td>{slotLabel(effectiveSlot(row))}</td>
 				{dpsCell}
-				<td>{sourceCell(row, this.simUI.sim)}</td>
+				{sourceTd}
 				{/* Last two cells, one control each — see RESULTS_ACTION_COLUMNS. */}
 				<td className="upgrades-action-cell">{favorite.container}</td>
 				<td className="upgrades-action-cell">{batch.container}</td>

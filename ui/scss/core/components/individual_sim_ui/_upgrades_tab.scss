@@ -41,11 +41,15 @@
 // `--gap-width` right of theirs. `.p-gap` itself is shared across the whole
 // app and deliberately not edited; these two wrappers are the only ones that
 // need their left padding cancelled, so the override is scoped to them by
-// name. Right and vertical padding from `.p-gap` are left alone -- only the
-// left side was wrong.
+// name. Vertical padding from `.p-gap` is left alone.
+//
+// The right padding goes too (ticket 483): it stopped the table one
+// `--gap-width` short of the right end of the line under the slot tabs, and the
+// owner asked for the table to reach that line.
 .upgrades-shopping-list,
 .upgrades-slot-pane {
 	padding-left: 0;
+	padding-right: 0;
 }
 
 // The panel keeps `.tab-panel-left`'s multi-column `repeat(auto-fit,
@@ -729,15 +733,11 @@
 	text-align: center;
 }
 
-// The scroller is not a narrow-width concession any more (ticket 472). It used
-// to live in the `<md` block alone, because only there did content sizing push
-// the table past its panel. The two action columns do the same at desktop --
-// measured 624px of table in a 613px host at 1280, 738 in 733 at 768 -- and the
-// layout gate's assertion 7b requires a table wider than `.upgrades-results` to
-// scroll rather than clip, at whatever width that happens. One rule for every
-// width says what was always meant: the table scrolls inside its panel instead
-// of losing its right-hand columns.
-.upgrades-results {
+// A table wider than its panel scrolls rather than clips, at every width
+// (ticket 472; layout gate assertion 7b). Each table has its own scroll host
+// (ticket 483) so the scrollbar sits directly under that table; it used to be
+// on `.upgrades-results`, which put one scrollbar under the whole results area.
+.upgrades-table-scroll {
 	overflow-x: auto;
 }
 
@@ -995,13 +995,11 @@
 			text-align: right;
 		}
 
-		// Slot ("Trinket 1" is the longest label) and DPS both hold short,
-		// predictable strings; keeping them off the item name is the point.
-		th:nth-child(3),
-		td:nth-child(3),
+		// DPS holds a short, predictable string. Slot is not `nowrap` any more
+		// (ticket 483): its column width comes from `.upgrades-col-slot` below,
+		// and a nowrap label could only overflow that width, not widen it.
 		th:nth-child(4),
 		td:nth-child(4) {
-			width: 1%;
 			white-space: nowrap;
 		}
 
@@ -1065,32 +1063,61 @@
 		}
 	}
 
-	// Stop the mid-run table reflowing as wider rows land (ticket 463). The
-	// desktop rules above deliberately leave the settled table on
-	// `table-layout: auto` so a long item name can widen its column; but the
-	// provisional table re-renders on every landed row, and a late row carrying a
-	// longer name (measured on feral: the item column grew ~65px between 11 and 98
-	// rows, shoving Slot/DPS/Source sideways with it). Only the provisional table
-	// is pinned to `table-layout: fixed`, so its `<colgroup>` percentages are the
-	// layout regardless of what lands, and a long name wraps inside the Item cell
-	// instead of widening the column. The settled table (no `-provisional`) and
-	// the `<md` block are untouched, so the finished layout the layout gate
-	// measures is exactly as before.
-	.upgrades-results-table-provisional {
+	// Every results table is `table-layout: fixed` against one shared
+	// `<colgroup>` (`resultsColgroup()`, ticket 483). Ticket 463 did this for the
+	// mid-run table alone, so it would not reflow as rows with longer names
+	// landed. The settled shortlist and below-cutoff tables stayed on
+	// `table-layout: auto`, and because they are separate `<table>`s each sized
+	// its columns from its own content, so their columns never lined up
+	// (measured 627 vs 676px in a 627px host). Fixed widths on the short columns
+	// make all three tables line up, and Item takes the rest.
+	.upgrades-results-table {
 		table-layout: fixed;
-		// A definite table width is what makes `table-layout: fixed` stable: the
-		// `<colgroup>` percentages resolve against it, so without this the table
-		// still sizes to its content and the whole thing (and every column with it)
-		// grows as wider rows land. Bootstrap's `.table` sets this, but the fixed
-		// layout needs it stated here so the percentages have a fixed base.
+		// A definite table width is what makes `table-layout: fixed` stable:
+		// without it the table still sizes to its content.
 		width: 100%;
+
+		// Widths include the cell's horizontal padding (`--spacer-3` each
+		// side, above). Slot fits "Trinket 2" at its 0.875rem font; Source is
+		// capped and ellipsized (below).
+		.upgrades-col-rank {
+			width: 3rem;
+		}
+
+		.upgrades-col-slot {
+			width: 6.5rem;
+		}
+
+		.upgrades-col-dps {
+			width: 7rem;
+		}
+
+		.upgrades-col-source {
+			width: 8rem;
+		}
+
+		.upgrades-col-action {
+			width: 2.5rem;
+		}
+
+		.upgrades-action-cell {
+			padding-left: var(--spacer-1);
+			padding-right: var(--spacer-1);
+		}
+
+		// Source is one line, cut with an ellipsis; the cell's `title` holds the
+		// full text (upgrades_tab.tsx `resultRow`).
+		td:nth-child(5) {
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
+		}
 
 		// The columns are now fixed, so any wrapping cell must wrap its content
 		// between words rather than overflowing it and pushing the table's
 		// scrollWidth past the results wrap (the layout gate reads that overflow
-		// as clipping). Slot and DPS keep the desktop block's `white-space:
-		// nowrap` and their columns are sized to fit their one-line content, so
-		// this does not touch them.
+		// as clipping). DPS keeps the desktop block's `white-space: nowrap` and
+		// its column is sized to fit its one-line content.
 		//
 		// This used to be `overflow-wrap: anywhere`, which breaks mid-word --
 		// fine for a single long token with no spaces (there is nowhere else to
@@ -1410,6 +1437,14 @@
 	// prefix (1,1,0) is what actually wins, measured live at 1280.
 	#upgrades-tab .upgrades-tab-right {
 		flex: 1.5;
+	}
+
+	// The line under the slot tabs (the `.nav-tabs` bottom border) runs a
+	// little past the results table's right edge, into the gap before the
+	// settings panel (ticket 483, owner: "that line a teensy bit longer"). `xl`
+	// only: below it the panels stack and there is no gap to run into.
+	.upgrades-tab-tabs > .nav-tabs {
+		margin-right: calc(-1 * var(--spacer-2));
 	}
 }
 
