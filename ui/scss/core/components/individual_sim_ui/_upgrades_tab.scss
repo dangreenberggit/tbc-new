@@ -1307,6 +1307,16 @@
 	}
 }
 
+// The renamed "Upgrades" tab (ticket 485): larger and bolder than the slot
+// tabs beside it, since it is the tab the results actually live under and the
+// owner asked for it to read as the primary one. This tab carries no count
+// badge of its own (unlike the slot tabs, `.upgrades-subtab-count` below), so
+// there is nothing to realign against the bigger text.
+.upgrades-primary-subtab {
+	font-size: 1.125rem;
+	font-weight: bold;
+}
+
 // Per-slot counts on the sub-tab strip (ticket 304 item 10). Borrows the
 // `badge rounded-pill` idiom the gear-set chips and `.upgrades-bis-badge`
 // already use, rather than inventing a second count treatment.

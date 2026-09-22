@@ -735,7 +735,7 @@ export class UpgradesTab extends SimTab {
 						<ul ref={tabNavRef} className="nav nav-tabs" attributes={{ role: 'tablist' }}>
 							<li className="nav-item" attributes={{ role: 'presentation' }}>
 								<button
-									className="nav-link active"
+									className="nav-link upgrades-primary-subtab active"
 									type="button"
 									attributes={{
 										role: 'tab',
@@ -2604,24 +2604,21 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * The finished table under the site's own `.content-block` header, the same
-	 * markup `ContentBlock` builds (`content_block.tsx`: `h6.content-block-title`
-	 * inside `.content-block-header`) -- an `h6` and the partial's bottom border,
-	 * not a local heading rule. The classes are written out rather than
-	 * constructed through `new ContentBlock(...)` because this node is rebuilt by
-	 * `replaceChildren` on every view change, and the component owns a persistent
-	 * root element it appends to a parent.
+	 * The finished table, with no heading of its own (ticket 485): the tab
+	 * selector right above it already reads "Upgrades", so a second "Upgrades"
+	 * heading plus the `.content-block-header` rule under it said the same
+	 * thing twice. Removing the heading also drops the `.content-block-header`
+	 * wrapper it justified; `.content-block-body`'s own padding stays so the
+	 * table keeps the block's spacing.
 	 *
-	 * Only the table gets a header. The empty states carry their own title and a
-	 * second one above them would say the same thing twice, and the running
-	 * skeleton has no final count to name yet.
+	 * Confirmed no test asserts on the removed heading: neither
+	 * `test-layout.mjs` nor `test-tab-harness.mjs` selects
+	 * `.content-block-title`, `.content-block-header`, or the
+	 * `upgrades_tab.results.heading` key inside this tab's tree.
 	 */
 	private resultsBlock(table: Node): Node {
 		return (
 			<div className="upgrades-results-block content-block">
-				<div className="content-block-header">
-					<h6 className="content-block-title">{i18n.t('upgrades_tab.results.heading')}</h6>
-				</div>
 				<div className="content-block-body">{table}</div>
 			</div>
 		);

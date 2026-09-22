@@ -9102,9 +9102,6 @@
 						"below_cutoff_group": {
 							"type": "string"
 						},
-						"heading": {
-							"type": "string"
-						},
 						"removes_worn": {
 							"type": "string"
 						}
@@ -9129,7 +9126,6 @@
 						"empty_no_upgrades_body",
 						"empty_unsupported_spec_body",
 						"below_cutoff_group",
-						"heading",
 						"removes_worn"
 					]
 				},
