@@ -471,7 +471,6 @@ export default class ItemList<T extends ItemListType> {
 		const favoriteToggle = createFavoriteToggle({
 			sim: this.player.sim,
 			key: this.favoriteKey(itemData),
-			initial: isFavorite,
 		});
 		const individualSimUI = this.simUI instanceof IndividualSimUI ? this.simUI : null;
 		const batchToggle =

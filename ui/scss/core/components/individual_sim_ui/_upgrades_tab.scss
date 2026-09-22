@@ -849,7 +849,7 @@
 // `white-space: nowrap` so each renders on one line, symmetric with the desktop
 // block (`:648-663`) -- DPS right-aligned as a number column. Content sizing
 // can make the table wider than its narrow container (measured 424px content in
-// a 319px panel at 375px), so `.upgrades-results` carries `overflow-x: auto`:
+// a 319px panel at 375px), so `.upgrades-results` has `overflow-x: auto`:
 // the table scrolls horizontally inside the panel instead of shattering, and
 // stays legible one line per cell at every width. That rule started here and now
 // applies at every width (see `.upgrades-results` above, ticket 472).

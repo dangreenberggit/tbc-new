@@ -908,10 +908,7 @@
 			"tip_unmeasured": "breaks {{set}} {{threshold}}pc: value not measured",
 			"tip_future": "{{threshold}}pc ({{have}}/{{threshold}}): +{{dps}}",
 			"tip_break_on_complete": "breaks {{set}} {{threshold}}pc: -{{dps}}",
-			"tip_package_total": "Full set end state: {{dps}}",
-			"tip_total_full": "Total (full set): {{total}}{{ranked}}",
-			"tip_total_split": "Total (split share): {{total}}{{ranked}}",
-			"ranked_marker": " (ranked)"
+			"tip_package_total": "Full set end state: {{dps}}"
 		},
 		"cutoff": {
 			"pct_arm": "cleared by %-arm",

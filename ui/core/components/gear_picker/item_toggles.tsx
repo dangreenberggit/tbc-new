@@ -7,7 +7,6 @@ import { ItemSpec } from '../../proto/common';
 import { DatabaseFilters } from '../../proto/ui';
 import { Sim } from '../../sim';
 import { TypedEvent } from '../../typed_event';
-import { BulkTab } from '../individual_sim_ui/bulk_tab';
 
 /**
  * The favorite star and the add-to-Batch-Sim button, as one module both the
@@ -72,7 +71,7 @@ const repaintFns = new WeakMap<HTMLButtonElement, () => void>();
  * its rows are rebuilt on every landed row mid-run, so a per-row `.on()` would
  * accumulate listeners for rows that no longer exist.
  */
-export function refreshToggles(root: ParentNode, _sim: Sim, _bt: BulkTab | null): void {
+export function refreshToggles(root: ParentNode): void {
 	for (const button of root.querySelectorAll<HTMLButtonElement>('button[data-item-toggle]')) {
 		repaintFns.get(button)?.();
 	}
@@ -83,7 +82,7 @@ export function refreshToggles(root: ParentNode, _sim: Sim, _bt: BulkTab | null)
  * and other non-favoritable tabs): the star renders and does nothing, which is
  * what the closure this replaced did when its switch fell through.
  */
-export function createFavoriteToggle(options: { sim: Sim; key: FavoriteKey | null; initial: boolean }): FavoriteToggle {
+export function createFavoriteToggle(options: { sim: Sim; key: FavoriteKey | null }): FavoriteToggle {
 	const { sim, key } = options;
 	const buttonRef = ref<HTMLButtonElement>();
 	const iconRef = ref<HTMLElement>();
@@ -127,8 +126,6 @@ export function createFavoriteToggle(options: { sim: Sim; key: FavoriteKey | nul
 	});
 
 	repaintFns.set(button, refresh);
-	// `options.initial` is the caller's already-computed state; the first paint
-	// reads the sim so the two cannot disagree.
 	refresh();
 
 	return { container, button, refresh, isOn };

@@ -14,7 +14,7 @@ import { TypedEvent } from '../../typed_event';
 import { BaseModal } from '../base_modal';
 import { CopyButton } from '../copy_button';
 import { getSourceInfo } from '../gear_picker/item_list';
-import { createBatchToggle, createFavoriteToggle, isFavorited, refreshToggles } from '../gear_picker/item_toggles';
+import { createBatchToggle, createFavoriteToggle, refreshToggles } from '../gear_picker/item_toggles';
 import { makePhaseSelector } from '../inputs/other_inputs';
 import { BooleanPicker } from '../pickers/boolean_picker';
 import { NumberPicker } from '../pickers/number_picker';
@@ -1348,7 +1348,7 @@ export class UpgradesTab extends SimTab {
 	 * state when it is built.
 	 */
 	private wireToggleRefresh() {
-		const refresh = () => refreshToggles(this.contentContainer, this.simUI.sim, this.simUI.bt);
+		const refresh = () => refreshToggles(this.contentContainer);
 		this.simUI.bt?.itemsChangedEmitter.on(refresh);
 		this.simUI.sim.filtersChangeEmitter.on(refresh);
 	}
@@ -2979,7 +2979,6 @@ export class UpgradesTab extends SimTab {
 		const favorite = createFavoriteToggle({
 			sim: this.simUI.sim,
 			key: { method: 'favoriteItems', id: row.itemId },
-			initial: isFavorited(this.simUI.sim.getFilters(), { method: 'favoriteItems', id: row.itemId }),
 		});
 		const batch = createBatchToggle({ simUI: this.simUI, itemId: row.itemId, subscribe: false });
 		return (
@@ -3121,7 +3120,7 @@ export class UpgradesTab extends SimTab {
 		row: RankedItem,
 		noiseFloorDps: number | undefined,
 		on: boolean,
-		setCredit: SetCreditView,
+		_setCredit: SetCreditView,
 		deltaLabel: string,
 	): { line: Node | null; tip: HTMLElement | null } {
 		const ctx = row.setContext;
@@ -3228,7 +3227,6 @@ export class UpgradesTab extends SimTab {
 		// shown (ticket 471/#5): `setCredit` and `rankableSetPotential` (see
 		// `resultRow`) still compute them for ranking; this tooltip just no
 		// longer renders them.
-		void setCredit;
 		void deltaLabel;
 
 		const tip = (<div className="upgrades-set-bonus-tip">{rows}</div>) as HTMLElement;

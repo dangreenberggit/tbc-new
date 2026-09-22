@@ -8989,19 +8989,10 @@
 						},
 						"tip_package_total": {
 							"type": "string"
-						},
-						"tip_total_full": {
-							"type": "string"
-						},
-						"tip_total_split": {
-							"type": "string"
-						},
-						"ranked_marker": {
-							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["hover_hint", "not_counted", "tip_activates_included", "tip_breaks", "tip_unmeasured", "tip_future", "tip_break_on_complete", "tip_package_total", "tip_total_full", "tip_total_split", "ranked_marker"]
+					"required": ["hover_hint", "not_counted", "tip_activates_included", "tip_breaks", "tip_unmeasured", "tip_future", "tip_break_on_complete", "tip_package_total"]
 				},
 				"cutoff": {
 					"type": "object",

@@ -1846,9 +1846,6 @@ async function buildSetBonuses(
     }
   }
 
-  // itemId -> the best pool slot for that candidate, so per-row break
-  // computation and neutral-replacement selection both resolve slots the same
-  // way package selection did.
   const candidateSlotIndex = new Map<number, number>();
   const candidatesBySlot = new Map<number, PoolEntry[]>();
   for (const entry of candidates) {
@@ -1911,9 +1908,9 @@ async function buildSetBonuses(
   // `computeSynergy` builds `bonusDps = packageDelta − Σsingles − twoPieceBonus`.
   // A worn bonus (X, t') that some of the package's pieces break appears with a
   // −B term inside each of those three inputs, and the signs do NOT cancel:
-  //   • packageDelta carries −B once iff this package's own END-STATE breaks it;
-  //   • each member single that breaks it carries −B, subtracted, so +B each;
-  //   • twoPieceBonus (subtracted only for the 4pc) carries −B once iff the 2pc
+  //   • packageDelta includes −B once iff this package's own END-STATE breaks it;
+  //   • each member single that breaks it includes −B, subtracted, so +B each;
+  //   • twoPieceBonus (subtracted only for the 4pc) includes −B once iff the 2pc
   //     package's own end-state breaks it.
   // So the inflation is
   //   I = (memberSingleBreaks − packageEndStateBreaks − twoPieceEndStateBreaks)·B
@@ -2131,7 +2128,7 @@ async function measureBrokenSetValueFor(
     return { dps: ind?.deltaDps ?? 0, se: ind?.se ?? 0 };
   });
   const sumOwn = ownSamples.reduce((sum, s) => sum + s.dps, 0);
-  // worn == t: each replacement's single already carries −B, so B = Δ − Σown.
+  // worn == t: each replacement's single already includes −B, so B = Δ − Σown.
   // worn  > t: no single breaks it, only the vacate does, so B = Σown − Δ.
   const B = wornX === t ? delta - sumOwn : sumOwn - delta;
   const se = combineSe([
