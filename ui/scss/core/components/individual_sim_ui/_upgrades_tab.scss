@@ -818,15 +818,33 @@
 // `>=md`: the owner wanted the gear list's own 3rem icon and 1.125rem name, so
 // both now come from the shared `item-row-icon` / `item-row-name` mixins in the
 // `>=md` block below. The `<md` icon stays at 1.125rem.
+//
+// Ticket 474: the name and its BiS/set tags stack (name, then tags directly
+// beneath) rather than sitting inline after the name -- both beside the icon,
+// which is now a direct flex child of the cell rather than living inside the
+// link. `.upgrades-item-text` is the stacked column; `.upgrades-item-tags`
+// holds the badges/"(Owned)" line.
 .upgrades-item-cell {
 	display: inline-flex;
 	align-items: center;
+	gap: var(--spacer-2);
+}
+
+.upgrades-item-text {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
 }
 
 .upgrades-item-link {
 	display: flex;
 	align-items: center;
-	gap: var(--spacer-2);
+}
+
+.upgrades-item-tags {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
 }
 
 .upgrades-item-icon {
@@ -905,6 +923,11 @@
 			white-space: nowrap;
 		}
 
+		// Matches the desktop block's slot font-size fix (ticket 474).
+		td:nth-child(3) {
+			font-size: 0.875rem;
+		}
+
 		// DPS is a number column: one line and right-aligned, so magnitudes line
 		// up down the column. Matches the desktop block (`:659-662`).
 		th:nth-child(4),
@@ -919,18 +942,24 @@
 		height: 1.125rem;
 	}
 
+	// Ticket 474: name-over-tags stacks at this width too, so the icon aligns
+	// to the top of the stacked block rather than its (taller, two-line)
+	// centre -- `flex-start` here, not the desktop `center`.
 	.upgrades-item-cell {
 		display: flex;
-		flex-wrap: wrap;
-		// A wrapped "★ BiS" badge (and 424's set tags) needs vertical breathing
-		// room from the item name it wraps under, and the name + tags line up on
-		// their shared centre line (ticket 423).
+		align-items: flex-start;
+		gap: var(--spacer-1);
+	}
+
+	.upgrades-item-text {
 		row-gap: var(--spacer-1);
-		align-items: center;
+	}
+
+	.upgrades-item-tags {
+		column-gap: var(--spacer-1);
 	}
 
 	.upgrades-item-link {
-		gap: var(--spacer-1);
 		min-width: 0;
 	}
 
@@ -1007,6 +1036,14 @@
 		td:nth-child(4) {
 			width: 1%;
 			white-space: nowrap;
+		}
+
+		// Slot text read too large next to the 472 restyle's bigger (1.125rem)
+		// item name (ticket 474 owner walkthrough) -- matched to the gear
+		// list's own secondary scale (`.selector-modal-list-item-ep-delta`,
+		// _item_list.scss).
+		td:nth-child(3) {
+			font-size: 0.875rem;
 		}
 
 		// The DPS delta is a number column: aligning it right makes the
@@ -1111,26 +1148,23 @@
 		// name is the row's identity, and letting it wrap or shrink to a few
 		// characters (review round 1) makes the row unscannable. Everything
 		// else in the cell -- icon, BiS/set badges, "(Owned)" -- is allowed to
-		// wrap onto a second line instead (round 2's owner rule), so the cell
-		// is FIRST a flex row holding the icon + name (which never wraps), then
-		// wraps its remaining children onto following lines.
+		// wrap onto a second line instead (round 2's owner rule).
 		//
-		// `flex-wrap: wrap` plus giving the icon+name `<a>` `flex-basis: 100%`
-		// forces it to take the entire first line by itself (a 100%-basis flex
-		// child always starts a fresh line when wrapping is on), so badges and
-		// "(Owned)" -- the cell's other flex children -- are pushed to the line(s)
-		// below rather than competing with the name for the first line's width.
+		// Ticket 474 moved the tags out of the name's own flex row and into a
+		// stacked `.upgrades-item-text` column (icon | name-over-tags) so they
+		// never sit inline after the name. `.upgrades-item-text` takes the
+		// cell's remaining width after the icon; `min-width: 0` lets it shrink
+		// below its content so the name inside can still ellipsis instead of
+		// widening the fixed-layout column.
 		.upgrades-item-cell {
 			display: flex;
-			flex-wrap: wrap;
-			align-items: baseline;
-			row-gap: var(--spacer-1);
 			width: 100%;
 		}
 
-		.upgrades-item-link {
-			flex: 1 1 100%;
+		.upgrades-item-text {
+			flex: 1 1 auto;
 			min-width: 0;
+			row-gap: var(--spacer-1);
 		}
 
 		// `min-width: 0` overrides flex's default `min-width: auto`, which
@@ -1139,7 +1173,7 @@
 		// regardless of `overflow: hidden`. The full name survives as the
 		// element's `title` (upgrades_tab.tsx) for whenever it does truncate.
 		.upgrades-item-name {
-			flex-shrink: 1;
+			display: block;
 			min-width: 0;
 			overflow: hidden;
 			overflow-wrap: normal;
@@ -1147,14 +1181,14 @@
 			white-space: nowrap;
 		}
 
-		// Badges and "(Owned)" sit on the wrapped line(s) below the name. Round
-		// 1 of this fix gave them the same one-line-ellipsis treatment as the
-		// name to stop them crowding it out -- round 2 corrected that: a
-		// truncated "BiS …" hides which set/threshold badge this is (real data,
-		// not decoration), and a clipped "(Own…" is simply wrong. With the name
-		// now on its own line, these no longer compete with it for width at
-		// all, so they need no shrinking or ellipsis -- ordinary inline flex
-		// content that wraps to a new line when the row runs out of room.
+		// The tags line sits directly beneath the name (round 2's owner rule
+		// carried forward by 474: badges/"(Owned)" need no shrinking or
+		// ellipsis -- a truncated "BiS …" or "(Own…" would misreport real
+		// data, not decoration -- so it wraps as ordinary inline content
+		// instead).
+		.upgrades-item-tags {
+			column-gap: var(--spacer-1);
+		}
 	}
 }
 

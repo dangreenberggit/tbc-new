@@ -3393,27 +3393,36 @@ export class UpgradesTab extends SimTab {
 		const bisLabel = row.bisTags.includes('BiS') ? i18n.t('upgrades_tab.results.bis_badge') : row.bisTags.includes('Alt') ? i18n.t('upgrades_tab.results.alt_badge') : undefined;
 		const badges =
 			tags.length > 0
-				? tags.map(tag => <span className="badge rounded-pill upgrades-bis-badge ms-1">{tag}</span>)
+				? tags.map(tag => <span className="badge rounded-pill upgrades-bis-badge">{tag}</span>)
 				: bisLabel
-					? [<span className="badge rounded-pill upgrades-bis-badge ms-1">{bisLabel}</span>]
+					? [<span className="badge rounded-pill upgrades-bis-badge">{bisLabel}</span>]
 					: [];
 
 		const cell = (
 			<span className="upgrades-item-cell">
-				<a className="upgrades-item-link" ref={anchorElem} dataset={{ whtticon: 'false' }}>
-					{/* Decorative: the item name follows as text in the same link, so an
-					    empty alt lets a screen reader skip the icon rather than read its
-					    URL or repeat the name (ticket 444, axe image-alt). */}
-					<img className="upgrades-item-icon" ref={iconElem} alt="" />
-					{/* title (ticket 468): the name now truncates with an ellipsis in the
-					    provisional table's fixed-width Item column, so this is the only
-					    way to read a long name before the run settles. */}
-					<span className="upgrades-item-name" ref={nameElem} title={row.name}>
-						{row.name}
-					</span>
-				</a>
-				{badges}
-				{row.owned ? <span className="upgrades-text-secondary ms-1">{`(${i18n.t('upgrades_tab.results.owned')})`}</span> : null}
+				{/* Decorative: the item name follows as text in the same link, so an
+				    empty alt lets a screen reader skip the icon rather than read its
+				    URL or repeat the name (ticket 444, axe image-alt). */}
+				<img className="upgrades-item-icon" ref={iconElem} alt="" />
+				{/* Stacked block (ticket 474): name on its own line, tags/"(Owned)"
+				    directly beneath rather than crowding the name inline -- both
+				    sit beside the icon, not the link alone. */}
+				<span className="upgrades-item-text">
+					<a className="upgrades-item-link" ref={anchorElem} dataset={{ whtticon: 'false' }}>
+						{/* title (ticket 468): the name now truncates with an ellipsis in the
+						    provisional table's fixed-width Item column, so this is the only
+						    way to read a long name before the run settles. */}
+						<span className="upgrades-item-name" ref={nameElem} title={row.name}>
+							{row.name}
+						</span>
+					</a>
+					{badges.length > 0 || row.owned ? (
+						<span className="upgrades-item-tags">
+							{badges}
+							{row.owned ? <span className="upgrades-text-secondary">{`(${i18n.t('upgrades_tab.results.owned')})`}</span> : null}
+						</span>
+					) : null}
+				</span>
 			</span>
 		);
 
