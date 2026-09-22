@@ -812,6 +812,15 @@
 	display: flex;
 	flex-wrap: wrap;
 	align-items: baseline;
+	// 3px clear of the name above (ticket 484: the owner reported the tags
+	// touching the name). Set here rather than relied on from
+	// `.upgrades-item-text`'s `row-gap` (which also spaces this element from
+	// the link above it, at the coarser `--spacer-1` step) so the name-to-tags
+	// gap is the exact value the owner asked for, independent of that token.
+	margin-top: 3px;
+	// Horizontal gap between adjacent badges, and between the last badge and
+	// the "(Owned)" text -- ticket 484 ("mushed into each other").
+	column-gap: 0.25rem;
 }
 
 .upgrades-item-icon {
@@ -831,6 +840,10 @@
 .upgrades-bis-badge {
 	background-color: var(--bs-warning);
 	color: var(--bs-dark);
+	// Bootstrap's own `.badge` default (`node_modules/bootstrap/scss/_badge.scss`)
+	// -- stated explicitly rather than assumed, since nothing here overrides it,
+	// so the text keeps clear of the pill edge (ticket 484).
+	padding: 0.35em 0.65em;
 }
 
 // Mobile table treatment (ticket 327). The earlier fix here forced the table
@@ -918,10 +931,10 @@
 		gap: var(--spacer-1);
 	}
 
-	.upgrades-item-text {
-		row-gap: var(--spacer-1);
-	}
-
+	// Ticket 484: the name-to-tags gap moved to `.upgrades-item-tags`'s own
+	// `margin-top` (a fixed 3px at every width, set once at the base rule
+	// above) rather than living here as `row-gap`, so it is not compounded by
+	// both rules firing at once.
 	.upgrades-item-tags {
 		column-gap: var(--spacer-1);
 	}
@@ -1171,7 +1184,6 @@
 		.upgrades-item-text {
 			flex: 1 1 auto;
 			min-width: 0;
-			row-gap: var(--spacer-1);
 		}
 
 		// `min-width: 0` overrides flex's default `min-width: auto`, which
