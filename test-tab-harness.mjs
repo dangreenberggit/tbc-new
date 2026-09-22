@@ -505,8 +505,21 @@ export async function focusWalk(send, scope) {
 // `ctx` = { state, width } for the message text.
 export function a11yClassify(violations, walk, baseline, ctx) {
 	const baselineIndex = new Map();
+	// CSS-match entries (ticket 473): axe emits a per-node selector like
+	// `span[title="Choker of Endless Nightmares"]`, which never equals a
+	// class-based baseline selector such as `.upgrades-item-name.text-epic`.
+	// These are checked separately below, by testing the class attribute in
+	// the node's `html` snippet -- classification runs in Node (this
+	// function), not in the page, so there is no live DOM to run
+	// `Element.matches` against; a regex on the serialized class list is the
+	// closest equivalent available here.
+	const cssEntries = [];
 	baseline.forEach((e, i) => {
-		baselineIndex.set(`${e.ruleId}\u0000${e.selector}`, i);
+		if (e.match === 'css') {
+			cssEntries.push({ idx: i, ruleId: e.ruleId, selector: e.selector });
+		} else {
+			baselineIndex.set(`${e.ruleId}\u0000${e.selector}`, i);
+		}
 	});
 	const matched = new Set();
 	const fail = [];
@@ -515,7 +528,19 @@ export function a11yClassify(violations, walk, baseline, ctx) {
 	const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
 	const isWcag = tags => (tags || []).some(t => WCAG_TAGS.includes(t));
 
-	const consider = (ruleId, impact, selector, tags, helpUrl) => {
+	// A baseline `selector` like `.upgrades-item-name.text-epic` is read as a
+	// flat list of required class tokens (the only compound form this repo's
+	// entries use); each token must appear in the node's class attribute.
+	const cssSelectorMatchesHtml = (selector, html) => {
+		const classMatch = /\sclass="([^"]*)"/.exec(html || '');
+		if (!classMatch) return false;
+		const classes = new Set(classMatch[1].split(/\s+/));
+		const tokens = selector.split('.').filter(Boolean);
+		if (tokens.length === 0) return false;
+		return tokens.every(t => classes.has(t));
+	};
+
+	const consider = (ruleId, impact, selector, tags, helpUrl, html) => {
 		const key = `${ruleId}\u0000${selector}`;
 		const idx = baselineIndex.get(key);
 		const where = `[${ctx.state} ${ctx.width}]`;
@@ -523,6 +548,13 @@ export function a11yClassify(violations, walk, baseline, ctx) {
 			matched.add(idx);
 			warn.push(`WARN a11y baselined ${where} ${ruleId} ${selector} (${impact})`);
 			return;
+		}
+		for (const entry of cssEntries) {
+			if (entry.ruleId === ruleId && cssSelectorMatchesHtml(entry.selector, html)) {
+				matched.add(entry.idx);
+				warn.push(`WARN a11y baselined (css) ${where} ${ruleId} ${selector} (${impact})`);
+				return;
+			}
 		}
 		const critical = impact === 'critical' || impact === 'serious';
 		const wcag = isWcag(tags);
@@ -536,7 +568,7 @@ export function a11yClassify(violations, walk, baseline, ctx) {
 	for (const v of violations || []) {
 		for (const n of v.nodes || []) {
 			const selector = (n.target || []).join(' ');
-			consider(v.id, v.impact, selector, v.tags, v.helpUrl);
+			consider(v.id, v.impact, selector, v.tags, v.helpUrl, n.html);
 		}
 	}
 
