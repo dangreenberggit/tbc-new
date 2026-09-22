@@ -241,89 +241,12 @@ class ViewToggle {
 	}
 }
 
-/**
- * The ON-view set-bonus credit control (ticket 467): a two-option segmented
- * radio group "Full set" | "Split share" inline after the Set-potential toggle.
- * A radio pair (not a checkbox) names both states so "split" is not a negative
- * of the default; a dropdown would hide the alternative. Enabled only when Set
- * potential is on and at least one row has a non-null, non-zero ON credit;
- * otherwise both inputs are disabled, the value is forced to "full", and a tippy
- * reason hangs off the fieldset (441 idiom). Never persisted — read on render.
- */
-class SetCreditControl {
-	private value: SetCreditView = 'full';
-	private enabled = false;
-	private readonly fieldset: HTMLFieldSetElement;
-	private readonly fullInput: HTMLInputElement;
-	private readonly splitInput: HTMLInputElement;
-	private readonly tip: TippyInstance;
-
-	constructor(
-		host: HTMLElement,
-		config: { onChange: () => void },
-	) {
-		const fullRef = ref<HTMLInputElement>();
-		const splitRef = ref<HTMLInputElement>();
-		this.fieldset = (
-			<fieldset className="upgrades-set-credit d-none" attributes={{ role: 'radiogroup' }}>
-				<legend className="upgrades-set-credit-legend">{i18n.t('upgrades_tab.view.set_credit')}</legend>
-				<label className="upgrades-set-credit-option">
-					<input ref={fullRef} type="radio" />
-					{i18n.t('upgrades_tab.view.set_credit_full')}
-				</label>
-				<label className="upgrades-set-credit-option">
-					<input ref={splitRef} type="radio" />
-					{i18n.t('upgrades_tab.view.set_credit_split')}
-				</label>
-			</fieldset>
-		) as HTMLFieldSetElement;
-		this.fullInput = fullRef.value!;
-		this.splitInput = splitRef.value!;
-		// name/value/checked set imperatively: the tsx factory's typed `attributes`
-		// does not include them for <input>.
-		this.fullInput.name = 'upgrades-set-credit';
-		this.fullInput.value = 'full';
-		this.fullInput.checked = true;
-		this.splitInput.name = 'upgrades-set-credit';
-		this.splitInput.value = 'split';
-		const onInput = (next: SetCreditView) => {
-			if (!this.enabled) return;
-			this.value = next;
-			config.onChange();
-		};
-		this.fullInput.addEventListener('change', () => onInput('full'));
-		this.splitInput.addEventListener('change', () => onInput('split'));
-		this.tip = tippy(this.fieldset, { content: '' }) as TippyInstance;
-		this.setEnabled(false, i18n.t('upgrades_tab.view.set_credit_disabled_off'));
-		host.appendChild(this.fieldset);
-	}
-
-	get credit(): SetCreditView {
-		return this.enabled ? this.value : 'full';
-	}
-
-	setVisible(visible: boolean): void {
-		this.fieldset.classList.toggle('d-none', !visible);
-	}
-
-	/**
-	 * Enable or disable the pair in place. Disabling forces the value back to
-	 * "full" and its radio checked, so a stale "split" cannot survive into a run
-	 * where nothing splits, and swaps the fieldset tooltip to the reason.
-	 */
-	setEnabled(enabled: boolean, reason?: string): void {
-		this.enabled = enabled;
-		this.fullInput.disabled = !enabled;
-		this.splitInput.disabled = !enabled;
-		this.fieldset.classList.toggle('disabled', !enabled);
-		if (!enabled) {
-			this.value = 'full';
-			this.fullInput.checked = true;
-			this.splitInput.checked = false;
-		}
-		this.tip.setContent(!enabled && reason ? reason : '');
-	}
-}
+// Ticket 475: the ON-view Set-credit control (Full set / Split share) is
+// removed from the UI. Ranking always uses "full" — the mode the control
+// defaulted to and forced itself back to whenever disabled (467's evidence:
+// the OFF state read "Full set" with the group greyed) — so this constant
+// reproduces the control's prior default without changing ranking math.
+const SET_CREDIT: SetCreditView = 'full';
 
 /**
  * The visibility half of `ViewToggle`, as a free function so the raid filter
@@ -423,9 +346,9 @@ function formatDelta(deltaDps: number): string {
 /**
  * The same signed figure as `formatDelta`, without the " DPS" unit (ticket
  * 471/#5). The set-bonus tooltip's own break/future lines already render bare
- * numbers via `.toFixed(1)`; this keeps `tip_item_alone`/`tip_package_total`
- * consistent with them without touching `delta_dps_value`, which the main
- * results column still uses.
+ * numbers via `.toFixed(1)`; this keeps `tip_package_total` consistent with
+ * them without touching `delta_dps_value`, which the main results column
+ * still uses.
  */
 function tipDelta(deltaDps: number): string {
 	const sign = deltaDps > 0 ? '+' : '';
@@ -636,7 +559,6 @@ export class UpgradesTab extends SimTab {
 	/** The candidates picker's root, so its placeholder can be kept current. */
 	protected candidatesPickerElem!: HTMLElement;
 	protected setPotentialControl!: ViewToggle;
-	protected setCreditControl!: SetCreditControl;
 	protected bisOnlyControl!: ViewToggle;
 	/** The source-filter modal's body -- where `refreshSourceFilter` builds the grouped checkboxes (tickets 417/447). */
 	protected sourcesGroupElem!: HTMLElement;
@@ -866,7 +788,6 @@ export class UpgradesTab extends SimTab {
 		const settingsBodyRef = ref<HTMLDivElement>();
 		const viewControlsRef = ref<HTMLDivElement>();
 		const setPotentialPickerRef = ref<HTMLDivElement>();
-		const setCreditPickerRef = ref<HTMLDivElement>();
 		const bisOnlyPickerRef = ref<HTMLDivElement>();
 		const sourcesButtonRef = ref<HTMLButtonElement>();
 		const sourcesSummaryRef = ref<HTMLParagraphElement>();
@@ -1040,7 +961,6 @@ export class UpgradesTab extends SimTab {
 					 * inside the click/hover target the label's `htmlFor` toggles.
 					 */}
 					<div ref={setPotentialPickerRef} />
-					<div ref={setCreditPickerRef} />
 					<div ref={bisOnlyPickerRef} />
 				</div>
 			</div>,
@@ -1152,9 +1072,6 @@ export class UpgradesTab extends SimTab {
 			label: i18n.t('upgrades_tab.view.set_potential'),
 			labelTooltip: i18n.t('upgrades_tab.view.set_potential_tooltip'),
 			extraCssClasses: ['upgrades-set-potential-control'],
-			onChange: () => this.render(),
-		});
-		this.setCreditControl = new SetCreditControl(setCreditPickerRef.value!, {
 			onChange: () => this.render(),
 		});
 		this.bisOnlyControl = new ViewToggle(bisOnlyPickerRef.value!, {
@@ -2039,7 +1956,6 @@ export class UpgradesTab extends SimTab {
 		// the compiler can see `ranking` exists on the branch that reads it.
 		if (this.state.kind !== 'done') {
 			this.setPotentialControl.setVisible(false);
-			this.setCreditControl.setVisible(false);
 			this.bisOnlyControl.setVisible(false);
 			return;
 		}
@@ -2058,23 +1974,6 @@ export class UpgradesTab extends SimTab {
 		this.setPotentialControl.setVisible(true);
 		this.setPotentialControl.setEnabled(hasRankable, unavailableReason);
 		this.bisOnlyControl.setVisible(items.some(isBisTagged));
-
-		// The credit control means something only when Set potential is on and at
-		// least one row's ON credit is a non-null, non-zero number to split
-		// (ticket 467). Otherwise it stays visible but disabled with a reason
-		// (441 idiom), and its value is forced back to "Full set".
-		const canSplit =
-			items.some(
-				i =>
-					rankableSetPotential(i, noiseFloorDps, 'full') !== 0 ||
-					rankableSetPotential(i, noiseFloorDps, 'split') !== 0,
-			);
-		const creditEnabled = this.setPotentialControl.checked && canSplit;
-		const creditReason = this.setPotentialControl.checked
-			? i18n.t('upgrades_tab.view.set_credit_disabled_none')
-			: i18n.t('upgrades_tab.view.set_credit_disabled_off');
-		this.setCreditControl.setVisible(true);
-		this.setCreditControl.setEnabled(creditEnabled, creditReason);
 	}
 
 	/**
@@ -2617,7 +2516,7 @@ export class UpgradesTab extends SimTab {
 		return {
 			hideOwned: false,
 			withSetPotential: this.setPotentialControl.checked,
-			setCredit: this.setCreditControl.credit,
+			setCredit: SET_CREDIT,
 		};
 	}
 
@@ -2632,8 +2531,7 @@ export class UpgradesTab extends SimTab {
 	private deltaSortKey(noiseFloorDps: number | undefined): (row: ViewRow) => number {
 		const withSetPotential = this.setPotentialControl.checked && noiseFloorDps !== undefined;
 		if (!withSetPotential) return row => row.deltaDps;
-		const setCredit = this.setCreditControl.credit;
-		return row => row.deltaDps + rankableSetPotential(row, noiseFloorDps, setCredit);
+		return row => row.deltaDps + rankableSetPotential(row, noiseFloorDps, SET_CREDIT);
 	}
 
 	private resultsContent(view: ViewResult | undefined, noiseFloorDps: number | undefined): Node {
@@ -3036,7 +2934,7 @@ export class UpgradesTab extends SimTab {
 		// cell is exactly what it was.
 		const setBonus =
 			this.setPotentialControl.checked && noiseFloorDps !== undefined
-				? rankableSetPotential(row, noiseFloorDps, this.setCreditControl.credit)
+				? rankableSetPotential(row, noiseFloorDps, SET_CREDIT)
 				: 0;
 		// The ON credit can be negative (loss > gains), so a nonzero credit — not a
 		// positive one — folds into the cell total (ticket 467).
@@ -3050,7 +2948,7 @@ export class UpgradesTab extends SimTab {
 			row,
 			noiseFloorDps,
 			this.setPotentialControl.checked && noiseFloorDps !== undefined,
-			this.setCreditControl.credit,
+			SET_CREDIT,
 			deltaLabel,
 		);
 		const removedLine = this.removedItemsLine(row);
@@ -3259,16 +3157,12 @@ export class UpgradesTab extends SimTab {
 			</small>
 		);
 
-		// Item alone: the delta with this piece's own breaks added back, so the
-		// tooltip's first line is "what the piece does before any set accounting".
-		const itemAlone =
-			row.deltaDps + singleBreaks.reduce((sum, b) => sum + (b.dps ?? 0), 0);
-
 		const rows: Node[] = [];
 		// Set credit mode label ("Set credit: full set/split share") intentionally
 		// not shown (ticket 471/#5): it named a ranking-internal mode the tooltip
-		// doesn't need to explain.
-		rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_item_alone', { dps: tipDelta(itemAlone) })}</div>);
+		// doesn't need to explain. The "This piece alone" line is also gone
+		// (ticket 475): it repeated the DPS column, so the tooltip now opens with
+		// the set-context line below.
 		if (ctx.crossesThreshold) {
 			rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_activates_included', { threshold: ctx.piecesAfterSwap })}</div>);
 		}

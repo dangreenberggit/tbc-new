@@ -8922,21 +8922,6 @@
 						"set_potential_unavailable": {
 							"type": "string"
 						},
-						"set_credit": {
-							"type": "string"
-						},
-						"set_credit_full": {
-							"type": "string"
-						},
-						"set_credit_split": {
-							"type": "string"
-						},
-						"set_credit_disabled_off": {
-							"type": "string"
-						},
-						"set_credit_disabled_none": {
-							"type": "string"
-						},
 						"only_bis": {
 							"type": "string"
 						},
@@ -8945,7 +8930,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "set_potential", "set_potential_tooltip", "set_potential_unavailable", "set_credit", "set_credit_full", "set_credit_split", "set_credit_disabled_off", "set_credit_disabled_none", "only_bis", "only_bis_qualifier"]
+					"required": ["title", "set_potential", "set_potential_tooltip", "set_potential_unavailable", "only_bis", "only_bis_qualifier"]
 				},
 				"export": {
 					"type": "object",
@@ -8987,15 +8972,6 @@
 						"not_counted": {
 							"type": "string"
 						},
-						"tip_mode_full": {
-							"type": "string"
-						},
-						"tip_mode_split": {
-							"type": "string"
-						},
-						"tip_item_alone": {
-							"type": "string"
-						},
 						"tip_activates_included": {
 							"type": "string"
 						},
@@ -9025,7 +9001,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["hover_hint", "not_counted", "tip_mode_full", "tip_mode_split", "tip_item_alone", "tip_activates_included", "tip_breaks", "tip_unmeasured", "tip_future", "tip_break_on_complete", "tip_package_total", "tip_total_full", "tip_total_split", "ranked_marker"]
+					"required": ["hover_hint", "not_counted", "tip_activates_included", "tip_breaks", "tip_unmeasured", "tip_future", "tip_break_on_complete", "tip_package_total", "tip_total_full", "tip_total_split", "ranked_marker"]
 				},
 				"cutoff": {
 					"type": "object",

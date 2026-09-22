@@ -887,11 +887,6 @@
 			"set_potential": "Set potential",
 			"set_potential_tooltip": "When on, a row's DPS gain includes a set bonus the swap would earn. Bonuses too small to change the ranking are ignored.",
 			"set_potential_unavailable": "None of these upgrades gain a set bonus.",
-			"set_credit": "Set credit",
-			"set_credit_full": "Full set",
-			"set_credit_split": "Split share",
-			"set_credit_disabled_off": "Turn on Set potential to split the set-bonus credit.",
-			"set_credit_disabled_none": "No row here has a set-bonus credit to split.",
 			"only_bis": "BiS only",
 			"only_bis_qualifier": "{{phase}} list"
 		},
@@ -908,9 +903,6 @@
 		"set_bonus": {
 			"hover_hint": "hover for set detail",
 			"not_counted": "set bonus not counted",
-			"tip_mode_full": "Set credit: full set",
-			"tip_mode_split": "Set credit: split share",
-			"tip_item_alone": "This piece alone: {{dps}}",
 			"tip_activates_included": "activates {{threshold}}pc (included in this number)",
 			"tip_breaks": "breaks {{set}} {{threshold}}pc: -{{dps}}",
 			"tip_unmeasured": "breaks {{set}} {{threshold}}pc: value not measured",

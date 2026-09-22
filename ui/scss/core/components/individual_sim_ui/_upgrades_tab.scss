@@ -400,44 +400,11 @@
 	white-space: nowrap;
 }
 
-// The DPS cell's set-bonus breakdown tooltip (tickets 431, 467): mode line,
-// item-alone, each gain and loss, and both totals. Left-aligned so the stacked
-// figures read as a list rather than tippy's centred default.
+// The DPS cell's set-bonus breakdown tooltip (tickets 431, 467, 475): each
+// gain and loss, and both totals. Left-aligned so the stacked figures read as
+// a list rather than tippy's centred default.
 .upgrades-set-bonus-tip {
 	text-align: left;
-}
-
-// The ON-view credit control (ticket 467): a two-radio segmented group inline
-// after the Set-potential toggle. The browser-default fieldset chrome (border,
-// block layout, legend inset) is reset so it reads as one inline control row;
-// `disabled` dims it in place (441 idiom) rather than hiding it.
-.upgrades-set-credit {
-	display: inline-flex;
-	align-items: center;
-	gap: 0.4rem;
-	margin: 0;
-	padding: 0;
-	border: 0;
-
-	&.disabled {
-		opacity: 0.5;
-	}
-
-	.upgrades-set-credit-legend {
-		display: contents;
-		margin: 0;
-		padding: 0;
-		font-size: inherit;
-		color: var(--bs-gray-500);
-	}
-
-	.upgrades-set-credit-option {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.2rem;
-		margin: 0;
-		white-space: nowrap;
-	}
 }
 
 // Containment for the row's new home (ticket 312, F11). `.tab-panel-left` is
