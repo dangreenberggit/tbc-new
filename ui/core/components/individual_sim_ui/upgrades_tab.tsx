@@ -2976,17 +2976,13 @@ export class UpgradesTab extends SimTab {
 			key: { method: 'favoriteItems', id: row.itemId },
 		});
 		const batch = createBatchToggle({ simUI: this.simUI, itemId: row.itemId, subscribe: false });
-		// Source is capped and ellipsized at `>=md` (ticket 483); the title keeps
-		// the full text reachable.
-		const sourceTd = (<td>{sourceCell(row, this.simUI.sim)}</td>) as HTMLTableCellElement;
-		sourceTd.title = sourceTd.textContent ?? '';
 		return (
 			<tr className={row.owned ? 'upgrades-row-owned' : ''}>
 				<td>{display.rankText}</td>
 				<td>{this.itemCell(row)}</td>
 				<td>{slotLabel(effectiveSlot(row))}</td>
 				{dpsCell}
-				{sourceTd}
+				<td>{sourceCell(row, this.simUI.sim)}</td>
 				{/* Last two cells, one control each — see RESULTS_ACTION_COLUMNS. */}
 				<td className="upgrades-action-cell">{favorite.container}</td>
 				<td className="upgrades-action-cell">{batch.container}</td>

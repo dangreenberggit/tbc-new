@@ -1078,26 +1078,27 @@
 		width: 100%;
 
 		// Widths include the cell's horizontal padding (`--spacer-3` each
-		// side, above). Slot fits "Trinket 2" at its 0.875rem font; Source is
-		// capped and ellipsized (below).
+		// side, above). The short columns are kept narrow so Item, the column
+		// the table is for, gets the rest (owner review of ticket 483). Slot and
+		// Source may wrap between words; DPS stays on one line.
 		.upgrades-col-rank {
-			width: 3rem;
+			width: 2.5rem;
 		}
 
 		.upgrades-col-slot {
-			width: 6.5rem;
+			width: 5.5rem;
 		}
 
 		.upgrades-col-dps {
-			width: 7rem;
+			width: 5.5rem;
 		}
 
 		.upgrades-col-source {
-			width: 8rem;
+			width: 7rem;
 		}
 
 		.upgrades-col-action {
-			width: 2.5rem;
+			width: 2rem;
 		}
 
 		.upgrades-action-cell {
@@ -1105,12 +1106,24 @@
 			padding-right: var(--spacer-1);
 		}
 
-		// Source is one line, cut with an ellipsis; the cell's `title` holds the
-		// full text (upgrades_tab.tsx `resultRow`).
-		td:nth-child(5) {
-			overflow: hidden;
-			text-overflow: ellipsis;
-			white-space: nowrap;
+		// Rank and DPS drop their own horizontal padding: at these widths the
+		// padding left no room for the content. Measured at 14px: "Rank" is
+		// 37.8px in a 35px column, and "-41.4 DPS" is 73.6px in a 77px column.
+		// The neighbouring cells' `--spacer-3` padding still keeps the text
+		// apart. Slot drops only its right padding, so "Trinket 1" (0.875rem)
+		// stays on one line in 5.5rem; the layout gate fails a wrapped slot
+		// label.
+		td:nth-child(3) {
+			padding-right: 0;
+		}
+
+		th:first-child,
+		td:first-child,
+		th:nth-child(4),
+		td:nth-child(4),
+		th:nth-child(4) .upgrades-results-sort-button {
+			padding-left: 0;
+			padding-right: 0;
 		}
 
 		// The columns are now fixed, so any wrapping cell must wrap its content
@@ -1439,12 +1452,15 @@
 		flex: 1.5;
 	}
 
-	// The line under the slot tabs (the `.nav-tabs` bottom border) runs a
-	// little past the results table's right edge, into the gap before the
-	// settings panel (ticket 483, owner: "that line a teensy bit longer"). `xl`
-	// only: below it the panels stack and there is no gap to run into.
-	.upgrades-tab-tabs > .nav-tabs {
-		margin-right: calc(-1 * var(--spacer-2));
+	// Narrow the gap between the results and the settings panel (ticket 483).
+	// The shared gap is `--container-padding`, 3rem at this width, which left
+	// the results table and the line under the slot tabs ~40px short of the
+	// settings card; the owner asked for both to run further right. Both now
+	// end at the panel edge, one `--gap-width` from the card -- the same gutter
+	// the left panel's own grid uses between its sections. `xl` only: below it
+	// the panels stack and this gap is vertical.
+	#upgrades-tab .tab-pane-content-container {
+		gap: var(--gap-width);
 	}
 }
 
