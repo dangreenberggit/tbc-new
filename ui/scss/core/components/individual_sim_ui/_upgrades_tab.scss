@@ -73,6 +73,19 @@
 // competing for one wrapped line. The rules are copied rather than `@extend`ed
 // because `_bulk_tab.scss` scopes its versions under `#bulk-tab`, which this
 // tab is not inside.
+//
+// Sticky at every width -- the layout gate (`test-layout.mjs` assertion 3)
+// checks this deliberately, so Run cannot scroll out of reach. Below `xl` this
+// card is reordered ABOVE the results (`media-breakpoint-down(xl)`'s
+// `order: -1` below), so once it scrolls fully past, the left panel's own
+// content -- starting with "View options" -- becomes the first thing at page
+// top and lands underneath the sim's own sticky header in turn (ticket 487,
+// reported at 1070px): the header's `z-index: 100` and its bottom-border
+// pseudo-element (`_header.scss`'s `.sim-header::after`) painted over the
+// heading, reading as a clipped label with a stray line through it. The fix is
+// on the content that can end up under the header, not on this card's own
+// sticky rule -- see `.upgrades-view-controls-host`'s `scroll-margin-top`
+// below.
 .upgrades-settings-outer-container {
 	position: sticky;
 	top: var(--sim-header-height);
@@ -459,8 +472,18 @@
 //
 // Measured across an idle -> running transition: with this rule the host holds
 // 32px and `.upgrades-results` holds a constant top through the transition.
+//
+// `scroll-margin-top` (ticket 487) keeps this host's own content -- "View
+// options" is the first thing in it -- clear of the sim's own sticky header
+// (`--sim-header-height`, `.sim-header`'s own sticky rule) whenever the page
+// scroll lands this host at the very top: below `xl` the settings card is
+// reordered above this panel and is itself sticky (see the note on
+// `.upgrades-settings-outer-container` above), so once it scrolls fully past,
+// this host is the first thing on the page and would otherwise render under
+// the header instead of below it.
 .upgrades-view-controls-host {
 	align-self: start;
+	scroll-margin-top: var(--sim-header-height);
 }
 
 // The panel's own row sizing, pinned so the filter row cannot change height
