@@ -146,9 +146,10 @@ class ViewToggle {
 	private enabled = true;
 	private readonly emitter = new TypedEvent<void>();
 	private readonly picker: BooleanPicker<ViewToggle>;
-	private readonly qualifierElem?: HTMLElement;
 	private readonly tip?: TippyInstance;
 	private readonly baseTooltip?: string;
+	/** The phase qualifier appended to the tooltip by `setText` (ticket 486). */
+	private qualifierText = '';
 
 	constructor(
 		host: HTMLElement,
@@ -156,7 +157,6 @@ class ViewToggle {
 			id: string;
 			label: string;
 			labelTooltip?: string;
-			qualifier?: boolean;
 			extraCssClasses?: Array<string>;
 			onChange: () => void;
 		},
@@ -194,11 +194,6 @@ class ViewToggle {
 		// root (not the host) so the class carrying the `.form-check` layout is
 		// the same one visibility acts on.
 		this.picker.rootElem.classList.add('d-none');
-		if (config.qualifier) {
-			const label = this.picker.rootElem.querySelector('label');
-			this.qualifierElem = (<small className="upgrades-view-qualifier" />) as HTMLElement;
-			label?.appendChild(this.qualifierElem);
-		}
 	}
 
 	/** The picker root, so callers (SCSS-facing) can tag it for styling. */
@@ -232,12 +227,26 @@ class ViewToggle {
 		if (!enabled) this.value = false;
 		this.picker.update();
 		if (this.tip) {
-			this.tip.setContent(!enabled && reason ? reason : this.baseTooltip ?? '');
+			this.tip.setContent(!enabled && reason ? reason : this.tooltipContent());
 		}
 	}
 
+	/** Base tooltip text, with the qualifier (if any) appended as its own sentence. */
+	private tooltipContent(): string {
+		const base = this.baseTooltip ?? '';
+		return this.qualifierText ? `${base} ${this.qualifierText}`.trim() : base;
+	}
+
+	/**
+	 * Sets the phase qualifier that used to render as a `<small>` line under the
+	 * control's name (ticket 312) and now lives in the tooltip instead (ticket
+	 * 486, owner: the sub-caption under "BiS only" read as "weird" on its own
+	 * line). Requires `labelTooltip` on the control that calls this -- BiS-only
+	 * is the only caller and it always sets one.
+	 */
 	setText(text: string): void {
-		if (this.qualifierElem) this.qualifierElem.textContent = text;
+		this.qualifierText = text;
+		if (this.tip && this.enabled) this.tip.setContent(this.tooltipContent());
 	}
 }
 
@@ -1097,10 +1106,14 @@ export class UpgradesTab extends SimTab {
 			extraCssClasses: ['upgrades-set-potential-control'],
 			onChange: () => this.render(),
 		});
+		// The phase qualifier used to render as its own "{{phase}} list" line
+		// under the checkbox name (ticket 312); the owner called that sub-caption
+		// "weird" on its own (ticket 486), so it now lives in this tooltip
+		// instead, appended by `refreshPhaseLabels`'s `setText` call.
 		this.bisOnlyControl = new ViewToggle(bisOnlyPickerRef.value!, {
 			id: 'upgrades-bis-only',
 			label: i18n.t('upgrades_tab.view.only_bis'),
-			qualifier: true,
+			labelTooltip: i18n.t('upgrades_tab.view.only_bis_tooltip'),
 			extraCssClasses: ['upgrades-bis-only-control'],
 			onChange: () => this.render(),
 		});
@@ -1448,8 +1461,8 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * Writes the selected phase into the view qualifier, and (re)writes the
-	 * prune-toggle label.
+	 * Writes the selected phase into the BiS-only tooltip's qualifier, and
+	 * (re)writes the prune-toggle label.
 	 *
 	 * The prune label no longer carries a phase: after ticket 455 it reads
 	 * "Sim only selected set items", naming the selected sets rather than a
@@ -1458,11 +1471,13 @@ export class UpgradesTab extends SimTab {
 	 * onto that label element rather than through the picker's value channel,
 	 * and the picker is rebuilt on spec/phase change.
 	 *
-	 * The view qualifier ("{{phase}} list") still names the phase, since the
-	 * BiS-only view control still filters by the phase's BiS tags.
-	 * `common.phases.N` is the page's own spelling of a phase ("Phase 3
-	 * (2.2 - T6)"), so the tab agrees with every other phase control on the
-	 * page instead of inventing a second wording.
+	 * The qualifier ("{{phase}} list") still names the phase, since the
+	 * BiS-only view control still filters by the phase's BiS tags -- it now
+	 * appends to the control's tooltip (ticket 486) rather than rendering as
+	 * its own line under the checkbox name (ticket 312). `common.phases.N` is
+	 * the page's own spelling of a phase ("Phase 3 (2.2 - T6)"), so the tab
+	 * agrees with every other phase control on the page instead of inventing a
+	 * second wording.
 	 *
 	 * Called from `refreshCandidatesPlaceholder`, which the staleness listener
 	 * already runs on `sim.changeEmitter` -- the emitter a phase change arrives

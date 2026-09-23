@@ -299,6 +299,11 @@
 // its own header/body boundary.
 .upgrades-view-controls-title {
 	margin-bottom: 0;
+	// 1.125rem to read as a heading, matching the tab strip's own
+	// `.upgrades-primary-subtab` (ticket 486): before this it inherited the
+	// 1rem body size and was bold-only, one of several ad hoc sizes the results
+	// area had accumulated with no shared scale.
+	font-size: 1.125rem;
 	font-weight: bold;
 	padding-right: var(--spacer-3);
 	border-right: var(--border-default);
@@ -327,18 +332,11 @@
 	visibility: hidden;
 }
 
-// The phase a BiS list belongs to is a qualifier on the control, not its name,
-// so it follows the name on its own line at a smaller weight. The label stacks
-// its own text (the checkbox stays beside it via `align-items: center` on the
-// row) rather than letting the qualifier run on into the next control's space.
-// `--bs-gray-500` is this tab's existing muted-text colour
-// (`.upgrades-text-secondary` below), not a second grey invented here.
-// `--bs-secondary-color` was tried first and renders near-black on this dark
-// background -- the unreadable grey the owner reported as item 1, so it is
-// deliberately not used.
-.upgrades-view-qualifier {
-	color: var(--bs-gray-500);
-}
+// `.upgrades-view-qualifier` (the BiS-only phase caption's own line under the
+// checkbox name) is gone (ticket 486): the owner called that sub-caption
+// "weird" on its own line, and it now lives in the control's tooltip instead
+// (`ViewToggle.setText`, upgrades_tab.tsx). No rule replaces it -- there is no
+// longer a qualifier element to style.
 
 // The non-link Source fallback (ticket 440). The native source anchor is
 // `<a><small>`, so it renders muted and a step smaller; the bare-text fallback
@@ -367,8 +365,26 @@
 		width: 100%;
 	}
 
+	// The caveat, the flavour caption and the count are secondary text (ticket
+	// 486's scale): 0.875rem, the same size `.upgrades-sources-summary`
+	// already gets from Bootstrap's `form-text`, `.upgrades-source-fallback`
+	// already gets from `<small>`, and the desktop/mobile Slot cell already
+	// gets by its own explicit rule. Before this the caveat and count were
+	// grey but full body size, and the flavour caption had no rule at all --
+	// full body size AND full-contrast text, the least secondary-looking line
+	// in the box despite being exactly as secondary as its neighbours.
+	.upgrades-export-caveat,
+	.upgrades-export-flavour-caption,
+	.upgrades-export-count {
+		font-size: 0.875rem;
+	}
+
 	.upgrades-export-caveat {
 		margin-bottom: 0;
+		color: var(--bs-gray-500);
+	}
+
+	.upgrades-export-flavour-caption {
 		color: var(--bs-gray-500);
 	}
 
@@ -668,6 +684,12 @@
 	align-items: center;
 	gap: var(--spacer-2);
 	min-height: 1.5rem;
+	// Status text is secondary (ticket 486's scale), same 0.875rem as the
+	// captions elsewhere in this file. The `34ch` reservation just below is
+	// expressed in `ch`, so it stays correctly sized at the new font size --
+	// still exactly as wide as the widest running-state label at whatever size
+	// this rule renders it.
+	font-size: 0.875rem;
 
 	> span:first-child {
 		min-width: 34ch;
@@ -701,6 +723,11 @@
 // the measurement, which it never was (round-3 review T1).
 .upgrades-status {
 	min-height: 1.5rem;
+	// Secondary text (ticket 486's scale), matching `.upgrades-status-line`
+	// above: this text measured 17.5px (1rem) when the floor comment above was
+	// written, so 0.875rem only shrinks the text further inside that same
+	// floor, it does not add pressure against it.
+	font-size: 0.875rem;
 }
 
 // Sits inside the running state's .upgrades-status-line — capped width so it
@@ -767,6 +794,14 @@
 .upgrades-below-cutoff-group {
 	> summary {
 		cursor: pointer;
+		// Secondary text (ticket 486's scale): a disclosure toggle for auxiliary
+		// rows, not a heading or a data cell, matching the tab's other captions
+		// and status lines. It carried no size or colour rule at all before this
+		// -- full body size and full contrast, the most prominent-looking line
+		// in the panel despite naming rows explicitly de-emphasised as below the
+		// cutoff.
+		font-size: 0.875rem;
+		color: var(--bs-gray-500);
 	}
 }
 

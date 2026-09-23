@@ -8925,12 +8925,15 @@
 						"only_bis": {
 							"type": "string"
 						},
+						"only_bis_tooltip": {
+							"type": "string"
+						},
 						"only_bis_qualifier": {
 							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "set_potential", "set_potential_tooltip", "set_potential_unavailable", "only_bis", "only_bis_qualifier"]
+					"required": ["title", "set_potential", "set_potential_tooltip", "set_potential_unavailable", "only_bis", "only_bis_tooltip", "only_bis_qualifier"]
 				},
 				"export": {
 					"type": "object",
