@@ -109,8 +109,12 @@ import {
   computeSynergy,
   type DpsSample,
   type IndividualDelta,
+  type InflationKey,
   isBonusImplemented,
+  lostThresholds,
+  netInflation,
   nextMeasurableThreshold,
+  type PackagePiece,
   selectPackage,
   type SelfSetConfound,
   SET_THRESHOLDS,
@@ -281,8 +285,9 @@ export type RankedItem = {
  * `futureBonuses` and `commitBreaks` are the ON-view terms added on top of
  * `deltaDps` (bonuses the completed set would gain, and worn bonuses completing
  * it would break beyond the single's own break). `dps` on a break is the
- * measured `B`; absent means it could not be measured (`no-neutral-candidates`)
- * and the row falls back to disclosure-only, per the plan's fallback rule.
+ * measured `B`; absent means it could not be measured (`no-neutral-candidates`,
+ * `dependent-unmeasured`) and the row falls back to disclosure-only, per the
+ * plan's fallback rule — for a future bonus or a commit break alike (477).
  */
 export type SetContext = {
   setId: number;
@@ -324,7 +329,9 @@ export type SetPackageContext = {
  * or advancing another set would break (ticket 467), measured by vacating the
  * minimum number of worn X pieces that break (X, t) to neutral pool candidates
  * and differencing against the MAIN baseline. `dps` is `B`; absent with an
- * `unmeasured` reason when no neutral replacement existed or the sim failed.
+ * `unmeasured` reason when no neutral replacement existed, the sim failed, or
+ * (`dependent-unmeasured`) the solve needed a higher threshold's `B` of the same
+ * set that was itself unmeasured (ticket 476).
  */
 export type BrokenSetValue = {
   setId: number;
@@ -334,7 +341,11 @@ export type BrokenSetValue = {
   se?: number;
   vacatedItemIds: number[];
   replacementItemIds: number[];
-  unmeasured?: "no-neutral-candidates" | "sim-failed" | "repair-failed";
+  unmeasured?:
+    | "no-neutral-candidates"
+    | "sim-failed"
+    | "repair-failed"
+    | "dependent-unmeasured";
 };
 
 export type SetBonusValue = {
@@ -1862,13 +1873,17 @@ async function buildSetBonuses(
   const brokenSetValues: BrokenSetValue[] = [];
   if (measureBrokenSetValue) {
     // The distinct worn implemented bonuses (X, t) any candidate would break:
-    // from every package's `breaks`, and from each set-piece candidate's own
-    // single break. Keyed by `setId:threshold` so each is measured once.
+    // from every package's `breaks`, from each set-piece candidate's own single
+    // break, and from the top package with that candidate substituted in — the
+    // `commitBreaks` a row shows. Without the last source a row could subtract
+    // a break nothing measured and keep the whole gain (ticket 477). Keyed by
+    // `setId:threshold` so each is measured once, however many rows share it.
     const targets = new Map<string, BrokenSetBonus>();
+    const addTarget = (brk: BrokenSetBonus): void => {
+      targets.set(`${brk.setId}:${brk.threshold}`, brk);
+    };
     for (const b of results) {
-      for (const brk of b.breaks ?? []) {
-        targets.set(`${brk.setId}:${brk.threshold}`, brk);
-      }
+      for (const brk of b.breaks ?? []) addTarget(brk);
     }
     for (const entry of candidates) {
       const slotIndex = candidateSlotIndex.get(entry.itemId);
@@ -1880,12 +1895,31 @@ async function buildSetBonuses(
         [{ itemId: entry.itemId, slotIndex }],
         entrySetId
       );
-      for (const brk of singleBreaks) {
-        targets.set(`${brk.setId}:${brk.threshold}`, brk);
+      for (const brk of singleBreaks) addTarget(brk);
+      const top = topMeasuredPackage(
+        results.filter((r) => r.setId === entrySetId)
+      );
+      if (top) {
+        for (const brk of substitutedPackageBreaks(
+          entry.itemId,
+          entrySetId,
+          slotIndex,
+          top,
+          candidateSlotIndex,
+          equipment
+        )) {
+          addTarget(brk);
+        }
       }
     }
 
-    for (const brk of targets.values()) {
+    // Per set, highest threshold first: solving a lower threshold's B needs
+    // every higher lost threshold's B of the same set (ticket 476).
+    const ordered = [...targets.values()].sort((a, b) =>
+      a.setId !== b.setId ? a.setId - b.setId : b.threshold - a.threshold
+    );
+    const measuredByKey = new Map<string, BrokenSetValue>();
+    for (const brk of ordered) {
       const measured = await measureBrokenSetValueFor(
         deps,
         brk,
@@ -1897,75 +1931,133 @@ async function buildSetBonuses(
         composeFor,
         baseline,
         simVersion,
-        runOpts
+        runOpts,
+        measuredByKey
       );
+      measuredByKey.set(`${brk.setId}:${brk.threshold}`, measured);
       brokenSetValues.push(measured);
     }
   }
 
   // Correct `bonusDps` for ticket 90's inflation using the measured B.
   //
-  // `computeSynergy` builds `bonusDps = packageDelta − Σsingles − twoPieceBonus`.
-  // A worn bonus (X, t') that some of the package's pieces break appears with a
-  // −B term inside each of those three inputs, and the signs do NOT cancel:
-  //   • packageDelta includes −B once iff this package's own END-STATE breaks it;
-  //   • each member single that breaks it includes −B, subtracted, so +B each;
-  //   • twoPieceBonus (subtracted only for the 4pc) includes −B once iff the 2pc
-  //     package's own end-state breaks it.
-  // So the inflation is
-  //   I = (memberSingleBreaks − packageEndStateBreaks − twoPieceEndStateBreaks)·B
-  // and `bonusDpsNet = bonusDps − I`. This is the robust form of the plan's
-  // `(k − c)` heuristic: the plan's `c` assumed the 2pc and 4pc packages break
-  // the SAME worn pieces (`c = k(S,2)`), which is false when package selection
-  // picks different slots for the two thresholds — then the 4pc would be
-  // over-corrected. Reading each package's own `breaks` (its measured end-state)
-  // instead of re-deriving from k reproduces the plan's worked case and the
-  // divergent-slot case alike (ticket 467, executor deviation — see decision-log).
+  // `computeSynergy` builds `bonusDps = pkgΔ − Σsingles − raw2pc`. A worn bonus
+  // (X, t') that the package breaks puts a −B term in each input:
+  //   • pkgΔ holds −B once iff this package's END STATE breaks it (`pkgEnd`);
+  //   • each member single that breaks it holds −B, subtracted: +B per member
+  //     (`membersPkg`);
+  //   • the raw 2pc (subtracted by the 4pc only) carries its own inflation
+  //     `(members2pc − twoPcEnd)·B`, which the subtraction negates.
+  // So `I = Σ (membersPkg − members2pc − pkgEnd + twoPcEnd)·B` over every lost
+  // threshold (`netInflation`), and `bonusDpsNet = bonusDps − I`. Reading each
+  // package's own `breaks` (its measured end state) keeps this right when the
+  // 2pc and 4pc packages pick different slots (ticket 467).
+  //
+  // Ticket 478 A3: the earlier form subtracted `twoPcEnd`. The two agree at worn
+  // Malorne 4, where `members2pc − twoPcEnd = 2 − 1 = 1 = twoPcEnd`, and differ
+  // at worn 5 (net4 180 instead of 80; fixture 476-B). The keys are the union of
+  // this package's breaks, the 2pc package's breaks, and every member single's
+  // breaks. Today the 2pc package is a prefix of the 4pc and a member single
+  // never breaks what its package keeps, so the union equals this package's own
+  // `breaks`; it is kept so the formula stays whole if package selection changes.
   const bBy = new Map<string, number | undefined>();
   for (const v of brokenSetValues) bBy.set(`${v.setId}:${v.threshold}`, v.dps);
-  const twoPieceBreaks = (setId: number) => {
-    const two = results.find(
-      (r) => r.setId === setId && r.threshold === 2 && r.unmeasured === undefined
-    );
-    return two?.bonusDps !== undefined ? (two.breaks ?? []) : undefined;
-  };
-  const packageBreaksKey = (breaks: readonly BrokenSetBonus[] | undefined) =>
-    new Set((breaks ?? []).map((b) => `${b.setId}:${b.threshold}`));
+  const breakKey = (b: Pick<BrokenSetBonus, "setId" | "threshold">) =>
+    `${b.setId}:${b.threshold}`;
+  const memberSingleBreaks = (pkg: SetBonusValue): BrokenSetBonus[] =>
+    pkg.packageItemIds.flatMap((itemId) => {
+      const slotIndex = candidateSlotIndex.get(itemId);
+      const memberSetId = getItem(itemId)?.setId;
+      if (slotIndex === undefined || memberSetId == null) return [];
+      return brokenSetBonuses(equipment, [{ itemId, slotIndex }], memberSetId);
+    });
   for (const b of results) {
     if (b.bonusDps === undefined) continue;
-    // No break: the net is the raw value unchanged (correction 0).
-    let correction = 0;
-    let allMeasured = true;
-    const pkgBreaks = packageBreaksKey(b.breaks);
-    // The 4pc subtracts a measured 2pc `twoPieceBonus`; its own end-state breaks
-    // ride into that subtraction and must be added back once each.
-    const twoPcBreaks =
+    // The 4pc subtracts a measured raw 2pc; only then do the 2pc terms apply.
+    const two =
       b.threshold === 4
-        ? packageBreaksKey(twoPieceBreaks(b.setId))
-        : new Set<string>();
-    for (const brk of b.breaks ?? []) {
-      const key = `${brk.setId}:${brk.threshold}`;
+        ? results.find(
+            (r) =>
+              r.setId === b.setId &&
+              r.threshold === 2 &&
+              r.unmeasured === undefined &&
+              r.bonusDps !== undefined
+          )
+        : undefined;
+    const union = new Map<string, BrokenSetBonus>();
+    for (const brk of [
+      ...(b.breaks ?? []),
+      ...(two?.breaks ?? []),
+      ...memberSingleBreaks(b),
+      ...(two ? memberSingleBreaks(two) : []),
+    ]) {
+      union.set(breakKey(brk), brk);
+    }
+    const pkgEnd = new Set((b.breaks ?? []).map(breakKey));
+    const twoPcEnd = new Set((two?.breaks ?? []).map(breakKey));
+    const keys: InflationKey[] = [];
+    let allMeasured = true;
+    for (const [key, brk] of union) {
       const B = bBy.get(key);
       if (B === undefined) {
         allMeasured = false;
         break;
       }
-      const memberSingleBreaks = countMembersBreaking(
-        b,
-        brk,
-        equipment,
-        candidateSlotIndex
-      );
-      const packageEndStateBreaks = pkgBreaks.has(key) ? 1 : 0;
-      const twoPieceEndStateBreaks = twoPcBreaks.has(key) ? 1 : 0;
-      correction +=
-        (memberSingleBreaks - packageEndStateBreaks - twoPieceEndStateBreaks) *
-        B;
+      keys.push({
+        setId: brk.setId,
+        threshold: brk.threshold,
+        membersPkg: countMembersBreaking(b, brk, equipment, candidateSlotIndex),
+        members2pc: two
+          ? countMembersBreaking(two, brk, equipment, candidateSlotIndex)
+          : 0,
+        pkgEnd: pkgEnd.has(key) ? 1 : 0,
+        twoPcEnd: twoPcEnd.has(key) ? 1 : 0,
+        B,
+      });
     }
-    if (allMeasured) b.bonusDpsNet = b.bonusDps - correction;
+    if (allMeasured) b.bonusDpsNet = b.bonusDps - netInflation(keys);
   }
 
   return { bonuses: results, brokenSetValues, candidateSlotIndex };
+}
+
+/**
+ * The highest measured, non-empty package of one set: the package a row's
+ * `commitBreaks` completes, and a source of measurement targets (ticket 477).
+ */
+function topMeasuredPackage(
+  bonusesForSet: readonly SetBonusValue[]
+): SetBonusValue | undefined {
+  return [...bonusesForSet]
+    .filter((b) => b.unmeasured === undefined && b.packageItemIds.length > 0)
+    .sort((a, b) => b.threshold - a.threshold)[0];
+}
+
+/**
+ * The worn bonuses broken by the top package with `itemId` substituted into
+ * its own slot (the package's piece in that slot, if any, is dropped). Shared
+ * by `applySetContext`'s `commitBreaks` and the B target discovery, so every
+ * break a row shows is one the engine tried to measure (ticket 477).
+ */
+function substitutedPackageBreaks(
+  itemId: number,
+  setId: number,
+  slotIndex: number,
+  topPackage: SetBonusValue,
+  candidateSlotIndex: ReadonlyMap<number, number>,
+  equipment: readonly SimItemSpec[]
+): BrokenSetBonus[] {
+  const substituted: PackagePiece[] = topPackage.packageItemIds
+    .map((pieceItemId) => ({
+      itemId: pieceItemId,
+      slotIndex: candidateSlotIndex.get(pieceItemId),
+    }))
+    .filter(
+      (p): p is PackagePiece =>
+        p.slotIndex !== undefined && p.slotIndex !== slotIndex
+    );
+  substituted.push({ itemId, slotIndex });
+  return brokenSetBonuses(equipment, substituted, setId);
 }
 
 /**
@@ -2010,6 +2102,16 @@ function countMembersBreaking(
  * against the MAIN baseline (never a screen baseline), copying the package
  * pattern; the stored singles are used as measured, never re-based (ticket 467
  * N3, rank.ts:1111-1134).
+ *
+ * The vacate and each replacement single can lose MORE than (X, t): at worn
+ * Malorne 4 the 3-slot vacate for the 2pc also loses the 4pc, and each single
+ * loses the 4pc. With `L_vac` the thresholds the vacate loses, `L_1` those one
+ * single loses, `Σs` the replacements' singles and `Δ` the vacate delta,
+ *   B_t·(1 − n·[t∈L_1]) = (Σs − Δ) + n·Σ_{L_1, t'≠t} B_t' − Σ_{L_vac, t'≠t} B_t'
+ * The naive `Σs − Δ` is `B_2 − 2·B_4` at worn 4 and `B_2 + B_4` at worn 5
+ * (ticket 476). Every `t'` on the right is a higher threshold of the same set,
+ * which is why `buildSetBonuses` measures targets highest first and passes the
+ * results in `measuredByKey`.
  */
 async function measureBrokenSetValueFor(
   deps: Deps,
@@ -2022,7 +2124,8 @@ async function measureBrokenSetValueFor(
   composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
   baseline: DpsSample,
   simVersion: string,
-  runOpts: SimRunOpts
+  runOpts: SimRunOpts,
+  measuredByKey: ReadonlyMap<string, BrokenSetValue>
 ): Promise<BrokenSetValue> {
   const wornCounts = setCounts(equipment);
   const wornX = wornCounts.get(target.setId) ?? 0;
@@ -2041,6 +2144,17 @@ async function measureBrokenSetValueFor(
     replacementItemIds: [],
     unmeasured: reason,
   });
+
+  const lostByVacate = lostThresholds(target.setId, wornX, wornX - n);
+  const lostBySingle = lostThresholds(target.setId, wornX, wornX - 1);
+  // Checked before the sim, so an unsolvable target costs no run.
+  const others = new Map<SetThreshold, BrokenSetValue>();
+  for (const other of new Set([...lostByVacate, ...lostBySingle])) {
+    if (other === t) continue;
+    const known = measuredByKey.get(`${target.setId}:${other}`);
+    if (known?.dps === undefined) return failure("dependent-unmeasured");
+    others.set(other, known);
+  }
 
   // The worn slots holding X pieces, in slot order.
   const wornXSlots: number[] = [];
@@ -2128,13 +2242,24 @@ async function measureBrokenSetValueFor(
     return { dps: ind?.deltaDps ?? 0, se: ind?.se ?? 0 };
   });
   const sumOwn = ownSamples.reduce((sum, s) => sum + s.dps, 0);
-  // worn == t: each replacement's single already includes −B, so B = Δ − Σown.
-  // worn  > t: no single breaks it, only the vacate does, so B = Σown − Δ.
-  const B = wornX === t ? delta - sumOwn : sumOwn - delta;
+  // The explicit form in the doc comment. The coefficient is −1 when worn == t
+  // (n = 2, the single itself loses t: B = Δ − Σs) and 1 when worn > t.
+  const coefficient = 1 - n * (lostBySingle.includes(t) ? 1 : 0);
+  let rhs = sumOwn - delta;
+  const otherSe: DpsSample[] = [];
+  for (const [other, known] of others) {
+    const weight =
+      (lostBySingle.includes(other) ? n : 0) -
+      (lostByVacate.includes(other) ? 1 : 0);
+    rhs += weight * known.dps!;
+    otherSe.push({ dps: 0, se: weight * (known.se ?? 0) });
+  }
+  const B = rhs / coefficient;
   const se = combineSe([
     baseline,
     { dps: obs.dps, se: obs.stdev / Math.sqrt(runOpts.iterations) },
     ...ownSamples.map((s) => ({ dps: 0, se: s.se })),
+    ...otherSe,
   ]);
   return {
     setId: target.setId,
@@ -2238,8 +2363,13 @@ function applySetContext(
 
     // futureBonuses: every implemented threshold above the post-swap count, its
     // corrected net value. dps absent when the correction could not be measured.
+    // Only for a swap that adds a set piece: an owned row's swap changes nothing,
+    // so crediting it a future bonus would rank "keep what you wear" on value
+    // the swap cannot bring (ticket 478 A4; fixture A4 showed credit 80).
+    const advancesPieceCount = piecesAfterSwap > piecesWornBefore;
     const T = [...SET_THRESHOLDS].filter(
-      (t) => t > piecesAfterSwap && isBonusImplemented(setId, t)
+      (t) =>
+        advancesPieceCount && t > piecesAfterSwap && isBonusImplemented(setId, t)
     );
     const futureBonuses = T.map((t) => {
       const bonus = bonusesForSet.find((b) => b.threshold === t);
@@ -2258,21 +2388,16 @@ function applySetContext(
     // commitBreaks: the worn bonuses broken by completing the top implemented
     // threshold package with this item in its slot, beyond the row's own single
     // break. commitPackageDeltaDps: that package's end-state value (disclosure).
-    const topPackage = [...bonusesForSet]
-      .filter((b) => b.unmeasured === undefined && b.packageItemIds.length > 0)
-      .sort((a, b) => b.threshold - a.threshold)[0];
+    const topPackage = topMeasuredPackage(bonusesForSet);
     if (topPackage && slotIndex !== undefined) {
-      const substituted = topPackage.packageItemIds
-        .map((pieceItemId) => ({
-          itemId: pieceItemId,
-          slotIndex: candidateSlotIndex.get(pieceItemId),
-        }))
-        .filter(
-          (p): p is { itemId: number; slotIndex: number } =>
-            p.slotIndex !== undefined && p.slotIndex !== slotIndex
-        );
-      substituted.push({ itemId: item.itemId, slotIndex });
-      const commitAll = brokenSetBonuses(equipment, substituted, setId);
+      const commitAll = substitutedPackageBreaks(
+        item.itemId,
+        setId,
+        slotIndex,
+        topPackage,
+        candidateSlotIndex,
+        equipment
+      );
       const singleKeys = new Set(
         (setContext.singleBreaks ?? []).map((b) => `${b.setId}:${b.threshold}`)
       );

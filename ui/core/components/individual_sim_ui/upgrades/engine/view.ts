@@ -181,7 +181,9 @@ function belowCutoffUnderView(
  * Fallback (ticket 467 N5): if any future bonus lacks a measured `dps` — the
  * no-neutral-candidates case where `B` could not be measured — the whole credit
  * is 0, reverting the row to today's disclosure-only. This suppresses the gain
- * as well as the loss; it is honest and disclosed, not half-credited.
+ * as well as the loss; it is honest and disclosed, not half-credited. The same
+ * holds for a commit break without a measured `dps` (ticket 477): skipping it
+ * would credit the gain and hide the loss.
  */
 export function rankableSetPotential(
   item: Pick<RankedItem, "setContext">,
@@ -191,6 +193,9 @@ export function rankableSetPotential(
   const future = item.setContext?.futureBonuses ?? [];
   if (future.length === 0) return 0;
   if (future.some((f) => f.dps === undefined)) return 0;
+  if ((item.setContext?.commitBreaks ?? []).some((b) => b.dps === undefined)) {
+    return 0;
+  }
   const floored = (v: number): number => (v > noiseFloorDps ? v : 0);
   let credit = 0;
   for (const f of future) {
@@ -198,7 +203,7 @@ export function rankableSetPotential(
     credit += floored(value);
   }
   for (const brk of item.setContext?.commitBreaks ?? []) {
-    if (brk.dps !== undefined) credit -= floored(brk.dps);
+    credit -= floored(brk.dps!);
   }
   return credit;
 }

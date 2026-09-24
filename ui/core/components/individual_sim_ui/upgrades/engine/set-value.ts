@@ -1,9 +1,12 @@
 /**
  * Set-bonus prospective value — completion-package synergy.
  *
- * PORTED from packages/core/src/set-value.ts, unchanged except for the
- * items.ts import path. Pure functions only: no sim calls, no seams — same
- * invariant as the source file.
+ * PORTED from packages/core/src/set-value.ts. Fork-only changes: the items.ts
+ * import path; `brokenSetBonuses` reports every lost implemented threshold, not
+ * only the highest, via `lostThresholds` (ticket 476); and `netInflation`, the
+ * package-synergy correction for broken worn bonuses (ticket 478). Core never
+ * received ticket 467's broken-bonus work, so these do not exist there. Pure
+ * functions only: no sim calls, no seams — same invariant as the source file.
  */
 
 import { getItem } from "./items.js";
@@ -196,6 +199,26 @@ export type BrokenSetBonus = {
   piecesAfter: number;
 };
 
+/**
+ * The implemented thresholds of `setId` lost when its worn count drops from
+ * `before` to `after` (`before ≥ t > after`), highest first.
+ */
+export function lostThresholds(
+  setId: number,
+  before: number,
+  after: number
+): SetThreshold[] {
+  return [...SET_THRESHOLDS]
+    .reverse()
+    .filter((t) => before >= t && after < t && isBonusImplemented(setId, t));
+}
+
+/**
+ * Every worn implemented bonus the added pieces break, one entry per lost
+ * threshold, sorted by `setId` then descending threshold. A package that takes
+ * Malorne from 4 to 0 loses the 4pc AND the 2pc; reporting only the 4pc left
+ * the 2pc's value out of every net (ticket 476).
+ */
 export function brokenSetBonuses(
   equipment: readonly SimItemSpec[],
   addedPieces: readonly PackagePiece[],
@@ -220,22 +243,56 @@ export function brokenSetBonuses(
     if (setId === completingSetId) continue;
     const piecesAfter = after.get(setId) ?? 0;
     if (piecesAfter >= piecesBefore) continue;
-    const lost = [...SET_THRESHOLDS]
-      .reverse()
-      .find(
-        (t) =>
-          piecesBefore >= t && piecesAfter < t && isBonusImplemented(setId, t)
-      );
-    if (lost === undefined) continue;
-    broken.push({
-      setId,
-      setName: setLabel(equipment, setId),
-      threshold: lost,
-      piecesBefore,
-      piecesAfter,
-    });
+    for (const threshold of lostThresholds(setId, piecesBefore, piecesAfter)) {
+      broken.push({
+        setId,
+        setName: setLabel(equipment, setId),
+        threshold,
+        piecesBefore,
+        piecesAfter,
+      });
+    }
   }
-  return broken.sort((a, b) => a.setId - b.setId);
+  return broken.sort((a, b) =>
+    a.setId !== b.setId ? a.setId - b.setId : b.threshold - a.threshold
+  );
+}
+
+/**
+ * One broken worn bonus's counts inside a package's raw synergy, for
+ * `netInflation`. `membersPkg` / `members2pc`: how many members of this package
+ * / of the same set's 2pc package break it by their own single swap.
+ * `pkgEnd` / `twoPcEnd`: 1 if this package's / the 2pc package's end state
+ * breaks it. The 2pc fields are 0 when the package is itself the 2pc.
+ */
+export type InflationKey = {
+  setId: number;
+  threshold: number;
+  membersPkg: number;
+  members2pc: number;
+  pkgEnd: number;
+  twoPcEnd: number;
+  B: number;
+};
+
+/**
+ * How much a package's raw `bonusDps` overstates its bonus because of worn
+ * bonuses it breaks: `Σ (membersPkg − members2pc − pkgEnd + twoPcEnd)·B`.
+ *
+ * `computeSynergy` gives `pkgΔ − Σsingles − raw2pc`. A broken bonus puts a −B
+ * in `pkgΔ` once if the package's end state breaks it, in each member single
+ * that breaks it (subtracted, so +B each), and in the raw 2pc it subtracts
+ * (whose own inflation is `(members2pc − twoPcEnd)·B`, subtracted again). The
+ * earlier code subtracted `twoPcEnd`; the sign was hidden at worn 4, where
+ * `members2pc − twoPcEnd = 1 = twoPcEnd` (ticket 478 A3, pinned by fixture
+ * 476-B in packages/core/test/fork-set-net.test.ts).
+ */
+export function netInflation(keys: readonly InflationKey[]): number {
+  return keys.reduce(
+    (sum, k) =>
+      sum + (k.membersPkg - k.members2pc - k.pkgEnd + k.twoPcEnd) * k.B,
+    0
+  );
 }
 
 export type DpsSample = { dps: number; se: number };
