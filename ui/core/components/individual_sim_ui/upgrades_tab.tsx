@@ -32,6 +32,7 @@ import { isKaelTempLegendary } from './upgrades/engine/kael-temp';
 import { filterPoolByPhase, type ItemSource, type PoolEntry,simSlotsForPoolSlot } from './upgrades/engine/pool';
 import { type PartialRanking, type Progress, type RankedItem, type Ranking, type RankInput,rankUpgrades } from './upgrades/engine/rank';
 import { MemoryStore } from './upgrades/engine/seams/store';
+import { nextMeasurableThreshold } from './upgrades/engine/set-value';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
 import { applyView, rankableSetPotential, type SetCreditView, SOURCE_LABELS, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
@@ -3199,7 +3200,12 @@ export class UpgradesTab extends SimTab {
 		// (ticket 475): it repeated the DPS column, so the tooltip now opens with
 		// the set-context line below.
 		if (ctx.crossesThreshold) {
-			rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_activates_included', { threshold: ctx.piecesAfterSwap })}</div>);
+			// The threshold this piece crosses, the same expression rank.ts uses for
+			// `crossesThreshold` (ticket 479). `piecesAfterSwap` only equalled it for
+			// the usual one-piece step. The `??` cannot fire while crossesThreshold
+			// is true; it keeps the value a number.
+			const crossed = nextMeasurableThreshold(ctx.setId, ctx.piecesWornBefore) ?? ctx.piecesAfterSwap;
+			rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_activates_included', { threshold: crossed })}</div>);
 		}
 		for (const b of singleBreaks) {
 			rows.push(
@@ -3220,15 +3226,15 @@ export class UpgradesTab extends SimTab {
 		for (const f of futureBonuses) {
 			if (f.dps === undefined) continue;
 			if (!floorOk(f.dps)) continue;
-			// `have` = pieces already worn toward this threshold. `piecesNeeded` is
-			// built in engine `rank.ts` as `threshold - piecesWornBefore`, so
-			// `threshold - piecesNeeded` recovers `piecesWornBefore` (confirmed by
-			// reading rank.ts, not assumed).
+			// `have` is the pieces worn once this item is on, so a player wearing
+			// one piece who hovers a second reads "2/4" (ticket 479).
+			// `piecesAfterSwap` counts the hovered piece and is already
+			// `piecesWornBefore` when the item is owned (rank.ts).
 			rows.push(
 				<div>
 					{i18n.t('upgrades_tab.set_bonus.tip_future', {
 						threshold: f.threshold,
-						have: f.threshold - f.piecesNeeded,
+						have: ctx.piecesAfterSwap,
 						dps: f.dps.toFixed(1),
 					})}
 				</div>,
