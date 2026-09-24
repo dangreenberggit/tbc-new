@@ -8990,12 +8990,15 @@
 						"tip_break_on_complete": {
 							"type": "string"
 						},
+						"tip_future_break": {
+							"type": "string"
+						},
 						"tip_package_total": {
 							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["hover_hint", "not_counted", "tip_activates_included", "tip_breaks", "tip_unmeasured", "tip_future", "tip_break_on_complete", "tip_package_total"]
+					"required": ["hover_hint", "not_counted", "tip_activates_included", "tip_breaks", "tip_unmeasured", "tip_future", "tip_break_on_complete", "tip_future_break", "tip_package_total"]
 				},
 				"cutoff": {
 					"type": "object",

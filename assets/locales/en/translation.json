@@ -902,13 +902,14 @@
 			"flavour_gear": "Exporting the gear item ID for every row."
 		},
 		"set_bonus": {
-			"hover_hint": "hover for set detail",
-			"not_counted": "set bonus not counted",
+			"hover_hint": "set detail",
+			"not_counted": "uncounted",
 			"tip_activates_included": "activates {{threshold}}pc (included in this number)",
 			"tip_breaks": "breaks {{set}} {{threshold}}pc: -{{dps}}",
 			"tip_unmeasured": "breaks {{set}} {{threshold}}pc: value not measured",
 			"tip_future": "{{threshold}}pc ({{have}}/{{threshold}}): +{{dps}}",
 			"tip_break_on_complete": "breaks {{set}} {{threshold}}pc: -{{dps}}",
+			"tip_future_break": "to reach {{threshold}}pc: breaks {{set}} {{broken}}pc: -{{dps}}",
 			"tip_package_total": "Full set end state: {{dps}}"
 		},
 		"cutoff": {

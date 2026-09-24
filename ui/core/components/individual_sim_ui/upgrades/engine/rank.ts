@@ -288,6 +288,18 @@ export type RankedItem = {
  * measured `B`; absent means it could not be measured (`no-neutral-candidates`,
  * `dependent-unmeasured`) and the row falls back to disclosure-only, per the
  * plan's fallback rule — for a future bonus or a commit break alike (477).
+ *
+ * A future's `breaks` are the worn bonuses its own path breaks beyond the
+ * row's single break: this candidate plus the best remaining pieces of that
+ * threshold's measured package (the whole package when the candidate is in
+ * it). Only these are charged by the ON credit. `commitBreaks` keeps the top
+ * package with this candidate substituted: disclosure ("full set end state")
+ * and a measurement-target source. Charging the top package's breaks to
+ * every future made a Malorne chest row pay for the Thunderheart 2pc that
+ * only the Malorne 4pc's hands piece breaks (ticket 490). Every path break is
+ * already a measurement target: a path is a subset of the substituted top
+ * package, because packages nest, and a subset of vacated slots loses a
+ * subset of thresholds.
  */
 export type SetContext = {
   setId: number;
@@ -306,6 +318,12 @@ export type SetContext = {
     threshold: SetThreshold;
     piecesNeeded: number;
     dps?: number;
+    breaks?: Array<{
+      setId: number;
+      setName: string;
+      threshold: SetThreshold;
+      dps?: number;
+    }>;
   }>;
   commitBreaks?: Array<{
     setId: number;
@@ -1414,7 +1432,8 @@ export async function rankUpgrades(
         setBonuses,
         equipment,
         setBonusResult.brokenSetValues,
-        setBonusResult.candidateSlotIndex
+        setBonusResult.candidateSlotIndex,
+        individualDeltasByItemId
       );
     }
     onProgress?.({ stage: "ranking" });
@@ -1827,10 +1846,46 @@ async function buildSetBonuses(
       if (threshold === 2) twoPieceBonus = synergy.bonusDps;
 
       const breaks = brokenSetBonuses(equipment, addedPieces, setId);
-      const selfConfound: SelfSetConfound | undefined =
+      let selfConfound: SelfSetConfound | undefined =
         threshold === 4 && twoPieceUnmeasurableAtThisWornCount
           ? { threshold: 2 }
           : undefined;
+      if (selfConfound) {
+        // Ticket 492. At worn 1 the 2pc package is one piece, so the 2pc is
+        // never measured, and every single of the 4pc package crosses the
+        // 2pc: raw4 = B4 − (n−1)·B2 for n added pieces. Two added pieces
+        // simmed together end at 3 worn with only the 2pc active, so
+        // B2 = Σ(their singles) − their pair delta. Pieces whose own swap
+        // breaks another worn set are skipped: that loss would sit in the
+        // singles and the pair unequally and bias B2.
+        const pair = addedPieces
+          .filter(
+            (p) =>
+              brokenSetBonuses(equipment, [p], setId).length === 0 &&
+              individualDeltasByItemId.has(p.itemId)
+          )
+          .slice(0, 2);
+        const pairB2 =
+          pair.length === 2
+            ? await measurePairTwoPiece(
+                deps,
+                pair,
+                equipment,
+                gems,
+                composeFor,
+                individualDeltasByItemId,
+                baseline,
+                simVersion,
+                runOpts
+              )
+            : undefined;
+        if (pairB2) {
+          const extra = addedPieces.length - 1;
+          synergy.bonusDps += extra * pairB2.dps;
+          synergy.se = Math.sqrt(synergy.se ** 2 + (extra * pairB2.se) ** 2);
+          selfConfound = { threshold: 2, dps: pairB2.dps };
+        }
+      }
       results.push({
         setId,
         setName: label,
@@ -2058,6 +2113,97 @@ function substitutedPackageBreaks(
     );
   substituted.push({ itemId, slotIndex });
   return brokenSetBonuses(equipment, substituted, setId);
+}
+
+/**
+ * One sim of two break-free set pieces added together at worn 1, giving the
+ * 2pc value `B2 = Σ singles − pair delta` (ticket 492). Undefined when the gem
+ * repair or the sim fails; the caller then keeps the raw 4pc value.
+ */
+async function measurePairTwoPiece(
+  deps: Deps,
+  pair: readonly PackagePiece[],
+  equipment: readonly SimItemSpec[],
+  gems: GemContext,
+  composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
+  individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>,
+  baseline: DpsSample,
+  simVersion: string,
+  runOpts: SimRunOpts
+): Promise<{ dps: number; se: number } | undefined> {
+  let pairEquipment: SimItemSpec[] = [...equipment];
+  try {
+    for (const piece of pair) {
+      pairEquipment = candidateSwapWithRepairs(
+        pairEquipment,
+        piece.slotIndex,
+        piece.itemId,
+        gems
+      ).equipment;
+    }
+  } catch (err) {
+    if (!(err instanceof MetaRepairError)) throw err;
+    return undefined;
+  }
+  const request = composeFor(pairEquipment);
+  let obs = await readCachedSim(deps, request, simVersion, runOpts);
+  if (!obs) {
+    try {
+      obs = await deps.sim.run(request, runOpts);
+    } catch {
+      return undefined;
+    }
+    await cacheSimResult(deps, request, simVersion, runOpts, obs);
+  }
+  const singles = pair.map((p) => individualDeltasByItemId.get(p.itemId)!);
+  const pairSample: DpsSample = {
+    dps: obs.dps,
+    se: obs.stdev / Math.sqrt(runOpts.iterations),
+  };
+  return {
+    dps:
+      singles.reduce((sum, s) => sum + s.deltaDps, 0) -
+      (pairSample.dps - baseline.dps),
+    se: combineSe([
+      baseline,
+      pairSample,
+      ...singles.map((s) => ({ dps: 0, se: s.se })),
+    ]),
+  };
+}
+
+/**
+ * The pieces a player adds to reach `pkg`'s threshold when this candidate is
+ * one of them (ticket 490): the whole package if the candidate is in it,
+ * else the candidate plus the best `pkg.length − 1` package pieces outside its
+ * slot, ranked the way `selectPackage` ranks them (single delta, then lowest
+ * id). A candidate outside the package keeps what the package would not need.
+ */
+function pathToThreshold(
+  itemId: number,
+  slotIndex: number,
+  pkg: SetBonusValue,
+  candidateSlotIndex: ReadonlyMap<number, number>,
+  individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>
+): PackagePiece[] {
+  const members = pkg.packageItemIds
+    .map((pieceItemId) => ({
+      itemId: pieceItemId,
+      slotIndex: candidateSlotIndex.get(pieceItemId),
+    }))
+    .filter((p): p is PackagePiece => p.slotIndex !== undefined);
+  if (pkg.packageItemIds.includes(itemId)) return members;
+  const deltaOf = (id: number) =>
+    individualDeltasByItemId.get(id)?.deltaDps ?? -Infinity;
+  const rest = members
+    .filter((p) => p.slotIndex !== slotIndex)
+    .sort((a, b) =>
+      deltaOf(b.itemId) !== deltaOf(a.itemId)
+        ? deltaOf(b.itemId) - deltaOf(a.itemId)
+        : a.itemId - b.itemId
+    )
+    .slice(0, pkg.packageItemIds.length - 1);
+  return [...rest, { itemId, slotIndex }];
 }
 
 /**
@@ -2296,7 +2442,8 @@ function applySetContext(
   setBonuses: readonly SetBonusValue[],
   equipment: readonly SimItemSpec[],
   brokenSetValues: readonly BrokenSetValue[] = [],
-  candidateSlotIndex: ReadonlyMap<number, number> = new Map()
+  candidateSlotIndex: ReadonlyMap<number, number> = new Map(),
+  individualDeltasByItemId: ReadonlyMap<number, IndividualDelta> = new Map()
 ): void {
   const wornCounts = setCounts(equipment);
   const bonusesBySet = new Map<number, SetBonusValue[]>();
@@ -2371,9 +2518,41 @@ function applySetContext(
       (t) =>
         advancesPieceCount && t > piecesAfterSwap && isBonusImplemented(setId, t)
     );
+    const singleKeys = new Set(
+      (setContext.singleBreaks ?? []).map((b) => `${b.setId}:${b.threshold}`)
+    );
+    const withDps = (brk: BrokenSetBonus) => {
+      const dps = dpsForBreak(brk);
+      return {
+        setId: brk.setId,
+        setName: brk.setName,
+        threshold: brk.threshold,
+        ...(dps !== undefined ? { dps } : {}),
+      };
+    };
     const futureBonuses = T.map((t) => {
       const bonus = bonusesForSet.find((b) => b.threshold === t);
       const net = bonus?.bonusDpsNet;
+      // The worn bonuses this future's own path breaks beyond the single's
+      // own break (ticket 490). Keys a lower future already lists stay here
+      // too; the view charges each key once.
+      const pathBreaks =
+        bonus &&
+        bonus.unmeasured === undefined &&
+        bonus.packageItemIds.length > 0 &&
+        slotIndex !== undefined
+          ? brokenSetBonuses(
+              equipment,
+              pathToThreshold(
+                item.itemId,
+                slotIndex,
+                bonus,
+                candidateSlotIndex,
+                individualDeltasByItemId
+              ),
+              setId
+            ).filter((brk) => !singleKeys.has(`${brk.setId}:${brk.threshold}`))
+          : [];
       // Pieces the player still needs from their CURRENT worn count to activate
       // this threshold, counting this candidate as one of them (ticket 467 case
       // 2: at worn 1 the 4pc needs 3 more).
@@ -2381,6 +2560,7 @@ function applySetContext(
         threshold: t,
         piecesNeeded: t - piecesWornBefore,
         ...(net !== undefined ? { dps: net } : {}),
+        ...(pathBreaks.length > 0 ? { breaks: pathBreaks.map(withDps) } : {}),
       };
     });
     if (futureBonuses.length > 0) setContext.futureBonuses = futureBonuses;
@@ -2398,22 +2578,11 @@ function applySetContext(
         candidateSlotIndex,
         equipment
       );
-      const singleKeys = new Set(
-        (setContext.singleBreaks ?? []).map((b) => `${b.setId}:${b.threshold}`)
-      );
       const commitOnly = commitAll.filter(
         (brk) => !singleKeys.has(`${brk.setId}:${brk.threshold}`)
       );
       if (commitOnly.length > 0) {
-        setContext.commitBreaks = commitOnly.map((brk) => {
-          const dps = dpsForBreak(brk);
-          return {
-            setId: brk.setId,
-            setName: brk.setName,
-            threshold: brk.threshold,
-            ...(dps !== undefined ? { dps } : {}),
-          };
-        });
+        setContext.commitBreaks = commitOnly.map(withDps);
       }
       setContext.commitPackageDeltaDps = topPackage.packageDeltaDps;
     }

@@ -321,6 +321,13 @@ export type SynergyResult = {
 
 export type SelfSetConfound = {
   threshold: SetThreshold;
+  /**
+   * The confounding threshold's own value, measured by one pair sim and
+   * already added back into the 4pc `bonusDps` (ticket 492). Absent when no
+   * two break-free package pieces existed or that sim failed: the 4pc value
+   * then still carries the `−(n−1)·B2` confound.
+   */
+  dps?: number;
 };
 
 export function computeSynergy(input: SynergyInput): SynergyResult {

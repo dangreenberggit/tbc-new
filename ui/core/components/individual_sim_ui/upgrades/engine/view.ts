@@ -3,8 +3,9 @@
  * seam, no I/O, no sim, and nothing here reaches `contentHash`.
  *
  * PORTED from packages/core/src/view.ts. The Set-potential credit (ticket 467)
- * reads the corrected `setContext.futureBonuses` / `commitBreaks` the engine
- * attaches — a true net (gains minus the measured broken-bonus losses) — rather
+ * reads the corrected `setContext.futureBonuses` and the breaks on each
+ * future's own path (ticket 490) the engine attaches — a true net (gains minus
+ * the measured broken-bonus losses) — rather
  * than the old single nearest-threshold prospective bonus. The ticket-90
  * confound guard is gone: `bonusDpsNet` is already corrected for that inflation,
  * and a row whose loss could not be measured drops to disclosure-only here by
@@ -17,9 +18,26 @@ import {
   setBonusNoiseFloorDps,
 } from "./cutoff.js";
 import { type ItemSource,sourceMatchesBoss } from "./pool.js";
-import type { RankedItem, Ranking } from "./rank.js";
+import type { RankedItem, Ranking, SetContext } from "./rank.js";
 
 export type SetCreditView = "full" | "split";
+
+/**
+ * How far the ON credit assumes a player commits (ticket 490).
+ * "best-stop": to the threshold where committing pays best on full values,
+ * or not at all. "full-path": to every credited threshold, charging every
+ * break on the way. Which a player does is a preference, not a game fact;
+ * best-stop ships provisionally until the owner chooses.
+ */
+export type SetCreditRule = "best-stop" | "full-path";
+export const RULE_490: SetCreditRule = "best-stop";
+
+type SetContextLike = Partial<
+  Pick<
+    SetContext,
+    "futureBonuses" | "commitBreaks" | "singleBreaks" | "crossesThreshold"
+  >
+>;
 
 export type ViewOptions = {
   pinBis?: boolean;
@@ -165,11 +183,99 @@ function belowCutoffUnderView(
 }
 
 /**
- * The ON-view set-potential credit for a row: every corrected future set bonus
- * gained by committing to the set (`futureBonuses`, divided by the bonus's FULL
- * piece count in the split view), minus every worn bonus completing it would
- * break beyond the row's own break (`commitBreaks`). May be negative — when the
- * loss exceeds the gains, ON is honestly lower than OFF.
+ * True when a row has future bonuses but some figure its ON credit depends on
+ * was not measured: a future's own value, a break on a future's path, or a
+ * commit break of the top package (ticket 477). The credit is then 0 and the
+ * tab says "not counted" (ticket 491). False without futures: nothing is
+ * credited, so nothing is withheld.
+ */
+export function setCreditUnmeasured(ctx: SetContextLike | undefined): boolean {
+  const future = ctx?.futureBonuses ?? [];
+  if (future.length === 0) return false;
+  return (
+    future.some(
+      (f) =>
+        f.dps === undefined || (f.breaks ?? []).some((b) => b.dps === undefined)
+    ) || (ctx?.commitBreaks ?? []).some((b) => b.dps === undefined)
+  );
+}
+
+/**
+ * Which DPS-cell sub-line a set row shows (ticket 491): none when there is
+ * nothing to disclose, "not counted" when the ON credit is zeroed by an
+ * unmeasured figure, else the hover hint. The tab renders the string for the
+ * key; the choice lives here so it cannot drift from `rankableSetPotential`.
+ */
+export function setBonusSubLine(
+  ctx: SetContextLike | undefined,
+  on: boolean
+): "not_counted" | "hover_hint" | null {
+  if (!ctx) return null;
+  const anyDisclosure =
+    (ctx.singleBreaks ?? []).length > 0 ||
+    ctx.crossesThreshold === true ||
+    (ctx.futureBonuses ?? []).length > 0 ||
+    (ctx.commitBreaks ?? []).length > 0;
+  if (!anyDisclosure) return null;
+  return on && setCreditUnmeasured(ctx) ? "not_counted" : "hover_hint";
+}
+
+/**
+ * The credit arithmetic, once every figure is known to be measured (ticket
+ * 490). Futures are walked in threshold order. Each is worth its value minus
+ * the breaks its own path needs that a lower future has not already charged.
+ *
+ * best-stop: keep the running total on FULL values and stop at the threshold
+ * where it is largest, or not at all when no total is positive. The split view
+ * follows that same stopping point, each future at its per-piece share, and is
+ * not clamped: the stopping point is the player's, not the display's, so a
+ * split figure along it may be negative.
+ *
+ * full-path: every future above the floor, minus every break on their paths.
+ *
+ * The top package's `commitBreaks` are not charged: a row whose own path to
+ * each future keeps the other set's bonus should not pay for a slot only the
+ * top package vacates (a Malorne chest row charged the Thunderheart 2pc).
+ */
+export function setPotentialCredit(
+  ctx: SetContextLike | undefined,
+  noiseFloorDps: number,
+  setCredit: SetCreditView = "full",
+  rule: SetCreditRule = RULE_490
+): number {
+  const future = [...(ctx?.futureBonuses ?? [])].sort(
+    (a, b) => a.threshold - b.threshold
+  );
+  const floored = (v: number): number => (v > noiseFloorDps ? v : 0);
+  const charged = new Set<string>();
+  let fullTotal = 0;
+  let splitTotal = 0;
+  let bestFull = 0;
+  let bestSplit = 0;
+  for (const f of future) {
+    const full = floored(f.dps!);
+    const split = floored(f.dps! / f.threshold);
+    if (rule === "full-path" && full === 0) continue;
+    let loss = 0;
+    for (const brk of f.breaks ?? []) {
+      const key = `${brk.setId}:${brk.threshold}`;
+      if (charged.has(key)) continue;
+      charged.add(key);
+      loss += floored(brk.dps!);
+    }
+    fullTotal += full - loss;
+    splitTotal += split - loss;
+    if (rule === "full-path" || fullTotal > bestFull) {
+      bestFull = fullTotal;
+      bestSplit = splitTotal;
+    }
+  }
+  return setCredit === "split" ? bestSplit : bestFull;
+}
+
+/**
+ * The ON-view set-potential credit for a row (`setPotentialCredit`), in the
+ * full view or the split view (each future divided by its FULL piece count).
  *
  * Each component is floored at the per-spec noise floor (`setBonusNoiseFloorDps`
  * of the ranking's own `Cutoff`, ≈4.81 ret / ≈5.09 feral): a figure at or below
@@ -178,34 +284,21 @@ function belowCutoffUnderView(
  * so this stays ignorant of the `Cutoff` type; the comparison is strict (`>`),
  * matching the display gate.
  *
- * Fallback (ticket 467 N5): if any future bonus lacks a measured `dps` — the
- * no-neutral-candidates case where `B` could not be measured — the whole credit
- * is 0, reverting the row to today's disclosure-only. This suppresses the gain
- * as well as the loss; it is honest and disclosed, not half-credited. The same
- * holds for a commit break without a measured `dps` (ticket 477): skipping it
- * would credit the gain and hide the loss.
+ * Fallback (ticket 467 N5): if any figure the credit depends on lacks a
+ * measured `dps` (`setCreditUnmeasured`) — the no-neutral-candidates case where
+ * `B` could not be measured — the whole credit is 0, reverting the row to
+ * disclosure-only. This suppresses the gain as well as the loss; it is honest
+ * and disclosed, not half-credited. An unmeasured commit break still zeroes it
+ * (ticket 477), although a measured one is no longer charged (490).
  */
 export function rankableSetPotential(
   item: Pick<RankedItem, "setContext">,
   noiseFloorDps: number,
   setCredit: SetCreditView = "full"
 ): number {
-  const future = item.setContext?.futureBonuses ?? [];
-  if (future.length === 0) return 0;
-  if (future.some((f) => f.dps === undefined)) return 0;
-  if ((item.setContext?.commitBreaks ?? []).some((b) => b.dps === undefined)) {
-    return 0;
-  }
-  const floored = (v: number): number => (v > noiseFloorDps ? v : 0);
-  let credit = 0;
-  for (const f of future) {
-    const value = setCredit === "split" ? f.dps! / f.threshold : f.dps!;
-    credit += floored(value);
-  }
-  for (const brk of item.setContext?.commitBreaks ?? []) {
-    credit -= floored(brk.dps!);
-  }
-  return credit;
+  if ((item.setContext?.futureBonuses ?? []).length === 0) return 0;
+  if (setCreditUnmeasured(item.setContext)) return 0;
+  return setPotentialCredit(item.setContext, noiseFloorDps, setCredit);
 }
 
 function sortKeyFor(

@@ -35,7 +35,16 @@ import { MemoryStore } from './upgrades/engine/seams/store';
 import { nextMeasurableThreshold } from './upgrades/engine/set-value';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
-import { applyView, rankableSetPotential, type SetCreditView, SOURCE_LABELS, type ViewOptions, type ViewResult, type ViewRow } from './upgrades/engine/view';
+import {
+	applyView,
+	rankableSetPotential,
+	setBonusSubLine,
+	type SetCreditView,
+	SOURCE_LABELS,
+	type ViewOptions,
+	type ViewResult,
+	type ViewRow,
+} from './upgrades/engine/view';
 import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
 
 /**
@@ -3146,12 +3155,14 @@ export class UpgradesTab extends SimTab {
 	 * OFF: shows only what this one piece changes now — its own delta and any set
 	 * bonus it activates or breaks by itself (`singleBreaks`, inside `deltaDps`).
 	 * ON: adds the future bonuses committing to the set would gain
-	 * (`futureBonuses`, credited full or split) minus the bonuses completing it
-	 * would break beyond the row's own (`commitBreaks`). Each figure is floored at
-	 * the ranking's own per-spec noise floor (tickets 331/332); an absent floor is
-	 * the mid-run skeleton and suppresses every figure. A break whose value could
-	 * not be measured is named without a number (`tip_unmeasured`); when that
-	 * makes the ON credit unrankable the sub-line says `not_counted`.
+	 * (`futureBonuses`, credited full or split) minus the breaks each future's own
+	 * path needs, printed under that future as "to reach Npc: breaks ..." (ticket
+	 * 490). Each figure is floored at the ranking's own per-spec noise floor
+	 * (tickets 331/332); an absent floor is the mid-run skeleton and suppresses
+	 * every figure. A break whose value could not be measured is named without a
+	 * number (`tip_unmeasured`). Whether the sub-line says `not_counted` comes
+	 * from `view.ts`'s `setBonusSubLine`, the same rule that zeroes the credit
+	 * (ticket 491).
 	 */
 	private setBonusPresentation(
 		row: RankedItem,
@@ -3174,24 +3185,11 @@ export class UpgradesTab extends SimTab {
 		// `ViewOptions.withSetPotential`), not what this tooltip discloses.
 		const futureBonuses = ctx.futureBonuses ?? [];
 		const commitBreaks = ctx.commitBreaks ?? [];
-		const creditUnmeasured =
-			on && futureBonuses.length > 0 && futureBonuses.some(f => f.dps === undefined);
 
-		// Nothing to disclose: no break, no crossing, and (ON) no future/commit.
-		const anyDisclosure =
-			singleBreaks.length > 0 ||
-			ctx.crossesThreshold ||
-			futureBonuses.length > 0 ||
-			commitBreaks.length > 0;
-		if (!anyDisclosure) return { line: null, tip: null };
+		const subLine = setBonusSubLine(ctx, on);
+		if (subLine === null) return { line: null, tip: null };
 
-		const line = (
-			<small className="upgrades-set-bonus">
-				{creditUnmeasured
-					? i18n.t('upgrades_tab.set_bonus.not_counted')
-					: i18n.t('upgrades_tab.set_bonus.hover_hint')}
-			</small>
-		);
+		const line = <small className="upgrades-set-bonus">{i18n.t(`upgrades_tab.set_bonus.${subLine}`)}</small>;
 
 		const rows: Node[] = [];
 		// Set credit mode label ("Set credit: full set/split share") intentionally
@@ -3223,42 +3221,56 @@ export class UpgradesTab extends SimTab {
 				</div>,
 			);
 		}
+		// A break shared by two futures' paths is charged once (view.ts), so it is
+		// printed once, under the lowest future that needs it (ticket 490).
+		const renderedBreaks = new Set<string>();
 		for (const f of futureBonuses) {
-			if (f.dps === undefined) continue;
-			if (!floorOk(f.dps)) continue;
 			// `have` is the pieces worn once this item is on, so a player wearing
 			// one piece who hovers a second reads "2/4" (ticket 479).
 			// `piecesAfterSwap` counts the hovered piece and is already
 			// `piecesWornBefore` when the item is owned (rank.ts).
-			rows.push(
-				<div>
-					{i18n.t('upgrades_tab.set_bonus.tip_future', {
-						threshold: f.threshold,
-						have: ctx.piecesAfterSwap,
-						dps: f.dps.toFixed(1),
-					})}
-				</div>,
-			);
-		}
-		for (const b of commitBreaks) {
-			rows.push(
-				<div>
-					{b.dps !== undefined
-						? // Reuses `tip_break_on_complete`, whose value now reads
-							// identically to `tip_breaks` ("breaks ..."), by design: the
-							// owner wants the same wording in both the single-break and
-							// commit-break cases (ticket 471/#5).
-							i18n.t('upgrades_tab.set_bonus.tip_break_on_complete', {
+			if (f.dps !== undefined && floorOk(f.dps)) {
+				rows.push(
+					<div>
+						{i18n.t('upgrades_tab.set_bonus.tip_future', {
+							threshold: f.threshold,
+							have: ctx.piecesAfterSwap,
+							dps: f.dps.toFixed(1),
+						})}
+					</div>,
+				);
+			}
+			// A future at or below the floor has no value line, but its path's
+			// breaks still print: a higher future's path goes through them.
+			for (const b of f.breaks ?? []) {
+				const key = `${b.setId}:${b.threshold}`;
+				if (renderedBreaks.has(key)) continue;
+				if (b.dps === undefined) {
+					renderedBreaks.add(key);
+					rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_unmeasured', { set: b.setName, threshold: b.threshold })}</div>);
+				} else if (floorOk(b.dps)) {
+					renderedBreaks.add(key);
+					rows.push(
+						<div>
+							{i18n.t('upgrades_tab.set_bonus.tip_future_break', {
+								threshold: f.threshold,
 								set: b.setName,
-								threshold: b.threshold,
+								broken: b.threshold,
 								dps: b.dps.toFixed(1),
-							})
-						: i18n.t('upgrades_tab.set_bonus.tip_unmeasured', {
-								set: b.setName,
-								threshold: b.threshold,
 							})}
-				</div>,
-			);
+						</div>,
+					);
+				}
+			}
+		}
+		// Measured top-package breaks are no longer printed: the credit does not
+		// charge them (ticket 490). An unmeasured one still zeroes the credit
+		// (ticket 477), so it is named.
+		for (const b of commitBreaks) {
+			const key = `${b.setId}:${b.threshold}`;
+			if (b.dps !== undefined || renderedBreaks.has(key)) continue;
+			renderedBreaks.add(key);
+			rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_unmeasured', { set: b.setName, threshold: b.threshold })}</div>);
 		}
 		// "Full set end state" is informative regardless of the toggle (ticket
 		// 471/#4), so its gate is dropped along with the others above.

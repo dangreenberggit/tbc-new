@@ -406,7 +406,30 @@ function legibilityProbeExpression() {
 			if (br.top >= nr.bottom) badgeGaps.push({ text: name.innerText, gap: br.top - nr.bottom });
 		}
 
-		return { innerWidth: window.innerWidth, bodyLh, rowRects, slotCells, dpsCells, allCells, wrapInfo, columnAlign, badgeGaps };
+		// Every set-bonus sub-line in every landed results table, not the sampled
+		// rows: set rows are rare, and the sample can miss them all (ticket 493).
+		// The sub-line is display:block + nowrap, so its own box is the cell's
+		// content box whatever the text does; only a Range over its text shows
+		// the text running past the cell into Source. Hidden panes (clientWidth
+		// 0) have no layout and are skipped.
+		const subLines = [...document.querySelectorAll('.upgrades-results-table td:nth-child(4) .upgrades-set-bonus')]
+			.filter(s => s.closest('td').clientWidth > 0)
+			.map(s => {
+				const td = s.closest('td');
+				const range = document.createRange();
+				range.selectNodeContents(s);
+				const r = range.getBoundingClientRect();
+				return {
+					text: s.textContent,
+					rangeW: r.width,
+					rangeRight: r.right,
+					tdClientW: td.clientWidth,
+					tdRight: td.getBoundingClientRect().right,
+					scrollW: s.scrollWidth,
+				};
+			});
+
+		return { innerWidth: window.innerWidth, bodyLh, rowRects, slotCells, dpsCells, allCells, wrapInfo, columnAlign, badgeGaps, subLines };
 	})()`;
 }
 
@@ -480,6 +503,24 @@ function assertLegibility(width, m) {
 				: tallRow
 					? `[${width}] tbody row height ${tallRow.height.toFixed(1)} > ${LINE_MULTIPLE_ROW}x line-height ${lh.toFixed(1)}`
 					: `[${width}] gap ${bigGap.gap.toFixed(1)}px between rows ${bigGap.i - 1} and ${bigGap.i} (expected adjacent)`,
+		});
+	}
+
+	// (11) Set-bonus sub-lines stay inside their DPS cell (ticket 493): the
+	// text's right edge within the cell's, and no scroll overflow. At >= md the
+	// DPS column is fixed at 5.5rem, so a string longer than it drew over the
+	// Source text at every Source width.
+	{
+		const subs = m.subLines ?? [];
+		const bad = subs.find(s => s.rangeRight > s.tdRight + CLIP_TOL || s.scrollW > s.tdClientW + CLIP_TOL);
+		const ok = !bad;
+		results.push({
+			ok,
+			msg: !ok
+				? `[${width}] (11) set-bonus sub-line "${bad.text}" runs ${(bad.rangeRight - bad.tdRight).toFixed(1)}px past its cell (text ${bad.rangeW.toFixed(1)}px, scroll ${bad.scrollW} vs cell ${bad.tdClientW})`
+				: subs.length === 0
+					? `[${width}] (11) set-bonus sub-lines: 0 present in the landed rows (vacuous)`
+					: `[${width}] (11) set-bonus sub-lines inside their cell: ${subs.length} checked`,
 		});
 	}
 
