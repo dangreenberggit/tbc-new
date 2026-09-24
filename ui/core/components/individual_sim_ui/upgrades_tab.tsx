@@ -3017,7 +3017,10 @@ export class UpgradesTab extends SimTab {
 				{cutoffArmLine}
 			</td>
 		) as HTMLTableCellElement;
-		if (setBonus_.tip) tippy(dpsCellRef.value!, { content: setBonus_.tip });
+		// Wider than tippy's 350px default: at that width "to reach 4pc: breaks
+		// Thunderheart Harness 2pc: -108.6" wrapped its figure onto a line of its
+		// own (ticket 490 capture). The viewport cap keeps it on screen at 375.
+		if (setBonus_.tip) tippy(dpsCellRef.value!, { content: setBonus_.tip, maxWidth: 'min(30rem, calc(100vw - 1rem))' });
 		// The same controls the gear picker's item list renders, from the shared
 		// module (ticket 472). `subscribe: false`: these rows are rebuilt on every
 		// landed row mid-run, so a per-row listener would accumulate — the tab
