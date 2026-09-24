@@ -1151,7 +1151,12 @@
 		// Widths include the cell's horizontal padding (`--spacer-3` each
 		// side, above). The short columns are kept narrow so Item, the column
 		// the table is for, gets the rest (owner review of ticket 483). Slot and
-		// Source may wrap between words; DPS stays on one line.
+		// Source may wrap between words; DPS stays on one line. Source is wider
+		// than the other short columns (11rem, ticket 489): at 7rem a raid source
+		// such as "Black Temple (N) / Reliquary of the Lost" wrapped to six lines
+		// and made its row 119px tall while the item name needed one line.
+		// Measured on the feralcat phase-3 pool at 1280px: at 11rem the tallest
+		// row is 84px and every item name still fits on one line.
 		.upgrades-col-rank {
 			width: 2.5rem;
 		}
@@ -1165,7 +1170,7 @@
 		}
 
 		.upgrades-col-source {
-			width: 7rem;
+			width: 11rem;
 		}
 
 		.upgrades-col-action {
