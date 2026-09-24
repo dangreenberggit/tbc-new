@@ -1156,7 +1156,8 @@
 		// such as "Black Temple (N) / Reliquary of the Lost" wrapped to six lines
 		// and made its row 119px tall while the item name needed one line.
 		// Measured on the feralcat phase-3 pool at 1280px: at 11rem the tallest
-		// row is 84px and every item name still fits on one line.
+		// row is 84px. The cost is in Item: names never wrap (nowrap + ellipsis),
+		// and 144 of 338 names are cut short at 11rem against 20 at 7rem.
 		.upgrades-col-rank {
 			width: 2.5rem;
 		}
