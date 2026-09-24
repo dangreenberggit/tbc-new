@@ -3225,16 +3225,16 @@ export class UpgradesTab extends SimTab {
 		// printed once, under the lowest future that needs it (ticket 490).
 		const renderedBreaks = new Set<string>();
 		for (const f of futureBonuses) {
-			// `have` is the pieces worn once this item is on, so a player wearing
-			// one piece who hovers a second reads "2/4" (ticket 479).
-			// `piecesAfterSwap` counts the hovered piece and is already
-			// `piecesWornBefore` when the item is owned (rank.ts).
+			// `have` is the pieces worn now, before this swap: the owner wants the
+			// count to show "how much progress a player has with their current
+			// gear" (ticket 479, 2026-09-24), so a player wearing one piece reads
+			// "1/4" whichever piece they hover.
 			if (f.dps !== undefined && floorOk(f.dps)) {
 				rows.push(
 					<div>
 						{i18n.t('upgrades_tab.set_bonus.tip_future', {
 							threshold: f.threshold,
-							have: ctx.piecesAfterSwap,
+							have: ctx.piecesWornBefore,
 							dps: f.dps.toFixed(1),
 						})}
 					</div>,
