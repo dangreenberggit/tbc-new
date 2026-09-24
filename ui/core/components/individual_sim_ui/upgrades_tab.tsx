@@ -1326,9 +1326,24 @@ export class UpgradesTab extends SimTab {
 	/**
 	 * PLAN.md-style legibility rule carried over from plan §4: "on any
 	 * gear/settings change, mark existing results stale — never auto-rerun a
-	 * multi-second job on a checkbox." `sim.changeEmitter` already fans in
-	 * settings/raid/encounter (`ui/core/sim.ts`'s constructor); gear and
-	 * talents are player-level and need their own listeners.
+	 * multi-second job on a checkbox." Gear and talents are player-level and
+	 * get their own listeners.
+	 *
+	 * The sim-level inputs are listed here instead of subscribing to
+	 * `sim.changeEmitter`, because that emitter also fans in
+	 * `filtersChangeEmitter`, and a favorite star is stored in the sim's
+	 * filters: listening there made a star click grey out the ranking (ticket
+	 * 482). `TypedEvent.onAny` forwards only the event id, so a listener on the
+	 * composed emitter cannot tell which member fired. The list is every member
+	 * of `sim.ts`'s `settingsChangeEmitter` except `filtersChangeEmitter`, plus
+	 * raid and encounter; keep it in step with `sim.ts` if a member is added
+	 * there.
+	 *
+	 * No filter change marks the ranking stale, the Gear picker's item-source
+	 * filters included. The Upgrades pool is built from the tab's own pool data
+	 * and never reads the sim's `DatabaseFilters`, so a filter change cannot
+	 * change a result. The tab's own Sources picker is a run input and marks
+	 * stale through `settingsChangedEmitter` below.
 	 */
 	private wireStalenessListeners() {
 		const markStale = () => {
@@ -1344,7 +1359,22 @@ export class UpgradesTab extends SimTab {
 		};
 		this.simUI.player.gearChangeEmitter.on(markStale);
 		this.simUI.player.talentsChangeEmitter.on(markStale);
-		this.simUI.sim.changeEmitter.on(markStale);
+		const sim = this.simUI.sim;
+		TypedEvent.onAny([
+			sim.iterationsChangeEmitter,
+			sim.phaseChangeEmitter,
+			sim.fixedRngSeedChangeEmitter,
+			sim.showDamageMetricsChangeEmitter,
+			sim.showThreatMetricsChangeEmitter,
+			sim.showHealingMetricsChangeEmitter,
+			sim.showExperimentalChangeEmitter,
+			sim.wasmConcurrencyChangeEmitter,
+			sim.showQuickSwapChangeEmitter,
+			sim.showEPValuesChangeEmitter,
+			sim.languageChangeEmitter,
+			sim.raid.changeEmitter,
+			sim.encounter.changeEmitter,
+		]).on(markStale);
 		// The run-input pickers (iterations, candidates, prune) emit through
 		// settingsChangedEmitter. Changing one after a completed run has to mark
 		// that run stale so the disabled Simulate button re-enables (ticket 465) --
@@ -1378,10 +1408,9 @@ export class UpgradesTab extends SimTab {
 	 * A star clicked on one of these rows repaints itself inside its own click
 	 * handler, before either emitter fires. These subscriptions are for the other
 	 * direction: a favorite toggled in the gear modal, or an item removed in the
-	 * Batch tab, while Upgrades rows are on screen. A favorite toggle also marks
-	 * a completed run stale through `sim.changeEmitter` and re-renders the rows,
-	 * which is pre-existing behaviour and harmless — a rebuilt row reads current
-	 * state when it is built.
+	 * Batch tab, while Upgrades rows are on screen. A favorite toggle does not
+	 * mark the ranking stale or rebuild the rows (ticket 482), so the other
+	 * rows showing the same item get their new star state from this repaint.
 	 */
 	private wireToggleRefresh() {
 		const refresh = () => refreshToggles(this.contentContainer);
