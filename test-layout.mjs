@@ -315,6 +315,10 @@ const LINE_MULTIPLE_ONE_LINE = 1.5; // content height <= 1.5x line-height == one
 // (that is what assertion 6 asserts, on the cells directly).
 const LINE_MULTIPLE_ROW = 7; // a tbody row <= 7x line-height (icon + wrapped item name)
 const CLIP_TOL = 2; // px slack for scroll/clientWidth comparison
+// The DPS cell's sub-line classes that (6b), (11) and (13) measure. The fixture
+// pass must find set-bonus lines; a %-arm line is checked where a fixture has one.
+const SUB_LINE_CLASSES = ['upgrades-set-bonus', 'upgrades-cutoff-arm'];
+const SUB_LINE_NAME = { 'upgrades-set-bonus': 'set-bonus', 'upgrades-cutoff-arm': '%-arm' };
 
 // Measure the first MIN_ROWS rows' Slot (col 3) and DPS (col 4) cells plus the
 // scroller state, at the current emulated width. Returns a plain object so all
@@ -425,7 +429,10 @@ function legibilityProbeExpression() {
 		// content box whatever the text does; only a Range over its text shows
 		// the text running past the cell into Source. Hidden panes (clientWidth
 		// 0) have no layout and are skipped.
-		const subLines = [...document.querySelectorAll('.upgrades-results-table td:nth-child(4) .upgrades-set-bonus')]
+		// Every DPS-cell sub-line class is measured, not only the set-bonus one:
+		// the %-arm line overflowed into Source unseen while only
+		// .upgrades-set-bonus was checked (ticket 506).
+		const subLines = [...document.querySelectorAll(${JSON.stringify(SUB_LINE_CLASSES.map(c => `.upgrades-results-table td:nth-child(4) .${c}`).join(', '))})]
 			.filter(s => s.closest('td').clientWidth > 0)
 			.map(s => {
 				const td = s.closest('td');
@@ -433,6 +440,7 @@ function legibilityProbeExpression() {
 				range.selectNodeContents(s);
 				const r = range.getBoundingClientRect();
 				return {
+					cls: ${JSON.stringify(SUB_LINE_CLASSES)}.find(c => s.classList.contains(c)),
 					text: s.textContent,
 					rangeW: r.width,
 					rangeH: r.height,
@@ -481,15 +489,16 @@ function legibilityResults(width, m, opts) {
 		});
 	}
 
-	// (6b) Each set-bonus sub-line under a DPS figure is one line of its own.
+	// (6b) Each sub-line under a DPS figure is one line of its own.
 	{
 		const subs = m.subLines ?? [];
 		const bad = subs.find(s => s.rangeH > s.lh * LINE_MULTIPLE_ONE_LINE + 0.5);
+		const counts = SUB_LINE_CLASSES.map(c => `${subs.filter(s => s.cls === c).length} ${SUB_LINE_NAME[c]}`).join(', ');
 		results.push({
 			ok: !bad,
 			msg: bad
-				? `[${width}] (6b) set-bonus sub-line "${bad.text}" height ${bad.rangeH.toFixed(1)} > ${LINE_MULTIPLE_ONE_LINE}x line-height ${bad.lh.toFixed(1)} -- it wrapped`
-				: `[${width}] (6b) set-bonus sub-lines one line each: ${subs.length} checked`,
+				? `[${width}] (6b) ${SUB_LINE_NAME[bad.cls]} sub-line "${bad.text}" height ${bad.rangeH.toFixed(1)} > ${LINE_MULTIPLE_ONE_LINE}x line-height ${bad.lh.toFixed(1)} -- it wrapped`
+				: `[${width}] (6b) DPS-cell sub-lines one line each: ${counts} checked`,
 		});
 	}
 
@@ -541,24 +550,27 @@ function legibilityResults(width, m, opts) {
 		});
 	}
 
-	// (11) Set-bonus sub-lines stay inside their DPS cell (ticket 493): the
+	// (11) DPS-cell sub-lines stay inside their cell (tickets 493, 506): the
 	// text's right edge within the cell's, and no scroll overflow. At >= md the
 	// DPS column is fixed at 5.5rem, so a string longer than it drew over the
-	// Source text at every Source width.
-	{
-		const subs = m.subLines ?? [];
+	// Source text at every Source width. One result per class. Only the
+	// set-bonus class fails when absent from a fixture: the fixtures were chosen
+	// for set rows, and not every fixture has a %-arm row.
+	for (const cls of SUB_LINE_CLASSES) {
+		const name = SUB_LINE_NAME[cls];
+		const subs = (m.subLines ?? []).filter(s => s.cls === cls);
 		const bad = subs.find(s => s.rangeRight > s.tdRight + CLIP_TOL || s.scrollW > s.tdClientW + CLIP_TOL);
-		const vacuousFail = !bad && subs.length === 0 && !!opts.fixture;
+		const vacuousFail = !bad && subs.length === 0 && !!opts.fixture && cls === 'upgrades-set-bonus';
 		const ok = !bad && !vacuousFail;
 		results.push({
 			ok,
 			msg: bad
-				? `[${width}] (11) set-bonus sub-line "${bad.text}" runs ${(bad.rangeRight - bad.tdRight).toFixed(1)}px past its cell (text ${bad.rangeW.toFixed(1)}px, scroll ${bad.scrollW} vs cell ${bad.tdClientW})`
+				? `[${width}] (11) ${name} sub-line (.${cls}) "${bad.text}" runs ${(bad.rangeRight - bad.tdRight).toFixed(1)}px past its cell (text ${bad.rangeW.toFixed(1)}px, scroll ${bad.scrollW} vs cell ${bad.tdClientW})`
 				: vacuousFail
-					? `[${width}] (11) set-bonus sub-lines: 0 present in the fixture's rows -- the fixture pass exists to check them, so 0 checked is a failure`
+					? `[${width}] (11) ${name} sub-lines (.${cls}): 0 present in the fixture's rows -- the fixture pass exists to check them, so 0 checked is a failure`
 					: subs.length === 0
-						? `[${width}] (11) set-bonus sub-lines: 0 present in the landed rows (vacuous)`
-						: `[${width}] (11) set-bonus sub-lines inside their cell: ${subs.length} checked`,
+						? `[${width}] (11) ${name} sub-lines (.${cls}): 0 present (vacuous)`
+						: `[${width}] (11) ${name} sub-lines (.${cls}) inside their cell: ${subs.length} checked`,
 		});
 	}
 
@@ -650,9 +662,8 @@ function dpsCellProbeExpression() {
 			const b = td.getBoundingClientRect(), s = getComputedStyle(td);
 			const boxL = b.left + parseFloat(s.paddingLeft), boxR = b.right - parseFloat(s.paddingRight);
 			const slotR = Math.max(-1e9, ...rects(tr.children[2]).map(x => x.right));
-			const sub = td.querySelector('.upgrades-set-bonus');
-			const subL = sub ? Math.min(...rects(sub).map(x => x.left)) : null;
-			fig.push({ text: n.textContent.trim(), slot: tr.children[2].innerText.trim(), overR: f.right - boxR, overL: boxL - f.left, gap: f.left - slotR, subGap: subL === null ? null : subL - slotR });
+			const subGaps = ${JSON.stringify(SUB_LINE_CLASSES)}.flatMap(cls => [...td.querySelectorAll('.' + cls)].map(sub => ({ cls, gap: Math.min(...rects(sub).map(x => x.left)) - slotR })).filter(s => isFinite(s.gap)));
+			fig.push({ text: n.textContent.trim(), slot: tr.children[2].innerText.trim(), overR: f.right - boxR, overL: boxL - f.left, gap: f.left - slotR, subGaps });
 		}
 
 		// Set rows with a tooltip and a neighbour on each side in the same table.
@@ -746,22 +757,27 @@ function assertDpsCell(width, m, opts = {}) {
 		});
 	}
 
-	// (13) Slot text to DPS figure, and to the set-bonus line, >= 8px. The
-	// fixed columns apply from md up; below it the table sizes itself.
+	// (13) Slot text to DPS figure, and to each sub-line, >= 8px. The fixed
+	// columns apply from md up; below it the table sizes itself. Sub-lines of
+	// every class in SUB_LINE_CLASSES are measured (ticket 506); the fixture pass
+	// must find set-bonus lines, and reports %-arm lines where it has them.
 	if (width >= 768) {
-		const subs = m.fig.filter(f => f.subGap !== null);
+		const subs = m.fig.flatMap(f => f.subGaps.map(s => ({ ...s, slot: f.slot })));
 		const badFig = m.fig.find(f => f.gap < DPS_GAP_MIN);
-		const badSub = subs.find(f => f.subGap < DPS_GAP_MIN);
+		const badSub = subs.find(s => s.gap < DPS_GAP_MIN);
 		const minFig = Math.min(...m.fig.map(f => f.gap));
-		const minSub = subs.length ? Math.min(...subs.map(f => f.subGap)) : null;
-		const ok = !badFig && !badSub && need(m.fig.length) && need(subs.length);
+		const perClass = SUB_LINE_CLASSES.map(cls => {
+			const g = subs.filter(s => s.cls === cls).map(s => s.gap);
+			return `${g.length} ${SUB_LINE_NAME[cls]} lines (min ${g.length ? Math.min(...g).toFixed(1) : '-'}px)`;
+		}).join(', ');
+		const ok = !badFig && !badSub && need(m.fig.length) && need(subs.filter(s => s.cls === 'upgrades-set-bonus').length);
 		results.push({
 			ok,
 			msg: badFig
 				? `${tag} (13) Slot "${badFig.slot}" is ${badFig.gap.toFixed(1)}px from DPS figure "${badFig.text}" (< ${DPS_GAP_MIN}px)`
 				: badSub
-					? `${tag} (13) Slot "${badSub.slot}" is ${badSub.subGap.toFixed(1)}px from its set-bonus line (< ${DPS_GAP_MIN}px)`
-					: `${tag} (13) Slot-to-DPS gap >= ${DPS_GAP_MIN}px: ${m.fig.length} figures (min ${isFinite(minFig) ? minFig.toFixed(1) : '-'}px), ${subs.length} set-bonus lines (min ${minSub === null ? '-' : minSub.toFixed(1)}px) checked`,
+					? `${tag} (13) Slot "${badSub.slot}" is ${badSub.gap.toFixed(1)}px from its ${SUB_LINE_NAME[badSub.cls]} line (.${badSub.cls}) (< ${DPS_GAP_MIN}px)`
+					: `${tag} (13) Slot-to-DPS gap >= ${DPS_GAP_MIN}px: ${m.fig.length} figures (min ${isFinite(minFig) ? minFig.toFixed(1) : '-'}px), ${perClass} checked`,
 		});
 	}
 

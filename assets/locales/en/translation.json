@@ -913,7 +913,7 @@
 			"tip_package_total": "Full set end state: {{dps}}"
 		},
 		"cutoff": {
-			"pct_arm": "cleared by %-arm",
+			"pct_arm": "by % rule",
 			"pct_arm_title": "Above the cutoff via the percentage arm ({{pct}}%): its absolute DPS is below the {{abs}} DPS threshold."
 		},
 		"prune": {

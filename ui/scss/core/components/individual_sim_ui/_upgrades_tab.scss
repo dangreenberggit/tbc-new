@@ -423,7 +423,11 @@
 // landed DPS cell against 1.5x line-height, so the figure plus this one sub-line
 // must stay within that budget (C30). The base-delta / per-threshold breakdown
 // moved into the cell's tooltip.
-.upgrades-set-bonus {
+//
+// The %-arm marker is the same kind of line and shares the rule (ticket 506):
+// without it the marker sat inline after the figure and ran into Source.
+.upgrades-set-bonus,
+.upgrades-cutoff-arm {
 	display: block;
 	color: var(--bs-gray-500);
 	line-height: 1.2;
