@@ -373,13 +373,18 @@ export type SetBonusValue = {
   piecesWorn: number;
   packageItemIds: number[];
   packageDeltaDps: number;
+  /**
+   * The package synergy `pkgΔ − Σsingles − raw2pc`, before any broken-bonus
+   * correction. One exception: at worn 1 a 4pc also adds back `(n−1)·B2` from
+   * the pair sim (ticket 492, `selfConfound`). E-W3 compares this field.
+   */
   bonusDps?: number;
   /**
    * `bonusDps` corrected for ticket 90's `(k − c)·B` inflation using the
-   * measured broken-bonus value `B` (ticket 467). `bonusDps` keeps its raw
-   * meaning for E-W3 parity; this is the value the ON credit and sort key use.
-   * Absent when any needed `B` is unmeasured (no neutral replacement), which
-   * reverts the row to disclosure-only.
+   * measured broken-bonus value `B` (ticket 467); the value the ON credit and
+   * sort key use. Absent when any needed `B` is unmeasured, or when a worn-1
+   * 4pc's `selfConfound` has no `dps` (no usable pair, or the pair sim or its
+   * gem repair failed). Absent reverts the row to disclosure-only.
    */
   bonusDpsNet?: number;
   se?: number;
@@ -1855,18 +1860,21 @@ async function buildSetBonuses(
         // never measured, and every single of the 4pc package crosses the
         // 2pc: raw4 = B4 − (n−1)·B2 for n added pieces. Two added pieces
         // simmed together end at 3 worn with only the 2pc active, so
-        // B2 = Σ(their singles) − their pair delta. Pieces whose own swap
-        // breaks another worn set are skipped: that loss would sit in the
-        // singles and the pair unequally and bias B2.
-        const pair = addedPieces
-          .filter(
-            (p) =>
-              brokenSetBonuses(equipment, [p], setId).length === 0 &&
-              individualDeltasByItemId.has(p.itemId)
-          )
-          .slice(0, 2);
+        // B2 = Σ(their singles) − their pair delta. A break of another worn
+        // set would sit in the singles and the pair unequally and bias B2, so
+        // each piece must be break-free alone and the two together: worn
+        // Malorne 3, two break-free singles still take it to 1 as a pair.
+        // With no such pair `bonusDpsNet` stays unset (see below).
+        const breakFree = addedPieces.filter(
+          (p) =>
+            brokenSetBonuses(equipment, [p], setId).length === 0 &&
+            individualDeltasByItemId.has(p.itemId)
+        );
+        const pair = breakFree
+          .flatMap((a, i) => breakFree.slice(i + 1).map((b) => [a, b]))
+          .find((p) => brokenSetBonuses(equipment, p, setId).length === 0);
         const pairB2 =
-          pair.length === 2
+          pair !== undefined
             ? await measurePairTwoPiece(
                 deps,
                 pair,
@@ -2028,6 +2036,12 @@ async function buildSetBonuses(
     });
   for (const b of results) {
     if (b.bonusDps === undefined) continue;
+    // A worn-1 4pc whose 2pc the pair sim did not measure still carries
+    // `−(n−1)·B2`. Crediting it would rank rows on a confounded figure, so
+    // the net stays unset and the row shows as not counted.
+    if (b.selfConfound !== undefined && b.selfConfound.dps === undefined) {
+      continue;
+    }
     // The 4pc subtracts a measured raw 2pc; only then do the 2pc terms apply.
     const two =
       b.threshold === 4
@@ -2118,7 +2132,8 @@ function substitutedPackageBreaks(
 /**
  * One sim of two break-free set pieces added together at worn 1, giving the
  * 2pc value `B2 = Σ singles − pair delta` (ticket 492). Undefined when the gem
- * repair or the sim fails; the caller then keeps the raw 4pc value.
+ * repair or the sim fails; the caller then keeps the raw 4pc `bonusDps` and
+ * leaves its `bonusDpsNet` unset.
  */
 async function measurePairTwoPiece(
   deps: Deps,

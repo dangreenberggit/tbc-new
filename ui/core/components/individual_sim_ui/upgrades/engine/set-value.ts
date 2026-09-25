@@ -3,9 +3,11 @@
  *
  * PORTED from packages/core/src/set-value.ts. Fork-only changes: the items.ts
  * import path; `brokenSetBonuses` reports every lost implemented threshold, not
- * only the highest, via `lostThresholds` (ticket 476); and `netInflation`, the
- * package-synergy correction for broken worn bonuses (ticket 478). Core never
- * received ticket 467's broken-bonus work, so these do not exist there. Pure
+ * only the highest, via `lostThresholds` (ticket 476); `netInflation`, the
+ * package-synergy correction for broken worn bonuses (ticket 478); and the
+ * exported `IMPLEMENTED_SET_IDS`, so a test reads the set list instead of
+ * copying it. Core never received ticket 467's broken-bonus work, so these do
+ * not exist there. Pure
  * functions only: no sim calls, no seams — same invariant as the source file.
  */
 
@@ -25,16 +27,21 @@ export type UnmeasuredReason =
   | "unmeasurable-at-this-worn-count";
 
 /**
- * Which (setId, threshold) bonuses have a DPS-relevant effect body in the
- * pinned wowsims Go source — same table as packages/core/src/set-value.ts,
- * carried unchanged since it is a fact about the pinned sim's Go code, not
- * about which repo is asking. Re-verify against the fork's own pin if it
- * ever moves off `8aa378b3` (plan §9 slice 7's rebase item).
+ * Which (setId, threshold) bonuses the ranking measures — same values as
+ * packages/core/src/set-value.ts, carried unchanged since they are a fact
+ * about the pinned sim's Go code, not about which repo is asking. Re-verify
+ * against the fork's own pin if it ever moves off `8aa378b3` (plan §9
+ * slice 7's rebase item).
  */
 const IMPLEMENTED_IN_SIM: Record<
   number,
   Partial<Record<SetThreshold, boolean>>
 > = {
+  // Justicar 2pc is `false` although it has an effect body: its item_sets.go
+  // closure is empty, but sim/paladin/seals.go:553 (also at 8aa378b3) scales
+  // the Judgement of the Crusader bonus by 1.15. The default ret APL judges
+  // Crusader only in its prepull actions, so the effect is expected near 0
+  // DPS (hypothesis, not measured).
   626: { 2: false, 4: true }, // Justicar Battlegear
   629: { 2: true, 4: true }, // Crystalforge Battlegear
   680: { 2: true, 4: true }, // Lightbringer Battlegear
@@ -42,6 +49,11 @@ const IMPLEMENTED_IN_SIM: Record<
   641: { 2: false, 4: true }, // Nordrassil Harness
   676: { 2: true, 4: true }, // Thunderheart Harness
 };
+
+/** The set ids the table above covers, for tests that pin facts per set. */
+export const IMPLEMENTED_SET_IDS: readonly number[] = Object.keys(
+  IMPLEMENTED_IN_SIM
+).map(Number);
 
 export function isBonusImplemented(
   setId: number,
@@ -324,8 +336,9 @@ export type SelfSetConfound = {
   /**
    * The confounding threshold's own value, measured by one pair sim and
    * already added back into the 4pc `bonusDps` (ticket 492). Absent when no
-   * two break-free package pieces existed or that sim failed: the 4pc value
-   * then still carries the `−(n−1)·B2` confound.
+   * two package pieces were break-free alone and together, or that sim or its
+   * gem repair failed: the 4pc `bonusDps` then still carries the `−(n−1)·B2`
+   * confound, and `rank.ts` leaves its `bonusDpsNet` unset.
    */
   dps?: number;
 };
