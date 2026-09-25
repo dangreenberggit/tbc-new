@@ -27,7 +27,7 @@ export type SetCreditView = "full" | "split";
  * "best-stop": to the threshold where committing pays best on full values,
  * or not at all. "full-path": to every credited threshold, charging every
  * break on the way. Which a player does is a preference, not a game fact;
- * best-stop ships provisionally until the owner chooses.
+ * best-stop is the owner's choice (confirmed 2026-09-24, ticket 490).
  */
 export type SetCreditRule = "best-stop" | "full-path";
 export const RULE_490: SetCreditRule = "best-stop";

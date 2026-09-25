@@ -347,16 +347,16 @@ function sourceMatches(entry: PoolEntry, key: string): boolean {
 }
 
 /**
- * A delta in the results tables, with its unit: "+104.9 DPS".
+ * A delta in the results tables: "+104.9". The locale string carries no unit
+ * since ticket 499: the column header says DPS, and "-400.8 DPS" did not fit
+ * the DPS column.
  *
  * Both renderers used to hardcode the `+`, so a negative delta rendered as
  * "+-41.0" — mid-run rows are frequently negative, so this was on screen. The
  * sign comes from the number.
  *
- * The unit goes through i18n rather than being appended here, because where a
- * unit sits relative to its number is language-dependent, and because every
- * other "DPS" this page renders is already a locale string — `status.done`
- * spells the same figure "{{dps}} DPS".
+ * The figure still goes through i18n rather than being returned bare, so a
+ * language that needs a unit or a different sign placement can add one.
  */
 function formatDelta(deltaDps: number): string {
 	const sign = deltaDps > 0 ? '+' : '';
@@ -3039,7 +3039,20 @@ export class UpgradesTab extends SimTab {
 		// Wider than tippy's 350px default: at that width "to reach 4pc: breaks
 		// Thunderheart Harness 2pc: -108.6" wrapped its figure onto a line of its
 		// own (ticket 490 capture). The viewport cap keeps it on screen at 375.
-		if (setBonus_.tip) tippy(dpsCellRef.value!, { content: setBonus_.tip, maxWidth: 'min(30rem, calc(100vw - 1rem))' });
+		//
+		// Right of the figure when it fits, else above it (ticket 495, owner
+		// 2026-09-25). Above covered the whole row above, DPS figure included;
+		// to the right it covers Source and the row buttons and leaves the DPS
+		// column readable. Measured on the recorded fixtures: 465-507px of room
+		// at 1280, 165-207px at 768, so narrow screens get the top. Popper's own
+		// flip would pick `left` first, hence the explicit fallback.
+		if (setBonus_.tip)
+			tippy(dpsCellRef.value!, {
+				content: setBonus_.tip,
+				maxWidth: 'min(30rem, calc(100vw - 1rem))',
+				placement: 'right',
+				popperOptions: { modifiers: [{ name: 'flip', options: { fallbackPlacements: ['top'] } }] },
+			});
 		// The same controls the gear picker's item list renders, from the shared
 		// module (ticket 472). `subscribe: false`: these rows are rebuilt on every
 		// landed row mid-run, so a per-row listener would accumulate — the tab

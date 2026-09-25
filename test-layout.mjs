@@ -615,6 +615,196 @@ function legibilityResults(width, m, opts) {
 }
 
 // ---------------------------------------------------------------------------
+// DPS cell assertions (12)-(15) (tickets 495, 499, round 2c).
+//
+// Measured over every visible results row, not the first five: the rows these
+// check (wide figures, set rows with a tooltip) are rare and scattered. On the
+// live ret run there may be none; in the fixture pass each assertion must
+// check at least one, or it has proved nothing.
+// ---------------------------------------------------------------------------
+
+const DPS_GAP_MIN = 8; // px, Slot text to the DPS figure or the set-bonus line (ticket 495)
+const RING_TOL = 0.5; // px
+
+function dpsCellProbeExpression() {
+	return `(async () => {
+		document.querySelectorAll('#upgrades-tab details').forEach(d => { d.open = true; });
+		await new Promise(r => setTimeout(r, 100));
+		const rows = [...document.querySelectorAll('.upgrades-results-table')]
+			.filter(t => t.getBoundingClientRect().height > 0)
+			.flatMap(t => [...t.querySelectorAll('tbody tr')])
+			.filter(r => r.children.length >= 5 && r.querySelector('.upgrades-item-name'));
+		const rects = el => { const r = document.createRange(); r.selectNodeContents(el); return [...r.getClientRects()].filter(x => x.width > 0 && x.height > 0).map(x => ({ top: x.top, bottom: x.bottom, left: x.left, right: x.right })); };
+		const textRects = el => { const out = []; const w = document.createTreeWalker(el, NodeFilter.SHOW_TEXT); for (let n = w.nextNode(); n; n = w.nextNode()) { if (!n.textContent.trim()) continue; const r = document.createRange(); r.selectNodeContents(n); for (const x of r.getClientRects()) if (x.width > 0) out.push({ top: x.top, bottom: x.bottom, left: x.left, right: x.right }); } return out; };
+		const figureNode = td => [...td.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
+		const hit = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+
+		// (12) and (13): every row's figure against its cell, and the gaps.
+		const fig = [];
+		for (const tr of rows) {
+			const td = tr.children[3];
+			const n = figureNode(td);
+			if (!n) continue;
+			const f = rects(n)[0];
+			if (!f) continue;
+			const b = td.getBoundingClientRect(), s = getComputedStyle(td);
+			const boxL = b.left + parseFloat(s.paddingLeft), boxR = b.right - parseFloat(s.paddingRight);
+			const slotR = Math.max(-1e9, ...rects(tr.children[2]).map(x => x.right));
+			const sub = td.querySelector('.upgrades-set-bonus');
+			const subL = sub ? Math.min(...rects(sub).map(x => x.left)) : null;
+			fig.push({ text: n.textContent.trim(), slot: tr.children[2].innerText.trim(), overR: f.right - boxR, overL: boxL - f.left, gap: f.left - slotR, subGap: subL === null ? null : subL - slotR });
+		}
+
+		// Set rows with a tooltip and a neighbour on each side in the same table.
+		const setRows = rows.filter(tr => tr.children[3]._tippy && tr.previousElementSibling && tr.nextElementSibling);
+
+		// (14): focus each such row's cell; the ring must be drawn, and its band
+		// must not cross text in that row or the rows beside it.
+		const focus = [];
+		for (const tr of setRows) {
+			const td = tr.children[3];
+			td.focus({ focusVisible: true });
+			const st = getComputedStyle(tr);
+			const w = parseFloat(st.outlineWidth) || 0;
+			const drawn = st.outlineStyle !== 'none' && w > 0;
+			let crossing = null;
+			if (drawn) {
+				// An outline starts outline-offset outside the border edge and grows
+				// outward by its width: with offset -2 and width 2 it fills the row's
+				// outer 2px.
+				const off = parseFloat(st.outlineOffset) || 0;
+				const r = tr.getBoundingClientRect();
+				const inner = { top: r.top - off, bottom: r.bottom + off, left: r.left - off, right: r.right + off };
+				const outer = { top: inner.top - w, bottom: inner.bottom + w, left: inner.left - w, right: inner.right + w };
+				const bands = [
+					{ top: outer.top, bottom: inner.top, left: outer.left, right: outer.right },
+					{ top: inner.bottom, bottom: outer.bottom, left: outer.left, right: outer.right },
+					{ top: outer.top, bottom: outer.bottom, left: outer.left, right: inner.left },
+					{ top: outer.top, bottom: outer.bottom, left: inner.right, right: outer.right },
+				].map(b => ({ top: b.top + ${RING_TOL}, bottom: b.bottom - ${RING_TOL}, left: b.left + ${RING_TOL}, right: b.right - ${RING_TOL} }));
+				for (const row of [tr.previousElementSibling, tr, tr.nextElementSibling]) {
+					for (const t of textRects(row)) if (bands.some(b => hit(b, t))) { crossing = row.querySelector('.upgrades-item-name')?.innerText.trim() ?? '?'; break; }
+					if (crossing) break;
+				}
+			}
+			td._tippy?.hide();
+			td.blur();
+			focus.push({ name: tr.querySelector('.upgrades-item-name').innerText.trim(), drawn, width: w, crossing });
+		}
+
+		// (15): the tallest hover among those rows. Right of the figure when it
+		// fits, else above (owner, 2026-09-25); on screen; and when it opens to the
+		// right it covers no DPS text in its own row or the rows beside it.
+		const tips = [];
+		for (const tr of setRows) {
+			const td = tr.children[3];
+			td._tippy.show();
+			await new Promise(r => setTimeout(r, 60));
+			const box = td._tippy.popper.querySelector('.tippy-box');
+			const b = box.getBoundingClientRect();
+			tips.push({ tr, height: b.height });
+			td._tippy.hide();
+		}
+		await new Promise(r => setTimeout(r, 80));
+		let hover = null;
+		const tallest = tips.sort((a, b) => b.height - a.height)[0];
+		if (tallest) {
+			const tr = tallest.tr, td = tr.children[3];
+			tr.scrollIntoView({ block: 'center' });
+			await new Promise(r => setTimeout(r, 100));
+			td._tippy.show();
+			await new Promise(r => setTimeout(r, 200));
+			const box = td._tippy.popper.querySelector('.tippy-box');
+			const b = box.getBoundingClientRect();
+			const tip = { top: b.top, bottom: b.bottom, left: b.left, right: b.right };
+			const cell = td.getBoundingClientRect();
+			const offset = 10; // tippy's default distance
+			const fitsRight = innerWidth - cell.right - offset >= b.width;
+			const coveredDps = [tr.previousElementSibling, tr, tr.nextElementSibling].filter(row => textRects(row.children[3]).some(t => hit(t, tip))).map(row => row.querySelector('.upgrades-item-name')?.innerText.trim() ?? '?');
+			hover = { name: tr.querySelector('.upgrades-item-name').innerText.trim(), placement: box.getAttribute('data-placement'), fitsRight, width: b.width, height: b.height, onScreen: b.left >= -1 && b.right <= innerWidth + 1 && b.top >= -1 && b.bottom <= innerHeight + 1, coveredDps };
+			td._tippy.hide();
+		}
+		return { fig, focus, hover, setRows: setRows.length };
+	})()`;
+}
+
+function assertDpsCell(width, m, opts = {}) {
+	const tag = opts.fixture ? `[fixture ${opts.fixture}] [${width}]` : `[${width}]`;
+	const results = [];
+	const need = n => !opts.fixture || n > 0; // the fixture pass must check something
+	if (!m || m.error) return [{ ok: false, msg: `${tag} DPS-cell PROBE FAILED: ${m?.error ?? 'no result'}` }];
+
+	// (12) Every DPS figure inside its cell's content box.
+	{
+		const bad = m.fig.find(f => f.overR > CLIP_TOL || f.overL > CLIP_TOL);
+		const ok = !bad && need(m.fig.length);
+		results.push({
+			ok,
+			msg: bad
+				? `${tag} (12) DPS figure "${bad.text}" runs ${Math.max(bad.overR, bad.overL).toFixed(1)}px outside its cell`
+				: `${tag} (12) DPS figures inside their cell: ${m.fig.length} checked`,
+		});
+	}
+
+	// (13) Slot text to DPS figure, and to the set-bonus line, >= 8px. The
+	// fixed columns apply from md up; below it the table sizes itself.
+	if (width >= 768) {
+		const subs = m.fig.filter(f => f.subGap !== null);
+		const badFig = m.fig.find(f => f.gap < DPS_GAP_MIN);
+		const badSub = subs.find(f => f.subGap < DPS_GAP_MIN);
+		const minFig = Math.min(...m.fig.map(f => f.gap));
+		const minSub = subs.length ? Math.min(...subs.map(f => f.subGap)) : null;
+		const ok = !badFig && !badSub && need(m.fig.length) && need(subs.length);
+		results.push({
+			ok,
+			msg: badFig
+				? `${tag} (13) Slot "${badFig.slot}" is ${badFig.gap.toFixed(1)}px from DPS figure "${badFig.text}" (< ${DPS_GAP_MIN}px)`
+				: badSub
+					? `${tag} (13) Slot "${badSub.slot}" is ${badSub.subGap.toFixed(1)}px from its set-bonus line (< ${DPS_GAP_MIN}px)`
+					: `${tag} (13) Slot-to-DPS gap >= ${DPS_GAP_MIN}px: ${m.fig.length} figures (min ${isFinite(minFig) ? minFig.toFixed(1) : '-'}px), ${subs.length} set-bonus lines (min ${minSub === null ? '-' : minSub.toFixed(1)}px) checked`,
+		});
+	}
+
+	// (14) The row focus ring is drawn and crosses no text.
+	{
+		const drawn = m.focus.filter(f => f.drawn);
+		const bad = drawn.find(f => f.crossing);
+		const ok = !bad && need(drawn.length);
+		results.push({
+			ok,
+			msg: bad
+				? `${tag} (14) focus ring on "${bad.name}" crosses text in row "${bad.crossing}"`
+				: drawn.length === 0 && m.focus.length > 0
+					? `${tag} (14) focus ring: none drawn on ${m.focus.length} focused row(s) -- :focus-visible did not match or the row rule is gone`
+					: `${tag} (14) focus ring clear of text: ${drawn.length} checked`,
+		});
+	}
+
+	// (15) The tallest hover opens right of the figure when it fits, else above;
+	// on screen; covering no DPS text when it opens right.
+	{
+		const h = m.hover;
+		let ok = need(h ? 1 : 0);
+		let msg = `${tag} (15) hover placement: 0 checked`;
+		if (h) {
+			const expected = h.fitsRight ? 'right' : 'top';
+			const placed = h.placement === expected;
+			const clear = h.placement !== 'right' || h.coveredDps.length === 0;
+			ok = placed && h.onScreen && clear;
+			msg = !placed
+				? `${tag} (15) hover on "${h.name}" opened ${h.placement}, expected ${expected} (fits right: ${h.fitsRight})`
+				: !h.onScreen
+					? `${tag} (15) hover on "${h.name}" (${h.placement}) is partly off screen`
+					: !clear
+						? `${tag} (15) hover on "${h.name}" opened right and covers DPS text of ${h.coveredDps.join(', ')}`
+						: `${tag} (15) hover on "${h.name}" (${Math.round(h.height)}px, tallest of ${m.setRows}) opened ${h.placement} as expected: 1 checked`;
+		}
+		results.push({ ok, msg });
+	}
+	return results;
+}
+
+// ---------------------------------------------------------------------------
 // Accessibility helpers (visual-a11y-reviewer stage).
 // ---------------------------------------------------------------------------
 
@@ -765,6 +955,10 @@ async function main() {
 							if (r.ok) passes.push(r.msg);
 							else failures.push(r.msg);
 						}
+						for (const r of assertDpsCell(width, await evaluate(send, dpsCellProbeExpression()))) {
+							if (r.ok) passes.push(r.msg);
+							else failures.push(r.msg);
+						}
 
 						// a11y: axe only on the post-run results at this width (no
 						// focus walk post-run -- the pre-run walk covers operability).
@@ -804,6 +998,10 @@ async function main() {
 							await sleep(200);
 							const lm = await evaluate(send, legibilityProbeExpression());
 							for (const r of assertLegibility(width, lm, { fixture: name })) {
+								if (r.ok) passes.push(r.msg);
+								else failures.push(r.msg);
+							}
+							for (const r of assertDpsCell(width, await evaluate(send, dpsCellProbeExpression()), { fixture: name })) {
 								if (r.ok) passes.push(r.msg);
 								else failures.push(r.msg);
 							}

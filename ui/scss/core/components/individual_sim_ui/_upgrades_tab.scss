@@ -433,6 +433,20 @@
 	white-space: nowrap;
 }
 
+// Keyboard focus on a DPS cell with a set-bonus tooltip rings the whole row,
+// not the cell (ticket 499): the cell's own ring sat on a border with no
+// padding and crossed the figure. The row's edges are far from any text.
+.upgrades-results-table {
+	tr:has(> td[tabindex]:focus-visible) {
+		outline: 2px solid var(--bs-link-color);
+		outline-offset: -2px;
+	}
+
+	td[tabindex]:focus-visible {
+		outline: none;
+	}
+}
+
 // The DPS cell's set-bonus breakdown tooltip (tickets 431, 467, 475): each
 // gain and loss, and both totals. Left-aligned so the stacked figures read as
 // a list rather than tippy's centred default.
@@ -1151,27 +1165,35 @@
 		// Widths include the cell's horizontal padding (`--spacer-3` each
 		// side, above). The short columns are kept narrow so Item, the column
 		// the table is for, gets the rest (owner review of ticket 483). Slot and
-		// Source may wrap between words; DPS stays on one line. Source is wider
-		// than the other short columns (11rem, ticket 489): at 7rem a raid source
-		// such as "Black Temple (N) / Reliquary of the Lost" wrapped to six lines
-		// and made its row 119px tall while the item name needed one line.
-		// Measured on the feralcat phase-3 pool at 1280px: at 11rem the tallest
-		// row is 84px. The cost is in Item: names never wrap (nowrap + ellipsis),
-		// and 144 of 338 names are cut short at 11rem against 20 at 7rem.
+		// Source may wrap between words; DPS stays on one line. Source is 8rem
+		// (ticket 489, owner 2026-09-25): at 7rem a raid source such as "Black
+		// Temple (N) / Reliquary of the Lost" wrapped to six lines, and at 11rem
+		// 142 of 338 item names were cut short. With item names allowed two
+		// lines (below), 8rem cuts none on the feral phase-3 fixture at 1280px
+		// and the tallest row stays 101.5px, as it was at 8rem before the wrap.
 		.upgrades-col-rank {
 			width: 2.5rem;
 		}
 
+		// Slot and DPS were re-sized on the recorded fixtures (ticket 499, round
+		// 2c measurements): "Main Hand" (69.4px at 0.875rem) wrapped to two lines
+		// in 5.5rem, and "-400.8 DPS" (89.9px) ran 12.9px past a 77px DPS column.
+		// The figure now drops its unit (the header says DPS), so the widest
+		// recorded figure is 55.1px. Slot 5.75rem with a 0.5rem left padding holds
+		// "Main Hand" on one line; DPS 5rem with a 0.5rem left padding keeps at
+		// least 19px between the Slot text and the figure, and 19.9px to a set
+		// row's "set detail" line, on every fixture at 768 and 1280. The 0.25rem
+		// this frees over 5.5rem + 5.5rem goes to Item.
 		.upgrades-col-slot {
-			width: 5.5rem;
+			width: 5.75rem;
 		}
 
 		.upgrades-col-dps {
-			width: 5.5rem;
+			width: 5rem;
 		}
 
 		.upgrades-col-source {
-			width: 11rem;
+			width: 8rem;
 		}
 
 		.upgrades-col-action {
@@ -1183,14 +1205,15 @@
 			padding-right: var(--spacer-1);
 		}
 
-		// Rank and DPS drop their own horizontal padding: at these widths the
-		// padding left no room for the content. Measured at 14px: "Rank" is
-		// 37.8px in a 35px column, and "-41.4 DPS" is 73.6px in a 77px column.
-		// The neighbouring cells' `--spacer-3` padding still keeps the text
-		// apart. Slot drops only its right padding, so "Trinket 1" (0.875rem)
-		// stays on one line in 5.5rem; the layout gate fails a wrapped slot
-		// label.
+		// Rank drops its horizontal padding: at 14px "Rank" is 37.8px in a 35px
+		// column. Slot drops its right padding and halves its left one, so
+		// "Main Hand" stays on one line (the layout gate fails a wrapped slot
+		// label); Item's own right padding still separates the two. DPS keeps
+		// no right padding and a 0.5rem left one: the figure is right-aligned,
+		// so the left padding is the minimum gap to the Slot text whatever the
+		// two strings are (ticket 495's "DPS crowds Slot").
 		td:nth-child(3) {
+			padding-left: var(--spacer-2);
 			padding-right: 0;
 		}
 
@@ -1201,6 +1224,10 @@
 		th:nth-child(4) .upgrades-results-sort-button {
 			padding-left: 0;
 			padding-right: 0;
+		}
+
+		td:nth-child(4) {
+			padding-left: var(--spacer-2);
 		}
 
 		// The columns are now fixed, so any wrapping cell must wrap its content
@@ -1227,12 +1254,15 @@
 			word-break: normal;
 		}
 
-		// The item NAME is the one piece of this table that must stay on
-		// exactly one line with an ellipsis rather than wrap (ticket 468): a
-		// name is the row's identity, and letting it wrap or shrink to a few
-		// characters (review round 1) makes the row unscannable. Everything
-		// else in the cell -- icon, BiS/set badges, "(Owned)" -- is allowed to
-		// wrap onto a second line instead (round 2's owner rule).
+		// The item NAME wraps to at most two lines, then ends in an ellipsis
+		// (ticket 489, owner 2026-09-25). It used to stay on one line (ticket
+		// 468), which cut 36 to 142 names short. Most rows are already two or
+		// three lines tall because of Source, so the second line usually fits
+		// in height the row already has: on the feral phase-3 fixture at 1280px
+		// and Source 8rem, 3 of 338 rows grew and none are cut off. Wrapping
+		// happens only between words (below), never a few letters per line,
+		// which was 468's complaint. The tags stay on their own line under the
+		// name.
 		//
 		// Ticket 474 moved the tags out of the name's own flex row and into a
 		// stacked `.upgrades-item-text` column (icon | name-over-tags) so they
@@ -1255,13 +1285,17 @@
 		// would keep the text pushing the link (and the row under it) wide
 		// regardless of `overflow: hidden`. The full name survives as the
 		// element's `title` (upgrades_tab.tsx) for whenever it does truncate.
+		// `line-clamp` still needs the -webkit- box form in Chromium and Safari.
 		.upgrades-item-name {
-			display: block;
+			display: -webkit-box;
 			min-width: 0;
 			overflow: hidden;
 			overflow-wrap: normal;
 			text-overflow: ellipsis;
-			white-space: nowrap;
+			white-space: normal;
+			-webkit-box-orient: vertical;
+			-webkit-line-clamp: 2;
+			line-clamp: 2;
 		}
 
 		// The tags line sits directly beneath the name (round 2's owner rule

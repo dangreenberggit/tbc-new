@@ -933,7 +933,7 @@
 			"item": "Item",
 			"slot": "Slot",
 			"delta_dps": "DPS",
-			"delta_dps_value": "{{delta}} DPS",
+			"delta_dps_value": "{{delta}}",
 			"source": "Source",
 			"favorite": "Favorite",
 			"batch": "Batch sim",
