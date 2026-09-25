@@ -3063,7 +3063,9 @@ export class UpgradesTab extends SimTab {
 		});
 		const batch = createBatchToggle({ simUI: this.simUI, itemId: row.itemId, subscribe: false });
 		return (
-			<tr className={row.owned ? 'upgrades-row-owned' : ''}>
+			// `data-item-id` lets a review manifest target one row by item, since
+			// rows carry no other stable key (ticket 510).
+			<tr className={row.owned ? 'upgrades-row-owned' : ''} dataset={{ itemId: String(row.itemId) }}>
 				<td>{display.rankText}</td>
 				<td>{this.itemCell(row)}</td>
 				<td>{slotLabel(effectiveSlot(row))}</td>

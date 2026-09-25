@@ -15,7 +15,10 @@
 //       ticket:       string,
 //       state:        "pre-run" | "post-run",
 //       widths:       number[],
-//       interactions: [ { hover: sel } | { click: sel } ]  (optional),
+//       interactions: [ { hover: sel } | { click: sel } ]  (optional). A hover
+//                     opens closed <details> around its target, scrolls the
+//                     first visible match to centre, moves the mouse away,
+//                     then hovers it.
 //       pane:         boolean   (optional, default true). true = clip
 //                     #upgrades-tab first and run axe on it. false = clip only
 //                     the `capture` selectors and run axe on capture[0]; this
@@ -26,7 +29,11 @@
 //                     (ticket 504) to load instead of running the sim: a
 //                     name in the main repo's data/tab-fixtures/, or a .json
 //                     path. Entries sharing a fixture share one page.
-//       capture:      string[]   (selectors to clip, besides #upgrades-tab),
+//       capture:      string[]   (selectors to clip, besides #upgrades-tab).
+//                     In a `pane: false` entry with a hover, capture[0] is
+//                     clipped where it already is, with no scroll, so a
+//                     hovered tooltip ("[data-tippy-root] .tippy-box") stays
+//                     open for it; list the tooltip first (ticket 510).
 //       facts:        { key: "<op>:<sel>[:<prop>]" },
 //       acceptance:   string,
 //   } ] }
@@ -126,7 +133,34 @@ function factExpression(spec) {
 // scrolling to it returned a correctly-sized but empty (dark) clip, because the
 // pane had never painted. scrollIntoView forces the paint, then the document-
 // coordinate clip lands on the now-rendered element.
-async function captureClip(send, outDir, ticket, state, width, n, sel) {
+//
+// `viewportClip` is for the first capture after a hover (ticket 510): the
+// hovered element is already on screen, and any scroll would move the page
+// under the pointer, which tippy reads as the mouse leaving, so the tooltip
+// closes before the clip. It clips the element where it already is.
+async function captureClip(send, outDir, ticket, state, width, n, sel, viewportClip = false) {
+	if (viewportClip) {
+		const rect = await evaluate(
+			send,
+			`(() => {
+				const el = document.querySelector(${JSON.stringify(sel)});
+				if (!el) return null;
+				const r = el.getBoundingClientRect();
+				return { x: r.left + window.scrollX, y: r.top + window.scrollY, width: r.width, height: r.height };
+			})()`,
+		);
+		if (!rect || rect.width === 0 || rect.height === 0) {
+			return { error: `capture selector missing or zero-size: ${sel}` };
+		}
+		const { data } = await send('Page.captureScreenshot', {
+			format: 'png',
+			clip: { x: rect.x, y: rect.y, width: rect.width, height: rect.height, scale: 1 },
+			captureBeyondViewport: false,
+		});
+		const file = `${ticket}-${state}-${width}-${n}.png`;
+		fs.writeFileSync(path.join(outDir, file), Buffer.from(data, 'base64'));
+		return { file };
+	}
 	const rect = await evaluate(
 		send,
 		`(() => {
@@ -154,21 +188,45 @@ async function captureClip(send, outDir, ticket, state, width, n, sel) {
 
 // Dispatch a hover or click at the centre of `sel`. Returns null on success or
 // an error string if the target was not found.
+//
+// A hover first opens every closed <details> around a match (below-cutoff rows
+// sit in one, closed by default), scrolls the first visible match to the
+// middle of the viewport and moves the mouse away, so the hover is a fresh
+// mouse-enter on an element that no later scroll will move (ticket 510; the
+// order is round 2c's capture495.mjs). A match in a hidden pane has a zero
+// rect, so the first visible match is the target.
 async function doInteraction(send, interaction) {
 	const kind = interaction.hover ? 'hover' : interaction.click ? 'click' : null;
 	const sel = interaction.hover || interaction.click;
 	if (!kind) return `unknown interaction: ${JSON.stringify(interaction)}`;
+	if (kind === 'hover') {
+		const centre = await evaluate(
+			send,
+			`(async () => {
+				const all = [...document.querySelectorAll(${JSON.stringify(sel)})];
+				for (const el of all) for (let d = el.closest('details'); d; d = d.parentElement && d.parentElement.closest('details')) d.open = true;
+				const el = all.find(e => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; });
+				if (!el) return null;
+				el.scrollIntoView({ block: 'center', inline: 'nearest' });
+				await new Promise(res => setTimeout(res, 300));
+				const r = el.getBoundingClientRect();
+				return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+			})()`,
+		);
+		if (!centre) return `interaction target not found: ${sel}`;
+		await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 5, y: 5 });
+		await sleep(150);
+		await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: centre.x, y: centre.y });
+		await sleep(600);
+		return null;
+	}
 	const centre = await evaluate(
 		send,
 		`(() => { const el = document.querySelector(${JSON.stringify(sel)}); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })()`,
 	);
 	if (!centre) return `interaction target not found: ${sel}`;
-	if (kind === 'hover') {
-		await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: centre.x, y: centre.y });
-	} else {
-		await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: centre.x, y: centre.y, button: 'left', clickCount: 1 });
-		await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: centre.x, y: centre.y, button: 'left', clickCount: 1 });
-	}
+	await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: centre.x, y: centre.y, button: 'left', clickCount: 1 });
+	await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: centre.x, y: centre.y, button: 'left', clickCount: 1 });
 	await sleep(300);
 	return null;
 }
@@ -187,30 +245,50 @@ async function captureEntryAtWidth(send, outDir, entry, width) {
 	// out of the pane (pane: false), in which case only its own selectors.
 	const pane = entry.pane !== false;
 	const selectors = pane ? ['#upgrades-tab', ...(entry.capture || [])] : [...(entry.capture || [])];
-	for (let n = 0; n < selectors.length; n++) {
-		const res = await captureClip(send, outDir, entry.ticket, entry.state, width, n, selectors[n]);
+	// A hovered `pane: false` entry clips capture[0] where it is, then reads
+	// facts and runs axe while the tooltip is still open; the later captures
+	// scroll and so close it (ticket 510).
+	const hoverFirst = !pane && (entry.interactions || []).some(i => i.hover);
+	const capture = async n => {
+		const res = await captureClip(send, outDir, entry.ticket, entry.state, width, n, selectors[n], hoverFirst && n === 0);
 		if (res.error) errors.push(res.error);
 		else files.push(res.file);
-	}
+	};
+	const firstLater = hoverFirst ? 1 : 0;
+	if (hoverFirst && selectors.length) await capture(0);
 
 	// Facts at this width.
 	const facts = {};
-	for (const [key, spec] of Object.entries(entry.facts || {})) {
-		try {
-			facts[key] = await evaluate(send, factExpression(spec));
-		} catch (err) {
-			errors.push(`fact ${key} (${spec}) threw: ${err.message}`);
-			facts[key] = null;
+	const readFacts = async () => {
+		for (const [key, spec] of Object.entries(entry.facts || {})) {
+			try {
+				facts[key] = await evaluate(send, factExpression(spec));
+			} catch (err) {
+				errors.push(`fact ${key} (${spec}) threw: ${err.message}`);
+				facts[key] = null;
+			}
 		}
-	}
+	};
 
 	// a11y at this exact state/width.
 	const axeRoot = pane ? '#upgrades-tab' : selectors[0];
 	let axe = null;
-	try {
-		axe = await axeRun(send, axeRoot);
-	} catch (err) {
-		errors.push(`axe at ${width} threw: ${err.message}`);
+	const runAxe = async () => {
+		try {
+			axe = await axeRun(send, axeRoot);
+		} catch (err) {
+			errors.push(`axe at ${width} threw: ${err.message}`);
+		}
+	};
+
+	if (hoverFirst) {
+		await readFacts();
+		await runAxe();
+	}
+	for (let n = firstLater; n < selectors.length; n++) await capture(n);
+	if (!hoverFirst) {
+		await readFacts();
+		await runAxe();
 	}
 
 	return { files, errors, facts, axe };
