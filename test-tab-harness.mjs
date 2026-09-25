@@ -91,9 +91,9 @@ export function findChromium() {
 // absent, because those must already be on disk from a prior full build.
 // ---------------------------------------------------------------------------
 
-export function run(cmd, args, label) {
+export function run(cmd, args, label, extraEnv = {}) {
 	return new Promise((resolve, reject) => {
-		const p = spawn(cmd, args, { cwd: __dirname, shell: true, stdio: ['ignore', 'pipe', 'pipe'] });
+		const p = spawn(cmd, args, { cwd: __dirname, shell: true, stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, ...extraEnv } });
 		let tail = '';
 		const keep = d => {
 			tail = (tail + d.toString()).slice(-4000);
@@ -130,7 +130,10 @@ export async function build() {
 	console.log('building bundle (workers)...');
 	await run('npx', ['tsx', 'vite.build-workers.mts'], 'vite.build-workers');
 	console.log('building bundle (vite build)...');
-	await run('npx', ['vite', 'build'], 'vite build');
+	// Compiles in the tab's fixture loader (ticket 504), which the fixture pass
+	// and fixture manifest entries inject through. It also means this dist/ is
+	// not a user build: see data/tab-fixtures/README.md in the main repo.
+	await run('npx', ['vite', 'build'], 'vite build', { TBC_TAB_FIXTURES: '1' });
 	// `vite build` was observed to empty the WASM out of dist/. Re-check the
 	// exact file(s) that were there before the build, not a fixed name, so the
 	// protection survives whichever form `make host` left behind.
@@ -300,6 +303,66 @@ export function startRunExpression() {
 
 // Count landed result rows. Polled until >= MIN_ROWS or the deadline.
 export const rowCountExpression = `document.querySelectorAll('.upgrades-results-table tbody tr').length`;
+
+// ---------------------------------------------------------------------------
+// Recorded fixtures (ticket 504).
+//
+// A fixture is a finished Ranking recorded from a real run in the main repo
+// (data/tab-fixtures/). Loading one takes seconds and needs no sim, so the gate
+// can measure set-bonus rows that its live ret run never lands. The page's
+// loader exists only in builds made with TBC_TAB_FIXTURES=1, which build()
+// above sets.
+// ---------------------------------------------------------------------------
+
+export const PAGE_PATH_BY_SPEC = { ret: '/tbc/paladin/retribution/', feral: '/tbc/druid/feralcat/' };
+export const FIXTURE_DEADLINE_MS = 30000;
+
+export function pagePathFor(spec) {
+	const p = PAGE_PATH_BY_SPEC[spec];
+	if (!p) throw new Error(`no page path for fixture spec ${spec}`);
+	return p;
+}
+
+// Activate the Upgrades tab and load `fixtureJson` (the file's text) through
+// window.__upgradesFixture. Returns the loader's { ok, rows } / { ok:false, reason }
+// or { error }.
+export function loadFixtureExpression(fixtureJson) {
+	return `(async () => {
+		const waitFor = async (fn, ms) => { const end = Date.now()+ms; while (Date.now()<end) { const v=fn(); if (v) return v; await new Promise(r=>setTimeout(r,100)); } return fn(); };
+		const navBtn = await waitFor(() => document.querySelector('button[data-bs-target="#upgrades-tab"]'), 30000);
+		if (!navBtn) return { error: 'upgrades-tab nav button never appeared (app did not boot?)' };
+		navBtn.click();
+		const hook = await waitFor(() => typeof window.__upgradesFixture === 'function', 15000);
+		if (!hook) return { error: 'window.__upgradesFixture is absent -- was dist built with TBC_TAB_FIXTURES=1?' };
+		return await window.__upgradesFixture(${fixtureJson});
+	})()`;
+}
+
+// A fixture load is settled when the results table has rows and the stale
+// banner (the done state's '.upgrades-status-line.text-warning') is absent.
+// Never wait for "Took": no run happened, so the summary never says it.
+export const fixtureSettledExpression = `(document.querySelectorAll('.upgrades-results-table tbody tr').length >= 1 && !document.querySelector('#upgrades-tab .upgrades-status-line.text-warning'))`;
+
+// Navigate `send`'s page to the fixture's spec, load it and wait until settled.
+// Returns { ok, rows, ms } or { error }.
+export async function loadFixturePage(send, port, fixtureText) {
+	const fixture = JSON.parse(fixtureText);
+	await send('Page.navigate', { url: `http://127.0.0.1:${port}${pagePathFor(fixture.spec)}` });
+	await sleep(300);
+	const t0 = Date.now();
+	const loaded = await evaluate(send, loadFixtureExpression(fixtureText));
+	if (!loaded || loaded.error) return { error: loaded?.error ?? 'fixture load returned nothing' };
+	if (!loaded.ok) return { error: `fixture rejected: ${loaded.reason}${loaded.detail ? ` (${loaded.detail})` : ''}` };
+	const deadline = Date.now() + FIXTURE_DEADLINE_MS;
+	while (Date.now() < deadline) {
+		if (await evaluate(send, fixtureSettledExpression)) {
+			const rows = await evaluate(send, rowCountExpression);
+			return { ok: true, rows, ms: Date.now() - t0 };
+		}
+		await sleep(250);
+	}
+	return { error: `fixture did not settle in ${FIXTURE_DEADLINE_MS / 1000}s (rows or stale banner)` };
+}
 
 // Activate the Upgrades tab and wait for its shell, WITHOUT measuring anything.
 // This is the tab-activation half of test-layout.mjs's probeExpression, factored

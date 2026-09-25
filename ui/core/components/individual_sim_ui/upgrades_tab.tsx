@@ -21,6 +21,7 @@ import { NumberPicker } from '../pickers/number_picker';
 import { SimTab } from '../sim_tab';
 import { BulkHttpSimRunner } from './upgrades/adapters/bulk_http_sim_runner';
 import { makeSimRunner } from './upgrades/adapters/bulk_wasm_sim_runner';
+import { fixtureFileInput, type FixtureHost, installFixtureHooks } from './upgrades/adapters/fixture';
 import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
 import { simDatabaseResolverFor } from './upgrades/adapters/sim_database';
 import { currentPageSkeleton } from './upgrades/adapters/skeleton';
@@ -1331,6 +1332,24 @@ export class UpgradesTab extends SimTab {
 		// run finished (ticket 210).
 		this.refreshCandidatesPlaceholder();
 		this.render();
+
+		// Dev and gate builds only (ticket 504); see upgrades/adapters/fixture.ts.
+		if (__TBC_TAB_FIXTURES__) {
+			const host: FixtureHost = {
+				simUI: this.simUI,
+				specId: () => SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec],
+				currentRanking: () => (this.state.kind === 'done' ? this.state.ranking : undefined),
+				showRanking: ranking => {
+					this.landedRows = [];
+					this.lastRunSeconds = undefined;
+					this.lastRunPruned = false;
+					this.setState({ kind: 'done', ranking, stale: false });
+					return this.contentContainer.querySelectorAll('.upgrades-results-table tbody tr').length;
+				},
+			};
+			installFixtureHooks(host);
+			if (new URLSearchParams(window.location.search).has('upgrades-dev')) this.candidatesPickerElem.after(fixtureFileInput(host));
+		}
 	}
 
 	/**

@@ -22,6 +22,10 @@
 //                     is how an entry photographs something outside the
 //                     Upgrades pane (the Gear item list, ticket 472) without
 //                     the zero-size #upgrades-tab clip that would fail the run.
+//       fixture:      string     (optional, post-run only). A recorded fixture
+//                     (ticket 504) to load instead of running the sim: a
+//                     name in the main repo's data/tab-fixtures/, or a .json
+//                     path. Entries sharing a fixture share one page.
 //       capture:      string[]   (selectors to clip, besides #upgrades-tab),
 //       facts:        { key: "<op>:<sel>[:<prop>]" },
 //       acceptance:   string,
@@ -56,6 +60,7 @@ import {
 	rowCountExpression,
 	activateTabExpression,
 	axeRun,
+	loadFixturePage,
 } from './test-tab-harness.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -64,6 +69,16 @@ import { spawnSync } from 'node:child_process';
 function usage(msg) {
 	if (msg) console.error(`test-review.mjs: ${msg}`);
 	console.error('usage: node ./test-review.mjs --manifest <path> --out <dir>');
+}
+
+// A manifest `fixture` is a fixture name, resolved in TBC_TAB_FIXTURE_DIR (the
+// main repo's data/tab-fixtures/, set by scripts/check_tab_review.py), or a
+// path to a .json file.
+function fixturePathFor(name) {
+	if (name.endsWith('.json')) return path.resolve(process.cwd(), name);
+	const dir = process.env.TBC_TAB_FIXTURE_DIR;
+	if (!dir) throw new Error(`fixture "${name}" needs TBC_TAB_FIXTURE_DIR (run through pnpm tab-review) or a .json path`);
+	return path.join(dir, `${name}.json`);
 }
 
 function parseArgs(argv) {
@@ -251,7 +266,12 @@ async function main() {
 
 	const url = `http://127.0.0.1:${server.port}${PAGE_PATH}`;
 	const pre = manifest.entries.filter(e => e.state === 'pre-run');
-	const post = manifest.entries.filter(e => e.state === 'post-run');
+	const post = manifest.entries.filter(e => e.state === 'post-run' && !e.fixture);
+	const fixtureGroups = new Map();
+	for (const e of manifest.entries.filter(e => e.state === 'post-run' && e.fixture)) {
+		if (!fixtureGroups.has(e.fixture)) fixtureGroups.set(e.fixture, []);
+		fixtureGroups.get(e.fixture).push(e);
+	}
 
 	const recordEntry = (entry, width, r) => {
 		if (r.facts && Object.keys(r.facts).length) {
@@ -292,6 +312,34 @@ async function main() {
 				}
 				const r = await captureEntryAtWidth(send, outDir, entry, width);
 				recordEntry(entry, width, r);
+			}
+		}
+
+		// post-run entries that name a recorded fixture (ticket 504): one page per
+		// fixture, loaded instead of run, then re-emulated per (entry, width).
+		for (const [name, entries] of fixtureGroups) {
+			const { send } = await attachPage(client);
+			await send('Emulation.setDeviceMetricsOverride', { width: RUN_WIDTH, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
+			let loaded;
+			try {
+				loaded = await loadFixturePage(send, server.port, fs.readFileSync(fixturePathFor(name), 'utf8'));
+			} catch (err) {
+				loaded = { error: err.message };
+			}
+			if (loaded.error) {
+				for (const entry of entries)
+					for (const width of entry.widths || [])
+						indexEntries.push({ ticket: entry.ticket, state: entry.state, width, files: [], errors: [`fixture ${name}: ${loaded.error}`] });
+				continue;
+			}
+			console.log(`tab-review: fixture ${name} settled with ${loaded.rows} rows in ${(loaded.ms / 1000).toFixed(1)}s; capturing`);
+			for (const entry of entries) {
+				for (const width of entry.widths || []) {
+					await send('Emulation.setDeviceMetricsOverride', { width, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
+					await sleep(200);
+					const r = await captureEntryAtWidth(send, outDir, entry, width);
+					recordEntry(entry, width, r);
+				}
 			}
 		}
 

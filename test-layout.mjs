@@ -53,9 +53,11 @@ import {
 	axeRun,
 	focusWalk,
 	a11yClassify,
+	loadFixturePage,
 } from './test-tab-harness.mjs';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
+import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 const OVERFLOW_TOL = 2; // px; sub-pixel rounding and scrollbar-less overflow slack
@@ -367,7 +369,18 @@ function legibilityProbeExpression() {
 		const rowRects = rows.map(tr => { const r = tr.getBoundingClientRect(); return { top: r.top, bottom: r.bottom, height: r.height }; });
 		const bodyLh = lineHeightPx(rows[0].querySelector('td:nth-child(4)') || rows[0]);
 		const slotCells = rows.map(tr => cellInfo(tr.querySelector('td:nth-child(3)')));
-		const dpsCells = rows.map(tr => cellInfo(tr.querySelector('td:nth-child(4)')));
+		// The DPS figure is the cell's first text node; set-bonus and other
+		// sub-lines are block children below it, so a Range over the whole cell
+		// would count a real sub-line as the figure wrapping. (6b) checks the
+		// sub-lines on their own.
+		const figureHeight = td => {
+			const text = [...td.childNodes].find(n => n.nodeType === 3 && n.textContent.trim());
+			if (!text) return contentHeight(td);
+			const range = document.createRange();
+			range.selectNodeContents(text);
+			return range.getBoundingClientRect().height;
+		};
+		const dpsCells = rows.map(tr => { const td = tr.querySelector('td:nth-child(4)'); return { ...cellInfo(td), contentH: figureHeight(td) }; });
 		// Every rendered cell in the sampled rows, for the clip check.
 		const allCells = rows.flatMap(tr => [...tr.querySelectorAll('td')].map(cellInfo));
 		const wrapInfo = wrap ? (() => { const s = getComputedStyle(wrap); return { overflowX: s.overflowX, clientW: wrap.clientWidth, scrollW: wrap.scrollWidth, tableScrollW: table.scrollWidth }; })() : null;
@@ -422,6 +435,8 @@ function legibilityProbeExpression() {
 				return {
 					text: s.textContent,
 					rangeW: r.width,
+					rangeH: r.height,
+					lh: lineHeightPx(s),
 					rangeRight: r.right,
 					tdClientW: td.clientWidth,
 					tdRight: td.getBoundingClientRect().right,
@@ -434,7 +449,15 @@ function legibilityProbeExpression() {
 }
 
 // Legibility assertions (6),(7),(8) at one width, on the landed rows.
-function assertLegibility(width, m) {
+// `opts.fixture` names the recorded fixture being measured (ticket 504): every
+// message gets a `[fixture <name>]` prefix, and (11) fails when it finds no
+// sub-line, because the fixture was chosen to have set rows.
+function assertLegibility(width, m, opts = {}) {
+	const results = legibilityResults(width, m, opts);
+	return opts.fixture ? results.map(r => ({ ...r, msg: `[fixture ${opts.fixture}] ${r.msg}` })) : results;
+}
+
+function legibilityResults(width, m, opts) {
 	const results = [];
 	if (m.error) {
 		results.push({ ok: false, msg: `[${width}] legibility PROBE FAILED: ${m.error}` });
@@ -453,8 +476,20 @@ function assertLegibility(width, m) {
 		results.push({
 			ok,
 			msg: ok
-				? `[${width}] one-line cells: all Slot/DPS content heights <= ${LINE_MULTIPLE_ONE_LINE}x line-height (${lh.toFixed(1)}px)`
+				? `[${width}] one-line cells: all Slot text and DPS figure heights <= ${LINE_MULTIPLE_ONE_LINE}x line-height (${lh.toFixed(1)}px)`
 				: `[${width}] ${bad.col} cell "${bad.text}" content height ${bad.contentH.toFixed(1)} > ${LINE_MULTIPLE_ONE_LINE}x line-height ${bad.lh.toFixed(1)} -- text wrapped to multiple lines`,
+		});
+	}
+
+	// (6b) Each set-bonus sub-line under a DPS figure is one line of its own.
+	{
+		const subs = m.subLines ?? [];
+		const bad = subs.find(s => s.rangeH > s.lh * LINE_MULTIPLE_ONE_LINE + 0.5);
+		results.push({
+			ok: !bad,
+			msg: bad
+				? `[${width}] (6b) set-bonus sub-line "${bad.text}" height ${bad.rangeH.toFixed(1)} > ${LINE_MULTIPLE_ONE_LINE}x line-height ${bad.lh.toFixed(1)} -- it wrapped`
+				: `[${width}] (6b) set-bonus sub-lines one line each: ${subs.length} checked`,
 		});
 	}
 
@@ -513,14 +548,17 @@ function assertLegibility(width, m) {
 	{
 		const subs = m.subLines ?? [];
 		const bad = subs.find(s => s.rangeRight > s.tdRight + CLIP_TOL || s.scrollW > s.tdClientW + CLIP_TOL);
-		const ok = !bad;
+		const vacuousFail = !bad && subs.length === 0 && !!opts.fixture;
+		const ok = !bad && !vacuousFail;
 		results.push({
 			ok,
-			msg: !ok
+			msg: bad
 				? `[${width}] (11) set-bonus sub-line "${bad.text}" runs ${(bad.rangeRight - bad.tdRight).toFixed(1)}px past its cell (text ${bad.rangeW.toFixed(1)}px, scroll ${bad.scrollW} vs cell ${bad.tdClientW})`
-				: subs.length === 0
-					? `[${width}] (11) set-bonus sub-lines: 0 present in the landed rows (vacuous)`
-					: `[${width}] (11) set-bonus sub-lines inside their cell: ${subs.length} checked`,
+				: vacuousFail
+					? `[${width}] (11) set-bonus sub-lines: 0 present in the fixture's rows -- the fixture pass exists to check them, so 0 checked is a failure`
+					: subs.length === 0
+						? `[${width}] (11) set-bonus sub-lines: 0 present in the landed rows (vacuous)`
+						: `[${width}] (11) set-bonus sub-lines inside their cell: ${subs.length} checked`,
 		});
 	}
 
@@ -737,6 +775,39 @@ async function main() {
 						for (const w of cls.warn) a11yWarnings.push(w);
 						if (cls.fail.length === 0)
 							passes.push(`a11y [post-run ${width}] no unbaselined critical/serious violations (axe ${axeRes.ms}ms)`);
+					}
+				}
+			}
+
+			// Fixture pass (ticket 504): the live ret run lands no set rows, so the
+			// set-bonus assertions had nothing to check. A recorded fixture with set
+			// rows is rendered on a fresh page and measured at every width.
+			const fixturePath = process.env.TBC_TAB_FIXTURE;
+			if (fixturePath) {
+				const name = path.basename(fixturePath, '.json');
+				let text = null;
+				try {
+					text = fs.readFileSync(fixturePath, 'utf8');
+				} catch (err) {
+					failures.push(`[fixture ${name}] could not read ${fixturePath}: ${err.message}`);
+				}
+				if (text !== null) {
+					const { send } = await attachPage(client);
+					await send('Emulation.setDeviceMetricsOverride', { width: RUN_WIDTH, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
+					const loaded = await loadFixturePage(send, server.port, text);
+					if (loaded.error) {
+						failures.push(`[fixture ${name}] load FAILED: ${loaded.error}`);
+					} else {
+						console.log(`fixture ${name}: ${loaded.rows} rows settled in ${(loaded.ms / 1000).toFixed(1)}s; measuring legibility across widths...`);
+						for (const width of WIDTHS) {
+							await send('Emulation.setDeviceMetricsOverride', { width, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
+							await sleep(200);
+							const lm = await evaluate(send, legibilityProbeExpression());
+							for (const r of assertLegibility(width, lm, { fixture: name })) {
+								if (r.ok) passes.push(r.msg);
+								else failures.push(r.msg);
+							}
+						}
 					}
 				}
 			}
