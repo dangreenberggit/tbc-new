@@ -8975,30 +8975,36 @@
 						"not_counted": {
 							"type": "string"
 						},
-						"tip_activates_included": {
+						"tip_item_stats": {
+							"type": "string"
+						},
+						"tip_item_stats_with_bonus": {
+							"type": "string"
+						},
+						"tip_item_stats_with_broken": {
+							"type": "string"
+						},
+						"tip_item_stats_add_broken": {
 							"type": "string"
 						},
 						"tip_breaks": {
 							"type": "string"
 						},
-						"tip_unmeasured": {
+						"tip_couldnt_measure": {
 							"type": "string"
 						},
-						"tip_future": {
+						"tip_bonus": {
 							"type": "string"
 						},
-						"tip_break_on_complete": {
+						"tip_set_potential": {
 							"type": "string"
 						},
-						"tip_future_break": {
-							"type": "string"
-						},
-						"tip_package_total": {
+						"tip_total": {
 							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["hover_hint", "not_counted", "tip_activates_included", "tip_breaks", "tip_unmeasured", "tip_future", "tip_break_on_complete", "tip_future_break", "tip_package_total"]
+					"required": ["hover_hint", "not_counted", "tip_item_stats", "tip_item_stats_with_bonus", "tip_item_stats_with_broken", "tip_item_stats_add_broken", "tip_breaks", "tip_couldnt_measure", "tip_bonus", "tip_set_potential", "tip_total"]
 				},
 				"cutoff": {
 					"type": "object",

@@ -40,6 +40,7 @@ import {
 	applyView,
 	rankableSetPotential,
 	setBonusSubLine,
+	setCreditUnmeasured,
 	type SetCreditView,
 	SOURCE_LABELS,
 	type ViewOptions,
@@ -365,14 +366,143 @@ function formatDelta(deltaDps: number): string {
 
 /**
  * The same signed figure as `formatDelta`, without the " DPS" unit (ticket
- * 471/#5). The set-bonus tooltip's own break/future lines already render bare
- * numbers via `.toFixed(1)`; this keeps `tip_package_total` consistent with
- * them without touching `delta_dps_value`, which the main results column
- * still uses.
+ * 471/#5), for the set-bonus popover's figure column; `delta_dps_value` keeps
+ * the unit for the main results column.
  */
 function tipDelta(deltaDps: number): string {
 	const sign = deltaDps > 0 ? '+' : '';
 	return `${sign}${deltaDps.toFixed(1)}`;
+}
+
+/** One receipt line: a label and its signed figure, undefined when not measured. */
+type SetTipLine = { label: string; value: number | undefined };
+
+/** A figure in tenths of a DPS, rounded the way `tipDelta` shows it. */
+function tenths(v: number): number {
+	return Math.round(Number(v.toFixed(1)) * 10);
+}
+
+/**
+ * Rounds `values` to tenths so they add up to exactly `target` tenths, moving
+ * the fewest lines by one tenth each (largest remainder). Rounding each line
+ * alone can leave the shown lines a tenth off their shown total.
+ */
+function spreadTenths(values: readonly number[], target: number): number[] {
+	const out = values.map(tenths);
+	const diff = target - out.reduce((a, b) => a + b, 0);
+	if (diff === 0 || out.length === 0) return out;
+	const rem = values.map((v, i) => v * 10 - out[i]);
+	const order = values.map((_, i) => i).sort((a, b) => (diff > 0 ? rem[b] - rem[a] : rem[a] - rem[b]));
+	for (let k = 0; k < Math.abs(diff); k++) out[order[k % order.length]] += Math.sign(diff);
+	return out;
+}
+
+/**
+ * One popover line. The two spans become the grid's two columns through the
+ * `display: contents` wrapper; the space between them keeps the line's text
+ * readable to screen readers and to `textContent`.
+ */
+function setTipLine(label: string, value: string, className?: string): HTMLElement {
+	const div = (
+		<div>
+			<span className="upgrades-set-bonus-tip-label">{label}</span> <span className="upgrades-set-bonus-tip-value">{value}</span>
+		</div>
+	) as HTMLElement;
+	if (className) div.classList.add(className);
+	return div;
+}
+
+/** A popover heading: one grid row across both columns. */
+function setTipHeading(text: string): HTMLElement {
+	return (<div className="upgrades-set-bonus-tip-heading">{text}</div>) as HTMLElement;
+}
+
+/**
+ * The Set potential section for a row with future bonuses, with the toggle on.
+ * - `unmeasured`: a figure the credit needs was not measured, which zeroes the
+ *   credit (ticket 477), so each such figure is named with no value.
+ * - `none`: the measured credit is 0, so there is no section and the popover
+ *   matches the off state.
+ * - `itemised`: the credit's bonuses and breaks, from `setCreditTipLines`.
+ * - `fallback`: the guard's single line, which already names Set potential.
+ */
+function setPotentialTipLines(
+	ctx: NonNullable<RankedItem['setContext']>,
+	noiseFloorDps: number,
+	credit: number,
+	t: (key: string, opts: Record<string, unknown>) => string,
+): { lines: SetTipLine[]; kind: 'unmeasured' | 'none' | 'itemised' | 'fallback' } {
+	if (setCreditUnmeasured(ctx)) {
+		const future = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
+		const lines: SetTipLine[] = [];
+		const named = new Set((ctx.singleBreaks ?? []).map(b => `${b.setId}:${b.threshold}`));
+		const nameUnmeasuredBreak = (b: { setId: number; setName: string; threshold: number; dps?: number }) => {
+			const key = `${b.setId}:${b.threshold}`;
+			if (b.dps !== undefined || named.has(key)) return;
+			named.add(key);
+			lines.push({ label: t('tip_breaks', { set: b.setName, threshold: b.threshold }), value: undefined });
+		};
+		for (const f of future) {
+			if (f.dps === undefined) {
+				lines.push({ label: t('tip_bonus', { set: ctx.setName, threshold: f.threshold, have: ctx.piecesWornBefore }), value: undefined });
+			}
+			for (const b of f.breaks ?? []) nameUnmeasuredBreak(b);
+		}
+		for (const b of ctx.commitBreaks ?? []) nameUnmeasuredBreak(b);
+		return { lines, kind: 'unmeasured' };
+	}
+	if (credit === 0) return { lines: [], kind: 'none' };
+	const credited = setCreditTipLines(ctx, noiseFloorDps, credit, t);
+	return { lines: credited.lines, kind: credited.itemised ? 'itemised' : 'fallback' };
+}
+
+/**
+ * The credit's itemised lines, for display only. It repeats the best-stop walk
+ * of `setPotentialCredit` (view.ts, rule 490, full view) so the popover can
+ * name each bonus and break the credit counted. If the lines kept do not add
+ * up to the engine's `credit`, they are replaced by one line with the credit
+ * itself (`itemised` false): the popover must never disagree with the number
+ * the row sorted on.
+ */
+function setCreditTipLines(
+	ctx: NonNullable<RankedItem['setContext']>,
+	noiseFloorDps: number,
+	credit: number,
+	t: (key: string, opts: Record<string, unknown>) => string,
+): { lines: SetTipLine[]; itemised: boolean } {
+	const future = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
+	const floored = (v: number): number => (v > noiseFloorDps ? v : 0);
+	const charged = new Set<string>();
+	const lines: SetTipLine[] = [];
+	let running = 0;
+	let best = 0;
+	let keep = 0;
+	for (const f of future) {
+		const full = floored(f.dps ?? 0);
+		if (full > 0) {
+			lines.push({ label: t('tip_bonus', { set: ctx.setName, threshold: f.threshold, have: ctx.piecesWornBefore }), value: f.dps });
+		}
+		let loss = 0;
+		for (const b of f.breaks ?? []) {
+			const key = `${b.setId}:${b.threshold}`;
+			if (charged.has(key)) continue;
+			charged.add(key);
+			const lost = floored(b.dps ?? 0);
+			if (lost > 0) {
+				lines.push({ label: t('tip_breaks', { set: b.setName, threshold: b.threshold }), value: -lost });
+			}
+			loss += lost;
+		}
+		running += full - loss;
+		if (running > best) {
+			best = running;
+			keep = lines.length;
+		}
+	}
+	const kept = lines.slice(0, keep);
+	const sum = kept.reduce((acc, l) => acc + (l.value ?? 0), 0);
+	if (Math.abs(sum - credit) > 0.005) return { lines: [{ label: t('tip_set_potential', {}), value: credit }], itemised: false };
+	return { lines: kept, itemised: true };
 }
 
 /**
@@ -3013,8 +3143,7 @@ export class UpgradesTab extends SimTab {
 			row,
 			noiseFloorDps,
 			this.setPotentialControl.checked && noiseFloorDps !== undefined,
-			SET_CREDIT,
-			deltaLabel,
+			setBonus,
 		);
 		const removedLine = this.removedItemsLine(row);
 		const cutoffArmLine = cutoff && cutoffAdmittingArm(row.deltaDps, row.deltaPct, cutoff) === 'pct'
@@ -3036,9 +3165,10 @@ export class UpgradesTab extends SimTab {
 				{cutoffArmLine}
 			</td>
 		) as HTMLTableCellElement;
-		// Wider than tippy's 350px default: at that width "to reach 4pc: breaks
-		// Thunderheart Harness 2pc: -108.6" wrapped its figure onto a line of its
-		// own (ticket 490 capture). The viewport cap keeps it on screen at 375.
+		// Wider than tippy's 350px default: the popover with "couldn't measure"
+		// beside "Malorne Harness 2pc (0/2)" is 390px wide at 1280 (ticket 494,
+		// case 4 capture), so the default would wrap its labels. The viewport cap
+		// keeps it on screen at 375, where labels wrap instead.
 		//
 		// Right of the figure when it fits, else above it (ticket 495, owner
 		// 2026-09-25). Above covered the whole row above, DPS figure included;
@@ -3182,145 +3312,96 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
-	 * The DPS cell's set-bonus presentation (tickets 431, 467): at most one short
-	 * `<small>` hover-hint line for the cell, and a tippy tooltip that itemises
-	 * every gain and every loss with a DPS figure — the NET model the owner asked
-	 * for. The inline cell figure is the row's signed total (`deltaLabel`, built
-	 * by the caller from `deltaDps + credit`); this sub-line only tells the reader
-	 * a breakdown is available.
+	 * The DPS cell's set-bonus presentation (tickets 431, 467, 494): at most one
+	 * short `<small>` hover-hint line for the cell, and a tippy tooltip laid out
+	 * as a receipt whose lines add up to the cell's figure, so the reader can see
+	 * where the number came from rather than a list of figures to reconcile.
 	 *
-	 * OFF: shows only what this one piece changes now — its own delta and any set
-	 * bonus it activates or breaks by itself (`singleBreaks`, inside `deltaDps`).
-	 * ON: adds the future bonuses committing to the set would gain
-	 * (`futureBonuses`, credited full or split) minus the breaks each future's own
-	 * path needs, printed under that future as "to reach Npc: breaks ..." (ticket
-	 * 490). Each figure is floored at the ranking's own per-spec noise floor
-	 * (tickets 331/332); an absent floor is the mid-run skeleton and suppresses
-	 * every figure. A break whose value could not be measured is named without a
-	 * number (`tip_unmeasured`). Whether the sub-line says `not_counted` comes
-	 * from `view.ts`'s `setBonusSubLine`, the same rule that zeroes the credit
-	 * (ticket 491).
+	 * The receipt follows the Set potential toggle because the cell does: with it
+	 * on, the credit's own bonuses and breaks join the sum (`credit`, the same
+	 * `rankableSetPotential` the caller added to the cell). The first "Item
+	 * stats" line balances the off-state receipt and keeps its value when the
+	 * toggle changes, so a line never changes under the reader; the on-state
+	 * rounding goes into the Set potential lines instead. A worn bonus whose
+	 * value was not measured has no figure of its own, so the first line names
+	 * it and its value includes it.
+	 *
+	 * A plain "Item stats" line equal to the Total only repeats the cell, so it
+	 * is dropped; a row left with nothing but the Total gets no popover and no
+	 * hint (ticket 517).
 	 */
 	private setBonusPresentation(
 		row: RankedItem,
 		noiseFloorDps: number | undefined,
 		on: boolean,
-		_setCredit: SetCreditView,
-		deltaLabel: string,
+		credit: number,
 	): { line: Node | null; tip: HTMLElement | null } {
 		const ctx = row.setContext;
 		if (!ctx) return { line: null, tip: null };
-
-		const floorOk = (v: number | undefined): boolean =>
-			noiseFloorDps !== undefined && v !== undefined && v > noiseFloorDps;
-
-		const singleBreaks = ctx.singleBreaks ?? [];
-		// Prospective disclosure (future bonuses / commit breaks) is shown on ANY
-		// set item that has it, regardless of the Set-potential toggle (ticket
-		// 471/#4): a row whose only disclosure is prospective must still get a
-		// hover. The toggle keeps affecting ranking/sort only (`view.ts`'s
-		// `ViewOptions.withSetPotential`), not what this tooltip discloses.
-		const futureBonuses = ctx.futureBonuses ?? [];
-		const commitBreaks = ctx.commitBreaks ?? [];
 
 		const subLine = setBonusSubLine(ctx, on);
 		if (subLine === null) return { line: null, tip: null };
 
 		const line = <small className="upgrades-set-bonus">{i18n.t(`upgrades_tab.set_bonus.${subLine}`)}</small>;
 
-		const rows: Node[] = [];
-		// Set credit mode label ("Set credit: full set/split share") intentionally
-		// not shown (ticket 471/#5): it named a ranking-internal mode the tooltip
-		// doesn't need to explain. The "This piece alone" line is also gone
-		// (ticket 475): it repeated the DPS column, so the tooltip now opens with
-		// the set-context line below.
-		if (ctx.crossesThreshold) {
-			// The threshold this piece crosses, the same expression rank.ts uses for
-			// `crossesThreshold` (ticket 479). `piecesAfterSwap` only equalled it for
-			// the usual one-piece step. The `??` cannot fire while crossesThreshold
-			// is true; it keeps the value a number.
-			const crossed = nextMeasurableThreshold(ctx.setId, ctx.piecesWornBefore) ?? ctx.piecesAfterSwap;
-			rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_activates_included', { threshold: crossed })}</div>);
-		}
-		for (const b of singleBreaks) {
-			rows.push(
-				<div>
-					{b.dps !== undefined
-						? i18n.t('upgrades_tab.set_bonus.tip_breaks', {
-								set: b.setName,
-								threshold: b.threshold,
-								dps: b.dps.toFixed(1),
-							})
-						: i18n.t('upgrades_tab.set_bonus.tip_unmeasured', {
-								set: b.setName,
-								threshold: b.threshold,
-							})}
-				</div>,
-			);
-		}
-		// A break shared by two futures' paths is charged once (view.ts), so it is
-		// printed once, under the lowest future that needs it (ticket 490).
-		const renderedBreaks = new Set<string>();
-		for (const f of futureBonuses) {
-			// `have` is the pieces worn now, before this swap: the owner wants the
-			// count to show "how much progress a player has with their current
-			// gear" (ticket 479, 2026-09-24), so a player wearing one piece reads
-			// "1/4" whichever piece they hover.
-			if (f.dps !== undefined && floorOk(f.dps)) {
-				rows.push(
-					<div>
-						{i18n.t('upgrades_tab.set_bonus.tip_future', {
-							threshold: f.threshold,
-							have: ctx.piecesWornBefore,
-							dps: f.dps.toFixed(1),
-						})}
-					</div>,
-				);
-			}
-			// A future at or below the floor has no value line, but its path's
-			// breaks still print: a higher future's path goes through them.
-			for (const b of f.breaks ?? []) {
-				const key = `${b.setId}:${b.threshold}`;
-				if (renderedBreaks.has(key)) continue;
-				if (b.dps === undefined) {
-					renderedBreaks.add(key);
-					rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_unmeasured', { set: b.setName, threshold: b.threshold })}</div>);
-				} else if (floorOk(b.dps)) {
-					renderedBreaks.add(key);
-					rows.push(
-						<div>
-							{i18n.t('upgrades_tab.set_bonus.tip_future_break', {
-								threshold: f.threshold,
-								set: b.setName,
-								broken: b.threshold,
-								dps: b.dps.toFixed(1),
-							})}
-						</div>,
-					);
-				}
-			}
-		}
-		// Measured top-package breaks are no longer printed: the credit does not
-		// charge them (ticket 490). An unmeasured one still zeroes the credit
-		// (ticket 477), so it is named.
-		for (const b of commitBreaks) {
-			const key = `${b.setId}:${b.threshold}`;
-			if (b.dps !== undefined || renderedBreaks.has(key)) continue;
-			renderedBreaks.add(key);
-			rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_unmeasured', { set: b.setName, threshold: b.threshold })}</div>);
-		}
-		// "Full set end state" is informative regardless of the toggle (ticket
-		// 471/#4), so its gate is dropped along with the others above.
-		if (ctx.commitPackageDeltaDps !== undefined) {
-			rows.push(<div>{i18n.t('upgrades_tab.set_bonus.tip_package_total', { dps: tipDelta(ctx.commitPackageDeltaDps) })}</div>);
-		}
-		// Full/split credit TOTALS and the "(ranked)" marker intentionally not
-		// shown (ticket 471/#5): `setCredit` and `rankableSetPotential` (see
-		// `resultRow`) still compute them for ranking; this tooltip just no
-		// longer renders them.
-		void deltaLabel;
+		const t = (key: string, opts: Record<string, unknown>): string => String(i18n.t(`upgrades_tab.set_bonus.${key}`, opts));
+		const notMeasured = i18n.t('upgrades_tab.set_bonus.tip_couldnt_measure');
+		const singleBreaks = ctx.singleBreaks ?? [];
+		const measuredBreaks = singleBreaks.filter(b => b.dps !== undefined);
+		const total = row.deltaDps + credit;
 
-		const tip = (<div className="upgrades-set-bonus-tip">{rows}</div>) as HTMLElement;
+		// The threshold this piece crosses, the same expression rank.ts uses for
+		// `crossesThreshold` (ticket 479). The `??` cannot fire while
+		// crossesThreshold is true; it keeps the value a number.
+		let firstLabel: string | null = ctx.crossesThreshold
+			? t('tip_item_stats_with_bonus', {
+					set: ctx.setName,
+					threshold: nextMeasurableThreshold(ctx.setId, ctx.piecesWornBefore) ?? ctx.piecesAfterSwap,
+				})
+			: null;
+		for (const b of singleBreaks) {
+			if (b.dps !== undefined) continue;
+			firstLabel =
+				firstLabel === null
+					? t('tip_item_stats_with_broken', { set: b.setName, threshold: b.threshold })
+					: t('tip_item_stats_add_broken', { label: firstLabel, set: b.setName, threshold: b.threshold });
+		}
+		const breakTenths = measuredBreaks.map(b => tenths(-b.dps!));
+		const firstTenths = tenths(row.deltaDps) - breakTenths.reduce((a, b) => a + b, 0);
+
+		const lines: HTMLElement[] = [];
+		// A folded label is kept even when it equals the Total: it is the only
+		// place that bonus is named.
+		if (firstLabel !== null || firstTenths !== tenths(total)) {
+			lines.push(setTipLine(firstLabel ?? t('tip_item_stats', {}), tipDelta(firstTenths / 10)));
+		}
+		measuredBreaks.forEach((b, i) => lines.push(setTipLine(t('tip_breaks', { set: b.setName, threshold: b.threshold }), tipDelta(breakTenths[i] / 10))));
+
+		const potential =
+			on && noiseFloorDps !== undefined && (ctx.futureBonuses ?? []).length > 0
+				? setPotentialTipLines(ctx, noiseFloorDps, credit, t)
+				: { lines: [], kind: 'none' as const };
+		// The off-state lines add up to the off-state cell, so the Set potential
+		// lines must add up to the difference between the two cell figures.
+		const target = tenths(total) - tenths(row.deltaDps);
+		// Headed with the toggle's name, so the lines it adds read as its doing.
+		// The guard's single fallback line already carries that name.
+		if (potential.kind === 'unmeasured' || potential.kind === 'itemised') lines.push(setTipHeading(t('tip_set_potential', {})));
+		if (potential.kind === 'unmeasured') {
+			for (const l of potential.lines) lines.push(setTipLine(l.label, notMeasured));
+		} else if (potential.kind === 'fallback') {
+			lines.push(setTipLine(potential.lines[0].label, tipDelta(target / 10)));
+		} else if (potential.kind === 'itemised') {
+			const shown = spreadTenths(
+				potential.lines.map(l => l.value ?? 0),
+				target,
+			);
+			potential.lines.forEach((l, i) => lines.push(setTipLine(l.label, tipDelta(shown[i] / 10))));
+		}
+		if (lines.length === 0) return { line: null, tip: null };
+		lines.push(setTipLine(t('tip_total', {}), tipDelta(total), 'upgrades-set-bonus-tip-total'));
+
+		const tip = (<div className="upgrades-set-bonus-tip">{lines}</div>) as HTMLElement;
 		return { line, tip };
 	}
 

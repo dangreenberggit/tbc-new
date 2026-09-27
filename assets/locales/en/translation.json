@@ -903,14 +903,16 @@
 		},
 		"set_bonus": {
 			"hover_hint": "set detail",
-			"not_counted": "uncounted",
-			"tip_activates_included": "activates {{threshold}}pc (included in this number)",
-			"tip_breaks": "breaks {{set}} {{threshold}}pc: -{{dps}}",
-			"tip_unmeasured": "breaks {{set}} {{threshold}}pc: value not measured",
-			"tip_future": "{{threshold}}pc ({{have}}/{{threshold}}): +{{dps}}",
-			"tip_break_on_complete": "breaks {{set}} {{threshold}}pc: -{{dps}}",
-			"tip_future_break": "to reach {{threshold}}pc: breaks {{set}} {{broken}}pc: -{{dps}}",
-			"tip_package_total": "Full set end state: {{dps}}"
+			"not_counted": "set detail",
+			"tip_item_stats": "Item stats",
+			"tip_item_stats_with_bonus": "Item stats + {{set}} {{threshold}}pc",
+			"tip_item_stats_with_broken": "Item stats − {{set}} {{threshold}}pc",
+			"tip_item_stats_add_broken": "{{label}} − {{set}} {{threshold}}pc",
+			"tip_breaks": "Breaks {{set}} {{threshold}}pc",
+			"tip_couldnt_measure": "couldn't measure",
+			"tip_bonus": "{{set}} {{threshold}}pc ({{have}}/{{threshold}})",
+			"tip_set_potential": "Set potential",
+			"tip_total": "Total"
 		},
 		"cutoff": {
 			"pct_arm": "by % rule",

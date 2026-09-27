@@ -451,11 +451,58 @@
 	}
 }
 
-// The DPS cell's set-bonus breakdown tooltip (tickets 431, 467, 475): each
-// gain and loss, and both totals. Left-aligned so the stacked figures read as
-// a list rather than tippy's centred default.
+// The DPS cell's set-bonus popover (tickets 431, 467, 494): a receipt, label
+// left and figure right. Each line's div is `display: contents` so its two
+// spans share one grid, and every figure lines up in a single column however
+// long its label is.
 .upgrades-set-bonus-tip {
+	display: grid;
+	grid-template-columns: auto auto;
+	column-gap: 1.5rem;
+	row-gap: 0.15rem;
 	text-align: left;
+
+	> div:not(.upgrades-set-bonus-tip-heading) {
+		display: contents;
+	}
+}
+
+// A long label may wrap on a narrow screen; its figure never does, and sits
+// on the label's last line.
+.upgrades-set-bonus-tip-label {
+	white-space: normal;
+}
+
+.upgrades-set-bonus-tip-value {
+	align-self: end;
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+.upgrades-set-bonus-tip-total > span {
+	font-weight: 600;
+	border-top: 1px solid rgba(255, 255, 255, 0.35);
+	padding-top: 0.2rem;
+}
+
+// Carries the label's border across the column gap, so the rule reads as one
+// line over the whole Total row rather than two segments.
+.upgrades-set-bonus-tip-total > .upgrades-set-bonus-tip-label {
+	margin-right: -1.5rem;
+	padding-right: 1.5rem;
+}
+
+// Headings are plain divs, so each takes a whole grid row instead of joining
+// the label/figure columns.
+.upgrades-set-bonus-tip-heading {
+	grid-column: 1 / -1;
+	margin-top: 0.35rem;
+	font-size: 0.8em;
+	font-weight: 600;
+	color: var(--bs-gray-500);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
 }
 
 // Containment for the row's new home (ticket 312, F11). `.tab-panel-left` is
