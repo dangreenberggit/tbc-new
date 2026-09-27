@@ -1529,7 +1529,7 @@ export async function rankUpgrades(
           field: `${s.setName} ${s.threshold}pc completion package`,
           detail:
             `the ${s.setName} ${s.threshold}pc completion package could not ` +
-            `be measured: the sim failed — ${s.reason}`,
+            `be measured: ${s.reason}`,
         })),
       ],
       items: ranked,
@@ -1774,6 +1774,10 @@ async function buildSetBonuses(
         }
       } catch (err) {
         if (!(err instanceof MetaRepairError)) throw err;
+        console.warn(
+          `[upgrades] ${label} ${threshold}pc bonus package not measured: gem repair failed`,
+          err
+        );
         packageSimSkips.push({
           setId,
           setName: label,
@@ -1803,11 +1807,17 @@ async function buildSetBonuses(
         try {
           packageObs = await deps.sim.run(packageRequest, runOpts);
         } catch (err) {
+          console.warn(
+            `[upgrades] ${label} ${threshold}pc bonus package not measured: the sim failed`,
+            err
+          );
           packageSimSkips.push({
             setId,
             setName: label,
             threshold,
-            reason: err instanceof Error ? err.message : String(err),
+            reason: `the sim failed — ${
+              err instanceof Error ? err.message : String(err)
+            }`,
           });
           results.push({
             setId,
@@ -1876,6 +1886,7 @@ async function buildSetBonuses(
         const pairB2 =
           pair !== undefined
             ? await measurePairTwoPiece(
+                `${label} ${threshold}pc`,
                 deps,
                 pair,
                 equipment,
@@ -2136,6 +2147,7 @@ function substitutedPackageBreaks(
  * leaves its `bonusDpsNet` unset.
  */
 async function measurePairTwoPiece(
+  bonusLabel: string,
   deps: Deps,
   pair: readonly PackagePiece[],
   equipment: readonly SimItemSpec[],
@@ -2158,6 +2170,10 @@ async function measurePairTwoPiece(
     }
   } catch (err) {
     if (!(err instanceof MetaRepairError)) throw err;
+    console.warn(
+      `[upgrades] ${bonusLabel} net value not measured: gem repair failed for the worn-1 pair that measures the 2pc`,
+      err
+    );
     return undefined;
   }
   const request = composeFor(pairEquipment);
@@ -2165,7 +2181,11 @@ async function measurePairTwoPiece(
   if (!obs) {
     try {
       obs = await deps.sim.run(request, runOpts);
-    } catch {
+    } catch (err) {
+      console.warn(
+        `[upgrades] ${bonusLabel} net value not measured: the sim failed for the worn-1 pair that measures the 2pc`,
+        err
+      );
       return undefined;
     }
     await cacheSimResult(deps, request, simVersion, runOpts, obs);
@@ -2383,6 +2403,10 @@ async function measureBrokenSetValueFor(
     }
   } catch (err) {
     if (!(err instanceof MetaRepairError)) throw err;
+    console.warn(
+      `[upgrades] ${target.setName} ${t}pc break value not measured: gem repair failed on the vacate swap`,
+      err
+    );
     return failure("repair-failed");
   }
 
@@ -2391,7 +2415,11 @@ async function measureBrokenSetValueFor(
   if (!obs) {
     try {
       obs = await deps.sim.run(req, runOpts);
-    } catch {
+    } catch (err) {
+      console.warn(
+        `[upgrades] ${target.setName} ${t}pc break value not measured: the vacate sim failed`,
+        err
+      );
       return failure("sim-failed");
     }
     await cacheSimResult(deps, req, simVersion, runOpts, obs);
