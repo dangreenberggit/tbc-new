@@ -155,7 +155,6 @@ type RunState =
  */
 class ViewToggle {
 	private value = false;
-	private enabled = true;
 	private readonly emitter = new TypedEvent<void>();
 	private readonly picker: BooleanPicker<ViewToggle>;
 	private readonly tip?: TippyInstance;
@@ -178,11 +177,6 @@ class ViewToggle {
 			label: config.label,
 			extraCssClasses: config.extraCssClasses,
 			inline: true,
-			// `update()` re-reads this to add/remove `.disabled` and the input's
-			// `disabled` attribute (input.tsx:105-115); `setEnabled` flips the flag
-			// then calls `update()` so a run with no rankable set bonus can show the
-			// toggle disabled rather than hiding it (ticket 441).
-			enableWhen: () => this.enabled,
 			changedEvent: () => this.emitter,
 			getValue: () => this.value,
 			setValue: (_eventID, _obj, newValue) => {
@@ -194,8 +188,7 @@ class ViewToggle {
 		// `<label>` (ticket 420): `Input` attaches `labelTooltip` to the label
 		// alone (input.tsx:91-93), so hovering the checkbox showed nothing. The
 		// whole checkbox+label wrapper is one hover region here instead. The
-		// instance handle is kept (F4) so `setEnabled` can swap the content to a
-		// "why disabled" reason and restore the base text on re-enable.
+		// instance handle is kept so `setText` can append the phase qualifier.
 		this.baseTooltip = config.labelTooltip;
 		if (config.labelTooltip) {
 			// `tippy` with a single element reference returns one `Instance`; the
@@ -225,24 +218,6 @@ class ViewToggle {
 		setControlVisible(this.picker.rootElem, visible);
 	}
 
-	/**
-	 * Enable or disable the toggle in place (ticket 441). Disabling keeps the
-	 * control visible — the native `Input.update()` adds `.disabled` and the
-	 * input's `disabled` attribute (input.tsx:105-115) — and, when a `reason` is
-	 * given, swaps the hover tooltip to it so the reader learns why. Disabling
-	 * also forces the value off through `update()`'s value sync, so a stale "on"
-	 * from a previous run cannot silently hide rows. Re-enabling restores the
-	 * base tooltip text.
-	 */
-	setEnabled(enabled: boolean, reason?: string): void {
-		this.enabled = enabled;
-		if (!enabled) this.value = false;
-		this.picker.update();
-		if (this.tip) {
-			this.tip.setContent(!enabled && reason ? reason : this.tooltipContent());
-		}
-	}
-
 	/** Base tooltip text, with the qualifier (if any) appended as its own sentence. */
 	private tooltipContent(): string {
 		const base = this.baseTooltip ?? '';
@@ -258,7 +233,7 @@ class ViewToggle {
 	 */
 	setText(text: string): void {
 		this.qualifierText = text;
-		if (this.tip && this.enabled) this.tip.setContent(this.tooltipContent());
+		if (this.tip) this.tip.setContent(this.tooltipContent());
 	}
 }
 
@@ -2186,19 +2161,10 @@ export class UpgradesTab extends SimTab {
 			return;
 		}
 		const items = this.state.ranking.items;
-		// Same per-spec floor the ranking gate uses, from this done ranking's own
-		// frozen cutoff (in scope and non-null under the guard above) — tickets
-		// 331, 332.
-		const noiseFloorDps = setBonusNoiseFloorDps(this.state.ranking.cutoff);
-		// The Set-potential toggle acts on set-bonus sub-lines, so it is meaningless
-		// when no row has a rankable set bonus. Rather than vanish after a run
-		// (ticket 441 — the owner read the disappearance as a bug), it stays visible
-		// and goes disabled with a tooltip saying why. `setEnabled(false)` also
-		// forces the value off, so a stale "on" cannot hide rows on the next results.
-		const hasRankable = items.some(i => hasRankableSetPotential(i, noiseFloorDps));
-		const unavailableReason = i18n.t('upgrades_tab.view.set_potential_unavailable');
+		// Set potential stays enabled even when no row gets anything from it: the
+		// owner chose that over greying it out with a reason, which could be false
+		// and hid rows' "couldn't measure" lines (ticket 501, option A).
 		this.setPotentialControl.setVisible(true);
-		this.setPotentialControl.setEnabled(hasRankable, unavailableReason);
 		this.bisOnlyControl.setVisible(items.some(isBisTagged));
 	}
 
@@ -3640,21 +3606,6 @@ const SLOT_LABELS: Record<SimOrderName, string> = {
  */
 function effectiveSlot(row: Pick<RankedItem, 'slot' | 'slotChoice'>): SimOrderName {
 	return row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0];
-}
-
-/**
- * Whether a row has set-bonus potential the view would actually rank on.
- *
- * A row is "rankable" when its full-credit ON potential is non-zero at the
- * given floor — the same `rankableSetPotential` the sort key and cell use
- * (ticket 467 made it a named export, so this no longer hand-mirrors a private
- * predicate). A negative net counts: a row where committing to the set is a net
- * loss is exactly a row the toggle changes, so the toggle must be offered. The
- * floor is per-spec (`setBonusNoiseFloorDps` of the ranking's frozen cutoff,
- * tickets 331/332); the caller derives it and passes it in.
- */
-function hasRankableSetPotential(item: Ranking['items'][number], noiseFloorDps: number): boolean {
-	return rankableSetPotential(item, noiseFloorDps, 'full') !== 0;
 }
 
 /** Slots with at least one ranked candidate, in SIM_ORDER (stable, matches the page's own gear ordering). */

@@ -8919,9 +8919,6 @@
 						"set_potential_tooltip": {
 							"type": "string"
 						},
-						"set_potential_unavailable": {
-							"type": "string"
-						},
 						"only_bis": {
 							"type": "string"
 						},
@@ -8933,7 +8930,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "set_potential", "set_potential_tooltip", "set_potential_unavailable", "only_bis", "only_bis_tooltip", "only_bis_qualifier"]
+					"required": ["title", "set_potential", "set_potential_tooltip", "only_bis", "only_bis_tooltip", "only_bis_qualifier"]
 				},
 				"export": {
 					"type": "object",
