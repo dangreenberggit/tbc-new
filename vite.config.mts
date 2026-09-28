@@ -11,6 +11,7 @@ import i18nextLoader from 'vite-plugin-i18next-loader';
 import stylelint from 'vite-plugin-stylelint';
 
 import { specPages } from './tools/vite/spec_pages.mjs';
+import { tabFixtures } from './tools/vite/tab_fixtures.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -147,6 +148,7 @@ export default defineConfig(({ command, mode }) => {
 				},
 			]),
 			serveExternalAssets(),
+			tabFixtures(path.resolve(__dirname, '../../data/tab-fixtures')),
 			checker({
 				root: BASE_PATH,
 				typescript: { root: __dirname, tsconfigPath: 'tsconfig.json' },
