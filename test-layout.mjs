@@ -19,9 +19,9 @@
 // (settings card, view-controls host, sub-tab strip) in its constructor, so no
 // WASM run is needed to see the layout the SCSS promises.
 //
-// Accessibility (visual-a11y-reviewer stage): after each pre-run probe and each
-// post-run legibility probe, axe-core runs on #upgrades-tab and a keyboard focus
-// walk runs pre-run. A violation with impact critical/serious and a WCAG tag,
+// Accessibility (visual-a11y-reviewer stage): after each pre-run probe, and once
+// on the recorded fixture's results at RUN_WIDTH, axe-core runs on #upgrades-tab;
+// a keyboard focus walk runs pre-run. A violation with impact critical/serious and a WCAG tag,
 // not in the baseline (TBC_A11Y_BASELINE), fails the gate; moderate/minor,
 // best-practice-only and baselined entries print as WARN. The verdict line
 // carries a11yFailed / a11yWarned so check_layout_gate.py's contract is
@@ -38,7 +38,6 @@ import {
 	freePort,
 	findChromium,
 	run,
-	WASM_CANDIDATES,
 	build,
 	startServer,
 	launchChrome,
@@ -46,10 +45,7 @@ import {
 	attachPage,
 	evaluate,
 	RUN_WIDTH,
-	RUN_DEADLINE_MS,
 	MIN_ROWS,
-	startRunExpression,
-	rowCountExpression,
 	axeRun,
 	focusWalk,
 	a11yClassify,
@@ -293,14 +289,13 @@ function assertAll(width, m) {
 }
 
 // ---------------------------------------------------------------------------
-// The run phase (ticket 329).
+// The post-run legibility assertions (ticket 329).
 //
 // The five assertions above measure the pre-run shell. The legibility
 // assertions the owner asked for target the results table, which does not
-// exist until a run lands rows. So this phase drives a real headless WASM run
-// -- the gate's own Chromium runs the sim with no Go backend (probed feasible:
-// 5 rows in ~42s) -- then measures the landed cells. RUN_WIDTH / RUN_DEADLINE_MS
-// / MIN_ROWS come from the harness.
+// exist until a run lands rows. Since ticket 520 they measure a recorded
+// fixture's rows; the gate runs no sim. RUN_WIDTH and MIN_ROWS come from the
+// harness.
 // ---------------------------------------------------------------------------
 
 const LINE_MULTIPLE_ONE_LINE = 1.5; // content height <= 1.5x line-height == one line
@@ -630,9 +625,9 @@ function legibilityResults(width, m, opts) {
 // DPS cell assertions (12)-(15) (tickets 495, 499, round 2c).
 //
 // Measured over every visible results row, not the first five: the rows these
-// check (wide figures, set rows with a tooltip) are rare and scattered. On the
-// live ret run there may be none; in the fixture pass each assertion must
-// check at least one, or it has proved nothing.
+// check (wide figures, set rows with a tooltip) are rare and scattered. In the
+// fixture pass each assertion must check at least one, or it has proved
+// nothing.
 // ---------------------------------------------------------------------------
 
 const DPS_GAP_MIN = 8; // px, Slot text to the DPS figure or the set-bonus line (ticket 495)
@@ -936,91 +931,49 @@ async function main() {
 				);
 		}
 
-		// Run phase: one real WASM run at RUN_WIDTH, then re-emulate each width
-		// on the same page and measure the landed cells for legibility.
-		{
-			const { send } = await attachPage(client);
-			await send('Emulation.setDeviceMetricsOverride', { width: RUN_WIDTH, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
-			await send('Page.navigate', { url: `http://127.0.0.1:${server.port}${PAGE_PATH}` });
-			await sleep(300);
-
-			const started = await evaluate(send, startRunExpression());
-			if (started && started.error) {
-				failures.push(`[run] PROBE FAILED: ${started.error}`);
-			} else {
-				console.log('run started; polling for rows...');
-				const deadline = Date.now() + RUN_DEADLINE_MS;
-				const t0 = Date.now();
-				let rows = 0;
-				while (Date.now() < deadline) {
-					rows = await evaluate(send, rowCountExpression);
-					if (rows >= MIN_ROWS) break;
-					await sleep(1000);
-				}
-				const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
-				if (rows < MIN_ROWS) {
-					failures.push(`[run] only ${rows} rows after ${elapsed}s (deadline ${RUN_DEADLINE_MS / 1000}s) -- expected >= ${MIN_ROWS}`);
+		// Post-run pass (tickets 504, 520): the gate runs no sim. A recorded
+		// fixture renders a finished ranking, set rows included, in seconds and is
+		// measured at every width. Without TBC_TAB_FIXTURE the post-run checks are
+		// skipped.
+		const fixturePath = process.env.TBC_TAB_FIXTURE;
+		if (fixturePath) {
+			const name = path.basename(fixturePath, '.json');
+			let text = null;
+			try {
+				text = fs.readFileSync(fixturePath, 'utf8');
+			} catch (err) {
+				failures.push(`[fixture ${name}] could not read ${fixturePath}: ${err.message}`);
+			}
+			if (text !== null) {
+				const { send } = await attachPage(client);
+				await send('Emulation.setDeviceMetricsOverride', { width: RUN_WIDTH, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
+				const loaded = await loadFixturePage(send, server.port, text);
+				if (loaded.error) {
+					failures.push(`[fixture ${name}] load FAILED: ${loaded.error}`);
 				} else {
-					console.log(`run produced ${rows} rows in ${elapsed}s; measuring legibility across widths...`);
+					console.log(`fixture ${name}: ${loaded.rows} rows settled in ${(loaded.ms / 1000).toFixed(1)}s; measuring legibility across widths...`);
+
+					// a11y: axe once, at RUN_WIDTH, on the settled results (no focus
+					// walk post-run -- the pre-run walk covers operability). One width:
+					// on this full table axe took about 4 s per width (ticket 520).
+					const axeRes = await collectAxe(send, 'post-run', RUN_WIDTH);
+					const cls = a11yClassify(axeRes.violations, null, baseline, { state: 'post-run', width: RUN_WIDTH });
+					for (const i of cls.matched) baselineMatched.add(i);
+					for (const f of cls.fail) a11yFailures.push(f);
+					for (const w of cls.warn) a11yWarnings.push(w);
+					if (cls.fail.length === 0) passes.push(`a11y [post-run ${RUN_WIDTH}] no unbaselined critical/serious violations (axe ${axeRes.ms}ms)`);
+
 					for (const width of WIDTHS) {
 						await send('Emulation.setDeviceMetricsOverride', { width, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
 						await sleep(200);
 						const lm = await evaluate(send, legibilityProbeExpression());
-						const lresults = assertLegibility(width, lm);
-						for (const r of lresults) {
+						for (const r of assertLegibility(width, lm, { fixture: name })) {
 							if (r.ok) passes.push(r.msg);
 							else failures.push(r.msg);
 						}
-						for (const r of assertDpsCell(width, await evaluate(send, dpsCellProbeExpression()))) {
+						for (const r of assertDpsCell(width, await evaluate(send, dpsCellProbeExpression()), { fixture: name })) {
 							if (r.ok) passes.push(r.msg);
 							else failures.push(r.msg);
-						}
-
-						// a11y: axe only on the post-run results at this width (no
-						// focus walk post-run -- the pre-run walk covers operability).
-						const axeRes = await collectAxe(send, 'post-run', width);
-						const cls = a11yClassify(axeRes.violations, null, baseline, { state: 'post-run', width });
-						for (const i of cls.matched) baselineMatched.add(i);
-						for (const f of cls.fail) a11yFailures.push(f);
-						for (const w of cls.warn) a11yWarnings.push(w);
-						if (cls.fail.length === 0)
-							passes.push(`a11y [post-run ${width}] no unbaselined critical/serious violations (axe ${axeRes.ms}ms)`);
-					}
-				}
-			}
-
-			// Fixture pass (ticket 504): the live ret run lands no set rows, so the
-			// set-bonus assertions had nothing to check. A recorded fixture with set
-			// rows is rendered on a fresh page and measured at every width.
-			const fixturePath = process.env.TBC_TAB_FIXTURE;
-			if (fixturePath) {
-				const name = path.basename(fixturePath, '.json');
-				let text = null;
-				try {
-					text = fs.readFileSync(fixturePath, 'utf8');
-				} catch (err) {
-					failures.push(`[fixture ${name}] could not read ${fixturePath}: ${err.message}`);
-				}
-				if (text !== null) {
-					const { send } = await attachPage(client);
-					await send('Emulation.setDeviceMetricsOverride', { width: RUN_WIDTH, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
-					const loaded = await loadFixturePage(send, server.port, text);
-					if (loaded.error) {
-						failures.push(`[fixture ${name}] load FAILED: ${loaded.error}`);
-					} else {
-						console.log(`fixture ${name}: ${loaded.rows} rows settled in ${(loaded.ms / 1000).toFixed(1)}s; measuring legibility across widths...`);
-						for (const width of WIDTHS) {
-							await send('Emulation.setDeviceMetricsOverride', { width, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
-							await sleep(200);
-							const lm = await evaluate(send, legibilityProbeExpression());
-							for (const r of assertLegibility(width, lm, { fixture: name })) {
-								if (r.ok) passes.push(r.msg);
-								else failures.push(r.msg);
-							}
-							for (const r of assertDpsCell(width, await evaluate(send, dpsCellProbeExpression()), { fixture: name })) {
-								if (r.ok) passes.push(r.msg);
-								else failures.push(r.msg);
-							}
 						}
 					}
 				}
@@ -1039,7 +992,7 @@ async function main() {
 
 	// Stale-baseline warnings: entries that never fired this run. An entry
 	// flagged `mayNotFire` covers debt this run's capture may not show (the
-	// rare-quality item name: the live ret run can hold no rare item), so its
+	// rare-quality item name: the recorded fixture can hold no rare item), so its
 	// silence proves nothing and the "remove it" advice would be wrong.
 	for (let i = 0; i < baseline.length; i++) {
 		if (!baselineMatched.has(i) && baseline[i].mayNotFire !== true) {

@@ -317,13 +317,12 @@ export async function evaluate(send, expression) {
 // ---------------------------------------------------------------------------
 // The run phase constants and expressions (ticket 329).
 //
-// The five geometry assertions measure the pre-run shell. The legibility
-// assertions target the results table, which does not exist until a run lands
-// rows. So the run phase drives a real headless WASM run -- the harness's own
-// Chromium runs the sim with no Go backend (probed feasible: 5 rows in ~42s) --
-// then measures the landed cells. The sim runs ONCE, on one page at 653px; the
-// widths are re-emulated on that same page (rows survive a device-metrics
-// change without reload -- verified), so the ~40s cost is paid a single time.
+// A real headless WASM run -- the harness's own Chromium runs the sim with no
+// Go backend (probed feasible: 5 rows in ~42s). test-review.mjs uses these for
+// a post-run entry that names no fixture; the layout gate runs no sim since
+// ticket 520 and measures a recorded fixture instead. Widths are re-emulated
+// on one page (rows survive a device-metrics change without reload --
+// verified), so a run's cost is paid a single time.
 // ---------------------------------------------------------------------------
 
 export const RUN_WIDTH = 653; // narrow enough to reproduce the sub-md legibility defect
@@ -352,7 +351,7 @@ export const rowCountExpression = `document.querySelectorAll('.upgrades-results-
 //
 // A fixture is a finished Ranking recorded from a real run in the main repo
 // (data/tab-fixtures/). Loading one takes seconds and needs no sim, so the gate
-// can measure set-bonus rows that its live ret run never lands. The page's
+// measures its post-run checks on one. The page's
 // loader exists only in builds made with TBC_TAB_FIXTURES=1, which build()
 // above sets.
 // ---------------------------------------------------------------------------
