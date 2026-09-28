@@ -147,13 +147,22 @@ export async function build() {
 // http-server: serve dist/ (the fork's already-present dependency).
 // ---------------------------------------------------------------------------
 
+// Run http-server's entry script under this node, with no shell and no npx.
+// Through `npx` with `shell: true`, the tracked process on Windows is a
+// cmd.exe whose descendants (npx's node, another cmd.exe, http-server's node)
+// hold the port; proc.kill() terminates only that cmd.exe, so every run left
+// the server running. Here the tracked process is the server itself.
+const HTTP_SERVER_BIN = path.join(__dirname, 'node_modules', 'http-server', 'bin', 'http-server');
+
 export async function startServer() {
 	const port = await freePort();
-	const p = spawn('npx', ['http-server', OUT_ROOT, '-p', String(port), '-a', '127.0.0.1', '--silent', '-c-1'], {
+	const p = spawn(process.execPath, [HTTP_SERVER_BIN, OUT_ROOT, '-p', String(port), '-a', '127.0.0.1', '--silent', '-c-1'], {
 		cwd: __dirname,
-		shell: true,
 		stdio: 'ignore',
 	});
+	// Both callers call process.exit() on paths that never reach their
+	// finally blocks (a setup failure after this returns, main().catch).
+	process.on('exit', () => p.kill());
 	// Wait until it answers.
 	const deadline = Date.now() + 15000;
 	while (Date.now() < deadline) {
