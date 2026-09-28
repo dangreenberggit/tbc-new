@@ -1148,7 +1148,7 @@ export class UpgradesTab extends SimTab {
 					 */}
 					<div ref={exportFlavourPickerRef} className="upgrades-export-flavour" />
 					<p ref={exportFlavourCaptionRef} className="upgrades-export-flavour-caption" />
-					<textarea ref={exportAreaRef} className="upgrades-export-area form-control" rows={6} />
+					<textarea ref={exportAreaRef} className="upgrades-export-area form-control" rows={6} aria-label={i18n.t('upgrades_tab.export.title')} />
 					<div className="upgrades-export-actions">
 						<span ref={exportCountRef} className="upgrades-export-count" />
 						{/*
