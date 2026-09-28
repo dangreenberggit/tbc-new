@@ -102,6 +102,7 @@ import {
 } from "./seams/sim-runner.js";
 import type { Store } from "./seams/store.js";
 import { setBreakNote } from "./set-bonus.js";
+import { measureSameGearBonus } from "./set-less-copies.js";
 import {
   type BrokenSetBonus,
   brokenSetBonuses,
@@ -325,6 +326,9 @@ export type SetContext = {
     threshold: SetThreshold;
     piecesNeeded: number;
     dps?: number;
+    /** The entry's `sameGearDps` and `sameGearSe`, copied (ticket 511). */
+    sameGearDps?: number;
+    sameGearSe?: number;
     breaks?: Array<{
       setId: number;
       setName: string;
@@ -396,6 +400,16 @@ export type SetBonusValue = {
    */
   bonusDpsNet?: number;
   se?: number;
+  /**
+   * The bonus measured on its own package's gear: the package sim minus the
+   * same gear with enough of this set's pieces made set-less to leave
+   * `threshold − 1` (ticket 511, `measureSameGearBonus`). The noise gate for a
+   * set step reads it; `bonusDps` is left as it was. Present only under
+   * `deps.measureBrokenSetValue` and for a measured package; absent when a sim
+   * failed. `sameGearSe` is the combined standard error of the two sims.
+   */
+  sameGearDps?: number;
+  sameGearSe?: number;
   unmeasured?: UnmeasuredReason;
   breaks?: BrokenSetBonus[];
   selfConfound?: SelfSetConfound;
@@ -1702,6 +1716,25 @@ async function buildSetBonuses(
     return undefined;
   };
 
+  // The package sims' own store-cached run. The gate's "on" request is the
+  // package request, which the store already holds, so only its set-less
+  // request is a new sim (ticket 511).
+  const cachedSampleRun =
+    (what: string) =>
+    async (request: RaidSimRequest): Promise<DpsSample> => {
+      let obs = await readCachedSim(deps, request, simVersion, runOpts);
+      if (!obs) {
+        try {
+          obs = await deps.sim.run(request, runOpts);
+        } catch (err) {
+          console.warn(`[upgrades] ${what} not measured: the sim failed`, err);
+          throw err;
+        }
+        await cacheSimResult(deps, request, simVersion, runOpts, obs);
+      }
+      return { dps: obs.dps, se: obs.stdev / Math.sqrt(runOpts.iterations) };
+    };
+
   const results: SetBonusValue[] = [];
   for (const setId of setIdsWithCandidates) {
     const piecesWorn = wornCounts.get(setId) ?? 0;
@@ -1913,6 +1946,16 @@ async function buildSetBonuses(
           selfConfound = { threshold: 2, dps: pairB2.dps };
         }
       }
+      const sameGear = measureBrokenSetValue
+        ? await measureSameGearBonus(
+            cachedSampleRun(`${label} ${threshold}pc same-gear bonus`),
+            packageRequest,
+            packageEquipment.flatMap((spec, i) =>
+              spec.id && getItem(spec.id)?.setId === setId ? [i] : []
+            ),
+            threshold - 1
+          )
+        : undefined;
       results.push({
         setId,
         setName: label,
@@ -1922,6 +1965,9 @@ async function buildSetBonuses(
         packageDeltaDps: synergy.packageDeltaDps,
         bonusDps: synergy.bonusDps,
         se: synergy.se,
+        ...(sameGear
+          ? { sameGearDps: sameGear.dps, sameGearSe: sameGear.se }
+          : {}),
         ...(breaks.length > 0 ? { breaks } : {}),
         ...(selfConfound ? { selfConfound } : {}),
         ...(packageRepairSwaps.length > 0
@@ -2656,6 +2702,9 @@ function applySetContext(
         threshold: t,
         piecesNeeded: t - piecesWornBefore,
         ...(net !== undefined ? { dps: net } : {}),
+        ...(bonus?.sameGearDps !== undefined && bonus.sameGearSe !== undefined
+          ? { sameGearDps: bonus.sameGearDps, sameGearSe: bonus.sameGearSe }
+          : {}),
         ...(pathBreaks.length > 0 ? { breaks: pathBreaks.map(withDps) } : {}),
         ...(pieces ? { pieces } : {}),
       };
