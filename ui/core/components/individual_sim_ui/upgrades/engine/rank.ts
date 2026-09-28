@@ -300,6 +300,13 @@ export type RankedItem = {
  * already a measurement target: a path is a subset of the substituted top
  * package, because packages nest, and a subset of vacated slots loses a
  * subset of thresholds.
+ *
+ * A future's `pieces` are the other members of that same path, in path order,
+ * each with its own stats as `dps`: its single delta, plus the worn bonuses it
+ * breaks alone, minus the 2pc it crosses alone at worn 1. The ON credit counts
+ * them because committing to the bonus means wearing those pieces too, gain or
+ * loss (ticket 502, ADR-0034). `pieces` is present, possibly empty, exactly
+ * when the future has a path; `dps` is absent when an input was unmeasured.
  */
 export type SetContext = {
   setId: number;
@@ -324,6 +331,7 @@ export type SetContext = {
       threshold: SetThreshold;
       dps?: number;
     }>;
+    pieces?: Array<{ itemId: number; name: string; dps?: number }>;
   }>;
   commitBreaks?: Array<{
     setId: number;
@@ -2499,6 +2507,7 @@ function applySetContext(
   for (const v of brokenSetValues) bBy.set(`${v.setId}:${v.threshold}`, v.dps);
   const dpsForBreak = (brk: BrokenSetBonus): number | undefined =>
     bBy.get(`${brk.setId}:${brk.threshold}`);
+  const rankedById = new Map(ranked.map((r) => [r.itemId, r]));
 
   for (const item of ranked) {
     const setId = getItem(item.itemId)?.setId;
@@ -2573,29 +2582,73 @@ function applySetContext(
         ...(dps !== undefined ? { dps } : {}),
       };
     };
+    // A path piece's own stats (ticket 502): its single from the individual
+    // deltas, read here before `replicateTopItems` rewrites the top rows'
+    // `deltaDps`, so a row inside a measured package sums to that package's
+    // delta. The worn bonuses it breaks alone are added back because the path
+    // charges each break once; the 2pc it crosses alone at worn 1 is taken
+    // out because the row's own delta already holds it. Undefined when any
+    // input was unmeasured.
+    const ownStats = (p: PackagePiece): number | undefined => {
+      const single = individualDeltasByItemId.get(p.itemId)?.deltaDps;
+      if (single === undefined) return undefined;
+      let own = single;
+      for (const brk of brokenSetBonuses(equipment, [p], setId)) {
+        const dps = dpsForBreak(brk);
+        if (dps === undefined) return undefined;
+        own += dps;
+      }
+      const pieceAfterSwap = rankedById.get(p.itemId)?.owned
+        ? piecesWornBefore
+        : piecesWornBefore + 1;
+      if (
+        thresholdBeforeSwap !== null &&
+        pieceAfterSwap >= thresholdBeforeSwap
+      ) {
+        const crossed = bonusesForSet.find(
+          (b) => b.selfConfound?.threshold === thresholdBeforeSwap
+        )?.selfConfound?.dps;
+        if (crossed === undefined) return undefined;
+        own -= crossed;
+      }
+      return own;
+    };
     const futureBonuses = T.map((t) => {
       const bonus = bonusesForSet.find((b) => b.threshold === t);
       const net = bonus?.bonusDpsNet;
-      // The worn bonuses this future's own path breaks beyond the single's
-      // own break (ticket 490). Keys a lower future already lists stay here
-      // too; the view charges each key once.
-      const pathBreaks =
+      const path =
         bonus &&
         bonus.unmeasured === undefined &&
         bonus.packageItemIds.length > 0 &&
         slotIndex !== undefined
-          ? brokenSetBonuses(
-              equipment,
-              pathToThreshold(
-                item.itemId,
-                slotIndex,
-                bonus,
-                candidateSlotIndex,
-                individualDeltasByItemId
-              ),
-              setId
-            ).filter((brk) => !singleKeys.has(`${brk.setId}:${brk.threshold}`))
-          : [];
+          ? pathToThreshold(
+              item.itemId,
+              slotIndex,
+              bonus,
+              candidateSlotIndex,
+              individualDeltasByItemId
+            )
+          : undefined;
+      // The worn bonuses this future's own path breaks beyond the single's
+      // own break (ticket 490). Keys a lower future already lists stay here
+      // too; the view charges each key once.
+      const pathBreaks = path
+        ? brokenSetBonuses(equipment, path, setId).filter(
+            (brk) => !singleKeys.has(`${brk.setId}:${brk.threshold}`)
+          )
+        : [];
+      // The path's other members (ticket 502). Pieces a lower future already
+      // lists stay here too; the view counts each piece once.
+      const pieces = path
+        ?.filter((p) => p.itemId !== item.itemId)
+        .map((p) => {
+          const dps = ownStats(p);
+          return {
+            itemId: p.itemId,
+            name: rankedById.get(p.itemId)?.name ?? String(p.itemId),
+            ...(dps !== undefined ? { dps } : {}),
+          };
+        });
       // Pieces the player still needs from their CURRENT worn count to activate
       // this threshold, counting this candidate as one of them (ticket 467 case
       // 2: at worn 1 the 4pc needs 3 more).
@@ -2604,6 +2657,7 @@ function applySetContext(
         piecesNeeded: t - piecesWornBefore,
         ...(net !== undefined ? { dps: net } : {}),
         ...(pathBreaks.length > 0 ? { breaks: pathBreaks.map(withDps) } : {}),
+        ...(pieces ? { pieces } : {}),
       };
     });
     if (futureBonuses.length > 0) setContext.futureBonuses = futureBonuses;
