@@ -42,6 +42,7 @@ import {
 	setBonusSubLine,
 	setCreditUnmeasured,
 	type SetCreditView,
+	setPotentialTerms,
 	SOURCE_LABELS,
 	type ViewOptions,
 	type ViewResult,
@@ -398,15 +399,16 @@ function setTipHeading(text: string): HTMLElement {
  *   credit (ticket 477), so each such figure is named with no value.
  * - `none`: the measured credit is 0, so there is no section and the popover
  *   matches the off state.
- * - `itemised`: the credit's bonuses and breaks, from `setCreditTipLines`.
- * - `fallback`: the guard's single line, which already names Set potential.
+ * - `itemised`: the credit's bonuses, other pieces' stats and breaks, step by
+ *   step, from `setPotentialTerms` (engine/view.ts). They are the terms the
+ *   credit was summed from, so they always add up to it (ticket 502).
  */
 function setPotentialTipLines(
 	ctx: NonNullable<RankedItem['setContext']>,
 	noiseFloorDps: number,
 	credit: number,
 	t: (key: string, opts: Record<string, unknown>) => string,
-): { lines: SetTipLine[]; kind: 'unmeasured' | 'none' | 'itemised' | 'fallback' } {
+): { lines: SetTipLine[]; kind: 'unmeasured' | 'none' | 'itemised' } {
 	if (setCreditUnmeasured(ctx)) {
 		const future = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
 		const lines: SetTipLine[] = [];
@@ -427,57 +429,17 @@ function setPotentialTipLines(
 		return { lines, kind: 'unmeasured' };
 	}
 	if (credit === 0) return { lines: [], kind: 'none' };
-	const credited = setCreditTipLines(ctx, noiseFloorDps, credit, t);
-	return { lines: credited.lines, kind: credited.itemised ? 'itemised' : 'fallback' };
-}
-
-/**
- * The credit's itemised lines, for display only. It repeats the best-stop walk
- * of `setPotentialCredit` (view.ts, rule 490, full view) so the popover can
- * name each bonus and break the credit counted. If the lines kept do not add
- * up to the engine's `credit`, they are replaced by one line with the credit
- * itself (`itemised` false): the popover must never disagree with the number
- * the row sorted on.
- */
-function setCreditTipLines(
-	ctx: NonNullable<RankedItem['setContext']>,
-	noiseFloorDps: number,
-	credit: number,
-	t: (key: string, opts: Record<string, unknown>) => string,
-): { lines: SetTipLine[]; itemised: boolean } {
-	const future = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
-	const floored = (v: number): number => (v > noiseFloorDps ? v : 0);
-	const charged = new Set<string>();
-	const lines: SetTipLine[] = [];
-	let running = 0;
-	let best = 0;
-	let keep = 0;
-	for (const f of future) {
-		const full = floored(f.dps ?? 0);
-		if (full > 0) {
-			lines.push({ label: t('tip_bonus', { set: ctx.setName, threshold: f.threshold, have: ctx.piecesWornBefore }), value: f.dps });
+	const lines = setPotentialTerms(ctx, noiseFloorDps).terms.map((term): SetTipLine => {
+		switch (term.kind) {
+			case 'bonus':
+				return { label: t('tip_bonus', { set: term.setName, threshold: term.threshold, have: term.have }), value: term.dps };
+			case 'piece':
+				return { label: t('tip_piece_stats', { name: term.name }), value: term.dps };
+			case 'break':
+				return { label: t('tip_breaks', { set: term.setName, threshold: term.threshold }), value: term.dps };
 		}
-		let loss = 0;
-		for (const b of f.breaks ?? []) {
-			const key = `${b.setId}:${b.threshold}`;
-			if (charged.has(key)) continue;
-			charged.add(key);
-			const lost = floored(b.dps ?? 0);
-			if (lost > 0) {
-				lines.push({ label: t('tip_breaks', { set: b.setName, threshold: b.threshold }), value: -lost });
-			}
-			loss += lost;
-		}
-		running += full - loss;
-		if (running > best) {
-			best = running;
-			keep = lines.length;
-		}
-	}
-	const kept = lines.slice(0, keep);
-	const sum = kept.reduce((acc, l) => acc + (l.value ?? 0), 0);
-	if (Math.abs(sum - credit) > 0.005) return { lines: [{ label: t('tip_set_potential', {}), value: credit }], itemised: false };
-	return { lines: kept, itemised: true };
+	});
+	return { lines, kind: 'itemised' };
 }
 
 /**
@@ -3284,8 +3246,9 @@ export class UpgradesTab extends SimTab {
 	 * where the number came from rather than a list of figures to reconcile.
 	 *
 	 * The receipt follows the Set potential toggle because the cell does: with it
-	 * on, the credit's own bonuses and breaks join the sum (`credit`, the same
-	 * `rankableSetPotential` the caller added to the cell). The first "Item
+	 * on, the credit's own bonuses, other pieces' stats and breaks join the sum
+	 * (`credit`, the same `rankableSetPotential` the caller added to the cell).
+	 * The first "Item
 	 * stats" line balances the off-state receipt and keeps its value when the
 	 * toggle changes, so a line never changes under the reader; the on-state
 	 * rounding goes into the Set potential lines instead. A worn bonus whose
@@ -3351,12 +3314,9 @@ export class UpgradesTab extends SimTab {
 		// lines must add up to the difference between the two cell figures.
 		const target = tenths(total) - tenths(row.deltaDps);
 		// Headed with the toggle's name, so the lines it adds read as its doing.
-		// The guard's single fallback line already carries that name.
 		if (potential.kind === 'unmeasured' || potential.kind === 'itemised') lines.push(setTipHeading(t('tip_set_potential', {})));
 		if (potential.kind === 'unmeasured') {
 			for (const l of potential.lines) lines.push(setTipLine(l.label, notMeasured));
-		} else if (potential.kind === 'fallback') {
-			lines.push(setTipLine(potential.lines[0].label, tipDelta(target / 10)));
 		} else if (potential.kind === 'itemised') {
 			const shown = spreadTenths(
 				potential.lines.map(l => l.value ?? 0),

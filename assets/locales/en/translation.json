@@ -910,6 +910,7 @@
 			"tip_breaks": "Breaks {{set}} {{threshold}}pc",
 			"tip_couldnt_measure": "couldn't measure",
 			"tip_bonus": "{{set}} {{threshold}}pc ({{have}}/{{threshold}})",
+			"tip_piece_stats": "{{name}} stats",
 			"tip_set_potential": "Set potential",
 			"tip_total": "Total"
 		},

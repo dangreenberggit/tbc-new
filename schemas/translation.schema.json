@@ -8993,6 +8993,9 @@
 						"tip_bonus": {
 							"type": "string"
 						},
+						"tip_piece_stats": {
+							"type": "string"
+						},
 						"tip_set_potential": {
 							"type": "string"
 						},
@@ -9001,7 +9004,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["hover_hint", "not_counted", "tip_item_stats", "tip_item_stats_with_bonus", "tip_item_stats_with_broken", "tip_item_stats_add_broken", "tip_breaks", "tip_couldnt_measure", "tip_bonus", "tip_set_potential", "tip_total"]
+					"required": ["hover_hint", "not_counted", "tip_item_stats", "tip_item_stats_with_bonus", "tip_item_stats_with_broken", "tip_item_stats_add_broken", "tip_breaks", "tip_couldnt_measure", "tip_bonus", "tip_piece_stats", "tip_set_potential", "tip_total"]
 				},
 				"cutoff": {
 					"type": "object",

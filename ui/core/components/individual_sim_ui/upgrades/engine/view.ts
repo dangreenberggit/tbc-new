@@ -3,8 +3,9 @@
  * seam, no I/O, no sim, and nothing here reaches `contentHash`.
  *
  * PORTED from packages/core/src/view.ts. The Set-potential credit (ticket 467)
- * reads the corrected `setContext.futureBonuses` and the breaks on each
- * future's own path (ticket 490) the engine attaches — a true net (gains minus
+ * reads the corrected `setContext.futureBonuses`, and the breaks (ticket 490)
+ * and the other pieces' own stats (ticket 502) on each future's own path, that
+ * the engine attaches — a true net (gains minus
  * the measured broken-bonus losses) — rather
  * than the old single nearest-threshold prospective bonus. The ticket-90
  * confound guard is gone: `bonusDpsNet` is already corrected for that inflation,
@@ -25,9 +26,11 @@ export type SetCreditView = "full" | "split";
 /**
  * How far the ON credit assumes a player commits (ticket 490).
  * "best-stop": to the threshold where committing pays best on full values,
- * or not at all. "full-path": to every credited threshold, charging every
- * break on the way. Which a player does is a preference, not a game fact;
- * best-stop is the owner's choice (confirmed 2026-09-24, ticket 490).
+ * or not at all; only a threshold whose bonus clears the noise floor can be
+ * the stop (ticket 502). "full-path": to every credited threshold, counting
+ * every piece and charging every break on the way. Which a player does is a
+ * preference, not a game fact; best-stop is the owner's choice (confirmed
+ * 2026-09-24, ticket 490).
  */
 export type SetCreditRule = "best-stop" | "full-path";
 export const RULE_490: SetCreditRule = "best-stop";
@@ -35,9 +38,29 @@ export const RULE_490: SetCreditRule = "best-stop";
 type SetContextLike = Partial<
   Pick<
     SetContext,
-    "futureBonuses" | "commitBreaks" | "singleBreaks" | "crossesThreshold"
+    | "futureBonuses"
+    | "commitBreaks"
+    | "singleBreaks"
+    | "crossesThreshold"
+    | "setName"
+    | "piecesWornBefore"
   >
 >;
+
+/**
+ * One itemised line of the ON credit, in the order the walk counts it. `dps`
+ * is the signed contribution: a break is negative.
+ */
+export type SetPotentialTerm =
+  | {
+      kind: "bonus";
+      setName: string;
+      threshold: number;
+      have: number;
+      dps: number;
+    }
+  | { kind: "piece"; itemId: number; name: string; dps: number }
+  | { kind: "break"; setName: string; threshold: number; dps: number };
 
 export type ViewOptions = {
   pinBis?: boolean;
@@ -184,10 +207,11 @@ function belowCutoffUnderView(
 
 /**
  * True when a row has future bonuses but some figure its ON credit depends on
- * was not measured: a future's own value, a break on a future's path, or a
- * commit break of the top package (ticket 477). The credit is then 0 and the
- * tab says "not counted" (ticket 491). False without futures: nothing is
- * credited, so nothing is withheld.
+ * was not measured: a future's own value, a break or a piece on a future's
+ * path (ticket 502), or a commit break of the top package (ticket 477). The
+ * credit is then 0 and the tab says "not counted" (ticket 491). False without
+ * futures: nothing is credited, so nothing is withheld. A future with no
+ * `pieces` field has no path, so it has no piece to be missing.
  */
 export function setCreditUnmeasured(ctx: SetContextLike | undefined): boolean {
   const future = ctx?.futureBonuses ?? [];
@@ -195,7 +219,9 @@ export function setCreditUnmeasured(ctx: SetContextLike | undefined): boolean {
   return (
     future.some(
       (f) =>
-        f.dps === undefined || (f.breaks ?? []).some((b) => b.dps === undefined)
+        f.dps === undefined ||
+        (f.breaks ?? []).some((b) => b.dps === undefined) ||
+        (f.pieces ?? []).some((p) => p.dps === undefined)
     ) || (ctx?.commitBreaks ?? []).some((b) => b.dps === undefined)
   );
 }
@@ -220,69 +246,150 @@ export function setBonusSubLine(
   return on && setCreditUnmeasured(ctx) ? "not_counted" : "hover_hint";
 }
 
+type CreditWalk = {
+  credit: number;
+  split: number;
+  stopThreshold: number;
+  terms: SetPotentialTerm[];
+};
+
 /**
- * The credit arithmetic, once every figure is known to be measured (ticket
- * 490). Futures are walked in threshold order. Each is worth its value minus
- * the breaks its own path needs that a lower future has not already charged.
+ * The credit arithmetic, once every figure is known to be measured (tickets
+ * 490 and 502). Futures are walked in threshold order. Each step adds its
+ * floored bonus, the own stats of each path piece no lower step counted, and
+ * minus each path break no lower step charged. A break is charged at its
+ * measured value, not floored: each piece's own stats add that same value
+ * back, so the two cancel and a row inside a measured package sums to the
+ * package's delta (ADR-0034).
  *
- * best-stop: keep the running total on FULL values and stop at the threshold
- * where it is largest, or not at all when no total is positive. The split view
- * follows that same stopping point, each future at its per-piece share, and is
- * not clamped: the stopping point is the player's, not the display's, so a
- * split figure along it may be negative.
+ * best-stop: keep the running total and stop at the threshold where it is
+ * largest, or not at all when no total is positive. Only a step whose bonus
+ * clears the floor can be the stop; otherwise a row would be credited with
+ * another item's stats and no bonus. A step below the floor still counts its
+ * pieces and breaks, because a higher step's path holds them.
  *
- * full-path: every future above the floor, minus every break on their paths.
+ * full-path: every step whose bonus clears the floor, and the credit is the
+ * total after the last one. A skipped step's pieces and breaks are counted at
+ * the next step, whose path holds them.
+ *
+ * The split view keeps its per-step formula, each bonus at its per-piece
+ * share minus floored breaks and no pieces, taken at the full view's stop. It
+ * is not clamped: the stopping point is the player's, not the display's.
  *
  * The top package's `commitBreaks` are not charged: a row whose own path to
  * each future keeps the other set's bonus should not pay for a slot only the
  * top package vacates (a Malorne chest row charged the Thunderheart 2pc).
  */
+function walkCredit(
+  ctx: SetContextLike | undefined,
+  noiseFloorDps: number,
+  rule: SetCreditRule
+): CreditWalk {
+  const future = [...(ctx?.futureBonuses ?? [])].sort(
+    (a, b) => a.threshold - b.threshold
+  );
+  const floored = (v: number): number => (v > noiseFloorDps ? v : 0);
+  const counted = new Set<number>();
+  const charged = new Set<string>();
+  const terms: SetPotentialTerm[] = [];
+  let running = 0;
+  let splitRunning = 0;
+  let best: Omit<CreditWalk, "terms"> & { keep: number } = {
+    credit: 0,
+    split: 0,
+    stopThreshold: 0,
+    keep: 0,
+  };
+  for (const f of future) {
+    const bonus = floored(f.dps!);
+    if (rule === "full-path" && bonus === 0) continue;
+    const add = (term: SetPotentialTerm) => {
+      terms.push(term);
+      running += term.dps;
+    };
+    if (bonus > 0) {
+      add({
+        kind: "bonus",
+        setName: ctx?.setName ?? "",
+        threshold: f.threshold,
+        have: ctx?.piecesWornBefore ?? 0,
+        dps: bonus,
+      });
+    }
+    for (const p of f.pieces ?? []) {
+      if (counted.has(p.itemId)) continue;
+      counted.add(p.itemId);
+      add({ kind: "piece", itemId: p.itemId, name: p.name, dps: p.dps! });
+    }
+    let splitLoss = 0;
+    for (const brk of f.breaks ?? []) {
+      const key = `${brk.setId}:${brk.threshold}`;
+      if (charged.has(key)) continue;
+      charged.add(key);
+      splitLoss += floored(brk.dps!);
+      if (brk.dps! === 0) continue;
+      add({
+        kind: "break",
+        setName: brk.setName,
+        threshold: brk.threshold,
+        dps: -brk.dps!,
+      });
+    }
+    splitRunning += floored(f.dps! / f.threshold) - splitLoss;
+    if (rule === "full-path" || (bonus > 0 && running > best.credit)) {
+      best = {
+        credit: running,
+        split: splitRunning,
+        stopThreshold: f.threshold,
+        keep: terms.length,
+      };
+    }
+  }
+  return {
+    credit: best.credit,
+    split: best.split,
+    stopThreshold: best.stopThreshold,
+    terms: terms.slice(0, best.keep),
+  };
+}
+
+/**
+ * The full-view credit and its itemised terms up to the stop, for the tab's
+ * popover (ticket 502): each counted step's bonus (none when it floors to 0),
+ * then the pieces it adds, then the breaks it charges. The terms add up to
+ * `credit`. Call it only when `setCreditUnmeasured` is false.
+ */
+export function setPotentialTerms(
+  ctx: SetContextLike | undefined,
+  noiseFloorDps: number,
+  rule: SetCreditRule = RULE_490
+): { credit: number; stopThreshold: number; terms: SetPotentialTerm[] } {
+  const { credit, stopThreshold, terms } = walkCredit(ctx, noiseFloorDps, rule);
+  return { credit, stopThreshold, terms };
+}
+
+/** The credit of `walkCredit` in the full or the split view. */
 export function setPotentialCredit(
   ctx: SetContextLike | undefined,
   noiseFloorDps: number,
   setCredit: SetCreditView = "full",
   rule: SetCreditRule = RULE_490
 ): number {
-  const future = [...(ctx?.futureBonuses ?? [])].sort(
-    (a, b) => a.threshold - b.threshold
-  );
-  const floored = (v: number): number => (v > noiseFloorDps ? v : 0);
-  const charged = new Set<string>();
-  let fullTotal = 0;
-  let splitTotal = 0;
-  let bestFull = 0;
-  let bestSplit = 0;
-  for (const f of future) {
-    const full = floored(f.dps!);
-    const split = floored(f.dps! / f.threshold);
-    if (rule === "full-path" && full === 0) continue;
-    let loss = 0;
-    for (const brk of f.breaks ?? []) {
-      const key = `${brk.setId}:${brk.threshold}`;
-      if (charged.has(key)) continue;
-      charged.add(key);
-      loss += floored(brk.dps!);
-    }
-    fullTotal += full - loss;
-    splitTotal += split - loss;
-    if (rule === "full-path" || fullTotal > bestFull) {
-      bestFull = fullTotal;
-      bestSplit = splitTotal;
-    }
-  }
-  return setCredit === "split" ? bestSplit : bestFull;
+  const walk = walkCredit(ctx, noiseFloorDps, rule);
+  return setCredit === "split" ? walk.split : walk.credit;
 }
 
 /**
  * The ON-view set-potential credit for a row (`setPotentialCredit`), in the
  * full view or the split view (each future divided by its FULL piece count).
  *
- * Each component is floored at the per-spec noise floor (`setBonusNoiseFloorDps`
+ * Each bonus is floored at the per-spec noise floor (`setBonusNoiseFloorDps`
  * of the ranking's own `Cutoff`, ≈4.81 ret / ≈5.09 feral): a figure at or below
  * it is noise around a true zero and contributes nothing, so no row sorts on a
  * bonus the display hides (tickets 331, 332). The floor arrives as a parameter,
  * so this stays ignorant of the `Cutoff` type; the comparison is strict (`>`),
- * matching the display gate.
+ * matching the display gate. Path pieces and path breaks are not floored
+ * (ticket 502; see `walkCredit`).
  *
  * Fallback (ticket 467 N5): if any figure the credit depends on lacks a
  * measured `dps` (`setCreditUnmeasured`) — the no-neutral-candidates case where
