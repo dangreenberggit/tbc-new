@@ -1037,9 +1037,12 @@ async function main() {
 		}
 	}
 
-	// Stale-baseline warnings: entries that never fired this run.
+	// Stale-baseline warnings: entries that never fired this run. An entry
+	// flagged `mayNotFire` covers debt this run's capture may not show (the
+	// rare-quality item name: the live ret run can hold no rare item), so its
+	// silence proves nothing and the "remove it" advice would be wrong.
 	for (let i = 0; i < baseline.length; i++) {
-		if (!baselineMatched.has(i)) {
+		if (!baselineMatched.has(i) && baseline[i].mayNotFire !== true) {
 			const e = baseline[i];
 			a11yWarnings.push(`WARN a11y stale-baseline ${e.ruleId} ${e.selector} (never fired this run -- remove it)`);
 		}
