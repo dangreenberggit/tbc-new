@@ -463,7 +463,7 @@ async function main() {
 	} finally {
 		try {
 			client.close();
-			chrome.proc.kill();
+			chrome.kill();
 			server.proc.kill();
 		} catch {
 			// best-effort teardown

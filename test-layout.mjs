@@ -1028,7 +1028,7 @@ async function main() {
 		}
 	} finally {
 		client.close();
-		chrome.proc.kill();
+		chrome.kill();
 		server.proc.kill();
 		try {
 			await fsp.rm(chrome.userDataDir, { recursive: true, force: true });

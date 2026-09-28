@@ -11,7 +11,7 @@
 // added to package.json beyond axe-core. The scout's probe proved ~40 lines of
 // session plumbing is enough; that plumbing is `cdp()` below.
 
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { createServer } from 'node:net';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
@@ -200,6 +200,20 @@ export async function launchChrome() {
 		],
 		{ stdio: 'ignore' },
 	);
+	// On Windows proc.kill() ends only the browser process. Its renderer and
+	// crashpad handler normally follow, but a renderer stuck in a page loop
+	// does not: a script that exited with its page stuck left both running.
+	// taskkill /T ends the tree while the browser is still its root, so this
+	// has to run instead of proc.kill(), not after it. Callers call kill() in
+	// their cleanup; the exit hook covers the process.exit() paths that skip it.
+	let killed = false;
+	const kill = () => {
+		if (killed || proc.exitCode !== null || proc.signalCode !== null) return;
+		killed = true;
+		if (process.platform === 'win32') spawnSync('taskkill', ['/PID', String(proc.pid), '/T', '/F'], { stdio: 'ignore' });
+		else proc.kill();
+	};
+	process.on('exit', kill);
 	// Poll /json/version for the browser-level WebSocket URL.
 	const deadline = Date.now() + 20000;
 	let wsUrl;
@@ -216,39 +230,59 @@ export async function launchChrome() {
 		await sleep(150);
 	}
 	if (!wsUrl) {
-		proc.kill();
+		kill();
 		throw new Error('Chromium CDP endpoint did not come up');
 	}
-	return { proc, port, wsUrl, userDataDir };
+	return { proc, kill, port, wsUrl, userDataDir };
 }
 
 // A minimal CDP client: send(method, params) -> result, with event waiting.
-export function cdp(wsUrl) {
+//
+// When the socket closes or errors, every pending call rejects and later calls
+// reject at once. Without that, a call in flight when the socket dropped never
+// settled, and its caller waited forever (a recording hung ~47 min this way
+// when Windows entered Modern Standby). `callTimeoutMs`, when given, also
+// rejects any call with no answer in that time.
+export function cdp(wsUrl, { callTimeoutMs } = {}) {
 	const ws = new WebSocket(wsUrl);
 	let nextId = 1;
 	const pending = new Map();
 	const listeners = new Set();
+	let closedError = null;
+	const settle = (id, fn, value) => {
+		const entry = pending.get(id);
+		if (!entry) return;
+		pending.delete(id);
+		clearTimeout(entry.timer);
+		entry[fn](value);
+	};
+	const closeAll = why => {
+		if (!closedError) closedError = new Error(why);
+		for (const id of [...pending.keys()]) settle(id, 'reject', closedError);
+	};
 	ws.addEventListener('message', ev => {
 		const msg = JSON.parse(ev.data);
 		if (msg.id != null && pending.has(msg.id)) {
-			const { resolve, reject } = pending.get(msg.id);
-			pending.delete(msg.id);
-			if (msg.error) reject(new Error(`${msg.error.message} (${JSON.stringify(msg.params ?? {})})`));
-			else resolve(msg.result);
+			if (msg.error) settle(msg.id, 'reject', new Error(`${msg.error.message} (${JSON.stringify(msg.params ?? {})})`));
+			else settle(msg.id, 'resolve', msg.result);
 		} else if (msg.method) {
 			for (const l of listeners) l(msg);
 		}
 	});
+	ws.addEventListener('close', ev => closeAll(`CDP WebSocket closed (code ${ev.code})`));
+	ws.addEventListener('error', () => closeAll('CDP WebSocket error'));
 	const ready = new Promise((resolve, reject) => {
 		ws.addEventListener('open', resolve, { once: true });
 		ws.addEventListener('error', () => reject(new Error('CDP WebSocket error')), { once: true });
 	});
 	function send(method, params = {}, sessionId) {
+		if (closedError) return Promise.reject(closedError);
 		const id = nextId++;
 		const payload = { id, method, params };
 		if (sessionId) payload.sessionId = sessionId;
 		return new Promise((resolve, reject) => {
-			pending.set(id, { resolve, reject });
+			const timer = callTimeoutMs ? setTimeout(() => settle(id, 'reject', new Error(`CDP ${method} got no answer in ${callTimeoutMs / 1000}s`)), callTimeoutMs) : undefined;
+			pending.set(id, { resolve, reject, timer });
 			ws.send(JSON.stringify(payload));
 		});
 	}
