@@ -1,12 +1,27 @@
 /**
- * Set-less copies of set pieces, and the same-gear value of one set bonus
- * (ticket 511, ADR-0035).
+ * Copies of set pieces, and the same-gear value of one set bonus (tickets 511
+ * and 512, ADR-0035).
  *
  * FORK-ONLY, no packages/core ancestor. No request field turns off one set
- * bonus, so a bonus is measured by simming the same gear twice: once as it is,
- * and once with enough of the set's pieces swapped for copies that belong to
- * no set. The copies keep every stat, so the difference is the bonus alone on
- * that gear, with no replacement item's stats mixed in.
+ * bonus, so a bonus is measured by simming the same gear twice, with some of
+ * the set's pieces sent as copies: in one request the copies keep their set,
+ * in the other they belong to no set. The copies keep every stat, so the
+ * difference is the bonus alone on that gear, with no replacement item's
+ * stats mixed in.
+ *
+ * Why the changed pieces are copies in both requests: a copy has a new item
+ * id, and the Go sim reads equipped item ids in several places. It applies
+ * item effects by id (`itemEffects[eq.ID]`, sim/core/item_effects.go:75-80),
+ * turns on the PvP glove mods only for listed hands ids (`RegisterPvPGloveMod`,
+ * sim/core/item_sets.go:274-291), and checks ids in `HasTrinketEquipped` and
+ * `HasRingEquipped` (sim/core/character.go:528-535), in weapon checks
+ * (character.go:631), in item swaps (sim/core/item_swaps.go:312-317) and in
+ * class code (for example sim/paladin/item_librams.go, sim/hunter/hunter.go).
+ * A piece that is real in one request and a copy in the other would carry
+ * such an effect into the measured value. Sent as a copy in both, it lacks
+ * the effect in both, so the effect cancels, and no list of which pieces have
+ * such effects is needed. The value is then the bonus on gear without those
+ * pieces' id-keyed effects (a second-order difference; hypothesis, untested).
  */
 
 import type { RaidSimRequest } from "./seams/sim-runner.js";
@@ -26,6 +41,16 @@ import type { DpsSample } from "./set-value.js";
  */
 export const SET_LESS_ID_OFFSET = 1_000_000;
 
+/**
+ * Added to an item id to name that item's set-kept copy: the real row with only
+ * its id changed. Go matches a piece to its set by set id and name, never by
+ * item id (sim/core/item_sets.go:119-131), so the copy still counts toward its
+ * set. It needs its own offset because a set-kept and a set-less copy of one
+ * item are different rows, and the process-wide item map keeps the first row
+ * per id (database.go:54). 2,000,000 + the largest item id stays inside int32.
+ */
+export const SET_KEPT_ID_OFFSET = 2_000_000;
+
 type MutableItem = { id?: number } & Record<string, unknown>;
 type MutablePlayer = {
   equipment?: { items?: MutableItem[] };
@@ -42,46 +67,64 @@ function firstPlayer(request: Record<string, unknown>): MutablePlayer {
 }
 
 /**
- * A copy of `request` in which the item in each listed equipment slot is its
- * set-less copy. When the player has a database, it gains one row per copy:
- * the real item's row with `setName` "" and `setId` 0, so its stats and
- * `scalingOptions` carry over. A request with no database (the CLI, which is
- * built with the full item database) gets the id swap only.
+ * A copy of `request` in which the item in each `setLess` slot is its set-less
+ * copy and the item in each `setKept` slot is its set-kept copy. When the
+ * player has a database, it gains one row per copy, made from the real item's
+ * row: a set-less row has `setName` "" and `setId` 0, a set-kept row changes
+ * only `id`. Stats and `scalingOptions` carry over in both. A request with no
+ * database (the CLI, which is built with the full item database) gets the id
+ * swap only.
  */
-export function applySetLessCopies(
+export function applyCopies(
   request: RaidSimRequest,
-  slots: readonly number[]
+  copies: { setLess?: readonly number[]; setKept?: readonly number[] }
 ): RaidSimRequest {
   const out = structuredClone(request) as Record<string, unknown>;
   const player = firstPlayer(out);
   const items = player.equipment?.items ?? [];
   const rows = player.database ? (player.database.items ??= []) : undefined;
-  for (const slot of slots) {
-    const item = items[slot];
-    const id = item?.id;
-    if (!item || !id || id >= SET_LESS_ID_OFFSET) {
-      throw new Error(`slot ${slot} holds no item that can be made set-less`);
+  const kinds = [
+    { slots: copies.setLess ?? [], offset: SET_LESS_ID_OFFSET, setLess: true },
+    { slots: copies.setKept ?? [], offset: SET_KEPT_ID_OFFSET, setLess: false },
+  ];
+  for (const { slots, offset, setLess } of kinds) {
+    for (const slot of slots) {
+      const item = items[slot];
+      const id = item?.id;
+      if (!item || !id || id >= SET_LESS_ID_OFFSET) {
+        throw new Error(`slot ${slot} holds no item that can be copied`);
+      }
+      const copyId = offset + id;
+      item.id = copyId;
+      if (!rows || rows.some((r) => r.id === copyId)) continue;
+      const row = rows.find((r) => r.id === id);
+      if (!row) throw new Error(`the request database has no row for item ${id}`);
+      rows.push({
+        ...structuredClone(row),
+        id: copyId,
+        ...(setLess ? { setName: "", setId: 0 } : {}),
+      });
     }
-    const copyId = SET_LESS_ID_OFFSET + id;
-    item.id = copyId;
-    if (!rows || rows.some((r) => r.id === copyId)) continue;
-    const row = rows.find((r) => r.id === id);
-    if (!row) throw new Error(`the request database has no row for item ${id}`);
-    rows.push({ ...structuredClone(row), id: copyId, setName: "", setId: 0 });
   }
   return out;
 }
 
+/** `applyCopies` with set-less copies only. */
+export function applySetLessCopies(
+  request: RaidSimRequest,
+  slots: readonly number[]
+): RaidSimRequest {
+  return applyCopies(request, { setLess: slots });
+}
+
 /**
- * The value of one set bonus on the gear `composedRequest` wears: the request's
- * DPS minus the DPS of the same request with the first
- * `setPieceSlots.length − lowerCount` set pieces, in slot order, made
- * set-less. With `lowerCount` = t − 1 that turns off the t-piece bonus and
- * keeps every lower one. `se` combines both sims' standard errors. Undefined
- * when either sim, or building the set-less request, fails.
- *
- * `runSim` should be the caller's cached run: the caller has usually simmed
- * `composedRequest` already, and then only the set-less request is a new sim.
+ * The value of one set bonus on the gear `composedRequest` wears. The first
+ * `setPieceSlots.length − lowerCount` set pieces, in slot order, are copies in
+ * both sims: set-kept in the "on" sim, set-less in the "off" sim. With
+ * `lowerCount` = t − 1 the "off" sim keeps every bonus below t. The value is
+ * on − off, and `se` combines both sims' standard errors. Undefined when
+ * nothing is left to copy, or when either sim, or building either request,
+ * fails.
  */
 export async function measureSameGearBonus(
   runSim: (request: RaidSimRequest) => Promise<DpsSample>,
@@ -93,10 +136,23 @@ export async function measureSameGearBonus(
   const toCopy = inSlotOrder.slice(0, inSlotOrder.length - lowerCount);
   if (toCopy.length === 0) return undefined;
   try {
-    const on = await runSim(composedRequest);
-    const off = await runSim(applySetLessCopies(composedRequest, toCopy));
+    const on = await runSim(applyCopies(composedRequest, { setKept: toCopy }));
+    const off = await runSim(applyCopies(composedRequest, { setLess: toCopy }));
     return { dps: on.dps - off.dps, se: Math.sqrt(on.se ** 2 + off.se ** 2) };
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Whether a same-gear value is above noise: greater than both the set-bonus
+ * noise floor and twice its standard error. A value at or below that is not
+ * counted as a bonus or a break.
+ */
+export function clearsSameGearGate(
+  dps: number,
+  se: number,
+  floorDps: number
+): boolean {
+  return dps > Math.max(floorDps, 2 * se);
 }

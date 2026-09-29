@@ -401,9 +401,10 @@ export type SetBonusValue = {
   bonusDpsNet?: number;
   se?: number;
   /**
-   * The bonus measured on its own package's gear: the package sim minus the
-   * same gear with enough of this set's pieces made set-less to leave
-   * `threshold − 1` (ticket 511, `measureSameGearBonus`). The noise gate for a
+   * The bonus measured on its own package's gear: the same gear simmed twice
+   * with enough of this set's pieces sent as copies to leave `threshold − 1`
+   * without them, set kept in one sim and set-less in the other (tickets 511
+   * and 512, `measureSameGearBonus`). The noise gate for a
    * set step reads it; `bonusDps` is left as it was. Present only under
    * `deps.measureBrokenSetValue` and for a measured package; absent when a sim
    * failed. `sameGearSe` is the combined standard error of the two sims.
@@ -1716,9 +1717,9 @@ async function buildSetBonuses(
     return undefined;
   };
 
-  // The package sims' own store-cached run. The gate's "on" request is the
-  // package request, which the store already holds, so only its set-less
-  // request is a new sim (ticket 511).
+  // The package sims' own store-cached run. Both gate requests send copies,
+  // so neither is the package request the store holds: each gate is two new
+  // sims (tickets 511 and 512).
   const cachedSampleRun =
     (what: string) =>
     async (request: RaidSimRequest): Promise<DpsSample> => {
