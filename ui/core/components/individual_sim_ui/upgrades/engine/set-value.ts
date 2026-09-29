@@ -7,7 +7,9 @@
  * package-synergy correction for broken worn bonuses (ticket 478); and the
  * exported `IMPLEMENTED_SET_IDS`, so a test reads the set list instead of
  * copying it. Core never received ticket 467's broken-bonus work, so these do
- * not exist there. Pure
+ * not exist there. Ticket 512 (fork-only): `SetThreshold` is any piece count,
+ * and the break helpers take a `BonusCountPredicate` for which lost counts are
+ * breaks. Pure
  * functions only: no sim calls, no seams — same invariant as the source file.
  */
 
@@ -15,9 +17,27 @@ import { getItem } from "./items.js";
 import type { PoolEntry } from "./pool.js";
 import type { SimItemSpec } from "./slots.js";
 
-export type SetThreshold = 2 | 4;
+/**
+ * A piece count of 2 or more at which a set may have a bonus. A plain number,
+ * not a union of known counts: the Go sim keys set bonuses at whatever counts a
+ * set defines (3 for the crafted 3-piece sets, 6 and 8 for Cryptstalker), and
+ * the break side measures every count a swap loses (ticket 512).
+ */
+export type SetThreshold = number;
 
+/**
+ * The counts the gain side tries, and the counts the flag-off break side
+ * reads with `isBonusImplemented`. Ticket 511's K5 moves the gain side off it.
+ */
 export const SET_THRESHOLDS: readonly SetThreshold[] = [2, 4];
+
+/**
+ * Whether losing `count` pieces' bonus of `setId` counts as a break. The
+ * default, `isBonusImplemented`, reads the six-set table below; with
+ * `measureBrokenSetValue` the ranking passes the worn-set ladder's gated
+ * measurement instead (ticket 512, `rank.ts`).
+ */
+export type BonusCountPredicate = (setId: number, count: number) => boolean;
 
 export type UnmeasuredReason =
   | "not-implemented-in-sim"
@@ -27,11 +47,14 @@ export type UnmeasuredReason =
   | "unmeasurable-at-this-worn-count";
 
 /**
- * Which (setId, threshold) bonuses the ranking measures — same values as
- * packages/core/src/set-value.ts, carried unchanged since they are a fact
- * about the pinned sim's Go code, not about which repo is asking. Re-verify
- * against the fork's own pin if it ever moves off `8aa378b3` (plan §9
- * slice 7's rebase item).
+ * Which (setId, threshold) bonuses the flag-off ranking measures. It stays
+ * equal to packages/core/src/set-value.ts's table so that, without
+ * `measureBrokenSetValue`, the fork gives the E-W3 parity harness the same
+ * `unmeasured` values and breaks as core. With the flag the break side does
+ * not read it (ticket 512: the worn-set ladder measures every lost count and
+ * the noise gate decides), and after ticket 511's K5 the gain side does not
+ * either. The owner decided on 2026-09-28 that the tab keeps no list of
+ * implemented set bonuses, so do not extend this table.
  */
 const IMPLEMENTED_IN_SIM: Record<
   number,
@@ -212,29 +235,34 @@ export type BrokenSetBonus = {
 };
 
 /**
- * The implemented thresholds of `setId` lost when its worn count drops from
- * `before` to `after` (`before ≥ t > after`), highest first.
+ * The counts of `setId` lost when its worn count drops from `before` to
+ * `after` (`before ≥ t > after`, t ≥ 2) that `counts` accepts, highest first.
+ * Every count in that range is tried; no list decides which exist.
  */
 export function lostThresholds(
   setId: number,
   before: number,
-  after: number
+  after: number,
+  counts: BonusCountPredicate = isBonusImplemented
 ): SetThreshold[] {
-  return [...SET_THRESHOLDS]
-    .reverse()
-    .filter((t) => before >= t && after < t && isBonusImplemented(setId, t));
+  const lost: SetThreshold[] = [];
+  for (let t = before; t > after && t >= 2; t--) {
+    if (counts(setId, t)) lost.push(t);
+  }
+  return lost;
 }
 
 /**
- * Every worn implemented bonus the added pieces break, one entry per lost
- * threshold, sorted by `setId` then descending threshold. A package that takes
- * Malorne from 4 to 0 loses the 4pc AND the 2pc; reporting only the 4pc left
- * the 2pc's value out of every net (ticket 476).
+ * Every worn bonus the added pieces break, one entry per lost count that
+ * `counts` accepts, sorted by `setId` then descending threshold. A package
+ * that takes Malorne from 4 to 0 loses the 4pc AND the 2pc; reporting only
+ * the 4pc left the 2pc's value out of every net (ticket 476).
  */
 export function brokenSetBonuses(
   equipment: readonly SimItemSpec[],
   addedPieces: readonly PackagePiece[],
-  completingSetId: number
+  completingSetId: number,
+  counts: BonusCountPredicate = isBonusImplemented
 ): BrokenSetBonus[] {
   const before = setCounts(equipment);
   const after = new Map(before);
@@ -255,7 +283,12 @@ export function brokenSetBonuses(
     if (setId === completingSetId) continue;
     const piecesAfter = after.get(setId) ?? 0;
     if (piecesAfter >= piecesBefore) continue;
-    for (const threshold of lostThresholds(setId, piecesBefore, piecesAfter)) {
+    for (const threshold of lostThresholds(
+      setId,
+      piecesBefore,
+      piecesAfter,
+      counts
+    )) {
       broken.push({
         setId,
         setName: setLabel(equipment, setId),

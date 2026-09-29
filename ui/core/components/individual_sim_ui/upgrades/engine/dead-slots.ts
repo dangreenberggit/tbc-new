@@ -2,13 +2,14 @@
  * Why a slot has no upgrade in it.
  *
  * PORTED from packages/core/src/dead-slots.ts, unchanged except for the
- * items.ts import path.
+ * items.ts import path and, fork-only (ticket 512), the `counts` option for
+ * which lost counts are breaks.
  */
 
 import { getItem } from "./items.js";
 import {
+  type BonusCountPredicate,
   isBonusImplemented,
-  SET_THRESHOLDS,
   type SetThreshold,
 } from "./set-value.js";
 
@@ -55,19 +56,17 @@ export type WornUnrankableItem = {
 export type ClassifyDeadSlotsOptions = {
   wornSetCounts: ReadonlyMap<number, number>;
   wornUnrankable?: readonly WornUnrankableItem[];
+  /** Which lost counts are breaks; `isBonusImplemented` when absent. */
+  counts?: BonusCountPredicate;
 };
 
+/** Dropping one piece loses exactly the worn count, if it is a break. */
 function thresholdLostByDroppingOnePiece(
   setId: number,
-  piecesWorn: number
+  piecesWorn: number,
+  counts: BonusCountPredicate
 ): SetThreshold | null {
-  const lost = [...SET_THRESHOLDS]
-    .reverse()
-    .find(
-      (t) =>
-        piecesWorn >= t && piecesWorn - 1 < t && isBonusImplemented(setId, t)
-    );
-  return lost ?? null;
+  return piecesWorn >= 2 && counts(setId, piecesWorn) ? piecesWorn : null;
 }
 
 function wornRowsOf(slotRows: readonly DeadSlotRow[]): DeadSlotRow[] {
@@ -148,7 +147,8 @@ export function classifyDeadSlots(
           ? null
           : thresholdLostByDroppingOnePiece(
               wornSetId,
-              options.wornSetCounts.get(wornSetId) ?? 0
+              options.wornSetCounts.get(wornSetId) ?? 0,
+              options.counts ?? isBonusImplemented
             );
 
       let cause: DeadSlotCause;

@@ -48,7 +48,12 @@ import {
 } from "./caps.js";
 import { compose } from "./compose.js";
 import { canonicalJson, ENGINE_VERSION, type HashedGearItem } from "./content-hash.js";
-import { type Cutoff,cutoffForSpec, meetsCutoff } from "./cutoff.js";
+import {
+  type Cutoff,
+  cutoffForSpec,
+  meetsCutoff,
+  setBonusNoiseFloorDps,
+} from "./cutoff.js";
 import {
   type Assumptions,
   buildStandingAssumptions,
@@ -102,8 +107,13 @@ import {
 } from "./seams/sim-runner.js";
 import type { Store } from "./seams/store.js";
 import { setBreakNote } from "./set-bonus.js";
-import { measureSameGearBonus } from "./set-less-copies.js";
 import {
+  clearsSameGearGate,
+  measureSameGearBonus,
+  measureWornSetLadder,
+} from "./set-less-copies.js";
+import {
+  type BonusCountPredicate,
   type BrokenSetBonus,
   brokenSetBonuses,
   combineSe,
@@ -112,7 +122,6 @@ import {
   type IndividualDelta,
   type InflationKey,
   isBonusImplemented,
-  lostThresholds,
   netInflation,
   nextMeasurableThreshold,
   type PackagePiece,
@@ -184,10 +193,11 @@ export type Deps = {
    */
   concurrency?: number;
   /**
-   * When set, `buildSetBonuses` runs one extra sim per worn implemented set
-   * bonus that a ranked single or package would break, to measure that broken
-   * bonus's standalone value `B` in the player's own context (ticket 467). The
-   * tab passes it; the E-W3 parity harness does not, so the compared request
+   * When set, `buildSetBonuses` measures every bonus of every worn set on the
+   * player's own gear with the worn-set ladder, and charges a break only where
+   * that value clears the noise gate (tickets 467 and 512); it also measures
+   * each package's bonus on the package's own gear (ticket 511). The tab
+   * passes it; the E-W3 parity harness does not, so the compared request
    * lists stay identical (`wowsims-fork-parity.test.ts` never sets the flag).
    * Absent = today's behaviour and today's request list exactly.
    */
@@ -355,13 +365,12 @@ export type SetPackageContext = {
 };
 
 /**
- * Standalone value `B` of one worn implemented set bonus (X, t) that completing
- * or advancing another set would break (ticket 467), measured by vacating the
- * minimum number of worn X pieces that break (X, t) to neutral pool candidates
- * and differencing against the MAIN baseline. `dps` is `B`; absent with an
- * `unmeasured` reason when no neutral replacement existed, the sim failed, or
- * (`dependent-unmeasured`) the solve needed a higher threshold's `B` of the same
- * set that was itself unmeasured (ticket 476).
+ * Standalone value `B` of one worn set bonus (X, t) that a swap can break: the
+ * worn-set ladder's value at count t on the player's own gear (ticket 512), for
+ * a count whose value clears the noise gate or could not be measured. `dps` is
+ * `B`; absent with `unmeasured` when a ladder sim failed. Only `sim-failed` is
+ * produced since the ladder replaced the vacate sims; the other members are
+ * kept for rankings saved before it.
  */
 export type BrokenSetValue = {
   setId: number;
@@ -369,13 +378,28 @@ export type BrokenSetValue = {
   threshold: SetThreshold;
   dps?: number;
   se?: number;
-  vacatedItemIds: number[];
-  replacementItemIds: number[];
   unmeasured?:
     | "no-neutral-candidates"
     | "sim-failed"
     | "repair-failed"
     | "dependent-unmeasured";
+};
+
+/**
+ * One count of one worn set's ladder (ticket 512): its measured value on the
+ * player's own gear, and whether it is `counted` as a break — a value that
+ * clears the noise gate, or one whose sim failed (the row then shows it as
+ * unmeasured). Counts at which the set has no bonus read about 0 and are not
+ * counted.
+ */
+export type WornSetLadderEntry = {
+  setId: number;
+  setName: string;
+  count: number;
+  dps?: number;
+  se?: number;
+  unmeasured?: "sim-failed";
+  counted: boolean;
 };
 
 export type SetBonusValue = {
@@ -444,14 +468,19 @@ export type Ranking = {
   items: RankedItem[];
   setBonuses?: SetBonusValue[];
   /**
-   * Standalone value `B` of each worn implemented set bonus that a ranked
-   * single or package would break, measured by one vacate sim per broken bonus
-   * (ticket 467). Present only when `deps.measureBrokenSetValue` is set; the
-   * E-W3 harness leaves it unset, so this field never appears there and adds no
-   * requests to the parity comparison. `dps`/`se` absent with a reason when the
-   * pool held no neutral replacement to vacate to.
+   * Standalone value `B` of each worn set bonus a swap can break: one entry per
+   * counted ladder count (tickets 467 and 512). Present only when
+   * `deps.measureBrokenSetValue` is set; the E-W3 harness leaves it unset, so
+   * this field never appears there and adds no requests to the parity
+   * comparison.
    */
   brokenSetValues?: BrokenSetValue[];
+  /**
+   * Every count from 2 to the worn count of every worn set, measured with the
+   * ladder, counted or not (ticket 512). Present only when
+   * `deps.measureBrokenSetValue` is set and a set is worn at 2 or more.
+   */
+  wornSetLadder?: WornSetLadderEntry[];
   plausibilityWarnings?: PlausibilityWarning[];
   /**
    * Screening chunks that failed for an engine or transport reason, and whose
@@ -1437,7 +1466,12 @@ export async function rankUpgrades(
     // simmed stands, and the unsimmed rows stay honestly unsimmed rather
     // than pulling more work in behind the caller's back.
     const setBonusResult = aborted
-      ? { bonuses: [], brokenSetValues: [], candidateSlotIndex: new Map() }
+      ? {
+          bonuses: [],
+          brokenSetValues: [],
+          wornSetLadder: [],
+          candidateSlotIndex: new Map(),
+        }
       : await buildSetBonuses(
           deps,
           simCandidates,
@@ -1451,8 +1485,14 @@ export async function rankUpgrades(
           simVersion,
           runOpts,
           packageSimSkips,
-          deps.measureBrokenSetValue ?? false
+          deps.measureBrokenSetValue ?? false,
+          cutoff
         );
+    // With the flag, a lost count is a break only when the ladder counted it,
+    // and no table is read. An aborted run has no ladder, so it charges none.
+    const counts: BonusCountPredicate | undefined = deps.measureBrokenSetValue
+      ? countedLadderBreaks(setBonusResult.wornSetLadder)
+      : undefined;
     const setBonuses = setBonusResult.bonuses;
     if (setBonuses.length > 0) {
       applySetContext(
@@ -1461,7 +1501,8 @@ export async function rankUpgrades(
         equipment,
         setBonusResult.brokenSetValues,
         setBonusResult.candidateSlotIndex,
-        individualDeltasByItemId
+        individualDeltasByItemId,
+        counts
       );
     }
     onProgress?.({ stage: "ranking" });
@@ -1517,6 +1558,7 @@ export async function rankUpgrades(
         ...(i.owned === true ? { owned: true } : {}),
       })),
       wornSetCounts: setCounts(equipment),
+      ...(counts ? { counts } : {}),
     });
 
     const rankingBase = {
@@ -1559,6 +1601,9 @@ export async function rankUpgrades(
       ...(setBonuses.length > 0 ? { setBonuses } : {}),
       ...(setBonusResult.brokenSetValues.length > 0
         ? { brokenSetValues: setBonusResult.brokenSetValues }
+        : {}),
+      ...(setBonusResult.wornSetLadder.length > 0
+        ? { wornSetLadder: setBonusResult.wornSetLadder }
         : {}),
       ...(warnings.length > 0 ? { plausibilityWarnings: warnings } : {}),
       ...(screeningFallbacks.length > 0 ? { screeningFallbacks } : {}),
@@ -1684,42 +1729,24 @@ async function buildSetBonuses(
     reason: string;
   }[],
   /**
-   * When set, run one vacate sim per worn implemented bonus a candidate breaks
-   * to measure its standalone value `B` (ticket 467). Off in the E-W3 harness
-   * so the compared request list is unchanged.
+   * When set, measure every worn set's bonuses with the ladder, charge only
+   * the counted ones as breaks, and gate each package's bonus (tickets 467,
+   * 511 and 512). Off in the E-W3 harness so the compared request list is
+   * unchanged.
    */
-  measureBrokenSetValue: boolean
+  measureBrokenSetValue: boolean,
+  /** The ranking's cutoff, for the noise floor of the ladder's gate. */
+  cutoff: Cutoff
 ): Promise<{
   bonuses: SetBonusValue[];
   brokenSetValues: BrokenSetValue[];
+  wornSetLadder: WornSetLadderEntry[];
   /** itemId -> best pool slotIndex, so `applySetContext` can compute per-row breaks. */
   candidateSlotIndex: Map<number, number>;
 }> {
-  const setIdsWithCandidates = new Set<number>();
-  for (const entry of candidates) {
-    const setId = getItem(entry.itemId)?.setId;
-    if (setId != null) setIdsWithCandidates.add(setId);
-  }
-  if (setIdsWithCandidates.size === 0) {
-    return { bonuses: [], brokenSetValues: [], candidateSlotIndex: new Map() };
-  }
-
-  const wornCounts = setCounts(equipment);
-  const slotIndexForPoolEntry = (entry: PoolEntry): number | undefined => {
-    for (const slotName of simSlotsForPoolSlot(
-      entry.slot,
-      input.spec,
-      entry.itemId
-    )) {
-      const idx = SIM_ORDER.indexOf(slotName);
-      if (idx >= 0) return idx;
-    }
-    return undefined;
-  };
-
-  // The package sims' own store-cached run. Both gate requests send copies,
-  // so neither is the package request the store holds: each gate is two new
-  // sims (tickets 511 and 512).
+  // The set sims' own store-cached run. A gate or ladder request sends
+  // copies, so it is never a request the store already holds (tickets 511
+  // and 512).
   const cachedSampleRun =
     (what: string) =>
     async (request: RaidSimRequest): Promise<DpsSample> => {
@@ -1735,6 +1762,60 @@ async function buildSetBonuses(
       }
       return { dps: obs.dps, se: obs.stdev / Math.sqrt(runOpts.iterations) };
     };
+
+  // Ticket 512: the value of every bonus each worn set has, on the player's
+  // own gear, before any package is built, so every break below reads the
+  // gated measurement instead of a table. It runs even when no set piece is a
+  // candidate, because the dead-slot check reads it too.
+  const wornSetLadder = measureBrokenSetValue
+    ? await measureWornSetLadders(
+        equipment,
+        composeFor,
+        cachedSampleRun,
+        setBonusNoiseFloorDps(cutoff)
+      )
+    : [];
+  const counts: BonusCountPredicate = measureBrokenSetValue
+    ? countedLadderBreaks(wornSetLadder)
+    : isBonusImplemented;
+  const brokenSetValues: BrokenSetValue[] = wornSetLadder
+    .filter((e) => e.counted)
+    .sort((a, b) => (a.setId !== b.setId ? a.setId - b.setId : b.count - a.count))
+    .map((e) => ({
+      setId: e.setId,
+      setName: e.setName,
+      threshold: e.count,
+      ...(e.dps !== undefined ? { dps: e.dps } : {}),
+      ...(e.se !== undefined ? { se: e.se } : {}),
+      ...(e.unmeasured ? { unmeasured: e.unmeasured } : {}),
+    }));
+
+  const setIdsWithCandidates = new Set<number>();
+  for (const entry of candidates) {
+    const setId = getItem(entry.itemId)?.setId;
+    if (setId != null) setIdsWithCandidates.add(setId);
+  }
+  if (setIdsWithCandidates.size === 0) {
+    return {
+      bonuses: [],
+      brokenSetValues,
+      wornSetLadder,
+      candidateSlotIndex: new Map(),
+    };
+  }
+
+  const wornCounts = setCounts(equipment);
+  const slotIndexForPoolEntry = (entry: PoolEntry): number | undefined => {
+    for (const slotName of simSlotsForPoolSlot(
+      entry.slot,
+      input.spec,
+      entry.itemId
+    )) {
+      const idx = SIM_ORDER.indexOf(slotName);
+      if (idx >= 0) return idx;
+    }
+    return undefined;
+  };
 
   const results: SetBonusValue[] = [];
   for (const setId of setIdsWithCandidates) {
@@ -1902,7 +1983,7 @@ async function buildSetBonuses(
       });
       if (threshold === 2) twoPieceBonus = synergy.bonusDps;
 
-      const breaks = brokenSetBonuses(equipment, addedPieces, setId);
+      const breaks = brokenSetBonuses(equipment, addedPieces, setId, counts);
       let selfConfound: SelfSetConfound | undefined =
         threshold === 4 && twoPieceUnmeasurableAtThisWornCount
           ? { threshold: 2 }
@@ -1919,12 +2000,14 @@ async function buildSetBonuses(
         // With no such pair `bonusDpsNet` stays unset (see below).
         const breakFree = addedPieces.filter(
           (p) =>
-            brokenSetBonuses(equipment, [p], setId).length === 0 &&
+            brokenSetBonuses(equipment, [p], setId, counts).length === 0 &&
             individualDeltasByItemId.has(p.itemId)
         );
         const pair = breakFree
           .flatMap((a, i) => breakFree.slice(i + 1).map((b) => [a, b]))
-          .find((p) => brokenSetBonuses(equipment, p, setId).length === 0);
+          .find(
+            (p) => brokenSetBonuses(equipment, p, setId, counts).length === 0
+          );
         const pairB2 =
           pair !== undefined
             ? await measurePairTwoPiece(
@@ -1987,84 +2070,11 @@ async function buildSetBonuses(
   }
 
   const candidateSlotIndex = new Map<number, number>();
-  const candidatesBySlot = new Map<number, PoolEntry[]>();
   for (const entry of candidates) {
     const idx = slotIndexForPoolEntry(entry);
     if (idx === undefined) continue;
     if (!candidateSlotIndex.has(entry.itemId)) {
       candidateSlotIndex.set(entry.itemId, idx);
-    }
-    const bucket = candidatesBySlot.get(idx) ?? [];
-    bucket.push(entry);
-    candidatesBySlot.set(idx, bucket);
-  }
-
-  const brokenSetValues: BrokenSetValue[] = [];
-  if (measureBrokenSetValue) {
-    // The distinct worn implemented bonuses (X, t) any candidate would break:
-    // from every package's `breaks`, from each set-piece candidate's own single
-    // break, and from the top package with that candidate substituted in — the
-    // `commitBreaks` a row shows. Without the last source a row could subtract
-    // a break nothing measured and keep the whole gain (ticket 477). Keyed by
-    // `setId:threshold` so each is measured once, however many rows share it.
-    const targets = new Map<string, BrokenSetBonus>();
-    const addTarget = (brk: BrokenSetBonus): void => {
-      targets.set(`${brk.setId}:${brk.threshold}`, brk);
-    };
-    for (const b of results) {
-      for (const brk of b.breaks ?? []) addTarget(brk);
-    }
-    for (const entry of candidates) {
-      const slotIndex = candidateSlotIndex.get(entry.itemId);
-      if (slotIndex === undefined) continue;
-      const entrySetId = getItem(entry.itemId)?.setId;
-      if (entrySetId == null) continue;
-      const singleBreaks = brokenSetBonuses(
-        equipment,
-        [{ itemId: entry.itemId, slotIndex }],
-        entrySetId
-      );
-      for (const brk of singleBreaks) addTarget(brk);
-      const top = topMeasuredPackage(
-        results.filter((r) => r.setId === entrySetId)
-      );
-      if (top) {
-        for (const brk of substitutedPackageBreaks(
-          entry.itemId,
-          entrySetId,
-          slotIndex,
-          top,
-          candidateSlotIndex,
-          equipment
-        )) {
-          addTarget(brk);
-        }
-      }
-    }
-
-    // Per set, highest threshold first: solving a lower threshold's B needs
-    // every higher lost threshold's B of the same set (ticket 476).
-    const ordered = [...targets.values()].sort((a, b) =>
-      a.setId !== b.setId ? a.setId - b.setId : b.threshold - a.threshold
-    );
-    const measuredByKey = new Map<string, BrokenSetValue>();
-    for (const brk of ordered) {
-      const measured = await measureBrokenSetValueFor(
-        deps,
-        brk,
-        equipment,
-        candidates,
-        candidatesBySlot,
-        individualDeltasByItemId,
-        gems,
-        composeFor,
-        baseline,
-        simVersion,
-        runOpts,
-        measuredByKey
-      );
-      measuredByKey.set(`${brk.setId}:${brk.threshold}`, measured);
-      brokenSetValues.push(measured);
     }
   }
 
@@ -2098,7 +2108,12 @@ async function buildSetBonuses(
       const slotIndex = candidateSlotIndex.get(itemId);
       const memberSetId = getItem(itemId)?.setId;
       if (slotIndex === undefined || memberSetId == null) return [];
-      return brokenSetBonuses(equipment, [{ itemId, slotIndex }], memberSetId);
+      return brokenSetBonuses(
+        equipment,
+        [{ itemId, slotIndex }],
+        memberSetId,
+        counts
+      );
     });
   for (const b of results) {
     if (b.bonusDps === undefined) continue;
@@ -2141,9 +2156,15 @@ async function buildSetBonuses(
       keys.push({
         setId: brk.setId,
         threshold: brk.threshold,
-        membersPkg: countMembersBreaking(b, brk, equipment, candidateSlotIndex),
+        membersPkg: countMembersBreaking(
+          b,
+          brk,
+          equipment,
+          candidateSlotIndex,
+          counts
+        ),
         members2pc: two
-          ? countMembersBreaking(two, brk, equipment, candidateSlotIndex)
+          ? countMembersBreaking(two, brk, equipment, candidateSlotIndex, counts)
           : 0,
         pkgEnd: pkgEnd.has(key) ? 1 : 0,
         twoPcEnd: twoPcEnd.has(key) ? 1 : 0,
@@ -2153,7 +2174,7 @@ async function buildSetBonuses(
     if (allMeasured) b.bonusDpsNet = b.bonusDps - netInflation(keys);
   }
 
-  return { bonuses: results, brokenSetValues, candidateSlotIndex };
+  return { bonuses: results, brokenSetValues, wornSetLadder, candidateSlotIndex };
 }
 
 /**
@@ -2180,7 +2201,8 @@ function substitutedPackageBreaks(
   slotIndex: number,
   topPackage: SetBonusValue,
   candidateSlotIndex: ReadonlyMap<number, number>,
-  equipment: readonly SimItemSpec[]
+  equipment: readonly SimItemSpec[],
+  counts: BonusCountPredicate
 ): BrokenSetBonus[] {
   const substituted: PackagePiece[] = topPackage.packageItemIds
     .map((pieceItemId) => ({
@@ -2192,7 +2214,7 @@ function substitutedPackageBreaks(
         p.slotIndex !== undefined && p.slotIndex !== slotIndex
     );
   substituted.push({ itemId, slotIndex });
-  return brokenSetBonuses(equipment, substituted, setId);
+  return brokenSetBonuses(equipment, substituted, setId, counts);
 }
 
 /**
@@ -2305,7 +2327,8 @@ function countMembersBreaking(
   pkg: SetBonusValue,
   target: Pick<BrokenSetBonus, "setId" | "threshold">,
   equipment: readonly SimItemSpec[],
-  candidateSlotIndex: ReadonlyMap<number, number>
+  candidateSlotIndex: ReadonlyMap<number, number>,
+  counts: BonusCountPredicate
 ): number {
   let k = 0;
   for (const itemId of pkg.packageItemIds) {
@@ -2316,7 +2339,8 @@ function countMembersBreaking(
     const breaks = brokenSetBonuses(
       equipment,
       [{ itemId, slotIndex }],
-      memberSetId
+      memberSetId,
+      counts
     );
     if (
       breaks.some(
@@ -2331,189 +2355,55 @@ function countMembersBreaking(
 }
 
 /**
- * Measures one broken bonus's standalone value `B` by vacating the minimum
- * number of worn X pieces that break (X, t), to the highest-`deltaDps` neutral
- * pool candidates in those slots — candidates that are not X pieces and that
- * together cross no implemented threshold of any set. Differences the vacate sim
- * against the MAIN baseline (never a screen baseline), copying the package
- * pattern; the stored singles are used as measured, never re-based (ticket 467
- * N3, rank.ts:1111-1134).
- *
- * The vacate and each replacement single can lose MORE than (X, t): at worn
- * Malorne 4 the 3-slot vacate for the 2pc also loses the 4pc, and each single
- * loses the 4pc. With `L_vac` the thresholds the vacate loses, `L_1` those one
- * single loses, `Σs` the replacements' singles and `Δ` the vacate delta,
- *   B_t·(1 − n·[t∈L_1]) = (Σs − Δ) + n·Σ_{L_1, t'≠t} B_t' − Σ_{L_vac, t'≠t} B_t'
- * The naive `Σs − Δ` is `B_2 − 2·B_4` at worn 4 and `B_2 + B_4` at worn 5
- * (ticket 476). Every `t'` on the right is a higher threshold of the same set,
- * which is why `buildSetBonuses` measures targets highest first and passes the
- * results in `measuredByKey`.
+ * The worn-set ladder of every set worn at 2 or more pieces, in set-id order
+ * (ticket 512). Each count is `counted` when its value clears the same noise
+ * gate as a set bonus, or when its sims failed. No table decides which sets or
+ * counts are measured.
  */
-async function measureBrokenSetValueFor(
-  deps: Deps,
-  target: BrokenSetBonus,
+async function measureWornSetLadders(
   equipment: readonly SimItemSpec[],
-  candidates: readonly PoolEntry[],
-  candidatesBySlot: ReadonlyMap<number, PoolEntry[]>,
-  individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>,
-  gems: GemContext,
   composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
-  baseline: DpsSample,
-  simVersion: string,
-  runOpts: SimRunOpts,
-  measuredByKey: ReadonlyMap<string, BrokenSetValue>
-): Promise<BrokenSetValue> {
-  const wornCounts = setCounts(equipment);
-  const wornX = wornCounts.get(target.setId) ?? 0;
-  const t = target.threshold;
-  // n = 2 when the worn count equals t (one swap breaks it, but the vacate must
-  // reach a state no single reaches — 0 worn); else the minimum that breaks it.
-  const n = wornX === t ? 2 : wornX - t + 1;
-
-  const failure = (
-    reason: NonNullable<BrokenSetValue["unmeasured"]>
-  ): BrokenSetValue => ({
-    setId: target.setId,
-    setName: target.setName,
-    threshold: t,
-    vacatedItemIds: [],
-    replacementItemIds: [],
-    unmeasured: reason,
-  });
-
-  const lostByVacate = lostThresholds(target.setId, wornX, wornX - n);
-  const lostBySingle = lostThresholds(target.setId, wornX, wornX - 1);
-  // Checked before the sim, so an unsolvable target costs no run.
-  const others = new Map<SetThreshold, BrokenSetValue>();
-  for (const other of new Set([...lostByVacate, ...lostBySingle])) {
-    if (other === t) continue;
-    const known = measuredByKey.get(`${target.setId}:${other}`);
-    if (known?.dps === undefined) return failure("dependent-unmeasured");
-    others.set(other, known);
-  }
-
-  // The worn slots holding X pieces, in slot order.
-  const wornXSlots: number[] = [];
-  for (let i = 0; i < equipment.length; i++) {
-    const id = equipment[i]?.id;
-    if (id && getItem(id)?.setId === target.setId) wornXSlots.push(i);
-  }
-  if (wornXSlots.length < n) return failure("no-neutral-candidates");
-  const vacateSlots = wornXSlots.slice(0, n);
-
-  // Pick a neutral replacement per vacated slot: highest measured deltaDps, not
-  // an X piece, and the running selection crosses no implemented threshold of
-  // any set.
-  const runningSetCounts = new Map(wornCounts);
-  // Removing the vacated X pieces first, so a replacement's set is scored
-  // against the post-removal counts.
-  runningSetCounts.set(target.setId, wornX - vacateSlots.length);
-  const replacements: { itemId: number; slotIndex: number }[] = [];
-  for (const slotIndex of vacateSlots) {
-    const pool = (candidatesBySlot.get(slotIndex) ?? [])
-      .map((entry) => ({
-        entry,
-        delta: individualDeltasByItemId.get(entry.itemId)?.deltaDps,
-      }))
-      .filter(
-        (c): c is { entry: PoolEntry; delta: number } =>
-          c.delta !== undefined &&
-          getItem(c.entry.itemId)?.setId !== target.setId
-      )
-      .sort((a, b) => b.delta - a.delta);
-    let chosen: PoolEntry | undefined;
-    for (const { entry } of pool) {
-      const candSetId = getItem(entry.itemId)?.setId;
-      if (candSetId != null) {
-        const after = (runningSetCounts.get(candSetId) ?? 0) + 1;
-        const crosses = SET_THRESHOLDS.some(
-          (th) =>
-            after >= th &&
-            (runningSetCounts.get(candSetId) ?? 0) < th &&
-            isBonusImplemented(candSetId, th)
-        );
-        if (crosses) continue;
-      }
-      chosen = entry;
-      if (candSetId != null) {
-        runningSetCounts.set(candSetId, (runningSetCounts.get(candSetId) ?? 0) + 1);
-      }
-      break;
-    }
-    if (!chosen) return failure("no-neutral-candidates");
-    replacements.push({ itemId: chosen.itemId, slotIndex });
-  }
-
-  // Build the vacated equipment through the same swap/repair path packages use.
-  let vacateEquipment: SimItemSpec[] = [...equipment];
-  try {
-    for (const r of replacements) {
-      const outcome = candidateSwapWithRepairs(
-        vacateEquipment,
-        r.slotIndex,
-        r.itemId,
-        gems
-      );
-      vacateEquipment = outcome.equipment;
-    }
-  } catch (err) {
-    if (!(err instanceof MetaRepairError)) throw err;
-    console.warn(
-      `[upgrades] ${target.setName} ${t}pc break value not measured: gem repair failed on the vacate swap`,
-      err
+  cachedSampleRun: (
+    what: string
+  ) => (request: RaidSimRequest) => Promise<DpsSample>,
+  floorDps: number
+): Promise<WornSetLadderEntry[]> {
+  const worn = [...setCounts(equipment)]
+    .filter(([, count]) => count >= 2)
+    .map(([setId]) => setId)
+    .sort((a, b) => a - b);
+  if (worn.length === 0) return [];
+  const request = composeFor(equipment);
+  const entries: WornSetLadderEntry[] = [];
+  for (const setId of worn) {
+    const setName = setLabel(equipment, setId);
+    const slots = equipment.flatMap((spec, i) =>
+      spec.id && getItem(spec.id)?.setId === setId ? [i] : []
     );
-    return failure("repair-failed");
-  }
-
-  const req = composeFor(vacateEquipment);
-  let obs = await readCachedSim(deps, req, simVersion, runOpts);
-  if (!obs) {
-    try {
-      obs = await deps.sim.run(req, runOpts);
-    } catch (err) {
-      console.warn(
-        `[upgrades] ${target.setName} ${t}pc break value not measured: the vacate sim failed`,
-        err
-      );
-      return failure("sim-failed");
+    const rungs = await measureWornSetLadder(
+      cachedSampleRun(`${setName} worn-set ladder`),
+      request,
+      slots
+    );
+    for (const rung of rungs) {
+      const counted =
+        rung.unmeasured !== undefined ||
+        (rung.dps !== undefined &&
+          clearsSameGearGate(rung.dps, rung.se ?? 0, floorDps));
+      entries.push({ setId, setName, ...rung, counted });
     }
-    await cacheSimResult(deps, req, simVersion, runOpts, obs);
   }
+  return entries;
+}
 
-  const delta = obs.dps - baseline.dps;
-  const ownSamples = replacements.map((r) => {
-    const ind = individualDeltasByItemId.get(r.itemId);
-    return { dps: ind?.deltaDps ?? 0, se: ind?.se ?? 0 };
-  });
-  const sumOwn = ownSamples.reduce((sum, s) => sum + s.dps, 0);
-  // The explicit form in the doc comment. The coefficient is −1 when worn == t
-  // (n = 2, the single itself loses t: B = Δ − Σs) and 1 when worn > t.
-  const coefficient = 1 - n * (lostBySingle.includes(t) ? 1 : 0);
-  let rhs = sumOwn - delta;
-  const otherSe: DpsSample[] = [];
-  for (const [other, known] of others) {
-    const weight =
-      (lostBySingle.includes(other) ? n : 0) -
-      (lostByVacate.includes(other) ? 1 : 0);
-    rhs += weight * known.dps!;
-    otherSe.push({ dps: 0, se: weight * (known.se ?? 0) });
-  }
-  const B = rhs / coefficient;
-  const se = combineSe([
-    baseline,
-    { dps: obs.dps, se: obs.stdev / Math.sqrt(runOpts.iterations) },
-    ...ownSamples.map((s) => ({ dps: 0, se: s.se })),
-    ...otherSe,
-  ]);
-  return {
-    setId: target.setId,
-    setName: target.setName,
-    threshold: t,
-    dps: B,
-    se,
-    vacatedItemIds: vacateSlots.map((i) => equipment[i]?.id ?? 0),
-    replacementItemIds: replacements.map((r) => r.itemId),
-  };
+/** The break predicate the flag path uses: a count the ladder counted. */
+function countedLadderBreaks(
+  ladder: readonly WornSetLadderEntry[]
+): BonusCountPredicate {
+  const counted = new Set(
+    ladder.filter((e) => e.counted).map((e) => `${e.setId}:${e.count}`)
+  );
+  return (setId, count) => counted.has(`${setId}:${count}`);
 }
 
 export function memberPackages(
@@ -2541,7 +2431,8 @@ function applySetContext(
   equipment: readonly SimItemSpec[],
   brokenSetValues: readonly BrokenSetValue[] = [],
   candidateSlotIndex: ReadonlyMap<number, number> = new Map(),
-  individualDeltasByItemId: ReadonlyMap<number, IndividualDelta> = new Map()
+  individualDeltasByItemId: ReadonlyMap<number, IndividualDelta> = new Map(),
+  counts: BonusCountPredicate = isBonusImplemented
 ): void {
   const wornCounts = setCounts(equipment);
   const bonusesBySet = new Map<number, SetBonusValue[]>();
@@ -2592,7 +2483,8 @@ function applySetContext(
       const single = brokenSetBonuses(
         equipment,
         [{ itemId: item.itemId, slotIndex }],
-        setId
+        setId,
+        counts
       );
       if (single.length > 0) {
         setContext.singleBreaks = single.map((brk) => {
@@ -2640,7 +2532,7 @@ function applySetContext(
       const single = individualDeltasByItemId.get(p.itemId)?.deltaDps;
       if (single === undefined) return undefined;
       let own = single;
-      for (const brk of brokenSetBonuses(equipment, [p], setId)) {
+      for (const brk of brokenSetBonuses(equipment, [p], setId, counts)) {
         const dps = dpsForBreak(brk);
         if (dps === undefined) return undefined;
         own += dps;
@@ -2680,7 +2572,7 @@ function applySetContext(
       // own break (ticket 490). Keys a lower future already lists stay here
       // too; the view charges each key once.
       const pathBreaks = path
-        ? brokenSetBonuses(equipment, path, setId).filter(
+        ? brokenSetBonuses(equipment, path, setId, counts).filter(
             (brk) => !singleKeys.has(`${brk.setId}:${brk.threshold}`)
           )
         : [];
@@ -2723,7 +2615,8 @@ function applySetContext(
         slotIndex,
         topPackage,
         candidateSlotIndex,
-        equipment
+        equipment,
+        counts
       );
       const commitOnly = commitAll.filter(
         (brk) => !singleKeys.has(`${brk.setId}:${brk.threshold}`)

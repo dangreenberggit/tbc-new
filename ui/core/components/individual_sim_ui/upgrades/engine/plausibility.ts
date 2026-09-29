@@ -1,9 +1,10 @@
 /**
  * Cheap sanity checks on a finished ranking.
  *
- * PORTED from packages/core/src/plausibility.ts, unchanged. Pure over
- * dead-slots.ts and rank.ts's SetBonusValue type — no data-source
- * dependency to adapt.
+ * PORTED from packages/core/src/plausibility.ts, unchanged except that,
+ * fork-only (ticket 512), `plausibilityWarnings` passes dead-slots.ts's
+ * `counts` option through. Pure over dead-slots.ts and rank.ts's
+ * SetBonusValue type — no data-source dependency to adapt.
  */
 
 import {
@@ -172,6 +173,7 @@ export function plausibilityWarnings(
     ...deadSlotWarnings(input.rows, {
       wornSetCounts: input.wornSetCounts,
       ...(input.wornUnrankable ? { wornUnrankable: input.wornUnrankable } : {}),
+      ...(input.counts ? { counts: input.counts } : {}),
     }),
   ];
 }

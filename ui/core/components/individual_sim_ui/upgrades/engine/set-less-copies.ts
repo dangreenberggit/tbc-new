@@ -144,6 +144,63 @@ export async function measureSameGearBonus(
   }
 }
 
+/** One count of a worn set's ladder: the value of its c-th piece's bonus. */
+export type WornSetRung = {
+  count: number;
+  dps?: number;
+  se?: number;
+  unmeasured?: "sim-failed";
+};
+
+/**
+ * The value of every bonus a worn set has, from 2 up to its worn count, on the
+ * gear `composedRequest` wears (ticket 512). With the set's pieces at slots
+ * s_1 < … < s_w, rung R(c) for c = 1 … w keeps s_1 real, sends s_2 … s_c as
+ * set-kept copies and s_(c+1) … s_w as set-less copies, so Go counts c pieces.
+ * No rung sends the real id of s_2 … s_w, so an effect keyed by one of those
+ * ids is absent from every rung. The value at count c is R(c) − R(c − 1), with
+ * se = √(se_c² + se_(c−1)²), an upper bound because the rungs share a seed. A
+ * count at which the set has no bonus reads 0. There is no cap on w: a set
+ * with bonuses at 6 or 8 pieces gets those counts too. A failed rung makes
+ * both counts that use it `sim-failed`. Empty when w < 2.
+ */
+export async function measureWornSetLadder(
+  runSim: (request: RaidSimRequest) => Promise<DpsSample>,
+  composedRequest: RaidSimRequest,
+  wornSetSlots: readonly number[]
+): Promise<WornSetRung[]> {
+  const slots = [...wornSetSlots].sort((a, b) => a - b);
+  if (slots.length < 2) return [];
+  const rungs: Array<DpsSample | undefined> = [];
+  for (let c = 1; c <= slots.length; c++) {
+    try {
+      rungs[c] = await runSim(
+        applyCopies(composedRequest, {
+          setKept: slots.slice(1, c),
+          setLess: slots.slice(c),
+        })
+      );
+    } catch {
+      rungs[c] = undefined;
+    }
+  }
+  const out: WornSetRung[] = [];
+  for (let c = 2; c <= slots.length; c++) {
+    const upper = rungs[c];
+    const lower = rungs[c - 1];
+    out.push(
+      upper && lower
+        ? {
+            count: c,
+            dps: upper.dps - lower.dps,
+            se: Math.sqrt(upper.se ** 2 + lower.se ** 2),
+          }
+        : { count: c, unmeasured: "sim-failed" }
+    );
+  }
+  return out;
+}
+
 /**
  * Whether a same-gear value is above noise: greater than both the set-bonus
  * noise floor and twice its standard error. A value at or below that is not
