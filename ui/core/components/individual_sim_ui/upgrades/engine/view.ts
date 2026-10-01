@@ -12,6 +12,12 @@
  * and a row whose loss could not be measured drops to disclosure-only here by
  * the missing-`dps` fallback below.
  *
+ * Ticket 511 (fork-only): on a step ranking (`setContext.stepRanking`), a set
+ * row is credited from sims of the gear it would be worn in. Each future
+ * whose same-gear gate cleared carries `stepGearDps`, the sim of the current
+ * gear plus the row plus its partner pieces minus the sim of the current
+ * gear; the credit is the best `stepGearDps − singleDeltaDps` (best stop), and
+ * none of `dps`, the path pieces, the path breaks or `commitBreaks` is read.
  */
 import {
   type Cutoff,
@@ -20,6 +26,8 @@ import {
 } from "./cutoff.js";
 import { type ItemSource,sourceMatchesBoss } from "./pool.js";
 import type { RankedItem, Ranking, SetContext } from "./rank.js";
+import { clearsSameGearGate } from "./set-less-copies.js";
+import { nextMeasurableThreshold } from "./set-value.js";
 
 export type SetCreditView = "full" | "split";
 
@@ -44,8 +52,12 @@ type SetContextLike = Partial<
     | "crossesThreshold"
     | "setName"
     | "piecesWornBefore"
+    | "stepRanking"
+    | "singleDeltaDps"
   >
 >;
+
+type FutureLike = NonNullable<SetContext["futureBonuses"]>[number];
 
 /**
  * One itemised line of the ON credit, in the order the walk counts it. `dps`
@@ -60,7 +72,27 @@ export type SetPotentialTerm =
       dps: number;
     }
   | { kind: "piece"; itemId: number; name: string; dps: number }
-  | { kind: "break"; setName: string; threshold: number; dps: number };
+  | { kind: "break"; setName: string; threshold: number; dps: number }
+  /**
+   * One eligible bonus of a step ranking (ticket 511): its step gear's total
+   * over the current gear, the partner pieces it adds (in sim slot order)
+   * and the worn bonuses it loses. These lines are totals, not parts of the
+   * credit; `isStop` marks the one the credit stops at.
+   */
+  | {
+      kind: "stop";
+      threshold: number;
+      setName: string;
+      pieces: Array<{ itemId: number; name: string }>;
+      broken: Array<{
+        setId: number;
+        setName: string;
+        threshold: number;
+        dps?: number;
+      }>;
+      totalDps: number;
+      isStop: boolean;
+    };
 
 export type ViewOptions = {
   pinBis?: boolean;
@@ -216,6 +248,17 @@ function belowCutoffUnderView(
 export function setCreditUnmeasured(ctx: SetContextLike | undefined): boolean {
   const future = ctx?.futureBonuses ?? [];
   if (future.length === 0) return false;
+  // A step ranking (ticket 511) is unmeasured exactly when a future lacks its
+  // same-gear value and is not below the gate, or a future whose gate cleared
+  // lacks its step gear's sim or its partner choice. A below-gate future never
+  // zeroes the row, and `commitBreaks` are not read (C171).
+  if (ctx?.stepRanking) {
+    return future.some((f) => {
+      if (f.belowGate) return false;
+      if (f.sameGearDps === undefined) return true;
+      return f.stepGearDps === undefined || f.partnerUnmeasured !== undefined;
+    });
+  }
   return (
     future.some(
       (f) =>
@@ -241,7 +284,7 @@ export function setBonusSubLine(
     (ctx.singleBreaks ?? []).length > 0 ||
     ctx.crossesThreshold === true ||
     (ctx.futureBonuses ?? []).length > 0 ||
-    (ctx.commitBreaks ?? []).length > 0;
+    (!ctx.stepRanking && (ctx.commitBreaks ?? []).length > 0);
   if (!anyDisclosure) return null;
   return on && setCreditUnmeasured(ctx) ? "not_counted" : "hover_hint";
 }
@@ -285,6 +328,7 @@ function walkCredit(
   noiseFloorDps: number,
   rule: SetCreditRule
 ): CreditWalk {
+  if (ctx?.stepRanking) return walkSteps(ctx, noiseFloorDps, rule);
   const future = [...(ctx?.futureBonuses ?? [])].sort(
     (a, b) => a.threshold - b.threshold
   );
@@ -303,7 +347,7 @@ function walkCredit(
   for (const f of future) {
     const bonus = floored(f.dps!);
     if (rule === "full-path" && bonus === 0) continue;
-    const add = (term: SetPotentialTerm) => {
+    const add = (term: Exclude<SetPotentialTerm, { kind: "stop" }>) => {
       terms.push(term);
       running += term.dps;
     };
@@ -354,10 +398,120 @@ function walkCredit(
 }
 
 /**
+ * Whether a step ranking's future can be a stop (ticket 511): its same-gear
+ * value clears the noise gate. False when it is below the gate or has no
+ * same-gear value.
+ */
+export function stepEligible(
+  future: Pick<FutureLike, "belowGate" | "sameGearDps" | "sameGearSe">,
+  noiseFloorDps: number
+): boolean {
+  if (future.belowGate || future.sameGearDps === undefined) return false;
+  return clearsSameGearGate(
+    future.sameGearDps,
+    future.sameGearSe ?? 0,
+    noiseFloorDps
+  );
+}
+
+/**
+ * The step rule (ticket 511). Walk the eligible futures in count order with
+ * c = `stepGearDps` − d_r, the row's single-swap figure before replication.
+ * best-stop: the stop is the future whose c is strictly greater than the best
+ * so far, which starts at 0; the credit is that c, or 0. full-path: the stop is
+ * the last eligible future. So a credited row's figure, `deltaDps` + credit,
+ * is the sim of its stop gear whenever replication did not rewrite it. No
+ * figure from single swaps is added up.
+ *
+ * The split view keeps its per-step formula with `sameGearDps` in place of the
+ * bonus: each eligible step adds its value per piece and loses each newly
+ * lost worn bonus beyond the row's own break, floored, taken at the stop.
+ */
+function walkSteps(
+  ctx: SetContextLike,
+  noiseFloorDps: number,
+  rule: SetCreditRule
+): CreditWalk {
+  const singleDeltaDps = ctx.singleDeltaDps;
+  const eligible = [...(ctx.futureBonuses ?? [])]
+    .filter(
+      (f) => f.stepGearDps !== undefined && stepEligible(f, noiseFloorDps)
+    )
+    .sort((a, b) => a.threshold - b.threshold);
+  if (singleDeltaDps === undefined || eligible.length === 0) {
+    return { credit: 0, split: 0, stopThreshold: 0, terms: [] };
+  }
+  const floored = (v: number): number => (v > noiseFloorDps ? v : 0);
+  const charged = new Set(
+    (ctx.singleBreaks ?? []).map((b) => `${b.setId}:${b.threshold}`)
+  );
+  let splitRunning = 0;
+  let best = { credit: 0, split: 0, stopThreshold: 0 };
+  for (const f of eligible) {
+    let splitLoss = 0;
+    for (const brk of f.breaks ?? []) {
+      const key = `${brk.setId}:${brk.threshold}`;
+      if (charged.has(key)) continue;
+      charged.add(key);
+      splitLoss += floored(brk.dps ?? 0);
+    }
+    splitRunning += floored(f.sameGearDps! / f.threshold) - splitLoss;
+    const c = f.stepGearDps! - singleDeltaDps;
+    if (rule === "full-path" || c > best.credit) {
+      best = { credit: c, split: splitRunning, stopThreshold: f.threshold };
+    }
+  }
+  const terms: SetPotentialTerm[] = eligible.map((f) => ({
+    kind: "stop",
+    threshold: f.threshold,
+    setName: ctx.setName ?? "",
+    pieces: (f.pieces ?? []).map((p) => ({ itemId: p.itemId, name: p.name })),
+    broken: (f.breaks ?? []).map((b) => ({
+      setId: b.setId,
+      setName: b.setName,
+      threshold: b.threshold,
+      ...(b.dps !== undefined ? { dps: b.dps } : {}),
+    })),
+    totalDps: f.stepGearDps!,
+    isStop: f.threshold === best.stopThreshold,
+  }));
+  return { ...best, terms };
+}
+
+/**
+ * The count a crossing row's "Item stats + {set} {n}pc" label names. On a step
+ * ranking (ticket 511) it is the row's count after the swap, because the
+ * crossing gate measured that count; elsewhere it is the six-set table's next
+ * bonus above the worn count. Null when the row crosses nothing.
+ */
+export function crossingLabelCount(
+  ctx:
+    | Pick<
+        SetContext,
+        | "setId"
+        | "piecesWornBefore"
+        | "piecesAfterSwap"
+        | "crossesThreshold"
+        | "stepRanking"
+      >
+    | undefined,
+  stepRanking: boolean = ctx?.stepRanking === true
+): number | null {
+  if (!ctx?.crossesThreshold) return null;
+  if (stepRanking) return ctx.piecesAfterSwap;
+  return (
+    nextMeasurableThreshold(ctx.setId, ctx.piecesWornBefore) ??
+    ctx.piecesAfterSwap
+  );
+}
+
+/**
  * The full-view credit and its itemised terms up to the stop, for the tab's
  * popover (ticket 502): each counted step's bonus (none when it floors to 0),
  * then the pieces it adds, then the breaks it charges. The terms add up to
- * `credit`. Call it only when `setCreditUnmeasured` is false.
+ * `credit`. On a step ranking (ticket 511) the terms are one `"stop"` total
+ * per eligible bonus instead, which do not add up to `credit`. Call it only
+ * when `setCreditUnmeasured` is false.
  */
 export function setPotentialTerms(
   ctx: SetContextLike | undefined,

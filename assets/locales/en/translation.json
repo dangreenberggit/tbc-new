@@ -912,6 +912,9 @@
 			"tip_bonus": "{{set}} {{threshold}}pc ({{have}}/{{threshold}})",
 			"tip_piece_stats": "{{name}} stats",
 			"tip_set_potential": "Set potential",
+			"tip_set_potential_totals": "Set potential, totals over current gear",
+			"tip_stop": "With {{pieces}} ({{threshold}}pc)",
+			"tip_stop_breaks": "With {{pieces}} ({{threshold}}pc, breaks {{broken}})",
 			"tip_total": "Total"
 		},
 		"cutoff": {

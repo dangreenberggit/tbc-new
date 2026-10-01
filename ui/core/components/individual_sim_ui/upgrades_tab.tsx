@@ -21,6 +21,7 @@ import { NumberPicker } from '../pickers/number_picker';
 import { SimTab } from '../sim_tab';
 import { BulkHttpSimRunner } from './upgrades/adapters/bulk_http_sim_runner';
 import { makeSimRunner } from './upgrades/adapters/bulk_wasm_sim_runner';
+import { applyCheckPool } from './upgrades/adapters/check_hooks';
 import { fixtureFileInput, type FixtureHost, installFixtureHooks } from './upgrades/adapters/fixture';
 import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
 import { simDatabaseResolverFor } from './upgrades/adapters/sim_database';
@@ -33,15 +34,16 @@ import { isKaelTempLegendary } from './upgrades/engine/kael-temp';
 import { filterPoolByPhase, type ItemSource, type PoolEntry,simSlotsForPoolSlot } from './upgrades/engine/pool';
 import { type PartialRanking, type Progress, type RankedItem, type Ranking, type RankInput,rankUpgrades } from './upgrades/engine/rank';
 import { MemoryStore } from './upgrades/engine/seams/store';
-import { nextMeasurableThreshold } from './upgrades/engine/set-value';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
 import {
 	applyView,
+	crossingLabelCount,
 	rankableSetPotential,
 	setBonusSubLine,
 	setCreditUnmeasured,
 	type SetCreditView,
+	type SetPotentialTerm,
 	setPotentialTerms,
 	SOURCE_LABELS,
 	type ViewOptions,
@@ -393,6 +395,24 @@ function setTipHeading(text: string): HTMLElement {
 	return (<div className="upgrades-set-bonus-tip-heading">{text}</div>) as HTMLElement;
 }
 
+/** Joins names as "A", "A and B", or "A, B and C". */
+function joinNames(names: readonly string[]): string {
+	if (names.length <= 1) return names[0] ?? '';
+	return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+/**
+ * One step ranking total's label (ticket 511): the partner pieces' full names
+ * in sim slot order, the bonus's count, and each worn bonus the gear loses.
+ */
+function stopLabel(term: Extract<SetPotentialTerm, { kind: 'stop' }>, t: (key: string, opts: Record<string, unknown>) => string): string {
+	const pieces = joinNames(term.pieces.map(p => p.name));
+	if (term.broken.length === 0) return t('tip_stop', { pieces, threshold: term.threshold });
+	// A no-break space before the count, as in the other `tip_*` labels.
+	const broken = joinNames(term.broken.map(b => `${b.setName} ${b.threshold}pc`));
+	return t('tip_stop_breaks', { pieces, threshold: term.threshold, broken });
+}
+
 /**
  * The Set potential section for a row with future bonuses, with the toggle on.
  * - `unmeasured`: a figure the credit needs was not measured, which zeroes the
@@ -402,13 +422,25 @@ function setTipHeading(text: string): HTMLElement {
  * - `itemised`: the credit's bonuses, other pieces' stats and breaks, step by
  *   step, from `setPotentialTerms` (engine/view.ts). They are the terms the
  *   credit was summed from, so they always add up to it (ticket 502).
+ * - `totals` (a step ranking, ticket 511): one line per eligible bonus, each
+ *   the sim of the gear with its partner pieces over the current gear. This
+ *   is the interim form until the owner picks the popover form (K6).
  */
 function setPotentialTipLines(
 	ctx: NonNullable<RankedItem['setContext']>,
 	noiseFloorDps: number,
 	credit: number,
 	t: (key: string, opts: Record<string, unknown>) => string,
-): { lines: SetTipLine[]; kind: 'unmeasured' | 'none' | 'itemised' } {
+): { lines: SetTipLine[]; kind: 'unmeasured' | 'none' | 'itemised' | 'totals' } {
+	if (setCreditUnmeasured(ctx) && ctx.stepRanking) {
+		// The bonuses whose same-gear value, partner choice or step sim is
+		// missing, in count order.
+		const lines = [...(ctx.futureBonuses ?? [])]
+			.sort((a, b) => a.threshold - b.threshold)
+			.filter(f => !f.belowGate && (f.sameGearDps === undefined || f.stepGearDps === undefined || f.partnerUnmeasured !== undefined))
+			.map(f => ({ label: t('tip_bonus', { set: ctx.setName, threshold: f.threshold, have: ctx.piecesWornBefore }), value: undefined }));
+		return { lines, kind: 'unmeasured' };
+	}
 	if (setCreditUnmeasured(ctx)) {
 		const future = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
 		const lines: SetTipLine[] = [];
@@ -437,9 +469,11 @@ function setPotentialTipLines(
 				return { label: t('tip_piece_stats', { name: term.name }), value: term.dps };
 			case 'break':
 				return { label: t('tip_breaks', { set: term.setName, threshold: term.threshold }), value: term.dps };
+			case 'stop':
+				return { label: stopLabel(term, t), value: term.totalDps };
 		}
 	});
-	return { lines, kind: 'itemised' };
+	return { lines, kind: ctx.stepRanking ? 'totals' : 'itemised' };
 }
 
 /**
@@ -1816,7 +1850,14 @@ export class UpgradesTab extends SimTab {
 					clock: () => new Date(),
 					raidSimSkeleton: skeleton,
 					epWeights: epWeightsFor(specId),
-					pool: this.effectivePool(specId, maxPhase, pruned),
+					// The check hook (dev and gate builds only) can add pool entries and
+					// keep only set pieces for the partner-rule check (ticket 511).
+					pool: __TBC_TAB_FIXTURES__
+						? applyCheckPool(this.effectivePool(specId, maxPhase, pruned), window.__upgradesCheck?.pool, {
+								poolFor,
+								setIdOf: id => Database.getSync().getItemById(id)?.setId,
+							})
+						: this.effectivePool(specId, maxPhase, pruned),
 					simDatabaseFor: simDatabaseResolverFor(this.simUI.player, skeleton),
 					// `min(workers, memoryCap)` — WorkerPoolSimRunner derives this once at
 					// construction from the measured per-process memory cost
@@ -1828,6 +1869,10 @@ export class UpgradesTab extends SimTab {
 					// parity harness leaves this unset, keeping its request list
 					// identical.
 					measureBrokenSetValue: true,
+					// Dev and gate builds only: the check hook picks the partner rule
+					// (ticket 511). Undefined there, and always in a player's build,
+					// means the shipped `PARTNER_RULE`.
+					...(__TBC_TAB_FIXTURES__ && window.__upgradesCheck?.partnerRule ? { partnerRule: window.__upgradesCheck.partnerRule } : {}),
 				},
 				progress => {
 					// Row-landed events (candidate-pool.md §5.1.5) are a side
@@ -3279,13 +3324,13 @@ export class UpgradesTab extends SimTab {
 		const measuredBreaks = singleBreaks.filter(b => b.dps !== undefined);
 		const total = row.deltaDps + credit;
 
-		// The threshold this piece crosses, the same expression rank.ts uses for
-		// `crossesThreshold` (ticket 479). The `??` cannot fire while
-		// crossesThreshold is true; it keeps the value a number.
+		// The count this piece crosses, from the view (tickets 479 and 511). The
+		// `??` cannot fire while crossesThreshold is true; it keeps the value a
+		// number.
 		let firstLabel: string | null = ctx.crossesThreshold
 			? t('tip_item_stats_with_bonus', {
 					set: ctx.setName,
-					threshold: nextMeasurableThreshold(ctx.setId, ctx.piecesWornBefore) ?? ctx.piecesAfterSwap,
+					threshold: crossingLabelCount(ctx) ?? ctx.piecesAfterSwap,
 				})
 			: null;
 		for (const b of singleBreaks) {
@@ -3315,8 +3360,14 @@ export class UpgradesTab extends SimTab {
 		const target = tenths(total) - tenths(row.deltaDps);
 		// Headed with the toggle's name, so the lines it adds read as its doing.
 		if (potential.kind === 'unmeasured' || potential.kind === 'itemised') lines.push(setTipHeading(t('tip_set_potential', {})));
+		if (potential.kind === 'totals') lines.push(setTipHeading(t('tip_set_potential_totals', {})));
 		if (potential.kind === 'unmeasured') {
 			for (const l of potential.lines) lines.push(setTipLine(l.label, notMeasured));
+		} else if (potential.kind === 'totals') {
+			// Each line is a total over the current gear, rounded on its own
+			// (C103). The lines are not parts of the Total below, so they are
+			// not spread to add up to it.
+			for (const l of potential.lines) lines.push(setTipLine(l.label, tipDelta(l.value ?? 0)));
 		} else if (potential.kind === 'itemised') {
 			const shown = spreadTenths(
 				potential.lines.map(l => l.value ?? 0),

@@ -76,6 +76,14 @@ import {
 } from "./meta-repair.js";
 import { migrateGemsToItem } from "./migrate-gems.js";
 import {
+  choosePartnerSet,
+  PARTNER_RULE,
+  type PartnerAudit,
+  type PartnerPiece,
+  partnerPool,
+  type PartnerRule,
+} from "./partner-choice.js";
+import {
   type PlausibilityWarning,
   plausibilityWarnings,
 } from "./plausibility.js";
@@ -203,6 +211,14 @@ export type Deps = {
    */
   measureBrokenSetValue?: boolean;
   /**
+   * The rule that picks each set row's partner pieces for a bonus (ticket 511,
+   * `partner-choice.ts`). Absent means `PARTNER_RULE`. Only the tab's check
+   * hook sets it, in dev and gate builds, to score the rules; it joins the
+   * content hash only when set, so a ranking cached under one rule is never
+   * served for another.
+   */
+  partnerRule?: PartnerRule;
+  /**
    * Stop signal (candidate-pool.md §5.1.4). On abort, in-flight per-candidate
    * sims finish and the run returns a `PartialRanking` (`complete: false`); no
    * further candidates are dispatched. An in-flight bulk **screening chunk** is
@@ -326,6 +342,18 @@ export type SetContext = {
   piecesAfterSwap: number;
   nextThreshold: SetThreshold | null;
   crossesThreshold: boolean;
+  /**
+   * Set on every row of a step ranking (ticket 511): the engine valued each
+   * future as a sim of the row's step gear. The view's helpers that see only
+   * this context read it to apply the step rule instead of the ticket 502
+   * walk. Absent on rankings made without `measureBrokenSetValue`.
+   */
+  stepRanking?: true;
+  /**
+   * The row's single-swap figure d_r, taken before paired replication
+   * rewrites `deltaDps`. A step's credit is its `stepGearDps` minus this.
+   */
+  singleDeltaDps?: number;
   singleBreaks?: Array<{
     setId: number;
     setName: string;
@@ -339,6 +367,20 @@ export type SetContext = {
     /** The entry's `sameGearDps` and `sameGearSe`, copied (ticket 511). */
     sameGearDps?: number;
     sameGearSe?: number;
+    /** The entry's gate did not clear: no package or step sim ran (511). */
+    belowGate?: true;
+    /**
+     * The sim of the current gear plus this row plus its partner pieces, minus
+     * the sim of the current gear, and that difference's standard error
+     * (ticket 511). Present only on a step ranking, for a future whose gate
+     * cleared, when the partner choice and the sim succeeded.
+     */
+    stepGearDps?: number;
+    stepGearSe?: number;
+    /** The partner choice needed a worn bonus whose value is unmeasured. */
+    partnerUnmeasured?: "break-unmeasured";
+    /** The rule that chose `pieces` on a step ranking. */
+    partnerRule?: PartnerRule;
     breaks?: Array<{
       setId: number;
       setName: string;
@@ -402,6 +444,33 @@ export type WornSetLadderEntry = {
   counted: boolean;
 };
 
+/** One crossing gate of `Ranking.crossingGates` (ticket 511). */
+export type CrossingGate = {
+  setId: number;
+  /** One more than the worn count: the count a single swap reaches. */
+  count: number;
+  /** The candidate whose single-swap gear the gate was measured on. */
+  itemId: number;
+  dps?: number;
+  se?: number;
+  cleared: boolean;
+};
+
+export type SetStepSims = {
+  partnerRule: PartnerRule;
+  /** Distinct step gears across every row and future. */
+  gears: number;
+  simmed: number;
+  fromStore: number;
+};
+
+export type PartnerAuditEntry = {
+  itemId: number;
+  setId: number;
+  count: number;
+  audit: PartnerAudit;
+};
+
 export type SetBonusValue = {
   setId: number;
   setName: string;
@@ -435,6 +504,13 @@ export type SetBonusValue = {
    */
   sameGearDps?: number;
   sameGearSe?: number;
+  /**
+   * The same-gear value is at or below the noise gate, so this count is not
+   * a bonus here and no package, pair or step sim ran for it (ticket 511).
+   * Such an entry is never a simmed package: `packageDeltaDps` is 0 and
+   * `bonusDps` is absent.
+   */
+  belowGate?: true;
   unmeasured?: UnmeasuredReason;
   breaks?: BrokenSetBonus[];
   selfConfound?: SelfSetConfound;
@@ -481,6 +557,26 @@ export type Ranking = {
    * `deps.measureBrokenSetValue` is set and a set is worn at 2 or more.
    */
   wornSetLadder?: WornSetLadderEntry[];
+  /**
+   * One gate per worn set with a pool piece in a slot the set does not fill:
+   * the bonus at one piece more than worn, measured on that set's best such
+   * candidate's own swap (ticket 511). A row crosses a bonus only when its
+   * count's gate here cleared. Present only with `measureBrokenSetValue`.
+   */
+  crossingGates?: CrossingGate[];
+  /**
+   * The step-gear sims of a step ranking (ticket 511): the rule that chose
+   * the partner pieces, how many distinct step gears there were, and how many
+   * of their sims ran or came from the store. Its presence marks the ranking
+   * as one whose set rows are valued by the step rule.
+   */
+  setStepSims?: SetStepSims;
+  /**
+   * Every partner set simmed for every eligible future, written only under
+   * the "every-combination" rule, which the tab's check hook sets to score
+   * the zero-sim rules (ticket 511). Players never get it.
+   */
+  partnerAudit?: PartnerAuditEntry[];
   plausibilityWarnings?: PlausibilityWarning[];
   /**
    * Screening chunks that failed for an engine or transport reason, and whose
@@ -828,6 +924,9 @@ export async function rankUpgrades(
     fullPool: true,
     screenIterations: null,
     promoteTopK: null,
+    // Only when set, so a run without it keeps every key already written; a
+    // run with it is never served a ranking another rule made (ticket 511).
+    ...(deps.partnerRule !== undefined ? { partnerRule: deps.partnerRule } : {}),
   });
 
   const cached = await deps.store.get<Ranking>(rankingCacheKey(contentHash));
@@ -1470,6 +1569,7 @@ export async function rankUpgrades(
           bonuses: [],
           brokenSetValues: [],
           wornSetLadder: [],
+          crossingGates: [],
           candidateSlotIndex: new Map(),
         }
       : await buildSetBonuses(
@@ -1494,6 +1594,8 @@ export async function rankUpgrades(
       ? countedLadderBreaks(setBonusResult.wornSetLadder)
       : undefined;
     const setBonuses = setBonusResult.bonuses;
+    // Ticket 511: with the flag, each set row is valued by the step rule.
+    const stepPath = (deps.measureBrokenSetValue ?? false) && !aborted;
     if (setBonuses.length > 0) {
       applySetContext(
         ranked,
@@ -1502,9 +1604,34 @@ export async function rankUpgrades(
         setBonusResult.brokenSetValues,
         setBonusResult.candidateSlotIndex,
         individualDeltasByItemId,
-        counts
+        counts,
+        stepPath ? { crossingGates: setBonusResult.crossingGates } : undefined
       );
     }
+    // After the futures are complete and before replication rewrites the top
+    // rows' `deltaDps` (C89): the step gears' sims, one per distinct gear.
+    const steps =
+      stepPath && setBonuses.length > 0 && counts
+        ? await measureSetSteps({
+            deps,
+            ranked,
+            setBonuses,
+            equipment,
+            gems,
+            composeFor,
+            individualDeltasByItemId,
+            brokenSetValues: setBonusResult.brokenSetValues,
+            candidateSlotIndex: setBonusResult.candidateSlotIndex,
+            counts,
+            baseline: {
+              dps: baselineDps,
+              se: observation.stdev / Math.sqrt(iterations),
+            },
+            simVersion,
+            runOpts,
+            floorDps: setBonusNoiseFloorDps(cutoff),
+          })
+        : undefined;
     onProgress?.({ stage: "ranking" });
     // Sorted first so replication can pick the contested top of the list, then
     // sorted again below — replication rewrites the very `deltaDps` this order
@@ -1605,6 +1732,11 @@ export async function rankUpgrades(
       ...(setBonusResult.wornSetLadder.length > 0
         ? { wornSetLadder: setBonusResult.wornSetLadder }
         : {}),
+      ...(setBonusResult.crossingGates.length > 0
+        ? { crossingGates: setBonusResult.crossingGates }
+        : {}),
+      ...(steps ? { setStepSims: steps.setStepSims } : {}),
+      ...(steps?.partnerAudit ? { partnerAudit: steps.partnerAudit } : {}),
       ...(warnings.length > 0 ? { plausibilityWarnings: warnings } : {}),
       ...(screeningFallbacks.length > 0 ? { screeningFallbacks } : {}),
     };
@@ -1741,6 +1873,7 @@ async function buildSetBonuses(
   bonuses: SetBonusValue[];
   brokenSetValues: BrokenSetValue[];
   wornSetLadder: WornSetLadderEntry[];
+  crossingGates: CrossingGate[];
   /** itemId -> best pool slotIndex, so `applySetContext` can compute per-row breaks. */
   candidateSlotIndex: Map<number, number>;
 }> {
@@ -1800,6 +1933,7 @@ async function buildSetBonuses(
       bonuses: [],
       brokenSetValues,
       wornSetLadder,
+      crossingGates: [],
       candidateSlotIndex: new Map(),
     };
   }
@@ -1817,6 +1951,27 @@ async function buildSetBonuses(
     return undefined;
   };
 
+  const floorDps = setBonusNoiseFloorDps(cutoff);
+  const selectFor = (setId: number, threshold: SetThreshold) =>
+    selectPackage(
+      setId,
+      threshold,
+      equipment,
+      candidates,
+      [...individualDeltasByItemId.values()],
+      slotIndexForPoolEntry
+    );
+  // Ticket 511, flag only: every count from one above the worn count up to
+  // the count the pool can fill, with no list of which counts have a bonus.
+  // The same-gear gate below decides which are bonuses here.
+  const reachableCounts = (setId: number, piecesWorn: number): SetThreshold[] => {
+    const counts: SetThreshold[] = [];
+    for (let t = Math.max(2, piecesWorn + 1); selectFor(setId, t).ok; t++) {
+      counts.push(t);
+    }
+    return counts;
+  };
+
   const results: SetBonusValue[] = [];
   for (const setId of setIdsWithCandidates) {
     const piecesWorn = wornCounts.get(setId) ?? 0;
@@ -1827,11 +1982,30 @@ async function buildSetBonuses(
     );
     let twoPieceBonus: number | undefined;
     let twoPieceUnmeasurableAtThisWornCount = false;
+    // Flag only (C31): a 4pc's raw value subtracts the 2pc's, so it is left
+    // unset when the 2pc package was attempted and failed.
+    let twoPieceFailed = false;
 
-    for (const threshold of SET_THRESHOLDS) {
-      if (threshold <= piecesWorn) continue;
+    const thresholds = measureBrokenSetValue
+      ? reachableCounts(setId, piecesWorn)
+      : SET_THRESHOLDS.filter((t) => t > piecesWorn);
+    if (measureBrokenSetValue && thresholds.length === 0) {
+      // No count is in reach. One entry still marks the set, so its rows keep
+      // their single breaks and crossing in `setContext`; it is never a future.
+      results.push({
+        setId,
+        setName: label,
+        threshold: Math.max(2, piecesWorn + 1),
+        piecesWorn,
+        packageItemIds: [],
+        packageDeltaDps: 0,
+        unmeasured: "insufficient-pieces",
+      });
+      continue;
+    }
 
-      if (!isBonusImplemented(setId, threshold)) {
+    for (const threshold of thresholds) {
+      if (!measureBrokenSetValue && !isBonusImplemented(setId, threshold)) {
         results.push({
           setId,
           setName: label,
@@ -1844,14 +2018,7 @@ async function buildSetBonuses(
         continue;
       }
 
-      const selection = selectPackage(
-        setId,
-        threshold,
-        equipment,
-        candidates,
-        [...individualDeltasByItemId.values()],
-        slotIndexForPoolEntry
-      );
+      const selection = selectFor(setId, threshold);
       if (!selection.ok) {
         results.push({
           setId,
@@ -1916,9 +2083,61 @@ async function buildSetBonuses(
           packageDeltaDps: 0,
           unmeasured: "repair-failed",
         });
+        if (threshold === 2) twoPieceFailed = true;
         continue;
       }
       const packageRequest = composeFor(packageEquipment);
+
+      // Ticket 511, flag only: the gate runs before the package sim, so a
+      // count with no bonus on this gear costs its two gate sims and nothing
+      // else. It does not need the package's result.
+      let sameGear: DpsSample | undefined;
+      if (measureBrokenSetValue) {
+        sameGear = await measureSameGearBonus(
+          cachedSampleRun(`${label} ${threshold}pc same-gear bonus`),
+          packageRequest,
+          packageEquipment.flatMap((spec, i) =>
+            spec.id && getItem(spec.id)?.setId === setId ? [i] : []
+          ),
+          threshold - 1
+        );
+        if (!sameGear) {
+          packageSimSkips.push({
+            setId,
+            setName: label,
+            threshold,
+            reason: "the same-gear sims of its bonus failed",
+          });
+          results.push({
+            setId,
+            setName: label,
+            threshold,
+            piecesWorn,
+            packageItemIds: addedPieces.map((p) => p.itemId),
+            packageDeltaDps: 0,
+            unmeasured: "sim-failed",
+          });
+          if (threshold === 2) twoPieceFailed = true;
+          continue;
+        }
+        if (!clearsSameGearGate(sameGear.dps, sameGear.se, floorDps)) {
+          results.push({
+            setId,
+            setName: label,
+            threshold,
+            piecesWorn,
+            packageItemIds: addedPieces.map((p) => p.itemId),
+            packageDeltaDps: 0,
+            sameGearDps: sameGear.dps,
+            sameGearSe: sameGear.se,
+            belowGate: true,
+          });
+          continue;
+        }
+      }
+      const gateFields = sameGear
+        ? { sameGearDps: sameGear.dps, sameGearSe: sameGear.se }
+        : {};
 
       let packageObs = await readCachedSim(
         deps,
@@ -1949,8 +2168,10 @@ async function buildSetBonuses(
             piecesWorn,
             packageItemIds: addedPieces.map((p) => p.itemId),
             packageDeltaDps: 0,
+            ...gateFields,
             unmeasured: "sim-failed",
           });
+          if (threshold === 2) twoPieceFailed = true;
           continue;
         }
         await cacheSimResult(
@@ -2030,16 +2251,8 @@ async function buildSetBonuses(
           selfConfound = { threshold: 2, dps: pairB2.dps };
         }
       }
-      const sameGear = measureBrokenSetValue
-        ? await measureSameGearBonus(
-            cachedSampleRun(`${label} ${threshold}pc same-gear bonus`),
-            packageRequest,
-            packageEquipment.flatMap((spec, i) =>
-              spec.id && getItem(spec.id)?.setId === setId ? [i] : []
-            ),
-            threshold - 1
-          )
-        : undefined;
+      const missingTwoPiece =
+        measureBrokenSetValue && threshold === 4 && twoPieceFailed;
       results.push({
         setId,
         setName: label,
@@ -2047,11 +2260,10 @@ async function buildSetBonuses(
         piecesWorn,
         packageItemIds: addedPieces.map((p) => p.itemId),
         packageDeltaDps: synergy.packageDeltaDps,
-        bonusDps: synergy.bonusDps,
-        se: synergy.se,
-        ...(sameGear
-          ? { sameGearDps: sameGear.dps, sameGearSe: sameGear.se }
-          : {}),
+        ...(missingTwoPiece
+          ? {}
+          : { bonusDps: synergy.bonusDps, se: synergy.se }),
+        ...gateFields,
         ...(breaks.length > 0 ? { breaks } : {}),
         ...(selfConfound ? { selfConfound } : {}),
         ...(packageRepairSwaps.length > 0
@@ -2065,6 +2277,70 @@ async function buildSetBonuses(
               })),
             }
           : {}),
+      });
+    }
+  }
+
+  // Ticket 511, flag only: whether one more piece of a worn set reaches a
+  // bonus, measured on the gear a row actually makes. One gate per worn set
+  // with a candidate in a slot the set does not fill, on that set's best such
+  // candidate's own swap, so a row's "crosses" label reads a measurement
+  // rather than the six-set table.
+  const crossingGates: CrossingGate[] = [];
+  if (measureBrokenSetValue) {
+    for (const setId of [...setIdsWithCandidates].sort((a, b) => a - b)) {
+      const worn = wornCounts.get(setId) ?? 0;
+      if (worn < 1) continue;
+      const wornSlots = new Set(
+        equipment.flatMap((spec, i) =>
+          spec.id && getItem(spec.id)?.setId === setId ? [i] : []
+        )
+      );
+      let best: IndividualDelta | undefined;
+      for (const entry of candidates) {
+        if (getItem(entry.itemId)?.setId !== setId) continue;
+        const single = individualDeltasByItemId.get(entry.itemId);
+        if (!single || wornSlots.has(single.slotIndex)) continue;
+        if (
+          !best ||
+          single.deltaDps > best.deltaDps ||
+          (single.deltaDps === best.deltaDps && single.itemId < best.itemId)
+        ) {
+          best = single;
+        }
+      }
+      if (!best) continue;
+      let swapped: SimItemSpec[] | undefined;
+      try {
+        swapped = candidateSwapWithRepairs(
+          equipment,
+          best.slotIndex,
+          best.itemId,
+          gems
+        ).equipment;
+      } catch (err) {
+        if (!(err instanceof MetaRepairError)) throw err;
+      }
+      const value = swapped
+        ? await measureSameGearBonus(
+            cachedSampleRun(
+              `${setLabel(equipment, setId)} ${worn + 1}pc crossing gate`
+            ),
+            composeFor(swapped),
+            swapped.flatMap((spec, i) =>
+              spec.id && getItem(spec.id)?.setId === setId ? [i] : []
+            ),
+            worn
+          )
+        : undefined;
+      crossingGates.push({
+        setId,
+        count: worn + 1,
+        itemId: best.itemId,
+        ...(value ? { dps: value.dps, se: value.se } : {}),
+        cleared:
+          value !== undefined &&
+          clearsSameGearGate(value.dps, value.se, floorDps),
       });
     }
   }
@@ -2174,7 +2450,248 @@ async function buildSetBonuses(
     if (allMeasured) b.bonusDpsNet = b.bonusDps - netInflation(keys);
   }
 
-  return { bonuses: results, brokenSetValues, wornSetLadder, candidateSlotIndex };
+  return {
+    bonuses: results,
+    brokenSetValues,
+    wornSetLadder,
+    crossingGates,
+    candidateSlotIndex,
+  };
+}
+
+/**
+ * The step-sim phase of a step ranking (ticket 511). For each set row and each
+ * future whose same-gear gate cleared, `choosePartnerSet` picks the partner
+ * pieces once, and the row's step gear — the current gear plus the row plus
+ * those pieces, folded in slot order with the same gem repairs as every other
+ * swap — is simmed once per distinct gear. A future's `stepGearDps` is that
+ * sim minus the baseline. A failed choice, repair or sim leaves the future
+ * without it, which makes the row unmeasured; it never fails the ranking.
+ */
+async function measureSetSteps(args: {
+  deps: Deps;
+  ranked: RankedItem[];
+  setBonuses: readonly SetBonusValue[];
+  equipment: readonly SimItemSpec[];
+  gems: GemContext;
+  composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest;
+  individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>;
+  brokenSetValues: readonly BrokenSetValue[];
+  candidateSlotIndex: ReadonlyMap<number, number>;
+  counts: BonusCountPredicate;
+  baseline: DpsSample;
+  simVersion: string;
+  runOpts: SimRunOpts;
+  floorDps: number;
+}): Promise<{ setStepSims: SetStepSims; partnerAudit?: PartnerAuditEntry[] }> {
+  const { deps, equipment, gems, composeFor, counts, baseline, runOpts } = args;
+  const rule = deps.partnerRule ?? PARTNER_RULE;
+  const bBy = new Map<string, number | undefined>();
+  for (const v of args.brokenSetValues) {
+    bBy.set(`${v.setId}:${v.threshold}`, v.dps);
+  }
+  const nameOf = new Map(args.ranked.map((r) => [r.itemId, r.name]));
+  let simmed = 0;
+  let fromStore = 0;
+
+  /** A store hit, else a sim; undefined when the sim fails. */
+  const runCounted = async (
+    request: RaidSimRequest
+  ): Promise<{ totalDps: number; se: number } | undefined> => {
+    let obs = await readCachedSim(deps, request, args.simVersion, runOpts);
+    if (obs) {
+      fromStore += 1;
+    } else {
+      try {
+        obs = await deps.sim.run(request, runOpts);
+      } catch (err) {
+        console.warn(
+          "[upgrades] set step gear not measured: the sim failed",
+          err
+        );
+        return undefined;
+      }
+      simmed += 1;
+      await cacheSimResult(deps, request, args.simVersion, runOpts, obs);
+    }
+    const se = obs.stdev / Math.sqrt(runOpts.iterations);
+    return {
+      totalDps: obs.dps - baseline.dps,
+      se: Math.sqrt(se ** 2 + baseline.se ** 2),
+    };
+  };
+
+  /** The step gear's request, or undefined when a gem repair fails. */
+  const stepGear = (
+    swaps: readonly PackagePiece[]
+  ): RaidSimRequest | undefined => {
+    let gear: SimItemSpec[] = [...equipment];
+    try {
+      for (const p of [...swaps].sort((a, b) => a.slotIndex - b.slotIndex)) {
+        gear = candidateSwapWithRepairs(gear, p.slotIndex, p.itemId, gems)
+          .equipment;
+      }
+    } catch (err) {
+      if (!(err instanceof MetaRepairError)) throw err;
+      return undefined;
+    }
+    return composeFor(gear);
+  };
+
+  type Future = NonNullable<SetContext["futureBonuses"]>[number];
+  const requests = new Map<string, RaidSimRequest>();
+  const pending: Array<{ future: Future; key: string }> = [];
+  const audits: PartnerAuditEntry[] = [];
+
+  for (const item of args.ranked) {
+    const ctx = item.setContext;
+    if (!ctx) continue;
+    const single = args.individualDeltasByItemId.get(item.itemId);
+    if (!single) continue;
+    ctx.singleDeltaDps = single.deltaDps;
+    const eligible = (ctx.futureBonuses ?? []).filter(
+      (f) =>
+        !f.belowGate &&
+        f.sameGearDps !== undefined &&
+        clearsSameGearGate(f.sameGearDps, f.sameGearSe ?? 0, args.floorDps)
+    );
+    if (eligible.length === 0) continue;
+
+    const setId = ctx.setId;
+    const wornSetSlots = new Set(
+      equipment.flatMap((spec, i) =>
+        spec.id && getItem(spec.id)?.setId === setId ? [i] : []
+      )
+    );
+    const pieces: PartnerPiece[] = [];
+    for (const [itemId, slotIndex] of args.candidateSlotIndex) {
+      if (itemId === item.itemId || getItem(itemId)?.setId !== setId) continue;
+      const delta = args.individualDeltasByItemId.get(itemId);
+      if (!delta) continue;
+      pieces.push({ itemId, slotIndex, singleDeltaDps: delta.deltaDps });
+    }
+    const pool = partnerPool({
+      pieces,
+      wornSetSlots,
+      rowSlotIndex: single.slotIndex,
+    });
+    const rowSwap: PackagePiece = {
+      itemId: item.itemId,
+      slotIndex: single.slotIndex,
+    };
+    const lostBy = (swaps: readonly PackagePiece[]) =>
+      brokenSetBonuses(equipment, swaps, setId, counts);
+
+    for (const f of eligible) {
+      const entry = args.setBonuses.find(
+        (b) => b.setId === setId && b.threshold === f.threshold
+      );
+      const pathSlot = args.candidateSlotIndex.get(item.itemId);
+      const todaysPieces =
+        entry && entry.packageItemIds.length > 0 && pathSlot !== undefined
+          ? pathToThreshold(
+              item.itemId,
+              pathSlot,
+              entry,
+              args.candidateSlotIndex,
+              args.individualDeltasByItemId
+            ).filter((p) => p.itemId !== item.itemId)
+          : undefined;
+      const choice = await choosePartnerSet(
+        {
+          row: {
+            itemId: item.itemId,
+            slotIndex: single.slotIndex,
+            singleDeltaDps: single.deltaDps,
+          },
+          setId,
+          count: f.threshold,
+          needed: f.threshold - ctx.piecesAfterSwap,
+          pool,
+          lostBy,
+          breakDps: (s, c) => bBy.get(`${s}:${c}`),
+          ...(todaysPieces ? { todaysPieces } : {}),
+          simGear: async (partners) => {
+            const request = stepGear([rowSwap, ...partners]);
+            return request ? runCounted(request) : undefined;
+          },
+        },
+        rule
+      );
+      // On a step ranking an eligible future's `pieces` and `breaks` are its
+      // partner choice's, so the ticket 502 path's are dropped first.
+      delete f.pieces;
+      delete f.breaks;
+      if (choice === undefined) continue;
+      if ("unmeasured" in choice) {
+        f.partnerUnmeasured = choice.unmeasured;
+        continue;
+      }
+      if (choice.audit) {
+        audits.push({
+          itemId: item.itemId,
+          setId,
+          count: f.threshold,
+          audit: choice.audit,
+        });
+      }
+      const slotOf = new Map<number, number>();
+      for (const p of [...pool, ...(todaysPieces ?? [])]) {
+        slotOf.set(p.itemId, p.slotIndex);
+      }
+      const partners: PackagePiece[] = choice.itemIds
+        .map((itemId) => ({ itemId, slotIndex: slotOf.get(itemId)! }))
+        .sort((a, b) => a.slotIndex - b.slotIndex);
+      f.partnerRule = rule;
+      f.pieces = partners.map((p) => ({
+        itemId: p.itemId,
+        name: nameOf.get(p.itemId) ?? String(p.itemId),
+      }));
+      // Every counted worn bonus the step gear loses against the current
+      // gear, the row's own break included: the popover line is a total over
+      // the current gear.
+      const lost = lostBy([rowSwap, ...partners]);
+      if (lost.length > 0) {
+        f.breaks = lost.map((brk) => {
+          const dps = bBy.get(`${brk.setId}:${brk.threshold}`);
+          return {
+            setId: brk.setId,
+            setName: brk.setName,
+            threshold: brk.threshold,
+            ...(dps !== undefined ? { dps } : {}),
+          };
+        });
+      }
+      const request = stepGear([rowSwap, ...partners]);
+      if (!request) continue;
+      const key = simCacheKey(request, args.simVersion, runOpts);
+      requests.set(key, request);
+      pending.push({ future: f, key });
+    }
+  }
+
+  // Identical step gears are simmed once. Each task handles its own sim
+  // failure, so one failed sim leaves only its own futures unmeasured (C170).
+  const totals = new Map<string, { totalDps: number; se: number }>();
+  const keys = [...requests.keys()];
+  await promisePool(
+    keys.map((key) => async () => {
+      const total = await runCounted(requests.get(key)!);
+      if (total) totals.set(key, total);
+    }),
+    deps.concurrency ?? 1
+  );
+  for (const { future, key } of pending) {
+    const total = totals.get(key);
+    if (!total) continue;
+    future.stepGearDps = total.totalDps;
+    future.stepGearSe = total.se;
+  }
+
+  return {
+    setStepSims: { partnerRule: rule, gears: keys.length, simmed, fromStore },
+    ...(rule === "every-combination" ? { partnerAudit: audits } : {}),
+  };
 }
 
 /**
@@ -2184,8 +2701,15 @@ async function buildSetBonuses(
 function topMeasuredPackage(
   bonusesForSet: readonly SetBonusValue[]
 ): SetBonusValue | undefined {
+  // `!belowGate` (C198): a below-gate entry has package ids but no package
+  // sim, so it is never a measured package (ticket 511).
   return [...bonusesForSet]
-    .filter((b) => b.unmeasured === undefined && b.packageItemIds.length > 0)
+    .filter(
+      (b) =>
+        b.unmeasured === undefined &&
+        !b.belowGate &&
+        b.packageItemIds.length > 0
+    )
     .sort((a, b) => b.threshold - a.threshold)[0];
 }
 
@@ -2406,11 +2930,32 @@ function countedLadderBreaks(
   return (setId, count) => counted.has(`${setId}:${count}`);
 }
 
+/**
+ * The smallest entry count above `after` whose same-gear gate cleared, or
+ * null (ticket 511). An entry carries `sameGearDps` without `belowGate`
+ * exactly when its gate cleared.
+ */
+function nextClearedThreshold(
+  bonusesForSet: readonly SetBonusValue[],
+  after: number
+): SetThreshold | null {
+  const counts = bonusesForSet
+    .filter(
+      (b) => b.threshold > after && b.sameGearDps !== undefined && !b.belowGate
+    )
+    .map((b) => b.threshold);
+  return counts.length > 0 ? Math.min(...counts) : null;
+}
+
 export function memberPackages(
   itemId: number,
   bonusesForSet: readonly SetBonusValue[]
 ): SetPackageContext[] | undefined {
-  const measured = bonusesForSet.filter((b) => b.unmeasured === undefined);
+  // `!belowGate` (C198): a below-gate entry's package was never simmed, so
+  // its `packageDeltaDps` of 0 is not a measurement (ticket 511).
+  const measured = bonusesForSet.filter(
+    (b) => b.unmeasured === undefined && !b.belowGate
+  );
   if (!measured.some((b) => b.packageItemIds.includes(itemId))) {
     return undefined;
   }
@@ -2432,7 +2977,13 @@ function applySetContext(
   brokenSetValues: readonly BrokenSetValue[] = [],
   candidateSlotIndex: ReadonlyMap<number, number> = new Map(),
   individualDeltasByItemId: ReadonlyMap<number, IndividualDelta> = new Map(),
-  counts: BonusCountPredicate = isBonusImplemented
+  counts: BonusCountPredicate = isBonusImplemented,
+  /**
+   * Present exactly on the flag path (ticket 511): the crossing gates, so the
+   * crossing and next-bonus counts read measurements instead of the six-set
+   * table, and every entry above the swap's count becomes a future.
+   */
+  stepPath?: { crossingGates: readonly CrossingGate[] }
 ): void {
   const wornCounts = setCounts(equipment);
   const bonusesBySet = new Map<number, SetBonusValue[]>();
@@ -2457,13 +3008,25 @@ function applySetContext(
     const piecesAfterSwap = item.owned
       ? piecesWornBefore
       : piecesWornBefore + 1;
-    const thresholdBeforeSwap = nextMeasurableThreshold(
-      setId,
-      piecesWornBefore
-    );
-    const crossesThreshold =
-      thresholdBeforeSwap !== null && piecesAfterSwap >= thresholdBeforeSwap;
-    const nextThreshold = nextMeasurableThreshold(setId, piecesAfterSwap);
+    // Flag path (ticket 511): one more piece crosses a bonus only when that
+    // count's crossing gate cleared, and the next bonus is the next count
+    // whose gate cleared. No table is read.
+    const crossingCleared =
+      stepPath?.crossingGates.some(
+        (g) =>
+          g.setId === setId && g.count === piecesWornBefore + 1 && g.cleared
+      ) ?? false;
+    const thresholdBeforeSwap = stepPath
+      ? crossingCleared
+        ? piecesWornBefore + 1
+        : nextClearedThreshold(bonusesForSet, piecesWornBefore)
+      : nextMeasurableThreshold(setId, piecesWornBefore);
+    const crossesThreshold = stepPath
+      ? !item.owned && piecesAfterSwap === piecesWornBefore + 1 && crossingCleared
+      : thresholdBeforeSwap !== null && piecesAfterSwap >= thresholdBeforeSwap;
+    const nextThreshold = stepPath
+      ? nextClearedThreshold(bonusesForSet, piecesAfterSwap)
+      : nextMeasurableThreshold(setId, piecesAfterSwap);
 
     const setContext: SetContext = {
       setId,
@@ -2473,6 +3036,7 @@ function applySetContext(
       piecesAfterSwap,
       nextThreshold,
       crossesThreshold,
+      ...(stepPath ? { stepRanking: true as const } : {}),
     };
 
     const slotIndex = candidateSlotIndex.get(item.itemId);
@@ -2505,10 +3069,25 @@ function applySetContext(
     // so crediting it a future bonus would rank "keep what you wear" on value
     // the swap cannot bring (ticket 478 A4; fixture A4 showed credit 80).
     const advancesPieceCount = piecesAfterSwap > piecesWornBefore;
-    const T = [...SET_THRESHOLDS].filter(
-      (t) =>
-        advancesPieceCount && t > piecesAfterSwap && isBonusImplemented(setId, t)
-    );
+    // Flag path (ticket 511): every entry above the swap's count that has a
+    // package or is below the gate, with no list. A below-gate future is
+    // never a stop, but it is shown so the row can say the count was tried.
+    const T = stepPath
+      ? bonusesForSet
+          .filter(
+            (b) =>
+              advancesPieceCount &&
+              b.threshold > piecesAfterSwap &&
+              (b.packageItemIds.length > 0 || b.belowGate === true)
+          )
+          .map((b) => b.threshold)
+          .sort((a, b) => a - b)
+      : [...SET_THRESHOLDS].filter(
+          (t) =>
+            advancesPieceCount &&
+            t > piecesAfterSwap &&
+            isBonusImplemented(setId, t)
+        );
     const singleKeys = new Set(
       (setContext.singleBreaks ?? []).map((b) => `${b.setId}:${b.threshold}`)
     );
@@ -2555,9 +3134,12 @@ function applySetContext(
     const futureBonuses = T.map((t) => {
       const bonus = bonusesForSet.find((b) => b.threshold === t);
       const net = bonus?.bonusDpsNet;
+      // `!belowGate` (C198): no path through a package that was never simmed
+      // (ticket 511).
       const path =
         bonus &&
         bonus.unmeasured === undefined &&
+        !bonus.belowGate &&
         bonus.packageItemIds.length > 0 &&
         slotIndex !== undefined
           ? pathToThreshold(
@@ -2598,6 +3180,7 @@ function applySetContext(
         ...(bonus?.sameGearDps !== undefined && bonus.sameGearSe !== undefined
           ? { sameGearDps: bonus.sameGearDps, sameGearSe: bonus.sameGearSe }
           : {}),
+        ...(bonus?.belowGate ? { belowGate: true as const } : {}),
         ...(pathBreaks.length > 0 ? { breaks: pathBreaks.map(withDps) } : {}),
         ...(pieces ? { pieces } : {}),
       };
