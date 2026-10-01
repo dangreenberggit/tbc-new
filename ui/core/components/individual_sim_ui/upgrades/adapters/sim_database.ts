@@ -35,12 +35,24 @@
  * (`ui/core/player.tsx`), which likewise does not consult
  * `getEnableItemSwap()` — an empty swap set contributes no rows, so the
  * unconditional merge costs a disabled page nothing.
+ *
+ * The player's `consumables` and `spellEffects` rows are copied from the
+ * skeleton the same run captured (ticket 522). The same `makeRaidSimRequest`
+ * call that built the skeleton named the consumables and filled these rows
+ * (`ui/core/sim.ts` → `extendPlayerProtoWithMissingEffects`), so the names and
+ * rows agree and equal the page's own request. compose() replaces
+ * `player.database` as a whole (`engine/compose.ts:48`), so without this a
+ * backend that had not seen the rows simmed the tab's requests with no
+ * consumables: Go skips a named consumable that has no row, and a consumable
+ * row whose effect row is missing is a nil dereference
+ * (`sim/core/consumes.go:256-259`).
  */
 
 import type { Player } from '../../../../player.js';
 import { EquipmentSpec } from '../../../../proto/common.js';
 import { SimDatabase } from '../../../../proto/db.js';
 import { Database } from '../../../../proto_utils/database.js';
+import type { RaidSimRequest } from '../engine/seams/sim-runner.js';
 import type { SimItemSpec } from '../engine/slots.js';
 
 /**
@@ -49,11 +61,24 @@ import type { SimItemSpec } from '../engine/slots.js';
  * `Readonly<Record<string, unknown>>` — the engine never inspects it.
  *
  * Closes over the page's `Player` so every request includes that player's
- * item-swap rows. A factory rather than a bare function because the engine
- * hands the resolver only the equipment array, and widening that signature
- * would mean editing a ported engine file (ticket 362).
+ * item-swap rows, and over the run's skeleton so every request includes the
+ * page's consumable rows. A factory rather than a bare function because the
+ * engine hands the resolver only the equipment array, and widening that
+ * signature would mean editing a ported engine file (ticket 362).
  */
-export function simDatabaseResolverFor(player: Player<any>): (equipment: readonly SimItemSpec[]) => Readonly<Record<string, unknown>> | undefined {
+export function simDatabaseResolverFor(
+	player: Player<any>,
+	skeleton: RaidSimRequest,
+): (equipment: readonly SimItemSpec[]) => Readonly<Record<string, unknown>> | undefined {
+	// The seam keeps the request opaque (`engine/seams/sim-runner.ts` header),
+	// so the path to the player is typed here, and `fromJson`'s `JsonValue`
+	// gets the same `Record<string, never>` cast `bulk_request_builder.ts` uses.
+	const skeletonPlayer = (skeleton as { raid?: { parties?: Array<{ players?: Array<{ database?: unknown }> }> } }).raid?.parties?.[0]?.players?.[0];
+	const skeletonDb = SimDatabase.fromJson((skeletonPlayer?.database ?? {}) as Record<string, never>, { ignoreUnknownFields: true });
+	// A skeleton with no player database gives empty rows, which is what the
+	// page itself sent.
+	const pageRows = SimDatabase.create({ consumables: skeletonDb.consumables, spellEffects: skeletonDb.spellEffects });
+
 	return equipment => {
 		// Unguarded, like the engine's own items.ts: `getSync` throws if the
 		// Database has not loaded, and by the time a ranking runs the page has
@@ -64,6 +89,6 @@ export function simDatabaseResolverFor(player: Player<any>): (equipment: readonl
 		const spec = EquipmentSpec.fromJson({ items: equipment.map(item => ({ ...item })) }, { ignoreUnknownFields: true });
 		const gear = db.lookupEquipmentSpec(spec);
 		const swap = player.itemSwapSettings.getGear().toDatabase(db);
-		return SimDatabase.toJson(Database.mergeSimDatabases(gear.toDatabase(db), swap)) as Readonly<Record<string, unknown>>;
+		return SimDatabase.toJson(Database.mergeSimDatabases(Database.mergeSimDatabases(gear.toDatabase(db), swap), pageRows)) as Readonly<Record<string, unknown>>;
 	};
 }

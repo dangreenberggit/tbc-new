@@ -1817,7 +1817,7 @@ export class UpgradesTab extends SimTab {
 					raidSimSkeleton: skeleton,
 					epWeights: epWeightsFor(specId),
 					pool: this.effectivePool(specId, maxPhase, pruned),
-					simDatabaseFor: simDatabaseResolverFor(this.simUI.player),
+					simDatabaseFor: simDatabaseResolverFor(this.simUI.player, skeleton),
 					// `min(workers, memoryCap)` — WorkerPoolSimRunner derives this once at
 					// construction from the measured per-process memory cost
 					// (candidate-pool.md §5.1.2, worker_pool_sim_runner.ts).
