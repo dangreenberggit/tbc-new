@@ -22,6 +22,8 @@
 //   node run-tab-cdp.mjs --origin http://localhost:3333 [--page /tbc/paladin/retribution/]
 //        [--phase 5] [--candidates N] [--iterations N] [--timeout-ms 2700000]
 //        [--out out.json] [--force-fallback] [--bulk-http]
+//        [--preset-tab <name> --preset <chip|?>] [--wasm-concurrency N]
+//        [--capture-requests <dir> [--page-sim]]
 //
 // --bulk-http sets the `upgradesTab.runner` localStorage key before navigation so
 //   the tab selects the Go bulk runner (ticket 411 measurement only; the default
@@ -29,6 +31,21 @@
 // --iterations N sets the iterations NumberPicker at click time (default 3000).
 //   Readback: iterationsRequested. Two timings are always recorded: firstRowS
 //   (Run click to the first results-table row) and clickToDoneS (click to Took).
+//
+// The flags below exist for ticket 522's cold-worker check: does the tab's
+// baseline sim get exactly the page's own Simulate DPS for the same gear? None
+// of them changes the default path, which pnpm desktop-gate:check drives.
+// --preset-tab <name> --preset <chip> loads a Gear Sets preset before the
+//   Upgrades tab opens; the picker lives in the Gear tab, whose chips are hidden
+//   once another tab is active. --preset "?" lists the chips of that phase tab
+//   (or of every tab with --preset-tab "?") and exits 1 before any sim.
+// --wasm-concurrency N sets the page's wasm worker count before navigation; at 1
+//   the page does not split its sim, and a split run gives different floats.
+// --capture-requests <dir> records every WorkerPool.raidSimAsync request and its
+//   exact result DPS; the first tab-phase call is the tab's baseline.
+// --page-sim (needs --capture-requests) then runs the page's own Simulate at the
+//   tab's seed and iterations, replays that request once on the tab's pool, and
+//   compares requests and exact DPS (requestCheck, dpsDiff, replayEqual).
 
 import { spawn } from 'node:child_process';
 import { createServer } from 'node:net';
@@ -51,6 +68,11 @@ function parseArgs(argv) {
 		out: null,
 		forceFallback: false,
 		bulkHttp: false,
+		presetTab: null,
+		preset: null,
+		wasmConcurrency: null,
+		captureRequests: null,
+		pageSim: false,
 	};
 	for (let i = 0; i < argv.length; i++) {
 		const a = argv[i];
@@ -63,11 +85,20 @@ function parseArgs(argv) {
 		else if (a === '--out') args.out = argv[++i];
 		else if (a === '--force-fallback') args.forceFallback = true;
 		else if (a === '--bulk-http') args.bulkHttp = true;
+		else if (a === '--preset-tab') args.presetTab = argv[++i];
+		else if (a === '--preset') args.preset = argv[++i];
+		else if (a === '--wasm-concurrency') args.wasmConcurrency = parseInt(argv[++i], 10);
+		else if (a === '--capture-requests') args.captureRequests = argv[++i];
+		else if (a === '--page-sim') args.pageSim = true;
 		else {
 			throw new Error(`unknown arg: ${a}`);
 		}
 	}
 	if (!args.origin) throw new Error('--origin <url> is required');
+	if ((args.presetTab === null) !== (args.preset === null)) throw new Error('--preset-tab and --preset go together');
+	if (args.presetTab === '?' && args.preset !== '?') throw new Error('--preset-tab "?" needs --preset "?"');
+	if (args.wasmConcurrency !== null && !(args.wasmConcurrency >= 1)) throw new Error('--wasm-concurrency needs a positive integer');
+	if (args.pageSim && !args.captureRequests) throw new Error('--page-sim needs --capture-requests <dir>');
 	args.origin = args.origin.replace(/\/+$/, '');
 	return args;
 }
@@ -423,6 +454,267 @@ const readPoolSize = `(() => {
 	}
 })()`;
 
+// --- ticket 522 live-check scripts (only reached through the new flags) ---
+
+// The same DOM steps as scripts/tab-fixtures/record.mjs in the outer repo. It
+// must run before `activate`: the picker is in the Gear tab, and once the
+// Upgrades tab is active its chips fail the offsetParent filter. The 3 s
+// settle mirrors record.mjs, which waits 5 s after navigating, so a chip click
+// cannot land before the page's own init applies its default gear.
+const loadPreset = (tabName, chipName) => `(async () => {
+	const wf = async (fn,ms)=>{const e=Date.now()+ms;while(Date.now()<e){const v=fn();if(v)return v;await new Promise(r=>setTimeout(r,100));}return fn();};
+	const sleep = ms => new Promise(r=>setTimeout(r,ms));
+	if(!await wf(()=>document.querySelector('.preset-group-picker .preset-group-phase-tab'),30000)) return {error:'no .preset-group-picker .preset-group-phase-tab after 30 s'};
+	await sleep(3000);
+	const picker = document.querySelector('.preset-group-picker');
+	const tabs = [...picker.querySelectorAll('.preset-group-phase-tab')];
+	const tabNames = tabs.map(t=>t.textContent.trim());
+	const visibleChips = async t => {
+		t.click();
+		await sleep(400);
+		return [...picker.querySelectorAll('.preset-group-section')]
+			.filter(s=>s.querySelector('h6')?.textContent.trim()==='Gear Sets')
+			.flatMap(s=>[...s.querySelectorAll('.saved-data-set-chip')])
+			.filter(c=>c.offsetParent);
+	};
+	const names = chips => chips.map(c=>c.textContent.trim()).join(' | ');
+	const want = ${JSON.stringify(tabName)};
+	const chipWant = ${JSON.stringify(chipName)};
+	if (chipWant === '?') {
+		const listed = [];
+		for (const t of tabs) {
+			const name = t.textContent.trim();
+			if (want !== '?' && name !== want) continue;
+			listed.push(name+': '+names(await visibleChips(t)));
+		}
+		if (!listed.length) return {error:'no preset phase tab '+want+'; tabs: '+tabNames.join(' | ')};
+		return {list: listed.join('; ')};
+	}
+	const tab = tabs.find(t=>t.textContent.trim()===want);
+	if (!tab) return {error:'no preset phase tab '+want+'; tabs: '+tabNames.join(' | ')};
+	const chips = await visibleChips(tab);
+	const chip = chips.find(c=>c.textContent.trim()===chipWant);
+	if (!chip) return {error:'no Gear Sets chip '+chipWant+' under '+want+'; visible: '+names(chips)+'; tabs: '+tabNames.join(' | ')};
+	(chip.querySelector('.saved-data-set-name') ?? chip).click();
+	await sleep(1500);
+	return {ok:true};
+})()`;
+
+const wasmConcurrencySource = n => `try{localStorage.setItem('__tbc_new_wasmconcurrency','${n}')}catch{}`;
+
+// Patches the prototype, so the page's pool and the tab's own pool (C34: a
+// separate WorkerPool instance) are both captured through one module instance.
+// The wrapper awaits the original call because the check needs the exact DPS of
+// the very sim whose request it captured; the displayed number is rounded and
+// the page's readout also matches its in-progress view (ticket 522 plan, R1).
+const installSimCapture = `(async () => {
+	let wp, api;
+	try {
+		wp = await import('/tbc/core/worker_pool.ts');
+		api = await import('/tbc/core/proto/api.ts');
+	} catch (e) {
+		return {captureError: String((e && e.message) || e)};
+	}
+	window.__harnessSimCalls = [];
+	window.__harnessPhase = 'tab';
+	window.__harnessTabPool = null;
+	window.__harnessApi = api;
+	window.__harnessWp = wp;
+	const original = wp.WorkerPool.prototype.raidSimAsync;
+	wp.WorkerPool.prototype.raidSimAsync = async function (request, onProgress, signals) {
+		const phase = window.__harnessPhase;
+		const entry = {index: window.__harnessSimCalls.length, phase, done: false};
+		try { entry.json = api.RaidSimRequest.toJson(request); } catch (e) { entry.jsonError = String((e && e.message) || e); }
+		if (phase === 'page') entry.request = api.RaidSimRequest.clone(request);
+		if (phase === 'tab' && window.__harnessTabPool === null) window.__harnessTabPool = this;
+		entry.tabPool = this === window.__harnessTabPool;
+		window.__harnessSimCalls.push(entry);
+		let result;
+		try {
+			result = await original.call(this, request, onProgress, signals);
+		} catch (e) {
+			entry.thrown = String((e && e.message) || e);
+			entry.done = true;
+			throw e;
+		}
+		entry.raidDps = result?.raidMetrics?.dps?.avg ?? null;
+		entry.playerDps = result?.raidMetrics?.parties?.[0]?.players?.[0]?.dps?.avg ?? null;
+		entry.error = result?.error ? {type: result.error.type, message: result.error.message} : null;
+		entry.done = true;
+		return result;
+	};
+	return {ok:true};
+})()`;
+
+// Runs the page's own Simulate at the tab baseline's seed and iterations. 11 is
+// the tab's baseline seed (DEFAULT_SEEDS[0], engine/rank.ts:568,733). The inputs
+// are read back because a scripted value on the hidden settings-menu input is
+// not known to stick; a wrong seed would make the comparison meaningless.
+const runPageSim = (iterations, timeoutMs) => `(async () => {
+	const wf = async (fn,ms)=>{const e=Date.now()+ms;while(Date.now()<e){const v=fn();if(v)return v;await new Promise(r=>setTimeout(r,100));}return fn();};
+	const setNum = async (sel, v) => {
+		const input = await wf(()=>document.querySelector(sel),15000);
+		if(!input) return 'no '+sel;
+		const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
+		nativeSetter.call(input, v);
+		input.dispatchEvent(new Event('input',{bubbles:true}));
+		input.dispatchEvent(new Event('change',{bubbles:true}));
+		await new Promise(r=>setTimeout(r,400));
+		const settled = document.querySelector(sel).value;
+		return String(settled) === v ? null : sel+' did not stick: settled='+settled;
+	};
+	window.__harnessPhase = 'page';
+	let err = await setNum('#simui-fixed-rng-seed', '11');
+	if (err) return {error: err};
+	err = await setNum('#simui-iterations', '${iterations}');
+	if (err) return {error: err};
+	const btn = await wf(()=>{const b=document.querySelector('button.dps-action');return b&&!b.disabled?b:null;},30000);
+	if(!btn) return {error:'no enabled button.dps-action after 30 s'};
+	btn.click();
+	const deadline = Date.now() + ${timeoutMs};
+	const found = () => window.__harnessSimCalls.find(e=>e.phase==='page' && e.tabPool===false && e.done);
+	while (Date.now() < deadline) {
+		if (found()) return {ok:true};
+		await new Promise(r=>setTimeout(r,500));
+	}
+	return {error:'page sim did not finish within the timeout'};
+})()`;
+
+// Replays the page's request once on the tab's pool, with the two fields that
+// the request comparison leaves out set to the tab's values: debugFirstIteration
+// (the page sends true, which makes Go install an iteration-0 logger) and the
+// player name. Equal DPS shows that those two fields and the warm-page-worker
+// versus cold-tab-worker state do not move DPS (Gate B finding N1). Its phase
+// is 'replay', so it is never taken as the tab baseline or the page sim.
+const replayOnTabPool = `(async () => {
+	const calls = window.__harnessSimCalls;
+	const page = calls.find(e=>e.phase==='page' && e.tabPool===false && e.done);
+	const base = calls.find(e=>e.phase==='tab');
+	if (!page || !page.request) return {error:'no page request to replay'};
+	if (!base || !base.json) return {error:'no tab baseline request'};
+	if (!window.__harnessTabPool) return {error:'no tab pool'};
+	const req = window.__harnessApi.RaidSimRequest.clone(page.request);
+	req.requestId = window.__harnessWp.generateRequestId('raidSimAsync');
+	req.simOptions.debugFirstIteration = false;
+	req.raid.parties[0].players[0].name = base.json.raid?.parties?.[0]?.players?.[0]?.name ?? '';
+	window.__harnessPhase = 'replay';
+	try {
+		await window.__harnessTabPool.raidSimAsync(req, () => {}, undefined);
+	} catch (e) {
+		return {ok:true, thrown: String((e && e.message) || e)};
+	}
+	return {ok:true};
+})()`;
+
+// Every comparison runs in the page, on the JS numbers themselves; the String()
+// copies in `exact` let a reader confirm no transport rounding happened.
+const readCapture = `(() => {
+	const calls = window.__harnessSimCalls || [];
+	const dbOf = j => j?.raid?.parties?.[0]?.players?.[0]?.database ?? {};
+	const ids = rows => (rows || []).map(r => r.id ?? 0).sort((a,b)=>a-b);
+	const sameIds = (a,b) => a.length===b.length && a.every((x,i)=>x===b[i]);
+	const tabCalls = calls.filter(e=>e.phase==='tab');
+	const pageCalls = calls.filter(e=>e.phase==='page');
+	const base = tabCalls[0] || null;
+	const page = pageCalls.find(e=>e.tabPool===false && e.done) || null;
+	const replay = calls.find(e=>e.phase==='replay') || null;
+	const slim = e => ({
+		index: e.index, phase: e.phase, tabPool: e.tabPool, done: e.done,
+		raidDps: e.raidDps ?? null, error: e.error ?? null, thrown: e.thrown ?? null, jsonError: e.jsonError ?? null,
+		seed: e.json?.simOptions?.randomSeed ?? null, iterations: e.json?.simOptions?.iterations ?? null,
+		consumableIds: ids(dbOf(e.json).consumables), spellEffectIds: ids(dbOf(e.json).spellEffects),
+	});
+	const out = {
+		tabSimCalls: tabCalls.length,
+		pageSimCalls: pageCalls.length,
+		calls: calls.map(slim),
+		tabBaseline: base ? {
+			dps: base.raidDps ?? null, playerDps: base.playerDps ?? null,
+			seed: base.json?.simOptions?.randomSeed ?? null, iterations: base.json?.simOptions?.iterations ?? null,
+			error: base.error ?? base.thrown ?? null,
+		} : null,
+		tabBaselineRequest: base?.json ?? null,
+		pageRequest: page?.json ?? null,
+		replayRequest: replay?.json ?? null,
+	};
+	if (page) {
+		out.pageDps = page.raidDps ?? null;
+		out.pagePlayerDps = page.playerDps ?? null;
+		out.pageSeed = page.json?.simOptions?.randomSeed ?? null;
+		out.pageIterations = page.json?.simOptions?.iterations ?? null;
+		out.pageError = page.error ?? page.thrown ?? null;
+		if (base && typeof base.raidDps === 'number' && typeof page.raidDps === 'number') {
+			out.dpsDiff = base.raidDps - page.raidDps;
+			out.dpsEqual = out.dpsDiff === 0;
+		}
+	}
+	if (replay) {
+		out.replayDps = replay.raidDps ?? null;
+		out.replayEqual = page != null && typeof replay.raidDps === 'number' && replay.raidDps === page.raidDps;
+		out.replay = {
+			tabPool: replay.tabPool,
+			debugFirstIteration: replay.json?.simOptions?.debugFirstIteration ?? false,
+			nameMatchesTab: (replay.json?.raid?.parties?.[0]?.players?.[0]?.name ?? '') === (base?.json?.raid?.parties?.[0]?.players?.[0]?.name ?? ''),
+			error: replay.error ?? replay.thrown ?? null,
+		};
+	}
+	out.exact = {
+		tabBaselineDps: base ? String(base.raidDps) : null,
+		pageDps: page ? String(page.raidDps) : null,
+		pagePlayerDps: page ? String(page.playerDps) : null,
+		replayDps: replay ? String(replay.raidDps) : null,
+	};
+	if (base && page && base.json && page.json) {
+		const tdb = dbOf(base.json), pdb = dbOf(page.json);
+		const tabCons = ids(tdb.consumables), pageCons = ids(pdb.consumables);
+		const tabEff = ids(tdb.spellEffects), pageEff = ids(pdb.spellEffects);
+		const effSet = new Set(tabEff);
+		const strip = j => {
+			const c = JSON.parse(JSON.stringify(j));
+			delete c.requestId;
+			if (c.simOptions) delete c.simOptions.debugFirstIteration;
+			const p = c.raid?.parties?.[0]?.players?.[0];
+			if (p) { delete p.name; delete p.database; }
+			return c;
+		};
+		// Both sides are protobuf-ts toJson output, which drops defaults and empty
+		// arrays the same way, so a listed path is a real value difference.
+		const diffs = [];
+		let diffCount = 0;
+		const cut = v => v === undefined ? '(absent)' : JSON.stringify(v).slice(0, 200);
+		const isObj = v => v !== null && typeof v === 'object' && !Array.isArray(v);
+		const walk = (a, b, path) => {
+			if (Array.isArray(a) && Array.isArray(b)) {
+				for (let i = 0; i < Math.max(a.length, b.length); i++) walk(a[i], b[i], path+'['+i+']');
+				return;
+			}
+			if (isObj(a) && isObj(b)) {
+				const keys = [...new Set([...Object.keys(a), ...Object.keys(b)])].sort();
+				for (const k of keys) walk(a[k], b[k], path ? path+'.'+k : k);
+				return;
+			}
+			if (JSON.stringify(a) !== JSON.stringify(b)) {
+				diffCount++;
+				if (diffs.length < 50) diffs.push({path, tab: cut(a), page: cut(b)});
+			}
+		};
+		walk(strip(base.json), strip(page.json), '');
+		out.requestCheck = {
+			tabConsumableIds: tabCons, pageConsumableIds: pageCons,
+			tabSpellEffectIds: tabEff, pageSpellEffectIds: pageEff,
+			consumableIdsEqual: sameIds(tabCons, pageCons),
+			spellEffectIdsEqual: sameIds(tabEff, pageEff),
+			consumablesWithEffects: (tdb.consumables || []).filter(c => (c.effectIds || []).length > 0).length,
+			effectIdsCovered: (tdb.consumables || []).every(c => (c.effectIds || []).every(id => effSet.has(id))),
+			tabCallsChecked: tabCalls.length,
+			tabCallsWithPageRows: tabCalls.filter(e => sameIds(ids(dbOf(e.json).consumables), pageCons) && sameIds(ids(dbOf(e.json).spellEffects), pageEff)).length,
+			otherDiffPaths: diffs,
+			otherDiffCount: diffCount,
+		};
+	}
+	return out;
+})()`;
+
 async function fetchServedWorker(origin) {
 	const url = origin + '/tbc/sim_worker.js';
 	try {
@@ -521,6 +813,7 @@ async function main() {
 	});
 
 	let out;
+	let captureFiles = null;
 	try {
 		await psend('Page.enable', {});
 		await psend('Runtime.enable', {});
@@ -530,6 +823,9 @@ async function main() {
 		}
 		if (args.bulkHttp) {
 			await psend('Page.addScriptToEvaluateOnNewDocument', { source: bulkHttpSource });
+		}
+		if (args.wasmConcurrency !== null) {
+			await psend('Page.addScriptToEvaluateOnNewDocument', { source: wasmConcurrencySource(args.wasmConcurrency) });
 		}
 		await psend('Target.setAutoAttach', {
 			autoAttach: true,
@@ -545,6 +841,12 @@ async function main() {
 
 		await psend('Page.navigate', { url: `${args.origin}${args.page}` });
 		await sleep(500);
+
+		if (args.preset !== null) {
+			const loaded = await evaluate(psend, pageSession, loadPreset(args.presetTab, args.preset));
+			if (loaded?.list !== undefined) throw new Error(`preset list: ${loaded.list}`);
+			if (!loaded?.ok) throw new Error(`preset load failed: ${loaded?.error ?? 'unknown'}`);
+		}
 
 		const act = await evaluate(psend, pageSession, activate);
 		if (!act?.ok) throw new Error(`activate failed: ${act?.error ?? 'unknown'}`);
@@ -572,6 +874,11 @@ async function main() {
 		}
 
 		await evaluate(psend, pageSession, installFirstRowObserver);
+
+		let captureInstall = null;
+		if (args.captureRequests) {
+			captureInstall = await evaluate(psend, pageSession, installSimCapture);
+		}
 
 		const run = await evaluate(psend, pageSession, clickRun);
 		if (!run?.ok) throw new Error(`run click failed: ${run?.error ?? 'unknown'}`);
@@ -624,6 +931,46 @@ async function main() {
 			wallClockS: +((Date.now() - started) / 1000).toFixed(1),
 			recordedAt: new Date().toISOString(),
 		};
+
+		if (args.preset !== null) Object.assign(out, { presetTab: args.presetTab, preset: args.preset });
+		if (args.wasmConcurrency !== null) out.wasmConcurrency = args.wasmConcurrency;
+		if (args.captureRequests) {
+			const extra = {};
+			if (captureInstall?.captureError) {
+				extra.captureError = captureInstall.captureError;
+			} else {
+				if (args.pageSim) {
+					extra.pageSimRequested = true;
+					if (!done.done) {
+						extra.pageSimError = 'tab run did not finish; page sim skipped';
+					} else {
+						const iterations = args.iterations > 0 ? args.iterations : 3000;
+						const ps = await evaluate(psend, pageSession, runPageSim(iterations, args.timeoutMs));
+						if (!ps?.ok) {
+							extra.pageSimError = ps?.error ?? 'unknown';
+						} else {
+							const rp = await evaluate(psend, pageSession, replayOnTabPool);
+							if (!rp?.ok) extra.replayError = rp?.error ?? 'unknown';
+						}
+					}
+				}
+				const cap = await evaluate(psend, pageSession, readCapture);
+				captureFiles = {
+					'tab-baseline.json': cap.tabBaselineRequest,
+					'page.json': cap.pageRequest,
+					'replay.json': cap.replayRequest,
+				};
+				Object.assign(extra, cap);
+				delete extra.replayRequest;
+				if (cap.tabBaseline && typeof cap.tabBaseline.dps === 'number') {
+					// The tab shows the baseline with toFixed(1) (upgrades_tab.tsx:2058), so
+					// this checks that the first tab-phase call really was the baseline.
+					extra.tabBaselineMatchesDisplay = Number(cap.tabBaseline.dps.toFixed(1)) === results.baselineDps;
+				}
+			}
+			Object.assign(out, extra);
+			out.wallClockS = +((Date.now() - started) / 1000).toFixed(1);
+		}
 	} finally {
 		client.close();
 		chrome.proc.kill();
@@ -642,6 +989,21 @@ async function main() {
 			`fallbackWarnings=${out.screeningFallbackWarnings} done=${out.done} elapsedS=${out.elapsedS} ` +
 			`firstRowS=${out.firstRowS} clickToDoneS=${out.clickToDoneS}`,
 	);
+	if (args.captureRequests) {
+		await fsp.mkdir(args.captureRequests, { recursive: true });
+		for (const [name, body] of Object.entries(captureFiles ?? {})) {
+			if (body) await fsp.writeFile(path.join(args.captureRequests, name), JSON.stringify(body, null, 2));
+		}
+		const rc = out.requestCheck;
+		console.error(
+			`tabBaselineDps=${out.exact?.tabBaselineDps} pageDps=${out.exact?.pageDps} dpsDiff=${out.dpsDiff} ` +
+				`replayDps=${out.exact?.replayDps} replayEqual=${out.replayEqual} otherDiffCount=${rc?.otherDiffCount} ` +
+				`tabCallsWithPageRows=${rc?.tabCallsWithPageRows}/${rc?.tabCallsChecked}` +
+				(out.captureError ? ` captureError=${out.captureError}` : '') +
+				(out.pageSimError ? ` pageSimError=${out.pageSimError}` : '') +
+				(out.replayError ? ` replayError=${out.replayError}` : ''),
+		);
+	}
 	// Exit 0 only when the run completed, did not panic, and the tab wrote the
 	// attribute. The harness measures; the Python gate judges.
 	process.exit(out.done && !out.panicHit && out.runner !== null ? 0 : 1);

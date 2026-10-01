@@ -108,3 +108,29 @@ first `.upgrades-results table.upgrades-results-table tbody tr` (via a
 `MutationObserver` installed before the click; `null` if no row lands) — and
 **`clickToDoneS`** — click to the `Took` status. Two request-selection fields
 echo the flags: **`iterationsRequested`** and **`bulkHttpRequested`**.
+
+Ticket 522's cold-worker check adds opt-in flags. Without them the run is
+unchanged:
+
+- `--preset-tab <name> --preset <chip>` loads a Gear Sets preset before the
+  Upgrades tab opens (the picker is in the Gear tab, hidden once another tab is
+  active). `--preset "?"` lists that phase tab's chips, or every tab's with
+  `--preset-tab "?"`, and exits 1 before any sim.
+- `--wasm-concurrency N` sets `__tbc_new_wasmconcurrency` before navigation; at
+  1 the page does not split its sim, so its DPS is comparable bit for bit.
+- `--capture-requests <dir>` wraps `WorkerPool.prototype.raidSimAsync` before
+  the Run click and records each request and its exact `raidMetrics.dps.avg`.
+  The first tab call is the baseline. It writes `<dir>/tab-baseline.json`.
+- `--page-sim` (needs `--capture-requests`) then runs the page's Simulate at
+  seed 11 and the tab's iterations, writes `<dir>/page.json`, and replays that
+  request once on the tab's pool with `debugFirstIteration: false` and the
+  tab's player name (`<dir>/replay.json`).
+
+New readback fields: `presetTab`, `preset`, `wasmConcurrency`, `captureError`,
+`tabSimCalls`, `pageSimCalls`, `calls`, `tabBaseline`,
+`tabBaselineMatchesDisplay`, `tabBaselineRequest`, `pageRequest`, `pageDps`,
+`pagePlayerDps`, `pageSeed`, `pageIterations`, `pageError`, `dpsDiff`,
+`dpsEqual`, `replayDps`, `replayEqual`, `replay`, `exact`, `requestCheck`
+(consumable and spell-effect ids per side, `effectIdsCovered`,
+`tabCallsWithPageRows`, `otherDiffPaths`, `otherDiffCount`), and
+`pageSimError` / `replayError` when a step fails.
