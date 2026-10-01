@@ -108,6 +108,9 @@ export class WorkerPoolSimRunner implements SimRunner {
 	}
 
 	async run(req: RaidSimRequest, opts: SimRunOpts): Promise<SimObservation> {
+		// Only the set screen asks for per-iteration values (ticket 511). Without
+		// the option, the request and the observation are exactly as before.
+		const saveAllValues = opts.saveAllValues === true;
 		const withOptions = {
 			...req,
 			requestId: generateRequestId(SimRequest.raidSimAsync),
@@ -119,6 +122,7 @@ export class WorkerPoolSimRunner implements SimRunner {
 				// adaptation, same convention, not a new one invented here).
 				randomSeed: String(opts.seed),
 				debugFirstIteration: false,
+				...(saveAllValues ? { saveAllValues: true } : {}),
 			},
 		};
 
@@ -141,6 +145,7 @@ export class WorkerPoolSimRunner implements SimRunner {
 				stdev: dps.stdev,
 				iterationsDone: result.iterationsDone,
 				simVersion: await this.version(),
+				...(saveAllValues ? { allValues: [...dps.allValues] } : {}),
 			};
 		} finally {
 			this.signalManager.unregisterRunning(signals);

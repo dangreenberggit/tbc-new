@@ -121,6 +121,11 @@ import {
   measureWornSetLadder,
 } from "./set-less-copies.js";
 import {
+  recordSetScreen,
+  type SetScreen,
+  type SetScreenMode,
+} from "./set-screen.js";
+import {
   type BonusCountPredicate,
   type BrokenSetBonus,
   brokenSetBonuses,
@@ -218,6 +223,13 @@ export type Deps = {
    * served for another.
    */
   partnerRule?: PartnerRule;
+  /**
+   * The set screen (ticket 511, `set-screen.ts`). "record" runs the screen's
+   * sims with the flag and writes `Ranking.setScreen`, filtering nothing.
+   * Absent means "off". Only the tab's check hook sets it, in dev and gate
+   * builds; it joins the content hash only when set.
+   */
+  setScreen?: SetScreenMode;
   /**
    * Stop signal (candidate-pool.md §5.1.4). On abort, in-flight per-candidate
    * sims finish and the run returns a `PartialRanking` (`complete: false`); no
@@ -577,6 +589,12 @@ export type Ranking = {
    * the zero-sim rules (ticket 511). Players never get it.
    */
   partnerAudit?: PartnerAuditEntry[];
+  /**
+   * The set screen's readings, written only when `deps.setScreen` is
+   * "record" (ticket 511). Nothing in the engine or the view reads it; the
+   * exploration scores its rules from it offline. Players never get it.
+   */
+  setScreen?: SetScreen;
   plausibilityWarnings?: PlausibilityWarning[];
   /**
    * Screening chunks that failed for an engine or transport reason, and whose
@@ -927,6 +945,9 @@ export async function rankUpgrades(
     // Only when set, so a run without it keeps every key already written; a
     // run with it is never served a ranking another rule made (ticket 511).
     ...(deps.partnerRule !== undefined ? { partnerRule: deps.partnerRule } : {}),
+    // The same rule for the screen: a ranking without its readings is never
+    // served to a run that asked for them.
+    ...(deps.setScreen !== undefined ? { setScreen: deps.setScreen } : {}),
   });
 
   const cached = await deps.store.get<Ranking>(rankingCacheKey(contentHash));
@@ -1571,6 +1592,7 @@ export async function rankUpgrades(
           wornSetLadder: [],
           crossingGates: [],
           candidateSlotIndex: new Map(),
+          setScreen: undefined,
         }
       : await buildSetBonuses(
           deps,
@@ -1737,6 +1759,9 @@ export async function rankUpgrades(
         : {}),
       ...(steps ? { setStepSims: steps.setStepSims } : {}),
       ...(steps?.partnerAudit ? { partnerAudit: steps.partnerAudit } : {}),
+      ...(setBonusResult.setScreen
+        ? { setScreen: setBonusResult.setScreen }
+        : {}),
       ...(warnings.length > 0 ? { plausibilityWarnings: warnings } : {}),
       ...(screeningFallbacks.length > 0 ? { screeningFallbacks } : {}),
     };
@@ -1876,6 +1901,7 @@ async function buildSetBonuses(
   crossingGates: CrossingGate[];
   /** itemId -> best pool slotIndex, so `applySetContext` can compute per-row breaks. */
   candidateSlotIndex: Map<number, number>;
+  setScreen?: SetScreen;
 }> {
   // The set sims' own store-cached run. A gate or ladder request sends
   // copies, so it is never a request the store already holds (tickets 511
@@ -1928,15 +1954,6 @@ async function buildSetBonuses(
     const setId = getItem(entry.itemId)?.setId;
     if (setId != null) setIdsWithCandidates.add(setId);
   }
-  if (setIdsWithCandidates.size === 0) {
-    return {
-      bonuses: [],
-      brokenSetValues,
-      wornSetLadder,
-      crossingGates: [],
-      candidateSlotIndex: new Map(),
-    };
-  }
 
   const wornCounts = setCounts(equipment);
   const slotIndexForPoolEntry = (entry: PoolEntry): number | undefined => {
@@ -1971,6 +1988,62 @@ async function buildSetBonuses(
     }
     return counts;
   };
+
+  // Ticket 511, K5R: the screen in record mode runs after the worn-set ladder
+  // and before the package loop, and nothing below reads what it records.
+  const setScreen =
+    measureBrokenSetValue && deps.setScreen === "record"
+      ? await recordSetScreen({
+          sets: [...setIdsWithCandidates]
+            .sort((a, b) => a - b)
+            .map((setId) => {
+              const worn = wornCounts.get(setId) ?? 0;
+              const reachable = reachableCounts(setId, worn);
+              return {
+                setId,
+                worn,
+                reach: reachable[reachable.length - 1] ?? worn,
+              };
+            }),
+          packageAt: (setId, count) => {
+            const selection = selectFor(setId, count);
+            if (!selection.ok) return undefined;
+            // The package loop's own swaps, so the screen sims the gear the
+            // loop would build for this count.
+            let packageEquipment: SimItemSpec[] = [...equipment];
+            try {
+              for (const piece of selection.addedPieces) {
+                packageEquipment = candidateSwapWithRepairs(
+                  packageEquipment,
+                  piece.slotIndex,
+                  piece.itemId,
+                  gems
+                ).equipment;
+              }
+            } catch (err) {
+              if (!(err instanceof MetaRepairError)) throw err;
+              return undefined;
+            }
+            return {
+              request: composeFor(packageEquipment),
+              added: selection.addedPieces,
+            };
+          },
+          runSimAt: (request, opts) => runSimAt(deps, request, simVersion, opts),
+          seed: runOpts.seed,
+        })
+      : undefined;
+
+  if (setIdsWithCandidates.size === 0) {
+    return {
+      bonuses: [],
+      brokenSetValues,
+      wornSetLadder,
+      crossingGates: [],
+      candidateSlotIndex: new Map(),
+      ...(setScreen ? { setScreen } : {}),
+    };
+  }
 
   const results: SetBonusValue[] = [];
   for (const setId of setIdsWithCandidates) {
@@ -2456,6 +2529,7 @@ async function buildSetBonuses(
     wornSetLadder,
     crossingGates,
     candidateSlotIndex,
+    ...(setScreen ? { setScreen } : {}),
   };
 }
 
@@ -3285,6 +3359,25 @@ async function cacheSimResult(
   await asInternal(() =>
     deps.store.put(simStoreKey(req, simVersion, opts), observation)
   );
+}
+
+/**
+ * A store-cached sim at explicit options, for sims whose seed, iteration count
+ * or `saveAllValues` differ from the run's own (the set screen, ticket 511).
+ * The store key holds every option (`simCacheKey`), so it never answers one
+ * question with another's reading. Throws when the sim fails.
+ */
+async function runSimAt(
+  deps: Deps,
+  req: RaidSimRequest,
+  simVersion: string,
+  opts: SimRunOpts
+): Promise<{ observation: SimObservation; fromStore: boolean }> {
+  const cached = await readCachedSim(deps, req, simVersion, opts);
+  if (cached) return { observation: cached, fromStore: true };
+  const observation = await deps.sim.run(req, opts);
+  await cacheSimResult(deps, req, simVersion, opts, observation);
+  return { observation, fromStore: false };
 }
 
 /**

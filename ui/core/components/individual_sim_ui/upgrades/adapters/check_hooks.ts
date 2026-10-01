@@ -11,11 +11,14 @@
 
 import type { PartnerRule } from '../engine/partner-choice.js';
 import type { PoolEntry } from '../engine/pool.js';
+import type { SetScreenMode } from '../engine/set-screen.js';
 import type { ContentPhase, SpecId } from '../engine/types.js';
 
 export type CheckHooks = {
 	/** Overrides the engine's `PARTNER_RULE` for the next run. */
 	partnerRule?: PartnerRule;
+	/** "record" runs the set screen and writes `ranking.setScreen` (stages K5P and K5E). */
+	setScreen?: SetScreenMode;
 	pool?: {
 		/**
 		 * Entries from another spec's or phase's pool that the run's pool

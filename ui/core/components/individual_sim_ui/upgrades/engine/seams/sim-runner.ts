@@ -23,6 +23,12 @@ export type RaidSimRequest = Readonly<Record<string, unknown>>;
 export type SimRunOpts = {
   seed: number;
   iterations: number;
+  /**
+   * Ask for each iteration's DPS (ticket 511, the set screen's record mode).
+   * Only the screen sets it; a runner that does not support it ignores it.
+   * Absent leaves every request and observation exactly as before.
+   */
+  saveAllValues?: boolean;
 };
 
 export type SimObservation = {
@@ -30,6 +36,8 @@ export type SimObservation = {
   stdev: number;
   iterationsDone: number;
   simVersion: string;
+  /** Each iteration's DPS, only when the run asked with `saveAllValues`. */
+  allValues?: readonly number[];
 };
 
 /**
@@ -125,13 +133,18 @@ export interface SimRunner {
   runBulkScreen?(req: BulkScreenRequest): Promise<BulkScreenResult>;
 }
 
-/** Stable key: canonical-JSON(request) + version + seed + iterations (D4). */
+/**
+ * Stable key: canonical-JSON(request) + version + seed + iterations (D4). A run
+ * that asks for per-iteration values gets its own `:all` key, so a stored
+ * observation without them never answers it; no other key changes.
+ */
 export function simCacheKey(
   req: RaidSimRequest,
   simVersion: string,
   opts: SimRunOpts
 ): string {
-  return `${stableStringify(req)}:${simVersion}:${opts.seed}:${opts.iterations}`;
+  const key = `${stableStringify(req)}:${simVersion}:${opts.seed}:${opts.iterations}`;
+  return opts.saveAllValues === true ? `${key}:all` : key;
 }
 
 /**
