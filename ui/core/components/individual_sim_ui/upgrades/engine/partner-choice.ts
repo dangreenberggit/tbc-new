@@ -13,13 +13,17 @@
  * those words (stage-gate decision log, 2026-09-28), not the owner's own.
  *
  * `choosePartnerSet` is the only place a partner set is chosen, so the rule
- * can be replaced without touching anything else. `PARTNER_RULE` is
- * provisional: a check on built characters (stage K5P) decides whether it
- * stays.
+ * can be replaced without touching anything else. `PARTNER_RULE` names the
+ * rule the tab uses; its comment gives the check (stage K5P) that chose it.
  *
  * The rules, for row r with single-swap figure d_r and a candidate partner
  * set P, where d_p is piece p's single-swap figure:
  *
+ * - "close-calls" (the tab's rule): sims every set whose Z estimate is
+ *   within `CLOSE_CALL_MARGIN_DPS` of the best Z estimate and takes the
+ *   highest total, ties going to Z's order. A set whose sim fails is
+ *   skipped; when every sim fails, Z's choice stands. When Z's estimate is
+ *   undefined, the result is Z's: "break-unmeasured".
  * - "sum-of-singles" (Z): the set with the highest estimate
  *   est(P) = d_r + Σ_{p∈P} d_p + Σ_b v_b · (m_b − L_b).
  *   b runs over the worn bonuses the worn-set ladder counted, v_b is b's
@@ -43,13 +47,34 @@
 import type { BrokenSetBonus, PackagePiece } from "./set-value.js";
 
 export type PartnerRule =
+  | "close-calls"
   | "sum-of-singles"
   | "sum-of-singles-plain"
   | "single-swap"
   | "every-combination";
 
-/** The rule the tab uses. Provisional until the K5P check reports. */
-export const PARTNER_RULE: PartnerRule = "sum-of-singles";
+/**
+ * The rule the tab uses. The K5P check (eight built characters, live sims at
+ * 10,000 iterations) found that no zero-sim rule chose a set within noise of
+ * the best simmed set on every row: outcome P-C. So the tab sims the close
+ * calls. Against a player's full-pool run that adds 0 to 4.2% more sims
+ * (worst character 27 of 645), and the owner accepted the cost: "I assume
+ * it's a full run, 5% for a solid outcome is worth it" (stage-gate decision
+ * log, 2026-10-01).
+ */
+export const PARTNER_RULE: PartnerRule = "close-calls";
+
+/**
+ * How far below the best Z estimate a partner set may be and still be simmed
+ * by "close-calls". It is M′ = 2·M, where M = 15.9334 DPS is the largest gap
+ * K5P measured between the best Z estimate and the estimate of the set the
+ * sims found best, over every decided (row, bonus) of its eight characters
+ * (W3-TH, Mantle of Malorne 29100, 4pc). Source: the K5P report, from
+ * `python fallback_global.py results` in the stage folder
+ * `.scratch/stage-gate/511-512-set-credit/k5p/`. The plan of that stage sets
+ * the margin at twice M.
+ */
+export const CLOSE_CALL_MARGIN_DPS = 31.866872635956497;
 
 /** One candidate piece of the row's set, at its first sim slot. */
 export type PartnerPiece = {
@@ -105,7 +130,8 @@ export type PartnerQuery = {
   todaysPieces?: readonly PackagePiece[];
   /**
    * Sims the current gear plus the row plus `partners`, returning the total
-   * over the current gear. Only "every-combination" calls it.
+   * over the current gear. Only "every-combination" and "close-calls" call
+   * it.
    */
   simGear?: (
     partners: readonly PackagePiece[]
@@ -284,22 +310,53 @@ export async function choosePartnerSet(
     };
   }
 
-  const withCombinationOnly = rule === "sum-of-singles";
-  let best: { set: PartnerPiece[]; est: number } | undefined;
+  const withCombinationOnly = rule !== "sum-of-singles-plain";
+  const ranked: Array<{ set: PartnerPiece[]; est: number }> = [];
   for (const set of sets) {
     const est = sumOfSinglesEstimate(query, set, { withCombinationOnly });
     if (est === undefined) return { unmeasured: "break-unmeasured" };
-    if (
-      !best ||
-      est > best.est ||
-      (est === best.est && compareIds(set, best.set) < 0)
-    ) {
-      best = { set, est };
+    ranked.push({ set, est });
+  }
+  // Z's order: the highest estimate first, ties to the lowest sorted ids.
+  ranked.sort((a, b) => b.est - a.est || compareIds(a.set, b.set));
+  const top = ranked[0]!;
+  if (rule !== "close-calls") {
+    return {
+      itemIds: top.set.map((p) => p.itemId),
+      rule,
+      estimateDps: top.est,
+    };
+  }
+
+  const close = ranked.filter((c) => c.est >= top.est - CLOSE_CALL_MARGIN_DPS);
+  // One candidate needs no comparison; its step gear is simmed later anyway.
+  if (close.length === 1 || !query.simGear) {
+    return {
+      itemIds: top.set.map((p) => p.itemId),
+      rule,
+      estimateDps: top.est,
+    };
+  }
+  let best: { set: PartnerPiece[]; est: number; totalDps: number } | undefined;
+  for (const c of close) {
+    const sim = await query.simGear(c.set);
+    if (!sim) continue;
+    // Strictly greater, so a tie keeps the earlier set in Z's order.
+    if (!best || sim.totalDps > best.totalDps) {
+      best = { ...c, totalDps: sim.totalDps };
     }
   }
+  if (!best) {
+    return {
+      itemIds: top.set.map((p) => p.itemId),
+      rule,
+      estimateDps: top.est,
+    };
+  }
   return {
-    itemIds: best!.set.map((p) => p.itemId),
+    itemIds: best.set.map((p) => p.itemId),
     rule,
-    estimateDps: best!.est,
+    estimateDps: best.est,
+    totalDps: best.totalDps,
   };
 }
