@@ -244,9 +244,10 @@ export type Deps = {
    * further candidates are dispatched. An in-flight bulk **screening chunk** is
    * aborted rather than finished (ticket 347) — a chunk costs seconds on the Go
    * transport and minutes on the in-browser one, which no honest reading of
-   * "in-flight work finishes" covers. A Stop during the set phase lets the
-   * set sim in flight finish, sends no further set sim, and returns the same
-   * `PartialRanking` as a Stop during the last candidate sim (ticket 533).
+   * "in-flight work finishes" covers. A Stop during the set phase or during
+   * paired replication lets the sim in flight finish, sends no further sim,
+   * and returns the same `PartialRanking` as a Stop during the last
+   * candidate sim (ticket 533).
    */
   signal?: AbortSignal;
 };
@@ -1723,7 +1724,17 @@ export async function rankUpgrades(
       return a.itemId - b.itemId;
     };
     ranked.sort(bySimmedThenDelta);
-    if (!aborted) await replicateTopItems(ranked, winningRequests, baselineDps);
+    let replicated: Array<{ item: RankedItem; deltas: number[] }> = [];
+    if (!aborted) {
+      try {
+        replicated = await replicateTopItems(ranked, winningRequests);
+      } catch (err) {
+        // The guard refused a replication sim, so Stop fired; the re-read
+        // below sees it. Any other error still fails the ranking.
+        if (!(err instanceof StopRefusedSim)) throw err;
+      }
+    }
+    if (signal?.aborted) aborted = true;
     if (aborted) {
       // Ticket 533: a Stop after the candidate loop returns what a Stop during
       // its last sim returns. A ladder cut short would charge breaks from
@@ -1736,6 +1747,16 @@ export async function rankUpgrades(
       steps = undefined;
       packageSimSkips.length = 0;
       for (const item of ranked) delete item.setContext;
+    }
+    if (!aborted) {
+      for (const { item, deltas } of replicated) {
+        item.se = pairedReplicateSe(deltas);
+        item.seMethod = "paired-replicate";
+        item.deltaDps = deltas.reduce((sum, d) => sum + d, 0) / deltas.length;
+        item.deltaPct =
+          baselineDps === 0 ? 0 : (item.deltaDps / baselineDps) * 100;
+        item.belowCutoff = !meetsCutoff(item.deltaDps, item.deltaPct, cutoff);
+      }
     }
     ranked.sort(bySimmedThenDelta);
 
@@ -1850,23 +1871,28 @@ export async function rankUpgrades(
     return ranking;
   }
 
+  /**
+   * The top rows' paired deltas, one per seed. It writes nothing to the rows,
+   * so a Stop part-way through leaves them as the candidate loop left them
+   * (ticket 533).
+   */
   async function replicateTopItems(
     ranked: RankedItem[],
-    winningRequests: ReadonlyMap<number, RaidSimRequest>,
-    baselineDps: number
-  ): Promise<void> {
-    if (!usesPairedReplication(seeds)) return;
+    winningRequests: ReadonlyMap<number, RaidSimRequest>
+  ): Promise<Array<{ item: RankedItem; deltas: number[] }>> {
+    if (!usesPairedReplication(seeds)) return [];
 
     const top = ranked
       .filter((item) => !item.belowCutoff && item.simmed !== false)
       .slice(0, PAIRED_REPLICATE_TOP_N);
-    if (top.length === 0) return;
+    if (top.length === 0) return [];
     const baselineBySeed = new Map<number, number>();
     for (const s of seeds) {
       baselineBySeed.set(s, (await simFor(request, s)).dps);
       bumpProgress(s);
     }
 
+    const replicated: Array<{ item: RankedItem; deltas: number[] }> = [];
     for (const item of top) {
       const candReq = winningRequests.get(item.itemId);
       if (!candReq) {
@@ -1882,13 +1908,9 @@ export async function rankUpgrades(
         deltas.push(obs.dps - baselineBySeed.get(s)!);
         bumpProgress(s);
       }
-      item.se = pairedReplicateSe(deltas);
-      item.seMethod = "paired-replicate";
-      item.deltaDps = deltas.reduce((sum, d) => sum + d, 0) / deltas.length;
-      item.deltaPct =
-        baselineDps === 0 ? 0 : (item.deltaDps / baselineDps) * 100;
-      item.belowCutoff = !meetsCutoff(item.deltaDps, item.deltaPct, cutoff);
+      replicated.push({ item, deltas });
     }
+    return replicated;
   }
 
   function bumpProgress(seedForRun: number): void {
@@ -1910,8 +1932,9 @@ export async function rankUpgrades(
     if (cached) return cached;
     let obs: SimObservation;
     try {
-      obs = await deps.sim.run(req, opts);
+      obs = await guardedDeps.sim.run(req, opts);
     } catch (err) {
+      if (err instanceof StopRefusedSim) throw err;
       throw new RankError(
         "sim-failed",
         err instanceof Error ? err.message : String(err)
@@ -3708,7 +3731,7 @@ class StopRefusedSim extends Error {
 
 /**
  * `deps` whose sim refuses to start once `deps.signal` has aborted (ticket
- * 533). The set phase uses it. The candidate loop keeps the plain runner,
+ * 533). The set phase and replication use it. The candidate loop keeps the plain runner,
  * because it turns a failed sim into a dropped row and has its own Stop
  * check.
  */
