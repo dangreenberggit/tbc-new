@@ -117,6 +117,7 @@ import {
 import type { Store } from "./seams/store.js";
 import { setBreakNote } from "./set-bonus.js";
 import {
+  applyCopies,
   clearsSameGearGate,
   measureSameGearBonus,
   measureWornSetLadder,
@@ -158,6 +159,7 @@ import type {
   Race,
   SpecId,
 } from "./types.js";
+import { setCreditUnmeasured, setPotentialSteps } from "./view.js";
 
 export type RankInput = {
   character: CharacterRef;
@@ -395,6 +397,18 @@ export type SetContext = {
      */
     stepGearDps?: number;
     stepGearSe?: number;
+    /**
+     * The sim of the gear just before this step with the worn bonuses the
+     * step newly loses turned off (the lost set's replaced pieces sent as
+     * set-less copies), minus the sim of the current gear; that difference's
+     * standard error; and the bonuses that sim turned off (K6B). The popover
+     * splits the step into a Breaks line and a pieces line from it. Present
+     * only on a step ranking, for a shown step that newly loses a worn bonus,
+     * when the plain gear before was in the store and the sim succeeded.
+     */
+    bonusOffDps?: number;
+    bonusOffSe?: number;
+    bonusOff?: Array<{ setId: number; threshold: SetThreshold }>;
     /** The partner choice needed a worn bonus whose value is unmeasured. */
     partnerUnmeasured?: "break-unmeasured";
     /** The rule that chose `pieces` on a step ranking. */
@@ -480,6 +494,27 @@ export type SetStepSims = {
   gears: number;
   simmed: number;
   fromStore: number;
+};
+
+/**
+ * The bonus-off sims of a step ranking (K6B), one per distinct request: the
+ * gear just before a shown step with the lost set's replaced pieces sent as
+ * set-less copies. `gears` counts the distinct requests and `failedGears`
+ * those whose sim failed. `beforeInStore` counts the requests whose plain
+ * gear before, without copies, was in the store; a request whose plain gear
+ * before was not is never simmed, because its Breaks line would not be a
+ * paired difference. `skippedSteps` counts shown steps that newly lose a
+ * bonus but got no value: no request could be built (a piece-count guard
+ * failed, nothing to copy, a gem repair or `applyCopies` failed), or the
+ * plain gear before was not in the store.
+ */
+export type SetBonusOffSims = {
+  gears: number;
+  simmed: number;
+  fromStore: number;
+  failedGears: number;
+  skippedSteps: number;
+  beforeInStore: number;
 };
 
 export type PartnerAuditEntry = {
@@ -589,6 +624,11 @@ export type Ranking = {
    * as one whose set rows are valued by the step rule.
    */
   setStepSims?: SetStepSims;
+  /**
+   * The bonus-off sims that split a shown step's broken-set loss onto its own
+   * popover line (K6B). Present whenever `setStepSims` is.
+   */
+  setBonusOffSims?: SetBonusOffSims;
   /**
    * Every partner set simmed for every eligible future, written only under
    * the "every-combination" rule, which the tab's check hook sets to score
@@ -1767,6 +1807,7 @@ export async function rankUpgrades(
         ? { crossingGates: setBonusResult.crossingGates }
         : {}),
       ...(steps ? { setStepSims: steps.setStepSims } : {}),
+      ...(steps ? { setBonusOffSims: steps.bonusOffSims } : {}),
       ...(steps?.partnerAudit ? { partnerAudit: steps.partnerAudit } : {}),
       ...(setBonusResult.setScreen
         ? { setScreen: setBonusResult.setScreen }
@@ -2634,7 +2675,11 @@ async function measureSetSteps(args: {
   simVersion: string;
   runOpts: SimRunOpts;
   floorDps: number;
-}): Promise<{ setStepSims: SetStepSims; partnerAudit?: PartnerAuditEntry[] }> {
+}): Promise<{
+  setStepSims: SetStepSims;
+  bonusOffSims: SetBonusOffSims;
+  partnerAudit?: PartnerAuditEntry[];
+}> {
   const { deps, equipment, gems, composeFor, counts, baseline, runOpts } = args;
   const rule = deps.partnerRule ?? PARTNER_RULE;
   const bBy = new Map<string, number | undefined>();
@@ -2642,27 +2687,27 @@ async function measureSetSteps(args: {
     bBy.set(`${v.setId}:${v.threshold}`, v.dps);
   }
   const nameOf = new Map(args.ranked.map((r) => [r.itemId, r.name]));
-  let simmed = 0;
-  let fromStore = 0;
+  type SimCounter = { simmed: number; fromStore: number };
+  const stepCounter: SimCounter = { simmed: 0, fromStore: 0 };
+  const stepFailure = "[upgrades] set step gear not measured: the sim failed";
 
   /** A store hit, else a sim; undefined when the sim fails. */
   const runCounted = async (
-    request: RaidSimRequest
+    request: RaidSimRequest,
+    counter: SimCounter,
+    failure: string
   ): Promise<{ totalDps: number; se: number } | undefined> => {
     let obs = await readCachedSim(deps, request, args.simVersion, runOpts);
     if (obs) {
-      fromStore += 1;
+      counter.fromStore += 1;
     } else {
       try {
         obs = await deps.sim.run(request, runOpts);
       } catch (err) {
-        console.warn(
-          "[upgrades] set step gear not measured: the sim failed",
-          err
-        );
+        console.warn(failure, err);
         return undefined;
       }
-      simmed += 1;
+      counter.simmed += 1;
       await cacheSimResult(deps, request, args.simVersion, runOpts, obs);
     }
     const se = obs.stdev / Math.sqrt(runOpts.iterations);
@@ -2672,10 +2717,10 @@ async function measureSetSteps(args: {
     };
   };
 
-  /** The step gear's request, or undefined when a gem repair fails. */
-  const stepGear = (
+  /** The step gear's equipment, or undefined when a gem repair fails. */
+  const stepEquipment = (
     swaps: readonly PackagePiece[]
-  ): RaidSimRequest | undefined => {
+  ): SimItemSpec[] | undefined => {
     let gear: SimItemSpec[] = [...equipment];
     try {
       for (const p of [...swaps].sort((a, b) => a.slotIndex - b.slotIndex)) {
@@ -2686,13 +2731,23 @@ async function measureSetSteps(args: {
       if (!(err instanceof MetaRepairError)) throw err;
       return undefined;
     }
-    return composeFor(gear);
+    return gear;
+  };
+
+  /** The step gear's request, or undefined when a gem repair fails. */
+  const stepGear = (
+    swaps: readonly PackagePiece[]
+  ): RaidSimRequest | undefined => {
+    const gear = stepEquipment(swaps);
+    return gear ? composeFor(gear) : undefined;
   };
 
   type Future = NonNullable<SetContext["futureBonuses"]>[number];
   const requests = new Map<string, RaidSimRequest>();
   const pending: Array<{ future: Future; key: string }> = [];
   const audits: PartnerAuditEntry[] = [];
+  const rowSwapOf = new Map<RankedItem, PackagePiece>();
+  const partnersOf = new Map<Future, PackagePiece[]>();
 
   for (const item of args.ranked) {
     const ctx = item.setContext;
@@ -2730,6 +2785,7 @@ async function measureSetSteps(args: {
       itemId: item.itemId,
       slotIndex: single.slotIndex,
     };
+    rowSwapOf.set(item, rowSwap);
     const lostBy = (swaps: readonly PackagePiece[]) =>
       brokenSetBonuses(equipment, swaps, setId, counts);
 
@@ -2764,7 +2820,9 @@ async function measureSetSteps(args: {
           ...(todaysPieces ? { todaysPieces } : {}),
           simGear: async (partners) => {
             const request = stepGear([rowSwap, ...partners]);
-            return request ? runCounted(request) : undefined;
+            return request
+              ? runCounted(request, stepCounter, stepFailure)
+              : undefined;
           },
         },
         rule
@@ -2793,6 +2851,7 @@ async function measureSetSteps(args: {
       const partners: PackagePiece[] = choice.itemIds
         .map((itemId) => ({ itemId, slotIndex: slotOf.get(itemId)! }))
         .sort((a, b) => a.slotIndex - b.slotIndex);
+      partnersOf.set(f, partners);
       f.partnerRule = rule;
       f.pieces = partners.map((p) => ({
         itemId: p.itemId,
@@ -2827,7 +2886,11 @@ async function measureSetSteps(args: {
   const keys = [...requests.keys()];
   await promisePool(
     keys.map((key) => async () => {
-      const total = await runCounted(requests.get(key)!);
+      const total = await runCounted(
+        requests.get(key)!,
+        stepCounter,
+        stepFailure
+      );
       if (total) totals.set(key, total);
     }),
     deps.concurrency ?? 1
@@ -2839,8 +2902,158 @@ async function measureSetSteps(args: {
     future.stepGearSe = total.se;
   }
 
+  // The bonus-off sims run for exactly the steps the popover shows, so this
+  // uses the view's one definition of those steps (K6B, ADR-0035).
+  const offCounter: SimCounter = { simmed: 0, fromStore: 0 };
+  const offRequests = new Map<
+    string,
+    { request: RaidSimRequest; plain: RaidSimRequest }
+  >();
+  const offPending: Array<{
+    future: Future;
+    key: string;
+    lost: Array<{ setId: number; threshold: SetThreshold }>;
+  }> = [];
+  let skippedSteps = 0;
+  const setIdAt = (
+    gear: readonly SimItemSpec[],
+    slot: number
+  ): number | undefined => {
+    const id = gear[slot]?.id;
+    return (id ? getItem(id)?.setId : undefined) ?? undefined;
+  };
+  const countOf = (gear: readonly SimItemSpec[], setId: number) =>
+    gear.filter((_, slot) => setIdAt(gear, slot) === setId).length;
+
+  /** Queues the step's bonus-off request; false when none can be built. */
+  const queueBonusOff = (
+    future: Future,
+    prevSwaps: readonly PackagePiece[],
+    swaps: readonly PackagePiece[],
+    lost: Array<{ setId: number; threshold: SetThreshold }>
+  ): boolean => {
+    const before = stepEquipment(prevSwaps);
+    const after = stepEquipment(swaps);
+    if (!before || !after) return false;
+    const lostSets = new Set(lost.map((b) => b.setId));
+    const prevIds = new Set(prevSwaps.map((p) => p.itemId));
+    const replaced = [
+      ...new Set(
+        swaps.filter((p) => !prevIds.has(p.itemId)).map((p) => p.slotIndex)
+      ),
+    ]
+      .filter((slot) => {
+        const setId = setIdAt(before, slot);
+        return setId !== undefined && lostSets.has(setId);
+      })
+      .sort((a, b) => a - b);
+    if (replaced.length === 0) return false;
+    // Copying the replaced pieces must leave each lost set at its count after
+    // the step; otherwise (a two-hander's off-hand, a repair) the bonus-off
+    // gear is not "before, minus exactly these bonuses".
+    for (const setId of lostSets) {
+      const copied = replaced.filter(
+        (slot) => setIdAt(before, slot) === setId
+      ).length;
+      if (countOf(before, setId) - copied !== countOf(after, setId)) {
+        return false;
+      }
+    }
+    let plain: RaidSimRequest;
+    let request: RaidSimRequest;
+    try {
+      plain = composeFor(before);
+      request = applyCopies(plain, { setLess: replaced });
+    } catch (err) {
+      console.warn("[upgrades] set step break not split:", err);
+      return false;
+    }
+    const key = simCacheKey(request, args.simVersion, runOpts);
+    if (!offRequests.has(key)) offRequests.set(key, { request, plain });
+    offPending.push({ future, key, lost });
+    return true;
+  };
+
+  for (const item of args.ranked) {
+    const ctx = item.setContext;
+    const rowSwap = rowSwapOf.get(item);
+    if (!ctx?.stepRanking || !rowSwap || setCreditUnmeasured(ctx)) continue;
+    const steps = setPotentialSteps(ctx, args.floorDps);
+    if (!steps) continue;
+    let prevSwaps: PackagePiece[] | undefined = [rowSwap];
+    for (const step of steps) {
+      const f = (ctx.futureBonuses ?? []).find(
+        (x) => x.threshold === step.threshold
+      );
+      const partners = f ? partnersOf.get(f) : undefined;
+      const swaps = partners ? [rowSwap, ...partners] : undefined;
+      if (step.broken.length > 0) {
+        const lost = step.broken.map((b) => ({
+          setId: b.setId,
+          threshold: b.threshold as SetThreshold,
+        }));
+        const queued =
+          f !== undefined &&
+          swaps !== undefined &&
+          prevSwaps !== undefined &&
+          queueBonusOff(f, prevSwaps, swaps, lost);
+        if (!queued) skippedSteps += 1;
+      }
+      prevSwaps = swaps;
+    }
+  }
+
+  // A Breaks line pairs the bonus-off sim with the plain gear before's sim
+  // (the previous step's total, or the row's single swap). Only a gear before
+  // that this run already holds makes that a paired difference, so a request
+  // whose plain gear before is missing is not simmed (ruling GK6-2).
+  const paired = new Set<string>();
+  for (const [key, { plain }] of offRequests) {
+    if (await readCachedSim(deps, plain, args.simVersion, runOpts)) {
+      paired.add(key);
+    }
+  }
+  const offTotals = new Map<string, { totalDps: number; se: number }>();
+  let failedGears = 0;
+  await promisePool(
+    [...paired].map((key) => async () => {
+      const total = await runCounted(
+        offRequests.get(key)!.request,
+        offCounter,
+        "[upgrades] set step break not split: the sim failed"
+      );
+      if (total) offTotals.set(key, total);
+      else failedGears += 1;
+    }),
+    deps.concurrency ?? 1
+  );
+  for (const { future, key, lost } of offPending) {
+    if (!paired.has(key)) {
+      skippedSteps += 1;
+      continue;
+    }
+    const total = offTotals.get(key);
+    if (!total) continue;
+    future.bonusOffDps = total.totalDps;
+    future.bonusOffSe = total.se;
+    future.bonusOff = lost;
+  }
+
   return {
-    setStepSims: { partnerRule: rule, gears: keys.length, simmed, fromStore },
+    setStepSims: {
+      partnerRule: rule,
+      gears: keys.length,
+      simmed: stepCounter.simmed,
+      fromStore: stepCounter.fromStore,
+    },
+    bonusOffSims: {
+      gears: offRequests.size,
+      simmed: offCounter.simmed,
+      fromStore: offCounter.fromStore,
+      failedGears,
+      skippedSteps,
+      beforeInStore: paired.size,
+    },
     ...(rule === "every-combination" ? { partnerAudit: audits } : {}),
   };
 }

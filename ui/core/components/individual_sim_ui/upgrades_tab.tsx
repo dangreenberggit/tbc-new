@@ -472,7 +472,9 @@ function outcomesTip(row: RankedItem, ctx: NonNullable<RankedItem['setContext']>
  * - `steps` (a step ranking, K6, the owner's "steps that add up"): one line per
  *   step up to the stop, each the pieces it adds, the bonus it reaches and the
  *   worn bonuses it newly loses, valued as its total minus the step before.
- *   They add up to the credit (C86).
+ *   They add up to the credit (C86). A step with a bonus-off sim (K6B) is
+ *   two lines instead: "Breaks {set} {n}pc" (−Y), then the pieces it adds
+ *   and the bonus it reaches with no "breaks" text (X); X − Y is the step.
  * - `outcomes` (a step ranking whose partner sets do not nest, K6): one line
  *   per eligible bonus, each the total of the gear with its partner pieces
  *   over the current gear. These are separate outcomes, not parts of a sum;
@@ -516,7 +518,19 @@ function setPotentialTipLines(
 	if (ctx.stepRanking) {
 		const steps = setPotentialSteps(ctx, noiseFloorDps);
 		if (steps !== null) {
-			const lines = steps.map(s => ({ label: piecesLabel(s, { plain: 'tip_step', breaks: 'tip_step_breaks' }, t), value: s.dps }));
+			const lines = steps.flatMap((s): SetTipLine[] => {
+				if (s.breaksLineDps === undefined || s.piecesLineDps === undefined) {
+					return [{ label: piecesLabel(s, { plain: 'tip_step', breaks: 'tip_step_breaks' }, t), value: s.dps }];
+				}
+				const breaks =
+					s.broken.length === 1
+						? t('tip_breaks', { set: s.broken[0].setName, threshold: s.broken[0].threshold })
+						: t('tip_breaks_several', { broken: brokenNames(s.broken) });
+				return [
+					{ label: breaks, value: s.breaksLineDps },
+					{ label: piecesLabel({ ...s, broken: [] }, { plain: 'tip_step', breaks: 'tip_step_breaks' }, t), value: s.piecesLineDps },
+				];
+			});
 			return { lines, kind: 'steps' };
 		}
 		const lines = setPotentialTerms(ctx, noiseFloorDps)

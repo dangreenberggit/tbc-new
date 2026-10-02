@@ -541,6 +541,15 @@ export type SetPotentialStep = {
   }>;
   dps: number;
   isStop: boolean;
+  /**
+   * The values of the two lines a step that newly loses a worn bonus splits
+   * into (K6B): the Breaks line, the bonus-off gear's sim minus the previous
+   * total (−Y), and the pieces line, the step's total minus the bonus-off
+   * gear's sim (X). Both are present or both are absent, and they add up to
+   * `dps`.
+   */
+  breaksLineDps?: number;
+  piecesLineDps?: number;
 };
 
 /**
@@ -550,7 +559,10 @@ export type SetPotentialStep = {
  * step's partner pieces do not include the previous step's (the sets do not
  * nest), because then no step is a purchase on top of the one before; the tab
  * shows such a row's totals as separate outcomes. The first step does not
- * name the row's own breaks: the popover lists them above the steps.
+ * name the row's own breaks: the popover lists them above the steps. A step
+ * that newly loses a worn bonus gets its two line values (K6B) only when its
+ * future's bonus-off sim turned off exactly those bonuses; otherwise, as when
+ * that sim failed or the ranking predates it, the step stays one line.
  */
 export function setPotentialSteps(
   ctx: SetContextLike | undefined,
@@ -572,14 +584,31 @@ export function setPotentialSteps(
   for (const term of stops.slice(0, last + 1)) {
     const ids = new Set(term.pieces.map((p) => p.itemId));
     if ([...prevIds].some((id) => !ids.has(id))) return null;
+    const broken = term.broken.filter((b) => !prevBroken.has(keyOf(b)));
+    const fut = (ctx.futureBonuses ?? []).find(
+      (f) => f.threshold === term.threshold
+    );
+    const offKeys = new Set((fut?.bonusOff ?? []).map(keyOf));
+    const offDps = fut?.bonusOffDps;
+    const split =
+      broken.length > 0 &&
+      offDps !== undefined &&
+      offKeys.size === broken.length &&
+      broken.every((b) => offKeys.has(keyOf(b)));
     steps.push({
       kind: "step",
       threshold: term.threshold,
       setName: term.setName,
       pieces: term.pieces.filter((p) => !prevIds.has(p.itemId)),
-      broken: term.broken.filter((b) => !prevBroken.has(keyOf(b))),
+      broken,
       dps: term.totalDps - prevTotal,
       isStop: term.isStop,
+      ...(split
+        ? {
+            breaksLineDps: offDps - prevTotal,
+            piecesLineDps: term.totalDps - offDps,
+          }
+        : {}),
     });
     prevIds = ids;
     prevBroken = new Set([...prevBroken, ...term.broken.map(keyOf)]);
