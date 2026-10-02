@@ -1,12 +1,11 @@
 /**
- * The set screen's record mode (ticket 511, stage K5R; ADR-0035).
+ * The set screen (ticket 511, stages K5R and K5ON; ADR-0035).
  *
  * FORK-ONLY, no packages/core ancestor. A screen is a cheap first pass over
- * every set the gain side covers, meant to decide which sets get the exact
+ * every set the gain side covers. It decides which sets get the exact
  * per-bonus measurement (`.scratch/stage-gate/511-512-set-credit/
- * set-screening-plan.md` §2). Record mode only runs and records the screen's
- * sims, so the exploration can score candidate rules offline. It filters
- * nothing, and nothing in the engine reads what it records.
+ * set-screening-plan.md` §2), because that measurement costs most of a run's
+ * set sims and most sets a player is offered are not worth collecting.
  *
  * Per set S worn at w, with R the highest count the pool can reach and R − w
  * at least 2: on the gear of S's package at R, rung k (k = 0 … R − w) sends
@@ -14,8 +13,19 @@
  * the rest as set-less copies, so Go counts w + k pieces of S (the gate's
  * copies-in-both form, `set-less-copies.ts`). The pair is rungs 0 and R − w.
  * Every sim asks for per-iteration values, and the rungs share a seed, so a
- * difference of two rungs has a paired standard error. It holds no table of
- * set ids or piece counts.
+ * difference of two rungs has a paired standard error.
+ *
+ * Record mode runs the pair at four iteration counts and the whole ladder,
+ * and records them, so candidate rules can be scored offline. It filters
+ * nothing.
+ *
+ * On mode, the tab's default, runs only the pair at the rule's iteration
+ * count and applies `SCREEN_ON_RULE`. A set it drops gets no gate, package
+ * or step sims; `rank.ts` gives it one "screened-out" marker entry. A set
+ * whose readings failed is kept, so a sim failure never hides a set (the
+ * known case is ticket 532: off-class Cryptstalker sims fail).
+ *
+ * Neither mode holds a table of set ids or piece counts.
  */
 
 import type {
@@ -25,11 +35,51 @@ import type {
 } from "./seams/sim-runner.js";
 import { applyCopies } from "./set-less-copies.js";
 
-export type SetScreenMode = "off" | "record";
+export type SetScreenMode = "off" | "record" | "on";
 
 /** Iteration counts of the pair, and of the ladder (set-screening-plan.md Q4). */
 export const SCREEN_PAIR_ITERATIONS: readonly number[] = [10, 100, 300, 1000];
 export const SCREEN_LADDER_ITERATIONS: readonly number[] = [100, 300, 1000];
+
+export type ScreenOnRule = {
+  /** M2: the best count's package estimate plus the pair. */
+  measure: "M2";
+  iterations: number;
+  /** K: the sets with the highest measures that are always kept. */
+  keep: number;
+  /** c: the band below the K-th measure is c·√2·σ wide. */
+  bandC: number;
+  /** Rule 1: drop a set whose pair reads exactly 0. */
+  dropExactZero: boolean;
+  /** σ = sigmaBoundScale · √2 · baseline stdev / √iterations. */
+  sigmaBoundScale: number;
+};
+
+/**
+ * The on mode's rule: the runner-up of the K5E scoring, which kept every set
+ * worth collecting on all eleven check characters under σ, 1.5 × σ and each
+ * reading's own paired error (`.scratch/stage-gate/511-512-set-credit/k5e/
+ * report.md`). The orchestrator chose it over the cheaper top pick at Gate C
+ * on 2026-10-01 (Q-K5E-rule), because the top pick kept three needed sets
+ * only through its band; ADR-0035 records both. Changing any constant needs
+ * a new K5E-style scoring of the check characters.
+ */
+export const SCREEN_ON_RULE = {
+  measure: "M2",
+  iterations: 300,
+  keep: 2,
+  bandC: 1,
+  dropExactZero: true,
+  sigmaBoundScale: 1,
+} as const;
+
+export type ScreenReason =
+  | "exact-zero"
+  | "readings-absent"
+  | "below-zero"
+  | "top-k"
+  | "band"
+  | "outside-band";
 
 export type SetScreenPair = {
   iterations: number;
@@ -61,7 +111,7 @@ export type SetScreenSet = {
   rungs: SetScreenRung[];
 };
 
-export type SetScreen = {
+export type SetScreenRecord = {
   mode: "record";
   seed: number;
   pairIterations: number[];
@@ -72,6 +122,38 @@ export type SetScreen = {
   /** Sims the store answered. */
   fromStore: number;
 };
+
+export type SetScreenOnSet = {
+  setId: number;
+  worn: number;
+  reach: number;
+  /** The package's added pieces at `reach`, in slot order. */
+  packageItemIds: number[];
+  /** Rung R − w minus rung 0, absent when either sim failed. */
+  pair: { dps?: number; pairedSe?: number };
+  /** The highest package estimate over the counts in reach, if any. */
+  bestStats?: number;
+  /** `bestStats + pair.dps` (M2), absent when either is. */
+  measure?: number;
+  kept: boolean;
+  reason: ScreenReason;
+};
+
+export type SetScreenOn = {
+  mode: "on";
+  seed: number;
+  iterations: number;
+  rule: Readonly<ScreenOnRule>;
+  /** Absent when the baseline stdev is not a finite number. */
+  sigma?: number;
+  sets: SetScreenOnSet[];
+  /** Sims sent to the runner, failed ones included. */
+  simmed: number;
+  /** Sims the store answered. */
+  fromStore: number;
+};
+
+export type SetScreen = SetScreenRecord | SetScreenOn;
 
 /** A set's package at its reach: the composed request and its added pieces. */
 export type ScreenPackage = {
@@ -99,59 +181,94 @@ export type SetScreenInput = {
   ladderIterations?: readonly number[];
 };
 
+export type SetScreenOnInput = Omit<
+  SetScreenInput,
+  "pairIterations" | "ladderIterations"
+> & {
+  /**
+   * The package estimate of `setId` at `count`: the sum of its pieces'
+   * single-swap figures plus rule Z's add-back for the worn bonuses they
+   * share (`partner-choice.ts`). Undefined when an input is missing.
+   */
+  statsAt: (setId: number, count: number) => number | undefined;
+  /** The baseline sim's per-iteration standard deviation. */
+  baselineStdev: number;
+};
+
+type ScreenCounter = { simmed: number; fromStore: number };
+
+/** The package at `reach` and its added pieces' slots, in slot order. */
+function screenPackage(
+  input: Pick<SetScreenInput, "packageAt">,
+  setId: number,
+  reach: number
+) {
+  const pkg = input.packageAt(setId, reach);
+  const added = pkg
+    ? [...pkg.added].sort((a, b) => a.slotIndex - b.slotIndex)
+    : [];
+  return { pkg, added, slots: added.map((p) => p.slotIndex) };
+}
+
+/**
+ * One set's rung sim, shared by both modes so an on-mode pair is the same
+ * request, with the same options, as a record-mode pair at that N. Each
+ * reading catches its own failure, so one failed sim loses only that
+ * reading.
+ */
+function rungSimmer(
+  input: Pick<SetScreenInput, "runSimAt" | "seed">,
+  setId: number,
+  worn: number,
+  pkg: ScreenPackage | undefined,
+  slots: readonly number[],
+  counter: ScreenCounter
+): (k: number, iterations: number) => Promise<SimObservation | undefined> {
+  return async (k, iterations) => {
+    if (!pkg) return undefined;
+    const what = `[upgrades] set screen: set ${setId} at ${worn + k} pieces, ${iterations} iterations, not measured`;
+    let request: RaidSimRequest;
+    try {
+      request = applyCopies(pkg.request, {
+        setKept: slots.slice(0, k),
+        setLess: slots.slice(k),
+      });
+    } catch (err) {
+      console.warn(what, err);
+      return undefined;
+    }
+    try {
+      const { observation, fromStore: hit } = await input.runSimAt(request, {
+        seed: input.seed,
+        iterations,
+        saveAllValues: true,
+      });
+      if (hit) counter.fromStore += 1;
+      else counter.simmed += 1;
+      return observation;
+    } catch (err) {
+      counter.simmed += 1;
+      console.warn(what, err);
+      return undefined;
+    }
+  };
+}
+
 export async function recordSetScreen(
   input: SetScreenInput
-): Promise<SetScreen> {
+): Promise<SetScreenRecord> {
   const pairIterations = [...(input.pairIterations ?? SCREEN_PAIR_ITERATIONS)];
   const ladderIterations = [
     ...(input.ladderIterations ?? SCREEN_LADDER_ITERATIONS),
   ];
-  let simmed = 0;
-  let fromStore = 0;
+  const counter: ScreenCounter = { simmed: 0, fromStore: 0 };
   const sets: SetScreenSet[] = [];
 
   for (const { setId, worn, reach } of input.sets) {
     if (reach - worn < 2) continue;
-    const pkg = input.packageAt(setId, reach);
-    const added = pkg
-      ? [...pkg.added].sort((a, b) => a.slotIndex - b.slotIndex)
-      : [];
-    const slots = added.map((p) => p.slotIndex);
+    const { pkg, added, slots } = screenPackage(input, setId, reach);
     const top = reach - worn;
-
-    // Each reading catches its own failure, so one failed sim loses only that
-    // reading.
-    const rungAt = async (
-      k: number,
-      iterations: number
-    ): Promise<SimObservation | undefined> => {
-      if (!pkg) return undefined;
-      const what = `[upgrades] set screen: set ${setId} at ${worn + k} pieces, ${iterations} iterations, not measured`;
-      let request: RaidSimRequest;
-      try {
-        request = applyCopies(pkg.request, {
-          setKept: slots.slice(0, k),
-          setLess: slots.slice(k),
-        });
-      } catch (err) {
-        console.warn(what, err);
-        return undefined;
-      }
-      try {
-        const { observation, fromStore: hit } = await input.runSimAt(request, {
-          seed: input.seed,
-          iterations,
-          saveAllValues: true,
-        });
-        if (hit) fromStore += 1;
-        else simmed += 1;
-        return observation;
-      } catch (err) {
-        simmed += 1;
-        console.warn(what, err);
-        return undefined;
-      }
-    };
+    const rungAt = rungSimmer(input, setId, worn, pkg, slots, counter);
 
     const pairs: SetScreenPair[] = [];
     for (const iterations of pairIterations) {
@@ -199,9 +316,141 @@ export async function recordSetScreen(
     pairIterations,
     ladderIterations,
     sets,
-    simmed,
-    fromStore,
+    simmed: counter.simmed,
+    fromStore: counter.fromStore,
   };
+}
+
+/**
+ * The on mode: the pair at `SCREEN_ON_RULE.iterations` for each set with
+ * R − w ≥ 2, in set id order, then `applyScreenRule`. Sets with R − w < 2
+ * are not screened, so the caller keeps them.
+ */
+export async function runSetScreenOn(
+  input: SetScreenOnInput
+): Promise<SetScreenOn> {
+  const rule = SCREEN_ON_RULE;
+  const iterations = rule.iterations;
+  const counter: ScreenCounter = { simmed: 0, fromStore: 0 };
+  const readings: Omit<SetScreenOnSet, "kept" | "reason">[] = [];
+
+  for (const { setId, worn, reach } of [...input.sets].sort(
+    (a, b) => a.setId - b.setId
+  )) {
+    if (reach - worn < 2) continue;
+    const { pkg, added, slots } = screenPackage(input, setId, reach);
+    const rungAt = rungSimmer(input, setId, worn, pkg, slots, counter);
+    const low = await rungAt(0, iterations);
+    const high = await rungAt(reach - worn, iterations);
+    const pairDps = low && high ? high.dps - low.dps : undefined;
+
+    let bestStats: number | undefined;
+    for (let t = Math.max(2, worn + 1); t <= reach; t++) {
+      const stats = input.statsAt(setId, t);
+      if (stats !== undefined && (bestStats === undefined || stats > bestStats)) {
+        bestStats = stats;
+      }
+    }
+    const measure =
+      bestStats !== undefined && pairDps !== undefined
+        ? bestStats + pairDps
+        : undefined;
+
+    readings.push({
+      setId,
+      worn,
+      reach,
+      packageItemIds: added.map((p) => p.itemId),
+      pair: {
+        ...(pairDps !== undefined ? { dps: pairDps } : {}),
+        ...optionalPairedSe("pairedSe", high, low, iterations),
+      },
+      ...(bestStats !== undefined ? { bestStats } : {}),
+      ...(measure !== undefined ? { measure } : {}),
+    });
+  }
+
+  const sigma = Number.isFinite(input.baselineStdev)
+    ? (rule.sigmaBoundScale * Math.SQRT2 * input.baselineStdev) /
+      Math.sqrt(iterations)
+    : undefined;
+  const verdicts = applyScreenRule(
+    readings.map((r) => ({
+      setId: r.setId,
+      ...(r.pair.dps !== undefined ? { pairDps: r.pair.dps } : {}),
+      ...(r.measure !== undefined ? { measure: r.measure } : {}),
+    })),
+    sigma,
+    rule
+  );
+
+  return {
+    mode: "on",
+    seed: input.seed,
+    iterations,
+    rule,
+    ...(sigma !== undefined ? { sigma } : {}),
+    sets: readings.map((r) => ({ ...r, ...verdicts.get(r.setId)! })),
+    simmed: counter.simmed,
+    fromStore: counter.fromStore,
+  };
+}
+
+/**
+ * Which screened sets the on mode keeps, and why. A port of `apply_rule` in
+ * `.scratch/stage-gate/511-512-set-credit/k5e/score_screen.py` (bound mode),
+ * so the scoring's verdict carries over; keep the two in step. In ascending
+ * set id:
+ *
+ * 1. a pair of exactly 0 is dropped, before the absence check;
+ * 2. an absent measure or σ keeps the set, outside the ranking;
+ * 3. measure + 2σ < 0 is dropped;
+ * 4. the rest are ranked by (−measure, set id), the first K kept;
+ * 5. another set within c·√2·σ of the K-th measure (inclusive) is kept;
+ * 6. the rest are dropped.
+ */
+export function applyScreenRule(
+  sets: ReadonlyArray<{ setId: number; pairDps?: number; measure?: number }>,
+  sigma: number | undefined,
+  rule: Readonly<ScreenOnRule> = SCREEN_ON_RULE
+): Map<number, { kept: boolean; reason: ScreenReason }> {
+  const out = new Map<number, { kept: boolean; reason: ScreenReason }>();
+  const ranked: Array<{ setId: number; measure: number }> = [];
+  for (const set of [...sets].sort((a, b) => a.setId - b.setId)) {
+    if (rule.dropExactZero && set.pairDps === 0) {
+      out.set(set.setId, { kept: false, reason: "exact-zero" });
+      continue;
+    }
+    if (
+      set.measure === undefined ||
+      sigma === undefined ||
+      !Number.isFinite(sigma)
+    ) {
+      out.set(set.setId, { kept: true, reason: "readings-absent" });
+      continue;
+    }
+    if (set.measure + 2 * sigma < 0) {
+      out.set(set.setId, { kept: false, reason: "below-zero" });
+      continue;
+    }
+    ranked.push({ setId: set.setId, measure: set.measure });
+  }
+  ranked.sort((a, b) =>
+    a.measure !== b.measure ? b.measure - a.measure : a.setId - b.setId
+  );
+  if (ranked.length <= rule.keep) {
+    for (const r of ranked) out.set(r.setId, { kept: true, reason: "top-k" });
+    return out;
+  }
+  const measureK = ranked[rule.keep - 1]!.measure;
+  const width = rule.bandC * Math.SQRT2 * sigma!;
+  ranked.forEach((r, i) => {
+    if (i < rule.keep) out.set(r.setId, { kept: true, reason: "top-k" });
+    else if (r.measure >= measureK - width) {
+      out.set(r.setId, { kept: true, reason: "band" });
+    } else out.set(r.setId, { kept: false, reason: "outside-band" });
+  });
+  return out;
 }
 
 /** `{ [field]: sd(a_i − b_i)/√N }`, or nothing when either side lacks N values. */

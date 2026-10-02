@@ -1873,9 +1873,11 @@ export class UpgradesTab extends SimTab {
 					// (ticket 511). Undefined there, and always in a player's build,
 					// means the shipped `PARTNER_RULE`.
 					...(__TBC_TAB_FIXTURES__ && window.__upgradesCheck?.partnerRule ? { partnerRule: window.__upgradesCheck.partnerRule } : {}),
-					// Dev and gate builds only: the check hook turns on the set screen's
-					// record mode (ticket 511). Players never run it.
-					...(__TBC_TAB_FIXTURES__ && window.__upgradesCheck?.setScreen ? { setScreen: window.__upgradesCheck.setScreen } : {}),
+					// The set screen is the players' default, so a run spends the full
+					// per-bonus measurement only on the sets it keeps (ticket 511 K5ON,
+					// ADR-0035). The check hook can set "off" or "record", and is read
+					// only in dev and gate builds.
+					setScreen: __TBC_TAB_FIXTURES__ && window.__upgradesCheck?.setScreen ? window.__upgradesCheck.setScreen : 'on',
 				},
 				progress => {
 					// Row-landed events (candidate-pool.md §5.1.5) are a side

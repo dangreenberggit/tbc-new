@@ -44,7 +44,13 @@ export type UnmeasuredReason =
   | "insufficient-pieces"
   | "sim-failed"
   | "repair-failed"
-  | "unmeasurable-at-this-worn-count";
+  | "unmeasurable-at-this-worn-count"
+  /**
+   * The set screen dropped the set (ticket 511 K5ON, `set-screen.ts`). One
+   * marker entry keeps the rows' `setContext`, so they keep their single
+   * breaks and crossing; it has no package, so it is never a future.
+   */
+  | "screened-out";
 
 /**
  * Which (setId, threshold) bonuses the flag-off ranking measures. It stays

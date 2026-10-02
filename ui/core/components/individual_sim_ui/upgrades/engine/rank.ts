@@ -82,6 +82,7 @@ import {
   type PartnerPiece,
   partnerPool,
   type PartnerRule,
+  sumOfSinglesEstimate,
 } from "./partner-choice.js";
 import {
   type PlausibilityWarning,
@@ -122,7 +123,9 @@ import {
 } from "./set-less-copies.js";
 import {
   recordSetScreen,
+  runSetScreenOn,
   type SetScreen,
+  type SetScreenInput,
   type SetScreenMode,
 } from "./set-screen.js";
 import {
@@ -224,10 +227,13 @@ export type Deps = {
    */
   partnerRule?: PartnerRule;
   /**
-   * The set screen (ticket 511, `set-screen.ts`). "record" runs the screen's
-   * sims with the flag and writes `Ranking.setScreen`, filtering nothing.
-   * Absent means "off". Only the tab's check hook sets it, in dev and gate
-   * builds; it joins the content hash only when set.
+   * The set screen (ticket 511, `set-screen.ts`), with the flag only. "on"
+   * filters the gain side to the sets the screen keeps; the tab passes it
+   * (ticket 511 K5ON, ADR-0035). "record" runs the record mode's sims,
+   * filtering nothing; only the tab's check hook sets it, in dev and gate
+   * builds. Both write `Ranking.setScreen`. Absent means "off", so the core
+   * engine, the CLI and E-W3 are unchanged. It joins the content hash only
+   * when set.
    */
   setScreen?: SetScreenMode;
   /**
@@ -591,8 +597,10 @@ export type Ranking = {
   partnerAudit?: PartnerAuditEntry[];
   /**
    * The set screen's readings, written only when `deps.setScreen` is
-   * "record" (ticket 511). Nothing in the engine or the view reads it; the
-   * exploration scores its rules from it offline. Players never get it.
+   * "record" or "on" (ticket 511). In "on" mode it also holds each screened
+   * set's verdict and reason. Nothing in the engine or the view reads it:
+   * the gain side filters on the screen's own result, and record mode's
+   * readings are scored offline.
    */
   setScreen?: SetScreen;
   plausibilityWarnings?: PlausibilityWarning[];
@@ -1608,7 +1616,8 @@ export async function rankUpgrades(
           runOpts,
           packageSimSkips,
           deps.measureBrokenSetValue ?? false,
-          cutoff
+          cutoff,
+          observation.stdev
         );
     // With the flag, a lost count is a break only when the ladder counted it,
     // and no table is read. An aborted run has no ladder, so it charges none.
@@ -1893,7 +1902,12 @@ async function buildSetBonuses(
    */
   measureBrokenSetValue: boolean,
   /** The ranking's cutoff, for the noise floor of the ladder's gate. */
-  cutoff: Cutoff
+  cutoff: Cutoff,
+  /**
+   * The baseline sim's per-iteration stdev (`Ranking.baseline.stdev`), for
+   * the on-mode screen's σ.
+   */
+  baselineStdev: number
 ): Promise<{
   bonuses: SetBonusValue[];
   brokenSetValues: BrokenSetValue[];
@@ -1989,11 +2003,13 @@ async function buildSetBonuses(
     return counts;
   };
 
-  // Ticket 511, K5R: the screen in record mode runs after the worn-set ladder
-  // and before the package loop, and nothing below reads what it records.
-  const setScreen =
-    measureBrokenSetValue && deps.setScreen === "record"
-      ? await recordSetScreen({
+  // Ticket 511: the screen runs after the worn-set ladder and before the
+  // package loop. Both modes get the same sets, packages and sim options, so
+  // an on-mode pair is the record mode's request at that N (K5ON).
+  const screenMode = measureBrokenSetValue ? deps.setScreen : undefined;
+  const screenInput: SetScreenInput | undefined =
+    screenMode === "record" || screenMode === "on"
+      ? {
           sets: [...setIdsWithCandidates]
             .sort((a, b) => a - b)
             .map((setId) => {
@@ -2031,8 +2047,53 @@ async function buildSetBonuses(
           },
           runSimAt: (request, opts) => runSimAt(deps, request, simVersion, opts),
           seed: runOpts.seed,
-        })
+        }
       : undefined;
+  // The on mode's package estimate is rule Z's (`partner-choice.ts`) with the
+  // package's first added piece as the row, so it reads as the K5E scorer's
+  // stats(t), on which the rule was chosen.
+  const breakDpsBy = new Map(
+    brokenSetValues.map((v) => [`${v.setId}:${v.threshold}`, v.dps] as const)
+  );
+  const statsAt = (setId: number, count: number): number | undefined => {
+    const selection = selectFor(setId, count);
+    if (!selection.ok) return undefined;
+    const pieces: PartnerPiece[] = [];
+    for (const piece of selection.addedPieces) {
+      const single = individualDeltasByItemId.get(piece.itemId)?.deltaDps;
+      if (single === undefined) return undefined;
+      pieces.push({
+        itemId: piece.itemId,
+        slotIndex: piece.slotIndex,
+        singleDeltaDps: single,
+      });
+    }
+    const [row, ...rest] = pieces;
+    if (!row) return undefined;
+    return sumOfSinglesEstimate(
+      {
+        row,
+        setId,
+        count,
+        needed: rest.length,
+        pool: [],
+        lostBy: (swaps) => brokenSetBonuses(equipment, swaps, setId, counts),
+        breakDps: (s, c) => breakDpsBy.get(`${s}:${c}`),
+      },
+      rest,
+      { withCombinationOnly: true }
+    );
+  };
+  const setScreen: SetScreen | undefined = !screenInput
+    ? undefined
+    : screenMode === "record"
+      ? await recordSetScreen(screenInput)
+      : await runSetScreenOn({ ...screenInput, statsAt, baselineStdev });
+  const screenedOut = new Set(
+    setScreen?.mode === "on"
+      ? setScreen.sets.filter((s) => !s.kept).map((s) => s.setId)
+      : []
+  );
 
   if (setIdsWithCandidates.size === 0) {
     return {
@@ -2073,6 +2134,22 @@ async function buildSetBonuses(
         packageItemIds: [],
         packageDeltaDps: 0,
         unmeasured: "insufficient-pieces",
+      });
+      continue;
+    }
+    if (screenedOut.has(setId)) {
+      // The set screen dropped this set: no gate, package or step sims. One
+      // marker keeps its rows' single breaks and crossing, because
+      // `applySetContext` skips a row whose set has no entry; it has no
+      // package, so it is never a future (ticket 511 K5ON).
+      results.push({
+        setId,
+        setName: label,
+        threshold: Math.max(2, piecesWorn + 1),
+        piecesWorn,
+        packageItemIds: [],
+        packageDeltaDps: 0,
+        unmeasured: "screened-out",
       });
       continue;
     }

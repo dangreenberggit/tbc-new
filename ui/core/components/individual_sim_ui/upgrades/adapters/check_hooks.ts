@@ -6,7 +6,7 @@
  * branches, which exist in the dev server and the gate harness's own build and
  * never in a production build (`data/tab-fixtures/README.md`). Players never
  * set it. Undefined, or any field left undefined, means the shipped behaviour:
- * the tab's own pool and the engine's `PARTNER_RULE`.
+ * the tab's own pool, the engine's `PARTNER_RULE` and the set screen on.
  */
 
 import type { PartnerRule } from '../engine/partner-choice.js';
@@ -17,7 +17,12 @@ import type { ContentPhase, SpecId } from '../engine/types.js';
 export type CheckHooks = {
 	/** Overrides the engine's `PARTNER_RULE` for the next run. */
 	partnerRule?: PartnerRule;
-	/** "record" runs the set screen and writes `ranking.setScreen` (stages K5P and K5E). */
+	/**
+	 * The set screen's mode for the next run. Undefined means the tab's
+	 * default, "on" (ticket 511 K5ON). "off" and "record" are for checks only:
+	 * "record" writes the screen's readings to `ranking.setScreen` and filters
+	 * nothing (stages K5P and K5E).
+	 */
 	setScreen?: SetScreenMode;
 	pool?: {
 		/**
