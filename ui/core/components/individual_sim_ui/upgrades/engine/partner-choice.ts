@@ -10,7 +10,8 @@
  * The owner also ruled out any player control over the choice: the player
  * picks gear in the game, not the sim setup. "One partner set per bonus,
  * chosen by one function and shown alone" is the orchestrator's reading of
- * those words (stage-gate decision log, 2026-09-28), not the owner's own.
+ * those words (stage-gate decision log, 2026-09-28; gitignored, ADR-0035
+ * records the result), not the owner's own.
  *
  * `choosePartnerSet` is the only place a partner set is chosen, so the rule
  * can be replaced without touching anything else. `PARTNER_RULE` names the
@@ -71,8 +72,8 @@ export const PARTNER_RULE: PartnerRule = "close-calls";
  * sims found best, over every decided (row, bonus) of its eight characters
  * (W3-TH, Mantle of Malorne 29100, 4pc). Source: the K5P report, from
  * `python fallback_global.py results` in the stage folder
- * `.scratch/stage-gate/511-512-set-credit/k5p/`. The plan of that stage sets
- * the margin at twice M.
+ * `.scratch/stage-gate/511-512-set-credit/k5p/` (gitignored; ADR-0035 records
+ * the result). The plan of that stage sets the margin at twice M.
  */
 export const CLOSE_CALL_MARGIN_DPS = 31.866872635956497;
 

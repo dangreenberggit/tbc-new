@@ -17,7 +17,7 @@
  * `HasRingEquipped` (sim/core/character.go:528-535), in weapon checks
  * (character.go:631), in item swaps (sim/core/item_swaps.go:312-317) and in
  * class code (for example sim/paladin/item_librams.go, sim/hunter/hunter.go).
- * A piece that is real in one request and a copy in the other would carry
+ * A piece that is real in one request and a copy in the other would bring
  * such an effect into the measured value. Sent as a copy in both, it lacks
  * the effect in both, so the effect cancels, and no list of which pieces have
  * such effects is needed. The value is then the bonus on gear without those
@@ -71,7 +71,7 @@ function firstPlayer(request: Record<string, unknown>): MutablePlayer {
  * copy and the item in each `setKept` slot is its set-kept copy. When the
  * player has a database, it gains one row per copy, made from the real item's
  * row: a set-less row has `setName` "" and `setId` 0, a set-kept row changes
- * only `id`. Stats and `scalingOptions` carry over in both. A request with no
+ * only `id`. Stats and `scalingOptions` stay the same in both. A request with no
  * database (the CLI, which is built with the full item database) gets the id
  * swap only.
  */

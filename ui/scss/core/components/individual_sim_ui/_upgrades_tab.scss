@@ -79,7 +79,7 @@
 // card is reordered ABOVE the results (`media-breakpoint-down(xl)`'s
 // `order: -1` below), so once it scrolls fully past, the left panel's own
 // content -- starting with "View options" -- becomes the first thing at page
-// top and lands underneath the sim's own sticky header in turn (ticket 487,
+// top and slides underneath the sim's own sticky header in turn (ticket 487,
 // reported at 1070px): the header's `z-index: 100` and its bottom-border
 // pseudo-element (`_header.scss`'s `.sim-header::after`) painted over the
 // heading, reading as a clipped label with a stray line through it. The fix is
@@ -557,7 +557,7 @@
 // `scroll-margin-top` (ticket 487) keeps this host's own content -- "View
 // options" is the first thing in it -- clear of the sim's own sticky header
 // (`--sim-header-height`, `.sim-header`'s own sticky rule) whenever the page
-// scroll lands this host at the very top: below `xl` the settings card is
+// scroll brings this host to the very top: below `xl` the settings card is
 // reordered above this panel and is itself sticky (see the note on
 // `.upgrades-settings-outer-container` above), so once it scrolls fully past,
 // this host is the first thing on the page and would otherwise render under
@@ -1202,7 +1202,7 @@
 	// Every results table is `table-layout: fixed` against one shared
 	// `<colgroup>` (`resultsColgroup()`, ticket 483). Ticket 463 did this for the
 	// mid-run table alone, so it would not reflow as rows with longer names
-	// landed. The settled shortlist and below-cutoff tables stayed on
+	// arrived. The settled shortlist and below-cutoff tables stayed on
 	// `table-layout: auto`, and because they are separate `<table>`s each sized
 	// its columns from its own content, so their columns never lined up
 	// (measured 627 vs 676px in a 627px host). Fixed widths on the short columns
@@ -1458,7 +1458,7 @@
 
 // The renamed "Upgrades" tab (ticket 485): larger and bolder than the slot
 // tabs beside it, since it is the tab the results actually live under and the
-// owner asked for it to read as the primary one. This tab carries no count
+// owner asked for it to read as the primary one. This tab has no count
 // badge of its own (unlike the slot tabs, `.upgrades-subtab-count` below), so
 // there is nothing to realign against the bigger text.
 .upgrades-primary-subtab {

@@ -113,7 +113,7 @@ export function installFixtureHooks(host: FixtureHost): void {
 			ranking,
 			spec: host.specId(),
 			phase: host.simUI.sim.getPhase(),
-			// The recorder saves this beside the ranking so a fixture carries the
+			// The recorder saves this beside the ranking so a fixture keeps the
 			// gear its figures were measured against.
 			gear: EquipmentSpec.toJson(host.simUI.player.getGear().asSpec()),
 		};

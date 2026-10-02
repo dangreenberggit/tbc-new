@@ -14,7 +14,7 @@
  *
  * Ticket 511 (fork-only): on a step ranking (`setContext.stepRanking`), a set
  * row is credited from sims of the gear it would be worn in. Each future
- * whose same-gear gate cleared carries `stepGearDps`, the sim of the current
+ * whose same-gear gate cleared has `stepGearDps`, the sim of the current
  * gear plus the row plus its partner pieces minus the sim of the current
  * gear; the credit is the best `stepGearDps − singleDeltaDps` (best stop), and
  * none of `dps`, the path pieces, the path breaks or `commitBreaks` is read.

@@ -376,7 +376,7 @@ export type SelfSetConfound = {
    * The confounding threshold's own value, measured by one pair sim and
    * already added back into the 4pc `bonusDps` (ticket 492). Absent when no
    * two package pieces were break-free alone and together, or that sim or its
-   * gem repair failed: the 4pc `bonusDps` then still carries the `−(n−1)·B2`
+   * gem repair failed: the 4pc `bonusDps` then still has the `−(n−1)·B2`
    * confound, and `rank.ts` leaves its `bonusDpsNet` unset.
    */
   dps?: number;

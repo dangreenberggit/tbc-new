@@ -293,7 +293,7 @@ function assertAll(width, m) {
 //
 // The five assertions above measure the pre-run shell. The legibility
 // assertions the owner asked for target the results table, which does not
-// exist until a run lands rows. Since ticket 520 they measure a recorded
+// exist until a run produces rows. Since ticket 520 they measure a recorded
 // fixture's rows; the gate runs no sim. RUN_WIDTH and MIN_ROWS come from the
 // harness.
 // ---------------------------------------------------------------------------
@@ -418,7 +418,7 @@ function legibilityProbeExpression() {
 			if (br.top >= nr.bottom) badgeGaps.push({ text: name.innerText, gap: br.top - nr.bottom });
 		}
 
-		// Every set-bonus sub-line in every landed results table, not the sampled
+		// Every set-bonus sub-line in every finished results table, not the sampled
 		// rows: set rows are rare, and the sample can miss them all (ticket 493).
 		// The sub-line is display:block + nowrap, so its own box is the cell's
 		// content box whatever the text does; only a Range over its text shows

@@ -2552,7 +2552,7 @@ async function buildSetBonuses(
   //   • pkgΔ holds −B once iff this package's END STATE breaks it (`pkgEnd`);
   //   • each member single that breaks it holds −B, subtracted: +B per member
   //     (`membersPkg`);
-  //   • the raw 2pc (subtracted by the 4pc only) carries its own inflation
+  //   • the raw 2pc (subtracted by the 4pc only) has its own inflation
   //     `(members2pc − twoPcEnd)·B`, which the subtraction negates.
   // So `I = Σ (membersPkg − members2pc − pkgEnd + twoPcEnd)·B` over every lost
   // threshold (`netInflation`), and `bonusDpsNet = bonusDps − I`. Reading each
@@ -2584,7 +2584,7 @@ async function buildSetBonuses(
     });
   for (const b of results) {
     if (b.bonusDps === undefined) continue;
-    // A worn-1 4pc whose 2pc the pair sim did not measure still carries
+    // A worn-1 4pc whose 2pc the pair sim did not measure still has
     // `−(n−1)·B2`. Crediting it would rank rows on a confounded figure, so
     // the net stays unset and the row shows as not counted.
     if (b.selfConfound !== undefined && b.selfConfound.dps === undefined) {
@@ -3296,7 +3296,7 @@ function countedLadderBreaks(
 
 /**
  * The smallest entry count above `after` whose same-gear gate cleared, or
- * null (ticket 511). An entry carries `sameGearDps` without `belowGate`
+ * null (ticket 511). An entry has `sameGearDps` without `belowGate`
  * exactly when its gate cleared.
  */
 function nextClearedThreshold(

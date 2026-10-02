@@ -328,7 +328,7 @@ function sourceMatches(entry: PoolEntry, key: string): boolean {
 }
 
 /**
- * A delta in the results tables: "+104.9". The locale string carries no unit
+ * A delta in the results tables: "+104.9". The locale string has no unit
  * since ticket 499: the column header says DPS, and "-400.8 DPS" did not fit
  * the DPS column.
  *
@@ -1295,10 +1295,7 @@ export class UpgradesTab extends SimTab {
 			extraCssClasses: ['upgrades-set-potential-control'],
 			onChange: () => this.render(),
 		});
-		// The phase qualifier used to render as its own "{{phase}} list" line
-		// under the checkbox name (ticket 312); the owner called that sub-caption
-		// "weird" on its own (ticket 486), so it now lives in this tooltip
-		// instead, appended by `refreshPhaseLabels`'s `setText` call.
+		// The phase qualifier lives in this tooltip; see `ViewToggle.setText`.
 		this.bisOnlyControl = new ViewToggle(bisOnlyPickerRef.value!, {
 			id: 'upgrades-bis-only',
 			label: i18n.t('upgrades_tab.view.only_bis'),
@@ -1708,12 +1705,11 @@ export class UpgradesTab extends SimTab {
 	 * and the picker is rebuilt on spec/phase change.
 	 *
 	 * The qualifier ("{{phase}} list") still names the phase, since the
-	 * BiS-only view control still filters by the phase's BiS tags -- it now
-	 * appends to the control's tooltip (ticket 486) rather than rendering as
-	 * its own line under the checkbox name (ticket 312). `common.phases.N` is
-	 * the page's own spelling of a phase ("Phase 3 (2.2 - T6)"), so the tab
-	 * agrees with every other phase control on the page instead of inventing a
-	 * second wording.
+	 * BiS-only view control still filters by the phase's BiS tags -- it
+	 * appends to the control's tooltip (see `ViewToggle.setText`).
+	 * `common.phases.N` is the page's own spelling of a phase ("Phase 3 (2.2 -
+	 * T6)"), so the tab agrees with every other phase control on the page
+	 * instead of inventing a second wording.
 	 *
 	 * Called from `refreshCandidatesPlaceholder`, which the staleness listener
 	 * already runs on `sim.changeEmitter` -- the emitter a phase change arrives
@@ -2868,11 +2864,6 @@ export class UpgradesTab extends SimTab {
 	 * thing twice. Removing the heading also drops the `.content-block-header`
 	 * wrapper it justified; `.content-block-body`'s own padding stays so the
 	 * table keeps the block's spacing.
-	 *
-	 * Confirmed no test asserts on the removed heading: neither
-	 * `test-layout.mjs` nor `test-tab-harness.mjs` selects
-	 * `.content-block-title`, `.content-block-header`, or the
-	 * `upgrades_tab.results.heading` key inside this tab's tree.
 	 */
 	private resultsBlock(table: Node): Node {
 		return (
@@ -3249,7 +3240,7 @@ export class UpgradesTab extends SimTab {
 		const batch = createBatchToggle({ simUI: this.simUI, itemId: row.itemId, subscribe: false });
 		return (
 			// `data-item-id` lets a review manifest target one row by item, since
-			// rows carry no other stable key (ticket 510).
+			// rows have no other stable key (ticket 510).
 			<tr className={row.owned ? 'upgrades-row-owned' : ''} dataset={{ itemId: String(row.itemId) }}>
 				<td>{display.rankText}</td>
 				<td>{this.itemCell(row)}</td>

@@ -4,8 +4,9 @@
  * FORK-ONLY, no packages/core ancestor. A screen is a cheap first pass over
  * every set the gain side covers. It decides which sets get the exact
  * per-bonus measurement (`.scratch/stage-gate/511-512-set-credit/
- * set-screening-plan.md` §2), because that measurement costs most of a run's
- * set sims and most sets a player is offered are not worth collecting.
+ * set-screening-plan.md` §2; gitignored, ADR-0035 records the result),
+ * because that measurement costs most of a run's set sims and most sets a
+ * player is offered are not worth collecting.
  *
  * Per set S worn at w, with R the highest count the pool can reach and R − w
  * at least 2: on the gear of S's package at R, rung k (k = 0 … R − w) sends
@@ -59,10 +60,11 @@ export type ScreenOnRule = {
  * The on mode's rule: the runner-up of the K5E scoring, which kept every set
  * worth collecting on all eleven check characters under σ, 1.5 × σ and each
  * reading's own paired error (`.scratch/stage-gate/511-512-set-credit/k5e/
- * report.md`). The orchestrator chose it over the cheaper top pick at Gate C
- * on 2026-10-01 (Q-K5E-rule), because the top pick kept three needed sets
- * only through its band; ADR-0035 records both. Changing any constant needs
- * a new K5E-style scoring of the check characters.
+ * report.md`; gitignored, ADR-0035 records the result). The orchestrator
+ * chose it over the cheaper top pick at Gate C on 2026-10-01 (Q-K5E-rule),
+ * because the top pick kept three needed sets only through its band;
+ * ADR-0035 records both. Changing any constant needs a new K5E-style scoring
+ * of the check characters.
  */
 export const SCREEN_ON_RULE = {
   measure: "M2",
@@ -398,9 +400,9 @@ export async function runSetScreenOn(
 
 /**
  * Which screened sets the on mode keeps, and why. A port of `apply_rule` in
- * `.scratch/stage-gate/511-512-set-credit/k5e/score_screen.py` (bound mode),
- * so the scoring's verdict carries over; keep the two in step. In ascending
- * set id:
+ * `.scratch/stage-gate/511-512-set-credit/k5e/score_screen.py` (bound mode;
+ * gitignored, ADR-0035 records the result), so the scoring's verdict still
+ * holds; keep the two in step. In ascending set id:
  *
  * 1. a pair of exactly 0 is dropped, before the absence check;
  * 2. an absent measure or σ keeps the set, outside the ranking;
