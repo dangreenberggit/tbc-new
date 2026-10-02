@@ -244,7 +244,9 @@ export type Deps = {
    * further candidates are dispatched. An in-flight bulk **screening chunk** is
    * aborted rather than finished (ticket 347) — a chunk costs seconds on the Go
    * transport and minutes on the in-browser one, which no honest reading of
-   * "in-flight work finishes" covers.
+   * "in-flight work finishes" covers. A Stop during the set phase lets the
+   * set sim in flight finish, sends no further set sim, and returns the same
+   * `PartialRanking` as a Stop during the last candidate sim (ticket 533).
    */
   signal?: AbortSignal;
 };
@@ -894,6 +896,7 @@ export async function rankUpgrades(
   }
   const seed = seeds[0] ?? DEFAULT_SEEDS[0]!;
   const runOpts = { seed, iterations };
+  const guardedDeps = stopGuardedDeps(deps);
 
   onProgress?.({ stage: "building-pool" });
   const equippedIds = new Set(
@@ -1633,17 +1636,10 @@ export async function rankUpgrades(
     // in-flight and stop", so once aborted, neither runs; what already
     // simmed stands, and the unsimmed rows stay honestly unsimmed rather
     // than pulling more work in behind the caller's back.
-    const setBonusResult = aborted
-      ? {
-          bonuses: [],
-          brokenSetValues: [],
-          wornSetLadder: [],
-          crossingGates: [],
-          candidateSlotIndex: new Map(),
-          setScreen: undefined,
-        }
+    let setBonusResult = aborted
+      ? emptySetPhase()
       : await buildSetBonuses(
-          deps,
+          guardedDeps,
           simCandidates,
           equipment,
           gems,
@@ -1659,12 +1655,13 @@ export async function rankUpgrades(
           cutoff,
           observation.stdev
         );
+    if (signal?.aborted) aborted = true;
     // With the flag, a lost count is a break only when the ladder counted it,
     // and no table is read. An aborted run has no ladder, so it charges none.
-    const counts: BonusCountPredicate | undefined = deps.measureBrokenSetValue
+    let counts: BonusCountPredicate | undefined = deps.measureBrokenSetValue
       ? countedLadderBreaks(setBonusResult.wornSetLadder)
       : undefined;
-    const setBonuses = setBonusResult.bonuses;
+    let setBonuses = setBonusResult.bonuses;
     // Ticket 511: with the flag, each set row is valued by the step rule.
     const stepPath = (deps.measureBrokenSetValue ?? false) && !aborted;
     if (setBonuses.length > 0) {
@@ -1681,10 +1678,10 @@ export async function rankUpgrades(
     }
     // After the futures are complete and before replication rewrites the top
     // rows' `deltaDps` (C89): the step gears' sims, one per distinct gear.
-    const steps =
+    let steps =
       stepPath && setBonuses.length > 0 && counts
         ? await measureSetSteps({
-            deps,
+            deps: guardedDeps,
             ranked,
             setBonuses,
             equipment,
@@ -1703,6 +1700,7 @@ export async function rankUpgrades(
             floorDps: setBonusNoiseFloorDps(cutoff),
           })
         : undefined;
+    if (signal?.aborted) aborted = true;
     onProgress?.({ stage: "ranking" });
     // Sorted first so replication can pick the contested top of the list, then
     // sorted again below — replication rewrites the very `deltaDps` this order
@@ -1726,6 +1724,19 @@ export async function rankUpgrades(
     };
     ranked.sort(bySimmedThenDelta);
     if (!aborted) await replicateTopItems(ranked, winningRequests, baselineDps);
+    if (aborted) {
+      // Ticket 533: a Stop after the candidate loop returns what a Stop during
+      // its last sim returns. A ladder cut short would charge breaks from
+      // counts it never measured, so no partial set figure is kept.
+      setBonusResult = emptySetPhase();
+      counts = deps.measureBrokenSetValue
+        ? countedLadderBreaks(setBonusResult.wornSetLadder)
+        : undefined;
+      setBonuses = setBonusResult.bonuses;
+      steps = undefined;
+      packageSimSkips.length = 0;
+      for (const item of ranked) delete item.setContext;
+    }
     ranked.sort(bySimmedThenDelta);
 
     let rank = 1;
@@ -3668,6 +3679,51 @@ async function runSimAt(
   const observation = await deps.sim.run(req, opts);
   await cacheSimResult(deps, req, simVersion, opts, observation);
   return { observation, fromStore: false };
+}
+
+/**
+ * A sim the guard below refused to start because the caller's Stop fired
+ * (ticket 533). Its own class, so replication can tell it from a sim
+ * failure, which fails the ranking.
+ */
+class StopRefusedSim extends Error {
+  override readonly name = "StopRefusedSim";
+
+  constructor() {
+    super("sim not started: Stop was pressed");
+  }
+}
+
+/**
+ * `deps` whose sim refuses to start once `deps.signal` has aborted (ticket
+ * 533). The set phase uses it. The candidate loop keeps the plain runner,
+ * because it turns a failed sim into a dropped row and has its own Stop
+ * check.
+ */
+function stopGuardedDeps(deps: Deps): Deps {
+  const { signal, sim } = deps;
+  if (!signal) return deps;
+  return {
+    ...deps,
+    sim: {
+      version: () => sim.version(),
+      run: async (req, opts) => {
+        if (signal.aborted) throw new StopRefusedSim();
+        return sim.run(req, opts);
+      },
+    },
+  };
+}
+
+/** What the set phase gives when it does not run, or when Stop drops it. */
+function emptySetPhase(): Awaited<ReturnType<typeof buildSetBonuses>> {
+  return {
+    bonuses: [],
+    brokenSetValues: [],
+    wornSetLadder: [],
+    crossingGates: [],
+    candidateSlotIndex: new Map(),
+  };
 }
 
 /**
