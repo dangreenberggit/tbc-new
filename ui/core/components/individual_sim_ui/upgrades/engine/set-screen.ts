@@ -179,6 +179,12 @@ export type SetScreenInput = {
     opts: SimRunOpts
   ) => Promise<{ observation: SimObservation; fromStore: boolean }>;
   seed: number;
+  /**
+   * The caller's Stop. Once it has aborted, a failed reading is the runner
+   * refusing the sim and the caller drops the screen, so the reading writes
+   * no warning (ticket 533).
+   */
+  signal?: AbortSignal;
   pairIterations?: readonly number[];
   ladderIterations?: readonly number[];
 };
@@ -219,7 +225,7 @@ function screenPackage(
  * reading.
  */
 function rungSimmer(
-  input: Pick<SetScreenInput, "runSimAt" | "seed">,
+  input: Pick<SetScreenInput, "runSimAt" | "seed" | "signal">,
   setId: number,
   worn: number,
   pkg: ScreenPackage | undefined,
@@ -250,7 +256,7 @@ function rungSimmer(
       return observation;
     } catch (err) {
       counter.simmed += 1;
-      console.warn(what, err);
+      if (!input.signal?.aborted) console.warn(what, err);
       return undefined;
     }
   };

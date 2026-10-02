@@ -1980,7 +1980,11 @@ async function buildSetBonuses(
         try {
           obs = await deps.sim.run(request, runOpts);
         } catch (err) {
-          console.warn(`[upgrades] ${what} not measured: the sim failed`, err);
+          // After Stop the guard refused the sim, which is no sim failure,
+          // and the caller drops this run's set figures (ticket 533).
+          if (!deps.signal?.aborted) {
+            console.warn(`[upgrades] ${what} not measured: the sim failed`, err);
+          }
           throw err;
         }
         await cacheSimResult(deps, request, simVersion, runOpts, obs);
@@ -2099,6 +2103,7 @@ async function buildSetBonuses(
           },
           runSimAt: (request, opts) => runSimAt(deps, request, simVersion, opts),
           seed: runOpts.seed,
+          ...(deps.signal ? { signal: deps.signal } : {}),
         }
       : undefined;
   // The on mode's package estimate is rule Z's (`partner-choice.ts`) with the
@@ -2351,10 +2356,13 @@ async function buildSetBonuses(
         try {
           packageObs = await deps.sim.run(packageRequest, runOpts);
         } catch (err) {
-          console.warn(
-            `[upgrades] ${label} ${threshold}pc bonus package not measured: the sim failed`,
-            err
-          );
+          // No warning for a sim the Stop guard refused (ticket 533).
+          if (!deps.signal?.aborted) {
+            console.warn(
+              `[upgrades] ${label} ${threshold}pc bonus package not measured: the sim failed`,
+              err
+            );
+          }
           packageSimSkips.push({
             setId,
             setName: label,
@@ -2715,7 +2723,8 @@ async function measureSetSteps(args: {
       try {
         obs = await deps.sim.run(request, runOpts);
       } catch (err) {
-        console.warn(failure, err);
+        // No warning for a sim the Stop guard refused (ticket 533).
+        if (!deps.signal?.aborted) console.warn(failure, err);
         return undefined;
       }
       counter.simmed += 1;
@@ -3158,10 +3167,13 @@ async function measurePairTwoPiece(
     try {
       obs = await deps.sim.run(request, runOpts);
     } catch (err) {
-      console.warn(
-        `[upgrades] ${bonusLabel} net value not measured: the sim failed for the worn-1 pair that measures the 2pc`,
-        err
-      );
+      // No warning for a sim the Stop guard refused (ticket 533).
+      if (!deps.signal?.aborted) {
+        console.warn(
+          `[upgrades] ${bonusLabel} net value not measured: the sim failed for the worn-1 pair that measures the 2pc`,
+          err
+        );
+      }
       return undefined;
     }
     await cacheSimResult(deps, request, simVersion, runOpts, obs);
