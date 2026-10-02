@@ -522,6 +522,72 @@ export function setPotentialTerms(
   return { credit, stopThreshold, terms };
 }
 
+/**
+ * One step of a step ranking's row (K6, the owner's "steps that add up"): the
+ * partner pieces this step adds to the previous step's gear, the bonus it
+ * reaches, the worn bonuses it newly loses, and `dps`, its total minus the
+ * previous step's total (the first step's minus the row's single swap).
+ */
+export type SetPotentialStep = {
+  kind: "step";
+  threshold: number;
+  setName: string;
+  pieces: Array<{ itemId: number; name: string }>;
+  broken: Array<{
+    setId: number;
+    setName: string;
+    threshold: number;
+    dps?: number;
+  }>;
+  dps: number;
+  isStop: boolean;
+};
+
+/**
+ * The step ranking's `"stop"` totals up to the stop, turned into steps (K6).
+ * The steps' `dps` telescope (C86): they add up to the stop's total minus the
+ * single swap, which is the credit. Null when the row has no stop, or when a
+ * step's partner pieces do not include the previous step's (the sets do not
+ * nest), because then no step is a purchase on top of the one before; the tab
+ * shows such a row's totals as separate outcomes. The first step does not
+ * name the row's own breaks: the popover lists them above the steps.
+ */
+export function setPotentialSteps(
+  ctx: SetContextLike | undefined,
+  noiseFloorDps: number,
+  rule: SetCreditRule = RULE_490
+): SetPotentialStep[] | null {
+  if (!ctx?.stepRanking || ctx.singleDeltaDps === undefined) return null;
+  const stops = walkSteps(ctx, noiseFloorDps, rule).terms.filter(
+    (t): t is Extract<SetPotentialTerm, { kind: "stop" }> => t.kind === "stop"
+  );
+  const last = stops.findIndex((t) => t.isStop);
+  if (last < 0) return null;
+  const keyOf = (b: { setId: number; threshold: number }) =>
+    `${b.setId}:${b.threshold}`;
+  let prevIds = new Set<number>();
+  let prevBroken = new Set((ctx.singleBreaks ?? []).map(keyOf));
+  let prevTotal = ctx.singleDeltaDps;
+  const steps: SetPotentialStep[] = [];
+  for (const term of stops.slice(0, last + 1)) {
+    const ids = new Set(term.pieces.map((p) => p.itemId));
+    if ([...prevIds].some((id) => !ids.has(id))) return null;
+    steps.push({
+      kind: "step",
+      threshold: term.threshold,
+      setName: term.setName,
+      pieces: term.pieces.filter((p) => !prevIds.has(p.itemId)),
+      broken: term.broken.filter((b) => !prevBroken.has(keyOf(b))),
+      dps: term.totalDps - prevTotal,
+      isStop: term.isStop,
+    });
+    prevIds = ids;
+    prevBroken = new Set([...prevBroken, ...term.broken.map(keyOf)]);
+    prevTotal = term.totalDps;
+  }
+  return steps;
+}
+
 /** The credit of `walkCredit` in the full or the split view. */
 export function setPotentialCredit(
   ctx: SetContextLike | undefined,

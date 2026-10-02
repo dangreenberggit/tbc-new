@@ -912,9 +912,16 @@
 			"tip_bonus": "{{set}} {{threshold}}pc ({{have}}/{{threshold}})",
 			"tip_piece_stats": "{{name}} stats",
 			"tip_set_potential": "Set potential",
-			"tip_set_potential_totals": "Set potential, totals over current gear",
+			"tip_set_potential_totals": "Separate outcomes with this item, not added",
 			"tip_stop": "With {{pieces}} ({{threshold}}pc)",
 			"tip_stop_breaks": "With {{pieces}} ({{threshold}}pc, breaks {{broken}})",
+			"tip_step": "{{pieces}} ({{threshold}}pc)",
+			"tip_step_breaks": "{{pieces}} ({{threshold}}pc, breaks {{broken}})",
+			"tip_item_alone": "{{name}} alone",
+			"tip_item_alone_breaks": "{{name}} alone (breaks {{broken}})",
+			"tip_dps_more": "{{dps}} DPS more",
+			"tip_dps_less": "{{dps}} DPS less",
+			"tip_figure_marker": "this row's figure",
 			"tip_total": "Total"
 		},
 		"cutoff": {

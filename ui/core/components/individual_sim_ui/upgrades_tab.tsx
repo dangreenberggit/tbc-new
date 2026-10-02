@@ -43,6 +43,8 @@ import {
 	setBonusSubLine,
 	setCreditUnmeasured,
 	type SetCreditView,
+	type SetPotentialStep,
+	setPotentialSteps,
 	type SetPotentialTerm,
 	setPotentialTerms,
 	SOURCE_LABELS,
@@ -352,8 +354,11 @@ function tipDelta(deltaDps: number): string {
 	return `${sign}${deltaDps.toFixed(1)}`;
 }
 
-/** One receipt line: a label and its signed figure, undefined when not measured. */
-type SetTipLine = { label: string; value: number | undefined };
+/**
+ * One receipt line: a label and its signed figure, undefined when not
+ * measured. `figure` marks the separate outcome the row's figure uses (K6).
+ */
+type SetTipLine = { label: string; value: number | undefined; figure?: boolean };
 
 /** A figure in tenths of a DPS, rounded the way `tipDelta` shows it. */
 function tenths(v: number): number {
@@ -401,16 +406,58 @@ function joinNames(names: readonly string[]): string {
 	return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
+type TipT = (key: string, opts: Record<string, unknown>) => string;
+
 /**
- * One step ranking total's label (ticket 511): the partner pieces' full names
- * in sim slot order, the bonus's count, and each worn bonus the gear loses.
+ * A step ranking line's label (ticket 511): the partner pieces' full names in
+ * sim slot order, the bonus's count, and each worn bonus lost, from the
+ * `plain` key, or the `breaks` key when a bonus is lost.
  */
-function stopLabel(term: Extract<SetPotentialTerm, { kind: 'stop' }>, t: (key: string, opts: Record<string, unknown>) => string): string {
+function piecesLabel(term: Pick<SetPotentialStep, 'pieces' | 'threshold' | 'broken'>, keys: { plain: string; breaks: string }, t: TipT): string {
 	const pieces = joinNames(term.pieces.map(p => p.name));
-	if (term.broken.length === 0) return t('tip_stop', { pieces, threshold: term.threshold });
+	if (term.broken.length === 0) return t(keys.plain, { pieces, threshold: term.threshold });
+	return t(keys.breaks, { pieces, threshold: term.threshold, broken: brokenNames(term.broken) });
+}
+
+/** Lost worn bonuses as "{set name} {count}pc", joined as "A and B". */
+function brokenNames(lost: ReadonlyArray<{ setName: string; threshold: number }>): string {
 	// A no-break space before the count, as in the other `tip_*` labels.
-	const broken = joinNames(term.broken.map(b => `${b.setName} ${b.threshold}pc`));
-	return t('tip_stop_breaks', { pieces, threshold: term.threshold, broken });
+	return joinNames(lost.map(b => `${b.setName} ${b.threshold}pc`));
+}
+
+/**
+ * A separate outcome's figure (K6): "N DPS more" or "N DPS less", with no
+ * sign, because the outcomes are not added to anything.
+ */
+function outcomeDps(dps: number, t: TipT): string {
+	const shown = Number(dps.toFixed(1));
+	return t(shown < 0 ? 'tip_dps_less' : 'tip_dps_more', { dps: Math.abs(shown).toFixed(1) });
+}
+
+/**
+ * The popover of a step ranking row whose partner sets do not nest (K6; the
+ * owner's ruling of 2026-10-01): each line is a separate outcome compared
+ * with the current gear, so there is no "+" sign, no Item stats addend and no
+ * Total, which would make the lines read as a sum. The item alone comes
+ * first, then one line per eligible bonus; the marker names the line the
+ * row's figure uses. On a row that paired replication rewrote, every bonus's
+ * total moves by the same amount as the row's single swap, so the item-alone
+ * line and the marked line equal the figures the row shows.
+ */
+function outcomesTip(row: RankedItem, ctx: NonNullable<RankedItem['setContext']>, outcomes: readonly SetTipLine[], t: TipT): HTMLElement {
+	const singleBreaks = ctx.singleBreaks ?? [];
+	const alone =
+		singleBreaks.length === 0 ? t('tip_item_alone', { name: row.name }) : t('tip_item_alone_breaks', { name: row.name, broken: brokenNames(singleBreaks) });
+	const shift = row.deltaDps - (ctx.singleDeltaDps ?? row.deltaDps);
+	const lines: HTMLElement[] = [setTipHeading(t('tip_set_potential_totals', {})), setTipLine(alone, outcomeDps(row.deltaDps, t))];
+	for (const o of outcomes) {
+		const div = setTipLine(o.label, outcomeDps((o.value ?? 0) + shift, t));
+		if (o.figure) {
+			div.querySelector('.upgrades-set-bonus-tip-label')?.append(<br />, <small className="upgrades-set-bonus-tip-marker">{t('tip_figure_marker', {})}</small>);
+		}
+		lines.push(div);
+	}
+	return (<div className="upgrades-set-bonus-tip">{lines}</div>) as HTMLElement;
 }
 
 /**
@@ -422,16 +469,21 @@ function stopLabel(term: Extract<SetPotentialTerm, { kind: 'stop' }>, t: (key: s
  * - `itemised`: the credit's bonuses, other pieces' stats and breaks, step by
  *   step, from `setPotentialTerms` (engine/view.ts). They are the terms the
  *   credit was summed from, so they always add up to it (ticket 502).
- * - `totals` (a step ranking, ticket 511): one line per eligible bonus, each
- *   the sim of the gear with its partner pieces over the current gear. This
- *   is the interim form until the owner picks the popover form (K6).
+ * - `steps` (a step ranking, K6, the owner's "steps that add up"): one line per
+ *   step up to the stop, each the pieces it adds, the bonus it reaches and the
+ *   worn bonuses it newly loses, valued as its total minus the step before.
+ *   They add up to the credit (C86).
+ * - `outcomes` (a step ranking whose partner sets do not nest, K6): one line
+ *   per eligible bonus, each the total of the gear with its partner pieces
+ *   over the current gear. These are separate outcomes, not parts of a sum;
+ *   `figure` marks the one the row's figure uses.
  */
 function setPotentialTipLines(
 	ctx: NonNullable<RankedItem['setContext']>,
 	noiseFloorDps: number,
 	credit: number,
-	t: (key: string, opts: Record<string, unknown>) => string,
-): { lines: SetTipLine[]; kind: 'unmeasured' | 'none' | 'itemised' | 'totals' } {
+	t: TipT,
+): { lines: SetTipLine[]; kind: 'unmeasured' | 'none' | 'itemised' | 'steps' | 'outcomes' } {
 	if (setCreditUnmeasured(ctx) && ctx.stepRanking) {
 		// The bonuses whose same-gear value, partner choice or step sim is
 		// missing, in count order.
@@ -461,6 +513,17 @@ function setPotentialTipLines(
 		return { lines, kind: 'unmeasured' };
 	}
 	if (credit === 0) return { lines: [], kind: 'none' };
+	if (ctx.stepRanking) {
+		const steps = setPotentialSteps(ctx, noiseFloorDps);
+		if (steps !== null) {
+			const lines = steps.map(s => ({ label: piecesLabel(s, { plain: 'tip_step', breaks: 'tip_step_breaks' }, t), value: s.dps }));
+			return { lines, kind: 'steps' };
+		}
+		const lines = setPotentialTerms(ctx, noiseFloorDps)
+			.terms.filter((term): term is Extract<SetPotentialTerm, { kind: 'stop' }> => term.kind === 'stop')
+			.map(term => ({ label: piecesLabel(term, { plain: 'tip_stop', breaks: 'tip_stop_breaks' }, t), value: term.totalDps, figure: term.isStop }));
+		return { lines, kind: 'outcomes' };
+	}
 	const lines = setPotentialTerms(ctx, noiseFloorDps).terms.map((term): SetTipLine => {
 		switch (term.kind) {
 			case 'bonus':
@@ -470,10 +533,10 @@ function setPotentialTipLines(
 			case 'break':
 				return { label: t('tip_breaks', { set: term.setName, threshold: term.threshold }), value: term.dps };
 			case 'stop':
-				return { label: stopLabel(term, t), value: term.totalDps };
+				return { label: piecesLabel(term, { plain: 'tip_stop', breaks: 'tip_stop_breaks' }, t), value: term.totalDps };
 		}
 	});
-	return { lines, kind: ctx.stepRanking ? 'totals' : 'itemised' };
+	return { lines, kind: 'itemised' };
 }
 
 /**
@@ -3308,6 +3371,9 @@ export class UpgradesTab extends SimTab {
 	 * A plain "Item stats" line equal to the Total only repeats the cell, so it
 	 * is dropped; a row left with nothing but the Total gets no popover and no
 	 * hint (ticket 517).
+	 *
+	 * One exception (K6): a step ranking row whose partner sets do not nest
+	 * shows separate outcomes, not a receipt (`outcomesTip`).
 	 */
 	private setBonusPresentation(
 		row: RankedItem,
@@ -3328,6 +3394,12 @@ export class UpgradesTab extends SimTab {
 		const singleBreaks = ctx.singleBreaks ?? [];
 		const measuredBreaks = singleBreaks.filter(b => b.dps !== undefined);
 		const total = row.deltaDps + credit;
+
+		const potential =
+			on && noiseFloorDps !== undefined && (ctx.futureBonuses ?? []).length > 0
+				? setPotentialTipLines(ctx, noiseFloorDps, credit, t)
+				: { lines: [], kind: 'none' as const };
+		if (potential.kind === 'outcomes') return { line, tip: outcomesTip(row, ctx, potential.lines, t) };
 
 		// The count this piece crosses, from the view (tickets 479 and 511). The
 		// `??` cannot fire while crossesThreshold is true; it keeps the value a
@@ -3356,24 +3428,14 @@ export class UpgradesTab extends SimTab {
 		}
 		measuredBreaks.forEach((b, i) => lines.push(setTipLine(t('tip_breaks', { set: b.setName, threshold: b.threshold }), tipDelta(breakTenths[i] / 10))));
 
-		const potential =
-			on && noiseFloorDps !== undefined && (ctx.futureBonuses ?? []).length > 0
-				? setPotentialTipLines(ctx, noiseFloorDps, credit, t)
-				: { lines: [], kind: 'none' as const };
 		// The off-state lines add up to the off-state cell, so the Set potential
 		// lines must add up to the difference between the two cell figures.
 		const target = tenths(total) - tenths(row.deltaDps);
 		// Headed with the toggle's name, so the lines it adds read as its doing.
-		if (potential.kind === 'unmeasured' || potential.kind === 'itemised') lines.push(setTipHeading(t('tip_set_potential', {})));
-		if (potential.kind === 'totals') lines.push(setTipHeading(t('tip_set_potential_totals', {})));
+		if (potential.kind !== 'none') lines.push(setTipHeading(t('tip_set_potential', {})));
 		if (potential.kind === 'unmeasured') {
 			for (const l of potential.lines) lines.push(setTipLine(l.label, notMeasured));
-		} else if (potential.kind === 'totals') {
-			// Each line is a total over the current gear, rounded on its own
-			// (C103). The lines are not parts of the Total below, so they are
-			// not spread to add up to it.
-			for (const l of potential.lines) lines.push(setTipLine(l.label, tipDelta(l.value ?? 0)));
-		} else if (potential.kind === 'itemised') {
+		} else if (potential.kind === 'itemised' || potential.kind === 'steps') {
 			const shown = spreadTenths(
 				potential.lines.map(l => l.value ?? 0),
 				target,
