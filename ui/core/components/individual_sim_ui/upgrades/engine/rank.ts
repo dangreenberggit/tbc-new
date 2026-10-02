@@ -3511,7 +3511,7 @@ function applySetContext(
       };
     };
     // A path piece's own stats (ticket 502): its single from the individual
-    // deltas, read here before `replicateTopItems` rewrites the top rows'
+    // deltas, read here before replication rewrites the top rows'
     // `deltaDps`, so a row inside a measured package sums to that package's
     // delta. The worn bonuses it breaks alone are added back because the path
     // charges each break once; the 2pc it crosses alone at worn 1 is taken
@@ -3731,9 +3731,9 @@ class StopRefusedSim extends Error {
 
 /**
  * `deps` whose sim refuses to start once `deps.signal` has aborted (ticket
- * 533). The set phase and replication use it. The candidate loop keeps the plain runner,
- * because it turns a failed sim into a dropped row and has its own Stop
- * check.
+ * 533). The set phase and replication use it. The candidate loop keeps the
+ * plain runner, because it turns a failed sim into a dropped row and has its
+ * own Stop check.
  */
 function stopGuardedDeps(deps: Deps): Deps {
   const { signal, sim } = deps;
