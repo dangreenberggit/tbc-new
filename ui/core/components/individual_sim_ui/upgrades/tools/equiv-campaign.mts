@@ -318,11 +318,12 @@ export async function runCampaignArm(opts: CampaignArmOptions): Promise<Campaign
 	let ranking: Ranking | PartialRanking;
 	try {
 		ranking = await rankUpgrades(
-			// `seeds` MUST go into the input, not just into the dump. `rank.ts:564`
-			// reads `input.seeds ?? DEFAULT_SEEDS` and takes `seeds[0]` as the
-			// screening seed, so an arm that only *records* its seeds runs at the
-			// default 11 regardless of what it claims — which is exactly the bug
-			// that made arm C a byte-identical repeat of arm B instead of a null.
+			// `seeds` MUST go into the input, not just into the dump. `rank.ts`
+			// reads `input.seeds ?? defaultSeedsFor(iterations)` and takes
+			// `seeds[0]` as the screening seed, so an arm that only *records* its
+			// seeds runs at the default 11 regardless of what it claims — which is
+			// exactly the bug that made arm C a byte-identical repeat of arm B
+			// instead of a null.
 			{ ...opts.input, seeds: opts.seeds },
 			{
 				...(opts.deps as Record<string, unknown>),
