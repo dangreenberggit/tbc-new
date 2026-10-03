@@ -28,14 +28,7 @@ func init() {
 			},
 		})
 
-		getDpm := func() *core.DynamicProcManager {
-			return character.NewStaticLegacyPPMManager(
-				1,
-				*character.GetDynamicProcMaskForWeaponEffect(28573),
-			)
-		}
-
-		dpm := getDpm()
+		dpm := character.NewDynamicLegacyProcForWeapon(28573, 1, 0)
 
 		procTrigger := character.MakeProcTriggerAura(core.ProcTrigger{
 			Name:               "Despair",
@@ -47,10 +40,6 @@ func init() {
 			Handler: func(sim *core.Simulation, _ *core.Spell, result *core.SpellResult) {
 				spell.Cast(sim, result.Target)
 			},
-		})
-
-		character.RegisterItemSwapCallback([]proto.ItemSlot{proto.ItemSlot_ItemSlotMainHand}, func(sim *core.Simulation, slot proto.ItemSlot) {
-			dpm = getDpm()
 		})
 
 		character.ItemSwap.RegisterProc(28573, procTrigger)
@@ -75,14 +64,7 @@ func init() {
 			},
 		)
 
-		getDpm := func() *core.DynamicProcManager {
-			return character.NewStaticLegacyPPMManager(
-				2,
-				*character.GetDynamicProcMaskForWeaponEffect(17076),
-			)
-		}
-
-		dpm := getDpm()
+		dpm := character.NewDynamicLegacyProcForWeapon(17076, 2, 0)
 
 		procTrigger := character.MakeProcTriggerAura(core.ProcTrigger{
 			Name:     "Bonereaver's Edge Trigger",
@@ -94,13 +76,6 @@ func init() {
 				arpAura.AddStack(sim)
 			},
 		})
-
-		character.RegisterItemSwapCallback(
-			[]proto.ItemSlot{proto.ItemSlot_ItemSlotMainHand},
-			func(sim *core.Simulation, slot proto.ItemSlot) {
-				dpm = getDpm()
-			},
-		)
 
 		character.ItemSwap.RegisterProc(17076, procTrigger)
 	})
@@ -132,14 +107,7 @@ func init() {
 			},
 		})
 
-		resourceGainDpm := func() *core.DynamicProcManager {
-			return character.NewStaticLegacyPPMManager(
-				1,
-				*character.GetDynamicProcMaskForWeaponEffect(29996),
-			)
-		}
-
-		dpm := resourceGainDpm()
+		dpm := character.NewDynamicLegacyProcForWeapon(29996, 1, 0)
 
 		procTrigger := character.MakeProcTriggerAura(core.ProcTrigger{
 			Name:               "Power of the Sun King",
@@ -151,10 +119,6 @@ func init() {
 			Handler: func(sim *core.Simulation, _ *core.Spell, result *core.SpellResult) {
 				spell.Cast(sim, result.Target)
 			},
-		})
-
-		character.RegisterItemSwapCallback(core.AllMeleeWeaponSlots(), func(sim *core.Simulation, slot proto.ItemSlot) {
-			dpm = resourceGainDpm()
 		})
 
 		character.ItemSwap.RegisterProc(29996, procTrigger)
@@ -184,14 +148,7 @@ func init() {
 				},
 			})
 
-		getDpm := func() *core.DynamicProcManager {
-			return character.NewStaticLegacyPPMManager(
-				1,
-				*character.GetDynamicProcMaskForWeaponEffect(30090),
-			)
-		}
-
-		dpm := getDpm()
+		dpm := character.NewDynamicLegacyProcForWeapon(30090, 1, 0)
 
 		procTrigger := character.MakeProcTriggerAura(core.ProcTrigger{
 			Name:               "World Breaker - Trigger",
@@ -206,10 +163,6 @@ func init() {
 			},
 		})
 
-		character.RegisterItemSwapCallback([]proto.ItemSlot{proto.ItemSlot_ItemSlotMainHand}, func(sim *core.Simulation, slot proto.ItemSlot) {
-			dpm = getDpm()
-		})
-
 		character.ItemSwap.RegisterProc(30090, procTrigger)
 	})
 
@@ -217,14 +170,7 @@ func init() {
 		core.NewItemEffect(itemID, func(agent core.Agent) {
 			character := agent.GetCharacter()
 
-			getDpm := func() *core.DynamicProcManager {
-				return character.NewStaticLegacyPPMManager(
-					2,
-					*character.GetDynamicProcMaskForWeaponEffect(itemID),
-				)
-			}
-
-			dpm := getDpm()
+			dpm := character.NewDynamicLegacyProcForWeapon(itemID, 2, 0)
 
 			aura := character.RegisterAura(core.Aura{
 				Label:    "Speed Infusion",
@@ -244,10 +190,6 @@ func init() {
 				},
 			})
 
-			character.RegisterItemSwapCallback(core.AllMeleeWeaponSlots(), func(sim *core.Simulation, slot proto.ItemSlot) {
-				dpm = getDpm()
-			})
-
 			character.ItemSwap.RegisterProc(itemID, procTrigger)
 		})
 	}
@@ -263,14 +205,7 @@ func init() {
 			stats.SchoolIndexHoly, stats.SchoolIndexNature, stats.SchoolIndexShadow,
 		}
 
-		getDpm := func() *core.DynamicProcManager {
-			return character.NewStaticLegacyPPMManager(
-				2,
-				*character.GetDynamicProcMaskForWeaponEffect(30312),
-			)
-		}
-
-		dpm := getDpm()
+		dpm := character.NewDynamicLegacyProcForWeapon(30312, 2, 0)
 
 		auras := character.NewEnemyAuraArray(func(target *core.Unit) *core.Aura {
 			return target.GetOrRegisterAura(core.Aura{
@@ -298,10 +233,6 @@ func init() {
 			},
 		})
 
-		character.RegisterItemSwapCallback(core.AllMeleeWeaponSlots(), func(sim *core.Simulation, slot proto.ItemSlot) {
-			dpm = getDpm()
-		})
-
 		character.ItemSwap.RegisterProc(30312, procTrigger)
 	})
 
@@ -310,14 +241,7 @@ func init() {
 		character := agent.GetCharacter()
 		var blinkStrikeSpell *core.Spell
 
-		extraAttackDPM := func() *core.DynamicProcManager {
-			return character.NewStaticLegacyPPMManager(
-				1,
-				*character.GetDynamicProcMaskForWeaponEffect(31332),
-			)
-		}
-
-		dpm := extraAttackDPM()
+		dpm := character.NewDynamicLegacyProcForWeapon(31332, 1, 0)
 
 		procTrigger := character.MakeProcTriggerAura(core.ProcTrigger{
 			Name:               "Blinkstrike",
@@ -336,10 +260,6 @@ func init() {
 			config.ActionID = config.ActionID.WithTag(31332)
 			config.Flags |= core.SpellFlagPassiveSpell
 			blinkStrikeSpell = character.GetOrRegisterSpell(config)
-		})
-
-		character.RegisterItemSwapCallback(core.AllMeleeWeaponSlots(), func(sim *core.Simulation, slot proto.ItemSlot) {
-			dpm = extraAttackDPM()
 		})
 
 		character.ItemSwap.RegisterProc(31332, procTrigger)
