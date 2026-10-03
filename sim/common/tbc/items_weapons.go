@@ -188,14 +188,7 @@ func init() {
 		character := agent.GetCharacter()
 		var blinkStrikeSpell *core.Spell
 
-		extraAttackDPM := func() *core.DynamicProcManager {
-			return character.NewStaticLegacyPPMManager(
-				1,
-				*character.GetDynamicProcMaskForWeaponEffect(31332),
-			)
-		}
-
-		dpm := extraAttackDPM()
+		dpm := character.NewDynamicLegacyProcForWeapon(31332, 1, 0)
 
 		procTrigger := character.MakeProcTriggerAura(core.ProcTrigger{
 			Name:               "Blinkstrike",
@@ -214,10 +207,6 @@ func init() {
 			config.ActionID = config.ActionID.WithTag(31332)
 			config.Flags |= core.SpellFlagPassiveSpell
 			blinkStrikeSpell = character.GetOrRegisterSpell(config)
-		})
-
-		character.RegisterItemSwapCallback(core.AllMeleeWeaponSlots(), func(sim *core.Simulation, slot proto.ItemSlot) {
-			dpm = extraAttackDPM()
 		})
 
 		character.ItemSwap.RegisterProc(31332, procTrigger)
