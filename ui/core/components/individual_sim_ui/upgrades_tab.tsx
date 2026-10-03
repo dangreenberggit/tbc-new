@@ -23,7 +23,7 @@ import { BulkHttpSimRunner } from './upgrades/adapters/bulk_http_sim_runner';
 import { makeSimRunner } from './upgrades/adapters/bulk_wasm_sim_runner';
 import { applyCheckPool } from './upgrades/adapters/check_hooks';
 import { fixtureFileInput, type FixtureHost, installFixtureHooks } from './upgrades/adapters/fixture';
-import { PlayerGearSource } from './upgrades/adapters/player_gear_source';
+import { equippedItemIds, PlayerGearSource } from './upgrades/adapters/player_gear_source';
 import { simDatabaseResolverFor } from './upgrades/adapters/sim_database';
 import { currentPageSkeleton } from './upgrades/adapters/skeleton';
 import { WorkerPoolSimRunner } from './upgrades/adapters/worker_pool_sim_runner';
@@ -47,6 +47,7 @@ import {
 	setPotentialSteps,
 	type SetPotentialTerm,
 	setPotentialTerms,
+	singleSwapBreaks,
 	SOURCE_LABELS,
 	type ViewOptions,
 	type ViewResult,
@@ -112,7 +113,18 @@ const DEFAULT_ITERATIONS = 3000;
 type RunState =
 	| { kind: 'idle' }
 	| { kind: 'running'; progress: Progress }
-	| { kind: 'done'; ranking: Ranking; stale: boolean }
+	| {
+			kind: 'done';
+			ranking: Ranking;
+			stale: boolean;
+			/**
+			 * The item ids of the gear the ranking was measured on. The ranking
+			 * holds no gear, and a stale result keeps its rows after the page gear
+			 * changes, so a row's own set breaks are worked out from these
+			 * (ticket 536).
+			 */
+			wornItemIds?: readonly number[];
+	  }
 	/**
 	 * Stop (candidate-pool.md §5.1.4) cut the run short — `ranking.complete`
 	 * is `false` by construction (`PartialRanking`), kept as its own `RunState`
@@ -1518,7 +1530,8 @@ export class UpgradesTab extends SimTab {
 					this.landedRows = [];
 					this.lastRunSeconds = undefined;
 					this.lastRunPruned = false;
-					this.setState({ kind: 'done', ranking, stale: false });
+					// `loadFixture` set the page gear from the fixture just before this.
+					this.setState({ kind: 'done', ranking, stale: false, wornItemIds: equippedItemIds(this.simUI.player) });
 					return this.contentContainer.querySelectorAll('.upgrades-results-table tbody tr').length;
 				},
 			};
@@ -2008,7 +2021,7 @@ export class UpgradesTab extends SimTab {
 		}
 
 		if (ranking.complete) {
-			this.setState({ kind: 'done', ranking, stale: false });
+			this.setState({ kind: 'done', ranking, stale: false, wornItemIds: gearSource.lastItemIds });
 		} else {
 			// Stop cut the run short — `ranking.complete` narrows to `false`
 			// here, so this is a `PartialRanking` by the type, not by
@@ -3387,29 +3400,32 @@ export class UpgradesTab extends SimTab {
 		credit: number,
 	): { line: Node | null; tip: HTMLElement | null } {
 		const ctx = row.setContext;
-		if (!ctx) return { line: null, tip: null };
+		// A row with no setContext gets the same receipt for the worn bonuses its
+		// own swap breaks (ticket 536); it has no futures and no crossing.
+		const ownBreaks = ctx ? [] : this.ownSwapBreaks(row);
+		if (!ctx && ownBreaks.length === 0) return { line: null, tip: null };
 
-		const subLine = setBonusSubLine(ctx, on);
+		const subLine = setBonusSubLine(ctx ?? { singleBreaks: ownBreaks }, on);
 		if (subLine === null) return { line: null, tip: null };
 
 		const line = <small className="upgrades-set-bonus">{i18n.t(`upgrades_tab.set_bonus.${subLine}`)}</small>;
 
 		const t = (key: string, opts: Record<string, unknown>): string => String(i18n.t(`upgrades_tab.set_bonus.${key}`, opts));
 		const notMeasured = i18n.t('upgrades_tab.set_bonus.tip_couldnt_measure');
-		const singleBreaks = ctx.singleBreaks ?? [];
+		const singleBreaks = ctx ? (ctx.singleBreaks ?? []) : ownBreaks;
 		const measuredBreaks = singleBreaks.filter(b => b.dps !== undefined);
 		const total = row.deltaDps + credit;
 
 		const potential =
-			on && noiseFloorDps !== undefined && (ctx.futureBonuses ?? []).length > 0
+			ctx && on && noiseFloorDps !== undefined && (ctx.futureBonuses ?? []).length > 0
 				? setPotentialTipLines(ctx, noiseFloorDps, credit, t)
 				: { lines: [], kind: 'none' as const };
-		if (potential.kind === 'outcomes') return { line, tip: outcomesTip(row, ctx, potential.lines, t) };
+		if (ctx && potential.kind === 'outcomes') return { line, tip: outcomesTip(row, ctx, potential.lines, t) };
 
 		// The count this piece crosses, from the view (tickets 479 and 511). The
 		// `??` cannot fire while crossesThreshold is true; it keeps the value a
 		// number.
-		let firstLabel: string | null = ctx.crossesThreshold
+		let firstLabel: string | null = ctx?.crossesThreshold
 			? t('tip_item_stats_with_bonus', {
 					set: ctx.setName,
 					threshold: crossingLabelCount(ctx) ?? ctx.piecesAfterSwap,
@@ -3452,6 +3468,17 @@ export class UpgradesTab extends SimTab {
 
 		const tip = (<div className="upgrades-set-bonus-tip">{lines}</div>) as HTMLElement;
 		return { line, tip };
+	}
+
+	/**
+	 * Read from the done state, not the page: a stale result keeps the breaks
+	 * of the gear it was measured on.
+	 */
+	private ownSwapBreaks(row: RankedItem): ReturnType<typeof singleSwapBreaks> {
+		if (this.state.kind !== 'done') return [];
+		const specId = SPEC_ID_BY_PROTO_SPEC[this.simUI.player.getSpec() as Spec];
+		if (!specId) return [];
+		return singleSwapBreaks(row, this.state.ranking.brokenSetValues, this.state.wornItemIds, specId);
 	}
 
 	/**

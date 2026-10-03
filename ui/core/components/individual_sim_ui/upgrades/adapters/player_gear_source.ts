@@ -52,7 +52,19 @@ const CURRENT_PAGE_FIGHT_SUMMARY: FightSummary = {
 	confidence: 1,
 };
 
+/** The item id in each `SIM_ORDER` slot of the page's gear, 0 for an empty slot. */
+export function equippedItemIds(player: IndividualSimUI<any>['player']): number[] {
+	const equipped = player.getGear().getEquippedItems();
+	return SIM_ORDER.map((_, i) => equipped[i]?.id ?? 0);
+}
+
 export class PlayerGearSource implements GearSource {
+	/**
+	 * The ids the last `readGear` gave the engine. The ranking holds no gear, so
+	 * the tab keeps these to work out a row's own set breaks (ticket 536).
+	 */
+	lastItemIds: readonly number[] | undefined;
+
 	constructor(private readonly simUI: IndividualSimUI<any>) {}
 
 	async findFights(_character: CharacterRef, _spec: SpecId): Promise<FightSummary[]> {
@@ -62,11 +74,13 @@ export class PlayerGearSource implements GearSource {
 	async readGear(_fight: FightRef): Promise<LoggedGear> {
 		const player = this.simUI.player;
 		const equipped = player.getGear().getEquippedItems();
+		const ids = equippedItemIds(player);
+		this.lastItemIds = ids;
 
 		const items: LoggedItem[] = SIM_ORDER.map((slot, i) => {
 			const eq = equipped[i];
 			if (!eq) return { id: 0, slot };
-			const item: LoggedItem = { id: eq.id, slot };
+			const item: LoggedItem = { id: ids[i]!, slot };
 			const enchant = eq.enchant;
 			if (enchant) item.enchant = enchant.effectId;
 			const gemIds = eq.gems.filter((g): g is NonNullable<typeof g> => g != null).map(g => g.id);

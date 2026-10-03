@@ -24,10 +24,21 @@ import {
   meetsCutoff,
   setBonusNoiseFloorDps,
 } from "./cutoff.js";
-import { type ItemSource,sourceMatchesBoss } from "./pool.js";
+import { getItem } from "./items.js";
+import {
+  type ItemSource,
+  simSlotsForPoolSlot,
+  sourceMatchesBoss,
+} from "./pool.js";
 import type { RankedItem, Ranking, SetContext } from "./rank.js";
 import { clearsSameGearGate } from "./set-less-copies.js";
-import { nextMeasurableThreshold } from "./set-value.js";
+import {
+  brokenSetBonuses,
+  nextMeasurableThreshold,
+  type SetThreshold,
+} from "./set-value.js";
+import { SIM_ORDER } from "./slots.js";
+import type { SpecId } from "./types.js";
 
 export type SetCreditView = "full" | "split";
 
@@ -287,6 +298,76 @@ export function setBonusSubLine(
     (!ctx.stepRanking && (ctx.commitBreaks ?? []).length > 0);
   if (!anyDisclosure) return null;
   return on && setCreditUnmeasured(ctx) ? "not_counted" : "hover_hint";
+}
+
+export type SwapBreak = {
+  setId: number;
+  setName: string;
+  threshold: SetThreshold;
+  dps?: number;
+};
+
+/**
+ * The worn bonuses one row's own swap breaks, for a row with no `setContext`
+ * (ticket 536). The engine gives only set pieces a `setContext`, so a non-set
+ * item that breaks a worn bonus showed a low figure with no reason. The break
+ * rule is the engine's own: `brokenSetBonuses` with the lost counts the
+ * ranking measured in `brokenSetValues`, valued from there. It runs at render
+ * time from the gear the run read, so rankings recorded before this change
+ * show the breaks too. A set row returns nothing: its `singleBreaks` are the
+ * source.
+ */
+export function singleSwapBreaks(
+  row: Pick<
+    RankedItem,
+    | "itemId"
+    | "slot"
+    | "slotChoice"
+    | "removedItems"
+    | "owned"
+    | "simmed"
+    | "setContext"
+  >,
+  brokenSetValues: Ranking["brokenSetValues"],
+  wornItemIds: readonly number[] | undefined,
+  spec: SpecId
+): SwapBreak[] {
+  if (
+    row.setContext ||
+    row.owned ||
+    row.simmed === false ||
+    !brokenSetValues ||
+    wornItemIds?.length !== SIM_ORDER.length
+  ) {
+    return [];
+  }
+  const valueOf = (setId: number, threshold: number) =>
+    brokenSetValues.find(
+      (v) => v.setId === setId && v.threshold === threshold
+    );
+  const slotName =
+    row.slotChoice ?? simSlotsForPoolSlot(row.slot, spec, row.itemId)[0];
+  if (slotName === undefined) return [];
+  // A cleared slot is a piece of item 0: it displaces the worn item and,
+  // having no set, adds nothing.
+  const pieces = [
+    { itemId: row.itemId, slotIndex: SIM_ORDER.indexOf(slotName) },
+    ...(row.removedItems ?? []).map((r) => ({
+      itemId: 0,
+      slotIndex: SIM_ORDER.indexOf(r.slot),
+    })),
+  ];
+  return brokenSetBonuses(
+    wornItemIds.map((id) => ({ id, gems: [] })),
+    pieces,
+    getItem(row.itemId)?.setId ?? -1,
+    (setId, t) => valueOf(setId, t) !== undefined
+  ).map(({ setId, setName, threshold }) => {
+    const dps = valueOf(setId, threshold)?.dps;
+    return dps === undefined
+      ? { setId, setName, threshold }
+      : { setId, setName, threshold, dps };
+  });
 }
 
 type CreditWalk = {
