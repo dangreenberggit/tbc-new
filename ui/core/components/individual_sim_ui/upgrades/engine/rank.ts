@@ -1136,7 +1136,7 @@ export async function rankUpgrades(
 
     /**
      * Each version of one set-phase build, with its own hit budget (ticket
-     * 535, plan § Approach, Part 3). A version's missed hit is the hit the
+     * 535 and its close). A version's missed hit is the hit the
      * local budget cannot see, set-bonus hit on the measured gear:
      * `sim hit(version) − sim hit(baseline) − (gear hit(build) − gear hit(baseline))`,
      * the gear hit taken on real item ids before the copies. A version whose
@@ -3237,7 +3237,8 @@ async function measureSetSteps(args: {
     // the candidate loop with `composeFor` of this same default build. When
     // entry 0 was rebuilt for set hit that loop's budget missed, no sim of it
     // exists, so the split is skipped rather than paired with another
-    // layout (rev 6.1, F1).
+    // layout (ticket 535). The store check below would skip it too; this
+    // check states the rule rather than relying on that.
     if (
       firstStep &&
       stableStringify(plain) !== stableStringify(composeFor(before))
