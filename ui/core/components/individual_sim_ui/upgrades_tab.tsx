@@ -34,6 +34,7 @@ import { isKaelTempLegendary } from './upgrades/engine/kael-temp';
 import { filterPoolByPhase, type ItemSource, type PoolEntry,simSlotsForPoolSlot } from './upgrades/engine/pool';
 import { type PartialRanking, type Progress, type RankedItem, type Ranking, type RankInput,rankUpgrades } from './upgrades/engine/rank';
 import { MemoryStore } from './upgrades/engine/seams/store';
+import { bonusKey } from './upgrades/engine/set-value';
 import { SIM_ORDER, type SimOrderName } from './upgrades/engine/slots';
 import type { ContentPhase, SpecId } from './upgrades/engine/types';
 import {
@@ -49,6 +50,7 @@ import {
 	setPotentialTerms,
 	singleSwapBreaks,
 	SOURCE_LABELS,
+	stepFutureUnmeasured,
 	type ViewOptions,
 	type ViewResult,
 	type ViewRow,
@@ -503,16 +505,16 @@ function setPotentialTipLines(
 		// missing, in count order.
 		const lines = [...(ctx.futureBonuses ?? [])]
 			.sort((a, b) => a.threshold - b.threshold)
-			.filter(f => !f.belowGate && (f.sameGearDps === undefined || f.stepGearDps === undefined || f.partnerUnmeasured !== undefined))
+			.filter(stepFutureUnmeasured)
 			.map(f => ({ label: t('tip_bonus', { set: ctx.setName, threshold: f.threshold, have: ctx.piecesWornBefore }), value: undefined }));
 		return { lines, kind: 'unmeasured' };
 	}
 	if (setCreditUnmeasured(ctx)) {
 		const future = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
 		const lines: SetTipLine[] = [];
-		const named = new Set((ctx.singleBreaks ?? []).map(b => `${b.setId}:${b.threshold}`));
+		const named = new Set((ctx.singleBreaks ?? []).map(bonusKey));
 		const nameUnmeasuredBreak = (b: { setId: number; setName: string; threshold: number; dps?: number }) => {
-			const key = `${b.setId}:${b.threshold}`;
+			const key = bonusKey(b);
 			if (b.dps !== undefined || named.has(key)) return;
 			named.add(key);
 			lines.push({ label: t('tip_breaks', { set: b.setName, threshold: b.threshold }), value: undefined });

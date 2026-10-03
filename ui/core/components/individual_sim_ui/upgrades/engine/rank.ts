@@ -132,6 +132,7 @@ import {
 } from "./set-screen.js";
 import {
   type BonusCountPredicate,
+  bonusKey,
   type BrokenSetBonus,
   brokenSetBonuses,
   combineSe,
@@ -2161,7 +2162,7 @@ async function buildSetBonuses(
   // package's first added piece as the row, so it reads as the K5E scorer's
   // stats(t), on which the rule was chosen.
   const breakDpsBy = new Map(
-    brokenSetValues.map((v) => [`${v.setId}:${v.threshold}`, v.dps] as const)
+    brokenSetValues.map((v) => [bonusKey(v), v.dps] as const)
   );
   const statsAt = (setId: number, count: number): number | undefined => {
     const selection = selectFor(setId, count);
@@ -2615,31 +2616,19 @@ async function buildSetBonuses(
     }
   }
 
-  // Correct `bonusDps` for ticket 90's inflation using the measured B.
-  //
-  // `computeSynergy` builds `bonusDps = pkgΔ − Σsingles − raw2pc`. A worn bonus
-  // (X, t') that the package breaks puts a −B term in each input:
-  //   • pkgΔ holds −B once iff this package's END STATE breaks it (`pkgEnd`);
-  //   • each member single that breaks it holds −B, subtracted: +B per member
-  //     (`membersPkg`);
-  //   • the raw 2pc (subtracted by the 4pc only) has its own inflation
-  //     `(members2pc − twoPcEnd)·B`, which the subtraction negates.
-  // So `I = Σ (membersPkg − members2pc − pkgEnd + twoPcEnd)·B` over every lost
-  // threshold (`netInflation`), and `bonusDpsNet = bonusDps − I`. Reading each
+  // Correct `bonusDps` for ticket 90's inflation using the measured B:
+  // `bonusDpsNet = bonusDps − netInflation(keys)`, where set-value.ts's
+  // `netInflation` derives the formula and its sign history. Reading each
   // package's own `breaks` (its measured end state) keeps this right when the
   // 2pc and 4pc packages pick different slots (ticket 467).
   //
-  // Ticket 478 A3: the earlier form subtracted `twoPcEnd`. The two agree at worn
-  // Malorne 4, where `members2pc − twoPcEnd = 2 − 1 = 1 = twoPcEnd`, and differ
-  // at worn 5 (net4 180 instead of 80; fixture 476-B). The keys are the union of
-  // this package's breaks, the 2pc package's breaks, and every member single's
-  // breaks. Today the 2pc package is a prefix of the 4pc and a member single
-  // never breaks what its package keeps, so the union equals this package's own
-  // `breaks`; it is kept so the formula stays whole if package selection changes.
+  // The keys are the union of this package's breaks, the 2pc package's
+  // breaks, and every member single's breaks. Today the 2pc package is a
+  // prefix of the 4pc and a member single never breaks what its package
+  // keeps, so the union equals this package's own `breaks`; it is kept so the
+  // formula stays whole if package selection changes.
   const bBy = new Map<string, number | undefined>();
-  for (const v of brokenSetValues) bBy.set(`${v.setId}:${v.threshold}`, v.dps);
-  const breakKey = (b: Pick<BrokenSetBonus, "setId" | "threshold">) =>
-    `${b.setId}:${b.threshold}`;
+  for (const v of brokenSetValues) bBy.set(bonusKey(v), v.dps);
   const memberSingleBreaks = (pkg: SetBonusValue): BrokenSetBonus[] =>
     pkg.packageItemIds.flatMap((itemId) => {
       const slotIndex = candidateSlotIndex.get(itemId);
@@ -2678,10 +2667,10 @@ async function buildSetBonuses(
       ...memberSingleBreaks(b),
       ...(two ? memberSingleBreaks(two) : []),
     ]) {
-      union.set(breakKey(brk), brk);
+      union.set(bonusKey(brk), brk);
     }
-    const pkgEnd = new Set((b.breaks ?? []).map(breakKey));
-    const twoPcEnd = new Set((two?.breaks ?? []).map(breakKey));
+    const pkgEnd = new Set((b.breaks ?? []).map(bonusKey));
+    const twoPcEnd = new Set((two?.breaks ?? []).map(bonusKey));
     const keys: InflationKey[] = [];
     let allMeasured = true;
     for (const [key, brk] of union) {
@@ -2691,8 +2680,6 @@ async function buildSetBonuses(
         break;
       }
       keys.push({
-        setId: brk.setId,
-        threshold: brk.threshold,
         membersPkg: countMembersBreaking(
           b,
           brk,
@@ -2754,7 +2741,7 @@ async function measureSetSteps(args: {
   const rule = deps.partnerRule ?? PARTNER_RULE;
   const bBy = new Map<string, number | undefined>();
   for (const v of args.brokenSetValues) {
-    bBy.set(`${v.setId}:${v.threshold}`, v.dps);
+    bBy.set(bonusKey(v), v.dps);
   }
   const nameOf = new Map(args.ranked.map((r) => [r.itemId, r.name]));
   type SimCounter = { simmed: number; fromStore: number };
@@ -2934,7 +2921,7 @@ async function measureSetSteps(args: {
       const lost = lostBy([rowSwap, ...partners]);
       if (lost.length > 0) {
         f.breaks = lost.map((brk) => {
-          const dps = bBy.get(`${brk.setId}:${brk.threshold}`);
+          const dps = bBy.get(bonusKey(brk));
           return {
             setId: brk.setId,
             setName: brk.setName,
@@ -3431,9 +3418,9 @@ function applySetContext(
     bonusesBySet.set(b.setId, list);
   }
   const bBy = new Map<string, number | undefined>();
-  for (const v of brokenSetValues) bBy.set(`${v.setId}:${v.threshold}`, v.dps);
+  for (const v of brokenSetValues) bBy.set(bonusKey(v), v.dps);
   const dpsForBreak = (brk: BrokenSetBonus): number | undefined =>
-    bBy.get(`${brk.setId}:${brk.threshold}`);
+    bBy.get(bonusKey(brk));
   const rankedById = new Map(ranked.map((r) => [r.itemId, r]));
 
   for (const item of ranked) {
@@ -3526,9 +3513,7 @@ function applySetContext(
             t > piecesAfterSwap &&
             isBonusImplemented(setId, t)
         );
-    const singleKeys = new Set(
-      (setContext.singleBreaks ?? []).map((b) => `${b.setId}:${b.threshold}`)
-    );
+    const singleKeys = new Set((setContext.singleBreaks ?? []).map(bonusKey));
     const withDps = (brk: BrokenSetBonus) => {
       const dps = dpsForBreak(brk);
       return {
@@ -3593,7 +3578,7 @@ function applySetContext(
       // too; the view charges each key once.
       const pathBreaks = path
         ? brokenSetBonuses(equipment, path, setId, counts).filter(
-            (brk) => !singleKeys.has(`${brk.setId}:${brk.threshold}`)
+            (brk) => !singleKeys.has(bonusKey(brk))
           )
         : [];
       // The path's other members (ticket 502). Pieces a lower future already
@@ -3640,7 +3625,7 @@ function applySetContext(
         counts
       );
       const commitOnly = commitAll.filter(
-        (brk) => !singleKeys.has(`${brk.setId}:${brk.threshold}`)
+        (brk) => !singleKeys.has(bonusKey(brk))
       );
       if (commitOnly.length > 0) {
         setContext.commitBreaks = commitOnly.map(withDps);

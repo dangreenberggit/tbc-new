@@ -240,6 +240,10 @@ export type BrokenSetBonus = {
   piecesAfter: number;
 };
 
+/** The map key of one worn bonus: its set and its count. */
+export const bonusKey = (b: { setId: number; threshold: number }): string =>
+  `${b.setId}:${b.threshold}`;
+
 /**
  * The counts of `setId` lost when its worn count drops from `before` to
  * `after` (`before ≥ t > after`, t ≥ 2) that `counts` accepts, highest first.
@@ -317,8 +321,6 @@ export function brokenSetBonuses(
  * breaks it. The 2pc fields are 0 when the package is itself the 2pc.
  */
 export type InflationKey = {
-  setId: number;
-  threshold: number;
   membersPkg: number;
   members2pc: number;
   pkgEnd: number;

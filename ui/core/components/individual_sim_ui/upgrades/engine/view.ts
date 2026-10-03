@@ -5,12 +5,11 @@
  * PORTED from packages/core/src/view.ts. The Set-potential credit (ticket 467)
  * reads the corrected `setContext.futureBonuses`, and the breaks (ticket 490)
  * and the other pieces' own stats (ticket 502) on each future's own path, that
- * the engine attaches — a true net (gains minus
- * the measured broken-bonus losses) — rather
- * than the old single nearest-threshold prospective bonus. The ticket-90
- * confound guard is gone: `bonusDpsNet` is already corrected for that inflation,
- * and a row whose loss could not be measured drops to disclosure-only here by
- * the missing-`dps` fallback below.
+ * the engine attaches — a true net (gains minus the measured broken-bonus
+ * losses) — rather than the old single nearest-threshold prospective bonus.
+ * The ticket-90 confound guard is gone: `bonusDpsNet` is already corrected for
+ * that inflation, and a row whose loss could not be measured drops to
+ * disclosure-only here by the missing-`dps` fallback below.
  *
  * Ticket 511 (fork-only): on a step ranking (`setContext.stepRanking`), a set
  * row is credited from sims of the gear it would be worn in. Each future
@@ -33,6 +32,7 @@ import {
 import type { RankedItem, Ranking, SetContext } from "./rank.js";
 import { clearsSameGearGate } from "./set-less-copies.js";
 import {
+  bonusKey,
   brokenSetBonuses,
   nextMeasurableThreshold,
   type SetThreshold,
@@ -52,7 +52,7 @@ export type SetCreditView = "full" | "split";
  * 2026-09-24, ticket 490).
  */
 export type SetCreditRule = "best-stop" | "full-path";
-export const RULE_490: SetCreditRule = "best-stop";
+export const DEFAULT_SET_CREDIT_RULE: SetCreditRule = "best-stop";
 
 type SetContextLike = Partial<
   Pick<
@@ -259,17 +259,8 @@ function belowCutoffUnderView(
 export function setCreditUnmeasured(ctx: SetContextLike | undefined): boolean {
   const future = ctx?.futureBonuses ?? [];
   if (future.length === 0) return false;
-  // A step ranking (ticket 511) is unmeasured exactly when a future lacks its
-  // same-gear value and is not below the gate, or a future whose gate cleared
-  // lacks its step gear's sim or its partner choice. A below-gate future never
-  // zeroes the row, and `commitBreaks` are not read (C171).
-  if (ctx?.stepRanking) {
-    return future.some((f) => {
-      if (f.belowGate) return false;
-      if (f.sameGearDps === undefined) return true;
-      return f.stepGearDps === undefined || f.partnerUnmeasured !== undefined;
-    });
-  }
+  // `commitBreaks` are not read on a step ranking (C171).
+  if (ctx?.stepRanking) return future.some(stepFutureUnmeasured);
   return (
     future.some(
       (f) =>
@@ -278,6 +269,24 @@ export function setCreditUnmeasured(ctx: SetContextLike | undefined): boolean {
         (f.pieces ?? []).some((p) => p.dps === undefined)
     ) || (ctx?.commitBreaks ?? []).some((b) => b.dps === undefined)
   );
+}
+
+/**
+ * On a step ranking (ticket 511), whether one future zeroes the row's ON
+ * credit: it lacks its same-gear value and is not below the gate, or its gate
+ * cleared and it lacks its step gear's sim or its partner choice. A
+ * below-gate future never zeroes the row. Exported so the tab names the same
+ * futures in its popover.
+ */
+export function stepFutureUnmeasured(
+  f: Pick<
+    NonNullable<SetContext["futureBonuses"]>[number],
+    "belowGate" | "sameGearDps" | "stepGearDps" | "partnerUnmeasured"
+  >
+): boolean {
+  if (f.belowGate) return false;
+  if (f.sameGearDps === undefined) return true;
+  return f.stepGearDps === undefined || f.partnerUnmeasured !== undefined;
 }
 
 /**
@@ -448,7 +457,7 @@ function walkCredit(
     }
     let splitLoss = 0;
     for (const brk of f.breaks ?? []) {
-      const key = `${brk.setId}:${brk.threshold}`;
+      const key = bonusKey(brk);
       if (charged.has(key)) continue;
       charged.add(key);
       splitLoss += floored(brk.dps!);
@@ -523,15 +532,13 @@ function walkSteps(
     return { credit: 0, split: 0, stopThreshold: 0, terms: [] };
   }
   const floored = (v: number): number => (v > noiseFloorDps ? v : 0);
-  const charged = new Set(
-    (ctx.singleBreaks ?? []).map((b) => `${b.setId}:${b.threshold}`)
-  );
+  const charged = new Set((ctx.singleBreaks ?? []).map(bonusKey));
   let splitRunning = 0;
   let best = { credit: 0, split: 0, stopThreshold: 0 };
   for (const f of eligible) {
     let splitLoss = 0;
     for (const brk of f.breaks ?? []) {
-      const key = `${brk.setId}:${brk.threshold}`;
+      const key = bonusKey(brk);
       if (charged.has(key)) continue;
       charged.add(key);
       splitLoss += floored(brk.dps ?? 0);
@@ -597,7 +604,7 @@ export function crossingLabelCount(
 export function setPotentialTerms(
   ctx: SetContextLike | undefined,
   noiseFloorDps: number,
-  rule: SetCreditRule = RULE_490
+  rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE
 ): { credit: number; stopThreshold: number; terms: SetPotentialTerm[] } {
   const { credit, stopThreshold, terms } = walkCredit(ctx, noiseFloorDps, rule);
   return { credit, stopThreshold, terms };
@@ -648,7 +655,7 @@ export type SetPotentialStep = {
 export function setPotentialSteps(
   ctx: SetContextLike | undefined,
   noiseFloorDps: number,
-  rule: SetCreditRule = RULE_490
+  rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE
 ): SetPotentialStep[] | null {
   if (!ctx?.stepRanking || ctx.singleDeltaDps === undefined) return null;
   const stops = walkSteps(ctx, noiseFloorDps, rule).terms.filter(
@@ -656,26 +663,24 @@ export function setPotentialSteps(
   );
   const last = stops.findIndex((t) => t.isStop);
   if (last < 0) return null;
-  const keyOf = (b: { setId: number; threshold: number }) =>
-    `${b.setId}:${b.threshold}`;
   let prevIds = new Set<number>();
-  let prevBroken = new Set((ctx.singleBreaks ?? []).map(keyOf));
+  let prevBroken = new Set((ctx.singleBreaks ?? []).map(bonusKey));
   let prevTotal = ctx.singleDeltaDps;
   const steps: SetPotentialStep[] = [];
   for (const term of stops.slice(0, last + 1)) {
     const ids = new Set(term.pieces.map((p) => p.itemId));
     if ([...prevIds].some((id) => !ids.has(id))) return null;
-    const broken = term.broken.filter((b) => !prevBroken.has(keyOf(b)));
+    const broken = term.broken.filter((b) => !prevBroken.has(bonusKey(b)));
     const fut = (ctx.futureBonuses ?? []).find(
       (f) => f.threshold === term.threshold
     );
-    const offKeys = new Set((fut?.bonusOff ?? []).map(keyOf));
+    const offKeys = new Set((fut?.bonusOff ?? []).map(bonusKey));
     const offDps = fut?.bonusOffDps;
     const split =
       broken.length > 0 &&
       offDps !== undefined &&
       offKeys.size === broken.length &&
-      broken.every((b) => offKeys.has(keyOf(b)));
+      broken.every((b) => offKeys.has(bonusKey(b)));
     steps.push({
       kind: "step",
       threshold: term.threshold,
@@ -692,7 +697,7 @@ export function setPotentialSteps(
         : {}),
     });
     prevIds = ids;
-    prevBroken = new Set([...prevBroken, ...term.broken.map(keyOf)]);
+    prevBroken = new Set([...prevBroken, ...term.broken.map(bonusKey)]);
     prevTotal = term.totalDps;
   }
   return steps;
@@ -703,7 +708,7 @@ export function setPotentialCredit(
   ctx: SetContextLike | undefined,
   noiseFloorDps: number,
   setCredit: SetCreditView = "full",
-  rule: SetCreditRule = RULE_490
+  rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE
 ): number {
   const walk = walkCredit(ctx, noiseFloorDps, rule);
   return setCredit === "split" ? walk.split : walk.credit;

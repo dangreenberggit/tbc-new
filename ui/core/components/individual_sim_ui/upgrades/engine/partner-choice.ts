@@ -45,7 +45,11 @@
  * Neither this file nor its caller holds a table of set ids or piece counts.
  */
 
-import type { BrokenSetBonus, PackagePiece } from "./set-value.js";
+import {
+  bonusKey,
+  type BrokenSetBonus,
+  type PackagePiece,
+} from "./set-value.js";
 
 export type PartnerRule =
   | "close-calls"
@@ -158,9 +162,6 @@ export function partnerSets(query: PartnerQuery): PartnerPiece[][] {
   pick(0, []);
   return out;
 }
-
-const bonusKey = (b: Pick<BrokenSetBonus, "setId" | "threshold">): string =>
-  `${b.setId}:${b.threshold}`;
 
 /**
  * Rule Z's estimate of one partner set (or Z0's without the combination-only
