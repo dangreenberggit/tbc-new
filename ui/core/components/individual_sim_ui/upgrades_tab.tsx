@@ -56,6 +56,7 @@ import {
 	type ViewRow,
 } from './upgrades/engine/view';
 import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
+import { RunStaleness } from './upgrades/run_staleness';
 
 /**
  * Specs this tab can rank, per plan §2.5: "The tab renders only for specs
@@ -136,7 +137,7 @@ type RunState =
 	 * own render path builds its own row list from `ranking.items` rather
 	 * than calling `applyView`.
 	 */
-	| { kind: 'stopped'; ranking: PartialRanking }
+	| { kind: 'stopped'; ranking: PartialRanking; stale: boolean }
 	| { kind: 'error'; message: string }
 	| { kind: 'unsupported-spec' };
 
@@ -886,6 +887,7 @@ export class UpgradesTab extends SimTab {
 	// finishes.
 	private landedRows: Ranking['items'] = [];
 	private state: RunState = { kind: 'idle' };
+	private readonly staleness = new RunStaleness();
 	// Wall-clock of the last finished run, in seconds. Held on the instance
 	// rather than in the 'done'/'stopped' state so a re-render triggered by a
 	// view control (which runs no sims) keeps showing the run's own elapsed
@@ -1566,9 +1568,7 @@ export class UpgradesTab extends SimTab {
 	 */
 	private wireStalenessListeners() {
 		const markStale = () => {
-			if (this.state.kind === 'done') {
-				this.setState({ ...this.state, stale: true });
-			}
+			this.markInputsChanged();
 			// The Candidates placeholder describes the pool the *next* run will
 			// use, so it has to follow the phase/spec selection rather than the
 			// last finished run (ticket 210). Refreshed here as well as at
@@ -1603,9 +1603,7 @@ export class UpgradesTab extends SimTab {
 		// own click emits this event mid-handler (it would drop the button it is on,
 		// the reason refreshSetChips is never called from there). render() alone
 		// touches no chip, and the chip click already marks stale through it.
-		this.settingsChangedEmitter.on(() => {
-			if (this.state.kind === 'done') this.setState({ ...this.state, stale: true });
-		});
+		this.settingsChangedEmitter.on(() => this.markInputsChanged());
 	}
 
 	/**
@@ -1762,6 +1760,15 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
+	 * Every run-input change goes through here, so a change made during a run
+	 * marks that run's result stale when it finishes (ticket 537).
+	 */
+	private markInputsChanged() {
+		const next = this.staleness.inputChanged(this.state);
+		if (next !== this.state) this.setState(next);
+	}
+
+	/**
 	 * Reads the iterations field (D7) at click-time only. The field is a plain
 	 * `number` written by the `NumberPicker`; the picker coerces user input in
 	 * `getInputValue()` (`parseInt(value || '') || 0`), so this only ever sees
@@ -1901,6 +1908,7 @@ export class UpgradesTab extends SimTab {
 		// rather than `Date.now()`: monotonic, so a clock adjustment mid-run
 		// cannot produce a negative or wildly wrong elapsed.
 		const startedAt = performance.now();
+		this.staleness.runStarted();
 		this.setState({ kind: 'running', progress: { stage: 'resolving' } });
 
 		const input: RankInput = {
@@ -2022,15 +2030,16 @@ export class UpgradesTab extends SimTab {
 			if (runAssumptions) this.logAssumptions(runAssumptions);
 		}
 
+		const stale = this.staleness.staleAtFinish();
 		if (ranking.complete) {
-			this.setState({ kind: 'done', ranking, stale: false, wornItemIds: gearSource.lastItemIds });
+			this.setState({ kind: 'done', ranking, stale, wornItemIds: gearSource.lastItemIds });
 		} else {
 			// Stop cut the run short — `ranking.complete` narrows to `false`
 			// here, so this is a `PartialRanking` by the type, not by
 			// convention. Never reaches the ranking cache (rank.ts's own
 			// `complete: true`-only cache write), so a later re-run recomputes
 			// rather than replaying the partial result.
-			this.setState({ kind: 'stopped', ranking });
+			this.setState({ kind: 'stopped', ranking, stale });
 		}
 	}
 
@@ -2150,14 +2159,12 @@ export class UpgradesTab extends SimTab {
 				// (ticket 437), already wrapped or plain as appropriate.
 				return <div className="upgrades-status-line text-danger">{this.state.message}</div>;
 			case 'stopped':
-				// The stopped baseline moved under the table (ticket 416); the top
-				// status line has nothing left to say for this state.
-				return <></>;
 			case 'done':
-				// The done baseline ("Your current gear: N DPS. Took Ns.") moved
-				// under the table (ticket 416). Only the staleness warning stays in
-				// the top slot, because it is a caution about the results the reader
-				// is about to act on, not a footer summarising them.
+				// The done and stopped baselines moved under the table (ticket 416).
+				// Only the staleness warning stays in the top slot, because it is a
+				// caution about the results the reader is about to act on, not a
+				// footer summarising them. A stopped run's partial rows go stale
+				// the same way a finished run's do (ticket 537).
 				return this.state.stale ? (
 					<div className="upgrades-status-line text-warning">
 						<strong>{i18n.t('upgrades_tab.status.stale')}</strong>
@@ -2372,7 +2379,7 @@ export class UpgradesTab extends SimTab {
 						this.updateEligibleCount();
 						this.refreshSourcesSummary();
 						this.settingsChangedEmitter.emit(eventID);
-						if (this.state.kind === 'done') this.setState({ ...this.state, stale: true });
+						this.markInputsChanged();
 					},
 				});
 			}
@@ -2504,7 +2511,7 @@ export class UpgradesTab extends SimTab {
 	 * is muted (`--unavailable`) and `aria-disabled` but still shown, so the reader
 	 * can hover for the reason. Clicking the inner span toggles the key, the
 	 * `.active` state and `aria-pressed`, then re-runs the prune toggle's
-	 * visibility, refreshes the count and marks a done result stale -- the same
+	 * visibility, refreshes the count and marks a shown result stale -- the same
 	 * run-input behaviour as the source checkboxes. The selected sets now define
 	 * the prune (ticket 456): they no longer union items past the Sources filter,
 	 * so there is no always-included caption to keep.
@@ -2592,7 +2599,7 @@ export class UpgradesTab extends SimTab {
 				// chip group and would drop the button mid-click.
 				this.updateEligibleCount();
 				this.settingsChangedEmitter.emit(TypedEvent.nextEventID());
-				if (this.state.kind === 'done') this.setState({ ...this.state, stale: true });
+				this.markInputsChanged();
 				// Ticking/unticking does NOT move the chip between rows now -- that
 				// would rebuild the group mid-click and drop this very button (the
 				// count-only reason above). A newly-ticked off-phase chip stays behind
