@@ -51,11 +51,11 @@ export function hitCapRatingFor(profile: CapProfile): number {
 }
 
 /**
- * The hit `stat` the equipment carries: item stats, enchants, gems and active
+ * The hit `stat` the equipment has: item stats, enchants, gems and active
  * socket bonuses (ticket 535). It leaves out set bonuses, which live in the
  * sim's Go code and are in no database row, so the set phase reads them from
  * the sim instead. Enchants count because a swap can drop one that does not
- * fit the new item, and ret's head enchant carries 16 hit.
+ * fit the new item, and ret's head enchant has 16 hit.
  */
 export function gearHitRating(
   equipment: readonly SimItemSpec[],

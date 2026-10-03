@@ -73,7 +73,7 @@ export type GemContext = {
   /**
    * Meta repair's hit budget (ticket 535), set once the sim has read the
    * baseline's hit: the rating still useful on the baseline, and the hit the
-   * baseline's equipment carries by `gearHitRating`. Each swap's budget is
+   * baseline's equipment has by `gearHitRating`. Each swap's budget is
    * `baselineRemaining − (gearHitRating(swapped) − baselineGearHit)`. Absent
    * means repair values hit at full weight.
    */

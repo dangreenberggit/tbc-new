@@ -1064,6 +1064,11 @@ export async function rankUpgrades(
   let hitCapFailed = false;
   /** The baseline's sim hit rating, once the budget is set (ticket 535). */
   let baselineSimHit: number | undefined;
+  /**
+   * Why repair could not use the hit cap, shown with the ranking: the console
+   * warning alone leaves a full-weight ranking looking like a capped one.
+   */
+  const hitCapNotes: Substitution[] = [];
 
   const job = await deps.store.job.create({ contentHash, input });
   await deps.store.job.update(job.id, { status: "running" });
@@ -1124,6 +1129,13 @@ export async function rankUpgrades(
             },
           };
           baselineSimHit = hitPercent * capProfile.ratingPerPercent;
+        } else {
+          hitCapNotes.push({
+            field: "gems.meta-repair-hit-cap",
+            detail:
+              "Meta repair valued hit at full weight: the hit cap is set " +
+              "only for a fight whose targets are all level 73.",
+          });
         }
       } catch (err) {
         console.warn(
@@ -1131,6 +1143,12 @@ export async function rankUpgrades(
           err
         );
         hitCapFailed = true;
+        hitCapNotes.push({
+          field: "gems.meta-repair-hit-cap",
+          detail:
+            "Meta repair valued hit at full weight: the character's hit " +
+            `could not be read (${err instanceof Error ? err.message : String(err)}).`,
+        });
       }
     }
 
@@ -1229,6 +1247,13 @@ export async function rankUpgrades(
             "[upgrades] meta repair: set version hit not read, shared layout used",
             err
           );
+          hitCapNotes.push({
+            field: "gems.meta-repair-set-versions",
+            detail:
+              "Each version of the set gear used one shared gem layout, so " +
+              "meta repair did not count set-bonus hit against the hit cap: " +
+              `a version's hit could not be read (${err instanceof Error ? err.message : String(err)}).`,
+          });
         }
         return shared();
       }
@@ -2000,6 +2025,7 @@ export async function rankUpgrades(
       caps,
       substitutions: [
         ...substitutionsFromMetaRepair(metaSwaps),
+        ...hitCapNotes,
         ...metaPreferenceDisclosure(gems.spec),
         ...candidateSkips.map((s) => ({
           field: `candidate ${s.itemId} (${s.slot})`,

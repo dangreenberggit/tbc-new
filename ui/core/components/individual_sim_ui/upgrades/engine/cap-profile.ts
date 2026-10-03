@@ -77,6 +77,11 @@ export type CapProfile = {
    * a per-spell mod (`sim/core/character.go:733-739`,
    * `sim/druid/talents.go:126-138`); hunters' ranged hit is unexamined.
    *
+   * The budget is set per spec, not per build: the sim adds the dual-wield
+   * miss penalty only when the off hand has a swing speed
+   * (`sim/core/attack.go:441`), so a two-handed warrior or enhancement shaman
+   * has ret's 9% cap and still gets full-weight repair.
+   *
    * One known limit for feral: a druid with Improved Faerie Fire applies it
    * through its own Faerie Fire (Feral) aura (`sim/druid/faerie_fire.go:11,51`),
    * which `raid.debuffs` does not show, so with the raid debuff off the budget
