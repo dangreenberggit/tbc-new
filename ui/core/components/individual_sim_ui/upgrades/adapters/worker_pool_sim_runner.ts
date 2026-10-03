@@ -36,12 +36,14 @@
  * Only screening batches.
  */
 
+import type { JsonValue } from '@protobuf-ts/runtime';
+
 import { SimRequest } from '../../../../../worker/types.js';
 import { CURRENT_API_VERSION } from '../../../../constants/other.js';
-import { RaidSimRequest as RaidSimRequestProto } from '../../../../proto/api.js';
+import { ComputeStatsRequest, RaidSimRequest as RaidSimRequestProto } from '../../../../proto/api.js';
 import { RequestTypes, SimSignalManager } from '../../../../sim_signal_manager.js';
 import { generateRequestId, WorkerPool } from '../../../../worker_pool.js';
-import type { RaidSimRequest, SimObservation, SimRunner,SimRunOpts } from '../engine/seams/sim-runner.js';
+import type { PlayerStatsObservation, RaidSimRequest, SimObservation, SimRunner, SimRunOpts } from '../engine/seams/sim-runner.js';
 
 /** Matches upstream's own default (`ui/core/sim.ts`'s WorkerPool(1) plus its
  * wasm-concurrency auto-sizing, capped at 4 — see that file's constructor). */
@@ -150,5 +152,26 @@ export class WorkerPoolSimRunner implements SimRunner {
 		} finally {
 			this.signalManager.unregisterRunning(signals);
 		}
+	}
+
+	/**
+	 * The first player's final stats for the request's gear (ticket 535), the
+	 * call the page's own stats panel makes (`ui/core/sim.ts`
+	 * `getCharacterStatsForGear`). Meta repair reads hit from it.
+	 */
+	async computeStats(req: RaidSimRequest): Promise<PlayerStatsObservation> {
+		const proto = ComputeStatsRequest.fromJson(
+			{ raid: req.raid, encounter: req.encounter } as JsonValue,
+			{ ignoreUnknownFields: true },
+		);
+		const result = await this.pool.computeStats(proto);
+		if (result.errorResult !== '') {
+			throw new Error(`computeStats error: ${result.errorResult}`);
+		}
+		const finalStats = result.raidStats?.parties[0]?.players[0]?.finalStats;
+		if (!finalStats) {
+			throw new Error('computeStats result has no first player finalStats');
+		}
+		return { stats: [...finalStats.stats], pseudoStats: [...finalStats.pseudoStats] };
 	}
 }

@@ -68,7 +68,43 @@ export type CapProfile = {
   readonly trackExpertise: boolean;
   /** Absent when the spec's trees carry no hit talent at all. */
   readonly talentHit?: TalentHitDescriptor;
+  /**
+   * Present when meta repair may value hit only up to the character's
+   * remaining cap, read from the sim (ticket 535). Ret and feral only:
+   * dual-wield white swings miss 27% at zero hit, so hit past 9% still helps
+   * them (`sim/core/spell_outcome.go:570-577`, `sim/core/attack.go:441`);
+   * casters keep school hit in per-school pseudo-stats and Balance of Power is
+   * a per-spell mod (`sim/core/character.go:733-739`,
+   * `sim/druid/talents.go:126-138`); hunters' ranged hit is unexamined.
+   *
+   * One known limit for feral: a druid with Improved Faerie Fire applies it
+   * through its own Faerie Fire (Feral) aura (`sim/druid/faerie_fire.go:11,51`),
+   * which `raid.debuffs` does not show, so with the raid debuff off the budget
+   * wants 3% more hit than the sim needs.
+   */
+  readonly repairCap?: { readonly hitPercentPseudoStat: number };
 };
+
+/**
+ * The hit rating still useful against the cap, negative when the gear is over
+ * it (ticket 535).
+ */
+export type HitCapBudget = { readonly stat: Stat; readonly remaining: number };
+
+/** `PseudoStatMeleeHitPercent` in the fork's proto (`proto/common.ts`). */
+const PSEUDO_STAT_MELEE_HIT_PERCENT = 12;
+
+/**
+ * Improved Faerie Fire's hit, which `computeStats` does not return: it is a
+ * target-side `ReducedPhysicalHitTakenChance` (`sim/core/debuffs.go:44,365`).
+ */
+export const IMPROVED_FAERIE_FIRE_HIT_PERCENT = 3;
+
+/**
+ * The target level the 9% physical cap holds against: 8% miss plus 1% hit
+ * suppression at level 73 (`sim/core/target.go:390-402`).
+ */
+export const RAID_BOSS_LEVEL = 73;
 
 /**
  * ui/core/constants/mechanics.ts @ wowsims/tbc-new
@@ -133,6 +169,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
       talent: "Precision",
       maxPoints: 3,
     },
+    repairCap: { hitPercentPseudoStat: PSEUDO_STAT_MELEE_HIT_PERCENT },
   },
   /**
    * Feral cat's trees carry no physical hit talent: a search of `sim/druid/`
@@ -143,6 +180,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
     hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
     ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
     trackExpertise: true,
+    repairCap: { hitPercentPseudoStat: PSEUDO_STAT_MELEE_HIT_PERCENT },
   },
 
   /**
@@ -374,4 +412,45 @@ export const DEFAULT_CAP_PROFILE: CapProfile = CAP_PROFILE_BY_SPEC.ret;
 export function capProfileFor(spec: SpecId | undefined): CapProfile {
   if (spec === undefined) return DEFAULT_CAP_PROFILE;
   return CAP_PROFILE_BY_SPEC[spec] ?? DEFAULT_CAP_PROFILE;
+}
+
+/**
+ * The repair hit budget of a character the sim read (ticket 535):
+ * `(cap − Improved Faerie Fire − sim hit %) × rating per %`. `pseudoStats` is
+ * the first player's `finalStats.pseudoStats` from `computeStats`, whose hit
+ * percent holds every player-side source (gear, gems, bonuses, enchants, set
+ * bonuses, talents, buffs). Undefined when the spec has no `repairCap`, when
+ * any target is not at the level the cap holds for, or when the read is not
+ * a finite number.
+ */
+export function hitCapBudgetFrom(
+  profile: CapProfile,
+  request: unknown,
+  pseudoStats: readonly number[]
+): HitCapBudget | undefined {
+  if (!profile.repairCap) return undefined;
+  const req = request as {
+    raid?: { debuffs?: { faerieFire?: unknown } };
+    encounter?: { targets?: ReadonlyArray<{ level?: unknown }> };
+  };
+  const targets = req.encounter?.targets ?? [];
+  if (
+    targets.length === 0 ||
+    targets.some((t) => t.level !== RAID_BOSS_LEVEL)
+  ) {
+    return undefined;
+  }
+  const hitPercent = pseudoStats[profile.repairCap.hitPercentPseudoStat];
+  if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
+    return undefined;
+  }
+  const faerieFire = req.raid?.debuffs?.faerieFire;
+  const improved =
+    faerieFire === "TristateEffectImproved" || faerieFire === 2;
+  const fire = improved ? IMPROVED_FAERIE_FIRE_HIT_PERCENT : 0;
+  return {
+    stat: profile.hitStat,
+    remaining:
+      (profile.hitCapPercent - fire - hitPercent) * profile.ratingPerPercent,
+  };
 }

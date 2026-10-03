@@ -4,7 +4,8 @@
  *
  * PORTED from packages/core/src/candidate-gems.ts, unchanged except for
  * import paths retargeted at this directory's Database-backed items.ts/
- * gems.ts/meta.ts adapters.
+ * gems.ts/meta.ts adapters, and the fork-only `GemContext.repairHitCap`
+ * (ticket 535).
  */
 import { GemColor } from "../../../../proto/common.js";
 import { capProfileFor } from "./cap-profile.js";
@@ -69,6 +70,18 @@ export type GemContext = {
    * reads exactly as it did before `SPEC_PREFERRED_METAS` existed.
    */
   readonly spec?: DetectedSpecId;
+  /**
+   * Meta repair's hit budget (ticket 535), set once the sim has read the
+   * baseline's hit: the rating still useful on the baseline, and the hit the
+   * baseline's equipment carries by `gearHitRating`. Each swap's budget is
+   * `baselineRemaining − (gearHitRating(swapped) − baselineGearHit)`. Absent
+   * means repair values hit at full weight.
+   */
+  readonly repairHitCap?: {
+    readonly stat: Stat;
+    readonly baselineRemaining: number;
+    readonly baselineGearHit: number;
+  };
 };
 
 export function gemContext(
@@ -323,7 +336,9 @@ export function fillEmptyCandidateGems(
 
 /**
  * Softcaps: hit / expertise EP overstates gems on capped raid sets.
- * Used only for candidate socket fills — meta-repair keeps full EP weights.
+ * Used only for candidate socket fills. Meta repair does not use these
+ * weights: on ret and feral it values hit up to a budget the sim reads
+ * (`GemContext.repairHitCap`, ticket 535), elsewhere at full weight.
  *
  * Which stats are softcapped is the spec's own question, and getting it wrong
  * is silent in both directions: zeroing melee hit for a caster leaves spell hit

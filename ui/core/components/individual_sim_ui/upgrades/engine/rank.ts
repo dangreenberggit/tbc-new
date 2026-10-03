@@ -39,9 +39,11 @@ import {
   missingMetaPreferenceNote,
 } from "./candidate-gems.js";
 import { orderCandidatesByEp } from "./candidate-order.js";
+import { capProfileFor, hitCapBudgetFrom } from "./cap-profile.js";
 import {
   type CapState,
   capStateFrom,
+  gearHitRating,
   hitRegression,
   isHitDriven,
   statDeltaBetween,
@@ -71,6 +73,7 @@ import {
 import {
   MetaRepairError,
   type MetaRepairSwap,
+  REPAIR_SEARCH_WORK_LIMIT,
   repairAndMinimize,
   type SocketedItem,
 } from "./meta-repair.js";
@@ -109,11 +112,13 @@ import {
   // Value imports: these classes are tested with `instanceof`.
   BulkScreenAbortedError,
   BulkScreenIntegrityError,
+  type PlayerStatsObservation,
   type RaidSimRequest,
   simCacheKey,
   type SimObservation,
   type SimRunner,
   type SimRunOpts,
+  stableStringify,
 } from "./seams/sim-runner.js";
 import type { Store } from "./seams/store.js";
 import { setBreakNote } from "./set-bonus.js";
@@ -813,7 +818,9 @@ export async function rankUpgrades(
   let socketed: SocketedItem[] = preRepairSocketed;
   let metaAdjusted = false;
   let metaSwaps: MetaRepairSwap[] = [];
-  const gems = gemContext(
+  // Reassigned once, after the baseline's stats read, so every later repair
+  // site gets the hit budget (ticket 535).
+  let gems = gemContext(
     deps.gemPalette ?? gemsForPhase(input.maxPhase),
     deps.epWeights,
     input.spec
@@ -961,6 +968,13 @@ export async function rankUpgrades(
 
   const simVersion = await deps.sim.version();
 
+  // Whether repair can value hit up to the cap: the spec has a repair cap and
+  // the runner can read stats (ticket 535).
+  const capProfile = capProfileFor(input.spec);
+  const hitCapReadable =
+    capProfile.repairCap !== undefined &&
+    typeof deps.sim.computeStats === "function";
+
   // Hashed on every *eligible* candidate, not the post-cap set: which
   // candidates are eligible is known before any sim runs, so this is stable
   // enough to gate the cache lookup before the sim loop starts.
@@ -1029,6 +1043,13 @@ export async function rankUpgrades(
     // The same rule for the screen: a ranking without its readings is never
     // served to a run that asked for them.
     ...(deps.setScreen !== undefined ? { setScreen: deps.setScreen } : {}),
+    // Only when set, so a run whose repair cannot read hit keeps the key a
+    // run with the same rule writes; a run that reads it is never served a
+    // ranking repaired at full weight (ticket 535).
+    ...(hitCapReadable ? { metaRepairHitCap: true } : {}),
+    // The repair rule, on every run, so no ranking cached under greedy repair
+    // or another work limit is served (ticket 535).
+    metaRepair: `exact-credit-per-version;limit=${REPAIR_SEARCH_WORK_LIMIT}`,
   });
 
   const cached = await deps.store.get<Ranking>(rankingCacheKey(contentHash));
@@ -1039,6 +1060,10 @@ export async function rankUpgrades(
 
   let simsDone = 0;
   let totalSimsForProgress = 0;
+  /** A stats read failed, so this run's ranking is not cached (ticket 535). */
+  let hitCapFailed = false;
+  /** The baseline's sim hit rating, once the budget is set (ticket 535). */
+  let baselineSimHit: number | undefined;
 
   const job = await deps.store.job.create({ contentHash, input });
   await deps.store.job.update(job.id, { status: "running" });
@@ -1075,6 +1100,139 @@ export async function rankUpgrades(
       await cacheSimResult(deps, request, simVersion, runOpts, observation);
     }
     simsDone = 1;
+
+    // Ticket 535: one stats read of the baseline turns into the repair hit
+    // budget every later swap starts from. Before the first candidate site,
+    // so every repair gets it. A failed read keeps full-weight repair and
+    // caches no ranking, so a later run can still read it.
+    if (hitCapReadable) {
+      try {
+        const observed = await deps.sim.computeStats!(request);
+        const hitPercent =
+          observed.pseudoStats[capProfile.repairCap!.hitPercentPseudoStat];
+        if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
+          throw new Error(`hit percent read as ${String(hitPercent)}`);
+        }
+        const budget = hitCapBudgetFrom(capProfile, request, observed.pseudoStats);
+        if (budget) {
+          gems = {
+            ...gems,
+            repairHitCap: {
+              stat: budget.stat,
+              baselineRemaining: budget.remaining,
+              baselineGearHit: gearHitRating(equipment, budget.stat),
+            },
+          };
+          baselineSimHit = hitPercent * capProfile.ratingPerPercent;
+        }
+      } catch (err) {
+        console.warn(
+          "[upgrades] meta repair: hit cap not read, full-weight repair used",
+          err
+        );
+        hitCapFailed = true;
+      }
+    }
+
+    /**
+     * Each version of one set-phase build, with its own hit budget (ticket
+     * 535, plan § Approach, Part 3). A version's missed hit is the hit the
+     * local budget cannot see, set-bonus hit on the measured gear:
+     * `sim hit(version) − sim hit(baseline) − (gear hit(build) − gear hit(baseline))`,
+     * the gear hit taken on real item ids before the copies. A version whose
+     * build made no repair is never read. One read per distinct default
+     * request, through the Stop guard. The first failed read turns version
+     * budgets off for the rest of the set phase: the whole call, and every
+     * later one, gets the default builds, so no pair mixes a version budget
+     * with the shared layout, and the ranking is not cached.
+     */
+    const versionReads = new Map<string, Promise<PlayerStatsObservation>>();
+    let versionBudgetsOff = false;
+    const versionGears: VersionGears = async (rebuild, base, copiesList) => {
+      let plain: RaidSimRequest | undefined;
+      try {
+        plain = composeFor(base.equipment);
+      } catch {
+        plain = undefined;
+      }
+      const defaults = copiesList.map((copies) => {
+        if (!plain) return undefined;
+        try {
+          return applyCopies(plain, copies);
+        } catch {
+          return undefined;
+        }
+      });
+      const shared = () =>
+        defaults.map((request) =>
+          request ? { request, swaps: base.swaps } : undefined
+        );
+      const cap = gems.repairHitCap;
+      const sim = guardedDeps.sim;
+      if (
+        !base.repaired ||
+        !cap ||
+        baselineSimHit === undefined ||
+        versionBudgetsOff ||
+        !sim.computeStats
+      ) {
+        return shared();
+      }
+      try {
+        const buildHit = gearHitRating(base.equipment, cap.stat);
+        const out: Array<VersionEntry | undefined> = [];
+        for (let i = 0; i < copiesList.length; i++) {
+          const request = defaults[i];
+          if (!request) {
+            out.push(undefined);
+            continue;
+          }
+          const key = stableStringify(request);
+          let read = versionReads.get(key);
+          if (!read) {
+            read = sim.computeStats(request);
+            versionReads.set(key, read);
+          }
+          const observed = await read;
+          const hitPercent =
+            observed.pseudoStats[capProfile.repairCap!.hitPercentPseudoStat];
+          if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
+            throw new Error(`hit percent read as ${String(hitPercent)}`);
+          }
+          const missed =
+            hitPercent * capProfile.ratingPerPercent -
+            baselineSimHit -
+            (buildHit - cap.baselineGearHit);
+          if (Math.abs(missed) < MISSED_HIT_TOLERANCE) {
+            out.push({ request, swaps: base.swaps });
+            continue;
+          }
+          const rebuilt = rebuild({
+            ...gems,
+            repairHitCap: {
+              ...cap,
+              baselineRemaining: cap.baselineRemaining - missed,
+            },
+          });
+          out.push({
+            request: applyCopies(composeFor(rebuilt.equipment), copiesList[i]!),
+            swaps: rebuilt.swaps,
+          });
+        }
+        return out;
+      } catch (err) {
+        versionBudgetsOff = true;
+        hitCapFailed = true;
+        // After Stop the guard refused the read, which is no failure to report.
+        if (!deps.signal?.aborted) {
+          console.warn(
+            "[upgrades] meta repair: set version hit not read, shared layout used",
+            err
+          );
+        }
+        return shared();
+      }
+    };
 
     const baselineDps = observation.dps;
     const ranked: RankedItem[] = [];
@@ -1683,7 +1841,8 @@ export async function rankUpgrades(
           packageSimSkips,
           deps.measureBrokenSetValue ?? false,
           cutoff,
-          observation.stdev
+          observation.stdev,
+          versionGears
         );
     if (signal?.aborted) aborted = true;
     // With the flag, a lost count is a break only when the ladder counted it,
@@ -1728,6 +1887,7 @@ export async function rankUpgrades(
             simVersion,
             runOpts,
             floorDps: setBonusNoiseFloorDps(cutoff),
+            versionGears,
           })
         : undefined;
     if (signal?.aborted) aborted = true;
@@ -1892,7 +2052,11 @@ export async function rankUpgrades(
     }
 
     const ranking: Ranking = { ...rankingBase, complete: true };
-    await deps.store.put(rankingCacheKey(contentHash), ranking);
+    // A ranking repaired without the hit it should have read is not cached,
+    // so the next run reads again (ticket 535).
+    if (!hitCapFailed) {
+      await deps.store.put(rankingCacheKey(contentHash), ranking);
+    }
     await deps.store.job.update(job.id, {
       status: "done",
       result: ranking,
@@ -2011,7 +2175,9 @@ async function buildSetBonuses(
    * The baseline sim's per-iteration stdev (`Ranking.baseline.stdev`), for
    * the on-mode screen's σ.
    */
-  baselineStdev: number
+  baselineStdev: number,
+  /** Every simmed version of a repaired gear comes from it (ticket 535). */
+  versionGears: VersionGears
 ): Promise<{
   bonuses: SetBonusValue[];
   brokenSetValues: BrokenSetValue[];
@@ -2134,23 +2300,26 @@ async function buildSetBonuses(
             if (!selection.ok) return undefined;
             // The package loop's own swaps, so the screen sims the gear the
             // loop would build for this count.
-            let packageEquipment: SimItemSpec[] = [...equipment];
+            const pieces = selection.addedPieces;
+            let base: ChainBuild;
             try {
-              for (const piece of selection.addedPieces) {
-                packageEquipment = candidateSwapWithRepairs(
-                  packageEquipment,
-                  piece.slotIndex,
-                  piece.itemId,
-                  gems
-                ).equipment;
-              }
+              base = chainSwapsWithRepairs(equipment, pieces, gems);
             } catch (err) {
               if (!(err instanceof MetaRepairError)) throw err;
               return undefined;
             }
             return {
-              request: composeFor(packageEquipment),
-              added: selection.addedPieces,
+              request: composeFor(base.equipment),
+              added: pieces,
+              // Each rung its own repair (ticket 535).
+              requestsFor: async (copiesList) =>
+                (
+                  await versionGears(
+                    (g) => chainSwapsWithRepairs(equipment, pieces, g),
+                    base,
+                    copiesList
+                  )
+                ).map((entry) => entry?.request),
             };
           },
           runSimAt: (request, opts) => runSimAt(deps, request, simVersion, opts),
@@ -2305,22 +2474,9 @@ async function buildSetBonuses(
         });
         continue;
       }
-      let packageEquipment: SimItemSpec[] = [...equipment];
-      const packageRepairSwaps: MetaRepairSwap[] = [];
+      let packageBuild: ChainBuild;
       try {
-        for (const piece of addedPieces) {
-          const outcome = candidateSwapWithRepairs(
-            packageEquipment,
-            piece.slotIndex,
-            piece.itemId,
-            gems
-          );
-          packageEquipment = outcome.equipment;
-          const packageSlots = new Set(addedPieces.map((p) => p.slotIndex));
-          packageRepairSwaps.push(
-            ...outcome.swaps.filter((s) => !packageSlots.has(s.itemIndex))
-          );
-        }
+        packageBuild = chainSwapsWithRepairs(equipment, addedPieces, gems);
       } catch (err) {
         if (!(err instanceof MetaRepairError)) throw err;
         console.warn(
@@ -2345,7 +2501,24 @@ async function buildSetBonuses(
         if (threshold === 2) twoPieceFailed = true;
         continue;
       }
-      const packageRequest = composeFor(packageEquipment);
+      const builtPackage = packageBuild;
+      const rebuildPackage = (g: GemContext) =>
+        chainSwapsWithRepairs(equipment, addedPieces, g);
+      // Ticket 535: the package sim and its gate's "on" and "off" are one
+      // pair, so all three come from one `versionGears` call when the gate
+      // runs; the package's own version is kept for its sim.
+      const plainVersion: { built: boolean; entry?: VersionEntry } = {
+        built: false,
+      };
+      const packageVersions = async (copiesList: readonly VersionCopies[]) => {
+        const entries = await versionGears(rebuildPackage, builtPackage, [
+          {},
+          ...copiesList,
+        ]);
+        plainVersion.built = true;
+        if (entries[0]) plainVersion.entry = entries[0];
+        return entries.slice(1).map((entry) => entry?.request);
+      };
 
       // Ticket 511, flag only: the gate runs before the package sim, so a
       // count with no bonus on this gear costs its two gate sims and nothing
@@ -2354,11 +2527,12 @@ async function buildSetBonuses(
       if (measureBrokenSetValue) {
         sameGear = await measureSameGearBonus(
           cachedSampleRun(`${label} ${threshold}pc same-gear bonus`),
-          packageRequest,
-          packageEquipment.flatMap((spec, i) =>
+          composeFor(builtPackage.equipment),
+          builtPackage.equipment.flatMap((spec, i) =>
             spec.id && getItem(spec.id)?.setId === setId ? [i] : []
           ),
-          threshold - 1
+          threshold - 1,
+          packageVersions
         );
         if (!sameGear) {
           packageSimSkips.push({
@@ -2398,14 +2572,25 @@ async function buildSetBonuses(
         ? { sameGearDps: sameGear.dps, sameGearSe: sameGear.se }
         : {};
 
-      let packageObs = await readCachedSim(
-        deps,
-        packageRequest,
-        simVersion,
-        runOpts
+      if (!plainVersion.built) {
+        const [entry] = await versionGears(rebuildPackage, builtPackage, [{}]);
+        if (entry) plainVersion.entry = entry;
+      }
+      const packageRequest = plainVersion.entry?.request;
+      // The package entry's gem changes are the swaps of the build its sim
+      // wore, without the package's own slots (ticket 535).
+      const packageSlots = new Set(addedPieces.map((p) => p.slotIndex));
+      const packageRepairSwaps = (plainVersion.entry?.swaps ?? []).filter(
+        (s) => !packageSlots.has(s.itemIndex)
       );
+      let packageObs = packageRequest
+        ? await readCachedSim(deps, packageRequest, simVersion, runOpts)
+        : undefined;
       if (!packageObs) {
         try {
+          if (!packageRequest) {
+            throw new Error("the package request could not be built");
+          }
           packageObs = await deps.sim.run(packageRequest, runOpts);
         } catch (err) {
           // No warning for a sim the Stop guard refused (ticket 533).
@@ -2503,7 +2688,8 @@ async function buildSetBonuses(
                 individualDeltasByItemId,
                 baseline,
                 simVersion,
-                runOpts
+                runOpts,
+                versionGears
               )
             : undefined;
         if (pairB2) {
@@ -2572,27 +2758,33 @@ async function buildSetBonuses(
         }
       }
       if (!best) continue;
-      let swapped: SimItemSpec[] | undefined;
+      const crossing = [{ slotIndex: best.slotIndex, itemId: best.itemId }];
+      let swapped: ChainBuild | undefined;
       try {
-        swapped = candidateSwapWithRepairs(
-          equipment,
-          best.slotIndex,
-          best.itemId,
-          gems
-        ).equipment;
+        swapped = chainSwapsWithRepairs(equipment, crossing, gems);
       } catch (err) {
         if (!(err instanceof MetaRepairError)) throw err;
       }
-      const value = swapped
+      const crossingBuild = swapped;
+      const value = crossingBuild
         ? await measureSameGearBonus(
             cachedSampleRun(
               `${setLabel(equipment, setId)} ${worn + 1}pc crossing gate`
             ),
-            composeFor(swapped),
-            swapped.flatMap((spec, i) =>
+            composeFor(crossingBuild.equipment),
+            crossingBuild.equipment.flatMap((spec, i) =>
               spec.id && getItem(spec.id)?.setId === setId ? [i] : []
             ),
-            worn
+            worn,
+            // "On" and "off" are one pair: one call (ticket 535).
+            async (copiesList) =>
+              (
+                await versionGears(
+                  (g) => chainSwapsWithRepairs(equipment, crossing, g),
+                  crossingBuild,
+                  copiesList
+                )
+              ).map((entry) => entry?.request)
           )
         : undefined;
       crossingGates.push({
@@ -2732,6 +2924,8 @@ async function measureSetSteps(args: {
   simVersion: string;
   runOpts: SimRunOpts;
   floorDps: number;
+  /** Every step sim's request comes from it (ticket 535). */
+  versionGears: VersionGears;
 }): Promise<{
   setStepSims: SetStepSims;
   bonusOffSims: SetBonusOffSims;
@@ -2775,29 +2969,32 @@ async function measureSetSteps(args: {
     };
   };
 
-  /** The step gear's equipment, or undefined when a gem repair fails. */
-  const stepEquipment = (
-    swaps: readonly PackagePiece[]
-  ): SimItemSpec[] | undefined => {
-    let gear: SimItemSpec[] = [...equipment];
+  const inSlotOrder = (swaps: readonly PackagePiece[]) =>
+    [...swaps].sort((a, b) => a.slotIndex - b.slotIndex);
+  /** The step gear's chain, or undefined when a gem repair fails. */
+  const stepBuild = (swaps: readonly PackagePiece[]): ChainBuild | undefined => {
     try {
-      for (const p of [...swaps].sort((a, b) => a.slotIndex - b.slotIndex)) {
-        gear = candidateSwapWithRepairs(gear, p.slotIndex, p.itemId, gems)
-          .equipment;
-      }
+      return chainSwapsWithRepairs(equipment, inSlotOrder(swaps), gems);
     } catch (err) {
       if (!(err instanceof MetaRepairError)) throw err;
       return undefined;
     }
-    return gear;
   };
+  const stepRebuild =
+    (swaps: readonly PackagePiece[]) => (g: GemContext) =>
+      chainSwapsWithRepairs(equipment, inSlotOrder(swaps), g);
 
-  /** The step gear's request, or undefined when a gem repair fails. */
-  const stepGear = (
+  /**
+   * The step gear's request, its own version (ticket 535), or undefined when
+   * a gem repair fails.
+   */
+  const stepGear = async (
     swaps: readonly PackagePiece[]
-  ): RaidSimRequest | undefined => {
-    const gear = stepEquipment(swaps);
-    return gear ? composeFor(gear) : undefined;
+  ): Promise<RaidSimRequest | undefined> => {
+    const build = stepBuild(swaps);
+    if (!build) return undefined;
+    const [entry] = await args.versionGears(stepRebuild(swaps), build, [{}]);
+    return entry?.request;
   };
 
   type Future = NonNullable<SetContext["futureBonuses"]>[number];
@@ -2877,7 +3074,7 @@ async function measureSetSteps(args: {
           breakDps: (s, c) => bBy.get(`${s}:${c}`),
           ...(todaysPieces ? { todaysPieces } : {}),
           simGear: async (partners) => {
-            const request = stepGear([rowSwap, ...partners]);
+            const request = await stepGear([rowSwap, ...partners]);
             return request
               ? runCounted(request, stepCounter, stepFailure)
               : undefined;
@@ -2930,7 +3127,7 @@ async function measureSetSteps(args: {
           };
         });
       }
-      const request = stepGear([rowSwap, ...partners]);
+      const request = await stepGear([rowSwap, ...partners]);
       if (!request) continue;
       const key = simCacheKey(request, args.simVersion, runOpts);
       requests.set(key, request);
@@ -2984,15 +3181,17 @@ async function measureSetSteps(args: {
     gear.filter((_, slot) => setIdAt(gear, slot) === setId).length;
 
   /** Queues the step's bonus-off request; false when none can be built. */
-  const queueBonusOff = (
+  const queueBonusOff = async (
     future: Future,
     prevSwaps: readonly PackagePiece[],
     swaps: readonly PackagePiece[],
-    lost: Array<{ setId: number; threshold: SetThreshold }>
-  ): boolean => {
-    const before = stepEquipment(prevSwaps);
-    const after = stepEquipment(swaps);
-    if (!before || !after) return false;
+    lost: Array<{ setId: number; threshold: SetThreshold }>,
+    firstStep: boolean
+  ): Promise<boolean> => {
+    const beforeBuild = stepBuild(prevSwaps);
+    const before = beforeBuild?.equipment;
+    const after = stepBuild(swaps)?.equipment;
+    if (!beforeBuild || !before || !after) return false;
     const lostSets = new Set(lost.map((b) => b.setId));
     const prevIds = new Set(prevSwaps.map((p) => p.itemId));
     const replaced = [
@@ -3017,13 +3216,32 @@ async function measureSetSteps(args: {
         return false;
       }
     }
-    let plain: RaidSimRequest;
-    let request: RaidSimRequest;
-    try {
-      plain = composeFor(before);
-      request = applyCopies(plain, { setLess: replaced });
-    } catch (err) {
-      console.warn("[upgrades] set step break not split:", err);
+    // Ticket 535: `plain` must be the request simmed for the gear before, and
+    // the bonus-off version its pair, so both come from one call. On later
+    // steps entry 0 is the previous step's own request (the build is
+    // deterministic and its read is cached).
+    const [plainEntry, offEntry] = await args.versionGears(
+      stepRebuild(prevSwaps),
+      beforeBuild,
+      [{}, { setLess: replaced }]
+    );
+    if (!plainEntry || !offEntry) {
+      console.warn(
+        "[upgrades] set step break not split: its request could not be built"
+      );
+      return false;
+    }
+    const plain = plainEntry.request;
+    const request = offEntry.request;
+    // On the first step the gear before is the row's single swap, simmed by
+    // the candidate loop with `composeFor` of this same default build. When
+    // entry 0 was rebuilt for set hit that loop's budget missed, no sim of it
+    // exists, so the split is skipped rather than paired with another
+    // layout (rev 6.1, F1).
+    if (
+      firstStep &&
+      stableStringify(plain) !== stableStringify(composeFor(before))
+    ) {
       return false;
     }
     const key = simCacheKey(request, args.simVersion, runOpts);
@@ -3039,6 +3257,7 @@ async function measureSetSteps(args: {
     const steps = setPotentialSteps(ctx, args.floorDps);
     if (!steps) continue;
     let prevSwaps: PackagePiece[] | undefined = [rowSwap];
+    let firstStep = true;
     for (const step of steps) {
       const f = (ctx.futureBonuses ?? []).find(
         (x) => x.threshold === step.threshold
@@ -3054,10 +3273,11 @@ async function measureSetSteps(args: {
           f !== undefined &&
           swaps !== undefined &&
           prevSwaps !== undefined &&
-          queueBonusOff(f, prevSwaps, swaps, lost);
+          (await queueBonusOff(f, prevSwaps, swaps, lost, firstStep));
         if (!queued) skippedSteps += 1;
       }
       prevSwaps = swaps;
+      firstStep = false;
     }
   }
 
@@ -3179,18 +3399,12 @@ async function measurePairTwoPiece(
   individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>,
   baseline: DpsSample,
   simVersion: string,
-  runOpts: SimRunOpts
+  runOpts: SimRunOpts,
+  versionGears: VersionGears
 ): Promise<{ dps: number; se: number } | undefined> {
-  let pairEquipment: SimItemSpec[] = [...equipment];
+  let pairBuild: ChainBuild;
   try {
-    for (const piece of pair) {
-      pairEquipment = candidateSwapWithRepairs(
-        pairEquipment,
-        piece.slotIndex,
-        piece.itemId,
-        gems
-      ).equipment;
-    }
+    pairBuild = chainSwapsWithRepairs(equipment, pair, gems);
   } catch (err) {
     if (!(err instanceof MetaRepairError)) throw err;
     console.warn(
@@ -3199,7 +3413,18 @@ async function measurePairTwoPiece(
     );
     return undefined;
   }
-  const request = composeFor(pairEquipment);
+  const [entry] = await versionGears(
+    (g) => chainSwapsWithRepairs(equipment, pair, g),
+    pairBuild,
+    [{}]
+  );
+  if (!entry) {
+    console.warn(
+      `[upgrades] ${bonusLabel} net value not measured: the request for the worn-1 pair that measures the 2pc could not be built`
+    );
+    return undefined;
+  }
+  const request = entry.request;
   let obs = await readCachedSim(deps, request, simVersion, runOpts);
   if (!obs) {
     try {
@@ -3759,6 +3984,15 @@ function stopGuardedDeps(deps: Deps): Deps {
         if (signal.aborted) throw new StopRefusedSim();
         return sim.run(req, opts);
       },
+      // The set phase's version reads stop with its sims (ticket 535).
+      ...(sim.computeStats
+        ? {
+            computeStats: async (req: RaidSimRequest) => {
+              if (signal.aborted) throw new StopRefusedSim();
+              return sim.computeStats!(req);
+            },
+          }
+        : {}),
     },
   };
 }
@@ -3890,14 +4124,19 @@ export function equipmentForCandidateSwap(
   return candidateSwapWithRepairs(equipment, slotIndex, itemId, gems).equipment;
 }
 
-export function candidateSwapWithRepairs(
+/**
+ * The first half of `candidateSwapWithRepairs`: the gear after the swap and
+ * its gem fill, before any meta repair. Exported so the ticket 535 test can
+ * read each repair's input.
+ */
+export function candidateSwapPreRepair(
   equipment: readonly SimItemSpec[],
   slotIndex: number,
   itemId: number,
   gems: GemContext
 ): {
-  equipment: SimItemSpec[];
-  swaps: readonly MetaRepairSwap[];
+  swapped: SimItemSpec[];
+  socketed: SocketedItem[];
   removed: readonly { slotIndex: number; itemId: number }[];
 } {
   // Before the swap, and `swapItemAt` takes the cleared array: `swapItemAt`
@@ -3914,16 +4153,115 @@ export function candidateSwapWithRepairs(
     itemId: spec.id ?? 0,
     gems: [...spec.gems],
   }));
+  return { swapped, socketed, removed };
+}
+
+export function candidateSwapWithRepairs(
+  equipment: readonly SimItemSpec[],
+  slotIndex: number,
+  itemId: number,
+  gems: GemContext
+): {
+  equipment: SimItemSpec[];
+  swaps: readonly MetaRepairSwap[];
+  repaired: boolean;
+  removed: readonly { slotIndex: number; itemId: number }[];
+} {
+  const { swapped, socketed, removed } = candidateSwapPreRepair(
+    equipment,
+    slotIndex,
+    itemId,
+    gems
+  );
+  const cap = gems.repairHitCap;
   const minimized = repairAndMinimize({
     items: socketed,
     epWeights: gems.weights,
     palette: gems.fillPalette,
+    ...(cap
+      ? {
+          hitCap: {
+            stat: cap.stat,
+            remaining:
+              cap.baselineRemaining -
+              (gearHitRating(swapped, cap.stat) - cap.baselineGearHit),
+          },
+        }
+      : {}),
   });
   return {
     equipment: applyRepairedGems(swapped, minimized.items),
     swaps: minimized.swaps.filter((s) => s.itemIndex !== slotIndex),
+    // The swapped slot included, which `swaps` filters out (ticket 535).
+    repaired: minimized.swaps.length > 0,
     removed,
   };
+}
+
+/**
+ * A site's fixed chain of `candidateSwapWithRepairs` calls from the gear it
+ * starts on, as built (ticket 535): the set phase's package, step and pair
+ * gears. `repaired` is whether any call changed a socket; `swaps` is every
+ * call's repair swaps in call order.
+ */
+type ChainBuild = {
+  equipment: SimItemSpec[];
+  repaired: boolean;
+  swaps: MetaRepairSwap[];
+};
+
+/** A version's copies; `{}` is the build's plain request. */
+type VersionCopies = {
+  setKept?: readonly number[];
+  setLess?: readonly number[];
+};
+
+/** A version's request and the repair swaps of the build it wears. */
+type VersionEntry = {
+  request: RaidSimRequest;
+  swaps: readonly MetaRepairSwap[];
+};
+
+/**
+ * Each version of one set-phase build, a pair's versions in one call
+ * (ticket 535; `rankUpgrades` defines it). `base` is the build with the run's
+ * budget; `rebuild` builds the same chain with another budget. An entry is
+ * undefined when that version's request cannot be composed. Never rejects.
+ */
+type VersionGears = (
+  rebuild: (gems: GemContext) => ChainBuild,
+  base: ChainBuild,
+  copiesList: readonly VersionCopies[]
+) => Promise<Array<VersionEntry | undefined>>;
+
+/**
+ * Missed hit below this many rating keeps a version on the run's budget. On
+ * the measured gear, gem, item and enchant hit cancel inside `missed`, so
+ * what is left is set-bonus hit, a whole number of rating (20 on Burning
+ * Rage's 2pc); the tolerance only absorbs the percent round trip (ticket 535).
+ */
+const MISSED_HIT_TOLERANCE = 0.5;
+
+function chainSwapsWithRepairs(
+  equipment: readonly SimItemSpec[],
+  pieces: readonly { slotIndex: number; itemId: number }[],
+  gems: GemContext
+): ChainBuild {
+  let gear: SimItemSpec[] = [...equipment];
+  let repaired = false;
+  const swaps: MetaRepairSwap[] = [];
+  for (const piece of pieces) {
+    const outcome = candidateSwapWithRepairs(
+      gear,
+      piece.slotIndex,
+      piece.itemId,
+      gems
+    );
+    gear = outcome.equipment;
+    repaired ||= outcome.repaired;
+    swaps.push(...outcome.swaps);
+  }
+  return { equipment: gear, repaired, swaps };
 }
 
 /**

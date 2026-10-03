@@ -14,7 +14,9 @@
  * the rest as set-less copies, so Go counts w + k pieces of S (the gate's
  * copies-in-both form, `set-less-copies.ts`). The pair is rungs 0 and R − w.
  * Every sim asks for per-iteration values, and the rungs share a seed, so a
- * difference of two rungs has a paired standard error.
+ * difference of two rungs has a paired standard error. A rung's gems can
+ * differ from rung 0's where meta repair chose them for that rung's own hit
+ * (ticket 535, `ScreenPackage.requestsFor`).
  *
  * Record mode runs the pair at four iteration counts and the whole ladder,
  * and records them, so candidate rules can be scored offline. It filters
@@ -162,6 +164,14 @@ export type ScreenPackage = {
   request: RaidSimRequest;
   /** The added pieces' slot indices and item ids, in slot order. */
   added: ReadonlyArray<{ slotIndex: number; itemId: number }>;
+  /**
+   * Each rung's request with its own repair-chosen gems (ticket 535), one
+   * entry per copies, undefined when that request cannot be built. Absent
+   * means every rung is `request` with its copies applied.
+   */
+  requestsFor?: (
+    copiesList: Array<{ setKept: number[]; setLess: number[] }>
+  ) => Promise<Array<RaidSimRequest | undefined>>;
 };
 
 export type SetScreenInput = {
@@ -222,7 +232,8 @@ function screenPackage(
  * One set's rung sim, shared by both modes so an on-mode pair is the same
  * request, with the same options, as a record-mode pair at that N. Each
  * reading catches its own failure, so one failed sim loses only that
- * reading.
+ * reading. `rungs` are the rungs the mode sims; with `pkg.requestsFor`,
+ * the first reading asks for all of them in one call.
  */
 function rungSimmer(
   input: Pick<SetScreenInput, "runSimAt" | "seed" | "signal">,
@@ -230,20 +241,34 @@ function rungSimmer(
   worn: number,
   pkg: ScreenPackage | undefined,
   slots: readonly number[],
-  counter: ScreenCounter
+  counter: ScreenCounter,
+  rungs: readonly number[]
 ): (k: number, iterations: number) => Promise<SimObservation | undefined> {
+  const copiesAt = (k: number) => ({
+    setKept: slots.slice(0, k),
+    setLess: slots.slice(k),
+  });
+  let requests: Promise<Array<RaidSimRequest | undefined>> | undefined;
   return async (k, iterations) => {
     if (!pkg) return undefined;
     const what = `[upgrades] set screen: set ${setId} at ${worn + k} pieces, ${iterations} iterations, not measured`;
-    let request: RaidSimRequest;
-    try {
-      request = applyCopies(pkg.request, {
-        setKept: slots.slice(0, k),
-        setLess: slots.slice(k),
-      });
-    } catch (err) {
-      console.warn(what, err);
-      return undefined;
+    let request: RaidSimRequest | undefined;
+    if (pkg.requestsFor) {
+      requests ??= pkg.requestsFor(rungs.map(copiesAt));
+      request = (await requests)[rungs.indexOf(k)];
+      if (!request) {
+        if (!input.signal?.aborted) {
+          console.warn(what, new Error("the rung's request could not be built"));
+        }
+        return undefined;
+      }
+    } else {
+      try {
+        request = applyCopies(pkg.request, copiesAt(k));
+      } catch (err) {
+        console.warn(what, err);
+        return undefined;
+      }
     }
     try {
       const { observation, fromStore: hit } = await input.runSimAt(request, {
@@ -276,7 +301,15 @@ export async function recordSetScreen(
     if (reach - worn < 2) continue;
     const { pkg, added, slots } = screenPackage(input, setId, reach);
     const top = reach - worn;
-    const rungAt = rungSimmer(input, setId, worn, pkg, slots, counter);
+    const rungAt = rungSimmer(
+      input,
+      setId,
+      worn,
+      pkg,
+      slots,
+      counter,
+      Array.from({ length: top + 1 }, (_, k) => k)
+    );
 
     const pairs: SetScreenPair[] = [];
     for (const iterations of pairIterations) {
@@ -347,7 +380,10 @@ export async function runSetScreenOn(
   )) {
     if (reach - worn < 2) continue;
     const { pkg, added, slots } = screenPackage(input, setId, reach);
-    const rungAt = rungSimmer(input, setId, worn, pkg, slots, counter);
+    const rungAt = rungSimmer(input, setId, worn, pkg, slots, counter, [
+      0,
+      reach - worn,
+    ]);
     const low = await rungAt(0, iterations);
     const high = await rungAt(reach - worn, iterations);
     const pairDps = low && high ? high.dps - low.dps : undefined;

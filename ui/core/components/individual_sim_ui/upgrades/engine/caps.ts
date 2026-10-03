@@ -1,7 +1,8 @@
 /**
  * Hit / expertise cap state.
  *
- * PORTED from packages/core/src/caps.ts, unchanged except for import paths.
+ * PORTED from packages/core/src/caps.ts, unchanged except for import paths
+ * and the fork-only `gearHitRating` (ticket 535).
  * The Precision-talent hit constant and the ret talent-string decode are
  * facts about the pinned game build, not about which repo is asking, so they
  * carry over verbatim.
@@ -12,9 +13,10 @@ import {
   PHYSICAL_HIT_CAP_PERCENT,
   PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
 } from "./cap-profile.js";
+import { enchantStats } from "./enchants.js";
 import { getGem } from "./gems.js";
 import { getItem } from "./items.js";
-import type { SocketedItem } from "./meta-repair.js";
+import { layoutHitRating, type SocketedItem } from "./meta-repair.js";
 import type { SimItemSpec } from "./slots.js";
 import { Stat, statAt } from "./stats.js";
 import type { Race, SpecId } from "./types.js";
@@ -46,6 +48,32 @@ export const HIT_CAP_UNCERTAINTY = PHYSICAL_HIT_RATING_PER_HIT_PERCENT;
 /** The spec's cap in rating: its cap percent through its own conversion. */
 export function hitCapRatingFor(profile: CapProfile): number {
   return profile.hitCapPercent * profile.ratingPerPercent;
+}
+
+/**
+ * The hit `stat` the equipment carries: item stats, enchants, gems and active
+ * socket bonuses (ticket 535). It leaves out set bonuses, which live in the
+ * sim's Go code and are in no database row, so the set phase reads them from
+ * the sim instead. Enchants count because a swap can drop one that does not
+ * fit the new item, and ret's head enchant carries 16 hit.
+ */
+export function gearHitRating(
+  equipment: readonly SimItemSpec[],
+  stat: Stat
+): number {
+  let hit = 0;
+  for (const spec of equipment) {
+    if (!spec.id) continue;
+    hit += statAt(getItem(spec.id)?.stats ?? [], stat);
+    if (spec.enchant) hit += statAt(enchantStats(spec.enchant), stat);
+  }
+  return (
+    hit +
+    layoutHitRating(
+      equipment.map((spec) => ({ itemId: spec.id ?? 0, gems: [...(spec.gems ?? [])] })),
+      stat
+    )
+  );
 }
 
 export type CapEntry = {

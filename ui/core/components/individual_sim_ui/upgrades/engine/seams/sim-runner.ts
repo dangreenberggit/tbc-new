@@ -131,7 +131,24 @@ export interface SimRunner {
    * stays proto-unaware, and the adapter bridges to typed protos.
    */
   runBulkScreen?(req: BulkScreenRequest): Promise<BulkScreenResult>;
+  /**
+   * Optional stats read (ticket 535): the first player's final stats for the
+   * request's gear, with no sim. Meta repair reads the baseline's hit with it,
+   * and each set-phase version's, so hit counts only up to the cap. When a
+   * runner lacks it, repair values hit at full weight, so this is additive
+   * like `runBulkScreen`.
+   */
+  computeStats?(req: RaidSimRequest): Promise<PlayerStatsObservation>;
 }
+
+/**
+ * The first player's `finalStats` from a stats read: the dense `stats` and
+ * `pseudoStats` arrays, indexed by the proto's `Stat` and `PseudoStat`.
+ */
+export type PlayerStatsObservation = {
+  stats: readonly number[];
+  pseudoStats: readonly number[];
+};
 
 /**
  * Stable key: canonical-JSON(request) + version + seed + iterations (D4). A run
@@ -165,7 +182,12 @@ export function bulkScreenCacheKey(
   )}:${simVersion}:${req.seed}:${req.iterations}`;
 }
 
-function stableStringify(value: unknown): string {
+/**
+ * Canonical JSON with object keys sorted, so two equal requests give one
+ * string. Exported for the set phase's per-request stats-read cache
+ * (ticket 535).
+ */
+export function stableStringify(value: unknown): string {
   return JSON.stringify(sortKeys(value));
 }
 

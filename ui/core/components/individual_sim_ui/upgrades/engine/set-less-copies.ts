@@ -7,7 +7,9 @@
  * the set's pieces sent as copies: in one request the copies keep their set,
  * in the other they belong to no set. The copies keep every stat, so the
  * difference is the bonus alone on that gear, with no replacement item's
- * stats mixed in.
+ * stats mixed in. The one exception is meta repair: in the sockets a repair
+ * changed, the gems may differ between the two requests, because each wears
+ * the repair chosen for its own hit (ticket 535, ADR-0035 amendment).
  *
  * Why the changed pieces are copies in both requests: a copy has a new item
  * id, and the Go sim reads equipped item ids in several places. It applies
@@ -124,18 +126,33 @@ export function applySetLessCopies(
  * `lowerCount` = t − 1 the "off" sim keeps every bonus below t. The value is
  * on − off, and `se` combines both sims' standard errors. Undefined when
  * nothing is left to copy, or when either sim, or building either request,
- * fails.
+ * fails. With `requestsFor`, both requests come from one call to it, so each
+ * can carry the gems repair chose for its own hit (ticket 535); without it,
+ * both are `composedRequest` with the copies applied.
  */
 export async function measureSameGearBonus(
   runSim: (request: RaidSimRequest) => Promise<DpsSample>,
   composedRequest: RaidSimRequest,
   setPieceSlots: readonly number[],
-  lowerCount: number
+  lowerCount: number,
+  requestsFor?: (
+    copiesList: Array<{ setKept: number[]; setLess: number[] }>
+  ) => Promise<Array<RaidSimRequest | undefined>>
 ): Promise<DpsSample | undefined> {
   const inSlotOrder = [...setPieceSlots].sort((a, b) => a - b);
   const toCopy = inSlotOrder.slice(0, inSlotOrder.length - lowerCount);
   if (toCopy.length === 0) return undefined;
   try {
+    if (requestsFor) {
+      const [onRequest, offRequest] = await requestsFor([
+        { setKept: toCopy, setLess: [] },
+        { setKept: [], setLess: toCopy },
+      ]);
+      if (!onRequest || !offRequest) return undefined;
+      const on = await runSim(onRequest);
+      const off = await runSim(offRequest);
+      return { dps: on.dps - off.dps, se: Math.sqrt(on.se ** 2 + off.se ** 2) };
+    }
     const on = await runSim(applyCopies(composedRequest, { setKept: toCopy }));
     const off = await runSim(applyCopies(composedRequest, { setLess: toCopy }));
     return { dps: on.dps - off.dps, se: Math.sqrt(on.se ** 2 + off.se ** 2) };

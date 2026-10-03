@@ -44,6 +44,20 @@ export function enchantAppliesToItem(effectId: number, itemId: number): boolean 
   return false;
 }
 
+/**
+ * The stats of the enchant with this `effectId`, found the way
+ * `enchantAppliesToItem` finds it, or `[]` when the database has none
+ * (ticket 535: an enchant's hit counts toward the repair hit budget).
+ */
+export function enchantStats(effectId: number): readonly number[] {
+  for (const slot of ALL_ITEM_SLOTS) {
+    for (const enchant of Database.getSync().getEnchants(slot)) {
+      if (enchant.effectId === effectId) return enchant.stats;
+    }
+  }
+  return [];
+}
+
 // ItemSlot values 0..16 (proto/common.ts) — iterated rather than imported by
 // name because Database.getEnchants keys its internal map by every slot an
 // enchant is eligible for, and the cheapest correct scan is "every slot".
