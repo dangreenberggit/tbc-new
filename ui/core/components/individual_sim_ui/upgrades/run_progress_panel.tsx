@@ -115,6 +115,7 @@ export class RunProgressPanel {
 		setData(this.root, 'boundary', view.boundary ?? undefined);
 		setData(this.root, 'remainingMs', view.remainingMs === undefined ? undefined : Math.round(view.remainingMs));
 		setData(this.root, 'concurrency', view.concurrency);
+		setData(this.root, 'qualifyingRows', view.qualifyingRows);
 
 		setText(this.phaseElem, phaseLabel(view));
 

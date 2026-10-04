@@ -83,7 +83,38 @@ export type RunTimeline = {
 	readonly concurrency: number;
 	/** The time of the event the estimate is made at. */
 	readonly now: number;
+	/** Rows received before `ranking` that replication can re-sim. */
+	readonly qualifyingRows: number;
+	/** Seeds per re-simmed row (`TAB_REPLICATE_SEED_COUNT`). */
+	readonly seedCount: number;
+	/** The most rows replication re-sims (`PAIRED_REPLICATE_TOP_N`). */
+	readonly topN: number;
 };
+
+/**
+ * The `done` the run ends on. Replication re-sims only the rows that cleared
+ * the cutoff, at most `topN`, with `seedCount - 1` sims each plus as many for
+ * the baseline, and none at all when no row qualifies; `total` budgets for
+ * `min(topN, c)` rows, so it is only an upper bound. Before the last
+ * candidate, the qualifying rows so far are scaled up to the whole pool. A
+ * replication event past the result means the count was wrong, and `total`
+ * is used. `total` also when the boundary is unknown.
+ */
+export function expectedFinalDone(run: RunTimeline): number {
+	const boundary = run.boundary;
+	if (boundary === null) return run.total;
+	const c = boundary - 1;
+	const before = run.sims.filter(s => !s.afterRanking);
+	const lastBefore = before[before.length - 1];
+	const n = lastBefore ? Math.min(lastBefore.done - 1, c) : 0;
+	const q = run.qualifyingRows;
+	const projected = n >= c ? q : n > 0 ? (q * c) / n : 0;
+	const rows = Math.min(run.topN, projected);
+	const expected = boundary + (rows === 0 ? 0 : (run.seedCount - 1) * (1 + rows));
+	const after = run.sims.filter(s => s.afterRanking);
+	const lastAfter = after[after.length - 1];
+	return lastAfter && lastAfter.done > expected ? run.total : expected;
+}
 
 /**
  * The time left, in ms, at the latest event of `run`; undefined when the run
@@ -96,7 +127,9 @@ export type RunTimeline = {
  * candidate, psi is the set phase in candidate-times and each replication sim
  * costs k = kappa * concurrency candidate-times. Before the last candidate,
  * the i-th candidate is taken to cost a * (1 + slowdown * i), so the
- * candidates still to come cost more than the ones already done.
+ * candidates still to come cost more than the ones already done. The
+ * replication sims counted are those `expectedFinalDone` expects, not the
+ * whole budget in `total`.
  */
 export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): number | undefined {
 	const first = run.sims[0];
@@ -115,12 +148,13 @@ export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): 
 	} else {
 		const k = config.kappa * run.concurrency;
 		const boundary = run.boundary;
+		const finalDone = expectedFinalDone(run);
 		const boundaryEvent = boundary === null ? undefined : run.sims.find(s => !s.afterRanking && s.done === boundary);
 		if (!atRanking) {
 			if (boundary === null) {
 				estimate = linear();
 			} else {
-				const left = total - boundary;
+				const left = finalDone - boundary;
 				if (done < boundary) {
 					const n = done - 1;
 					const c = boundary - 1;
@@ -149,9 +183,9 @@ export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): 
 			}
 			const m = b === undefined ? 0 : done - b;
 			if (m >= 2) {
-				estimate = ((run.now - run.rankingAt!) / m) * (total - done);
+				estimate = ((run.now - run.rankingAt!) / m) * (finalDone - done);
 			} else if (rB !== undefined) {
-				estimate = rB * k * (total - done);
+				estimate = rB * k * (finalDone - done);
 			}
 		}
 	}
@@ -167,6 +201,7 @@ export type RunProgressView = {
 	boundary: number | null;
 	remainingMs?: number;
 	concurrency: number;
+	qualifyingRows: number;
 };
 
 type TrackerOptions = {
@@ -190,6 +225,7 @@ export class RunProgressTracker {
 	private readonly sims: Array<{ t: number; done: number; afterRanking: boolean }> = [];
 	private rankingAt: number | undefined;
 	private concurrency = 1;
+	private qualifyingRows = 0;
 	private stopped = false;
 	private shown = false;
 	private estimate: number | undefined;
@@ -208,7 +244,10 @@ export class RunProgressTracker {
 	}
 
 	observe(p: Progress, nowMs: number): void {
-		if ('kind' in p) return;
+		if ('kind' in p) {
+			this.observeRow(p.row);
+			return;
+		}
 		this.stage = p.stage;
 		switch (p.stage) {
 			case 'resolving':
@@ -223,8 +262,9 @@ export class RunProgressTracker {
 			case 'ranking': {
 				this.rankingAt = nowMs;
 				const done = this.lastDone();
+				const timeline = this.timeline(nowMs);
 				this.phase =
-					done === undefined || this.stopped || (this.total !== undefined && done >= this.total) ? 'ranking' : 'replication';
+					done === undefined || this.stopped || (timeline !== undefined && done >= expectedFinalDone(timeline)) ? 'ranking' : 'replication';
 				break;
 			}
 		}
@@ -239,7 +279,20 @@ export class RunProgressTracker {
 			boundary: this.boundary,
 			...(this.shown && !this.stopped && this.estimate !== undefined ? { remainingMs: this.estimate } : {}),
 			concurrency: this.concurrency,
+			qualifyingRows: this.qualifyingRows,
 		};
+	}
+
+	/**
+	 * Mirrors rank.ts `replicateTopItems`' filter (`!belowCutoff && simmed !==
+	 * false`, at most `PAIRED_REPLICATE_TOP_N`). The repo test "run progress
+	 * event order (542)" fails if the two differ.
+	 */
+	private observeRow(row: { readonly belowCutoff: boolean; readonly simmed?: false }): void {
+		if (this.rankingAt !== undefined || row.belowCutoff !== false || row.simmed === false) return;
+		this.qualifyingRows += 1;
+		const last = this.sims[this.sims.length - 1];
+		if (last) this.recompute(last.t);
 	}
 
 	private observeSimming(done: number, total: number, nowMs: number): void {
@@ -250,7 +303,7 @@ export class RunProgressTracker {
 		const afterRanking = this.rankingAt !== undefined;
 		this.sims.push({ t: nowMs, done, afterRanking });
 		if (afterRanking) {
-			this.phase = this.stopped || done >= total ? 'ranking' : 'replication';
+			this.phase = this.stopped || done >= expectedFinalDone(this.timeline(nowMs)!) ? 'ranking' : 'replication';
 			return;
 		}
 		// The seed-count mirror is wrong for this run: stop naming a set phase.
@@ -262,18 +315,27 @@ export class RunProgressTracker {
 		return this.sims[this.sims.length - 1]?.done;
 	}
 
-	private recompute(nowMs: number): void {
-		const done = this.lastDone();
-		if (done === undefined || this.total === undefined) return;
-		this.estimate = estimateRemainingMs(this.options.estimator, {
+	private timeline(nowMs: number): RunTimeline | undefined {
+		if (this.total === undefined) return undefined;
+		return {
 			sims: this.sims,
 			rankingAt: this.rankingAt,
 			total: this.total,
 			boundary: this.boundary,
 			concurrency: this.concurrency,
 			now: nowMs,
-		});
-		if (!this.shown && done - 1 >= this.options.minCandidatesDone && done / this.total >= this.options.showFromFraction) {
+			qualifyingRows: this.qualifyingRows,
+			seedCount: this.options.seedCount,
+			topN: this.options.topN,
+		};
+	}
+
+	private recompute(nowMs: number): void {
+		const done = this.lastDone();
+		const timeline = this.timeline(nowMs);
+		if (done === undefined || timeline === undefined) return;
+		this.estimate = estimateRemainingMs(this.options.estimator, timeline);
+		if (!this.shown && done - 1 >= this.options.minCandidatesDone && done / timeline.total >= this.options.showFromFraction) {
 			this.shown = true;
 		}
 	}

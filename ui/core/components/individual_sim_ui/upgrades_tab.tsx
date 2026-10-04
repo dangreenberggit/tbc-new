@@ -2015,6 +2015,7 @@ export class UpgradesTab extends SimTab {
 					// own — accumulate them for the skeleton fill and keep
 					// rendering the current 'running' stage/progress underneath.
 					if ('kind' in progress && progress.kind === 'row') {
+						tracker.observe(progress, performance.now() - startedAt);
 						this.landedRows.push(progress.row);
 						if (this.state.kind === 'running') this.render();
 						return;
