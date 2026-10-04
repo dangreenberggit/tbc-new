@@ -177,3 +177,63 @@ func TestWeaponProcSwappedIn(t *testing.T) {
 		t.Errorf("World Breaker never procced after the swap")
 	}
 }
+
+// Ticket 540 (tbc-gear-prio): these effects key their proc chance on the
+// type of weapon worn. Each rebuilt its proc manager into a local variable
+// on item swap, but the proc trigger keeps the manager it was given at
+// attach, so a weapon of the keyed type that arrives by swap never procs.
+// Each test starts with no weapon of the keyed type and swaps one in.
+
+var armsMaceWarriorSpec = offClassSpec{"../ui/warrior/dps/gear_sets", "p1_arms", "../ui/warrior/dps/apls", "arms", func() *proto.Player {
+	p := armsWarriorSpec.player()
+	// armsWarriorSpec's arms tree with its 5 points moved from Sword
+	// Specialization to Mace Specialization (proto/warrior.proto fields 14, 15).
+	p.TalentsString = "32005011352015000221-0550000500521203"
+	return p
+}}
+
+// swapInRequest wears mh and oh (0 leaves the off hand empty) and runs a
+// rotation that only swaps to Swap1.
+func swapInRequest(spec offClassSpec, mh, oh int32, swap *proto.ItemSwap) *proto.RaidSimRequest {
+	req := weaponSwapRequest(spec, mh, oh == 0, swap)
+	player := req.Raid.Parties[0].Players[0]
+	if oh != 0 {
+		player.Equipment.Items[offHand] = &proto.ItemSpec{Id: oh}
+	}
+	player.Rotation = core.APLRotationFromJsonString(
+		`{"type":"TypeAPL","priorityList":[{"action":{"itemSwap":{"swapSet":"Swap1"}}}]}`)
+	return req
+}
+
+func requireSwappedInProc(t *testing.T, req *proto.RaidSimRequest, spellID, tag int32) {
+	t.Helper()
+	result := core.RunRaidSim(req)
+	if result.Error != nil {
+		t.Fatalf("sim error: %s", firstLines(result.Error.Message, 26))
+	}
+	if procCount(result, spellID, tag) == 0 {
+		t.Errorf("the effect never procced after the swap")
+	}
+}
+
+// Base: Dragonmaw (mace) and Malchazeen (dagger). Swap: two swords.
+func TestItemSwapProcHandOfJustice(t *testing.T) {
+	req := swapInRequest(furyWarriorSpec, 28438, 28768, weaponSwap(28295, 28189))
+	req.Raid.Parties[0].Players[0].Equipment.Items[proto.ItemSlot_ItemSlotTrinket2] = &proto.ItemSpec{Id: 11815}
+	requireSwappedInProc(t, req, 0, 11815)
+}
+
+// Base: Malchazeen (dagger). Swap: Lionheart Champion (two-hand sword).
+func TestItemSwapProcArmsSwordSpec(t *testing.T) {
+	requireSwappedInProc(t, swapInRequest(armsWarriorSpec, 28768, 0, weaponSwap(28429, 0)), 0, 12281)
+}
+
+// Base: Malchazeen (dagger). Swap: Dragonmaw (mace). 5530 is the rage gain.
+func TestItemSwapProcArmsMaceSpec(t *testing.T) {
+	requireSwappedInProc(t, swapInRequest(armsMaceWarriorSpec, 28768, 0, weaponSwap(28438, 0)), 5530, 0)
+}
+
+// Base: Malchazeen and Heartrazor (daggers). Swap: two swords.
+func TestItemSwapProcRogueSwordSpec(t *testing.T) {
+	requireSwappedInProc(t, swapInRequest(swordsRogueSpec, 28768, 29962, weaponSwap(28295, 28189)), 0, 12281)
+}
