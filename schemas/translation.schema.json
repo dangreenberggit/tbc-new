@@ -9090,6 +9090,28 @@
 					"additionalProperties": false,
 					"required": ["aria_label", "resolving", "reading_gear", "composing", "building_pool", "simming", "ranking"]
 				},
+				"run_progress": {
+					"type": "object",
+					"properties": {
+						"title": {
+							"type": "string"
+						},
+						"phase_candidates": {
+							"type": "string"
+						},
+						"phase_set_bonuses": {
+							"type": "string"
+						},
+						"phase_replication": {
+							"type": "string"
+						},
+						"rows_landed": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["title", "phase_candidates", "phase_set_bonuses", "phase_replication", "rows_landed"]
+				},
 				"results": {
 					"type": "object",
 					"properties": {
@@ -9189,7 +9211,7 @@
 				}
 			},
 			"additionalProperties": false,
-			"required": ["title", "description", "subtabs", "run", "stop", "settings_title", "settings", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "export", "set_bonus", "cutoff", "prune", "progress", "results", "assumptions"]
+			"required": ["title", "description", "subtabs", "run", "stop", "settings_title", "settings", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "export", "set_bonus", "cutoff", "prune", "progress", "run_progress", "results", "assumptions"]
 		}
 	},
 	"additionalProperties": false,

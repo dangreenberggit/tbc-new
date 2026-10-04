@@ -723,26 +723,19 @@
 	}
 }
 
-// One idiom for every run state: the tone is a Bootstrap text utility chosen
-// per state in statusContent(), so nothing here declares colour.
+// One idiom for the error, stopped and done lines and the baseline summary:
+// the tone is a Bootstrap text utility chosen per state in statusContent(), so
+// nothing here declares colour.
 //
-// The row is a fixed grid rather than a wrapping flex row so the progress bar's
-// position does not depend on the label's length. Before this rule the bar's
-// left edge slid ~21px every tick, as the running label grew from "Simming
-// 4/65…" to "Simming 33/65…" and pushed it along (ticket 304 item 11). The
-// label cell is reserved in `ch` at the widest running string, so the digits
-// grow into space that is already there.
-//
-// The three columns size the running state -- label, bar, and what follows it.
-// Other states render fewer children and simply leave columns empty; the `done
-// + stale` state renders four and wraps its last onto a second row, which is
-// why `.upgrades-status` below carries the height floor rather than this rule
-// (round-3 review T3). `> span:first-child` is likewise a no-op in the states
-// that render bare text with no span -- harmless, because the floor is what
-// actually holds the block below in place.
-//
-// The bar's own `width: 100%; max-width` cap is the progress-tracker modal's
-// idiom, unchanged.
+// The running state no longer renders here: the progress component
+// (`.upgrades-run-progress` below) shows a run, and the status slot is hidden
+// meanwhile (ticket 542). The grid was sized for the old running line -- a
+// label reserved at `34ch` so a progress bar beside it did not slide each tick
+// (ticket 304 item 11) -- and is left as it is for the states that still
+// render here. They use fewer children and leave columns empty; the `done +
+// stale` state renders four and wraps its last onto a second row, which is why
+// `.upgrades-status` below carries the height floor rather than this rule
+// (round-3 review T3).
 .upgrades-status-line {
 	display: grid;
 	grid-template-columns: minmax(0, max-content) minmax(0, 200px) max-content;
@@ -795,12 +788,118 @@
 	font-size: 0.875rem;
 }
 
-// Sits inside the running state's .upgrades-status-line — capped width so it
-// reads as an inline indicator alongside the text, not a full-width bar.
-.upgrades-progress {
-	--bs-progress-height: 8px;
+// The run progress component (ticket 542): the Bulk tab's progress dialog
+// (`_progress_tracker_modal.scss`) laid out for the top of the results area,
+// in flow, covering nothing.
+//
+// Bootstrap defines the `--bs-modal-*` properties only on `.modal`, and the
+// fork's inset header and flex body are scoped to `.modal .modal-dialog`
+// (`_bootstrap_style_overrides.scss`). This element is a `.modal-content`
+// with no `.modal` around it, so it defines the properties its box, header,
+// title and body read, with Bootstrap's own expressions. Without them the box
+// has no background or border, and the progress track, which reads
+// `--bs-modal-border-color`, loses its colour.
+.upgrades-run-progress {
+	--bs-modal-padding: #{$modal-inner-padding};
+	--bs-modal-color: #{$modal-content-color};
+	--bs-modal-bg: #{$modal-content-bg};
+	--bs-modal-border-color: #{$modal-content-border-color};
+	--bs-modal-border-width: #{$modal-content-border-width};
+	--bs-modal-border-radius: #{$modal-content-border-radius};
+	--bs-modal-box-shadow: #{$modal-content-box-shadow-xs};
+	--bs-modal-inner-border-radius: #{$modal-content-inner-border-radius};
+	--bs-modal-header-padding: #{$modal-header-padding};
+	--bs-modal-header-border-color: #{$modal-header-border-color};
+	--bs-modal-header-border-width: #{$modal-header-border-width};
+	--bs-modal-title-line-height: #{$modal-title-line-height};
 	width: 100%;
-	max-width: 200px;
+
+	// The fork's inset header. The title stays left-aligned, unlike the Bulk
+	// dialog's centred one: centred over a full-width box it floats away from
+	// the bar it names.
+	.modal-header {
+		padding-left: 0;
+		padding-right: 0;
+		margin-left: $modal-header-padding;
+		margin-right: $modal-header-padding;
+		align-items: flex-start;
+	}
+
+	.modal-body {
+		display: flex;
+		flex-direction: column;
+	}
+
+	// Desktop: phase and bar on the left, spanning the column; elapsed time,
+	// rows, time left and Stop stacked on the right. Below md, upstream's
+	// centred column applies unchanged.
+	@include media-breakpoint-up(md) {
+		.progress-tracker-modal-content {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) max-content;
+			grid-template-areas:
+				'progress time'
+				'progress message'
+				'progress stop';
+			column-gap: var(--spacer-3);
+			row-gap: var(--spacer-2);
+			align-items: start;
+			text-align: left;
+		}
+
+		.progress-tracker-modal-progress-container {
+			grid-area: progress;
+			max-width: none;
+			align-self: center;
+		}
+
+		.progress-tracker-modal-time-display {
+			grid-area: time;
+			justify-self: end;
+			text-align: right;
+		}
+
+		.progress-tracker-modal-message {
+			grid-area: message;
+			justify-self: end;
+			text-align: right;
+		}
+
+		.progress-tracker-modal-cancel-btn {
+			grid-area: stop;
+			justify-self: end;
+		}
+	}
+
+	// Before the first sim count the bar has no ratio and shows Bootstrap's
+	// moving stripes. Upstream's shimmer rule (`.progress-tracker-modal-
+	// progress-container .progress-bar`, 0,2,0) sets a `background` shorthand
+	// and its own animation, which beat the one-class stripe rules and would
+	// draw a full green bar that reads as finished. These win at 0,4,0+.
+	.progress-tracker-modal-progress-container .progress-bar.progress-bar-striped {
+		background-color: var(--bs-progress-bar-bg);
+
+		@include gradient-striped();
+
+		background-size: var(--bs-progress-height) var(--bs-progress-height);
+		background-position: 0 0;
+		animation: none;
+	}
+
+	.progress-tracker-modal-progress-container .progress-bar.progress-bar-striped.progress-bar-animated {
+		animation: 1s linear infinite progress-bar-stripes;
+
+		@media (prefers-reduced-motion: reduce) {
+			animation: none;
+		}
+	}
+
+	// A deliberate difference from the Bulk dialog: upstream's gray-600 count
+	// measures 3.82:1 on this background and fails AA; gray-500 is this tab's
+	// secondary-text colour (8.63:1), as for `.upgrades-baseline-summary`.
+	.progress-tracker-modal-progress-text {
+		color: var(--bs-gray-500);
+	}
 }
 
 // The bulk renderer's divider, borrowed rule for rule

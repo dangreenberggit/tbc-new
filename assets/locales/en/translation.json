@@ -941,6 +941,13 @@
 			"simming": "Simming {{done}}/{{total}}…",
 			"ranking": "Ranking results…"
 		},
+		"run_progress": {
+			"title": "Ranking upgrades",
+			"phase_candidates": "Simming candidates",
+			"phase_set_bonuses": "Measuring set bonuses",
+			"phase_replication": "Re-simming the top rows",
+			"rows_landed": "{{count}} rows landed"
+		},
 		"results": {
 			"rank": "Rank",
 			"item": "Item",

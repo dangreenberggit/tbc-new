@@ -56,6 +56,13 @@ import {
 	type ViewRow,
 } from './upgrades/engine/view';
 import { ENGINE_FORK_COMMIT } from './upgrades/engine_provenance';
+import {
+	RUN_PROGRESS_ESTIMATOR,
+	RUN_PROGRESS_MIN_CANDIDATES_DONE,
+	RUN_PROGRESS_SHOW_FROM_FRACTION,
+	RunProgressTracker,
+} from './upgrades/run_progress';
+import { RunProgressPanel } from './upgrades/run_progress_panel';
 import { RunStaleness } from './upgrades/run_staleness';
 
 /**
@@ -898,6 +905,19 @@ export class UpgradesTab extends SimTab {
 	// the drawer has to describe the run the numbers came from, and the box can
 	// be toggled afterwards.
 	private lastRunPruned = false;
+	// The progress component (ticket 542). Built once and only shown or hidden,
+	// outside the status element `render()` rebuilds on every progress event,
+	// so keyboard focus on its Stop button survives the run.
+	private readonly runProgressPanel = new RunProgressPanel({
+		onStop: () => {
+			this.runTracker?.noteStop();
+			this.abortController?.abort();
+		},
+	});
+	// One per run, from the Run click; `runStartedAt` is the same
+	// `performance.now()` reading "Took" is measured from.
+	private runTracker: RunProgressTracker | undefined;
+	private runStartedAt = 0;
 
 	// Column-header sort state for the done-state results tables (ticket 280).
 	// `undefined` means "the engine's own order" (rank ascending / delta
@@ -1206,12 +1226,9 @@ export class UpgradesTab extends SimTab {
 		this.shoppingListElem.appendChild(
 			<div className="upgrades-shopping-list p-gap content-block">
 				{/*
-				 * The visible status text. Not itself a live region: it holds the
-				 * per-tick running text, which changes about once a second for up to
-				 * a minute and a half, and announcing every tick is worse than
-				 * announcing none. The progress bar rendered inside it carries the
-				 * numbers for AT through its own `role="progressbar"`, which is the
-				 * surface built for a value that changes continuously.
+				 * The visible status text for the error, stopped and done states.
+				 * Hidden while a run is in flight: the progress component below
+				 * shows the run then (ticket 542). Not itself a live region.
 				 */}
 				<div ref={statusRef} className="upgrades-status" />
 				{/*
@@ -1235,6 +1252,14 @@ export class UpgradesTab extends SimTab {
 					attributes={{ role: 'status', 'aria-live': 'polite', 'aria-atomic': 'true' }}
 				/>
 				<div ref={errorAlertRef} className="upgrades-status-alert visually-hidden" attributes={{ role: 'alert' }} />
+				{/*
+				 * The run's progress, at the top of the results area while a run is
+				 * in flight (ticket 542). Not a live region: its clock and counts
+				 * change every tick, and the announce element above speaks the run's
+				 * transitions. Its bar carries the numbers for AT through
+				 * `role="progressbar"`.
+				 */}
+				{this.runProgressPanel.root}
 				{/*
 				 * The block rhythm comes from `.content-block`'s own `gap`
 				 * (`--block-spacer`) on the wrapper, not from per-element `mt-gap`
@@ -1496,6 +1521,7 @@ export class UpgradesTab extends SimTab {
 		// batch of them: seconds on the Go transport, minutes in the browser
 		// (ticket 347).
 		this.stopButton.addEventListener('click', () => {
+			this.runTracker?.noteStop();
 			this.abortController?.abort();
 		});
 
@@ -1909,6 +1935,13 @@ export class UpgradesTab extends SimTab {
 		// cannot produce a negative or wildly wrong elapsed.
 		const startedAt = performance.now();
 		this.staleness.runStarted();
+		this.runStartedAt = startedAt;
+		const tracker = new RunProgressTracker({
+			estimator: RUN_PROGRESS_ESTIMATOR,
+			showFromFraction: RUN_PROGRESS_SHOW_FROM_FRACTION,
+			minCandidatesDone: RUN_PROGRESS_MIN_CANDIDATES_DONE,
+		});
+		this.runTracker = tracker;
 		this.setState({ kind: 'running', progress: { stage: 'resolving' } });
 
 		const input: RankInput = {
@@ -1926,6 +1959,7 @@ export class UpgradesTab extends SimTab {
 		// only knowable once a worker reports ready (see `simRunner`). Memoised,
 		// so only the first run pays the probe.
 		const sim = await this.simRunner();
+		tracker.setConcurrency(sim.concurrency);
 		// Desktop-gate S1: record the runner class the tab actually chose. A
 		// literal keyed on `instanceof`, not `constructor.name` — Vite minifies
 		// class names in production, so the name is unusable; the literal is not.
@@ -1985,6 +2019,7 @@ export class UpgradesTab extends SimTab {
 						if (this.state.kind === 'running') this.render();
 						return;
 					}
+					tracker.observe(progress, performance.now() - startedAt);
 					// Only overwrite a still-running state — a late progress tick
 					// racing a state read is possible but not a completion, so it
 					// must never clobber a 'done'/'error'/'stopped' state set
@@ -2072,6 +2107,7 @@ export class UpgradesTab extends SimTab {
 		// leaves no stale payload on screen.
 		setControlVisible(this.exportBoxElem, false);
 		this.statusElem.replaceChildren(this.statusContent());
+		this.renderRunProgress();
 		// Filled before `renderAnnouncement` reads it: the done/stopped summary
 		// now lives in this element rather than the top status line, so the live
 		// region announces its text (ticket 416).
@@ -2085,11 +2121,27 @@ export class UpgradesTab extends SimTab {
 	}
 
 	/**
+	 * Shows the progress component for `running` and hides the status slot
+	 * meanwhile, so its reserved height leaves no empty row above the component.
+	 * Every other state hides the component and gives the slot back.
+	 */
+	private renderRunProgress(): void {
+		const running = this.state.kind === 'running';
+		this.statusElem.classList.toggle('d-none', running);
+		if (running && this.runTracker) {
+			if (!this.runProgressPanel.visible) this.runProgressPanel.start(this.runStartedAt);
+			this.runProgressPanel.update(this.runTracker.view(), this.landedRows.length);
+		} else {
+			this.runProgressPanel.stop();
+		}
+	}
+
+	/**
 	 * Speaks state transitions, not renders. `running` re-renders about once a
 	 * second for up to a minute and a half; announcing each tick would bury the
 	 * one thing worth hearing, so only a change of `kind` is written here and a
 	 * tick within `running` writes nothing. Sighted readers get the live counts
-	 * from the visible status line, and AT can poll the progress bar's
+	 * from the progress component, and AT can poll its progress bar's
 	 * `role="progressbar"` for the same numbers on demand.
 	 *
 	 * Errors go to the assertive region and everything else to the polite one,
@@ -2105,8 +2157,9 @@ export class UpgradesTab extends SimTab {
 		// the idle / unsupported-spec purpose moved to the empty state (ticket 427),
 		// so the announced text is read from wherever the state's copy now lives --
 		// reading the now-blank top status line would announce nothing (C27, F5).
-		// The top line still carries the announcement for running and the stale
-		// warning.
+		// The top line still carries the stale warning. `running` is announced
+		// from the same string the running status line used to render, so the
+		// text spoken at Run is unchanged by the progress component (ticket 542).
 		let announceSource: HTMLElement;
 		if (kind === 'done' || kind === 'stopped') {
 			announceSource = this.baselineSummaryElem;
@@ -2117,7 +2170,17 @@ export class UpgradesTab extends SimTab {
 		}
 		// `state.message` is already the display-ready line from `describeRunError`
 		// (ticket 437), so it is not re-wrapped in `status.error` here.
-		const message = kind === 'error' ? this.state.message : (announceSource.textContent?.trim() ?? '');
+		let message: string;
+		if (kind === 'error') {
+			message = this.state.message;
+		} else if (kind === 'running') {
+			message = i18n.t('upgrades_tab.status.running_rows', {
+				label: progressLabel(this.state.progress),
+				count: this.landedRows.length,
+			});
+		} else {
+			message = announceSource.textContent?.trim() ?? '';
+		}
 		const isError = kind === 'error';
 		this.errorAlertElem.replaceChildren(isError ? message : '');
 		this.statusAnnounceElem.replaceChildren(isError ? '' : message);
@@ -2138,22 +2201,10 @@ export class UpgradesTab extends SimTab {
 				// unsupported specs, the top-line unsupported key plus
 				// `results.empty_unsupported_spec_body`.
 				return <></>;
-			case 'running': {
-				// Row-landed count (candidate-pool.md §5.1.5), not just the stage
-				// label — "Simming 12/246" is more useful mid-run than the stage
-				// name alone, and `landedRows` is exactly the rows that fired a
-				// `{ kind: 'row' }` event so far.
-				const text = i18n.t('upgrades_tab.status.running_rows', {
-					label: progressLabel(this.state.progress),
-					count: this.landedRows.length,
-				});
-				return (
-					<div className="upgrades-status-line">
-						<span>{text}</span>
-						{this.progressBarContent(this.state.progress)}
-					</div>
-				);
-			}
+			case 'running':
+				// The progress component shows the run (ticket 542), and
+				// `renderRunProgress` hides this slot while it does.
+				return <></>;
 			case 'error':
 				// `state.message` is the display-ready line from `describeRunError`
 				// (ticket 437), already wrapped or plain as appropriate.
@@ -2210,42 +2261,6 @@ export class UpgradesTab extends SimTab {
 			default:
 				return <></>;
 		}
-	}
-
-	/**
-	 * Reuses the Bootstrap `.progress`/`.progress-bar` markup that
-	 * `progress_tracker_modal.tsx` already renders for the Bulk tab, so the
-	 * bar reads as the site's one progress idiom rather than a second one.
-	 * Only the `simming` stage carries a done/total ratio (`rank.ts`'s
-	 * `Progress` type); every stage ahead of it (resolving, reading-gear,
-	 * composing, building-pool) and the trailing `ranking` stage have none,
-	 * so those render the bar in Bootstrap's indeterminate/striped mode
-	 * instead of a fabricated width — a 0% or 100% bar before rows have
-	 * landed would read as "not started" or "finished" when neither is true.
-	 */
-	private progressBarContent(progress: Progress): Node {
-		const stageProgress = isStageProgress(progress) ? progress : undefined;
-		const hasRatio = stageProgress?.stage === 'simming' && stageProgress.total > 0;
-		const pct = hasRatio ? Math.min(100, Math.round((stageProgress.done / stageProgress.total) * 100)) : undefined;
-		const barRef = ref<HTMLDivElement>();
-		const bar = (
-			<div
-				ref={barRef}
-				className={`progress-bar${hasRatio ? '' : ' progress-bar-striped progress-bar-animated'}`}
-				style={{ width: hasRatio ? `${pct}%` : '100%' }}
-				attributes={{ role: 'progressbar' }}
-			/>
-		);
-		// aria-value* and the name set imperatively, matching progress_tracker_modal.tsx —
-		// this JSX helper's `attributes` type only covers `role` for a bare
-		// div, not the aria-value* trio. A progressbar needs a name of its own; the
-		// stage text beside it changes each tick, so a stable label is the name
-		// (ticket 446, axe aria-progressbar-name).
-		barRef.value?.setAttribute('aria-label', i18n.t('upgrades_tab.progress.aria_label'));
-		barRef.value?.setAttribute('aria-valuemin', '0');
-		barRef.value?.setAttribute('aria-valuemax', '100');
-		if (pct !== undefined) barRef.value?.setAttribute('aria-valuenow', pct.toString());
-		return <div className="upgrades-progress progress">{bar}</div>;
 	}
 
 	/**
