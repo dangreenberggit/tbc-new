@@ -318,12 +318,12 @@ export type SwapBreak = {
 
 /**
  * The worn bonuses one row's own swap breaks, for a row with no `setContext`
- * (ticket 536). The engine gives only set pieces a `setContext`, so a non-set
- * item that breaks a worn bonus showed a low figure with no reason. The break
- * rule is the engine's own: `brokenSetBonuses` with the lost counts the
- * ranking measured in `brokenSetValues`, valued from there. Runs at render
- * time, so a recorded ranking shows the breaks too. A set row returns nothing: its `singleBreaks` are the
- * source.
+ * (ticket 536). The engine gives only set pieces a `setContext`, so without
+ * this a non-set item that breaks a worn bonus would show a low figure with
+ * no reason. The break rule is the engine's own: `brokenSetBonuses` with the
+ * lost counts the ranking measured in `brokenSetValues`, valued from there.
+ * Runs at render time, so a recorded ranking shows the breaks too. A set row
+ * returns nothing: its `singleBreaks` are the source.
  */
 export function singleSwapBreaks(
   row: Pick<

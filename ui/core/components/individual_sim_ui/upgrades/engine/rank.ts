@@ -1244,8 +1244,8 @@ export async function rankUpgrades(
       } catch (err) {
         versionBudgetsOff = true;
         hitCapFailed = true;
-        // After Stop the guard refused the read, which is no failure to report.
-        if (!deps.signal?.aborted) {
+        // A read Stop ended is no failure to report (ticket 538).
+        if (!(err instanceof StopRefusedSim)) {
           console.warn(
             "[upgrades] meta repair: set version hit not read, shared layout used",
             err
@@ -4000,11 +4000,11 @@ class StopRefusedSim extends Error {
 /**
  * One stats read, raced against Stop (ticket 538). The listener goes on
  * before the read starts, so an abort fired while the read is being sent is
- * not missed. There is no timeout: every path on which a read gets no answer
+ * not missed. There is no timeout. Every path on which a read gets no answer
  * (a worker that never finished starting, or a desktop server that accepts
- * the request and never answers) leaves that worker unable to answer sims,
- * so a read timeout would almost always only move the hang to a later sim
- * on that worker, which least-busy routing sends it once every healthy
+ * the request and never answers) leaves that worker unable to answer sims.
+ * A read timeout would almost always only move the hang to a later sim on
+ * that worker. Least-busy routing sends that worker a sim once every healthy
  * worker is busy (ticket 538's close).
  */
 async function readStats(
@@ -4027,7 +4027,7 @@ async function readStats(
   try {
     const read = sim.computeStats!(req);
     // After Stop wins the race nobody awaits the read, so its late failure
-    // must not surface as an unhandled rejection.
+    // must not become an unhandled rejection.
     read.catch(() => {});
     const observed = await Promise.race([read, stopped]);
     logStatsRead(started);
@@ -4065,13 +4065,6 @@ function stopGuardedDeps(deps: Deps): Deps {
         if (signal.aborted) throw new StopRefusedSim();
         return sim.run(req, opts);
       },
-      // A stats read stops with the sims (tickets 535 and 538).
-      ...(sim.computeStats
-        ? {
-            computeStats: (req: RaidSimRequest) =>
-              readStats(sim, req, signal),
-          }
-        : {}),
     },
   };
 }

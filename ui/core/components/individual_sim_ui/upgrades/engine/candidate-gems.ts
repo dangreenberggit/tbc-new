@@ -254,13 +254,15 @@ export const SPEC_PREFERRED_METAS: Readonly<
  *
  * Fail loud, per the spike: silently leaving the socket empty looks identical
  * to a palette that had no meta gem, and silently seating ret's would be
- * wrong. Naming the spec is what lets a reader tell the two apart.
+ * wrong. Naming the spec is what lets a reader tell the two apart. The note
+ * names the lost socket bonus too, because the sim pays no socket bonus while
+ * a socket is empty (ticket 541).
  */
 export function missingMetaPreferenceNote(
   spec: DetectedSpecId | undefined
 ): string | undefined {
   if (spec === undefined || SPEC_PREFERRED_METAS[spec]) return undefined;
-  return `no meta preference recorded for ${spec} — meta sockets on candidate items were left empty, so those items are priced without any meta gem's stats or effect`;
+  return `no meta preference recorded for ${spec} — meta sockets on candidate items were left empty, so those items are priced without any meta gem's stats or effect and without their socket bonus`;
 }
 
 /**
