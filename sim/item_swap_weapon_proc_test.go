@@ -233,6 +233,12 @@ func TestItemSwapProcArmsMaceSpec(t *testing.T) {
 	requireSwappedInProc(t, swapInRequest(armsMaceWarriorSpec, 28768, 0, weaponSwap(28438, 0)), 5530, 0)
 }
 
+// Base: Dragonmaw (mace) and Malchazeen (dagger). Swap: both Warglaives,
+// which also activates the 2pc. 41435 is its haste aura.
+func TestItemSwapProcTwinBlades(t *testing.T) {
+	requireSwappedInProc(t, swapInRequest(furyWarriorSpec, 28438, 28768, weaponSwap(32837, 32838)), 41435, 0)
+}
+
 // Base: Malchazeen and Heartrazor (daggers). Swap: two swords.
 func TestItemSwapProcRogueSwordSpec(t *testing.T) {
 	requireSwappedInProc(t, swapInRequest(swordsRogueSpec, 28768, 29962, weaponSwap(28295, 28189)), 0, 12281)
