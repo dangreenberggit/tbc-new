@@ -67,7 +67,7 @@ func (war *Warrior) registerUnbridledWrath() {
 
 	war.MakeProcTriggerAura(core.ProcTrigger{
 		Name:               "Unbridled Wrath",
-		DPM:                war.NewStaticLegacyPPMManager(3*float64(war.Talents.UnbridledWrath), core.ProcMaskMeleeWhiteHit),
+		DPM:                war.NewLegacyPPMManager(3*float64(war.Talents.UnbridledWrath), core.ProcMaskMeleeWhiteHit),
 		RequireDamageDealt: true,
 		Outcome:            core.OutcomeLanded,
 		Callback:           core.CallbackOnSpellHitDealt,

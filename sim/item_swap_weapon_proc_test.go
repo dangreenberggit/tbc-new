@@ -243,3 +243,105 @@ func TestItemSwapProcTwinBlades(t *testing.T) {
 func TestItemSwapProcRogueSwordSpec(t *testing.T) {
 	requireSwappedInProc(t, swapInRequest(swordsRogueSpec, 28768, 29962, weaponSwap(28295, 28189)), 0, 12281)
 }
+
+// Ticket 546 (tbc-gear-prio): these PPM procs build their chance per hit
+// (weapon speed × PPM / 60) from the weapons worn at the start. A proc that
+// still fires at the old chance after a swap passes a count-above-zero test,
+// so these tests compare procs per landed white hit with the chance of the
+// weapons swapped in. The rotation swaps at the start of each iteration, so
+// nearly every hit is made with the swapped-in weapons.
+
+const (
+	gladiatorsSlicer      = 28295 // main-hand sword, speed 2.6
+	nexusStalkerScimitar  = 25952 // main-hand sword, speed 1.5
+	gladiatorsQuickblade  = 28307 // off-hand sword, speed 1.5
+	gladiatorsGreatsword  = 24550 // two-hand sword, speed 3.6
+	unbridledWrathPPM     = 15    // rank 5 in furyWarriorSpec, 3 PPM per rank
+	sealOfVengeancePPM    = 20
+	rateRelativeTolerance = 0.10
+)
+
+func ppmChance(speed, ppm float64) float64 { return speed * ppm / 60 }
+
+func playerActionTargets(result *proto.RaidSimResult, match func(*proto.ActionID) bool) []*proto.TargetedActionMetrics {
+	var targets []*proto.TargetedActionMetrics
+	for _, action := range result.RaidMetrics.Parties[0].Players[0].Actions {
+		if match(action.Id) {
+			targets = append(targets, action.Targets...)
+		}
+	}
+	return targets
+}
+
+// landedWhiteHits counts the auto attacks of one hand (tag 1 main hand, tag 2
+// off hand) whose outcome OutcomeLanded matches (sim/core/flags.go), the
+// outcome both procs require.
+func landedWhiteHits(result *proto.RaidSimResult, tag int32) float64 {
+	count := int32(0)
+	for _, t := range playerActionTargets(result, func(id *proto.ActionID) bool {
+		return id.GetOtherId() == proto.OtherAction_OtherActionAttack && id.GetTag() == tag
+	}) {
+		count += t.Hits + t.Crits + t.Glances + t.Blocks + t.BlockedCrits + t.GlanceBlocks + t.Crushes
+	}
+	return float64(count)
+}
+
+func requireRate(t *testing.T, procs, hits, want, startChance float64) {
+	t.Helper()
+	rate := procs / hits
+	t.Logf("procs %.0f, landed white hits %.0f, rate %.4f; swapped-in chance %.4f, start chance %.4f", procs, hits, rate, want, startChance)
+	if hits == 0 {
+		t.Fatalf("no landed white hits")
+	}
+	if math.Abs(rate-want) > rateRelativeTolerance*want {
+		t.Errorf("rate %.4f is not within %.0f%% of the swapped-in chance %.4f (start chance %.4f)", rate, rateRelativeTolerance*100, want, startChance)
+	}
+}
+
+func runSim(t *testing.T, req *proto.RaidSimRequest) *proto.RaidSimResult {
+	t.Helper()
+	result := core.RunRaidSim(req)
+	if result.Error != nil {
+		t.Fatalf("sim error: %s", firstLines(result.Error.Message, 26))
+	}
+	return result
+}
+
+// Base: a 2.6-speed main hand, no off hand. Swap: a 1.5-speed main hand.
+func TestItemSwapRateUnbridledWrath(t *testing.T) {
+	result := runSim(t, swapInRequest(furyWarriorSpec, gladiatorsSlicer, 0, weaponSwap(nexusStalkerScimitar, 0)))
+	requireRate(t, procCount(result, 13002, 0), landedWhiteHits(result, 1),
+		ppmChance(1.5, unbridledWrathPPM), ppmChance(2.6, unbridledWrathPPM))
+}
+
+// Base: a 3.6-speed two-hander, so the off hand has speed 0 when the proc is
+// built and gets no proc mask (procs.go mergeOrAppend). Swap: a 2.6-speed
+// main hand and a 1.5-speed off hand.
+func TestItemSwapRateUnbridledWrathOffHand(t *testing.T) {
+	result := runSim(t, swapInRequest(furyWarriorSpec, gladiatorsGreatsword, 0, weaponSwap(gladiatorsSlicer, gladiatorsQuickblade)))
+	mh, oh := landedWhiteHits(result, 1), landedWhiteHits(result, 2)
+	if oh == 0 {
+		t.Fatalf("no landed off-hand white hits after the swap")
+	}
+	want := (mh*ppmChance(2.6, unbridledWrathPPM) + oh*ppmChance(1.5, unbridledWrathPPM)) / (mh + oh)
+	t.Logf("main-hand hits %.0f, off-hand hits %.0f", mh, oh)
+	requireRate(t, procCount(result, 13002, 0), mh+oh, want, ppmChance(3.6, unbridledWrathPPM)*mh/(mh+oh))
+}
+
+// Base: a 2.6-speed main hand. Swap: a 1.5-speed main hand. Both chances are
+// below 1, so neither is capped. The rotation keeps the seal up; each proc
+// casts Holy Vengeance (31803) once. The metrics count no casts for a passive
+// spell, so a proc is a landed or missed Holy Vengeance.
+func TestItemSwapRateSealOfVengeance(t *testing.T) {
+	req := swapInRequest(retPaladinSpec, gladiatorsSlicer, 0, weaponSwap(nexusStalkerScimitar, 0))
+	req.Raid.Parties[0].Players[0].Rotation = core.APLRotationFromJsonString(`{"type":"TypeAPL","priorityList":[
+		{"action":{"itemSwap":{"swapSet":"Swap1"}}},
+		{"action":{"condition":{"cmp":{"op":"OpLt","lhs":{"auraRemainingTime":{"auraId":{"spellId":31801}}},"rhs":{"const":{"val":"3s"}}}},"castSpell":{"spellId":{"spellId":31801}}}}]}`)
+	result := runSim(t, req)
+	procs := int32(0)
+	for _, target := range playerActionTargets(result, func(id *proto.ActionID) bool { return id.GetSpellId() == 31803 }) {
+		procs += target.Hits + target.Crits + target.Misses
+	}
+	requireRate(t, float64(procs), landedWhiteHits(result, 1),
+		ppmChance(1.5, sealOfVengeancePPM), ppmChance(2.6, sealOfVengeancePPM))
+}
