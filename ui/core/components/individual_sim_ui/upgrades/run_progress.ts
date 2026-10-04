@@ -26,19 +26,21 @@ export const TAB_REPLICATE_SEED_COUNT = 5;
 
 export type RunPhase = 'preparing' | 'candidates' | 'set-bonuses' | 'replication' | 'ranking';
 
-export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; kappa: number; psi: number };
+export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; kappa: number; psi: number; slowdown: number };
 
 /**
  * The estimator and when to show it, all in one place so a change of
  * estimator touches only these values and `estimateRemainingMs`. Fitted on
- * one recorded feral run (run 1, 2026-10-03, fork 9b11bf214, concurrency 4),
- * in sample: `.scratch/handoffs/542-run-progress/decision.md` in the repo.
- * Linear read 45% short at half way on that run, so the phased estimator
- * ships. Run 1 showed no stable estimate before 61% done; the show fraction
- * is capped at 0.45 so a value is on screen at half way.
+ * one recorded feral run (run 1, 2026-10-03, fork 9b11bf214, 364 candidates,
+ * concurrency 4), in sample: `.scratch/handoffs/542-run-progress/decision.md`
+ * in the repo, section "Round 4". On that run later candidates took longer
+ * while the sim server sat partly idle; the likely cause (hypothesis, render
+ * time not measured) is the tab rebuilding every landed row twice per
+ * finished candidate (`upgrades_tab.tsx`, `landedRowsTable`). So `slowdown`,
+ * `kappa` and `psi` must be refitted if that rebuild changes.
  */
-export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', kappa: 0.3221, psi: 50.993 };
-export const RUN_PROGRESS_SHOW_FROM_FRACTION = 0.45;
+export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', kappa: 0.3221, psi: 50.993, slowdown: 0.003064 };
+export const RUN_PROGRESS_SHOW_FROM_FRACTION = 0.35;
 export const RUN_PROGRESS_MIN_CANDIDATES_DONE = 10;
 
 /**
@@ -92,7 +94,9 @@ export type RunTimeline = {
  * Phased: candidates run `concurrency` at a time, the set phase is uncounted,
  * and replication runs one sim at a time. With r the observed time per
  * candidate, psi is the set phase in candidate-times and each replication sim
- * costs k = kappa * concurrency candidate-times.
+ * costs k = kappa * concurrency candidate-times. Before the last candidate,
+ * the i-th candidate is taken to cost a * (1 + slowdown * i), so the
+ * candidates still to come cost more than the ones already done.
  */
 export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): number | undefined {
 	const first = run.sims[0];
@@ -118,7 +122,17 @@ export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): 
 			} else {
 				const left = total - boundary;
 				if (done < boundary) {
-					estimate = done > 1 ? ((run.now - t1) / (done - 1)) * (boundary - done + config.psi + k * left) : undefined;
+					const n = done - 1;
+					const c = boundary - 1;
+					if (n >= 1) {
+						const tau = run.now - t1;
+						const beta = config.slowdown;
+						const tri = (x: number) => (x * (x + 1)) / 2;
+						const a = tau / (n + beta * tri(n));
+						const candidatesLeft = a * (c - n + beta * (tri(c) - tri(n)));
+						const meanPerCandidate = (tau + candidatesLeft) / c;
+						estimate = candidatesLeft + meanPerCandidate * (config.psi + k * left);
+					}
 				} else if (boundaryEvent && boundary > 1) {
 					estimate = ((boundaryEvent.t - t1) / (boundary - 1)) * (config.psi + k * left);
 				}
