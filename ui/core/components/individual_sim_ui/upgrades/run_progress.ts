@@ -18,9 +18,12 @@ import { PAIRED_REPLICATE_TOP_N } from './engine/se.js';
 /**
  * The tab passes no `seeds`, so `rank.ts` uses `defaultSeedsFor`, whose count
  * is the module-private `DEFAULT_SEED_COUNT`. This mirrors it rather than
- * editing the engine to export it. The repo test "run progress event order
- * (542)" drives the real engine with its default seeds and fails if the two
- * differ.
+ * editing the engine to export it. The guard is the block "run progress event
+ * order (542)" in the repo's `fork-run-progress.test.ts`: it drives the real
+ * engine with its default seeds on a seven- and a twelve-candidate pool and
+ * checks the boundary and the replication count against the events the
+ * engine sends. That block runs only where the fork is checked out; CI has no
+ * fork and skips it.
  */
 export const TAB_REPLICATE_SEED_COUNT = 5;
 
@@ -62,7 +65,7 @@ export function replicationBoundary(total: number, seedCount: number, topN: numb
 
 /**
  * The Bulk dialog's elapsed text, so the two read the same
- * (`progress_tracker_modal.tsx`, `updateTimeDisplay`, lines 178-190).
+ * (`progress_tracker_modal.tsx`, `updateTimeDisplay`).
  */
 export function formatElapsed(ms: number): string {
 	const elapsed = ms / 1000;
@@ -213,8 +216,10 @@ type TrackerOptions = {
 };
 
 /**
- * Follows one run's `Progress` events. The estimate is recomputed only at
- * `simming` and `ranking` events and held in between, as the Bulk tab's is.
+ * Follows one run's `Progress` events. The estimate is recomputed at
+ * `simming` and `ranking` events, and at a row that adds to the qualifying
+ * count (timed at the last `simming` event); it is held in between, as the
+ * Bulk tab's is.
  */
 export class RunProgressTracker {
 	private readonly options: Required<TrackerOptions>;
@@ -285,8 +290,12 @@ export class RunProgressTracker {
 
 	/**
 	 * Mirrors rank.ts `replicateTopItems`' filter (`!belowCutoff && simmed !==
-	 * false`, at most `PAIRED_REPLICATE_TOP_N`). The repo test "run progress
-	 * event order (542)" fails if the two differ.
+	 * false`, at most `PAIRED_REPLICATE_TOP_N`). In the repo's
+	 * `fork-run-progress.test.ts`, test N1 checks the `simmed` clause on
+	 * hand-built rows, and the block "run progress event order (542)" checks
+	 * this count against the real engine's replication sims, including a pool
+	 * with more qualifying rows than top-N. Both run only where the fork is
+	 * checked out; CI has no fork and skips them.
 	 */
 	private observeRow(row: { readonly belowCutoff: boolean; readonly simmed?: false }): void {
 		if (this.rankingAt !== undefined || row.belowCutoff !== false || row.simmed === false) return;
