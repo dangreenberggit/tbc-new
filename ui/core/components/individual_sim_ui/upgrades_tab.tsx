@@ -908,12 +908,7 @@ export class UpgradesTab extends SimTab {
 	// The progress component (ticket 542). Built once and only shown or hidden,
 	// outside the status element `render()` rebuilds on every progress event,
 	// so keyboard focus on its Stop button survives the run.
-	private readonly runProgressPanel = new RunProgressPanel({
-		onStop: () => {
-			this.runTracker?.noteStop();
-			this.abortController?.abort();
-		},
-	});
+	private readonly runProgressPanel = new RunProgressPanel({ onStop: () => this.stopRun() });
 	// One per run, from the Run click; `runStartedAt` is the same
 	// `performance.now()` reading "Took" is measured from.
 	private runTracker: RunProgressTracker | undefined;
@@ -1512,18 +1507,7 @@ export class UpgradesTab extends SimTab {
 		// nothing else. That refresh now happens in the picker's own `setValue`,
 		// so there is no separate change listener for it.
 
-		// Stop's contract (candidate-pool.md §5.1.4) is "finish in-flight
-		// per-candidate sims, abort an in-flight screening chunk, dispatch
-		// nothing new" — signalling the abort is all this button does;
-		// rankUpgrades itself decides what "in-flight" means and returns the
-		// PartialRanking, so there is nothing else for the click handler to do.
-		// The screening chunk is the exception because it is not a sim but a
-		// batch of them: seconds on the Go transport, minutes in the browser
-		// (ticket 347).
-		this.stopButton.addEventListener('click', () => {
-			this.runTracker?.noteStop();
-			this.abortController?.abort();
-		});
+		this.stopButton.addEventListener('click', () => this.stopRun());
 
 		// The collapse is only ever a narrow-width affordance: at `xl` and up the
 		// SCSS shows the body unconditionally and hides this button, so the class
@@ -2119,6 +2103,21 @@ export class UpgradesTab extends SimTab {
 		// `renderSubTabs` writes, so announcing before it exists would speak "".
 		this.renderAnnouncement();
 		this.substitutionsHostElem.replaceChildren(this.substitutionsContent());
+	}
+
+	/**
+	 * Both Stop buttons call this. Stop's contract (candidate-pool.md §5.1.4)
+	 * is "finish in-flight per-candidate sims, abort an in-flight screening
+	 * chunk, dispatch nothing new" — signalling the abort is all Stop does;
+	 * rankUpgrades itself decides what "in-flight" means and returns the
+	 * PartialRanking. The screening chunk is the exception because it is not a
+	 * sim but a batch of them: seconds on the Go transport, minutes in the
+	 * browser (ticket 347). The tracker is told too, so the estimate hides and
+	 * the run's last phase reads `ranking`, not replication.
+	 */
+	private stopRun(): void {
+		this.runTracker?.noteStop();
+		this.abortController?.abort();
 	}
 
 	/**
