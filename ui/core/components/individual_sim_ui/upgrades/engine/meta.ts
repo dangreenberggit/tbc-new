@@ -45,10 +45,13 @@ export function gemColorMatchesSocket(
 }
 
 /**
- * PORTED verbatim from packages/core/src/meta.ts — the socket-bonus-active
- * rule itself (which sockets need to match, meta-only-socket exception) is
- * not present as a standalone function anywhere in the fork, so this stays a
- * direct port over the shared `gemColorMatchesSocket`.
+ * PORTED verbatim from packages/core/src/meta.ts — the TS rule is not present
+ * as a standalone function anywhere in the fork, so this stays a direct port
+ * over the shared `gemColorMatchesSocket`. The rule is the sim's own
+ * (`sim/core/database.go` `ItemEquipmentGemAndEnchantStats`): every socket,
+ * meta included, must hold a gem whose colour matches it, so an empty meta
+ * socket withholds the bonus (ticket 541, which supersedes ADR-0025
+ * Decision 3).
  */
 export function socketBonusActive(
   sockets: readonly number[],
@@ -57,20 +60,13 @@ export function socketBonusActive(
   if (sockets.length === 0) return true;
   if (gemIds.length < sockets.length) return false;
 
-  let sawColoured = false;
-  let metaEmpty = false;
   for (let i = 0; i < sockets.length; i++) {
-    if (sockets[i] === GemColor.GemColorMeta) {
-      if (!gemIds[i]) metaEmpty = true;
-      continue;
-    }
-    sawColoured = true;
     const gem = getGem(gemIds[i] ?? 0);
     if (!gem) return false;
     if (!gemColorMatchesSocket(gem.colour, sockets[i]!)) return false;
   }
 
-  return sawColoured || !metaEmpty;
+  return true;
 }
 
 export function gemColorCounts(gemIds: readonly number[]): GemColorCounts {
