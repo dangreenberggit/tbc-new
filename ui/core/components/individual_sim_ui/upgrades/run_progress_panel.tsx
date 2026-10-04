@@ -109,6 +109,9 @@ export class RunProgressPanel {
 	}
 
 	update(view: RunProgressView, rowsLanded: number): void {
+		// Nothing on the page reads these. The repo's measurement script
+		// (`.scratch/handoffs/542-run-progress/capture.mjs`) reads them to check
+		// the estimate, and ticket 543's estimator refit needs them again.
 		setData(this.root, 'phase', view.phase);
 		setData(this.root, 'done', view.done);
 		setData(this.root, 'total', view.total);
