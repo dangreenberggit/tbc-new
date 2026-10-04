@@ -812,7 +812,7 @@ func (paladin *Paladin) registerSealOfVengeance() {
 		Callback:        core.CallbackOnSpellHitDealt,
 		ProcMask:        core.ProcMaskMeleeWhiteHit,
 		Outcome:         core.OutcomeLanded,
-		DPM:             paladin.NewStaticLegacyPPMManager(20, core.ProcMaskMeleeWhiteHit),
+		DPM:             paladin.NewLegacyPPMManager(20, core.ProcMaskMeleeWhiteHit),
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			dot := holyVengeanceDot.Dot(result.Target)
 			if dot.IsActive() && dot.GetStacks() == 5 {
