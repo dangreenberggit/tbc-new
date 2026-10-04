@@ -1112,7 +1112,7 @@ export async function rankUpgrades(
     // caches no ranking, so a later run can still read it.
     if (hitCapReadable) {
       try {
-        const observed = await deps.sim.computeStats!(request);
+        const observed = await readStats(deps.sim, request, deps.signal);
         const hitPercent =
           observed.pseudoStats[capProfile.repairCap!.hitPercentPseudoStat];
         if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
@@ -1138,17 +1138,21 @@ export async function rankUpgrades(
           });
         }
       } catch (err) {
-        console.warn(
-          "[upgrades] meta repair: hit cap not read, full-weight repair used",
-          err
-        );
-        hitCapFailed = true;
-        hitCapNotes.push({
-          field: "gems.meta-repair-hit-cap",
-          detail:
-            "Meta repair valued hit at full weight: the character's hit " +
-            `could not be read (${err instanceof Error ? err.message : String(err)}).`,
-        });
+        // After Stop the candidate loop returns the partial ranking; a read
+        // Stop ended is no failure to warn or note (ticket 538).
+        if (!(err instanceof StopRefusedSim)) {
+          console.warn(
+            "[upgrades] meta repair: hit cap not read, full-weight repair used",
+            err
+          );
+          hitCapFailed = true;
+          hitCapNotes.push({
+            field: "gems.meta-repair-hit-cap",
+            detail:
+              "Meta repair valued hit at full weight: the character's hit " +
+              `could not be read (${err instanceof Error ? err.message : String(err)}).`,
+          });
+        }
       }
     }
 
@@ -1159,7 +1163,7 @@ export async function rankUpgrades(
      * `sim hit(version) − sim hit(baseline) − (gear hit(build) − gear hit(baseline))`,
      * the gear hit taken on real item ids before the copies. A version whose
      * build made no repair is never read. One read per distinct default
-     * request, through the Stop guard. The first failed read turns version
+     * request, raced against Stop. The first failed read turns version
      * budgets off for the rest of the set phase: the whole call, and every
      * later one, gets the default builds, so no pair mixes a version budget
      * with the shared layout, and the ranking is not cached.
@@ -1186,13 +1190,12 @@ export async function rankUpgrades(
           request ? { request, swaps: base.swaps } : undefined
         );
       const cap = gems.repairHitCap;
-      const sim = guardedDeps.sim;
       if (
         !base.repaired ||
         !cap ||
         baselineSimHit === undefined ||
         versionBudgetsOff ||
-        !sim.computeStats
+        !deps.sim.computeStats
       ) {
         return shared();
       }
@@ -1208,7 +1211,7 @@ export async function rankUpgrades(
           const key = stableStringify(request);
           let read = versionReads.get(key);
           if (!read) {
-            read = sim.computeStats(request);
+            read = readStats(deps.sim, request, deps.signal);
             versionReads.set(key, read);
           }
           const observed = await read;
@@ -3995,6 +3998,57 @@ class StopRefusedSim extends Error {
 }
 
 /**
+ * One stats read, raced against Stop (ticket 538). The listener goes on
+ * before the read starts, so an abort fired while the read is being sent is
+ * not missed. There is no timeout: every path on which a read gets no answer
+ * (a worker that never finished starting, or a desktop server that accepts
+ * the request and never answers) leaves that worker unable to answer sims,
+ * so a read timeout would almost always only move the hang to a later sim
+ * on that worker, which least-busy routing sends it once every healthy
+ * worker is busy (ticket 538's close).
+ */
+async function readStats(
+  sim: Deps["sim"],
+  req: RaidSimRequest,
+  signal: AbortSignal | undefined
+): Promise<PlayerStatsObservation> {
+  if (signal?.aborted) throw new StopRefusedSim();
+  const started = performance.now();
+  if (!signal) {
+    const observed = await sim.computeStats!(req);
+    logStatsRead(started);
+    return observed;
+  }
+  let onAbort: (() => void) | undefined;
+  const stopped = new Promise<never>((_, reject) => {
+    onAbort = () => reject(new StopRefusedSim());
+    signal.addEventListener("abort", onAbort, { once: true });
+  });
+  try {
+    const read = sim.computeStats!(req);
+    // After Stop wins the race nobody awaits the read, so its late failure
+    // must not surface as an unhandled rejection.
+    read.catch(() => {});
+    const observed = await Promise.race([read, stopped]);
+    logStatsRead(started);
+    return observed;
+  } finally {
+    signal.removeEventListener("abort", onAbort!);
+  }
+}
+
+/**
+ * Pre-formatted, so a forwarded console line keeps the number. It times
+ * reads on either sim transport; the browser build's read time is
+ * unmeasured (ticket 538).
+ */
+function logStatsRead(started: number): void {
+  console.debug(
+    `[upgrades] stats read ${Math.round(performance.now() - started)} ms`
+  );
+}
+
+/**
  * `deps` whose sim refuses to start once `deps.signal` has aborted (ticket
  * 533). The set phase and replication use it. The candidate loop keeps the
  * plain runner, because it turns a failed sim into a dropped row and has its
@@ -4011,13 +4065,11 @@ function stopGuardedDeps(deps: Deps): Deps {
         if (signal.aborted) throw new StopRefusedSim();
         return sim.run(req, opts);
       },
-      // The set phase's version reads stop with its sims (ticket 535).
+      // A stats read stops with the sims (tickets 535 and 538).
       ...(sim.computeStats
         ? {
-            computeStats: async (req: RaidSimRequest) => {
-              if (signal.aborted) throw new StopRefusedSim();
-              return sim.computeStats!(req);
-            },
+            computeStats: (req: RaidSimRequest) =>
+              readStats(sim, req, signal),
           }
         : {}),
     },
