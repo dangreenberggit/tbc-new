@@ -9105,12 +9105,15 @@
 						"phase_replication": {
 							"type": "string"
 						},
-						"rows_landed": {
+						"rows_landed_one": {
+							"type": "string"
+						},
+						"rows_landed_other": {
 							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "phase_candidates", "phase_set_bonuses", "phase_replication", "rows_landed"]
+					"required": ["title", "phase_candidates", "phase_set_bonuses", "phase_replication", "rows_landed_one", "rows_landed_other"]
 				},
 				"results": {
 					"type": "object",

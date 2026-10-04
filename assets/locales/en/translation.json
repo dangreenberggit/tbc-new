@@ -946,7 +946,8 @@
 			"phase_candidates": "Simming candidates",
 			"phase_set_bonuses": "Measuring set bonuses",
 			"phase_replication": "Re-simming the top rows",
-			"rows_landed": "{{count}} rows landed"
+			"rows_landed_one": "{{count}} row landed",
+			"rows_landed_other": "{{count}} rows landed"
 		},
 		"results": {
 			"rank": "Rank",
