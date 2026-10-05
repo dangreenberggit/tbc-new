@@ -1,0 +1,108 @@
+/**
+ * Fails a worker that has sent nothing for too long while a request waits on it (ticket 545).
+ *
+ * A worker that never becomes ready, or a wasm sim that answered its request id and then
+ * stopped sending progress, would otherwise leave its callers waiting forever. Every message
+ * the worker sends re-arms the timer, so a busy worker is never failed; the limit depends on
+ * what the worker is doing, because the warm-up pass of a health-based fight is silent for
+ * far longer than the main loop.
+ */
+
+export type SilenceRegime = 'start' | 'run' | 'presim';
+
+export type SilenceLimits = {
+	/** Created until `ready`: covers the wasm module download. */
+	startMs: number;
+	/** After `ready`, outside the warm-up pass. */
+	runMs: number;
+	/** Between `PresimRunning: true` and `false`. Absent means the run limit applies there too. */
+	presimMs?: number;
+};
+
+export type SilenceHooks = {
+	/** Asked when the timer fires, not tracked by a counter: the pool deletes and re-adds a
+	 * progress entry inside one listener call, so a counter would pass through zero. */
+	hasWaiters: () => boolean;
+	onExpire: (regime: SilenceRegime, limitMs: number) => void;
+};
+
+export type SilenceTimers = {
+	set: (callback: () => void, ms: number) => unknown;
+	clear: (handle: unknown) => void;
+};
+
+// Wrapped rather than passed bare: called as a method of this object, a bare setTimeout gets a
+// plain object as `this`, which a browser may reject with "Illegal invocation" while Node accepts
+// it (hypothesis, untested), so tests could not catch it.
+const defaultTimers: SilenceTimers = {
+	set: (callback, ms) => setTimeout(callback, ms),
+	clear: handle => clearTimeout(handle as ReturnType<typeof setTimeout>),
+};
+
+export class SilenceMonitor {
+	private regime: SilenceRegime = 'start';
+	private handle: unknown;
+	private armed = false;
+	private disposed = false;
+
+	constructor(
+		private readonly limits: SilenceLimits,
+		private readonly hooks: SilenceHooks,
+		private readonly timers: SilenceTimers = defaultTimers,
+	) {}
+
+	/**
+	 * A request now waits on the worker. When no other request was waiting, the worker's last
+	 * message may be almost a full limit old, so the request gets a whole limit of its own;
+	 * otherwise the silence the earlier request is already waiting through keeps counting.
+	 */
+	requestWaiting(othersWaiting = false) {
+		if (!othersWaiting || !this.armed) this.arm();
+	}
+
+	messageSeen() {
+		this.arm();
+	}
+
+	setRegime(regime: SilenceRegime) {
+		if (regime === this.regime) return;
+		this.regime = regime;
+		this.arm();
+	}
+
+	dispose() {
+		this.disposed = true;
+		this.stop();
+	}
+
+	private limitMs(): number {
+		switch (this.regime) {
+			case 'start':
+				return this.limits.startMs;
+			case 'presim':
+				return this.limits.presimMs ?? this.limits.runMs;
+			default:
+				return this.limits.runMs;
+		}
+	}
+
+	private arm() {
+		if (this.disposed) return;
+		this.stop();
+		const regime = this.regime;
+		const limitMs = this.limitMs();
+		this.armed = true;
+		this.handle = this.timers.set(() => {
+			this.armed = false;
+			this.handle = undefined;
+			if (this.disposed || !this.hooks.hasWaiters()) return;
+			this.hooks.onExpire(regime, limitMs);
+		}, limitMs);
+	}
+
+	private stop() {
+		if (this.armed) this.timers.clear(this.handle);
+		this.armed = false;
+		this.handle = undefined;
+	}
+}

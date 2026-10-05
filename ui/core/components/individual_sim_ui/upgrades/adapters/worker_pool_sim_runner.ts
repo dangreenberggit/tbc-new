@@ -50,6 +50,19 @@ import type { PlayerStatsObservation, RaidSimRequest, SimObservation, SimRunner,
 export const DEFAULT_WORKER_COUNT = 4;
 
 /**
+ * How long a tab worker may send nothing while a request waits on it before
+ * the request fails and the worker restarts (ticket 545). Each limit is ten
+ * times the longest silence measured on feral cat in the browser build
+ * (tbc-gear-prio `.scratch/stage-gate/545-worker-silence-check/measurement.md`):
+ * 2.5x for a spec at 1,000 DPS, whose warm-up pass is longer, and 4x for a
+ * slower machine (hypothesis, untested). The start-up limit adds 120 s for the
+ * wasm download, which localhost cannot measure. The run limit is the 30 s
+ * floor: measured run silences peaked at 1.1 s. A warm-up pass on a
+ * health-based fight measured 11.7 s at the default boss health.
+ */
+export const WORKER_SILENCE_LIMITS = { startMs: 140_000, runMs: 30_000, presimMs: 120_000 } as const;
+
+/**
  * E-W5 measured **183.8 MB** peak RSS for one `wowsimcli` process running
  * 5,000 iterations (candidate-pool.md §3.1) — the Node/CLI sim binary, not
  * this browser's WASM worker. No in-browser RSS-per-worker measurement
@@ -101,7 +114,7 @@ export class WorkerPoolSimRunner implements SimRunner {
 	readonly concurrency: number;
 
 	constructor(numWorkers: number = DEFAULT_WORKER_COUNT) {
-		this.pool = new WorkerPool(numWorkers);
+		this.pool = new WorkerPool(numWorkers, { silence: WORKER_SILENCE_LIMITS });
 		this.concurrency = Math.max(1, Math.min(numWorkers, memoryCapFromDeviceMemory()));
 	}
 
