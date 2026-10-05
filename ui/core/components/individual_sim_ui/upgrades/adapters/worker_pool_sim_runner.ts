@@ -51,14 +51,26 @@ export const DEFAULT_WORKER_COUNT = 4;
 
 /**
  * How long a tab worker may send nothing while a request waits on it before
- * the request fails and the worker restarts (ticket 545). Each limit is ten
- * times the longest silence measured on feral cat in the browser build
- * (tbc-gear-prio `.scratch/stage-gate/545-worker-silence-check/measurement.md`):
- * 2.5x for a spec at 1,000 DPS, whose warm-up pass is longer, and 4x for a
- * slower machine (hypothesis, untested). The start-up limit adds 120 s for the
- * wasm download, which localhost cannot measure. The run limit is the 30 s
- * floor: measured run silences peaked at 1.1 s. A warm-up pass on a
- * health-based fight measured 11.7 s at the default boss health.
+ * the request fails and the worker restarts (tickets 545, 553). Measured in the
+ * browser build (tbc-gear-prio `.scratch/stage-gate/545-worker-silence-check/measurement.md`
+ * and `.scratch/stage-gate/553-554-silence-followups/probe.md`):
+ * - start-up: ten times the longest silence from creation to `ready` (1.8 s),
+ *   plus 120 s for the wasm download, which localhost cannot measure;
+ * - presim: ten times the longest warm-up pass at the default boss health, from
+ *   a sim's post to its first `PresimRunning: false`;
+ * - run: the 30 s floor, not ten times a measurement; the longest main-loop
+ *   silence measured is listed below.
+ * The factor of ten is a margin, not derived from a measurement. Warm-up time
+ * does not follow fight length: shadow priest's 3,822 s fight warmed up in
+ * 4.5 s and feral's 2,691 s fight in 11.7 s (probe.md, measurement.md). A spec not listed
+ * below may warm up for longer than feral, and a slower machine stretches
+ * every number (both hypotheses, untested).
+ *
+ * Longest silences measured, per spec (warm-up at the default boss health;
+ * main loop):
+ * - feral cat: warm-up 11.7 s, main loop 1.1 s (ticket 545)
+ * - warlock: warm-up 1.8 s, main loop 0.2 s (ticket 553)
+ * - shadow priest: warm-up 4.5 s, main loop 0.5 s (ticket 553)
  */
 export const WORKER_SILENCE_LIMITS = { startMs: 140_000, runMs: 30_000, presimMs: 120_000 } as const;
 

@@ -28,7 +28,7 @@ import {
 import { SimSignals } from './sim_signal_manager';
 import { isDevMode, noop } from './utils';
 import { WorkerPoolManager } from './concurrent_worker_pool';
-import { SilenceLimits, SilenceMonitor } from './worker_silence';
+import { SilenceLimits, SilenceMonitor, SilenceRegime } from './worker_silence';
 
 const SIM_WORKER_URL = `/${REPO_NAME}/sim_worker.js`;
 const SIM_WASM_URL = `/${REPO_NAME}/lib.wasm.gz`;
@@ -73,6 +73,9 @@ const getSharedWasmModule = (): Promise<WebAssembly.Module> => {
 };
 export type WorkerProgressCallback = (progressMetrics: ProgressMetrics) => void;
 
+/** The id a worker streams an async request's progress under (`ui/worker/worker_interface.ts`). */
+const progressIdOf = (id: string) => `${id}progress`;
+
 /**
  * Create random id for requests.
  * @param type The request type to prepend.
@@ -85,7 +88,10 @@ export const generateRequestId = (type: SimRequest) => {
 
 export type WorkerPoolOptions = {
 	/** Fail every request waiting on a worker that sent nothing for the limit, and restart the
-	 * worker. Off unless given, so pages that never asked for it behave as before. */
+	 * worker. Off unless given, so pages that never asked for it get no silence check. One change
+	 * reaches every page: `doAsyncRequest`'s `finally` removes a settled request's progress entry
+	 * (harmless on success, when nothing waits on it any more) and updates the worker's pre-loop
+	 * bookkeeping, which only the check reads. */
 	silence?: SilenceLimits;
 };
 
@@ -139,7 +145,7 @@ export class WorkerPool {
 	}
 
 	private getProgressName(id: string) {
-		return `${id}progress`;
+		return progressIdOf(id);
 	}
 
 	async statWeightsAsync(request: StatWeightsRequest, onProgress: WorkerProgressCallback, signals: SimSignals): Promise<StatWeightsResult> {
@@ -272,8 +278,9 @@ export class WorkerPool {
 		try {
 			worker.addSimTaskRunning(id, totalIterations);
 			// A real reject, not noop: on wasm the id is answered with no payload and only this entry
-			// waits, so the silence check must be able to fail it. Nothing else rejects it, because
-			// a worker never posts an error under a progress id.
+			// waits, so the silence check must be able to fail it. Nothing else rejects it: by reading,
+			// `ui/worker/worker_interface.ts:38-44` posts progress with no error field (hypothesis,
+			// untested).
 			const finalProgress: Promise<ProgressMetrics> = new Promise((resolve, reject) => {
 				worker.addPromiseFunc(
 					this.getProgressName(id),
@@ -281,6 +288,7 @@ export class WorkerPool {
 					reject,
 				);
 			});
+			worker.noteAsyncStart(id);
 			const apiCallResult = worker.doApiCall(requestName, request, id).then(outputData => {
 				// WASM async handlers deliver their final result via the progress channel and may return no payload
 				// on the request channel. In that case keep waiting for the final progress message instead of
@@ -299,6 +307,7 @@ export class WorkerPool {
 			return await Promise.race([finalProgress, apiCallResult]);
 		} finally {
 			unsubscribeAbort?.();
+			worker.noteAsyncEnd(id);
 			worker.updateSimTask(id, 0);
 			// After a rejected call the progress entry is still registered; left there, the silence
 			// check would count it as a waiting request and restart an idle worker.
@@ -322,7 +331,7 @@ export class WorkerPool {
 	): (progressData: Uint8Array) => void {
 		return (progressData: any) => {
 			const progress = ProgressMetrics.fromBinary(progressData);
-			worker.noteProgress(progress.presimRunning);
+			worker.noteProgress(id, progress.presimRunning);
 			onProgress(progress);
 			worker.updateSimTask(id, Math.max(1, progress.totalIterations - progress.completedIterations));
 			// If we are done, stop adding the handler.
@@ -352,6 +361,9 @@ class SimWorker {
 	// A Set the expiry clears, not a counter: a waiter rejected by the expiry must not be counted
 	// down again afterwards, or a restarted worker that never becomes ready would look idle.
 	private readonly readyWaiters = new Set<string>();
+	private ready = false;
+	// Async sims posted to this worker that have not yet sent their first `PresimRunning: false`.
+	private readonly preLoopIds = new Set<string>();
 
 	constructor(id: number, options: WorkerPoolOptions = {}) {
 		this.workerId = id;
@@ -370,6 +382,7 @@ class SimWorker {
 
 	private setupWorker() {
 		this.setTaskActive('setup', true); // Make it prefer ready workers.
+		this.ready = false;
 
 		this.onReady = new Promise((_resolve, _reject) => {
 			this.resolveReady = _resolve;
@@ -392,7 +405,8 @@ class SimWorker {
 			this.monitor?.messageSeen();
 			switch (msg) {
 				case 'ready':
-					this.monitor?.setRegime('run');
+					this.ready = true;
+					this.refreshRegime();
 					this.wasmWorker = !!outputData && !!outputData[0];
 					this.postMessage({ msg: 'setID', id: this.workerId.toString() });
 					this.resolveReady!();
@@ -495,9 +509,39 @@ class SimWorker {
 		delete this.taskIdsToPromiseFuncs[id];
 	}
 
-	/** The warm-up pass sends nothing until it ends, so it gets its own silence limit. */
-	noteProgress(presimRunning: boolean) {
-		this.monitor?.setRegime(presimRunning ? 'presim' : 'run');
+	/**
+	 * Counts a sim as before its main loop from the moment it is posted, not from its
+	 * `PresimRunning: true`: the engine can post that message only after the warm-up has run,
+	 * together with its `false` (ticket 553; 14 of 495 requests in the 545 measurement), so
+	 * the warm-up would otherwise be judged against the run limit.
+	 */
+	noteAsyncStart(id: string) {
+		this.preLoopIds.add(id);
+		this.refreshRegime();
+	}
+
+	noteProgress(id: string, presimRunning: boolean) {
+		if (!presimRunning) this.preLoopIds.delete(id);
+		this.refreshRegime();
+	}
+
+	noteAsyncEnd(id: string) {
+		this.preLoopIds.delete(id);
+		this.refreshRegime();
+	}
+
+	/**
+	 * Derived from state, not from the order messages arrive in: a sim posted before `ready`
+	 * must keep the presim limit once the worker is ready, and a restarted worker must keep the
+	 * start limit when the requests that were failed with the old worker settle.
+	 */
+	private regime(): SilenceRegime {
+		if (!this.ready) return 'start';
+		return this.preLoopIds.size > 0 ? 'presim' : 'run';
+	}
+
+	private refreshRegime() {
+		this.monitor?.setRegime(this.regime());
 	}
 
 	private hasWaiters(): boolean {
@@ -506,7 +550,7 @@ class SimWorker {
 
 	private hasWaitersOtherThan(id: string): boolean {
 		if (this.readyWaiters.size > 0) return true;
-		const progressId = `${id}progress`;
+		const progressId = progressIdOf(id);
 		return Object.keys(this.taskIdsToPromiseFuncs).some(key => key !== id && key !== progressId);
 	}
 
@@ -517,6 +561,7 @@ class SimWorker {
 		const waiting = Object.values(this.taskIdsToPromiseFuncs);
 		this.taskIdsToPromiseFuncs = {};
 		this.readyWaiters.clear();
+		this.preLoopIds.clear();
 		for (const id of Object.keys(this.simTasksRunning)) delete this.simTasksRunning[id];
 		this.rejectReady?.(error);
 		for (const [, reject] of waiting) reject(error);
