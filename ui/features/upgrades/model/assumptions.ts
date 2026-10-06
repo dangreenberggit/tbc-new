@@ -1,0 +1,45 @@
+/**
+ * The run's assumptions as one console line (ticket 318), ported from the old
+ * tab's `logAssumptions` (cb561067 `upgrades_tab.tsx`). Every item on it was a
+ * restatement of a control or detail no player can act on, so it left the
+ * page; it is still what someone diagnosing a bad ranking reads. Plain English
+ * on purpose: a console line is a diagnostic, not localised UI.
+ */
+
+import { bisTagPhaseFor, cutoffIsUnmeasuredFor, epWeightsDisclosureFor, poolSourceFor, unsourcedCountFor } from './data/data';
+import type { Ranking } from './engine/rank';
+import type { SpecId } from './engine/types';
+import type { RunSettings } from './run_reducer';
+
+export type AssumptionsContext = {
+	/** The ranked spec; absent, the lines that depend on the bundled data are left out. */
+	specId?: SpecId;
+	/** The settings the run used; absent for a loaded fixture, whose run settings are not recorded. */
+	settings?: RunSettings;
+};
+
+export function assumptionsLine(ranking: Pick<Ranking, 'assumptions'>, { specId, settings }: AssumptionsContext = {}): string {
+	const a = ranking.assumptions;
+	const lines = [`seeds: ${a.seeds.join(', ')}`, `iterations: ${a.iterations}`, `max phase: ${a.maxPhase}`];
+	if (settings) lines.push(`candidate pool: ${settings.prune ? `BiS-list items for phase ${a.maxPhase}` : 'every eligible item'}`);
+	if (specId) {
+		// The chosen file is not always the selected phase's: the data falls back to the highest phase at or below it.
+		const poolSource = poolSourceFor(specId, a.maxPhase);
+		if (poolSource) lines.push(`pool source: ${poolSource.file} (${poolSource.entries} entries)`);
+		const ep = epWeightsDisclosureFor(specId, a.maxPhase);
+		if (ep) lines.push(`EP weights: written for ${ep.from}, ranking ${ep.requested}`);
+		const tags = bisTagPhaseFor(specId, a.maxPhase);
+		if (tags && tags.tagsFromPhase < tags.requestedPhase) lines.push(`BiS tags: from P${tags.tagsFromPhase} sets, ranking P${tags.requestedPhase}`);
+		if (cutoffIsUnmeasuredFor(specId)) lines.push('cutoff: borrowed from Retribution Paladin, unmeasured for this spec');
+		const unsourced = unsourcedCountFor(specId, a.maxPhase);
+		if (unsourced > 0) lines.push(`source attribution: partial, ${unsourced} items admitted by database phase only`);
+	}
+	if (settings) {
+		if (settings.candidateCap !== undefined) lines.push(`candidate cap: top ${settings.candidateCap} simmed in full, plus anything you already own`);
+		const excluded = settings.excludedSources ?? [];
+		lines.push(excluded.length === 0 ? 'sources: all' : `sources: excluded ${excluded.join(', ')}`);
+		const sets = settings.guaranteedSetKeys ?? [];
+		lines.push(sets.length === 0 ? 'sets: none' : `sets: ${sets.join(', ')}`);
+	}
+	return `[upgrades] assumptions — ${lines.join(' · ')}`;
+}
