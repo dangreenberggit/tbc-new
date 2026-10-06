@@ -1,11 +1,26 @@
+import type { ItemSource } from '../model/engine/pool';
 import type { RankedItem, Ranking } from '../model/engine/rank';
+import type { StoppedRanking } from '../model/run_reducer';
 
 /**
- * A small finished ranking for the tab's unit tests: six rows trimmed from the
- * repo's recorded `data/tab-fixtures/ret-p3-p2.json`. Four ranked rows, one
- * set row (Lightbringer Breastplate, renumbered from rank 16 to 5) and one
- * row below the cutoff. Numbers are the recording's, so a format test reads
- * real magnitudes.
+ * A token source as the bundled universes carry it. `ItemSource` has no
+ * `tokenId` (`pool.ts`), but the data does, and the export reads it through
+ * the same narrowing.
+ */
+const tokenSource = (source: Extract<ItemSource, { kind: 'token' }> & { tokenId: number }): ItemSource => source;
+
+/**
+ * A small finished ranking for the tab's unit tests. Rows 0-5 are trimmed
+ * from the repo's recorded `data/tab-fixtures/ret-p3-p2.json`: four ranked
+ * rows, one set row (Lightbringer Breastplate, renumbered from rank 16 to 5)
+ * and one row below the cutoff, with the recording's numbers so a format test
+ * reads real magnitudes. P1 tests read those six by index.
+ *
+ * Rows 6-10 are appended so that each results feature has a row to show, and
+ * the one substitution is there for the same reason. No recorded fixture has
+ * a removed-worn line, an owned row above the cutoff or a substitution, so
+ * those figures and flags are made up; the appended rows are therefore not in
+ * engine order, which `applyView` does not need.
  */
 export const RANKING_FIXTURE: Ranking = {
 	contentHash: 'fixture:ret-p3-p2-trimmed',
@@ -20,7 +35,13 @@ export const RANKING_FIXTURE: Ranking = {
 		presetId: 'ret/current-page-settings',
 		standing: [{ id: 'race', detail: 'Race assumed RaceBloodElf from the pinned preset.' }],
 	},
-	substitutions: [],
+	substitutions: [
+		{
+			field: 'candidate 32837 (mainhand)',
+			detail:
+				'Warglaive of Azzinoth was dropped from the ranking: the sim failed on this swap — panic: runtime error\ngoroutine 1 [running]:\nmain.main()',
+		},
+	],
 	caps: {
 		hit: {
 			rating: 83.307699,
@@ -137,8 +158,137 @@ export const RANKING_FIXTURE: Ranking = {
 			belowCutoff: true,
 			hitDriven: true,
 		},
+		{
+			// Recorded figures: admitted by the percentage arm alone (3.32 DPS < 3.4, 0.159% ≥ 0.15%).
+			rank: 6,
+			itemId: 30905,
+			name: 'Midnight Chestguard',
+			slot: 'chest',
+			source: { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde', origin: 'db' },
+			deltaDps: 3.3196,
+			deltaPct: 0.1593,
+			se: 2.19,
+			seMethod: 'independent',
+			bisTags: [],
+			belowCutoff: false,
+			hitDriven: true,
+		},
+		{
+			rank: 7,
+			itemId: 28830,
+			name: 'Dragonspine Trophy',
+			slot: 'trinket',
+			slotChoice: 'trinket1',
+			source: { kind: 'raid', zone: "Gruul's Lair", boss: 'Gruul the Dragonkiller', origin: 'db' },
+			deltaDps: 5.2,
+			deltaPct: 0.2495,
+			se: 2.2,
+			seMethod: 'independent',
+			bisTags: ['Alt'],
+			belowCutoff: false,
+			owned: true,
+		},
+		{
+			rank: 8,
+			itemId: 29993,
+			name: 'Twinblade of the Phoenix',
+			slot: 'weapon',
+			source: { kind: 'raid', zone: 'Tempest Keep', boss: "Kael'thas Sunstrider", origin: 'db' },
+			deltaDps: 4.1671,
+			deltaPct: 0.2,
+			se: 2.2,
+			seMethod: 'independent',
+			bisTags: [],
+			belowCutoff: false,
+			removedItems: [{ itemId: 30882, slot: 'offhand' }],
+		},
+		{
+			rank: 9,
+			itemId: 30993,
+			name: 'Lightbringer Greaves',
+			slot: 'legs',
+			source: tokenSource({
+				kind: 'token',
+				zone: 'Black Temple',
+				token: 'Leggings of the Forgotten Conqueror',
+				boss: 'The Illidari Council',
+				tokenId: 31098,
+				origin: 'two-hop',
+			}),
+			sources: [
+				{ kind: 'raid', zone: 'Black Temple', boss: 'The Illidari Council', origin: 'db' },
+				tokenSource({
+					kind: 'token',
+					zone: 'Black Temple',
+					token: 'Leggings of the Forgotten Conqueror',
+					boss: 'The Illidari Council',
+					tokenId: 31098,
+					origin: 'two-hop',
+				}),
+			],
+			deltaDps: 3.62,
+			deltaPct: 0.1737,
+			se: 2.2,
+			seMethod: 'independent',
+			bisTags: [],
+			belowCutoff: false,
+		},
+		{
+			rank: 10,
+			itemId: 30989,
+			name: 'Lightbringer Faceguard',
+			slot: 'head',
+			source: { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde', origin: 'db' },
+			deltaDps: 4.45,
+			deltaPct: 0.2135,
+			se: 2.2,
+			seMethod: 'independent',
+			bisTags: [],
+			belowCutoff: false,
+			setContext: {
+				setId: 680,
+				setName: 'Lightbringer Battlegear',
+				piecesWornBefore: 0,
+				piecesAfterSwap: 1,
+				nextThreshold: null,
+				crossesThreshold: false,
+				singleBreaks: [{ setId: 627, setName: 'Crystalforge Battlegear', threshold: 2, dps: 18.43 }],
+				singleDeltaDps: 4.45,
+			},
+		},
 	],
 	complete: true,
+};
+
+/** A row Stop never reached, with the placeholder figures the engine gives one. */
+const unsimmed = (itemId: number, name: string, slot: RankedItem['slot']): RankedItem => ({
+	rank: null,
+	itemId,
+	name,
+	slot,
+	source: { kind: 'raid', zone: 'Black Temple', origin: 'db' },
+	deltaDps: 0,
+	deltaPct: 0,
+	se: 0,
+	seMethod: 'independent',
+	simmed: false,
+	bisTags: [],
+	belowCutoff: false,
+});
+
+/**
+ * What Stop returns for the same run: every row above in engine order (simmed
+ * rows by ΔDPS, highest first), then two rows Stop never simmed.
+ */
+export const STOPPED_FIXTURE: StoppedRanking = {
+	...RANKING_FIXTURE,
+	items: [
+		...[...RANKING_FIXTURE.items].sort((a, b) => b.deltaDps - a.deltaDps),
+		unsimmed(32366, "Shadowmaster's Boots", 'feet'),
+		unsimmed(32568, 'Swiftsteel Bracers', 'wrist'),
+	],
+	complete: false,
+	durationMs: 41_200,
 };
 
 /** One of the fixture's rows, for tests that name rows; throws on an index the fixture does not have. */
