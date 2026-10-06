@@ -6,6 +6,8 @@ import englishCharacter from '../../../../../assets/locales/en/character.json';
 import englishTranslations from '../../../../../assets/locales/en/translation.json';
 import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
 
+// The row toggles read the page's store; `RowToggles.test.tsx` covers them.
+vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favorite-stub" />, BatchToggle: () => <span data-testid="batch-stub" /> }));
 // The icon lookup fetches from wowhead; the row's own cells are under test.
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
 

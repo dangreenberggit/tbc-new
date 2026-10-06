@@ -5,6 +5,7 @@ import { memo } from 'react';
 import type { RankedItem } from '../../model/engine/rank';
 import type { SetBonusTipContext } from '../../model/set_bonus_tip';
 import { rowSourceLabel, slotLabel } from '../../utils/format';
+import { BatchToggle, FavoriteToggle } from '../RowToggles';
 import { DeltaCell } from './DeltaCell';
 import { ItemNameCell } from './ItemNameCell';
 
@@ -45,8 +46,11 @@ export const ResultRow = memo(({ row, position, context }: ResultRowProps) => (
 		<td className="py-1 pr-3 whitespace-nowrap">{slotLabel(row)}</td>
 		<DeltaCell row={row} context={context} />
 		<td className="py-1 pr-3">{rowSourceLabel(row)}</td>
-		{/* The favorite and batch toggles (K3). */}
-		<td className="py-1" />
-		<td className="py-1" />
+		<td className="py-1">
+			<FavoriteToggle itemId={row.itemId} />
+		</td>
+		<td className="py-1">
+			<BatchToggle itemId={row.itemId} />
+		</td>
 	</tr>
 ));

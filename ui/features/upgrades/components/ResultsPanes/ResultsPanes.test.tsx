@@ -8,6 +8,8 @@ import { applyView } from '../../model/engine/view';
 import { stoppedView } from '../../model/results_view';
 import { RANKING_FIXTURE, STOPPED_FIXTURE } from '../../testing/ranking_fixture';
 
+// The row toggles read the page's store; `RowToggles.test.tsx` covers them.
+vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favorite-stub" />, BatchToggle: () => <span data-testid="batch-stub" /> }));
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
 
 const { ResultsPanes } = await import('./ResultsPanes');

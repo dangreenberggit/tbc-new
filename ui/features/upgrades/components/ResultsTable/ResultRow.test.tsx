@@ -8,6 +8,8 @@ import englishTranslations from '../../../../../assets/locales/en/translation.js
 import type { RankedItem } from '../../model/engine/rank';
 import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
 
+// The row toggles read the page's store; `RowToggles.test.tsx` covers them.
+vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favorite-stub" />, BatchToggle: () => <span data-testid="batch-stub" /> }));
 // The icon lookup fetches from wowhead; the row's own cells are under test.
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
 // The engine reads set membership from the sim database, which a unit test does not load.
@@ -58,6 +60,8 @@ describe('ResultRow', () => {
 		const tr = renderRow(fixtureRow(0));
 		const cells = within(tr).getAllByRole('cell');
 		expect(cells.map(cell => cell.textContent)).toEqual(['3', 'Torch of the DamnedBiS', 'Main Hand', '+45.7', 'Black Temple', '', '']);
+		expect(cells[5]?.querySelector('[data-testid="favorite-stub"]')).not.toBeNull();
+		expect(cells[6]?.querySelector('[data-testid="batch-stub"]')).not.toBeNull();
 		expect(tr.dataset.itemId).toBe('32332');
 		expect(tr.dataset.testid).toBe('upgrades-result-row');
 	});
