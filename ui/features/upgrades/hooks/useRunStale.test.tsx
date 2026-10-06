@@ -113,14 +113,29 @@ describe('useRunStale', () => {
 		expect(view.result.current.stale).toBe(false);
 	});
 
-	it('is never stale while running, and listens to the page only while a result is shown', () => {
+	it('is never stale while running', () => {
 		const { view } = mountRun();
-		expect(listeners.size).toBe(0);
 		act(() => view.result.current.start(SETTINGS, 'an older page'));
 		expect(view.result.current.stale).toBe(false);
-		expect(listeners.size).toBe(0);
+	});
 
+	// Every render counts: a page key cached from before the result would show the warning for one paint.
+	it('never renders a fresh result as stale, though the gear changed after the tab mounted', () => {
+		const seen: boolean[] = [];
+		const view = renderHook(
+			() => {
+				const tab = useUpgradesRun(() => new Promise<RunOutcome>(() => {}));
+				const stale = useRunStale(tab.run, SETTINGS);
+				seen.push(stale);
+				return tab;
+			},
+			{ wrapper },
+		);
+		act(() => {
+			raidName = 'worn gear B';
+			pageChanged();
+		});
 		act(() => view.result.current.dispatchFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
-		expect(listeners.size).toBe(1);
+		expect(seen).not.toContain(true);
 	});
 });

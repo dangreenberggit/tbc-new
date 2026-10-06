@@ -1,13 +1,13 @@
 import { useSavedGear } from '@features/gear/hooks/useSavedGear';
 import { useSimHost } from '@sim/context/SimHostContext';
 import { useSimStore } from '@sim/hooks/useSimStore';
-import { type Dispatch, useMemo, useReducer, useState } from 'react';
+import { useMemo, useReducer, useState } from 'react';
 
 import { bisTagPhaseFor, poolFor } from '../model/data/data';
 import type { ContentPhase } from '../model/engine/types';
 import { specIdFor } from '../model/run';
 import { type SettingsOffer, settingsOffer, type SettingsView, settingsView } from '../model/settings_pool';
-import { initialSettings, type SettingsAction, settingsReducer, type SettingsState } from '../model/settings_reducer';
+import { initialSettings, settingsReducer } from '../model/settings_reducer';
 
 /**
  * A number field's value holder, which a `NumberPicker` reads as its model.
@@ -18,13 +18,16 @@ import { initialSettings, type SettingsAction, settingsReducer, type SettingsSta
 export type NumberField = { current: number };
 
 export type UpgradesSettings = Omit<SettingsView, 'eligibleCount'> & {
-	state: SettingsState;
-	dispatch: Dispatch<SettingsAction>;
 	sources: SettingsOffer['sources'];
+	excludedSources: readonly string[];
+	prune: boolean;
 	/** Undefined when the page's spec has no ranking data. */
 	eligibleCount: number | undefined;
 	iterationsField: NumberField;
 	capField: NumberField;
+	toggleSource: (key: string) => void;
+	toggleSet: (key: string) => void;
+	setPrune: (prune: boolean) => void;
 	onIterationsChange: (iterations: number) => void;
 	onCapChange: (cap: number) => void;
 };
@@ -65,12 +68,15 @@ export function useUpgradesSettings(seed: { iterations: number; candidateCap?: n
 
 	return {
 		...view,
-		state,
-		dispatch,
 		sources: offer.sources,
+		excludedSources: state.excludedSources,
+		prune: state.prune,
 		eligibleCount: specId ? view.eligibleCount : undefined,
 		iterationsField,
 		capField,
+		toggleSource: key => dispatch({ type: 'toggleSource', key }),
+		toggleSet: key => dispatch({ type: 'toggleSet', key }),
+		setPrune: prune => dispatch({ type: 'setPrune', prune }),
 		onIterationsChange: iterations => {
 			iterationsField.current = iterations;
 			dispatch({ type: 'setIterations', iterations });

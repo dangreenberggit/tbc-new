@@ -4,17 +4,15 @@ import { Button } from '@ui-kit/Button';
 import { Chip } from '@ui-kit/Chip';
 import { FieldLabel } from '@ui-kit/FormControl';
 import { Tooltip } from '@ui-kit/Tooltip';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 
 import type { SetOption } from '../../model/settings_pool';
 
 export interface SetChipsProps {
 	chips: { main: readonly SetOption[]; other: readonly SetOption[] };
 	selectedKeys: readonly string[];
-	otherOpen: boolean;
 	prune: boolean;
 	onToggleSet: (key: string) => void;
-	onToggleOther: () => void;
 	onPruneChange: (prune: boolean) => void;
 }
 
@@ -50,7 +48,8 @@ const ChipRow = ({ options, selectedKeys, tooltipId, onToggleSet }: ChipRowProps
 );
 
 /** The gear sets a run can be limited to: this phase's chips, the other phases' behind a disclosure, and the prune. */
-export const SetChips = ({ chips, selectedKeys, otherOpen, prune, onToggleSet, onToggleOther, onPruneChange }: SetChipsProps) => {
+export const SetChips = ({ chips, selectedKeys, prune, onToggleSet, onPruneChange }: SetChipsProps) => {
+	const [otherOpen, setOtherOpen] = useState(false);
 	const titleId = useId();
 	const otherId = useId();
 	const tooltipId = useId();
@@ -69,7 +68,7 @@ export const SetChips = ({ chips, selectedKeys, otherOpen, prune, onToggleSet, o
 						data-testid="upgrades-sets-other"
 						aria-expanded={otherOpen}
 						aria-controls={otherId}
-						onClick={onToggleOther}>
+						onClick={() => setOtherOpen(open => !open)}>
 						{i18n.t('upgrades_tab.settings.sets_other_phases', { n: chips.other.length })}
 					</Button>
 					<div id={otherId} hidden={!otherOpen}>
@@ -80,7 +79,7 @@ export const SetChips = ({ chips, selectedKeys, otherOpen, prune, onToggleSet, o
 			{selectedKeys.length > 0 && (
 				<div data-testid="upgrades-prune">
 					<BooleanPicker
-						modObject={chips}
+						modObject={null}
 						config={{ id: pruneId, label: i18n.t('upgrades_tab.prune.only_bis'), layout: 'inline', value: prune, onChange: onPruneChange }}
 					/>
 				</div>

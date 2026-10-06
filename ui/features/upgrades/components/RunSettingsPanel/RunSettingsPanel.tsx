@@ -28,7 +28,6 @@ export interface RunSettingsPanelProps {
 export const RunSettingsPanel = ({ settings, ready, running, devVisible, onStart }: RunSettingsPanelProps) => {
 	const [open, setOpen] = useState(false);
 	const bodyId = useId();
-	const { state, dispatch } = settings;
 	return (
 		<div className="grid gap-6 border border-border bg-background p-4" data-testid="upgrades-run-settings">
 			<Button
@@ -37,22 +36,24 @@ export const RunSettingsPanel = ({ settings, ready, running, devVisible, onStart
 				data-testid="upgrades-run-settings-summary"
 				aria-expanded={open}
 				aria-controls={bodyId}
-				onClick={() => setOpen(!open)}>
+				onClick={() => setOpen(wasOpen => !wasOpen)}>
 				{i18n.t('upgrades_tab.settings_title')}
 			</Button>
 			<div id={bodyId} className={clsx(open ? 'grid' : 'hidden', 'gap-6 xl:grid')} data-testid="upgrades-run-settings-body">
 				<PhaseSelector />
-				<SourcesButton sources={settings.sources} excluded={state.excludedSources} onToggle={key => dispatch({ type: 'toggleSource', key })} />
+				<SourcesButton sources={settings.sources} excluded={settings.excludedSources} onToggle={settings.toggleSource} />
 				<SetChips
 					chips={settings.chips}
 					selectedKeys={settings.selectedKeys}
-					otherOpen={state.otherSetsOpen}
-					prune={state.prune}
-					onToggleSet={key => dispatch({ type: 'toggleSet', key })}
-					onToggleOther={() => dispatch({ type: 'toggleOtherSets' })}
-					onPruneChange={prune => dispatch({ type: 'setPrune', prune })}
+					prune={settings.prune}
+					onToggleSet={settings.toggleSet}
+					onPruneChange={settings.setPrune}
 				/>
-				<CandidateCapPicker capField={settings.capField} onCapChange={settings.onCapChange} hidden={!devVisible} />
+				{/* Always in the page: the desktop gate writes this input on a production build. Hidden without
+				    `?upgrades-dev`, because a cut of the candidate list the user cannot see drops real upgrades (ticket 466). */}
+				<div hidden={!devVisible}>
+					<CandidateCapPicker capField={settings.capField} onCapChange={settings.onCapChange} />
+				</div>
 			</div>
 			<EligibleCount count={settings.eligibleCount} />
 			<RunControls

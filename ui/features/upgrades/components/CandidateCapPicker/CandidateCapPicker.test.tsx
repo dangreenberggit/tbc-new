@@ -8,14 +8,12 @@ import { CandidateCapPicker } from './CandidateCapPicker';
 beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations, true, true));
 afterAll(() => i18n.removeResourceBundle('en', 'translation'));
 
-const picker = () => screen.getByTestId('upgrades-candidates-picker');
-const input = () => within(picker()).getByRole('textbox', { hidden: true }) as HTMLInputElement;
+const input = () => within(screen.getByTestId('upgrades-candidates-picker')).getByRole('textbox') as HTMLInputElement;
 
 describe('CandidateCapPicker', () => {
-	it('stays in the page while hidden, so the desktop gate can write it', () => {
+	it('shows no cap as an empty field, and reports a typed cap', () => {
 		const onCapChange = vi.fn();
-		render(<CandidateCapPicker capField={{ current: 0 }} onCapChange={onCapChange} hidden />);
-		expect(picker().parentElement?.hidden).toBe(true);
+		render(<CandidateCapPicker capField={{ current: 0 }} onCapChange={onCapChange} />);
 		expect(input().value).toBe('');
 
 		act(() => {
@@ -24,9 +22,8 @@ describe('CandidateCapPicker', () => {
 		expect(onCapChange).toHaveBeenCalledWith(40);
 	});
 
-	it('shows under the dev flag, with the cap it holds', () => {
-		render(<CandidateCapPicker capField={{ current: 10 }} onCapChange={() => {}} hidden={false} />);
-		expect(picker().parentElement?.hidden).toBe(false);
+	it('shows the cap it holds', () => {
+		render(<CandidateCapPicker capField={{ current: 10 }} onCapChange={() => {}} />);
 		expect(input().value).toBe('10');
 	});
 });

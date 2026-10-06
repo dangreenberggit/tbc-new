@@ -15,8 +15,8 @@ const EMPTY = option('preset:3:Empty', 'Empty', 0);
 const P2 = option('preset:2:P2', 'P2', 2);
 
 const mount = (props: Partial<SetChipsProps> = {}) => {
-	const handlers = { onToggleSet: vi.fn(), onToggleOther: vi.fn(), onPruneChange: vi.fn() };
-	render(<SetChips chips={{ main: [P3, EMPTY], other: [P2] }} selectedKeys={[]} otherOpen={false} prune={false} {...handlers} {...props} />);
+	const handlers = { onToggleSet: vi.fn(), onPruneChange: vi.fn() };
+	render(<SetChips chips={{ main: [P3, EMPTY], other: [P2] }} selectedKeys={[]} prune={false} {...handlers} {...props} />);
 	return handlers;
 };
 
@@ -45,22 +45,17 @@ describe('SetChips', () => {
 		expect(onToggleSet).not.toHaveBeenCalled();
 	});
 
-	it('keeps other-phase sets behind a closed disclosure that says how many it holds', () => {
-		const { onToggleOther } = mount();
+	it('keeps other-phase sets behind a closed disclosure that says how many it holds, and opens it on a click', () => {
+		mount();
 		const disclosure = screen.getByTestId('upgrades-sets-other');
 		expect(disclosure.textContent).toBe('Other sets (1)');
 		expect(disclosure.getAttribute('aria-expanded')).toBe('false');
 		expect(disclosed(disclosure)?.hidden).toBe(true);
 
 		fireEvent.click(disclosure);
-		expect(onToggleOther).toHaveBeenCalledOnce();
-	});
-
-	it('shows the other-phase sets when the disclosure is open', () => {
-		mount({ otherOpen: true });
-		const disclosure = screen.getByTestId('upgrades-sets-other');
 		expect(disclosure.getAttribute('aria-expanded')).toBe('true');
 		expect(disclosed(disclosure)?.hidden).toBe(false);
+		expect(chip('preset:2:P2')).not.toBeNull();
 	});
 
 	it('has no disclosure when every set is shown', () => {

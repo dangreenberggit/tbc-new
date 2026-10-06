@@ -14,7 +14,6 @@ export type SettingsState = {
 	/** Undefined is no cap. */
 	candidateCap?: number;
 	iterations: number;
-	otherSetsOpen: boolean;
 	/** The `spec:phase` the default sets were last applied for. */
 	defaultsFor?: string;
 };
@@ -25,7 +24,6 @@ export type SettingsAction =
 	| { type: 'setPrune'; prune: boolean }
 	| { type: 'setCandidateCap'; cap: number | undefined }
 	| { type: 'setIterations'; iterations: number }
-	| { type: 'toggleOtherSets' }
 	| { type: 'applyDefaults'; key: string; selectedSetKeys: readonly string[]; validSourceKeys: readonly string[] };
 
 /** The old tab's cap field read 0 as "no cap" (C6). */
@@ -39,7 +37,6 @@ export const initialSettings = (seed: { iterations: number; candidateCap?: numbe
 	prune: false,
 	candidateCap: normaliseCap(seed.candidateCap),
 	iterations: seed.iterations,
-	otherSetsOpen: false,
 });
 
 export function settingsReducer(state: SettingsState, action: SettingsAction): SettingsState {
@@ -54,8 +51,6 @@ export function settingsReducer(state: SettingsState, action: SettingsAction): S
 			return { ...state, candidateCap: normaliseCap(action.cap) };
 		case 'setIterations':
 			return { ...state, iterations: action.iterations };
-		case 'toggleOtherSets':
-			return { ...state, otherSetsOpen: !state.otherSetsOpen };
 		case 'applyDefaults': {
 			// Once per spec:phase, so a set the user deselects stays deselected
 			// through the re-renders a gear change causes.

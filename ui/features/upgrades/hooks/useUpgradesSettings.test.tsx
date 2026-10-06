@@ -58,14 +58,14 @@ describe('useUpgradesSettings', () => {
 		const { view } = mount();
 		expect(selectedKeys(view.result.current)).toEqual(['preset:3:P3']);
 
-		act(() => view.result.current.dispatch({ type: 'toggleSet', key: 'preset:3:P3' }));
+		act(() => view.result.current.toggleSet('preset:3:P3'));
 		view.rerender();
 		expect(selectedKeys(view.result.current)).toEqual([]);
 	});
 
 	it('selects the new phase’s defaults when the phase changes, and drops an exclusion the new pool lacks', () => {
 		const { view, setPhase } = mount();
-		act(() => view.result.current.dispatch({ type: 'toggleSource', key: 'Hyjal Summit' }));
+		act(() => view.result.current.toggleSource('Hyjal Summit'));
 		expect(view.result.current.runSettings.excludedSources).toEqual(['Hyjal Summit']);
 
 		setPhase(4);
@@ -78,11 +78,11 @@ describe('useUpgradesSettings', () => {
 		const { view } = mount();
 		expect(view.result.current.eligibleCount).toBe(3);
 
-		act(() => view.result.current.dispatch({ type: 'setPrune', prune: true }));
+		act(() => view.result.current.setPrune(true));
 		expect(view.result.current.runSettings.prune).toBe(true);
 		expect(view.result.current.eligibleCount).toBe(1);
 
-		act(() => view.result.current.dispatch({ type: 'toggleSet', key: 'preset:3:P3' }));
+		act(() => view.result.current.toggleSet('preset:3:P3'));
 		expect(view.result.current.runSettings.prune).toBe(false);
 		expect(view.result.current.eligibleCount).toBe(3);
 	});

@@ -13,7 +13,6 @@ describe('initialSettings', () => {
 			prune: false,
 			candidateCap: 10,
 			iterations: 500,
-			otherSetsOpen: false,
 		});
 	});
 
@@ -48,12 +47,6 @@ describe('settingsReducer', () => {
 
 	it('sets iterations', () => {
 		expect(apply(seeded(), { type: 'setIterations', iterations: 2000 }).iterations).toBe(2000);
-	});
-
-	it('opens and closes the other-sets disclosure', () => {
-		const open = apply(seeded(), { type: 'toggleOtherSets' });
-		expect(open.otherSetsOpen).toBe(true);
-		expect(apply(open, { type: 'toggleOtherSets' }).otherSetsOpen).toBe(false);
 	});
 
 	it('applies the default sets once per spec and phase, so a later deselect survives', () => {

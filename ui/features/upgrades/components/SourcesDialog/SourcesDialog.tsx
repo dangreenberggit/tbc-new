@@ -31,7 +31,7 @@ const SourceSection = ({ title, options, excluded, onToggle }: SourceSectionProp
 				{options.map((option, index) => (
 					<div key={option.key} data-testid="upgrades-source-row" data-source={option.key}>
 						<BooleanPicker
-							modObject={option}
+							modObject={null}
 							config={{
 								id: `${idPrefix}-${index}`,
 								label: option.label,
