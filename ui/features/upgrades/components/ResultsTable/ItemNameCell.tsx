@@ -1,0 +1,56 @@
+import type { ItemQuality } from '@generated/proto/common';
+import i18n from '@i18n/config';
+import { ActionId } from '@sim/proto/action_id';
+import { externalRel } from '@sim/utils/links';
+import { useActionId } from '@ui-kit/hooks/useActionId';
+import { itemQualityClassName } from '@ui-kit/utils/css';
+import { WowheadIcon } from '@ui-kit/WowheadIcon';
+
+import type { RankedItem } from '../../model/engine/rank';
+
+export interface ItemNameCellProps {
+	row: Pick<RankedItem, 'itemId' | 'name' | 'bisTags' | 'owned'>;
+	quality: ItemQuality | undefined;
+}
+
+/** Guaranteed-set badges need the set picker (P3); until then a row shows the universe's own BiS or Alt tag. */
+const badgeLabel = (bisTags: RankedItem['bisTags']): string | undefined => {
+	if (bisTags.includes('BiS')) return i18n.t('upgrades_tab.results.bis_badge');
+	if (bisTags.includes('Alt')) return i18n.t('upgrades_tab.results.alt_badge');
+	return undefined;
+};
+
+/** The item: its icon, its name as a wowhead link in its quality colour, and its tags beneath. */
+export const ItemNameCell = ({ row, quality }: ItemNameCellProps) => {
+	const { iconUrl, href } = useActionId(ActionId.fromItemId(row.itemId));
+	const badge = badgeLabel(row.bisTags);
+
+	return (
+		<td className="py-1 pr-3">
+			<span className="flex items-center gap-2">
+				<WowheadIcon as="div" className="size-6 shrink-0" iconUrl={iconUrl} />
+				<span className="grid min-w-0">
+					<a
+						href={href || undefined}
+						target="_blank"
+						rel={externalRel(href || undefined, undefined)}
+						title={row.name}
+						data-testid="upgrades-item-name"
+						className={itemQualityClassName(quality)}>
+						{row.name}
+					</a>
+					{(badge || row.owned) && (
+						<span className="flex items-center gap-1 text-xs">
+							{badge && (
+								<span className="rounded-full bg-warning px-1.5 text-black" data-testid="upgrades-bis-badge">
+									{badge}
+								</span>
+							)}
+							{row.owned && <span>({i18n.t('upgrades_tab.results.owned')})</span>}
+						</span>
+					)}
+				</span>
+			</span>
+		</td>
+	);
+};

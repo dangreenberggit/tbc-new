@@ -21,8 +21,10 @@ export const UpgradesTabBody = () => {
 	return (
 		<>
 			<TabPanelColumns.Left variant="stacked" className="pt-2">
-				<StatusLine run={run} />
-				<UpgradesResults run={run} />
+				<div data-testid="upgrades-tab-left">
+					<StatusLine run={run} />
+					<UpgradesResults run={run} />
+				</div>
 			</TabPanelColumns.Left>
 			<TabPanelColumns.Right>
 				<div className="sticky top-sim-header pt-6">

@@ -1,16 +1,32 @@
-import { ActionId } from '@sim/proto/action_id';
-import { externalRel } from '@sim/utils/links';
-import { useActionId } from '@ui-kit/hooks/useActionId';
-import { WowheadIcon } from '@ui-kit/WowheadIcon';
+import type { ItemQuality } from '@generated/proto/common';
+import clsx from 'clsx';
 import { memo } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
-import { formatDelta, slotLabel, sourceLabel } from '../../utils/format';
+import type { SetBonusTipContext } from '../../model/set_bonus_tip';
+import { slotLabel, sourceLabel } from '../../utils/format';
+import { DeltaCell } from './DeltaCell';
+import { ItemNameCell } from './ItemNameCell';
+
+/**
+ * What every row of one results area shares. Built once per area and kept
+ * stable, so a memoised row renders again only when its own row changes.
+ */
+export type RowContext = {
+	/** The sim database's name and quality for an item, or undefined when it has none. */
+	itemOf: (itemId: number) => { name: string; quality: ItemQuality } | undefined;
+	/** What the set-bonus hint and the %-rule note are measured against; empty while a run is in flight. */
+	tip: SetBonusTipContext;
+};
+
+/** A row with several sources names the first, as the engine orders them. */
+export const rowSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>): string => sourceLabel(row.sources?.[0] ?? row.source);
 
 export interface ResultRowProps {
 	row: RankedItem;
-	/** The row's place in the table, which is what the Rank column shows. */
+	/** The row's place in its own table, which is what the Rank column shows (owner ruling, ticket 287). */
 	position: number;
+	context: RowContext;
 }
 
 /**
@@ -19,23 +35,19 @@ export interface ResultRowProps {
  * `memo`, because a run lands rows one at a time and each landing renders the table: without it every
  * row already shown renders again, which a 467-row replay measured at over 20 s.
  */
-export const ResultRow = memo(({ row, position }: ResultRowProps) => {
-	const { iconUrl, href } = useActionId(ActionId.fromItemId(row.itemId));
-
-	return (
-		<tr className="border-b border-b-border" data-testid="upgrades-result-row" data-item-id={row.itemId}>
-			<td className="py-1 pr-3 tabular-nums">{position}</td>
-			<td className="py-1 pr-3">
-				<span className="flex items-center gap-2">
-					<WowheadIcon as="div" className="size-6 shrink-0" iconUrl={iconUrl} />
-					<a href={href || undefined} target="_blank" rel={externalRel(href || undefined, undefined)}>
-						{row.name}
-					</a>
-				</span>
-			</td>
-			<td className="py-1 pr-3 whitespace-nowrap">{slotLabel(row)}</td>
-			<td className="py-1 pr-3 text-right whitespace-nowrap tabular-nums">{formatDelta(row.deltaDps)}</td>
-			<td className="py-1">{sourceLabel(row.source)}</td>
-		</tr>
-	);
-});
+export const ResultRow = memo(({ row, position, context }: ResultRowProps) => (
+	<tr
+		className={clsx('border-b border-b-border', row.owned && 'text-muted')}
+		data-testid="upgrades-result-row"
+		data-item-id={row.itemId}
+		data-owned={row.owned ? 'true' : undefined}>
+		<td className="py-1 pr-3 tabular-nums">{position}</td>
+		<ItemNameCell row={row} quality={context.itemOf(row.itemId)?.quality} />
+		<td className="py-1 pr-3 whitespace-nowrap">{slotLabel(row)}</td>
+		<DeltaCell row={row} context={context} />
+		<td className="py-1 pr-3">{rowSourceLabel(row)}</td>
+		{/* The favorite and batch toggles (K3). */}
+		<td className="py-1" />
+		<td className="py-1" />
+	</tr>
+));

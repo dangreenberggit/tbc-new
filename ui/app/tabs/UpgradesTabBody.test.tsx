@@ -1,6 +1,7 @@
 import type { RunDeps } from '@features/upgrades/model/run';
 import type { RunResult } from '@features/upgrades/model/run_reducer';
 import { fixtureRow, RANKING_FIXTURE } from '@features/upgrades/testing/ranking_fixture';
+import { Spec } from '@generated/proto/common';
 import i18n from '@i18n/config';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { fakeHost } from '@sim/testing';
@@ -31,13 +32,19 @@ afterAll(() => {
 	i18n.removeResourceBundle('en', 'character');
 });
 
+/** Enough of a page for a run to start and its rows to render: no gear, and a sim database that knows no item. */
+const HOST = fakeHost({
+	player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
+	sim: { db: { getItemById: () => undefined } },
+});
+
 const rowA = fixtureRow(0);
 const rowB = fixtureRow(1);
 
 const mount = () => {
 	runs.length = 0;
 	render(
-		<SimHostProvider host={fakeHost()}>
+		<SimHostProvider host={HOST}>
 			<UpgradesTabBody />
 		</SimHostProvider>,
 	);
@@ -47,7 +54,11 @@ const mount = () => {
 	return run;
 };
 
-const tableRows = () => within(screen.getByTestId('upgrades-results-table')).getAllByTestId('upgrades-result-row');
+/** The rows a reader sees: the one table while a run is in flight, the open sub-tab's table after (every pane stays mounted). */
+const tableRows = () => {
+	const openPane = document.querySelector<HTMLElement>('[data-testid="tab-pane"]:not([inert]):not([hidden])');
+	return within(within(openPane ?? document.body).getByTestId('upgrades-results-table')).getAllByTestId('upgrades-result-row');
+};
 
 describe('UpgradesTabBody', () => {
 	it('shows rows as they land, and keeps them when Stop ends the run', async () => {
@@ -76,7 +87,9 @@ describe('UpgradesTabBody', () => {
 		await act(async () => run.settle({ ...RANKING_FIXTURE, durationMs: 4200 }));
 
 		expect(screen.getByTestId('upgrades-baseline-summary').textContent).toMatch(/Took 4\.2s\.$/);
-		expect(tableRows()).toHaveLength(RANKING_FIXTURE.items.length);
+		// The Upgrades pane lists the ten rows above the cutoff; the eleventh waits in the collapsed group.
+		expect(tableRows()).toHaveLength(10);
+		expect(screen.getAllByTestId('upgrades-below-cutoff-trigger')[0]?.textContent).toBe('1 item(s) below the cutoff');
 		expect((screen.getByTestId('upgrades-run-button') as HTMLButtonElement).disabled).toBe(false);
 	});
 });
