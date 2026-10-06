@@ -20,7 +20,7 @@ export const UpgradesTabBody = () => {
 
 	return (
 		<>
-			<TabPanelColumns.Left className="grid content-start gap-4 pt-2">
+			<TabPanelColumns.Left variant="stacked" className="pt-2">
 				<StatusLine run={run} />
 				<UpgradesResults run={run} />
 			</TabPanelColumns.Left>
