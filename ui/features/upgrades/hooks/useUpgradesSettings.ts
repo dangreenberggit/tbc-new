@@ -6,7 +6,8 @@ import { useMemo, useReducer, useState } from 'react';
 import { bisTagPhaseFor, poolFor } from '../model/data/data';
 import type { ContentPhase } from '../model/engine/types';
 import { specIdFor } from '../model/run';
-import { type SettingsOffer, settingsOffer, type SettingsView, settingsView } from '../model/settings_pool';
+import type { RunSettings } from '../model/run_reducer';
+import { type SetSelection, setSelection, type SettingsOffer, settingsOffer, settingsView } from '../model/settings_pool';
 import { initialSettings, settingsReducer } from '../model/settings_reducer';
 
 /**
@@ -17,7 +18,8 @@ import { initialSettings, settingsReducer } from '../model/settings_reducer';
  */
 export type NumberField = { current: number };
 
-export type UpgradesSettings = Omit<SettingsView, 'eligibleCount'> & {
+export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
+	runSettings: RunSettings;
 	sources: SettingsOffer['sources'];
 	excludedSources: readonly string[];
 	prune: boolean;
@@ -58,8 +60,11 @@ export function useUpgradesSettings(seed: { iterations: number; candidateCap?: n
 			}),
 		[specId, phase, presets, saved],
 	);
+	// Memoised on the picked sets alone, so it keeps its identity while other settings change: the results
+	// area builds its row badges from it, and a new selection renders every row again.
+	const selection = useMemo(() => setSelection(offer, state.selectedSetKeys, phase), [offer, state.selectedSetKeys, phase]);
 	// Memoised for the same renders: the effective pool is a filter over the whole pool.
-	const view = useMemo(() => settingsView(offer, state, phase), [offer, state, phase]);
+	const view = useMemo(() => settingsView(offer, selection, state, phase), [offer, selection, state, phase]);
 
 	const scope = specId && `${specId}:${phase}`;
 	if (scope && state.defaultsFor !== scope) {
@@ -67,7 +72,10 @@ export function useUpgradesSettings(seed: { iterations: number; candidateCap?: n
 	}
 
 	return {
-		...view,
+		selectedOptions: selection.selectedOptions,
+		selectedKeys: selection.selectedKeys,
+		chips: selection.chips,
+		runSettings: view.runSettings,
 		sources: offer.sources,
 		excludedSources: state.excludedSources,
 		prune: state.prune,

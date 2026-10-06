@@ -11,6 +11,7 @@ import {
 	selectedSetItemIds,
 	type SetOption,
 	setOptions,
+	setSelection,
 	settingsOffer,
 	settingsView,
 	sourceKeyOf,
@@ -207,6 +208,10 @@ describe('settingsView', () => {
 		bisTagPhase: 3,
 	});
 	const fresh = initialSettings({ iterations: 500 });
+	const viewOf = (state: typeof fresh) => {
+		const selection = setSelection(offer, state.selectedSetKeys, 3);
+		return { ...selection, ...settingsView(offer, selection, state, 3) };
+	};
 
 	it('offers the pool’s sources and sets, and the BiS-tag phase’s preset as the default', () => {
 		expect(offer.sourceKeys).toEqual(['Black Temple', 'Hyjal Summit', 'Tempest Keep', 'Badge vendor', 'Crafted']);
@@ -215,7 +220,7 @@ describe('settingsView', () => {
 	});
 
 	it('runs the whole phase pool with nothing picked', () => {
-		const view = settingsView(offer, fresh, 3);
+		const view = viewOf(fresh);
 		expect(view.runSettings).toEqual({
 			iterations: 500,
 			candidateCap: undefined,
@@ -230,10 +235,10 @@ describe('settingsView', () => {
 
 	it('narrows the count when a source is excluded and, with prune, to the selected sets’ items', () => {
 		const excluded = settingsReducer(fresh, { type: 'toggleSource', key: 'Badge vendor' });
-		expect(settingsView(offer, excluded, 3).eligibleCount).toBe(4);
+		expect(viewOf(excluded).eligibleCount).toBe(4);
 
 		const pruned = settingsReducer(settingsReducer(fresh, { type: 'toggleSet', key: 'preset:3:P3' }), { type: 'setPrune', prune: true });
-		const view = settingsView(offer, pruned, 3);
+		const view = viewOf(pruned);
 		expect(view.selectedOptions.map(o => o.key)).toEqual(['preset:3:P3']);
 		expect(view.runSettings).toMatchObject({ guaranteedSetKeys: ['preset:3:P3'], guaranteedSetItemIds: [1, 3], prune: true });
 		expect(view.eligibleCount).toBe(2);
@@ -241,6 +246,6 @@ describe('settingsView', () => {
 
 	it('drops a picked set the offer no longer has, such as a deleted saved set', () => {
 		const picked = settingsReducer(fresh, { type: 'toggleSet', key: 'saved:Gone' });
-		expect(settingsView(offer, picked, 3).runSettings.guaranteedSetKeys).toEqual([]);
+		expect(viewOf(picked).runSettings.guaranteedSetKeys).toEqual([]);
 	});
 });

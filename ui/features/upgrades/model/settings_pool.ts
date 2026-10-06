@@ -204,26 +204,34 @@ export function settingsOffer({
 }
 
 /** What the user's picks make of an offer: the chips, the run they ask for and its candidate count. */
-export type SettingsView = {
+/** The sets the user picked, as the offer has them. Apart from `SettingsView` so it can outlive changes to the other settings. */
+export type SetSelection = {
 	selectedOptions: readonly SetOption[];
 	selectedKeys: readonly string[];
+	selectedItemIds: readonly number[];
 	chips: { main: SetOption[]; other: SetOption[] };
-	runSettings: RunSettings;
-	eligibleCount: number;
 };
 
-export function settingsView(offer: SettingsOffer, state: SettingsState, maxPhase: number): SettingsView {
+export function setSelection(offer: SettingsOffer, selectedSetKeys: readonly string[], maxPhase: number): SetSelection {
 	// A saved set deleted since it was picked is no longer a pick.
-	const selectedOptions = offer.options.filter(o => state.selectedSetKeys.includes(o.key));
+	const selectedOptions = offer.options.filter(o => selectedSetKeys.includes(o.key));
 	const selectedKeys = selectedOptions.map(o => o.key);
-	const itemIds = selectedSetItemIds(selectedOptions, selectedKeys);
-	const runSettings = toRunSettings({ ...state, selectedSetKeys: selectedKeys }, itemIds);
-	const pool = effectivePool(offer.pool, { excludedSources: state.excludedSources, selectedSetItemIds: itemIds, prune: runSettings.prune ?? false });
 	return {
 		selectedOptions,
 		selectedKeys,
+		selectedItemIds: selectedSetItemIds(selectedOptions, selectedKeys),
 		chips: splitSetChips(offer.options, selectedKeys, maxPhase),
-		runSettings,
-		eligibleCount: eligibleCount(pool, maxPhase),
 	};
+}
+
+export type SettingsView = { runSettings: RunSettings; eligibleCount: number };
+
+export function settingsView(offer: SettingsOffer, selection: SetSelection, state: SettingsState, maxPhase: number): SettingsView {
+	const runSettings = toRunSettings({ ...state, selectedSetKeys: selection.selectedKeys }, selection.selectedItemIds);
+	const pool = effectivePool(offer.pool, {
+		excludedSources: state.excludedSources,
+		selectedSetItemIds: selection.selectedItemIds,
+		prune: runSettings.prune ?? false,
+	});
+	return { runSettings, eligibleCount: eligibleCount(pool, maxPhase) };
 }

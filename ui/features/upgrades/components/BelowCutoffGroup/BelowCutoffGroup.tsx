@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
 import type { ResultsSort } from '../../model/results_sort';
-import { ResultRows, ResultsTable, type RowContext } from '../ResultsTable';
+import { PlainResultsHead, ResultRows, ResultsTable, type RowContext } from '../ResultsTable';
 
 export interface BelowCutoffGroupProps {
 	rows: readonly RankedItem[];
@@ -26,9 +26,13 @@ export const BelowCutoffGroup = ({ rows, rowContext, sort }: BelowCutoffGroupPro
 	return (
 		<Accordion value={open} onValueChange={setOpen}>
 			<AccordionItem value={GROUP} testId="upgrades-below-cutoff" title={i18n.t('upgrades_tab.results.below_cutoff_group', { count: rows.length })}>
-				<ResultsTable>
-					<ResultRows rows={rows} rowContext={rowContext} sort={sort} />
-				</ResultsTable>
+				{/* A1 attempt: a collapsed copy of the shortlist's head, so this table sizes its columns as that one does. */}
+				<div className="[&_thead]:collapse">
+					<ResultsTable>
+						<PlainResultsHead />
+						<ResultRows rows={rows} rowContext={rowContext} sort={sort} />
+					</ResultsTable>
+				</div>
 			</AccordionItem>
 		</Accordion>
 	);

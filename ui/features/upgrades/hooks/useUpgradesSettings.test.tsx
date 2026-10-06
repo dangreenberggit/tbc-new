@@ -103,6 +103,19 @@ describe('useUpgradesSettings', () => {
 		expect(view.result.current.runSettings).toMatchObject({ iterations: 2000, candidateCap: 40 });
 	});
 
+	it('keeps the selected sets’ identity while only other settings change, so the row badges do not render again', () => {
+		const { view } = mount();
+		const before = view.result.current.selectedOptions;
+
+		act(() => view.result.current.setPrune(true));
+		act(() => view.result.current.onIterationsChange(2000));
+		act(() => view.result.current.toggleSource('Hyjal Summit'));
+		expect(view.result.current.selectedOptions).toBe(before);
+
+		act(() => view.result.current.toggleSet('preset:3:P3'));
+		expect(view.result.current.selectedOptions).not.toBe(before);
+	});
+
 	it('offers nothing and counts nothing for a spec with no ranking data', () => {
 		const { view } = mount(Spec.SpecProtectionPaladin);
 		expect(view.result.current.eligibleCount).toBeUndefined();
