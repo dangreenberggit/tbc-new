@@ -39,6 +39,12 @@ const importHook = async (enabled: boolean) => {
 	return (options: Options) => renderHook((props: Options) => useFixtureAutoload(props), { wrapper, initialProps: options });
 };
 
+const installedLoader = () => {
+	const loader = window.__upgradesFixture;
+	if (!loader) throw new Error('window.__upgradesFixture is not installed');
+	return loader;
+};
+
 afterEach(() => {
 	vi.unstubAllGlobals();
 });
@@ -58,7 +64,7 @@ describe('useFixtureAutoload on a dev build', () => {
 		const onLoaded = vi.fn();
 		(await importHook(true))({ onLoaded, currentRanking: () => undefined });
 
-		await expect(window.__upgradesFixture!(FIXTURE)).resolves.toEqual({ ok: true, rows: RANKING_FIXTURE.items.length });
+		await expect(installedLoader()(FIXTURE)).resolves.toEqual({ ok: true, rows: RANKING_FIXTURE.items.length });
 		expect(onLoaded).toHaveBeenCalledWith(RANKING_FIXTURE);
 	});
 
@@ -66,7 +72,7 @@ describe('useFixtureAutoload on a dev build', () => {
 		const onLoaded = vi.fn();
 		(await importHook(true))({ onLoaded, currentRanking: () => undefined });
 
-		await expect(window.__upgradesFixture!({ ...FIXTURE, spec: 'feral' })).resolves.toMatchObject({ ok: false, reason: 'spec' });
+		await expect(installedLoader()({ ...FIXTURE, spec: 'feral' })).resolves.toMatchObject({ ok: false, reason: 'spec' });
 		expect(onLoaded).not.toHaveBeenCalled();
 	});
 
@@ -79,10 +85,10 @@ describe('useFixtureAutoload on a dev build', () => {
 		rerender({ onLoaded: latest, currentRanking: () => RANKING_FIXTURE });
 		expect(window.__upgradesFixture).toBe(installed);
 
-		await window.__upgradesFixture!(FIXTURE);
+		await installedLoader()(FIXTURE);
 		expect(first).not.toHaveBeenCalled();
 		expect(latest).toHaveBeenCalledOnce();
-		expect(window.__upgradesRanking!()).toMatchObject({ ranking: RANKING_FIXTURE, spec: 'ret', phase: 2 });
+		expect(window.__upgradesRanking?.()).toMatchObject({ ranking: RANKING_FIXTURE, spec: 'ret', phase: 2 });
 	});
 });
 

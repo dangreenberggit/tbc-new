@@ -1,5 +1,5 @@
 import { Spec } from '@generated/proto/common';
-import type { IndividualSimHost } from '@sim/sim_host';
+import { fakeHost as fakeSimHost } from '@sim/testing';
 import { describe, expect, it, vi } from 'vitest';
 
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
@@ -19,14 +19,14 @@ const FIXTURE: TabFixture = {
 const fakeHost = (spec = Spec.SpecRetributionPaladin) => {
 	const calls: string[] = [];
 	const gear = { gear: true };
-	const host = {
+	const host = fakeSimHost({
 		sim: {
 			waitForInit: async () => void calls.push('init'),
 			setPhase: (phase: number) => calls.push(`phase ${phase}`),
 			db: { lookupEquipmentSpec: () => gear },
 		},
 		player: { getSpec: () => spec, setGear: (next: unknown) => calls.push(next === gear ? 'gear' : 'wrong gear') },
-	} as unknown as IndividualSimHost<Spec>;
+	});
 	return { host, calls };
 };
 

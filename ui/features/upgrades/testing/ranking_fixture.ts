@@ -1,4 +1,4 @@
-import type { Ranking } from '../model/engine/rank';
+import type { RankedItem, Ranking } from '../model/engine/rank';
 
 /**
  * A small finished ranking for the tab's unit tests: six rows trimmed from the
@@ -140,3 +140,10 @@ export const RANKING_FIXTURE: Ranking = {
 	],
 	complete: true,
 };
+
+/** One of the fixture's rows, for tests that name rows; throws on an index the fixture does not have. */
+export function fixtureRow(index: number): RankedItem {
+	const row = RANKING_FIXTURE.items[index];
+	if (!row) throw new Error(`RANKING_FIXTURE has no row ${index}`);
+	return row;
+}
