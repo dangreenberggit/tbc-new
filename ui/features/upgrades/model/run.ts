@@ -18,7 +18,8 @@ import { MemoryStore } from './engine/seams/store';
 import type { ContentPhase, SpecId } from './engine/types';
 import { emitProgress } from './progress_channel';
 import { RUN_PROGRESS_ESTIMATOR, RUN_PROGRESS_MIN_CANDIDATES_DONE, RUN_PROGRESS_SHOW_FROM_FRACTION, RunProgressTracker } from './run_progress';
-import type { RunResult, RunSettings } from './run_reducer';
+import type { RunOutcome, RunSettings } from './run_reducer';
+import { effectivePool } from './settings_pool';
 
 /** The sim runner and the cache one mounted tab keeps across its runs. */
 export type RunContext = {
@@ -34,7 +35,7 @@ export type RunDeps = {
 	runContext: () => RunContext;
 };
 
-export type RunFn = (host: IndividualSimHost<Spec>, settings: RunSettings, deps: RunDeps) => Promise<RunResult>;
+export type RunFn = (host: IndividualSimHost<Spec>, settings: RunSettings, deps: RunDeps) => Promise<RunOutcome>;
 
 /**
  * Which page spec the engine can rank, and under what name. `Partial` on
@@ -116,7 +117,11 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 			clock: () => new Date(),
 			raidSimSkeleton: skeleton,
 			epWeights: epWeightsFor(specId),
-			pool: poolFor(specId, maxPhase),
+			pool: effectivePool(poolFor(specId, maxPhase), {
+				excludedSources: settings.excludedSources ?? [],
+				selectedSetItemIds: settings.guaranteedSetItemIds ?? [],
+				prune: settings.prune ?? false,
+			}),
 			simDatabaseFor: simDatabaseResolverFor(host.player, skeleton),
 			concurrency: simRunner.concurrency,
 			signal: deps.signal,
@@ -128,5 +133,5 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 		onProgress,
 	);
 
-	return { ...ranking, durationMs: Date.now() - startedAt };
+	return { ...ranking, durationMs: Date.now() - startedAt, runner: 'WorkerPoolSimRunner' };
 };

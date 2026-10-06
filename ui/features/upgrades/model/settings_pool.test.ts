@@ -1,0 +1,173 @@
+import { describe, expect, it } from 'vitest';
+
+import { poolFor } from './data/data';
+import type { PoolEntry } from './engine/pool';
+import {
+	defaultSetKeys,
+	effectivePool,
+	eligibleCount,
+	rowTagLabels,
+	selectedSetItemIds,
+	type SetOption,
+	setOptions,
+	sourceKeyOf,
+	sourceOptions,
+	splitSetChips,
+} from './settings_pool';
+
+const entry = (itemId: number, source: PoolEntry['source'], extra: Partial<PoolEntry> = {}): PoolEntry => ({
+	itemId,
+	name: `item ${itemId}`,
+	slot: 'head',
+	phase: 3,
+	source,
+	...extra,
+});
+
+const BT = { kind: 'raid', zone: 'Black Temple' } as const;
+const HYJAL = { kind: 'raid', zone: 'Hyjal Summit' } as const;
+
+// Two raids, an item that drops in both, a zoneless badge item, a crafted item
+// whose recipe has a zone (still filed under Crafted), and a Kael legendary.
+const POOL: PoolEntry[] = [
+	entry(1, BT, { bisTags: ['BiS'] }),
+	entry(2, BT, { sources: [BT, HYJAL] }),
+	entry(3, HYJAL, { bisTags: ['BiS'] }),
+	entry(4, { kind: 'badge', cost: 75 }),
+	entry(5, { kind: 'crafted', profession: 'Blacksmithing', recipeZone: 'Black Temple' }, { bisTags: ['Alt'] }),
+	entry(30318, { kind: 'raid', zone: 'Tempest Keep' }, { phase: 2 }),
+	entry(6, BT, { phase: 4 }),
+];
+
+const gear = (...ids: number[]) => ({ items: ids.map(id => ({ id })) });
+
+describe('sourceKeyOf', () => {
+	it('files an entry under its first zone, else under its source bucket', () => {
+		expect(POOL.map(sourceKeyOf)).toEqual(['Black Temple', 'Black Temple', 'Hyjal Summit', 'Badge vendor', 'Crafted', 'Tempest Keep', 'Black Temple']);
+	});
+});
+
+describe('sourceOptions', () => {
+	it('lists raid zones first, then zoneless buckets, each in first-seen order with its entry count', () => {
+		expect(sourceOptions(POOL)).toEqual({
+			raids: [
+				{ key: 'Black Temple', label: 'Black Temple', count: 3 },
+				{ key: 'Hyjal Summit', label: 'Hyjal Summit', count: 2 },
+				{ key: 'Tempest Keep', label: 'Tempest Keep', count: 1 },
+			],
+			other: [
+				{ key: 'Badge vendor', label: 'Badge vendor', count: 1 },
+				{ key: 'Crafted', label: 'Crafted', count: 1 },
+			],
+		});
+	});
+
+	it('leaves out an empty section', () => {
+		expect(sourceOptions([entry(4, { kind: 'badge', cost: 75 })]).raids).toEqual([]);
+	});
+});
+
+const ids = (pool: readonly PoolEntry[]) => pool.map(e => e.itemId);
+const NO_FILTER = { excludedSources: [], selectedSetItemIds: [], prune: false };
+
+describe('effectivePool', () => {
+	it('keeps the whole pool when nothing is excluded', () => {
+		expect(ids(effectivePool(POOL, NO_FILTER))).toEqual(ids(POOL));
+	});
+
+	it('keeps an item from two raids while one of them is still ticked, and drops it when both are excluded', () => {
+		expect(ids(effectivePool(POOL, { ...NO_FILTER, excludedSources: ['Black Temple'] }))).toEqual([2, 3, 4, 5, 30318]);
+		expect(ids(effectivePool(POOL, { ...NO_FILTER, excludedSources: ['Black Temple', 'Hyjal Summit'] }))).toEqual([4, 5, 30318]);
+	});
+
+	it('files a crafted item under Crafted, whatever zone its recipe drops in', () => {
+		expect(ids(effectivePool(POOL, { ...NO_FILTER, excludedSources: ['Crafted'] }))).not.toContain(5);
+		expect(ids(effectivePool(POOL, { ...NO_FILTER, excludedSources: ['Black Temple'] }))).toContain(5);
+	});
+
+	it('with prune, keeps only the selected sets’ items', () => {
+		expect(ids(effectivePool(POOL, { ...NO_FILTER, selectedSetItemIds: [1, 4, 99], prune: true }))).toEqual([1, 4]);
+	});
+
+	it('never adds a set item back past the Sources filter', () => {
+		expect(ids(effectivePool(POOL, { excludedSources: ['Badge vendor'], selectedSetItemIds: [1, 4], prune: true }))).toEqual([1]);
+		expect(ids(effectivePool(POOL, { excludedSources: ['Badge vendor'], selectedSetItemIds: [1, 4], prune: false }))).not.toContain(4);
+	});
+});
+
+describe('eligibleCount', () => {
+	it('counts what the run would sim: the phase filter applied and the Kael legendaries left out', () => {
+		expect(eligibleCount(POOL, 3)).toBe(5);
+		expect(eligibleCount(POOL, 4)).toBe(6);
+	});
+
+	it('matches the ret universes’ measured sizes (523 at phase 4, 617 at phase 5)', () => {
+		expect(eligibleCount(effectivePool(poolFor('ret', 4), NO_FILTER), 4)).toBe(523);
+		expect(eligibleCount(effectivePool(poolFor('ret', 5), NO_FILTER), 5)).toBe(617);
+	});
+});
+
+describe('setOptions', () => {
+	const options = setOptions({
+		presets: [
+			{ name: 'P2', phase: 2, gear: gear(1, 4, 0) },
+			{ name: 'P3', phase: 3, gear: gear(1, 3, 77) },
+			{ name: 'Bulwark', phase: 3, gear: gear(5) },
+			{ name: 'Pre-raid', gear: gear(88) },
+		],
+		savedSets: [{ name: 'Mine', gear: gear(2, 3) }, { name: 'Empty' }],
+		pool: POOL,
+	});
+
+	it('lists presets then saved sets, with keys, labels, item ids and the in-pool count', () => {
+		expect(options).toEqual([
+			{ key: 'preset:2:P2', name: 'P2', label: 'P2', phase: 2, kind: 'preset', itemIds: [1, 4], inPool: 2 },
+			{ key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [1, 3, 77], inPool: 2 },
+			{ key: 'preset:3:Bulwark', name: 'Bulwark', label: 'P3 - Bulwark', phase: 3, kind: 'preset', itemIds: [5], inPool: 1 },
+			{ key: 'preset::Pre-raid', name: 'Pre-raid', label: 'Pre-raid', phase: undefined, kind: 'preset', itemIds: [88], inPool: 0 },
+			{ key: 'saved:Mine', name: 'Mine', label: 'Mine', kind: 'saved', itemIds: [2, 3], inPool: 2 },
+			{ key: 'saved:Empty', name: 'Empty', label: 'Empty', kind: 'saved', itemIds: [], inPool: 0 },
+		]);
+	});
+
+	it('defaults to the presets of the BiS-tag phase whose in-pool items are all BiS-tagged', () => {
+		// P3's in-pool items 1 and 3 are BiS; Bulwark's 5 is only Alt; P2 is another phase.
+		expect(defaultSetKeys(options, POOL, 3)).toEqual(['preset:3:P3']);
+		expect(defaultSetKeys(options, POOL, undefined)).toEqual([]);
+	});
+
+	it('shows current-phase, phaseless and selected chips, and puts the rest behind the disclosure', () => {
+		const { main, other } = splitSetChips(options, ['preset:2:P2'], 3);
+		expect(main.map(o => o.key)).toEqual(['preset:2:P2', 'preset:3:P3', 'preset:3:Bulwark', 'preset::Pre-raid', 'saved:Mine', 'saved:Empty']);
+		expect(other).toEqual([]);
+		expect(splitSetChips(options, [], 3).other.map(o => o.key)).toEqual(['preset:2:P2']);
+	});
+
+	it('unions the selected sets’ item ids', () => {
+		expect(selectedSetItemIds(options, ['preset:2:P2', 'preset:3:P3'])).toEqual([1, 4, 3, 77]);
+	});
+});
+
+describe('rowTagLabels', () => {
+	const option = (key: string, name: string, phase: number | undefined, itemIds: number[]): SetOption => ({
+		key,
+		name,
+		label: name,
+		phase,
+		kind: phase === undefined ? 'saved' : 'preset',
+		itemIds,
+		inPool: itemIds.length,
+	});
+
+	it('names each selected set that holds the item', () => {
+		const selected = [option('preset:3:P3', 'P3', 3, [1, 2]), option('saved:Mine', 'Mine', undefined, [2])];
+		expect(rowTagLabels(2, selected)).toEqual(['P3', 'Mine']);
+		expect(rowTagLabels(1, selected)).toEqual(['P3']);
+		expect(rowTagLabels(9, selected)).toEqual([]);
+	});
+
+	it('prefixes the phase when two selected sets share a name', () => {
+		const selected = [option('preset:2:BiS 9%', 'BiS 9%', 2, [1]), option('preset:3:BiS 9%', 'BiS 9%', 3, [1])];
+		expect(rowTagLabels(1, selected)).toEqual(['P2 BiS 9%', 'P3 BiS 9%']);
+	});
+});

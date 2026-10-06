@@ -12,7 +12,7 @@ describe('assumptionsLine', () => {
 		const line = assumptionsLine(RANKING_FIXTURE, {
 			settings: { iterations: 3000, candidateCap: 40, excludedSources: ['Black Temple', 'pvp'], guaranteedSetKeys: ['p3-bis'], prune: true },
 		});
-		expect(line).toContain(' · candidate pool: BiS-list items for phase 3');
+		expect(line).toContain(' · candidate pool: selected set items for phase 3');
 		expect(line).toContain(' · candidate cap: top 40 simmed in full, plus anything you already own');
 		expect(line).toContain(' · sources: excluded Black Temple, pvp');
 		expect(line).toContain(' · sets: p3-bis');

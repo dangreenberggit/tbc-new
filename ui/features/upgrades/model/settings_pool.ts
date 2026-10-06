@@ -1,0 +1,161 @@
+/**
+ * The pool rules behind the tab's settings: which sources a pool offers, which
+ * gear sets can be selected and which are selected by default, the pool a run
+ * then sims, and the count of candidates in it. Pure, and ported from the old
+ * tab (cb561067 `upgrades_tab.tsx`), where they were private methods.
+ */
+
+import { isKaelTempLegendary } from './engine/kael-temp';
+import { filterPoolByPhase, type ItemSource, type PoolEntry } from './engine/pool';
+import { SOURCE_LABELS } from './engine/view';
+
+export type SourceOption = { key: string; label: string; count: number };
+
+/** A gear set as the settings need it: anything with item ids, which a preset's `gear` and a saved set's `gear` both are. */
+type GearItems = { items: readonly { id: number }[] };
+
+export type SetOption = {
+	key: string;
+	name: string;
+	label: string;
+	phase?: number;
+	kind: 'preset' | 'saved';
+	itemIds: readonly number[];
+	/** How many of `itemIds` are in this spec and phase's pool. */
+	inPool: number;
+};
+
+export type PoolFilter = {
+	excludedSources: readonly string[];
+	selectedSetItemIds: readonly number[];
+	prune: boolean;
+};
+
+const poolSourcesOf = (entry: PoolEntry): readonly ItemSource[] => entry.sources ?? [entry.source];
+
+/**
+ * The source key an entry files under: its first zone, else its source
+ * bucket. Mirrors the engine's module-private `zoneKeyOf` (view.ts) over a
+ * pool entry; the engine does not export it, so this is a copy and must
+ * change with it.
+ */
+export function sourceKeyOf(entry: PoolEntry): string {
+	for (const s of poolSourcesOf(entry)) {
+		if ('zone' in s) return s.zone;
+	}
+	return SOURCE_LABELS[entry.source.kind] ?? entry.source.kind;
+}
+
+/** A zone matches any entry that drops there; a zoneless bucket matches only entries with no zone. */
+function sourceMatches(entry: PoolEntry, key: string): boolean {
+	const sources = poolSourcesOf(entry);
+	if (sources.some(s => 'zone' in s && s.zone === key)) return true;
+	return sourceKeyOf(entry) === key && !sources.some(s => 'zone' in s);
+}
+
+const ZONELESS_KEYS = new Set(Object.values(SOURCE_LABELS));
+
+/** Every source key the pool offers: raid zones first, then zoneless buckets, each in first-seen order. */
+export function sourceKeys(pool: readonly PoolEntry[]): string[] {
+	const keys = [...new Set(pool.map(sourceKeyOf))];
+	return [...keys.filter(k => !ZONELESS_KEYS.has(k)), ...keys.filter(k => ZONELESS_KEYS.has(k))];
+}
+
+export function sourceOptions(pool: readonly PoolEntry[]): { raids: SourceOption[]; other: SourceOption[] } {
+	const options = sourceKeys(pool).map(key => ({ key, label: key, count: pool.filter(e => sourceMatches(e, key)).length }));
+	return { raids: options.filter(o => !ZONELESS_KEYS.has(o.key)), other: options.filter(o => ZONELESS_KEYS.has(o.key)) };
+}
+
+const itemIdsOf = (gear: GearItems | undefined): number[] => [...new Set((gear?.items ?? []).map(i => i.id).filter(id => id > 0))];
+
+/**
+ * A preset's label leads with "P{phase} - " unless its name already starts
+ * with that P-token (ret's presets are named "P2", "P3"), so ret shows "P2"
+ * and "P3 - Bulwark", not "P2 - P2".
+ */
+function presetLabel(name: string, phase: number | undefined): string {
+	if (phase === undefined || new RegExp(`^p${phase}($|[^0-9])`, 'i').test(name)) return name;
+	return `P${phase} - ${name}`;
+}
+
+export function setOptions({
+	presets,
+	savedSets,
+	pool,
+}: {
+	presets: readonly { name: string; phase?: number; gear: GearItems }[];
+	savedSets: readonly { name: string; gear?: GearItems }[];
+	pool: readonly PoolEntry[];
+}): SetOption[] {
+	const poolIds = new Set(pool.map(e => e.itemId));
+	const inPool = (itemIds: readonly number[]) => itemIds.filter(id => poolIds.has(id)).length;
+	const fromPresets = presets.map(({ name, phase, gear }): SetOption => {
+		const itemIds = itemIdsOf(gear);
+		return { key: `preset:${phase ?? ''}:${name}`, name, label: presetLabel(name, phase), phase, kind: 'preset', itemIds, inPool: inPool(itemIds) };
+	});
+	const fromSaved = savedSets.map(({ name, gear }): SetOption => {
+		const itemIds = itemIdsOf(gear);
+		return { key: `saved:${name}`, name, label: name, kind: 'saved', itemIds, inPool: inPool(itemIds) };
+	});
+	return [...fromPresets, ...fromSaved];
+}
+
+/**
+ * The sets selected by default: the presets of the phase the pool's BiS tags
+ * come from (`bisTagPhaseFor().tagsFromPhase`) whose in-pool items are all
+ * BiS-tagged, with at least one in the pool. Both tests are needed: the ids
+ * alone over-select (feral P3's ids also satisfy the P4 BiS pair), and the
+ * phase alone admits same-phase alternatives (ret's "Bulwark").
+ */
+export function defaultSetKeys(options: readonly SetOption[], pool: readonly PoolEntry[], bisTagPhase: number | undefined): string[] {
+	if (bisTagPhase === undefined) return [];
+	const poolIds = new Set(pool.map(e => e.itemId));
+	const bisIds = new Set(pool.filter(e => e.bisTags?.includes('BiS')).map(e => e.itemId));
+	return options
+		.filter(o => o.kind === 'preset' && o.phase === bisTagPhase)
+		.filter(o => {
+			const inPool = o.itemIds.filter(id => poolIds.has(id));
+			return inPool.length > 0 && inPool.every(id => bisIds.has(id));
+		})
+		.map(o => o.key);
+}
+
+/** Current-phase, phaseless and selected chips are always shown; the rest sit behind "Other sets (n)". */
+export function splitSetChips(options: readonly SetOption[], selectedKeys: readonly string[], maxPhase: number): { main: SetOption[]; other: SetOption[] } {
+	const shown = (o: SetOption) => o.phase === undefined || o.phase === maxPhase || selectedKeys.includes(o.key);
+	return { main: options.filter(shown), other: options.filter(o => !shown(o)) };
+}
+
+export const selectedSetItemIds = (options: readonly SetOption[], selectedKeys: readonly string[]): number[] => [
+	...new Set(options.filter(o => selectedKeys.includes(o.key)).flatMap(o => o.itemIds)),
+];
+
+/**
+ * The pool a run sims. An entry stays while some source it matches is still
+ * ticked, so an item from two raids survives one being excluded. With prune
+ * on, only the selected sets' items stay; the sets never add an item back
+ * past the Sources filter (ticket 456).
+ */
+export function effectivePool(pool: readonly PoolEntry[], { excludedSources, selectedSetItemIds, prune }: PoolFilter): PoolEntry[] {
+	const excluded = new Set(excludedSources);
+	const ticked = sourceKeys(pool).filter(key => !excluded.has(key));
+	const inSets = new Set(selectedSetItemIds);
+	return pool.filter(e => ticked.some(key => sourceMatches(e, key)) && (!prune || inSets.has(e.itemId)));
+}
+
+/** The candidates an uncapped run sims: the engine's own phase filter and Kael exclusion, applied to the effective pool. */
+export const eligibleCount = (pool: readonly PoolEntry[], maxPhase: number): number =>
+	filterPoolByPhase(pool, maxPhase).filter(e => !isKaelTempLegendary(e.itemId)).length;
+
+/**
+ * One badge per selected set that holds the item, named as the gear tab names
+ * the set (ticket 430). Two selected sets with the same name get their phase
+ * in front so the badges do not read the same.
+ */
+export function rowTagLabels(itemId: number, selectedOptions: readonly SetOption[]): string[] {
+	const holding = selectedOptions.filter(o => o.itemIds.includes(itemId));
+	return holding.map(o => {
+		const shared = holding.some(other => other !== o && other.name === o.name);
+		return shared && o.phase !== undefined ? `P${o.phase} ${o.name}` : o.name;
+	});
+}

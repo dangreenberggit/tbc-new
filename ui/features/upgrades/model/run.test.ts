@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { WorkerPoolSimRunner } from './adapters/worker_pool_sim_runner';
+import { poolFor } from './data/data';
 import type { Deps, PartialRanking, Progress, RankedItem, RankInput } from './engine/rank';
 import { MemoryStore } from './engine/seams/store';
 import { progressOf } from './progress_channel';
@@ -128,6 +129,33 @@ describe('rankForPlayer', () => {
 		expect(build).toHaveBeenCalledTimes(1);
 		expect(rankCalls[0]!.deps.sim).toBe(rankCalls[1]!.deps.sim);
 		expect(rankCalls[0]!.deps.store).toBe(rankCalls[1]!.deps.store);
+	});
+
+	it('records that the worker pool measured the result', async () => {
+		expect(await rankForPlayer(fakeHost(), SETTINGS, depsFor())).toMatchObject({ runner: 'WorkerPoolSimRunner' });
+	});
+
+	it('sims the whole pool when no setting narrows it', async () => {
+		await rankForPlayer(fakeHost(), SETTINGS, depsFor());
+		expect(rankCalls[0]!.deps.pool).toHaveLength(poolFor('ret', 3).length);
+	});
+
+	it('leaves an excluded raid’s items out of the pool it ranks', async () => {
+		const dropsIn = (zone: string) => (e: { source: object; sources?: object[] }) => (e.sources ?? [e.source]).some(s => 'zone' in s && s.zone === zone);
+		const full = poolFor('ret', 3);
+		expect(full.some(dropsIn('Black Temple'))).toBe(true);
+
+		await rankForPlayer(fakeHost(), { ...SETTINGS, excludedSources: ['Black Temple'] }, depsFor());
+		const pool = rankCalls[0]!.deps.pool ?? [];
+		expect(pool.length).toBeLessThan(full.length);
+		// An item that also drops in a raid still ticked stays.
+		expect(pool.filter(dropsIn('Black Temple')).every(e => (e.sources ?? []).some(s => 'zone' in s && s.zone !== 'Black Temple'))).toBe(true);
+	});
+
+	it('with prune, ranks only the selected sets’ items', async () => {
+		const [a, b] = poolFor('ret', 3);
+		await rankForPlayer(fakeHost(), { ...SETTINGS, guaranteedSetItemIds: [a!.itemId, b!.itemId], prune: true }, depsFor());
+		expect((rankCalls[0]!.deps.pool ?? []).map(e => e.itemId)).toEqual([a!.itemId, b!.itemId]);
 	});
 
 	it('refuses a spec it has no data for', async () => {

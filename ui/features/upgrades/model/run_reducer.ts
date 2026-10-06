@@ -13,12 +13,13 @@ export type RunSettings = {
 	/** Keep the first N candidates of the EP ordering; undefined is no cap. */
 	candidateCap?: number;
 	/**
-	 * The three pool filters the old tab offered (sources, selected sets,
-	 * prune). P1 has no control for them and `rankForPlayer` passes the whole
-	 * pool; P2 brings the controls and the filter.
+	 * The pool filters the old tab offered: excluded sources, and with `prune`
+	 * only the items of the selected sets. `rankForPlayer` applies them through
+	 * `effectivePool`; the set keys are for the assumptions line only.
 	 */
 	excludedSources?: readonly string[];
 	guaranteedSetKeys?: readonly string[];
+	guaranteedSetItemIds?: readonly number[];
 	prune?: boolean;
 };
 
@@ -35,12 +36,25 @@ export type FinishedRanking = Ranking & { durationMs?: number };
 export type StoppedRanking = PartialRanking & { durationMs: number };
 export type RunResult = FinishedRanking | StoppedRanking;
 
+/** The one runner a live run uses (`createRunContext`). */
+export type RunnerName = 'WorkerPoolSimRunner';
+
 /**
- * The gear and spec a ranking was measured against. The ranking holds no
- * gear, and a row's own set breaks are worked out from the gear it was
- * measured on, not the gear worn now (ticket 536).
+ * What a run function resolves with: the result and, for a live run, the
+ * runner that measured it. The runner moves to `MeasuredOn` when the run
+ * settles, so the ranking a fixture recorder saves never carries it.
  */
-export type MeasuredOn = { wornItemIds?: readonly number[]; specId?: SpecId };
+export type RunOutcome = RunResult & { runner?: RunnerName };
+
+/**
+ * What a ranking was measured against. The ranking holds no gear, and a row's
+ * own set breaks are worked out from the gear it was measured on, not the gear
+ * worn now (ticket 536). `inputsSignature` is the page and settings when the
+ * run started or the fixture loaded (`run_inputs.ts`); the result is stale
+ * once the same signature built now differs. `runner` is set only by a live
+ * run, never by a fixture or a replay.
+ */
+export type MeasuredOn = { wornItemIds?: readonly number[]; specId?: SpecId; inputsSignature?: string; runner?: RunnerName };
 
 export type RunState =
 	| { status: 'idle' }
@@ -57,12 +71,15 @@ export type RunAction =
 	| { type: 'started'; runId: number; startedAt: number; measuredOn?: MeasuredOn }
 	| { type: 'landed'; runId: number; row: RankedItem }
 	| { type: 'stopping'; runId: number }
-	| { type: 'finished'; runId: number; result: FinishedRanking }
-	| { type: 'stopped'; runId: number; result: StoppedRanking }
+	| { type: 'finished'; runId: number; result: FinishedRanking; runner?: RunnerName }
+	| { type: 'stopped'; runId: number; result: StoppedRanking; runner?: RunnerName }
 	| { type: 'failed'; runId: number; message: string }
 	| { type: 'fixtureLoaded'; runId: number; ranking: Ranking; measuredOn?: MeasuredOn };
 
 export const IDLE_RUN: RunState = { status: 'idle' };
+
+const withRunner = (measuredOn: MeasuredOn | undefined, runner: RunnerName | undefined): MeasuredOn | undefined =>
+	runner ? { ...measuredOn, runner } : measuredOn;
 
 const isCurrentRun = (state: RunState, runId: number): state is Extract<RunState, { status: 'running' }> => state.status === 'running' && state.runId === runId;
 
@@ -81,10 +98,10 @@ export function runReducer(state: RunState, action: RunAction): RunState {
 			return { ...state, stopping: true };
 		case 'finished':
 			if (!isCurrentRun(state, action.runId)) return state;
-			return { status: 'done', runId: action.runId, result: action.result, measuredOn: state.measuredOn };
+			return { status: 'done', runId: action.runId, result: action.result, measuredOn: withRunner(state.measuredOn, action.runner) };
 		case 'stopped':
 			if (!isCurrentRun(state, action.runId)) return state;
-			return { status: 'stopped', runId: action.runId, result: action.result, measuredOn: state.measuredOn };
+			return { status: 'stopped', runId: action.runId, result: action.result, measuredOn: withRunner(state.measuredOn, action.runner) };
 		case 'failed':
 			if (!isCurrentRun(state, action.runId)) return state;
 			return { status: 'error', runId: action.runId, message: action.message };
@@ -92,8 +109,14 @@ export function runReducer(state: RunState, action: RunAction): RunState {
 }
 
 /** The action a run's settled result dispatches: a partial ranking is what Stop returns. */
-export const settledAction = (runId: number, result: RunResult): RunAction =>
-	result.complete ? { type: 'finished', runId, result } : { type: 'stopped', runId, result };
+export function settledAction(runId: number, outcome: RunOutcome): RunAction {
+	if (outcome.complete) {
+		const { runner, ...result } = outcome;
+		return { type: 'finished', runId, result, runner };
+	}
+	const { runner, ...result } = outcome;
+	return { type: 'stopped', runId, result, runner };
+}
 
 /** The rows the table shows for `run`. A stopped ranking also lists the candidates Stop never reached. */
 export function visibleRows(run: RunState): readonly RankedItem[] {

@@ -12,10 +12,14 @@ import { RUNNER_ENV } from '../utils/runner_env';
 
 export type UpgradesRun = {
 	run: RunState;
-	/** A click handler: a run starts only from the user's Run. */
-	start: (settings: RunSettings) => void;
+	/**
+	 * A click handler: a run starts only from the user's Run. The caller passes
+	 * the inputs signature (`run_inputs.ts`), because the tab's settings live
+	 * with the caller.
+	 */
+	start: (settings: RunSettings, inputsSignature?: string) => void;
 	stop: () => void;
-	dispatchFixture: (ranking: Ranking) => void;
+	dispatchFixture: (ranking: Ranking, inputsSignature?: string) => void;
 };
 
 /**
@@ -23,9 +27,10 @@ export type UpgradesRun = {
  * dialog blocks gear edits until the run settles, so this is the gear the
  * engine reads; and read when a fixture loads, which sets the page gear first.
  */
-const measuredOnPage = (host: ReturnType<typeof useSimHost>): MeasuredOn => ({
+const measuredOnPage = (host: ReturnType<typeof useSimHost>, inputsSignature: string | undefined): MeasuredOn => ({
 	wornItemIds: equippedItemIds(host.player),
 	specId: specIdFor(host.player.getSpec()),
+	inputsSignature,
 });
 
 /**
@@ -60,7 +65,7 @@ export function useUpgradesRun(runFn: RunFn): UpgradesRun {
 		};
 	}, []);
 
-	const start = (settings: RunSettings) => {
+	const start = (settings: RunSettings, inputsSignature?: string) => {
 		const current = session.current;
 		current.controller?.abort();
 		const controller = new AbortController();
@@ -68,7 +73,7 @@ export function useUpgradesRun(runFn: RunFn): UpgradesRun {
 		const runId = ++current.runId;
 
 		clearProgress(host.player);
-		const measuredOn = measuredOnPage(host);
+		const measuredOn = measuredOnPage(host, inputsSignature);
 		dispatch({ type: 'started', runId, startedAt: Date.now(), measuredOn });
 		runFn(host, settings, {
 			signal: controller.signal,
@@ -92,10 +97,10 @@ export function useUpgradesRun(runFn: RunFn): UpgradesRun {
 		dispatch({ type: 'stopping', runId: current.runId });
 	};
 
-	const dispatchFixture = (ranking: Ranking) => {
+	const dispatchFixture = (ranking: Ranking, inputsSignature?: string) => {
 		const current = session.current;
 		current.controller?.abort();
-		const measuredOn = measuredOnPage(host);
+		const measuredOn = measuredOnPage(host, inputsSignature);
 		dispatch({ type: 'fixtureLoaded', runId: ++current.runId, ranking, measuredOn });
 		logAssumptions(ranking, { specId: measuredOn.specId });
 	};

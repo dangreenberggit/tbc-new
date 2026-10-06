@@ -22,7 +22,7 @@ export type AssumptionsContext = {
 export function assumptionsLine(ranking: Pick<Ranking, 'assumptions'>, { specId, settings }: AssumptionsContext = {}): string {
 	const a = ranking.assumptions;
 	const lines = [`seeds: ${a.seeds.join(', ')}`, `iterations: ${a.iterations}`, `max phase: ${a.maxPhase}`];
-	if (settings) lines.push(`candidate pool: ${settings.prune ? `BiS-list items for phase ${a.maxPhase}` : 'every eligible item'}`);
+	if (settings) lines.push(`candidate pool: ${settings.prune ? `selected set items for phase ${a.maxPhase}` : 'every eligible item'}`);
 	if (specId) {
 		// The chosen file is not always the selected phase's: the data falls back to the highest phase at or below it.
 		const poolSource = poolSourceFor(specId, a.maxPhase);

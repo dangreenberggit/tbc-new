@@ -111,6 +111,22 @@ describe('runReducer', () => {
 		expect(loaded).toMatchObject({ status: 'done', runId: 2 });
 		expect(runReducer(loaded, { type: 'landed', runId: 1, row: rowA! })).toBe(loaded);
 	});
+
+	it('keeps the inputs signature a run started with through to its result', () => {
+		const started = runReducer(IDLE_RUN, { type: 'started', runId: 1, startedAt: 0, measuredOn: { inputsSignature: 'sig' } });
+		const done = runReducer(started, { type: 'finished', runId: 1, result: RANKING_FIXTURE });
+		expect(done).toMatchObject({ status: 'done', measuredOn: { inputsSignature: 'sig' } });
+	});
+
+	it('records the runner when a live run settles, and none for a run that named none', () => {
+		const started = runReducer(IDLE_RUN, { type: 'started', runId: 1, startedAt: 0, measuredOn: { inputsSignature: 'sig' } });
+		const live = runReducer(started, { type: 'finished', runId: 1, result: RANKING_FIXTURE, runner: 'WorkerPoolSimRunner' });
+		expect(live).toMatchObject({ measuredOn: { inputsSignature: 'sig', runner: 'WorkerPoolSimRunner' } });
+		const stopped = runReducer(started, { type: 'stopped', runId: 1, result: { ...partial, durationMs: 1 }, runner: 'WorkerPoolSimRunner' });
+		expect(stopped).toMatchObject({ status: 'stopped', measuredOn: { runner: 'WorkerPoolSimRunner' } });
+		const replay = runReducer(started, { type: 'finished', runId: 1, result: RANKING_FIXTURE });
+		expect(replay.status === 'done' && replay.measuredOn).toEqual({ inputsSignature: 'sig' });
+	});
 });
 
 describe('runSettings', () => {
@@ -132,6 +148,13 @@ describe('settledAction', () => {
 	it('stops a run whose ranking is partial', () => {
 		const result = { ...partial, durationMs: 5 };
 		expect(settledAction(4, result)).toEqual({ type: 'stopped', runId: 4, result });
+	});
+
+	it('moves the runner off the result, so a recorded ranking never carries it', () => {
+		const result = { ...RANKING_FIXTURE, durationMs: 5 };
+		const action = settledAction(4, { ...result, runner: 'WorkerPoolSimRunner' });
+		expect(action).toEqual({ type: 'finished', runId: 4, result, runner: 'WorkerPoolSimRunner' });
+		expect(action.type === 'finished' && 'runner' in action.result).toBe(false);
 	});
 });
 
