@@ -11,7 +11,23 @@ const running = (runId = 1): RunState => runReducer(IDLE_RUN, { type: 'started',
 
 describe('runReducer', () => {
 	it('starts a run from idle with no landed rows', () => {
-		expect(running()).toEqual({ status: 'running', runId: 1, startedAt: 1000, landedRows: [] });
+		expect(running()).toEqual({ status: 'running', runId: 1, startedAt: 1000, landedRows: [], stopping: false });
+	});
+
+	it('marks the run as stopping when Stop is pressed, keeping its landed rows', () => {
+		const state = runReducer(runReducer(running(), { type: 'landed', runId: 1, row: rowA! }), { type: 'stopping', runId: 1 });
+		expect(state).toMatchObject({ status: 'running', landedRows: [rowA], stopping: true });
+	});
+
+	it('ignores a Stop meant for a superseded run', () => {
+		const state = running(2);
+		expect(runReducer(state, { type: 'stopping', runId: 1 })).toBe(state);
+	});
+
+	it('enters stopped, not error, when a stopping run settles with its partial ranking', () => {
+		const stopping = runReducer(running(), { type: 'stopping', runId: 1 });
+		const result = { ...partial, durationMs: 800 };
+		expect(runReducer(stopping, settledAction(1, result))).toEqual({ status: 'stopped', runId: 1, result });
 	});
 
 	it('appends each landed row of the current run, in order', () => {
@@ -64,6 +80,7 @@ describe('runReducer', () => {
 			runId: 2,
 			startedAt: 5000,
 			landedRows: [],
+			stopping: false,
 		});
 	});
 

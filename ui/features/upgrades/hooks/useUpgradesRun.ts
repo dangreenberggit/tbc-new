@@ -57,7 +57,13 @@ export function useUpgradesRun(runFn: RunFn): UpgradesRun {
 		);
 	};
 
-	const stop = () => session.current.controller?.abort();
+	/** Nothing is cancelled mid-sim: the engine finishes the step in flight and returns the rows so far (option (a), ticket 559). */
+	const stop = () => {
+		const current = session.current;
+		if (!current.controller) return;
+		current.controller.abort();
+		dispatch({ type: 'stopping', runId: current.runId });
+	};
 
 	const dispatchFixture = (ranking: Ranking) => {
 		const current = session.current;

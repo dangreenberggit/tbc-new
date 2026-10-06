@@ -92,6 +92,6 @@ describe('resultsViewFor', () => {
 
 	it('has no view before a run settles', () => {
 		expect(resultsViewFor({ status: 'idle' })).toBeUndefined();
-		expect(resultsViewFor({ status: 'running', runId: 1, startedAt: 0, landedRows: [] })).toBeUndefined();
+		expect(resultsViewFor({ status: 'running', runId: 1, startedAt: 0, landedRows: [], stopping: false })).toBeUndefined();
 	});
 });

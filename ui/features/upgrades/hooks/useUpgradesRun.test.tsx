@@ -74,6 +74,7 @@ describe('useUpgradesRun', () => {
 
 		act(() => result.current.stop());
 		expect(call(0).deps.signal.aborted).toBe(true);
+		expect(result.current.run).toMatchObject({ status: 'running', stopping: true });
 
 		await act(async () => call(0).settle(partialOf()));
 		expect(result.current.run).toMatchObject({ status: 'stopped', result: { items: [rowA] } });

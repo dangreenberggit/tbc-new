@@ -62,6 +62,8 @@ describe('UpgradesTabBody', () => {
 
 		fireEvent.click(screen.getByTestId('progress-tracker-modal-cancel-btn'));
 		expect(run.deps.signal.aborted).toBe(true);
+		// The dialog covers the status line for the whole wait, so the dialog itself says so.
+		expect(screen.getByTestId('progress-tracker-modal-message').textContent).toBe('Stopping — finishing the current step.');
 		await act(async () => run.settle({ ...RANKING_FIXTURE, items: [rowA, rowB], complete: false, durationMs: 800 }));
 
 		expect(screen.getByTestId('upgrades-baseline-summary').textContent).toMatch(/^Stopped early\./);

@@ -2621,7 +2621,8 @@
 			"running_rows": "{{label}} ({{count}} rows landed)",
 			"done_took": "Your current gear: {{dps}} DPS. Took {{seconds}}s.",
 			"running": "Rows landed so far: {{count}}.",
-			"stopped_partial": "Stopped early. Your current gear: {{dps}} DPS. The rows below finished before Stop."
+			"stopped_partial": "Stopped early. Your current gear: {{dps}} DPS. The rows below finished before Stop.",
+			"stopping": "Stopping — finishing the current step."
 		},
 		"view": {
 			"title": "View options",
@@ -2709,7 +2710,15 @@
 			"empty_no_upgrades_body": "Every candidate simmed at or below your current gear. Widen the phase or content filter to consider more items.",
 			"empty_unsupported_spec_body": "Ranking data has not been built for this spec yet, so there is nothing to run.",
 			"below_cutoff_group": "{{count}} item(s) below the cutoff",
-			"removes_worn": "removes worn {{name}} ({{slot}})"
+			"removes_worn": "removes worn {{name}} ({{slot}})",
+			"sort_ascending": "sorted ascending",
+			"sort_descending": "sorted descending"
+		},
+		"toggles": {
+			"favorite_add": "Add to favorites",
+			"favorite_remove": "Remove from favorites",
+			"batch_add": "Add to Batch Sim",
+			"batch_remove": "Remove from Batch Sim"
 		},
 		"assumptions": {
 			"substitutions_title": "Dropped candidates and substitutions ({{count}})",

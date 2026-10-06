@@ -35,7 +35,7 @@ export const UpgradesTabBody = () => {
 					/>
 				</div>
 			</TabPanelColumns.Right>
-			{run.status === 'running' && <RunProgressDialog onStop={stop} />}
+			{run.status === 'running' && <RunProgressDialog onStop={stop} stopping={run.stopping} />}
 		</>
 	);
 };

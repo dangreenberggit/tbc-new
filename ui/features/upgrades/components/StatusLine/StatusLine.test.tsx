@@ -29,9 +29,14 @@ describe('StatusLine', () => {
 	});
 
 	it('counts the rows landed while running, with no baseline yet', () => {
-		const { getByTestId, queryByTestId } = render(<StatusLine run={{ status: 'running', runId: 1, startedAt: 0, landedRows: [row] }} />);
+		const { getByTestId, queryByTestId } = render(<StatusLine run={{ status: 'running', runId: 1, startedAt: 0, landedRows: [row], stopping: false }} />);
 		expect(getByTestId('upgrades-status-line').textContent).toBe('Rows landed so far: 1.');
 		expect(queryByTestId('upgrades-baseline-summary')).toBeNull();
+	});
+
+	it('says the run is stopping while the step in flight finishes', () => {
+		const { getByTestId } = render(<StatusLine run={{ status: 'running', runId: 1, startedAt: 0, landedRows: [row], stopping: true }} />);
+		expect(getByTestId('upgrades-status-line').textContent).toBe('Stopping — finishing the current step.');
 	});
 
 	it('says nothing before a run', () => {

@@ -13,7 +13,7 @@ export const StatusLine = ({ run }: StatusLineProps) => {
 		case 'running':
 			return (
 				<p className="mb-0" data-testid="upgrades-status-line">
-					{i18n.t('upgrades_tab.status.running', { count: run.landedRows.length })}
+					{run.stopping ? i18n.t('upgrades_tab.status.stopping') : i18n.t('upgrades_tab.status.running', { count: run.landedRows.length })}
 				</p>
 			);
 		case 'done':

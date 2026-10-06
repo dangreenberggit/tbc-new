@@ -8,13 +8,15 @@ import { progressBarOf, progressLabel, progressStageOf } from '../../utils/forma
 
 export interface RunProgressDialogProps {
 	onStop: () => void;
+	/** Stop was pressed; the dialog stays up until the step in flight finishes, so it says so. */
+	stopping: boolean;
 }
 
 /**
  * Mounted only while a run is in flight, as the Bulk dialog is. A tick goes to
  * the bar through its handle, so only a change of stage renders the dialog.
  */
-export const RunProgressDialog = ({ onStop }: RunProgressDialogProps) => {
+export const RunProgressDialog = ({ onStop, stopping }: RunProgressDialogProps) => {
 	const player = usePlayer();
 	const [stage, setStage] = useState(() => progressStageOf(progressOf(player)));
 	const barRef = useRef<ProgressTrackerHandle>(null);
@@ -37,7 +39,7 @@ export const RunProgressDialog = ({ onStop }: RunProgressDialogProps) => {
 			open
 			testId="upgrades-run-progress"
 			title={i18n.t('upgrades_tab.run_progress.title')}
-			state={{ stage, message: progressLabel(stage) }}
+			state={{ stage, message: stopping ? i18n.t('upgrades_tab.status.stopping') : progressLabel(stage) }}
 			hasProgressBar
 			onCancel={onStop}
 			ref={barRef}

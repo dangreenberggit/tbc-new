@@ -36,7 +36,11 @@ export type RunResult = FinishedRanking | StoppedRanking;
 
 export type RunState =
 	| { status: 'idle' }
-	| { status: 'running'; runId: number; startedAt: number; landedRows: readonly RankedItem[] }
+	/**
+	 * `stopping`: Stop was pressed. The engine finishes the step in flight and
+	 * then returns what it has, so the run stays `running` until it settles.
+	 */
+	| { status: 'running'; runId: number; startedAt: number; landedRows: readonly RankedItem[]; stopping: boolean }
 	| { status: 'done'; runId: number; result: FinishedRanking }
 	| { status: 'stopped'; runId: number; result: StoppedRanking }
 	| { status: 'error'; runId: number; message: string };
@@ -44,6 +48,7 @@ export type RunState =
 export type RunAction =
 	| { type: 'started'; runId: number; startedAt: number }
 	| { type: 'landed'; runId: number; row: RankedItem }
+	| { type: 'stopping'; runId: number }
 	| { type: 'finished'; runId: number; result: FinishedRanking }
 	| { type: 'stopped'; runId: number; result: StoppedRanking }
 	| { type: 'failed'; runId: number; message: string }
@@ -56,13 +61,16 @@ const isCurrentRun = (state: RunState, runId: number): state is Extract<RunState
 export function runReducer(state: RunState, action: RunAction): RunState {
 	switch (action.type) {
 		case 'started':
-			return { status: 'running', runId: action.runId, startedAt: action.startedAt, landedRows: [] };
+			return { status: 'running', runId: action.runId, startedAt: action.startedAt, landedRows: [], stopping: false };
 		case 'fixtureLoaded':
 			return { status: 'done', runId: action.runId, result: action.ranking };
 		case 'landed':
 			// A superseded run's rows can still arrive after a new run started.
 			if (!isCurrentRun(state, action.runId)) return state;
 			return { ...state, landedRows: [...state.landedRows, action.row] };
+		case 'stopping':
+			if (!isCurrentRun(state, action.runId)) return state;
+			return { ...state, stopping: true };
 		case 'finished':
 			if (!isCurrentRun(state, action.runId)) return state;
 			return { status: 'done', runId: action.runId, result: action.result };
