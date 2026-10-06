@@ -118,6 +118,12 @@ export class WorkerPool {
 		return this.concurrencyPool.getNumWorkers();
 	}
 
+	/** Ends every worker now, busy or not. The pool takes no request after this. */
+	terminate() {
+		for (const worker of this.concurrencyPool.getWorkers()) worker.disable(true);
+		this.concurrencyPool.clear();
+	}
+
 	private getLeastBusyWorker(): SimWorker {
 		return this.concurrencyPool.getLeastBusyWorker();
 	}

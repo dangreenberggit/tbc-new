@@ -168,6 +168,11 @@ export class WorkerPoolSimRunner implements SimRunner {
 		return `api-v${CURRENT_API_VERSION}`;
 	}
 
+	/** Ends this runner's WASM workers; the tab calls it when it unmounts. */
+	terminate(): void {
+		this.pool.terminate();
+	}
+
 	async run(req: RaidSimRequest, opts: SimRunOpts): Promise<SimObservation> {
 		// Only the set screen asks for per-iteration values (ticket 511). Without
 		// the option, the request and the observation are exactly as before.
