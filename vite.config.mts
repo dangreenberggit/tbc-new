@@ -138,6 +138,12 @@ export default defineConfig(({ command, mode }) => {
 
 	return {
 		...baseConfig,
+		define: {
+			// The Upgrades tab's recorded-fixture loader (ticket 504) is compiled in
+			// on the dev server and in the gate harness's build, which sets this env,
+			// and dropped from every other build as dead code.
+			__TBC_TAB_FIXTURES__: JSON.stringify(command === 'serve' || process.env.TBC_TAB_FIXTURES === '1'),
+		},
 		plugins: [
 			// Fast Refresh only: on vite 8 this plugin carries no transform of its own, it turns on
 			// `oxc.jsx.refresh` for `serve` and lets rolldown's native refresh wrapper instrument the
