@@ -11943,6 +11943,22 @@
       "curationHint": 0.12
     },
     {
+      "itemId": 281739,
+      "name": "Empty Mug of Direbrew",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 45.08
+    },
+    {
       "itemId": 33831,
       "name": "Berserker's Call",
       "slot": "trinket",
@@ -12023,7 +12039,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -12039,7 +12055,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -12098,22 +12114,6 @@
         "p2_sv_2h_6p",
         "p2_sv_dw_6p"
       ]
-    },
-    {
-      "itemId": 38287,
-      "name": "Empty Mug of Direbrew",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 33.12
     },
     {
       "itemId": 28288,
@@ -12774,7 +12774,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -12790,7 +12790,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -12806,23 +12806,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 35326,
-      "name": "Battlemaster's Alacrity",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -12838,39 +12822,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 37127,
-      "name": "Brightbrew Charm",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 4,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 37128,
-      "name": "Balebrew Charm",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -12912,45 +12864,77 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 38288,
-      "name": "Direbrew Hops",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 38289,
-      "name": "Coren's Lucky Coin",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 38290,
+      "itemId": 281735,
       "name": "Dark Iron Smoking Pipe",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 1,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281743,
+      "name": "Coren's Lucky Coin",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281748,
+      "name": "Direbrew Hops",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281893,
+      "name": "Balebrew Charm",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281895,
+      "name": "Brightbrew Charm",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -14656,6 +14640,22 @@
       "curationHint": 45.94
     },
     {
+      "itemId": 281903,
+      "name": "Direbrew's Shanker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 44.24
+    },
+    {
       "itemId": 30865,
       "name": "Tracker's Blade",
       "slot": "weapon",
@@ -14906,22 +14906,6 @@
           "kind": "raid",
           "zone": "Karazhan",
           "boss": "Moroes",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 35.56
-    },
-    {
-      "itemId": 37597,
-      "name": "Direbrew's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
           "origin": "db"
         }
       ],

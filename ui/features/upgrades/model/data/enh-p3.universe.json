@@ -10693,6 +10693,22 @@
       "curationHint": 122.2
     },
     {
+      "itemId": 281739,
+      "name": "Empty Mug of Direbrew",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 98.0
+    },
+    {
       "itemId": 30627,
       "name": "Tsunami Talisman",
       "slot": "trinket",
@@ -10709,6 +10725,22 @@
         }
       ],
       "curationHint": 85.22
+    },
+    {
+      "itemId": 33832,
+      "name": "Battlemaster's Determination",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 80.0
     },
     {
       "itemId": 29383,
@@ -10739,20 +10771,20 @@
       ]
     },
     {
-      "itemId": 38287,
-      "name": "Empty Mug of Direbrew",
+      "itemId": 34163,
+      "name": "Battlemaster's Cruelty",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 1,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
           "origin": "db"
         }
       ],
-      "curationHint": 72.0
+      "curationHint": 69.6
     },
     {
       "itemId": 28579,
@@ -10822,6 +10854,22 @@
       ]
     },
     {
+      "itemId": 281735,
+      "name": "Dark Iron Smoking Pipe",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 28.32
+    },
+    {
       "itemId": 32483,
       "name": "The Skull of Gul'dan",
       "slot": "trinket",
@@ -10858,24 +10906,24 @@
       "curationHint": 25.92
     },
     {
-      "itemId": 29370,
-      "name": "Icon of the Silver Crescent",
+      "itemId": 34049,
+      "name": "Battlemaster's Audacity",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 1,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
           "origin": "db"
         }
       ],
-      "curationHint": 20.64
+      "curationHint": 22.56
     },
     {
-      "itemId": 38290,
-      "name": "Dark Iron Smoking Pipe",
+      "itemId": 29370,
+      "name": "Icon of the Silver Crescent",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
@@ -10908,24 +10956,40 @@
       "curationHint": 17.76
     },
     {
-      "itemId": 29376,
-      "name": "Essence of the Martyr",
+      "itemId": 281748,
+      "name": "Direbrew Hops",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 1,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
           "origin": "db"
         }
       ],
-      "curationHint": 13.44
+      "curationHint": 17.76
     },
     {
-      "itemId": 38288,
-      "name": "Direbrew Hops",
+      "itemId": 34050,
+      "name": "Battlemaster's Perseverance",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 14.4
+    },
+    {
+      "itemId": 29376,
+      "name": "Essence of the Martyr",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
@@ -11316,13 +11380,77 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 38289,
+      "itemId": 34162,
+      "name": "Battlemaster's Depravity",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 35327,
+      "name": "Battlemaster's Alacrity",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281743,
       "name": "Coren's Lucky Coin",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 1,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281893,
+      "name": "Balebrew Charm",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281895,
+      "name": "Brightbrew Charm",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -12762,6 +12890,22 @@
       "curationHint": 938.352
     },
     {
+      "itemId": 281903,
+      "name": "Direbrew's Shanker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 911.622
+    },
+    {
       "itemId": 32236,
       "name": "Rising Tide",
       "slot": "weapon",
@@ -13068,22 +13212,6 @@
           "kind": "raid",
           "zone": "Karazhan",
           "boss": "Moroes",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 789.985
-    },
-    {
-      "itemId": 37597,
-      "name": "Direbrew's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
           "origin": "db"
         }
       ],

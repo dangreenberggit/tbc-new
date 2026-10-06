@@ -8282,22 +8282,6 @@
       ]
     },
     {
-      "itemId": 38287,
-      "name": "Empty Mug of Direbrew",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 72.0
-    },
-    {
       "itemId": 28579,
       "name": "Romulo's Poison Vial",
       "slot": "trinket",
@@ -8399,40 +8383,8 @@
       "curationHint": 24.08
     },
     {
-      "itemId": 38290,
-      "name": "Dark Iron Smoking Pipe",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 24.08
-    },
-    {
       "itemId": 29376,
       "name": "Essence of the Martyr",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 15.68
-    },
-    {
-      "itemId": 38288,
-      "name": "Direbrew Hops",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
@@ -8772,22 +8724,6 @@
     {
       "itemId": 31858,
       "name": "Darkmoon Card: Vengeance",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 38289,
-      "name": "Coren's Lucky Coin",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
@@ -9969,22 +9905,6 @@
           "kind": "raid",
           "zone": "Karazhan",
           "boss": "Moroes",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 783.405
-    },
-    {
-      "itemId": 37597,
-      "name": "Direbrew's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
           "origin": "db"
         }
       ],

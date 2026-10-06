@@ -7005,22 +7005,6 @@
       ]
     },
     {
-      "itemId": 38287,
-      "name": "Empty Mug of Direbrew",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 72.0
-    },
-    {
       "itemId": 30450,
       "name": "Warp-Spring Coil",
       "slot": "trinket",
@@ -7472,54 +7456,6 @@
     {
       "itemId": 31857,
       "name": "Darkmoon Card: Wrath",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 38288,
-      "name": "Direbrew Hops",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 38289,
-      "name": "Coren's Lucky Coin",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 38290,
-      "name": "Dark Iron Smoking Pipe",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
@@ -8332,22 +8268,6 @@
           "kind": "raid",
           "zone": "Karazhan",
           "boss": "Moroes",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 894.66
-    },
-    {
-      "itemId": 37597,
-      "name": "Direbrew's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
           "origin": "db"
         }
       ],

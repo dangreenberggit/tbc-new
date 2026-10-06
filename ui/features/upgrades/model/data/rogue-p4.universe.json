@@ -9833,6 +9833,22 @@
       "curationHint": 107.1
     },
     {
+      "itemId": 281739,
+      "name": "Empty Mug of Direbrew",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 98.0
+    },
+    {
       "itemId": 30627,
       "name": "Tsunami Talisman",
       "slot": "trinket",
@@ -9875,7 +9891,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -9905,29 +9921,13 @@
       ]
     },
     {
-      "itemId": 38287,
-      "name": "Empty Mug of Direbrew",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 72.0
-    },
-    {
       "itemId": 34163,
       "name": "Battlemaster's Cruelty",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -10029,36 +10029,36 @@
       "curationHint": 0.51
     },
     {
-      "itemId": 37127,
-      "name": "Brightbrew Charm",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 4,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.45
-    },
-    {
-      "itemId": 37128,
+      "itemId": 281893,
       "name": "Balebrew Charm",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
           "origin": "db"
         }
       ],
-      "curationHint": 0.45
+      "curationHint": 0.51
+    },
+    {
+      "itemId": 281895,
+      "name": "Brightbrew Charm",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.5
     },
     {
       "itemId": 30620,
@@ -10585,7 +10585,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -10601,7 +10601,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -10617,23 +10617,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 35326,
-      "name": "Battlemaster's Alacrity",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -10649,7 +10633,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -10691,45 +10675,45 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 38288,
-      "name": "Direbrew Hops",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 38289,
-      "name": "Coren's Lucky Coin",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 38290,
+      "itemId": 281735,
       "name": "Dark Iron Smoking Pipe",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 1,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281743,
+      "name": "Coren's Lucky Coin",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281748,
+      "name": "Direbrew Hops",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -11920,6 +11904,22 @@
       ]
     },
     {
+      "itemId": 281903,
+      "name": "Direbrew's Shanker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1032.645
+    },
+    {
       "itemId": 32944,
       "name": "Talon of the Phoenix",
       "slot": "weapon",
@@ -12348,22 +12348,6 @@
           "kind": "raid",
           "zone": "Karazhan",
           "boss": "Moroes",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 894.66
-    },
-    {
-      "itemId": 37597,
-      "name": "Direbrew's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
           "origin": "db"
         }
       ],

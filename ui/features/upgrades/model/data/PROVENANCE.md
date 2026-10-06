@@ -498,3 +498,41 @@ Verify:
 ```bash
 pnpm fork-universes:check
 ```
+
+## Refresh, 2026-10-06 (engine pin 17a8fb28 → 42c75dc9, ticket 558 P4)
+
+The source repo's engine pin moved from upstream `master`
+`17a8fb28c5ad14b649acecdaacd488594048f467` to `master`
+`42c75dc9b6ef447202588250480a7d504182409a`, and `data/universes/*` was
+regenerated against that pin's `db.json`.
+
+`python scripts/sync_fork_universes.py --write` reported **36 refreshed, 27
+already matching, 63 listed here**: the p2-p5 universes of the nine specs
+that admit items by db phase (balance, ele, enh, hunter, mage, rogue, shadow,
+warlock, warrior). None of it is line endings: `git diff --stat` and
+`git diff --stat --ignore-cr-at-eol` agree (36 files, 2390 insertions, 2255
+deletions), and so do their `--name-only` lists. The ret and feral universes
+and all 19 EP-weight files are unchanged.
+
+One cause: upstream re-issued the Brewfest items under new ids and removed
+Battlemaster's Alacrity.
+
+1. **Brewfest re-issues.** `db.json` drops 37597, 38287, 38288, 38289, 38290,
+   37127 and 37128 and adds 281903 (Direbrew's Shanker), 281739 (Empty Mug of
+   Direbrew), 281748 (Direbrew Hops), 281743 (Coren's Lucky Coin), 281735
+   (Dark Iron Smoking Pipe), 281895 (Brightbrew Charm) and 281893 (Balebrew
+   Charm), all at `phase` 3 and item level 141. So the p2 universes lose five
+   entries and gain none; p3 swaps the five for the seven; p4 and p5 swap
+   seven for seven.
+2. **Battlemaster's items.** 35326 (Battlemaster's Alacrity) is gone from
+   `db.json`, so p4 and p5 lose it. 33832, 34049, 34050, 34162, 34163 and
+   35327 move from `phase` 4 to 3: p3 gains them, and in p4 and p5 only their
+   `phase` field changes.
+
+No engine file changed: this touches only `ui/features/upgrades/model/data/`.
+
+Verify:
+
+```bash
+pnpm fork-universes:check
+```

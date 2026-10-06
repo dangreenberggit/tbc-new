@@ -14055,6 +14055,22 @@
       ]
     },
     {
+      "itemId": 281739,
+      "name": "Empty Mug of Direbrew",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 98.0
+    },
+    {
       "itemId": 33831,
       "name": "Berserker's Call",
       "slot": "trinket",
@@ -14120,7 +14136,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -14172,29 +14188,13 @@
       ]
     },
     {
-      "itemId": 38287,
-      "name": "Empty Mug of Direbrew",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 72.0
-    },
-    {
       "itemId": 34163,
       "name": "Battlemaster's Cruelty",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -14265,6 +14265,22 @@
       ]
     },
     {
+      "itemId": 281735,
+      "name": "Dark Iron Smoking Pipe",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 28.32
+    },
+    {
       "itemId": 32483,
       "name": "The Skull of Gul'dan",
       "slot": "trinket",
@@ -14325,7 +14341,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -14368,22 +14384,6 @@
       "curationHint": 20.64
     },
     {
-      "itemId": 38290,
-      "name": "Dark Iron Smoking Pipe",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 20.64
-    },
-    {
       "itemId": 32496,
       "name": "Memento of Tyrande",
       "slot": "trinket",
@@ -14402,13 +14402,29 @@
       "curationHint": 17.76
     },
     {
+      "itemId": 281748,
+      "name": "Direbrew Hops",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 17.76
+    },
+    {
       "itemId": 34050,
       "name": "Battlemaster's Perseverance",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -14420,22 +14436,6 @@
     {
       "itemId": 29376,
       "name": "Essence of the Martyr",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 13.44
-    },
-    {
-      "itemId": 38288,
-      "name": "Direbrew Hops",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
@@ -14906,7 +14906,7 @@
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -14951,29 +14951,13 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 35326,
-      "name": "Battlemaster's Alacrity",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 4,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 35327,
       "name": "Battlemaster's Alacrity",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -14997,38 +14981,6 @@
           "recipeFaction": "Shattered Sun Offensive",
           "recipeStanding": "Revered",
           "recipeFactionId": 1077,
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 37127,
-      "name": "Brightbrew Charm",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 4,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 37128,
-      "name": "Balebrew Charm",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 4,
-      "sources": [
-        {
-          "kind": "unknown",
           "origin": "db"
         }
       ],
@@ -15067,13 +15019,45 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 38289,
+      "itemId": 281743,
       "name": "Coren's Lucky Coin",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 1,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281893,
+      "name": "Balebrew Charm",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281895,
+      "name": "Brightbrew Charm",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -17143,6 +17127,22 @@
       "curationHint": 934.567
     },
     {
+      "itemId": 281903,
+      "name": "Direbrew's Shanker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 911.622
+    },
+    {
       "itemId": 32236,
       "name": "Rising Tide",
       "slot": "weapon",
@@ -17594,22 +17594,6 @@
           "kind": "raid",
           "zone": "Karazhan",
           "boss": "Moroes",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 789.985
-    },
-    {
-      "itemId": 37597,
-      "name": "Direbrew's Shanker",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
           "origin": "db"
         }
       ],

@@ -9178,6 +9178,22 @@
       ]
     },
     {
+      "itemId": 281735,
+      "name": "Dark Iron Smoking Pipe",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 59.0
+    },
+    {
       "itemId": 28789,
       "name": "Eye of Magtheridon",
       "slot": "trinket",
@@ -9194,6 +9210,22 @@
         }
       ],
       "curationHint": 54.0
+    },
+    {
+      "itemId": 34049,
+      "name": "Battlemaster's Audacity",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 47.0
     },
     {
       "itemId": 29370,
@@ -9217,22 +9249,6 @@
       ]
     },
     {
-      "itemId": 38290,
-      "name": "Dark Iron Smoking Pipe",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 43.0
-    },
-    {
       "itemId": 32496,
       "name": "Memento of Tyrande",
       "slot": "trinket",
@@ -9249,6 +9265,38 @@
         }
       ],
       "curationHint": 37.0
+    },
+    {
+      "itemId": 281748,
+      "name": "Direbrew Hops",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 37.0
+    },
+    {
+      "itemId": 34050,
+      "name": "Battlemaster's Perseverance",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 30.0
     },
     {
       "itemId": 30626,
@@ -9269,24 +9317,24 @@
       "curationHint": 29.2
     },
     {
-      "itemId": 29376,
-      "name": "Essence of the Martyr",
+      "itemId": 34162,
+      "name": "Battlemaster's Depravity",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 1,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
           "origin": "db"
         }
       ],
-      "curationHint": 28.0
+      "curationHint": 29.2
     },
     {
-      "itemId": 38288,
-      "name": "Direbrew Hops",
+      "itemId": 29376,
+      "name": "Essence of the Martyr",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
@@ -9317,6 +9365,22 @@
         }
       ],
       "curationHint": 22.8
+    },
+    {
+      "itemId": 35327,
+      "name": "Battlemaster's Alacrity",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 21.2
     },
     {
       "itemId": 14557,
@@ -9790,13 +9854,13 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 38287,
-      "name": "Empty Mug of Direbrew",
+      "itemId": 33832,
+      "name": "Battlemaster's Determination",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 1,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -9806,13 +9870,77 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 38289,
+      "itemId": 34163,
+      "name": "Battlemaster's Cruelty",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281739,
+      "name": "Empty Mug of Direbrew",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281743,
       "name": "Coren's Lucky Coin",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
       "quality": 4,
-      "phase": 1,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281893,
+      "name": "Balebrew Charm",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 281895,
+      "name": "Brightbrew Charm",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
@@ -13104,13 +13232,13 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 37597,
+      "itemId": 281903,
       "name": "Direbrew's Shanker",
       "slot": "weapon",
       "armorType": null,
       "handType": 2,
       "quality": 4,
-      "phase": 1,
+      "phase": 3,
       "sources": [
         {
           "kind": "unknown",
