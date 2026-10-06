@@ -1,0 +1,23 @@
+{
+  "source": "tbc-new-fork ui/hunter/dps/presets.ts P1_BM_EP_PRESET",
+  "pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
+  "label": "P1 BM",
+  "notes": [
+    "Transcribed from the fork, not upstream: ui/hunter/dps/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
+    "ui/hunter/dps/sim.ts:75 wires P1_BM_EP_PRESET as the default; the SV variant is not transcribed (single-axis schema)"
+  ],
+  "weights": {
+    "0": 0.06,
+    "1": 1.0,
+    "3": 0.01,
+    "17": 0.06,
+    "18": 0.4,
+    "20": 0.12,
+    "21": 0.92,
+    "22": 0.788,
+    "23": 0.16
+  },
+  "pseudoWeights": {
+    "2": 1.75
+  }
+}

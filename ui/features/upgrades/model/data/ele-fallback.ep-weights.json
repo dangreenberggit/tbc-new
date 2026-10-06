@@ -1,0 +1,21 @@
+{
+  "source": "tbc-new-fork ui/shaman/elemental/presets.ts EP_PRESET_DEFAULT",
+  "pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
+  "label": "Default",
+  "notes": [
+    "Transcribed from the fork, not upstream: ui/shaman/elemental/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
+    "ui/shaman/elemental/sim.ts:62 wires EP_PRESET_DEFAULT, the only elemental preset and unphased (label 'Default')"
+  ],
+  "weights": {
+    "3": 0.25,
+    "5": 1.0,
+    "10": 1.0,
+    "12": 2.12,
+    "13": 0.85,
+    "14": 1.18,
+    "35": 0.0
+  },
+  "pseudoWeights": {
+    "10": 2.12
+  }
+}

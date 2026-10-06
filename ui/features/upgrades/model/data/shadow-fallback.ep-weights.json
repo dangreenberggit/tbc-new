@@ -1,0 +1,22 @@
+{
+  "source": "tbc-new-fork ui/priest/dps/presets.ts P1_EP_PRESET",
+  "pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
+  "label": "P1",
+  "notes": [
+    "Transcribed from the fork, not upstream: ui/priest/dps/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
+    "ui/priest/dps/sim.ts:71 wires P1_EP_PRESET"
+  ],
+  "weights": {
+    "3": 0.06,
+    "5": 1.0,
+    "11": 1.0,
+    "12": 1.18,
+    "13": 0.18,
+    "14": 0.69,
+    "16": 0.12,
+    "35": 0.05
+  },
+  "pseudoWeights": {
+    "11": 1.15
+  }
+}

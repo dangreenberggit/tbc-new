@@ -1,0 +1,21 @@
+{
+  "source": "tbc-new-fork ui/druid/balance/presets.ts PreRaidEPWeights",
+  "pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
+  "label": "Pre-raid",
+  "notes": [
+    "Transcribed from the fork, not upstream: ui/druid/balance/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
+    "ui/druid/balance/sim.ts:61 wires DefaultEPWeights, an alias of Phase2EPWeights labelled 'Default (P2)' (presets.ts:131)"
+  ],
+  "weights": {
+    "3": 0.61,
+    "5": 1.0,
+    "6": 0.99,
+    "10": 0.01,
+    "12": 1.76,
+    "13": 0.67,
+    "14": 1.24,
+    "16": 0.13,
+    "35": 0.05
+  },
+  "pseudoWeights": {}
+}

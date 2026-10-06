@@ -1,0 +1,26 @@
+{
+  "source": "tbc-new-fork ui/mage/dps/presets.ts P1_EP_PRESET",
+  "pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
+  "label": "P1 - Arcane",
+  "notes": [
+    "Transcribed from the fork, not upstream: ui/mage/dps/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
+    "ui/mage/dps/sim.tsx:96 wires P1_EP_PRESET (Arcane)"
+  ],
+  "weights": {
+    "3": 1.52,
+    "5": 1.0,
+    "6": 0.92,
+    "8": 0.08,
+    "12": 2.36,
+    "13": 0.83,
+    "14": 0.53,
+    "15": 0.0,
+    "16": 1.0,
+    "34": 0.03,
+    "35": 0.56
+  },
+  "pseudoWeights": {
+    "6": 2.14,
+    "8": 0.15
+  }
+}

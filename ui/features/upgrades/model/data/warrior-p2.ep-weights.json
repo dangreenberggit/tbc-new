@@ -1,0 +1,23 @@
+{
+  "source": "tbc-new-fork ui/warrior/dps/presets.ts P2_FURY_EP_PRESET",
+  "pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
+  "label": "P2, P3, P4 & P5 - Fury",
+  "notes": [
+    "Transcribed from the fork, not upstream: ui/warrior/dps/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
+    "ui/warrior/dps/sim.ts:63 wires P2_FURY_EP_PRESET, so Fury is the default variant; the Arms pair is not transcribed (single-axis schema)"
+  ],
+  "weights": {
+    "0": 1.0,
+    "1": 0.75,
+    "17": 0.45,
+    "20": 1.5,
+    "21": 0.9,
+    "22": 0.86,
+    "23": 0.2,
+    "24": 1.31
+  },
+  "pseudoWeights": {
+    "0": 2.8,
+    "1": 1.5
+  }
+}
