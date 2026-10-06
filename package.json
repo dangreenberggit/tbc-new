@@ -25,7 +25,8 @@
 		"test:unit": "vitest run",
 		"test:locales": "node ./test-locales.mjs",
 		"test:layout": "node ./test-layout.mjs",
-		"test:review": "node ./test-review.mjs"
+		"test:review": "node ./test-review.mjs",
+		"test:stop": "node ./test-stop.mjs"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.7.0",
