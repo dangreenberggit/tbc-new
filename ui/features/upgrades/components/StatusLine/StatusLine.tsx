@@ -5,10 +5,18 @@ import { formatDps, formatSeconds } from '../../utils/format';
 
 export interface StatusLineProps {
 	run: RunState;
+	/** The result on screen was measured on other inputs than the page and settings hold now. */
+	stale?: boolean;
 }
 
+const StaleLine = () => (
+	<p className="mb-0 text-warning" data-testid="upgrades-stale">
+		<strong>{i18n.t('upgrades_tab.status.stale')}</strong> {i18n.t('upgrades_tab.status.stale_hint')}
+	</p>
+);
+
 /** One line on the run: rows landed so far, or the baseline a finished or stopped run measured. */
-export const StatusLine = ({ run }: StatusLineProps) => {
+export const StatusLine = ({ run, stale = false }: StatusLineProps) => {
 	switch (run.status) {
 		case 'running':
 			return (
@@ -18,19 +26,28 @@ export const StatusLine = ({ run }: StatusLineProps) => {
 			);
 		case 'done':
 			return (
-				<p className="mb-0" data-testid="upgrades-baseline-summary">
-					{run.result.durationMs === undefined
-						? i18n.t('upgrades_tab.status.done', { dps: formatDps(run.result.baseline.dps) })
-						: i18n.t('upgrades_tab.status.done_took', { dps: formatDps(run.result.baseline.dps), seconds: formatSeconds(run.result.durationMs) })}
-				</p>
+				<>
+					{stale && <StaleLine />}
+					<p className="mb-0" data-testid="upgrades-baseline-summary">
+						{run.result.durationMs === undefined
+							? i18n.t('upgrades_tab.status.done', { dps: formatDps(run.result.baseline.dps) })
+							: i18n.t('upgrades_tab.status.done_took', {
+									dps: formatDps(run.result.baseline.dps),
+									seconds: formatSeconds(run.result.durationMs),
+								})}
+					</p>
+				</>
 			);
 		case 'stopped': {
 			// No time on a stopped run: it would read as the cost of a full ranking (ticket 460).
 			const dps = formatDps(run.result.baseline.dps);
 			return (
-				<p className="mb-0 text-warning" data-testid="upgrades-baseline-summary">
-					{visibleRows(run).length > 0 ? i18n.t('upgrades_tab.status.stopped_partial', { dps }) : i18n.t('upgrades_tab.status.stopped', { dps })}
-				</p>
+				<>
+					{stale && <StaleLine />}
+					<p className="mb-0 text-warning" data-testid="upgrades-baseline-summary">
+						{visibleRows(run).length > 0 ? i18n.t('upgrades_tab.status.stopped_partial', { dps }) : i18n.t('upgrades_tab.status.stopped', { dps })}
+					</p>
+				</>
 			);
 		}
 		default:

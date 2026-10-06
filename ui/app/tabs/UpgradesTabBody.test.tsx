@@ -1,23 +1,56 @@
+import type { FixtureAutoloadOptions } from '@features/upgrades/hooks/useFixtureAutoload';
+import type { PoolEntry } from '@features/upgrades/model/engine/pool';
 import type { RunDeps } from '@features/upgrades/model/run';
-import type { RunResult } from '@features/upgrades/model/run_reducer';
+import type { RunOutcome, RunSettings } from '@features/upgrades/model/run_reducer';
 import { fixtureRow, RANKING_FIXTURE } from '@features/upgrades/testing/ranking_fixture';
-import { Spec } from '@generated/proto/common';
+import { Raid as RaidProto } from '@generated/proto/api';
+import { Encounter as EncounterProto, EquipmentSpec, Spec } from '@generated/proto/common';
 import i18n from '@i18n/config';
 import { SimHostProvider } from '@sim/context/SimHostContext';
+import { createSimStore, patchSlice } from '@sim/state/sim_store';
 import { fakeHost } from '@sim/testing';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import englishCharacter from '../../../assets/locales/en/character.json';
 import englishTranslations from '../../../assets/locales/en/translation.json';
 
-/** The live run, replaced by one the test settles by hand; the engine and its data are never loaded. */
-const runs: Array<{ deps: RunDeps; settle: (result: RunResult) => void }> = [];
+/** The live run, replaced by one the test settles by hand; the engine is never loaded. */
+const runs: Array<{ settings: RunSettings; deps: RunDeps; settle: (outcome: RunOutcome) => void }> = [];
 vi.mock('@features/upgrades/model/run', () => ({
-	rankForPlayer: (_host: unknown, _settings: unknown, deps: RunDeps) => new Promise<RunResult>(settle => runs.push({ deps, settle })),
+	rankForPlayer: (_host: unknown, settings: RunSettings, deps: RunDeps) => new Promise<RunOutcome>(settle => runs.push({ settings, deps, settle })),
 	createRunContext: () => ({ terminate: () => {} }),
 	specIdFor: () => 'ret',
 }));
+
+/** A small phase-3 pool in two raids, whose BiS tags speak for phase 3, so the P3 preset is the default set. */
+const entry = (itemId: number, zone: string, bis = false): PoolEntry => ({
+	itemId,
+	name: `item ${itemId}`,
+	slot: 'head',
+	phase: 3,
+	source: { kind: 'raid', zone },
+	...(bis ? { bisTags: ['BiS'] } : {}),
+});
+vi.mock('@features/upgrades/model/data/data', async importOriginal => ({
+	...(await importOriginal<typeof import('@features/upgrades/model/data/data')>()),
+	poolFor: () => [entry(1, 'Black Temple', true), entry(2, 'Hyjal Summit'), entry(3, 'Black Temple')],
+	bisTagPhaseFor: () => ({ tagsFromPhase: 3, requestedPhase: 3 }),
+}));
+
+/** The page's change source: every listener hears every page edit. */
+const listeners = new Set<() => void>();
+const pageChanged = () => listeners.forEach(listener => listener());
+vi.mock('@sim/state/subscriptions', async () =>
+	(await import('@sim/testing')).mockSubscriptions(listener => {
+		listeners.add(listener);
+		return () => listeners.delete(listener);
+	}),
+);
+
+/** The fixture hooks install nothing under vitest, so the test calls the loader the body hands them. */
+const autoload: { current?: FixtureAutoloadOptions } = {};
+vi.mock('@features/upgrades/hooks/useFixtureAutoload', () => ({ useFixtureAutoload: (options: FixtureAutoloadOptions) => (autoload.current = options) }));
 vi.mock('@sim/hooks/useSimReady', () => ({ useSimReady: () => true }));
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
 vi.mock('@features/upgrades/components/RowToggles', () => ({ FavoriteToggle: () => null, BatchToggle: () => null }));
@@ -34,24 +67,42 @@ afterAll(() => {
 	i18n.removeResourceBundle('en', 'character');
 });
 
-/** Enough of a page for a run to start and its rows to render: no gear, and a sim database that knows no item. */
+/** The worn gear the key reads; a test changes it to edit the page. */
+let worn = 'P2 preset';
+const store = createSimStore();
 const HOST = fakeHost({
 	player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
-	sim: { db: { getItemById: () => undefined } },
+	sim: {
+		store,
+		db: { getItemById: () => undefined },
+		raid: { toProto: () => RaidProto.create({ parties: [{ players: [{ name: worn }] }] }) },
+		encounter: { toProto: () => EncounterProto.create({ duration: 180 }) },
+		getPhase: () => store.getState().sim.phase,
+		setPhase: (phase: number) => patchSlice(store, 'sim', { phase }),
+	},
+	individualConfig: { presets: { gear: [{ name: 'P3', phase: 3, gear: EquipmentSpec.create({ items: [{ id: 1 }] }) }] } },
+	getSavedGearStorageKey: () => 'upgrades-tab-body-test-gear',
 });
 
 const rowA = fixtureRow(0);
 const rowB = fixtureRow(1);
 
-const mount = () => {
+beforeEach(() => {
 	runs.length = 0;
+	worn = 'P2 preset';
+	patchSlice(store, 'sim', { phase: 3 });
+});
+
+const mount = () =>
 	render(
 		<SimHostProvider host={HOST}>
 			<UpgradesTabBody />
 		</SimHostProvider>,
 	);
+
+const clickRun = () => {
 	fireEvent.click(screen.getByTestId('upgrades-run-button'));
-	const run = runs[0];
+	const run = runs.at(-1);
 	if (!run) throw new Error('Run did not start a run');
 	return run;
 };
@@ -62,9 +113,12 @@ const tableRows = () => {
 	return within(within(openPane ?? document.body).getByTestId('upgrades-results-table')).getAllByTestId('upgrades-result-row');
 };
 
+const tabRoot = () => screen.getByTestId('upgrades-tab-root');
+
 describe('UpgradesTabBody', () => {
 	it('shows rows as they land, and keeps them when Stop ends the run', async () => {
-		const run = mount();
+		mount();
+		const run = clickRun();
 		expect(screen.getByTestId('upgrades-run-progress')).not.toBeNull();
 
 		act(() => {
@@ -85,7 +139,8 @@ describe('UpgradesTabBody', () => {
 	});
 
 	it('shows the whole ranking and how long it took when the run finishes', async () => {
-		const run = mount();
+		mount();
+		const run = clickRun();
 		await act(async () => run.settle({ ...RANKING_FIXTURE, durationMs: 4200 }));
 
 		expect(screen.getByTestId('upgrades-baseline-summary').textContent).toMatch(/Took 4\.2s\.$/);
@@ -93,5 +148,62 @@ describe('UpgradesTabBody', () => {
 		expect(tableRows()).toHaveLength(10);
 		expect(screen.getAllByTestId('upgrades-below-cutoff-trigger')[0]?.textContent).toBe('1 item(s) below the cutoff');
 		expect((screen.getByTestId('upgrades-run-button') as HTMLButtonElement).disabled).toBe(false);
+	});
+
+	it('runs with the excluded sources, the selected sets and the iterations the column holds', () => {
+		mount();
+		expect(screen.getByTestId('upgrades-eligible-count').dataset.count).toBe('3');
+
+		fireEvent.click(screen.getByTestId('upgrades-sources-button'));
+		const hyjal = screen.getAllByTestId('upgrades-source-row').find(row => row.dataset.source === 'Hyjal Summit');
+		if (!hyjal) throw new Error('no Hyjal row');
+		fireEvent.click(within(hyjal).getByRole('checkbox'));
+		expect(screen.getByTestId('upgrades-eligible-count').dataset.count).toBe('2');
+		fireEvent.click(screen.getByTestId('sim-dialog-close'));
+
+		const iterations = within(screen.getByTestId('upgrades-iterations-picker')).getByRole('textbox');
+		act(() => {
+			fireEvent.change(iterations, { target: { value: '750' } });
+		});
+		expect((iterations as HTMLInputElement).value).toBe('750');
+
+		expect(clickRun().settings).toEqual({
+			iterations: 750,
+			candidateCap: undefined,
+			excludedSources: ['Hyjal Summit'],
+			guaranteedSetKeys: ['preset:3:P3'],
+			guaranteedSetItemIds: [1],
+			prune: false,
+		});
+	});
+
+	it('marks a live run with its runner, and shows it current until the gear changes', async () => {
+		mount();
+		expect(tabRoot().dataset.runner).toBeUndefined();
+		const run = clickRun();
+		await act(async () => run.settle({ ...RANKING_FIXTURE, durationMs: 4200, runner: 'WorkerPoolSimRunner' }));
+
+		expect(tabRoot().dataset.runner).toBe('WorkerPoolSimRunner');
+		expect(screen.queryByTestId('upgrades-stale')).toBeNull();
+
+		act(() => {
+			worn = 'P3 preset';
+			pageChanged();
+		});
+		expect(screen.getByTestId('upgrades-stale')).not.toBeNull();
+	});
+
+	it('shows a loaded fixture as current with no runner, and as stale once a setting changes', () => {
+		mount();
+		act(() => autoload.current?.onLoaded(RANKING_FIXTURE));
+
+		expect(screen.getByTestId('upgrades-baseline-summary').textContent).toBe('Your current gear: 2,084.2 DPS.');
+		expect(tabRoot().dataset.runner).toBeUndefined();
+		expect(screen.queryByTestId('upgrades-stale')).toBeNull();
+
+		const chip = screen.getAllByTestId('upgrades-set-chip').find(element => element.dataset.setKey === 'preset:3:P3');
+		if (!chip) throw new Error('no P3 chip');
+		fireEvent.click(within(chip).getByRole('button'));
+		expect(screen.getByTestId('upgrades-stale')).not.toBeNull();
 	});
 });

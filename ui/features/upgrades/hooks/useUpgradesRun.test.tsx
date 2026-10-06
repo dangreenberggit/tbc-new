@@ -25,6 +25,7 @@ const { useUpgradesRun } = await import('./useUpgradesRun');
 const rowA = fixtureRow(0);
 const rowB = fixtureRow(1);
 const SETTINGS = { iterations: 500 };
+const SIGNATURE = 'page and settings';
 
 /** A run the test drives by hand: it keeps each call's deps and settles when told to. */
 const controllableRun = () => {
@@ -62,7 +63,7 @@ describe('useUpgradesRun', () => {
 		const { result } = mount(runFn);
 		expect(result.current.run.status).toBe('idle');
 
-		act(() => result.current.start(SETTINGS));
+		act(() => result.current.start(SETTINGS, SIGNATURE));
 		expect(result.current.run).toMatchObject({ status: 'running', landedRows: [] });
 
 		act(() => call(0).deps.onLanded(rowA));
@@ -75,7 +76,7 @@ describe('useUpgradesRun', () => {
 	it('aborts the run on stop and shows the partial ranking it returns', async () => {
 		const { runFn, call } = controllableRun();
 		const { result } = mount(runFn);
-		act(() => result.current.start(SETTINGS));
+		act(() => result.current.start(SETTINGS, SIGNATURE));
 
 		act(() => result.current.stop());
 		expect(call(0).deps.signal.aborted).toBe(true);
@@ -88,8 +89,8 @@ describe('useUpgradesRun', () => {
 	it('lets a second start supersede the first, whose late rows and result are dropped', async () => {
 		const { runFn, call } = controllableRun();
 		const { result } = mount(runFn);
-		act(() => result.current.start(SETTINGS));
-		act(() => result.current.start(SETTINGS));
+		act(() => result.current.start(SETTINGS, SIGNATURE));
+		act(() => result.current.start(SETTINGS, SIGNATURE));
 		expect(call(0).deps.signal.aborted).toBe(true);
 
 		act(() => call(0).deps.onLanded(rowA));
@@ -101,7 +102,7 @@ describe('useUpgradesRun', () => {
 	it('shows a failed run as an error', async () => {
 		const { runFn, call } = controllableRun();
 		const { result } = mount(runFn);
-		act(() => result.current.start(SETTINGS));
+		act(() => result.current.start(SETTINGS, SIGNATURE));
 
 		await act(async () => call(0).fail(new Error('worker died')));
 		expect(result.current.run).toMatchObject({ status: 'error' });
@@ -110,11 +111,11 @@ describe('useUpgradesRun', () => {
 	it('builds the run context once, on first use, and reuses it across runs', () => {
 		const { runFn, call } = controllableRun();
 		const { result } = mount(runFn);
-		act(() => result.current.start(SETTINGS));
+		act(() => result.current.start(SETTINGS, SIGNATURE));
 		expect(contexts).toHaveLength(0);
 
 		const first = call(0).deps.runContext();
-		act(() => result.current.start(SETTINGS));
+		act(() => result.current.start(SETTINGS, SIGNATURE));
 		expect(call(1).deps.runContext()).toBe(first);
 		expect(contexts).toHaveLength(1);
 	});
@@ -122,7 +123,7 @@ describe('useUpgradesRun', () => {
 	it('builds no context for a run that never asks for one', async () => {
 		const { runFn, call } = controllableRun();
 		const { result, unmount } = mount(runFn);
-		act(() => result.current.start(SETTINGS));
+		act(() => result.current.start(SETTINGS, SIGNATURE));
 		await act(async () => call(0).settle({ ...RANKING_FIXTURE, durationMs: 1 }));
 		unmount();
 
@@ -132,7 +133,7 @@ describe('useUpgradesRun', () => {
 	it('aborts the run and ends the workers on unmount', () => {
 		const { runFn, call } = controllableRun();
 		const { result, unmount } = mount(runFn);
-		act(() => result.current.start(SETTINGS));
+		act(() => result.current.start(SETTINGS, SIGNATURE));
 		const context = call(0).deps.runContext();
 
 		unmount();
@@ -143,9 +144,9 @@ describe('useUpgradesRun', () => {
 	it('shows a loaded fixture as a finished run and drops the run it replaced', async () => {
 		const { runFn, call } = controllableRun();
 		const { result } = mount(runFn);
-		act(() => result.current.start(SETTINGS));
+		act(() => result.current.start(SETTINGS, SIGNATURE));
 
-		act(() => result.current.dispatchFixture(RANKING_FIXTURE));
+		act(() => result.current.dispatchFixture(RANKING_FIXTURE, SIGNATURE));
 		expect(call(0).deps.signal.aborted).toBe(true);
 		await act(async () => call(0).settle(partialOf()));
 		expect(result.current.run).toMatchObject({ status: 'done', runId: 2, result: RANKING_FIXTURE });
@@ -155,7 +156,7 @@ describe('useUpgradesRun', () => {
 		const { runFn, call } = controllableRun();
 		const { result } = mount(runFn);
 		equipped = [{ id: 30990 }, null];
-		act(() => result.current.start(SETTINGS));
+		act(() => result.current.start(SETTINGS, SIGNATURE));
 		equipped = [{ id: 1 }];
 
 		await act(async () => call(0).settle({ ...RANKING_FIXTURE, durationMs: 1 }));
@@ -168,7 +169,7 @@ describe('useUpgradesRun', () => {
 		const { result } = mount(runFn);
 		equipped = [{ id: 28830 }];
 
-		act(() => result.current.dispatchFixture(RANKING_FIXTURE));
+		act(() => result.current.dispatchFixture(RANKING_FIXTURE, SIGNATURE));
 		expect(result.current.run).toMatchObject({
 			status: 'done',
 			measuredOn: { wornItemIds: [28830, ...Array.from({ length: 16 }, () => 0)], specId: 'ret' },
@@ -198,7 +199,7 @@ describe('useUpgradesRun', () => {
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 		const { runFn, call } = controllableRun();
 		const { result } = mount(runFn);
-		act(() => result.current.start(SETTINGS));
+		act(() => result.current.start(SETTINGS, SIGNATURE));
 		expect(info).not.toHaveBeenCalled();
 
 		await act(async () => call(0).settle({ ...RANKING_FIXTURE, durationMs: 1 }));
@@ -214,8 +215,8 @@ describe('useUpgradesRun', () => {
 		vi.spyOn(console, 'warn').mockImplementation(() => {});
 		const { runFn, call } = controllableRun();
 		const { result } = mount(runFn);
-		act(() => result.current.start(SETTINGS));
-		act(() => result.current.dispatchFixture(RANKING_FIXTURE));
+		act(() => result.current.start(SETTINGS, SIGNATURE));
+		act(() => result.current.dispatchFixture(RANKING_FIXTURE, SIGNATURE));
 		expect(info).toHaveBeenCalledTimes(1);
 
 		await act(async () => call(0).settle(partialOf()));

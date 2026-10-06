@@ -39,6 +39,22 @@ describe('StatusLine', () => {
 		expect(getByTestId('upgrades-status-line').textContent).toBe('Stopping — finishing the current step.');
 	});
 
+	it('warns above a stale result’s baseline, finished or stopped', () => {
+		const done: RunState = { status: 'done', runId: 1, result: RANKING_FIXTURE };
+		const stopped: RunState = { status: 'stopped', runId: 1, result: { ...RANKING_FIXTURE, items: [row], complete: false, durationMs: 900 } };
+		for (const run of [done, stopped]) {
+			const { getByTestId, unmount } = render(<StatusLine run={run} stale />);
+			expect(getByTestId('upgrades-stale').textContent).toBe(
+				'settings changed since this ranking — results may be out of date Run again to rank with the current settings.',
+			);
+			unmount();
+		}
+	});
+
+	it('gives no warning for a current result', () => {
+		expect(render(<StatusLine run={{ status: 'done', runId: 1, result: RANKING_FIXTURE }} stale={false} />).queryByTestId('upgrades-stale')).toBeNull();
+	});
+
 	it('says nothing before a run', () => {
 		expect(render(<StatusLine run={{ status: 'idle' }} />).container.textContent).toBe('');
 	});
