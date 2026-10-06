@@ -15,7 +15,7 @@ import { ItemNameCell } from './ItemNameCell';
 export type RowContext = {
 	/** The sim database's name and quality for an item, or undefined when it has none. */
 	itemOf: (itemId: number) => { name: string; quality: ItemQuality } | undefined;
-	/** What the set-bonus hint and the %-rule note are measured against; empty while a run is in flight. */
+	/** What the set-bonus hint and the %-rule note are measured against; it has no ranking while a run is in flight. */
 	tip: SetBonusTipContext;
 };
 
@@ -33,7 +33,9 @@ export interface ResultRowProps {
  * One ranked item. The cell order is read by position by the desktop gate (`tools/run-tab-cdp.mjs`).
  *
  * `memo`, because a run lands rows one at a time and each landing renders the table: without it every
- * row already shown renders again, which a 467-row replay measured at over 20 s.
+ * row already shown renders again, which a 467-row replay measured at over 20 s. A landing row or a sort
+ * still moves `position` for the rows below it, so the two costly cells are memoised on their own and
+ * only the Rank cell changes.
  */
 export const ResultRow = memo(({ row, position, context }: ResultRowProps) => (
 	<tr

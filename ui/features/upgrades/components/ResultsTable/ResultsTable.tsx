@@ -17,8 +17,8 @@ export interface ResultsTableProps {
 	headless?: boolean;
 }
 
-/** The slot and source columns sort on the text their cells show. */
-const SORT_LABELS: SortLabels<RankedItem> = { slot: slotLabel, source: rowSourceLabel };
+/** The slot and source columns sort on the text their cells show; the export sorts with the same labels. */
+export const SORT_LABELS: SortLabels<RankedItem> = { slot: slotLabel, source: rowSourceLabel };
 
 /** One results table. Every table numbers its own rows from 1 in the order shown (owner ruling, ticket 287). */
 export const ResultsTable = ({ rows, rowContext, sort, onSort, provisional, headless }: ResultsTableProps) => (

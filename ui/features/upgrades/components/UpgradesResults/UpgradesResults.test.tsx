@@ -77,7 +77,7 @@ describe('UpgradesResults', () => {
 		const { container } = show({ status: 'done', runId: 1, result: RANKING_FIXTURE });
 		const pane = activePane(container);
 
-		expect(within(pane).getAllByTestId('upgrades-item-name')[0]!.className).toBe('text-quality-epic');
+		expect(within(pane).getAllByTestId('upgrades-item-name')[0]?.className).toBe('text-quality-epic');
 		expect(within(pane).getAllByTestId('upgrades-cutoff-arm')).toHaveLength(1);
 		expect(within(pane).getAllByTestId('upgrades-set-bonus')).toHaveLength(1);
 	});

@@ -20,6 +20,7 @@ afterAll(() => {
 });
 
 const ROWS = [fixtureRow(5), fixtureRow(3)];
+const [FIRST_ID, SECOND_ID] = ROWS.map(row => String(row.itemId));
 const CONTEXT = { itemOf: () => undefined, tip: {} };
 
 describe('BelowCutoffGroup', () => {
@@ -38,8 +39,8 @@ describe('BelowCutoffGroup', () => {
 		expect(table.querySelector('thead')).toBeNull();
 		const rows = within(table).getAllByTestId('upgrades-result-row');
 		expect(rows.map(row => [within(row).getAllByRole('cell')[0]?.textContent, row.dataset.itemId])).toEqual([
-			['1', String(ROWS[0]!.itemId)],
-			['2', String(ROWS[1]!.itemId)],
+			['1', FIRST_ID],
+			['2', SECOND_ID],
 		]);
 	});
 
@@ -50,6 +51,6 @@ describe('BelowCutoffGroup', () => {
 		const ids = within(getByTestId('upgrades-results-table'))
 			.getAllByTestId('upgrades-result-row')
 			.map(row => row.dataset.itemId);
-		expect(ids).toEqual([String(ROWS[1]!.itemId), String(ROWS[0]!.itemId)]);
+		expect(ids).toEqual([SECOND_ID, FIRST_ID]);
 	});
 });

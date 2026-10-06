@@ -1,4 +1,5 @@
 import i18n from '@i18n/config';
+import { memo } from 'react';
 
 import { cutoffAdmittingArm } from '../../model/engine/cutoff';
 import type { RankedItem } from '../../model/engine/rank';
@@ -16,9 +17,9 @@ export interface DeltaCellProps {
  * The DPS change, with at most three short notes under it: that the row has
  * set-bonus detail, which worn item a two-item swap removes, and that only the
  * percentage rule admitted the row (ticket 254). K3 makes the figure the
- * set-bonus popover's trigger.
+ * set-bonus popover's trigger. `memo`: see `ResultRow`.
  */
-export const DeltaCell = ({ row, context }: DeltaCellProps) => {
+export const DeltaCell = memo(({ row, context }: DeltaCellProps) => {
 	const tip = setBonusTipLines(row, context.tip);
 	const cutoff = context.tip.ranking?.cutoff;
 	const pctOnly = cutoff !== undefined && cutoffAdmittingArm(row.deltaDps, row.deltaPct, cutoff) === 'pct';
@@ -51,4 +52,4 @@ export const DeltaCell = ({ row, context }: DeltaCellProps) => {
 			</span>
 		</td>
 	);
-};
+});

@@ -24,7 +24,7 @@ afterAll(() => {
 const CONTEXT = { itemOf: () => undefined, tip: {} };
 const VIEW = applyView(RANKING_FIXTURE);
 
-const tabStrip = (container: HTMLElement) => within(container.querySelector<HTMLElement>('[data-testid="upgrades-tab-tabs"]')!);
+const tabStrip = (container: HTMLElement) => within(within(container).getByTestId('upgrades-tab-tabs'));
 const tabLabels = (container: HTMLElement) =>
 	tabStrip(container)
 		.getAllByRole('tab')

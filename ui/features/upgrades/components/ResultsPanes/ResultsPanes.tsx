@@ -23,18 +23,17 @@ const paneId = (tab: ResultsTabId) => `upgrades-pane-${tab}`;
  * with a row. The open tab and the one column sort shared by every pane
  * (ticket 280) live here; neither is stored.
  */
-export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
-	const [activeTab, setActiveTab] = useState<ResultsTabId>(SHOPPING_LIST_TAB);
-	const [sort, setSort] = useState<ResultsSort>();
+type Pane = { id: ResultsTabId; label: string; badge?: string; className?: string };
 
-	const slots = slotTabs(view);
-	// A new result without the open slot falls back to the Upgrades list, as the old tab did.
-	const shownTab = slots.some(slot => slot.id === activeTab) ? activeTab : SHOPPING_LIST_TAB;
+export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
+	// A string, because the tab strip reports any tab's value; `shownTab` checks it against this view's panes.
+	const [activeTab, setActiveTab] = useState<string>(SHOPPING_LIST_TAB);
+	const [sort, setSort] = useState<ResultsSort>();
 	const onSort = (key: ResultsSortKey) => setSort(current => nextSort(current, key));
 
-	const tabs: TabNavTab[] = [
-		{ id: SHOPPING_LIST_TAB, label: i18n.t('upgrades_tab.subtabs.shopping_list'), ariaControls: paneId(SHOPPING_LIST_TAB) },
-		...slots.map(slot => {
+	const panes: Pane[] = [
+		{ id: SHOPPING_LIST_TAB, label: i18n.t('upgrades_tab.subtabs.shopping_list') },
+		...slotTabs(view).map(slot => {
 			// Every slot tab comes from a row of the view, so this finds one.
 			const row = view.rows.find(candidate => effectiveSlot(candidate) === slot.id);
 			return {
@@ -43,19 +42,21 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 				badge: String(slot.count),
 				// A slot with nothing above the cutoff keeps its tab, dimmed, so the user can open it and see why.
 				className: slot.count === 0 ? 'opacity-60' : undefined,
-				ariaControls: paneId(slot.id),
 			};
 		}),
 	];
+	// A new result without the open slot falls back to the Upgrades list, as the old tab did.
+	const shownTab = panes.find(pane => pane.id === activeTab)?.id ?? SHOPPING_LIST_TAB;
+	const tabs: TabNavTab[] = panes.map(pane => ({ ...pane, ariaControls: paneId(pane.id) }));
 
 	return (
-		<Tabs.Root value={shownTab} onValueChange={next => setActiveTab(next as ResultsTabId)}>
+		<Tabs.Root value={shownTab} onValueChange={next => setActiveTab(String(next))}>
 			<TabNav tabs={tabs} testId="upgrades-tab-tabs" />
 			<TabPanels>
-				{tabs.map(tab => {
-					const { shortlist, belowCutoff } = paneRows(view, tab.id as ResultsTabId);
+				{panes.map(pane => {
+					const { shortlist, belowCutoff } = paneRows(view, pane.id);
 					return (
-						<TabPanel key={tab.id} value={tab.id} id={paneId(tab.id as ResultsTabId)}>
+						<TabPanel key={pane.id} value={pane.id} id={paneId(pane.id)}>
 							<ResultsPane shortlist={shortlist} belowCutoff={belowCutoff} rowContext={rowContext} sort={sort} onSort={onSort} />
 						</TabPanel>
 					);

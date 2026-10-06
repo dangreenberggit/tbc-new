@@ -5,6 +5,7 @@ import { externalRel } from '@sim/utils/links';
 import { useActionId } from '@ui-kit/hooks/useActionId';
 import { itemQualityClassName } from '@ui-kit/utils/css';
 import { WowheadIcon } from '@ui-kit/WowheadIcon';
+import { memo } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
 
@@ -20,8 +21,8 @@ const badgeLabel = (bisTags: RankedItem['bisTags']): string | undefined => {
 	return undefined;
 };
 
-/** The item: its icon, its name as a wowhead link in its quality colour, and its tags beneath. */
-export const ItemNameCell = ({ row, quality }: ItemNameCellProps) => {
+/** The item: its icon, its name as a wowhead link in its quality colour, and its tags beneath. `memo`: see `ResultRow`. */
+export const ItemNameCell = memo(({ row, quality }: ItemNameCellProps) => {
 	const { iconUrl, href } = useActionId(ActionId.fromItemId(row.itemId));
 	const badge = badgeLabel(row.bisTags);
 
@@ -53,4 +54,4 @@ export const ItemNameCell = ({ row, quality }: ItemNameCellProps) => {
 			</span>
 		</td>
 	);
-};
+});
