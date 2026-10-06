@@ -1,8 +1,8 @@
 import type { RankedItem } from '../../model/engine/rank';
-import { type ResultsSort, type ResultsSortKey, type SortLabels, sortRows } from '../../model/results_sort';
+import { type ResultsSort, type ResultsSortKey, sortRows } from '../../model/results_sort';
 import { rowKey } from '../../model/results_view';
-import { slotLabel } from '../../utils/format';
-import { ResultRow, type RowContext, rowSourceLabel } from './ResultRow';
+import { SORT_LABELS } from '../../utils/format';
+import { ResultRow, type RowContext } from './ResultRow';
 import { ResultsTableHead } from './ResultsTableHead';
 
 export interface ResultsTableProps {
@@ -16,9 +16,6 @@ export interface ResultsTableProps {
 	/** No head, for the below-cutoff group under a table that has one. */
 	headless?: boolean;
 }
-
-/** The slot and source columns sort on the text their cells show; the export sorts with the same labels. */
-export const SORT_LABELS: SortLabels<RankedItem> = { slot: slotLabel, source: rowSourceLabel };
 
 /** One results table. Every table numbers its own rows from 1 in the order shown (owner ruling, ticket 287). */
 export const ResultsTable = ({ rows, rowContext, sort, onSort, provisional, headless }: ResultsTableProps) => (

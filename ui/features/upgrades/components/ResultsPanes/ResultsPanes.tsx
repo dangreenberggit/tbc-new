@@ -5,8 +5,8 @@ import { useState } from 'react';
 
 import type { ViewResult } from '../../model/engine/view';
 import { nextSort, type ResultsSort, type ResultsSortKey } from '../../model/results_sort';
-import { effectiveSlot, paneRows, type ResultsTabId, SHOPPING_LIST_TAB, slotTabs } from '../../model/results_view';
-import { slotLabel } from '../../utils/format';
+import { paneRows, type ResultsTabId, SHOPPING_LIST_TAB, slotTabs } from '../../model/results_view';
+import { simSlotLabel } from '../../utils/format';
 import { ResultsPane } from '../ResultsPane';
 import type { RowContext } from '../ResultsTable';
 
@@ -33,17 +33,13 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 
 	const panes: Pane[] = [
 		{ id: SHOPPING_LIST_TAB, label: i18n.t('upgrades_tab.subtabs.shopping_list') },
-		...slotTabs(view).map(slot => {
-			// Every slot tab comes from a row of the view, so this finds one.
-			const row = view.rows.find(candidate => effectiveSlot(candidate) === slot.id);
-			return {
-				id: slot.id,
-				label: row ? slotLabel(row) : slot.id,
-				badge: String(slot.count),
-				// A slot with nothing above the cutoff keeps its tab, dimmed, so the user can open it and see why.
-				className: slot.count === 0 ? 'opacity-60' : undefined,
-			};
-		}),
+		...slotTabs(view).map(slot => ({
+			id: slot.id,
+			label: simSlotLabel(slot.id),
+			badge: String(slot.count),
+			// A slot with nothing above the cutoff keeps its tab, dimmed, so the user can open it and see why.
+			className: slot.count === 0 ? 'opacity-60' : undefined,
+		})),
 	];
 	// A new result without the open slot falls back to the Upgrades list, as the old tab did.
 	const shownTab = panes.find(pane => pane.id === activeTab)?.id ?? SHOPPING_LIST_TAB;

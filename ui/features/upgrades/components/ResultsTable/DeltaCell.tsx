@@ -4,7 +4,7 @@ import { memo } from 'react';
 import { cutoffAdmittingArm } from '../../model/engine/cutoff';
 import type { RankedItem } from '../../model/engine/rank';
 import { setBonusTipLines } from '../../model/set_bonus_tip';
-import { formatDelta, formatDps } from '../../utils/format';
+import { formatDelta, formatDps, simSlotLabel } from '../../utils/format';
 import { setBonusSubLineText } from '../../utils/set_bonus_labels';
 import type { RowContext } from './ResultRow';
 
@@ -37,7 +37,7 @@ export const DeltaCell = memo(({ row, context }: DeltaCellProps) => {
 					<small key={`${removed.itemId}:${removed.slot}`} className="text-muted" data-testid="upgrades-removed-items">
 						{i18n.t('upgrades_tab.results.removes_worn', {
 							name: context.itemOf(removed.itemId)?.name ?? String(removed.itemId),
-							slot: removed.slot,
+							slot: simSlotLabel(removed.slot),
 						})}
 					</small>
 				))}

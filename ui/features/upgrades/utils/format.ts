@@ -9,6 +9,7 @@ import { simSlotsForPoolSlot } from '../model/engine/pool';
 import { type RankedItem, RankError } from '../model/engine/rank';
 import type { SimOrderName } from '../model/engine/slots';
 import { SOURCE_LABELS } from '../model/engine/view';
+import type { SortLabels } from '../model/results_sort';
 import type { RunPhase, RunProgressView } from '../model/run_progress';
 
 const ONE_DECIMAL = { minimumFractionDigits: 1, maximumFractionDigits: 1 };
@@ -41,12 +42,20 @@ const ITEM_SLOT_BY_SIM_SLOT: Record<SimOrderName, ItemSlot> = {
 	ranged: ItemSlot.ItemSlotRanged,
 };
 
+/** A sim slot in the page's own words. */
+export const simSlotLabel = (slot: SimOrderName): string => translateSlotName(ITEM_SLOT_BY_SIM_SLOT[slot]);
+
 /** `slotChoice` is set only where a pool slot maps to two sim slots; otherwise the first mapping is the slot. */
-export const slotLabel = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): string =>
-	translateSlotName(ITEM_SLOT_BY_SIM_SLOT[row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0]]);
+export const slotLabel = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): string => simSlotLabel(row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0]);
 
 /** The engine's own source text, which the desktop gate's golden compares cell for cell. */
 export const sourceLabel = (source: ItemSource): string => ('zone' in source ? source.zone : (SOURCE_LABELS[source.kind] ?? source.kind));
+
+/** A row with several sources names the first, as the engine orders them. */
+export const rowSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>): string => sourceLabel(row.sources?.[0] ?? row.source);
+
+/** The slot and source columns sort on the text their cells show; the export sorts with the same labels, so its order is the order on screen. */
+export const SORT_LABELS: SortLabels<Pick<RankedItem, 'slot' | 'slotChoice' | 'source' | 'sources'>> = { slot: slotLabel, source: rowSourceLabel };
 
 export const describeRunError = (error: unknown): string => {
 	if (error instanceof RankError && error.kind === 'not-implemented') return i18n.t('upgrades_tab.status.unsupported_spec');

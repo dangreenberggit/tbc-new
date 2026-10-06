@@ -4,7 +4,7 @@ import { memo } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
 import type { SetBonusTipContext } from '../../model/set_bonus_tip';
-import { slotLabel, sourceLabel } from '../../utils/format';
+import { rowSourceLabel, slotLabel } from '../../utils/format';
 import { DeltaCell } from './DeltaCell';
 import { ItemNameCell } from './ItemNameCell';
 
@@ -18,9 +18,6 @@ export type RowContext = {
 	/** What the set-bonus hint and the %-rule note are measured against; it has no ranking while a run is in flight. */
 	tip: SetBonusTipContext;
 };
-
-/** A row with several sources names the first, as the engine orders them. */
-export const rowSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>): string => sourceLabel(row.sources?.[0] ?? row.source);
 
 export interface ResultRowProps {
 	row: RankedItem;

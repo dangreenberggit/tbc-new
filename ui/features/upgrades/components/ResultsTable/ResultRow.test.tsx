@@ -85,7 +85,7 @@ describe('ResultRow', () => {
 	});
 
 	it('names the worn item a two-item swap removes', () => {
-		expect(testIdText(renderRow(fixtureRow(8)), 'upgrades-removed-items')).toEqual(['removes worn Blade of Infamy (offhand)']);
+		expect(testIdText(renderRow(fixtureRow(8)), 'upgrades-removed-items')).toEqual(['removes worn Blade of Infamy (Off Hand)']);
 		expect(testIdText(renderRow(fixtureRow(0)), 'upgrades-removed-items')).toEqual([]);
 	});
 

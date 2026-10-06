@@ -5,7 +5,20 @@ import englishCharacter from '../../../../assets/locales/en/character.json';
 import englishTranslations from '../../../../assets/locales/en/translation.json';
 import { RankError } from '../model/engine/rank';
 import type { RunProgressView } from '../model/run_progress';
-import { describeRunError, formatDelta, formatDps, formatSeconds, progressBarOf, progressLabel, progressStageOf, slotLabel, sourceLabel } from './format';
+import {
+	describeRunError,
+	formatDelta,
+	formatDps,
+	formatSeconds,
+	progressBarOf,
+	progressLabel,
+	progressStageOf,
+	rowSourceLabel,
+	simSlotLabel,
+	slotLabel,
+	SORT_LABELS,
+	sourceLabel,
+} from './format';
 
 beforeAll(() => {
 	i18n.addResourceBundle('en', 'translation', englishTranslations, true, true);
@@ -51,6 +64,30 @@ describe('slotLabel', () => {
 		expect(slotLabel({ slot: 'head' })).toBe('Head');
 		expect(slotLabel({ slot: 'weapon' })).toBe('Main Hand');
 		expect(slotLabel({ slot: 'finger', slotChoice: 'finger2' })).toBe('Ring 2');
+	});
+});
+
+describe('simSlotLabel', () => {
+	it('names a sim slot as the page does, so a removed off-hand reads "Off Hand", not "offhand"', () => {
+		expect(simSlotLabel('offhand')).toBe('Off Hand');
+		expect(simSlotLabel('mainhand')).toBe('Main Hand');
+	});
+});
+
+describe('rowSourceLabel', () => {
+	it('names the first source of a row that has several, as the engine orders them', () => {
+		const raid = { kind: 'raid', zone: 'Black Temple', boss: 'Illidan' } as const;
+		const badge = { kind: 'badge', cost: 75 } as const;
+		expect(rowSourceLabel({ source: badge, sources: [raid, badge] })).toBe('Black Temple');
+		expect(rowSourceLabel({ source: badge })).toBe('Badge vendor');
+	});
+});
+
+describe('SORT_LABELS', () => {
+	it('sorts the slot and source columns on the text their cells show', () => {
+		const row = { slot: 'finger', slotChoice: 'finger2', source: { kind: 'badge', cost: 75 } } as const;
+		expect(SORT_LABELS.slot(row)).toBe('Ring 2');
+		expect(SORT_LABELS.source(row)).toBe('Badge vendor');
 	});
 });
 
