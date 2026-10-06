@@ -21,6 +21,14 @@ export type RunSettings = {
 	prune?: boolean;
 };
 
+/** The old tab's iteration count, used when the field is empty or zero. */
+export const DEFAULT_ITERATIONS = 3000;
+
+export const runSettings = (iterations: number, candidateCap?: number): RunSettings => ({
+	iterations: iterations > 0 ? Math.floor(iterations) : DEFAULT_ITERATIONS,
+	candidateCap,
+});
+
 export type FinishedRanking = Ranking & { durationMs: number };
 export type StoppedRanking = PartialRanking & { durationMs: number };
 export type RunResult = FinishedRanking | StoppedRanking;
@@ -65,3 +73,24 @@ export function runReducer(state: RunState, action: RunAction): RunState {
 			return { status: 'error', runId: action.runId, message: action.message };
 	}
 }
+
+/** The action a run's settled result dispatches: a partial ranking is what Stop returns. */
+export const settledAction = (runId: number, result: RunResult): RunAction =>
+	result.complete ? { type: 'finished', runId, result } : { type: 'stopped', runId, result };
+
+/** The rows the table shows for `run`. A stopped ranking also lists the candidates Stop never reached. */
+export function visibleRows(run: RunState): readonly RankedItem[] {
+	switch (run.status) {
+		case 'running':
+			return run.landedRows;
+		case 'done':
+			return run.result.items;
+		case 'stopped':
+			return run.result.items.filter(row => row.simmed !== false);
+		default:
+			return [];
+	}
+}
+
+/** The finished ranking on screen, which the fixture recorder saves. */
+export const shownRanking = (run: RunState): FinishedRanking | undefined => (run.status === 'done' ? run.result : undefined);

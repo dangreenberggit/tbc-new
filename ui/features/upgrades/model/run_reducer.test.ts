@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { PartialRanking } from './engine/rank';
-import { IDLE_RUN, runReducer, type RunState } from './run_reducer';
+import { DEFAULT_ITERATIONS, IDLE_RUN, runReducer, runSettings, type RunState, settledAction, shownRanking, visibleRows } from './run_reducer';
 
 const [rowA, rowB] = RANKING_FIXTURE.items;
 const partial: PartialRanking = { ...RANKING_FIXTURE, items: [rowA!], complete: false };
@@ -79,5 +79,58 @@ describe('runReducer', () => {
 		const loaded = runReducer(running(1), { type: 'fixtureLoaded', runId: 2, ranking: RANKING_FIXTURE });
 		expect(loaded).toMatchObject({ status: 'done', runId: 2 });
 		expect(runReducer(loaded, { type: 'landed', runId: 1, row: rowA! })).toBe(loaded);
+	});
+});
+
+describe('runSettings', () => {
+	it('keeps a positive whole iteration count and the cap', () => {
+		expect(runSettings(750, 10)).toEqual({ iterations: 750, candidateCap: 10 });
+	});
+
+	it('falls back to the default for an empty or zero field', () => {
+		expect(runSettings(0)).toEqual({ iterations: DEFAULT_ITERATIONS, candidateCap: undefined });
+	});
+});
+
+describe('settledAction', () => {
+	it('finishes a run whose ranking is complete', () => {
+		const result = { ...RANKING_FIXTURE, durationMs: 5 };
+		expect(settledAction(4, result)).toEqual({ type: 'finished', runId: 4, result });
+	});
+
+	it('stops a run whose ranking is partial', () => {
+		const result = { ...partial, durationMs: 5 };
+		expect(settledAction(4, result)).toEqual({ type: 'stopped', runId: 4, result });
+	});
+});
+
+describe('visibleRows', () => {
+	it('shows nothing before a run', () => {
+		expect(visibleRows(IDLE_RUN)).toEqual([]);
+	});
+
+	it('shows the landed rows while running', () => {
+		const state = runReducer(running(), { type: 'landed', runId: 1, row: rowA! });
+		expect(visibleRows(state)).toEqual([rowA]);
+	});
+
+	it('shows every row of a finished ranking', () => {
+		const done = runReducer(running(), { type: 'finished', runId: 1, result: { ...RANKING_FIXTURE, durationMs: 1 } });
+		expect(visibleRows(done)).toEqual(RANKING_FIXTURE.items);
+	});
+
+	it('leaves out the rows Stop never simmed', () => {
+		const unsimmed = { ...rowB!, simmed: false as const };
+		const result = { ...partial, items: [rowA!, unsimmed], durationMs: 1 };
+		expect(visibleRows(runReducer(running(), { type: 'stopped', runId: 1, result }))).toEqual([rowA]);
+	});
+});
+
+describe('shownRanking', () => {
+	it('is the finished ranking, and nothing for any other state', () => {
+		const result = { ...RANKING_FIXTURE, durationMs: 1 };
+		expect(shownRanking(runReducer(running(), { type: 'finished', runId: 1, result }))).toBe(result);
+		expect(shownRanking(running())).toBeUndefined();
+		expect(shownRanking(IDLE_RUN)).toBeUndefined();
 	});
 });
