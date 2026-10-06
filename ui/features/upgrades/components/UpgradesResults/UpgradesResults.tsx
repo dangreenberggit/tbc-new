@@ -6,7 +6,7 @@ import { landedRows, resultsViewFor } from '../../model/results_view';
 import type { RunState } from '../../model/run_reducer';
 import { EmptyState } from '../EmptyState';
 import { ResultsPanes } from '../ResultsPanes';
-import { PlainResultsHead, ResultRows, ResultsTable, type RowContext } from '../ResultsTable';
+import { ProvisionalResultsTable, type RowContext } from '../ResultsTable';
 import { SubstitutionsList } from '../SubstitutionsList';
 
 export interface UpgradesResultsProps {
@@ -35,10 +35,7 @@ export const UpgradesResults = ({ run }: UpgradesResultsProps) => {
 			return <EmptyState title={i18n.t('upgrades_tab.results.empty_no_ranking')} body={i18n.t('upgrades_tab.results.empty_no_ranking_body')} />;
 		case 'running':
 			return run.landedRows.length > 0 ? (
-				<ResultsTable data-provisional="true">
-					<PlainResultsHead />
-					<ResultRows rows={landedRows(run.landedRows)} rowContext={rowContext} />
-				</ResultsTable>
+				<ProvisionalResultsTable rows={landedRows(run.landedRows)} rowContext={rowContext} />
 			) : (
 				<EmptyState body={i18n.t('upgrades_tab.results.rows_pending')} />
 			);
@@ -49,19 +46,19 @@ export const UpgradesResults = ({ run }: UpgradesResultsProps) => {
 				</p>
 			);
 		case 'done':
-		case 'stopped':
+		case 'stopped': {
+			const hasRows = view !== undefined && view.rows.length > 0;
+			// A stopped run with no finished row shows no empty state: the status line already says so.
+			const noUpgrades = !hasRows && run.status === 'done';
 			return (
 				<>
-					{view && view.rows.length > 0 ? (
-						<ResultsPanes view={view} rowContext={rowContext} />
-					) : (
-						// A stopped run with no finished row: the status line already says so.
-						run.status === 'done' && (
-							<EmptyState title={i18n.t('upgrades_tab.results.empty_no_upgrades')} body={i18n.t('upgrades_tab.results.empty_no_upgrades_body')} />
-						)
+					{hasRows && <ResultsPanes view={view} rowContext={rowContext} />}
+					{noUpgrades && (
+						<EmptyState title={i18n.t('upgrades_tab.results.empty_no_upgrades')} body={i18n.t('upgrades_tab.results.empty_no_upgrades_body')} />
 					)}
 					{run.result.substitutions.length > 0 && <SubstitutionsList substitutions={run.result.substitutions} />}
 				</>
 			);
+		}
 	}
 };

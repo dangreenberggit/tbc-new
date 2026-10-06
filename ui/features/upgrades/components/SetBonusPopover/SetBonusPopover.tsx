@@ -26,23 +26,25 @@ export const SetBonusPopover = ({ tip, children }: SetBonusPopoverProps) => (
 		testId="upgrades-set-bonus-tip">
 		<div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 text-left">
 			{tipSections(setBonusTipText(tip)).map(section => (
-				<dl key={section.heading ?? ''} className="contents">
+				<div key={section.id} className="contents">
 					{section.heading && <p className="col-span-2 mt-1 mb-0 font-semibold">{section.heading}</p>}
-					{section.lines.map(line => (
-						<div key={line.label} className="contents" data-testid={line.total ? 'upgrades-set-bonus-tip-total' : undefined}>
-							<dt className={line.total ? 'border-t border-t-border pt-0.5 font-semibold' : 'font-normal'}>
-								{line.label}
-								{line.marker && <small className="block text-muted">{line.marker}</small>}
-							</dt>
-							<dd
-								className={
-									line.total ? 'm-0 border-t border-t-border pt-0.5 text-right font-semibold tabular-nums' : 'm-0 text-right tabular-nums'
-								}>
-								{line.value}
-							</dd>
-						</div>
-					))}
-				</dl>
+					<dl className="contents">
+						{section.lines.map(line => (
+							<div key={line.id} className="contents" data-testid={line.total ? 'upgrades-set-bonus-tip-total' : undefined}>
+								<dt className={line.total ? 'border-t border-t-border pt-0.5 font-semibold' : 'font-normal'}>
+									{line.label}
+									{line.marker && <small className="block text-muted">{line.marker}</small>}
+								</dt>
+								<dd
+									className={
+										line.total ? 'm-0 border-t border-t-border pt-0.5 text-right font-semibold tabular-nums' : 'm-0 text-right tabular-nums'
+									}>
+									{line.value}
+								</dd>
+							</div>
+						))}
+					</dl>
+				</div>
 			))}
 		</div>
 	</Popover>

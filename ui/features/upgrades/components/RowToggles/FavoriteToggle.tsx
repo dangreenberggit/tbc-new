@@ -1,19 +1,20 @@
 import i18n from '@i18n/config';
 import { useSimHost } from '@sim/context/SimHostContext';
-import { useStoreSubscribe } from '@sim/hooks/useStoreSubscribe';
-import { subscribeSimField } from '@sim/state/subscriptions';
 import { Button } from '@ui-kit/Button';
 import { Icon } from '@ui-kit/Icon';
 import clsx from 'clsx';
+import { useStore } from 'zustand';
 
 /**
  * The gear picker's favourite star for one result row: it writes the sim's
  * own favourites, so the item is starred in the picker too. It subscribes on
  * its own, so a memoised row does not render again when favourites change.
+ * Read through zustand, not `useStoreSubscribe`: the answer is keyed by a
+ * prop, which that hook answers one notification late (its own comment).
  */
 export const FavoriteToggle = ({ itemId }: { itemId: number }) => {
 	const { sim } = useSimHost();
-	const favourite = useStoreSubscribe(subscribeSimField(sim, 'filters'), () => sim.getFilters().favoriteItems.includes(itemId));
+	const favourite = useStore(sim.store, state => state.sim.filters.favoriteItems.includes(itemId));
 
 	const toggle = () => {
 		const next = sim.getFilters();

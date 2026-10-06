@@ -2,8 +2,10 @@ import i18n from '@i18n/config';
 
 import type { BonusRef, SetBonusTip, TipLabel } from '../model/set_bonus_tip';
 
-/** One printed popover row. `total` marks the receipt's last line. */
-export type TipTextRow = { type: 'heading'; text: string } | { type: 'line'; label: string; value: string; marker?: string; total: boolean };
+/** One printed popover row. `id` names what the row is about, for a list key; `total` marks the receipt's last line. */
+export type TipTextRow =
+	| { type: 'heading'; id: string; text: string }
+	| { type: 'line'; id: string; label: string; value: string; marker?: string; total: boolean };
 
 /**
  * Joins names as "A", "A and B", or "A, B and C". Literal English, as the old
@@ -82,11 +84,39 @@ const valueText = (kind: SetBonusTip['kind'], dps: number | undefined): string =
 	return shown < 0 ? i18n.t('upgrades_tab.set_bonus.tip_dps_less', { dps: amount }) : i18n.t('upgrades_tab.set_bonus.tip_dps_more', { dps: amount });
 };
 
-export const setBonusTipText = (tip: SetBonusTip): TipTextRow[] =>
-	tip.entries.map((entry): TipTextRow => {
+const bonusIds = (bonuses: readonly BonusRef[]): string => bonuses.map(b => `${b.setName}:${b.threshold}`).join('+');
+
+/** What a popover line is about, from its data rather than its printed text. */
+export function tipLabelId(label: TipLabel): string {
+	switch (label.kind) {
+		case 'item_stats':
+		case 'item_alone':
+		case 'total':
+			return label.kind;
+		case 'breaks':
+			return `breaks:${bonusIds(label.broken)}`;
+		case 'bonus':
+			return `bonus:${label.set}:${label.threshold}`;
+		case 'piece_stats':
+			return `piece:${label.name}`;
+		case 'pieces':
+			return `pieces:${label.form}:${label.threshold}:${label.pieces.join('+')}`;
+	}
+}
+
+export const setBonusTipText = (tip: SetBonusTip): TipTextRow[] => {
+	// Nothing in the model forbids two lines about the same thing, so a repeat gets its occurrence number.
+	const seen = new Map<string, number>();
+	const unique = (id: string) => {
+		const count = (seen.get(id) ?? 0) + 1;
+		seen.set(id, count);
+		return count === 1 ? id : `${id}#${count}`;
+	};
+	return tip.entries.map((entry): TipTextRow => {
 		if (entry.type === 'heading') {
 			return {
 				type: 'heading',
+				id: unique(entry.heading),
 				text:
 					entry.heading === 'set_potential'
 						? i18n.t('upgrades_tab.set_bonus.tip_set_potential')
@@ -95,28 +125,30 @@ export const setBonusTipText = (tip: SetBonusTip): TipTextRow[] =>
 		}
 		return {
 			type: 'line',
+			id: unique(tipLabelId(entry.label)),
 			label: tipLabelText(entry.label),
 			value: valueText(tip.kind, entry.dps),
 			...(entry.marker ? { marker: i18n.t('upgrades_tab.set_bonus.tip_figure_marker') } : {}),
 			total: entry.label.kind === 'total',
 		};
 	});
+};
 
 export type TipLineRow = Extract<TipTextRow, { type: 'line' }>;
 
-/** The popover's lines grouped under their headings; lines before the first heading form an untitled section. */
-export type TipSection = { heading?: string; lines: TipLineRow[] };
+/** The popover's lines grouped under their headings; lines before the first heading form an untitled section, id `lines`. */
+export type TipSection = { id: string; heading?: string; lines: TipLineRow[] };
 
 export function tipSections(rows: readonly TipTextRow[]): TipSection[] {
 	const sections: TipSection[] = [];
 	for (const row of rows) {
 		if (row.type === 'heading') {
-			sections.push({ heading: row.text, lines: [] });
+			sections.push({ id: row.id, heading: row.text, lines: [] });
 			continue;
 		}
 		const last = sections.at(-1);
 		if (last) last.lines.push(row);
-		else sections.push({ lines: [row] });
+		else sections.push({ id: 'lines', lines: [row] });
 	}
 	return sections;
 }

@@ -18,6 +18,7 @@ import {
 	slotLabel,
 	SORT_LABELS,
 	sourceLabel,
+	substitutionText,
 } from './format';
 
 beforeAll(() => {
@@ -88,6 +89,13 @@ describe('SORT_LABELS', () => {
 		const row = { slot: 'finger', slotChoice: 'finger2', source: { kind: 'badge', cost: 75 } } as const;
 		expect(SORT_LABELS.slot(row)).toBe('Ring 2');
 		expect(SORT_LABELS.source(row)).toBe('Badge vendor');
+	});
+});
+
+describe('substitutionText', () => {
+	it('shows a crash trace’s first line and says the rest is in the console, and leaves a one-line reason whole', () => {
+		expect(substitutionText('panic: boom\ngoroutine 1')).toBe('panic: boom… (full text in the browser console)');
+		expect(substitutionText('Kept the worn hit gems.')).toBe('Kept the worn hit gems.');
 	});
 });
 

@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import englishTranslations from '../../../../assets/locales/en/translation.json';
 import { setBonusTipLines, type TipLabel } from '../model/set_bonus_tip';
 import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
-import { setBonusSubLineText, setBonusTipText, tipLabelText, tipSections } from './set_bonus_labels';
+import { setBonusSubLineText, setBonusTipText, tipLabelId, tipLabelText, tipSections } from './set_bonus_labels';
 
 beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations, true, true));
 afterAll(() => i18n.removeResourceBundle('en', 'translation'));
@@ -17,9 +17,9 @@ describe('setBonusTipText', () => {
 	it('prints a receipt with signed figures and a marked total', () => {
 		const tip = setBonusTipLines(fixtureRow(10), { ranking: RANKING_FIXTURE })!;
 		expect(setBonusTipText(tip)).toEqual([
-			{ type: 'line', label: 'Item stats', value: '+22.8', total: false },
-			{ type: 'line', label: `Breaks Crystalforge Battlegear${NBSP}2pc`, value: '-18.4', total: false },
-			{ type: 'line', label: 'Total', value: '+4.4', total: true },
+			{ type: 'line', id: 'item_stats', label: 'Item stats', value: '+22.8', total: false },
+			{ type: 'line', id: 'breaks:Crystalforge Battlegear:2', label: `Breaks Crystalforge Battlegear${NBSP}2pc`, value: '-18.4', total: false },
+			{ type: 'line', id: 'total', label: 'Total', value: '+4.4', total: true },
 		]);
 	});
 
@@ -34,9 +34,9 @@ describe('setBonusTipText', () => {
 			],
 		});
 		expect(rows).toEqual([
-			{ type: 'heading', text: 'Separate outcomes with this item, not added' },
-			{ type: 'line', label: 'Lightbringer Faceguard alone', value: '2.0 DPS less', total: false },
-			{ type: 'line', label: 'With A and B (4pc)', value: '13.0 DPS more', marker: "this row's figure", total: false },
+			{ type: 'heading', id: 'set_potential_totals', text: 'Separate outcomes with this item, not added' },
+			{ type: 'line', id: 'item_alone', label: 'Lightbringer Faceguard alone', value: '2.0 DPS less', total: false },
+			{ type: 'line', id: 'pieces:stop:4:A+B', label: 'With A and B (4pc)', value: '13.0 DPS more', marker: "this row's figure", total: false },
 		]);
 	});
 
@@ -51,8 +51,8 @@ describe('setBonusTipText', () => {
 			],
 		});
 		expect(rows.slice(0, 2)).toEqual([
-			{ type: 'heading', text: 'Set potential' },
-			{ type: 'line', label: `Lightbringer Battlegear${NBSP}2pc (1/2)`, value: "couldn't measure", total: false },
+			{ type: 'heading', id: 'set_potential', text: 'Set potential' },
+			{ type: 'line', id: 'bonus:Lightbringer Battlegear:2', label: `Lightbringer Battlegear${NBSP}2pc (1/2)`, value: "couldn't measure", total: false },
 		]);
 	});
 });
@@ -86,12 +86,34 @@ describe('setBonusSubLineText', () => {
 
 describe('tipSections', () => {
 	it('starts a new section at each heading and keeps the lines before the first heading in an untitled one', () => {
-		const line = (label: string) => ({ type: 'line' as const, label, value: '+1.0', total: false });
-		const sections = tipSections([line('a'), { type: 'heading', text: 'Set potential' }, line('b'), line('c')]);
-		expect(sections).toEqual([{ lines: [line('a')] }, { heading: 'Set potential', lines: [line('b'), line('c')] }]);
+		const line = (label: string) => ({ type: 'line' as const, id: label, label, value: '+1.0', total: false });
+		const sections = tipSections([line('a'), { type: 'heading', id: 'set_potential', text: 'Set potential' }, line('b'), line('c')]);
+		expect(sections).toEqual([
+			{ id: 'lines', lines: [line('a')] },
+			{ id: 'set_potential', heading: 'Set potential', lines: [line('b'), line('c')] },
+		]);
 	});
 
 	it('gives a popover that opens on a heading no untitled section', () => {
-		expect(tipSections([{ type: 'heading', text: 'Outcomes' }])).toEqual([{ heading: 'Outcomes', lines: [] }]);
+		expect(tipSections([{ type: 'heading', id: 'set_potential_totals', text: 'Outcomes' }])).toEqual([
+			{ id: 'set_potential_totals', heading: 'Outcomes', lines: [] },
+		]);
+	});
+});
+
+describe('tipLabelId', () => {
+	it('names a line by the bonus, piece or set it is about', () => {
+		expect(tipLabelId({ kind: 'breaks', broken: [crystalforge, lightbringer] })).toBe('breaks:Crystalforge Battlegear:2+Lightbringer Battlegear:4');
+		expect(tipLabelId({ kind: 'piece_stats', name: 'Lightbringer Greaves' })).toBe('piece:Lightbringer Greaves');
+	});
+
+	it('numbers a second line about the same thing, so every row of a popover has its own id', () => {
+		const breaks = { type: 'line' as const, label: { kind: 'breaks' as const, broken: [crystalforge] }, dps: -1 };
+		const rows = setBonusTipText({
+			subLine: 'hover_hint',
+			kind: 'receipt',
+			entries: [breaks, breaks, { type: 'line', label: { kind: 'total' }, dps: -2 }],
+		});
+		expect(rows.map(row => row.id)).toEqual(['breaks:Crystalforge Battlegear:2', 'breaks:Crystalforge Battlegear:2#2', 'total']);
 	});
 });

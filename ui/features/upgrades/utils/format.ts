@@ -4,6 +4,7 @@ import { translateSlotName } from '@i18n/localization';
 import { formatToNumber } from '@sim/utils/format';
 import type { ProgressTrackerProgress } from '@ui-kit/ProgressTrackerDialog';
 
+import { substitutionFirstLine } from '../model/assumptions';
 import type { ItemSource } from '../model/engine/pool';
 import { simSlotsForPoolSlot } from '../model/engine/pool';
 import { type RankedItem, RankError } from '../model/engine/rank';
@@ -56,6 +57,12 @@ export const rowSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>): str
 
 /** The slot and source columns sort on the text their cells show; the export sorts with the same labels, so its order is the order on screen. */
 export const SORT_LABELS: SortLabels<Pick<RankedItem, 'slot' | 'slotChoice' | 'source' | 'sources'>> = { slot: slotLabel, source: rowSourceLabel };
+
+/** A dropped candidate's reason as the page shows it: the first line, and where the rest went when it was cut. */
+export const substitutionText = (detail: string): string => {
+	const { line, truncated } = substitutionFirstLine(detail);
+	return truncated ? `${line}${i18n.t('upgrades_tab.assumptions.substitution_truncated_suffix')}` : line;
+};
 
 export const describeRunError = (error: unknown): string => {
 	if (error instanceof RankError && error.kind === 'not-implemented') return i18n.t('upgrades_tab.status.unsupported_spec');
