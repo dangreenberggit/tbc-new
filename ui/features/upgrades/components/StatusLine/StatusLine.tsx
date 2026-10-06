@@ -19,8 +19,8 @@ export const StatusLine = ({ run }: StatusLineProps) => {
 		case 'done':
 			return (
 				<p className="mb-0" data-testid="upgrades-baseline-summary">
-					{i18n.t('upgrades_tab.status.done', { dps: formatDps(run.result.baseline.dps) })}{' '}
-					{i18n.t('upgrades_tab.status.took', { seconds: formatSeconds(run.result.durationMs) })}
+					{i18n.t('upgrades_tab.status.done', { dps: formatDps(run.result.baseline.dps) })}
+					{run.result.durationMs !== undefined && ` ${i18n.t('upgrades_tab.status.took', { seconds: formatSeconds(run.result.durationMs) })}`}
 				</p>
 			);
 		case 'stopped': {

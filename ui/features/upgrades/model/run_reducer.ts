@@ -29,7 +29,8 @@ export const runSettings = (iterations: number, candidateCap?: number): RunSetti
 	candidateCap,
 });
 
-export type FinishedRanking = Ranking & { durationMs: number };
+/** `durationMs` is absent on a ranking loaded from a fixture: nothing ran, so there is no time to show. */
+export type FinishedRanking = Ranking & { durationMs?: number };
 export type StoppedRanking = PartialRanking & { durationMs: number };
 export type RunResult = FinishedRanking | StoppedRanking;
 
@@ -57,7 +58,7 @@ export function runReducer(state: RunState, action: RunAction): RunState {
 		case 'started':
 			return { status: 'running', runId: action.runId, startedAt: action.startedAt, landedRows: [] };
 		case 'fixtureLoaded':
-			return { status: 'done', runId: action.runId, result: { ...action.ranking, durationMs: 0 } };
+			return { status: 'done', runId: action.runId, result: action.ranking };
 		case 'landed':
 			// A superseded run's rows can still arrive after a new run started.
 			if (!isCurrentRun(state, action.runId)) return state;

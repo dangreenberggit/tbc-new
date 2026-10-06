@@ -142,6 +142,6 @@ describe('useUpgradesRun', () => {
 		act(() => result.current.dispatchFixture(RANKING_FIXTURE));
 		expect(call(0).deps.signal.aborted).toBe(true);
 		await act(async () => call(0).settle(partialOf()));
-		expect(result.current.run).toMatchObject({ status: 'done', result: { durationMs: 0 } });
+		expect(result.current.run).toEqual({ status: 'done', runId: 2, result: RANKING_FIXTURE });
 	});
 });

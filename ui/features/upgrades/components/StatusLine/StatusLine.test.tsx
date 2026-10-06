@@ -19,6 +19,10 @@ describe('StatusLine', () => {
 		expect(summaryOf(run)).toBe('Your current gear: 2,084.2 DPS. Took 2.5s.');
 	});
 
+	it('gives a loaded fixture’s baseline with no time, since nothing ran', () => {
+		expect(summaryOf({ status: 'done', runId: 1, result: RANKING_FIXTURE })).toBe('Your current gear: 2,084.2 DPS.');
+	});
+
 	it('gives no time for a stopped run, whose duration is not the cost of a ranking', () => {
 		const run: RunState = { status: 'stopped', runId: 1, result: { ...RANKING_FIXTURE, items: [row], complete: false, durationMs: 900 } };
 		expect(summaryOf(run)).toBe('Stopped early. Your current gear: 2,084.2 DPS. The rows below finished before Stop.');

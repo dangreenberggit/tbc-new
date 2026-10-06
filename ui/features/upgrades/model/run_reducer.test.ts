@@ -67,11 +67,11 @@ describe('runReducer', () => {
 		});
 	});
 
-	it('enters done with a zero duration when a fixture loads', () => {
+	it('enters done with no duration when a fixture loads, since nothing ran', () => {
 		expect(runReducer(IDLE_RUN, { type: 'fixtureLoaded', runId: 3, ranking: RANKING_FIXTURE })).toEqual({
 			status: 'done',
 			runId: 3,
-			result: { ...RANKING_FIXTURE, durationMs: 0 },
+			result: RANKING_FIXTURE,
 		});
 	});
 
