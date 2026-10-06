@@ -1,5 +1,5 @@
 {
-  "source": "tbc-new-fork ui/warlock/dps/presets.ts P1_AFFLI_DEMO_DESTRO_EP",
+  "source": "tbc-new-fork ui/specs/warlock/dps/presets.ts P1_AFFLI_DEMO_DESTRO_EP",
   "pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
   "label": "P1 - Affli / Demo / Destro",
   "notes": [

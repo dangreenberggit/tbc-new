@@ -1,5 +1,5 @@
 {
-  "source": "wowsims/tbc-new ui/paladin/retribution/presets.ts P2_EP_PRESET",
+  "source": "wowsims/tbc-new ui/specs/paladin/retribution/presets.ts P2_EP_PRESET",
   "pin": "8aa378b3",
   "weights": {
     "0": 1.0,

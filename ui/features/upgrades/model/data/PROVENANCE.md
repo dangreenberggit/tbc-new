@@ -479,3 +479,22 @@ Verify:
 pnpm fork-universes:check
 git -C . check-attr text eol -- ret-p2.universe.json
 ```
+
+## Refresh, 2026-10-05 (ticket 558: EP-weight `source` paths)
+
+Upstream moved each spec's `presets.ts` from `ui/<class>/<spec>/` to
+`ui/specs/<class>/<spec>/`, so the source repo rewrote the `source` field of
+its 20 `data/presets/*/*.ep-weights.json` files to the new path, and
+`scripts/check_ep_presets.py` now reads the presets from there.
+`python scripts/sync_fork_universes.py --write` reported **19 refreshed, 44
+already matching, 63 listed here**: the 19 bundled EP-weight copies. In each,
+the `source` line is the only changed line (`git diff --stat`: 19 files, 19
+insertions, 19 deletions). No weight and no universe changed.
+
+No engine file changed: this touches only `ui/features/upgrades/model/data/`.
+
+Verify:
+
+```bash
+pnpm fork-universes:check
+```

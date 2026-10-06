@@ -1,5 +1,5 @@
 {
-  "source": "tbc-new-fork ui/warrior/dps/presets.ts P1_FURY_EP_PRESET",
+  "source": "tbc-new-fork ui/specs/warrior/dps/presets.ts P1_FURY_EP_PRESET",
   "pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
   "label": "P1 - Fury",
   "notes": [

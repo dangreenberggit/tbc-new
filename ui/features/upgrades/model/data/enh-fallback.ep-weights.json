@@ -1,5 +1,5 @@
 {
-  "source": "tbc-new-fork ui/shaman/enhancement/presets.ts P1_EP_PRESET",
+  "source": "tbc-new-fork ui/specs/shaman/enhancement/presets.ts P1_EP_PRESET",
   "pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
   "label": "Default",
   "notes": [
