@@ -9154,10 +9154,50 @@
 						},
 						"sets_other_phases": {
 							"type": "string"
+						},
+						"fixture_file": {
+							"type": "string"
+						},
+						"fixture_loaded": {
+							"type": "string"
+						},
+						"fixture_rejected": {
+							"type": "string"
+						},
+						"fixture_not_json": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["phase_label", "sources_title", "sources_button", "sources_summary", "sources_summary_none", "sources_section_raids", "sources_section_other", "sets_title", "sets_in_pool", "sets_other_phases"]
+					"required": ["phase_label", "sources_title", "sources_button", "sources_summary", "sources_summary_none", "sources_section_raids", "sources_section_other", "sets_title", "sets_in_pool", "sets_other_phases", "fixture_file", "fixture_loaded", "fixture_rejected", "fixture_not_json"]
+				},
+				"sources": {
+					"type": "object",
+					"properties": {
+						"badge": {
+							"type": "string"
+						},
+						"crafted": {
+							"type": "string"
+						},
+						"rep": {
+							"type": "string"
+						},
+						"pvp": {
+							"type": "string"
+						},
+						"world": {
+							"type": "string"
+						},
+						"heroic": {
+							"type": "string"
+						},
+						"unknown": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["badge", "crafted", "rep", "pvp", "world", "heroic", "unknown"]
 				},
 				"iterations_label": {
 					"type": "string"
@@ -9201,6 +9241,9 @@
 						"stale": {
 							"type": "string"
 						},
+						"stale_hint": {
+							"type": "string"
+						},
 						"stopped": {
 							"type": "string"
 						},
@@ -9221,7 +9264,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["idle", "unsupported_spec", "error", "error_sim_unavailable", "done", "elapsed", "stale", "stopped", "running_rows", "done_took", "running", "stopped_partial", "stopping"]
+					"required": ["idle", "unsupported_spec", "error", "error_sim_unavailable", "done", "elapsed", "stale", "stale_hint", "stopped", "running_rows", "done_took", "running", "stopped_partial", "stopping"]
 				},
 				"view": {
 					"type": "object",
@@ -9535,7 +9578,7 @@
 				}
 			},
 			"additionalProperties": false,
-			"required": ["title", "title_badge", "description", "subtabs", "run", "stop", "settings_title", "settings", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "export", "set_bonus", "cutoff", "prune", "progress", "run_progress", "results", "toggles", "assumptions"]
+			"required": ["title", "title_badge", "description", "subtabs", "run", "stop", "settings_title", "settings", "sources", "iterations_label", "candidates_label", "candidates_placeholder", "candidates_placeholder_uncapped", "eligible_count", "eligible_count_unknown", "status", "view", "export", "set_bonus", "cutoff", "prune", "progress", "run_progress", "results", "toggles", "assumptions"]
 		}
 	},
 	"additionalProperties": false,

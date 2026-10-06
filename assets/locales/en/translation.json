@@ -2601,7 +2601,20 @@
 			"sources_section_other": "Other sources",
 			"sets_title": "Sim sets",
 			"sets_in_pool": "{{n}}/{{m}} in pool",
-			"sets_other_phases": "Other sets ({{n}})"
+			"sets_other_phases": "Other sets ({{n}})",
+			"fixture_file": "Load a fixture file",
+			"fixture_loaded": "Loaded a fixture with {{rows}} rows.",
+			"fixture_rejected": "Fixture rejected: {{reason}}",
+			"fixture_not_json": "The file is not JSON."
+		},
+		"sources": {
+			"badge": "Badge vendor",
+			"crafted": "Crafted",
+			"rep": "Reputation vendor",
+			"pvp": "PvP vendor",
+			"world": "World drop",
+			"heroic": "Heroic dungeon",
+			"unknown": "Source not recorded"
 		},
 		"iterations_label": "Iterations",
 		"candidates_label": "Candidates",
@@ -2617,6 +2630,7 @@
 			"done": "Your current gear: {{dps}} DPS.",
 			"elapsed": "Took {{seconds}}s.",
 			"stale": "settings changed since this ranking — results may be out of date",
+			"stale_hint": "Run again to rank with the current settings.",
 			"stopped": "Stopped early. Your current gear: {{dps}} DPS. No candidate rows to show — run again for a full ranking.",
 			"running_rows": "{{label}} ({{count}} rows landed)",
 			"done_took": "Your current gear: {{dps}} DPS. Took {{seconds}}s.",
