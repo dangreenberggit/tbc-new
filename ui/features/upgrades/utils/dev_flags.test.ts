@@ -12,6 +12,7 @@ describe('readDevFlags', () => {
 			replay: 'x',
 			cap: 10,
 			iterations: 500,
+			dev: true,
 		});
 	});
 
@@ -24,8 +25,8 @@ describe('readDevFlags', () => {
 	});
 
 	it('ignores a cap or iteration count that is not a positive whole number', () => {
-		expect(readDevFlags('?upgrades-dev&cap=0&iterations=abc')).toEqual({});
-		expect(readDevFlags('?upgrades-dev&cap=-3&iterations=2.5')).toEqual({});
+		expect(readDevFlags('?upgrades-dev&cap=0&iterations=abc')).toEqual({ dev: true });
+		expect(readDevFlags('?upgrades-dev&cap=-3&iterations=2.5')).toEqual({ dev: true });
 	});
 
 	it('ignores a runner other than replay, and a replay with no name', () => {

@@ -132,5 +132,9 @@ export function visibleRows(run: RunState): readonly RankedItem[] {
 	}
 }
 
+/** What the run in flight or the result on screen was measured on. */
+export const measuredOnOf = (run: RunState): MeasuredOn | undefined =>
+	run.status === 'running' || run.status === 'done' || run.status === 'stopped' ? run.measuredOn : undefined;
+
 /** The finished ranking on screen, which the fixture recorder saves. */
 export const shownRanking = (run: RunState): FinishedRanking | undefined => (run.status === 'done' ? run.result : undefined);

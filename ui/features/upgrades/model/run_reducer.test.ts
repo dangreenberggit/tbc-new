@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { PartialRanking } from './engine/rank';
-import { DEFAULT_ITERATIONS, IDLE_RUN, runReducer, runSettings, type RunState, settledAction, shownRanking, visibleRows } from './run_reducer';
+import { DEFAULT_ITERATIONS, IDLE_RUN, measuredOnOf, runReducer, runSettings, type RunState, settledAction, shownRanking, visibleRows } from './run_reducer';
 
 const [rowA, rowB] = RANKING_FIXTURE.items;
 const partial: PartialRanking = { ...RANKING_FIXTURE, items: [rowA!], complete: false };
@@ -186,5 +186,17 @@ describe('shownRanking', () => {
 		expect(shownRanking(runReducer(running(), { type: 'finished', runId: 1, result }))).toBe(result);
 		expect(shownRanking(running())).toBeUndefined();
 		expect(shownRanking(IDLE_RUN)).toBeUndefined();
+	});
+});
+
+describe('measuredOnOf', () => {
+	it('is what the run or the result on screen was measured on, and nothing before a run or after an error', () => {
+		const measuredOn = { inputsSignature: 'page' };
+		const started = runReducer(IDLE_RUN, { type: 'started', runId: 1, startedAt: 0, measuredOn });
+		expect(measuredOnOf(started)).toBe(measuredOn);
+		const done = runReducer(started, { type: 'finished', runId: 1, result: { ...RANKING_FIXTURE, durationMs: 1 }, runner: 'WorkerPoolSimRunner' });
+		expect(measuredOnOf(done)).toEqual({ inputsSignature: 'page', runner: 'WorkerPoolSimRunner' });
+		expect(measuredOnOf(IDLE_RUN)).toBeUndefined();
+		expect(measuredOnOf(runReducer(started, { type: 'failed', runId: 1, message: 'no' }))).toBeUndefined();
 	});
 });

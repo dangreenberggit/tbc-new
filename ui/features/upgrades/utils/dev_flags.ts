@@ -12,6 +12,8 @@ export type DevFlags = {
 	replay?: string;
 	cap?: number;
 	iterations?: number;
+	/** `?upgrades-dev`: show the dev-only controls. */
+	dev?: boolean;
 };
 
 /**
@@ -45,6 +47,7 @@ export function readDevFlags(search: string): DevFlags {
 	// A stray `cap` or `iterations` on a shared link must not change a run, so
 	// both need the explicit `upgrades-dev` switch.
 	if (params.has('upgrades-dev')) {
+		flags.dev = true;
 		const cap = positiveInteger(params.get('cap'));
 		if (cap !== undefined) flags.cap = cap;
 		const iterations = positiveInteger(params.get('iterations'));

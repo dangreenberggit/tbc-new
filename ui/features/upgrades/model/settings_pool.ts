@@ -8,6 +8,8 @@
 import { isKaelTempLegendary } from './engine/kael-temp';
 import { filterPoolByPhase, type ItemSource, type PoolEntry } from './engine/pool';
 import { SOURCE_LABELS } from './engine/view';
+import type { RunSettings } from './run_reducer';
+import { type SettingsState, toRunSettings } from './settings_reducer';
 
 export type SourceOption = { key: string; label: string; count: number };
 
@@ -158,4 +160,56 @@ export function rowTagLabels(itemId: number, selectedOptions: readonly SetOption
 		const shared = holding.some(other => other !== o && other.name === o.name);
 		return shared && o.phase !== undefined ? `P${o.phase} ${o.name}` : o.name;
 	});
+}
+
+type PresetSet = { name: string; phase?: number; gear: GearItems };
+type SavedSet = { name: string; gear?: GearItems };
+
+/** What a spec and phase offer the settings: everything that does not depend on what the user picked. */
+export type SettingsOffer = {
+	pool: readonly PoolEntry[];
+	sources: { raids: SourceOption[]; other: SourceOption[] };
+	sourceKeys: readonly string[];
+	options: readonly SetOption[];
+	defaultKeys: readonly string[];
+};
+
+export function settingsOffer({
+	pool,
+	presets,
+	savedSets,
+	bisTagPhase,
+}: {
+	pool: readonly PoolEntry[];
+	presets: readonly PresetSet[];
+	savedSets: readonly SavedSet[];
+	bisTagPhase: number | undefined;
+}): SettingsOffer {
+	const options = setOptions({ presets, savedSets, pool });
+	return { pool, sources: sourceOptions(pool), sourceKeys: sourceKeys(pool), options, defaultKeys: defaultSetKeys(options, pool, bisTagPhase) };
+}
+
+/** What the user's picks make of an offer: the chips, the run they ask for and its candidate count. */
+export type SettingsView = {
+	selectedOptions: readonly SetOption[];
+	selectedKeys: readonly string[];
+	chips: { main: SetOption[]; other: SetOption[] };
+	runSettings: RunSettings;
+	eligibleCount: number;
+};
+
+export function settingsView(offer: SettingsOffer, state: SettingsState, maxPhase: number): SettingsView {
+	// A saved set deleted since it was picked is no longer a pick.
+	const selectedOptions = offer.options.filter(o => state.selectedSetKeys.includes(o.key));
+	const selectedKeys = selectedOptions.map(o => o.key);
+	const itemIds = selectedSetItemIds(selectedOptions, selectedKeys);
+	const runSettings = toRunSettings({ ...state, selectedSetKeys: selectedKeys }, itemIds);
+	const pool = effectivePool(offer.pool, { excludedSources: state.excludedSources, selectedSetItemIds: itemIds, prune: runSettings.prune ?? false });
+	return {
+		selectedOptions,
+		selectedKeys,
+		chips: splitSetChips(offer.options, selectedKeys, maxPhase),
+		runSettings,
+		eligibleCount: eligibleCount(pool, maxPhase),
+	};
 }

@@ -10,10 +10,13 @@ import {
 	selectedSetItemIds,
 	type SetOption,
 	setOptions,
+	settingsOffer,
+	settingsView,
 	sourceKeyOf,
 	sourceOptions,
 	splitSetChips,
 } from './settings_pool';
+import { initialSettings, settingsReducer } from './settings_reducer';
 
 const entry = (itemId: number, source: PoolEntry['source'], extra: Partial<PoolEntry> = {}): PoolEntry => ({
 	itemId,
@@ -169,5 +172,54 @@ describe('rowTagLabels', () => {
 	it('prefixes the phase when two selected sets share a name', () => {
 		const selected = [option('preset:2:BiS 9%', 'BiS 9%', 2, [1]), option('preset:3:BiS 9%', 'BiS 9%', 3, [1])];
 		expect(rowTagLabels(1, selected)).toEqual(['P2 BiS 9%', 'P3 BiS 9%']);
+	});
+});
+
+describe('settingsView', () => {
+	const offer = settingsOffer({
+		pool: POOL,
+		presets: [
+			{ name: 'P2', phase: 2, gear: gear(1, 4) },
+			{ name: 'P3', phase: 3, gear: gear(1, 3) },
+		],
+		savedSets: [{ name: 'Mine', gear: gear(2) }],
+		bisTagPhase: 3,
+	});
+	const fresh = initialSettings({ iterations: 500 });
+
+	it('offers the pool’s sources and sets, and the BiS-tag phase’s preset as the default', () => {
+		expect(offer.sourceKeys).toEqual(['Black Temple', 'Hyjal Summit', 'Tempest Keep', 'Badge vendor', 'Crafted']);
+		expect(offer.options.map(o => o.key)).toEqual(['preset:2:P2', 'preset:3:P3', 'saved:Mine']);
+		expect(offer.defaultKeys).toEqual(['preset:3:P3']);
+	});
+
+	it('runs the whole phase pool with nothing picked', () => {
+		const view = settingsView(offer, fresh, 3);
+		expect(view.runSettings).toEqual({
+			iterations: 500,
+			candidateCap: undefined,
+			excludedSources: [],
+			guaranteedSetKeys: [],
+			guaranteedSetItemIds: [],
+			prune: false,
+		});
+		expect(view.eligibleCount).toBe(5);
+		expect(view.chips.other.map(o => o.key)).toEqual(['preset:2:P2']);
+	});
+
+	it('narrows the count when a source is excluded and, with prune, to the selected sets’ items', () => {
+		const excluded = settingsReducer(fresh, { type: 'toggleSource', key: 'Badge vendor' });
+		expect(settingsView(offer, excluded, 3).eligibleCount).toBe(4);
+
+		const pruned = settingsReducer(settingsReducer(fresh, { type: 'toggleSet', key: 'preset:3:P3' }), { type: 'setPrune', prune: true });
+		const view = settingsView(offer, pruned, 3);
+		expect(view.selectedOptions.map(o => o.key)).toEqual(['preset:3:P3']);
+		expect(view.runSettings).toMatchObject({ guaranteedSetKeys: ['preset:3:P3'], guaranteedSetItemIds: [1, 3], prune: true });
+		expect(view.eligibleCount).toBe(2);
+	});
+
+	it('drops a picked set the offer no longer has, such as a deleted saved set', () => {
+		const picked = settingsReducer(fresh, { type: 'toggleSet', key: 'saved:Gone' });
+		expect(settingsView(offer, picked, 3).runSettings.guaranteedSetKeys).toEqual([]);
 	});
 });
