@@ -20,9 +20,12 @@ export const RunProgressDialog = ({ onStop }: RunProgressDialogProps) => {
 	const barRef = useRef<ProgressTrackerHandle>(null);
 
 	useEffect(() => {
-		// Ticks sent between Run and this effect are not lost: the bar starts from the latest one.
+		// Ticks sent between this render and the effect are not lost: both start from the latest one.
 		const latest = progressOf(player);
-		if (latest) barRef.current?.setProgress(progressBarOf(latest));
+		if (latest) {
+			setStage(progressStageOf(latest));
+			barRef.current?.setProgress(progressBarOf(latest));
+		}
 		return subscribeProgress(player, view => {
 			setStage(progressStageOf(view));
 			barRef.current?.setProgress(progressBarOf(view));
