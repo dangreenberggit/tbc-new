@@ -5,6 +5,7 @@
  */
 
 import type { PartialRanking, RankedItem, Ranking } from './engine/rank';
+import type { SpecId } from './engine/types';
 
 /** What one click of Run asks for. */
 export type RunSettings = {
@@ -34,25 +35,32 @@ export type FinishedRanking = Ranking & { durationMs?: number };
 export type StoppedRanking = PartialRanking & { durationMs: number };
 export type RunResult = FinishedRanking | StoppedRanking;
 
+/**
+ * The gear and spec a ranking was measured against. The ranking holds no
+ * gear, and a row's own set breaks are worked out from the gear it was
+ * measured on, not the gear worn now (ticket 536).
+ */
+export type MeasuredOn = { wornItemIds?: readonly number[]; specId?: SpecId };
+
 export type RunState =
 	| { status: 'idle' }
 	/**
 	 * `stopping`: Stop was pressed. The engine finishes the step in flight and
 	 * then returns what it has, so the run stays `running` until it settles.
 	 */
-	| { status: 'running'; runId: number; startedAt: number; landedRows: readonly RankedItem[]; stopping: boolean }
-	| { status: 'done'; runId: number; result: FinishedRanking }
-	| { status: 'stopped'; runId: number; result: StoppedRanking }
+	| { status: 'running'; runId: number; startedAt: number; landedRows: readonly RankedItem[]; stopping: boolean; measuredOn?: MeasuredOn }
+	| { status: 'done'; runId: number; result: FinishedRanking; measuredOn?: MeasuredOn }
+	| { status: 'stopped'; runId: number; result: StoppedRanking; measuredOn?: MeasuredOn }
 	| { status: 'error'; runId: number; message: string };
 
 export type RunAction =
-	| { type: 'started'; runId: number; startedAt: number }
+	| { type: 'started'; runId: number; startedAt: number; measuredOn?: MeasuredOn }
 	| { type: 'landed'; runId: number; row: RankedItem }
 	| { type: 'stopping'; runId: number }
 	| { type: 'finished'; runId: number; result: FinishedRanking }
 	| { type: 'stopped'; runId: number; result: StoppedRanking }
 	| { type: 'failed'; runId: number; message: string }
-	| { type: 'fixtureLoaded'; runId: number; ranking: Ranking };
+	| { type: 'fixtureLoaded'; runId: number; ranking: Ranking; measuredOn?: MeasuredOn };
 
 export const IDLE_RUN: RunState = { status: 'idle' };
 
@@ -61,9 +69,9 @@ const isCurrentRun = (state: RunState, runId: number): state is Extract<RunState
 export function runReducer(state: RunState, action: RunAction): RunState {
 	switch (action.type) {
 		case 'started':
-			return { status: 'running', runId: action.runId, startedAt: action.startedAt, landedRows: [], stopping: false };
+			return { status: 'running', runId: action.runId, startedAt: action.startedAt, landedRows: [], stopping: false, measuredOn: action.measuredOn };
 		case 'fixtureLoaded':
-			return { status: 'done', runId: action.runId, result: action.ranking };
+			return { status: 'done', runId: action.runId, result: action.ranking, measuredOn: action.measuredOn };
 		case 'landed':
 			// A superseded run's rows can still arrive after a new run started.
 			if (!isCurrentRun(state, action.runId)) return state;
@@ -73,10 +81,10 @@ export function runReducer(state: RunState, action: RunAction): RunState {
 			return { ...state, stopping: true };
 		case 'finished':
 			if (!isCurrentRun(state, action.runId)) return state;
-			return { status: 'done', runId: action.runId, result: action.result };
+			return { status: 'done', runId: action.runId, result: action.result, measuredOn: state.measuredOn };
 		case 'stopped':
 			if (!isCurrentRun(state, action.runId)) return state;
-			return { status: 'stopped', runId: action.runId, result: action.result };
+			return { status: 'stopped', runId: action.runId, result: action.result, measuredOn: state.measuredOn };
 		case 'failed':
 			if (!isCurrentRun(state, action.runId)) return state;
 			return { status: 'error', runId: action.runId, message: action.message };

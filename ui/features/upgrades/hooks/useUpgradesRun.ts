@@ -1,10 +1,11 @@
 import { useSimHost } from '@sim/context/SimHostContext';
 import { useEffect, useReducer, useRef } from 'react';
 
+import { equippedItemIds } from '../model/adapters/player_gear_source';
 import type { Ranking } from '../model/engine/rank';
 import { clearProgress } from '../model/progress_channel';
-import { createRunContext, type RunContext, type RunFn } from '../model/run';
-import { IDLE_RUN, runReducer, type RunSettings, type RunState, settledAction } from '../model/run_reducer';
+import { createRunContext, type RunContext, type RunFn, specIdFor } from '../model/run';
+import { IDLE_RUN, type MeasuredOn, runReducer, type RunSettings, type RunState, settledAction } from '../model/run_reducer';
 import { describeRunError } from '../utils/format';
 import { RUNNER_ENV } from '../utils/runner_env';
 
@@ -15,6 +16,16 @@ export type UpgradesRun = {
 	stop: () => void;
 	dispatchFixture: (ranking: Ranking) => void;
 };
+
+/**
+ * The page's gear and spec now. Read at the click, because the progress
+ * dialog blocks gear edits until the run settles, so this is the gear the
+ * engine reads; and read when a fixture loads, which sets the page gear first.
+ */
+const measuredOnPage = (host: ReturnType<typeof useSimHost>): MeasuredOn => ({
+	wornItemIds: equippedItemIds(host.player),
+	specId: specIdFor(host.player.getSpec()),
+});
 
 /** What outlives a render: the run in flight, the id that tells its callbacks from a superseded run's, and the tab's workers. */
 type RunSession = { controller: AbortController | null; runId: number; context: RunContext | null };
@@ -46,7 +57,7 @@ export function useUpgradesRun(runFn: RunFn): UpgradesRun {
 		const runId = ++current.runId;
 
 		clearProgress(host.player);
-		dispatch({ type: 'started', runId, startedAt: Date.now() });
+		dispatch({ type: 'started', runId, startedAt: Date.now(), measuredOn: measuredOnPage(host) });
 		runFn(host, settings, {
 			signal: controller.signal,
 			onLanded: row => dispatch({ type: 'landed', runId, row }),
@@ -68,7 +79,7 @@ export function useUpgradesRun(runFn: RunFn): UpgradesRun {
 	const dispatchFixture = (ranking: Ranking) => {
 		const current = session.current;
 		current.controller?.abort();
-		dispatch({ type: 'fixtureLoaded', runId: ++current.runId, ranking });
+		dispatch({ type: 'fixtureLoaded', runId: ++current.runId, ranking, measuredOn: measuredOnPage(host) });
 	};
 
 	return { run, start, stop, dispatchFixture };

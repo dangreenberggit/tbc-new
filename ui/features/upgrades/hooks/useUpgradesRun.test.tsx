@@ -1,3 +1,4 @@
+import { Spec } from '@generated/proto/common';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { fakeHost } from '@sim/testing';
 import { act, renderHook } from '@testing-library/react';
@@ -43,12 +44,15 @@ const controllableRun = () => {
 const partialOf = (rows = [rowA]): RunResult =>
 	({ ...RANKING_FIXTURE, items: rows, complete: false, durationMs: 9 }) satisfies PartialRanking & { durationMs: number };
 
-const host = fakeHost();
+/** The page's gear, which a test changes between a click and a settle. */
+let equipped: Array<{ id: number } | null> = [];
+const host = fakeHost({ player: { getGear: () => ({ getEquippedItems: () => equipped }), getSpec: () => Spec.SpecRetributionPaladin } });
 const wrapper = ({ children }: { children: ReactNode }) => <SimHostProvider host={host}>{children}</SimHostProvider>;
 const mount = (runFn: RunFn) => renderHook(() => useUpgradesRun(runFn), { wrapper });
 
 beforeEach(() => {
 	contexts.length = 0;
+	equipped = [];
 });
 
 describe('useUpgradesRun', () => {
@@ -143,6 +147,30 @@ describe('useUpgradesRun', () => {
 		act(() => result.current.dispatchFixture(RANKING_FIXTURE));
 		expect(call(0).deps.signal.aborted).toBe(true);
 		await act(async () => call(0).settle(partialOf()));
-		expect(result.current.run).toEqual({ status: 'done', runId: 2, result: RANKING_FIXTURE });
+		expect(result.current.run).toMatchObject({ status: 'done', runId: 2, result: RANKING_FIXTURE });
+	});
+
+	it('keeps the gear a run started on, not the gear worn when it settles (ticket 536)', async () => {
+		const { runFn, call } = controllableRun();
+		const { result } = mount(runFn);
+		equipped = [{ id: 30990 }, null];
+		act(() => result.current.start(SETTINGS));
+		equipped = [{ id: 1 }];
+
+		await act(async () => call(0).settle({ ...RANKING_FIXTURE, durationMs: 1 }));
+		const worn = [30990, ...Array.from({ length: 16 }, () => 0)];
+		expect(result.current.run).toMatchObject({ status: 'done', measuredOn: { wornItemIds: worn, specId: 'ret' } });
+	});
+
+	it('keeps the gear a fixture was loaded with', () => {
+		const { runFn } = controllableRun();
+		const { result } = mount(runFn);
+		equipped = [{ id: 28830 }];
+
+		act(() => result.current.dispatchFixture(RANKING_FIXTURE));
+		expect(result.current.run).toMatchObject({
+			status: 'done',
+			measuredOn: { wornItemIds: [28830, ...Array.from({ length: 16 }, () => 0)], specId: 'ret' },
+		});
 	});
 });

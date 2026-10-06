@@ -52,6 +52,20 @@ describe('runReducer', () => {
 		expect(runReducer(running(), { type: 'stopped', runId: 1, result })).toEqual({ status: 'stopped', runId: 1, result });
 	});
 
+	it('keeps what the run was measured against from its start to its result, done or stopped', () => {
+		const measuredOn = { wornItemIds: [1, 2, 3], specId: 'ret' as const };
+		const started = runReducer(IDLE_RUN, { type: 'started', runId: 1, startedAt: 1000, measuredOn });
+		const landed = runReducer(started, { type: 'landed', runId: 1, row: rowA! });
+
+		expect(runReducer(landed, { type: 'finished', runId: 1, result: RANKING_FIXTURE })).toMatchObject({ status: 'done', measuredOn });
+		expect(runReducer(landed, { type: 'stopped', runId: 1, result: { ...partial, durationMs: 800 } })).toMatchObject({ status: 'stopped', measuredOn });
+	});
+
+	it('keeps what a loaded fixture was measured against', () => {
+		const measuredOn = { wornItemIds: [4, 5], specId: 'feral' as const };
+		expect(runReducer(IDLE_RUN, { type: 'fixtureLoaded', runId: 3, ranking: RANKING_FIXTURE, measuredOn })).toMatchObject({ status: 'done', measuredOn });
+	});
+
 	it('enters error with the message', () => {
 		expect(runReducer(running(), { type: 'failed', runId: 1, message: 'sim failed' })).toEqual({
 			status: 'error',
