@@ -11,6 +11,7 @@ import { GearTabBody } from './tabs/GearTabBody';
 import { RotationTabPane } from './tabs/RotationTabPane';
 import { SettingsTabBody } from './tabs/SettingsTabBody';
 import { TalentsTabBody } from './tabs/TalentsTabBody';
+import { UpgradesTabBody } from './tabs/UpgradesTabBody';
 
 export interface SimTabsSectionProps {
 	host: SimHostObject<any>;
@@ -37,7 +38,7 @@ export const SimTabsSection = memo(({ host }: SimTabsSectionProps) => (
 				<TalentsTabBody />
 			</SimTabPane>
 		</SimTabDef>
-		{/* The three tabs that only mean something once a sim has run. A gear planner never runs one. */}
+		{/* The four tabs that only mean something once a sim has run. A gear planner never runs one. */}
 		{!host.simDisabled && (
 			<>
 				<SimTabDef id="rotation-tab" title={i18n.t('rotation_tab.title')}>
@@ -54,6 +55,11 @@ export const SimTabsSection = memo(({ host }: SimTabsSectionProps) => (
 				<SimTabDef id="bulk-tab" title={i18n.t('bulk_tab.title')} badge={i18n.t('bulk_tab.title_badge')}>
 					<SimTabPane id="bulk-tab" className="p-0">
 						<BulkTabBody />
+					</SimTabPane>
+				</SimTabDef>
+				<SimTabDef id="upgrades-tab" title={i18n.t('upgrades_tab.title')} badge={i18n.t('upgrades_tab.title_badge')}>
+					<SimTabPane id="upgrades-tab">
+						<UpgradesTabBody />
 					</SimTabPane>
 				</SimTabDef>
 			</>
