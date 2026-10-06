@@ -6,14 +6,15 @@ import {
 	defaultSetKeys,
 	effectivePool,
 	eligibleCount,
+	eligibleCountOf,
 	rowTagIndex,
-	rowTagLabels,
+	rowTags,
+	runSettingsOf,
 	selectedSetItemIds,
 	type SetOption,
 	setOptions,
 	setSelection,
 	settingsOffer,
-	settingsView,
 	sourceKeyOf,
 	sourceOptions,
 	splitSetChips,
@@ -153,7 +154,7 @@ describe('setOptions', () => {
 	});
 });
 
-describe('rowTagLabels', () => {
+describe('rowTags', () => {
 	const option = (key: string, name: string, phase: number | undefined, itemIds: number[]): SetOption => ({
 		key,
 		name,
@@ -166,14 +167,17 @@ describe('rowTagLabels', () => {
 
 	it('names each selected set that holds the item', () => {
 		const selected = [option('preset:3:P3', 'P3', 3, [1, 2]), option('saved:Mine', 'Mine', undefined, [2])];
-		expect(rowTagLabels(2, selected)).toEqual(['P3', 'Mine']);
-		expect(rowTagLabels(1, selected)).toEqual(['P3']);
-		expect(rowTagLabels(9, selected)).toEqual([]);
+		expect(rowTags(2, selected)).toEqual([
+			{ key: 'preset:3:P3', label: 'P3' },
+			{ key: 'saved:Mine', label: 'Mine' },
+		]);
+		expect(rowTags(1, selected)).toEqual([{ key: 'preset:3:P3', label: 'P3' }]);
+		expect(rowTags(9, selected)).toEqual([]);
 	});
 
 	it('prefixes the phase when two selected sets share a name', () => {
 		const selected = [option('preset:2:BiS 9%', 'BiS 9%', 2, [1]), option('preset:3:BiS 9%', 'BiS 9%', 3, [1])];
-		expect(rowTagLabels(1, selected)).toEqual(['P2 BiS 9%', 'P3 BiS 9%']);
+		expect(rowTags(1, selected).map(tag => tag.label)).toEqual(['P2 BiS 9%', 'P3 BiS 9%']);
 	});
 });
 
@@ -183,10 +187,10 @@ describe('rowTagIndex', () => {
 		{ key: 'saved:Mine', name: 'Mine', label: 'Mine', kind: 'saved', itemIds: [2], inPool: 1 },
 	];
 
-	it('gives each item the labels rowTagLabels gives it', () => {
+	it('gives each item the tags rowTags gives it', () => {
 		const tagsOf = rowTagIndex(selected);
-		expect(tagsOf(2)).toEqual(['P3', 'Mine']);
-		expect(tagsOf(1)).toEqual(['P3']);
+		expect(tagsOf(2)).toEqual(rowTags(2, selected));
+		expect(tagsOf(1)).toEqual(rowTags(1, selected));
 		expect(tagsOf(9)).toEqual([]);
 	});
 
@@ -197,7 +201,7 @@ describe('rowTagIndex', () => {
 	});
 });
 
-describe('settingsView', () => {
+describe('setSelection, runSettingsOf and eligibleCountOf', () => {
 	const offer = settingsOffer({
 		pool: POOL,
 		presets: [
@@ -210,7 +214,9 @@ describe('settingsView', () => {
 	const fresh = initialSettings({ iterations: 500 });
 	const viewOf = (state: typeof fresh) => {
 		const selection = setSelection(offer, state.selectedSetKeys, 3);
-		return { ...selection, ...settingsView(offer, selection, state, 3) };
+		const runSettings = runSettingsOf(selection, state);
+		const filter = { excludedSources: state.excludedSources, selectedSetItemIds: selection.selectedItemIds, prune: runSettings.prune ?? false };
+		return { ...selection, runSettings, eligibleCount: eligibleCountOf(offer, filter, 3) };
 	};
 
 	it('offers the pool’s sources and sets, and the BiS-tag phase’s preset as the default', () => {

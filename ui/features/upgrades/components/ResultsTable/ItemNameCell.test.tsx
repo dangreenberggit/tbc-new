@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import englishTranslations from '../../../../../assets/locales/en/translation.json';
 import type { RankedItem } from '../../model/engine/rank';
-import { rowTagIndex, type SetOption } from '../../model/settings_pool';
+import { type RowTag, rowTagIndex, type SetOption } from '../../model/settings_pool';
 import { fixtureRow } from '../../testing/ranking_fixture';
 
 // The icon lookup fetches from wowhead; the cell's text is under test.
@@ -26,7 +26,7 @@ const set = (key: string, name: string, phase: number | undefined, itemIds: numb
 	inPool: itemIds.length,
 });
 
-const badgesOf = (row: RankedItem, tags: readonly string[]) => {
+const badgesOf = (row: RankedItem, tags: readonly RowTag[]) => {
 	const { container } = render(
 		<table>
 			<tbody>

@@ -111,10 +111,8 @@ describe('resultsViewFor', () => {
 		expect(resultsViewFor(done(RANKING_FIXTURE), NO_VIEW_TOGGLES)).toEqual(VIEW);
 	});
 
-	it('views a stopped run through stoppedView, whatever the toggles say', () => {
-		const stopped = { status: 'stopped' as const, runId: 1, result: STOPPED_FIXTURE };
-		expect(resultsViewFor(stopped, NO_VIEW_TOGGLES)).toEqual(stoppedView(STOPPED_FIXTURE));
-		expect(resultsViewFor(stopped, { withSetPotential: true, onlyBis: true })).toEqual(stoppedView(STOPPED_FIXTURE));
+	it('views a stopped run through stoppedView', () => {
+		expect(resultsViewFor({ status: 'stopped', runId: 1, result: STOPPED_FIXTURE }, NO_VIEW_TOGGLES)).toEqual(stoppedView(STOPPED_FIXTURE));
 	});
 
 	it('has no view before a run settles', () => {
@@ -136,11 +134,6 @@ describe('resultsViewFor', () => {
 		expect(ids(view.rows)).toEqual([32332, 32235, 28830]);
 		expect(ids(view.shortlist)).toEqual([32332, 32235, 28830]);
 		expect(view.belowCutoffCount).toBe(0);
-	});
-
-	it('ignores BiS only on a ranking with no BiS-list row, where the toggle is not offered', () => {
-		const untagged = { ...RANKING_FIXTURE, items: RANKING_FIXTURE.items.map(row => ({ ...row, bisTags: [] })) };
-		expect(resultsViewFor(done(untagged), ONLY_BIS)!.rows).toHaveLength(RANKING_FIXTURE.items.length);
 	});
 });
 
@@ -164,10 +157,11 @@ describe('offeredToggles and appliedToggles', () => {
 		expect(offeredToggles({ status: 'idle' })).toEqual(NO_VIEW_TOGGLES);
 	});
 
-	it('applies only the toggles on offer', () => {
-		expect(appliedToggles(done(RANKING_FIXTURE), both)).toEqual(both);
-		expect(appliedToggles(done(untagged), both)).toEqual(SET_POTENTIAL);
-		expect(appliedToggles(stopped, both)).toEqual(NO_VIEW_TOGGLES);
+	it('applies only the toggles on offer, so a hidden BiS only never filters rows', () => {
+		const applied = (run: Parameters<typeof offeredToggles>[0]) => appliedToggles(offeredToggles(run), both);
+		expect(applied(done(RANKING_FIXTURE))).toEqual(both);
+		expect(applied(done(untagged))).toEqual(SET_POTENTIAL);
+		expect(applied(stopped)).toEqual(NO_VIEW_TOGGLES);
 	});
 });
 

@@ -1,1 +1,1 @@
-export { ViewToggle, type ViewToggleProps, ViewToggles } from './ViewToggles';
+export { ViewToggles, type ViewTogglesProps } from './ViewToggles';

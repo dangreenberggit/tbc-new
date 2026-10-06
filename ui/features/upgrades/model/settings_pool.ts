@@ -150,29 +150,32 @@ export function effectivePool(pool: readonly PoolEntry[], { excludedSources, sel
 export const eligibleCount = (pool: readonly PoolEntry[], maxPhase: number): number =>
 	filterPoolByPhase(pool, maxPhase).filter(e => !isKaelTempLegendary(e.itemId)).length;
 
+/** A row's badge for a selected set: the set's key, and its name as the gear tab names it. */
+export type RowTag = { key: string; label: string };
+
 /**
- * One badge per selected set that holds the item, named as the gear tab names
- * the set (ticket 430). Two selected sets with the same name get their phase
- * in front so the badges do not read the same.
+ * One badge per selected set that holds the item (ticket 430). Two selected
+ * sets with the same name get their phase in front so the badges do not read
+ * the same.
  */
-export function rowTagLabels(itemId: number, selectedOptions: readonly SetOption[]): string[] {
+export function rowTags(itemId: number, selectedOptions: readonly SetOption[]): RowTag[] {
 	const holding = selectedOptions.filter(o => o.itemIds.includes(itemId));
 	return holding.map(o => {
 		const shared = holding.some(other => other !== o && other.name === o.name);
-		return shared && o.phase !== undefined ? `P${o.phase} ${o.name}` : o.name;
+		return { key: o.key, label: shared && o.phase !== undefined ? `P${o.phase} ${o.name}` : o.name };
 	});
 }
 
-const NO_TAGS: readonly string[] = [];
+const NO_TAGS: readonly RowTag[] = [];
 
 /**
- * `rowTagLabels` for every item at once. Each item keeps one array for as long
- * as the selection stands, so a memoised name cell given its tags does not
- * render again when only its row's position moves.
+ * `rowTags` for every item at once. Each item keeps one array for as long as
+ * the selection stands, so a memoised name cell given its tags does not render
+ * again when only its row's position moves.
  */
-export function rowTagIndex(selectedOptions: readonly SetOption[]): (itemId: number) => readonly string[] {
-	const byItem = new Map<number, readonly string[]>();
-	for (const itemId of new Set(selectedOptions.flatMap(o => o.itemIds))) byItem.set(itemId, rowTagLabels(itemId, selectedOptions));
+export function rowTagIndex(selectedOptions: readonly SetOption[]): (itemId: number) => readonly RowTag[] {
+	const byItem = new Map<number, readonly RowTag[]>();
+	for (const itemId of new Set(selectedOptions.flatMap(o => o.itemIds))) byItem.set(itemId, rowTags(itemId, selectedOptions));
 	return itemId => byItem.get(itemId) ?? NO_TAGS;
 }
 
@@ -224,14 +227,10 @@ export function setSelection(offer: SettingsOffer, selectedSetKeys: readonly str
 	};
 }
 
-export type SettingsView = { runSettings: RunSettings; eligibleCount: number };
+/** What one click of Run asks for, with the selection as the offer has it. */
+export const runSettingsOf = (selection: SetSelection, state: SettingsState): RunSettings =>
+	toRunSettings({ ...state, selectedSetKeys: selection.selectedKeys }, selection.selectedItemIds);
 
-export function settingsView(offer: SettingsOffer, selection: SetSelection, state: SettingsState, maxPhase: number): SettingsView {
-	const runSettings = toRunSettings({ ...state, selectedSetKeys: selection.selectedKeys }, selection.selectedItemIds);
-	const pool = effectivePool(offer.pool, {
-		excludedSources: state.excludedSources,
-		selectedSetItemIds: selection.selectedItemIds,
-		prune: runSettings.prune ?? false,
-	});
-	return { runSettings, eligibleCount: eligibleCount(pool, maxPhase) };
-}
+/** The candidates an uncapped run would sim under the pool filters; apart from `runSettingsOf`, so an iterations edit does not refilter the pool. */
+export const eligibleCountOf = (offer: SettingsOffer, filter: PoolFilter, maxPhase: number): number =>
+	eligibleCount(effectivePool(offer.pool, filter), maxPhase);

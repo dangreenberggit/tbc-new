@@ -92,11 +92,11 @@ export const hasBisRows = (ranking: Pick<Ranking, 'items'>): boolean => ranking.
 export const offeredToggles = (run: RunState): ViewToggles =>
 	run.status === 'done' ? { withSetPotential: true, onlyBis: hasBisRows(run.result) } : NO_VIEW_TOGGLES;
 
-/** The toggles that act on `run`: one the tab does not show changes nothing, so a hidden control never filters rows. */
-export function appliedToggles(run: RunState, toggles: ViewToggles): ViewToggles {
-	const offered = offeredToggles(run);
-	return { withSetPotential: offered.withSetPotential && toggles.withSetPotential, onlyBis: offered.onlyBis && toggles.onlyBis };
-}
+/** The toggles that act, given the ones offered: one the tab does not show changes nothing, so a hidden control never filters rows. */
+export const appliedToggles = (offered: ViewToggles, toggles: ViewToggles): ViewToggles => ({
+	withSetPotential: offered.withSetPotential && toggles.withSetPotential,
+	onlyBis: offered.onlyBis && toggles.onlyBis,
+});
 
 /**
  * A view cut to its BiS-list rows. Each row's cutoff verdict depends on that
@@ -108,9 +108,8 @@ function bisOnlyView(view: ViewResult): ViewResult {
 	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length };
 }
 
-/** The view a settled run renders under the toggles that act on it; nothing before a run settles. */
-export function resultsViewFor(run: RunState, toggles: ViewToggles): ViewResult | undefined {
-	const { withSetPotential, onlyBis } = appliedToggles(run, toggles);
+/** The view a settled run renders under `applied` (from `appliedToggles`); nothing before a run settles. */
+export function resultsViewFor(run: RunState, { withSetPotential, onlyBis }: ViewToggles): ViewResult | undefined {
 	switch (run.status) {
 		case 'done': {
 			const view = applyView(run.result, { withSetPotential });

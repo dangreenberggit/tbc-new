@@ -2,16 +2,8 @@ import i18n from '@i18n/config';
 import { FieldLabel } from '@ui-kit/FormControl';
 import { type ChangeEvent, useId, useState } from 'react';
 
-import type { FixtureLoadResult } from '../../utils/fixture';
-
-/** The file's own failure, before the page's hook sees it. */
-const NOT_JSON = 'not_json';
-
-const outcomeText = (outcome: FixtureLoadResult): string => {
-	if (outcome.ok) return i18n.t('upgrades_tab.settings.fixture_loaded', { rows: outcome.rows });
-	if (outcome.reason === NOT_JSON) return i18n.t('upgrades_tab.settings.fixture_not_json');
-	return i18n.t('upgrades_tab.settings.fixture_rejected', { reason: outcome.detail ?? outcome.reason });
-};
+import { FIXTURE_NOT_JSON, type FixtureLoadResult } from '../../utils/fixture';
+import { fixtureOutcomeText } from '../../utils/format';
 
 /**
  * Loads a recorded fixture file from disk, for a developer with a file the
@@ -32,7 +24,7 @@ export const FixtureFileInput = () => {
 		try {
 			payload = JSON.parse(await file.text());
 		} catch {
-			setOutcome({ ok: false, reason: NOT_JSON });
+			setOutcome({ ok: false, reason: FIXTURE_NOT_JSON });
 			return;
 		}
 		setOutcome(await window.__upgradesFixture(payload));
@@ -44,7 +36,7 @@ export const FixtureFileInput = () => {
 			<input id={inputId} type="file" accept=".json" data-testid="upgrades-fixture-file" onChange={onChange} />
 			{outcome && (
 				<p className="mb-0 text-sm text-muted" data-testid="upgrades-fixture-file-result">
-					{outcomeText(outcome)}
+					{fixtureOutcomeText(outcome)}
 				</p>
 			)}
 		</div>

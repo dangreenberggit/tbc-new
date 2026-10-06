@@ -26,7 +26,9 @@ export const BelowCutoffGroup = ({ rows, rowContext, sort }: BelowCutoffGroupPro
 	return (
 		<Accordion value={open} onValueChange={setOpen}>
 			<AccordionItem value={GROUP} testId="upgrades-below-cutoff" title={i18n.t('upgrades_tab.results.below_cutoff_group', { count: rows.length })}>
-				{/* A1 attempt: a collapsed copy of the shortlist's head, so this table sizes its columns as that one does. */}
+				{/* The shortlist's head, collapsed to no height, so this table sizes its columns from the same header text and
+				    sits closer under the shortlist's columns. Measured at 1280 on ret-p3-p2: the largest column offset fell from
+				    30 px to 17 px, not to zero, because the cells' own text still sets each table's widths. */}
 				<div className="[&_thead]:collapse">
 					<ResultsTable>
 						<PlainResultsHead />

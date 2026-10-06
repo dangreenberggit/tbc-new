@@ -7,6 +7,7 @@ import { RankError } from '../model/engine/rank';
 import type { RunProgressView } from '../model/run_progress';
 import {
 	describeRunError,
+	fixtureOutcomeText,
 	formatDelta,
 	formatDps,
 	formatSeconds,
@@ -124,6 +125,17 @@ describe('sourceKeyLabel', () => {
 		expect(sourceKeyLabel('Black Temple')).toBe('Black Temple');
 		expect(sourceKeyLabel('Badge vendor')).toBe('Badge vendor');
 		withTranslation('upgrades_tab.sources.badge', 'Marken', () => expect(sourceKeyLabel('Badge vendor')).toBe('Marken'));
+	});
+});
+
+describe('fixtureOutcomeText', () => {
+	it('counts the rows of a loaded fixture, and gives the detail or the reason of a refused one', () => {
+		expect(fixtureOutcomeText({ ok: true, rows: 467 })).toBe('Loaded a fixture with 467 rows.');
+		expect(fixtureOutcomeText({ ok: false, reason: 'spec', detail: 'fixture is feral, page is ret' })).toBe(
+			'Fixture rejected: fixture is feral, page is ret',
+		);
+		expect(fixtureOutcomeText({ ok: false, reason: 'phase missing' })).toBe('Fixture rejected: phase missing');
+		expect(fixtureOutcomeText({ ok: false, reason: 'not_json' })).toBe('The file is not JSON.');
 	});
 });
 

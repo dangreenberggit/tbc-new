@@ -5,6 +5,7 @@ import { memo } from 'react';
 import type { RankedItem } from '../../model/engine/rank';
 import type { DpsSortKey } from '../../model/results_sort';
 import type { SetBonusTipContext } from '../../model/set_bonus_tip';
+import type { RowTag } from '../../model/settings_pool';
 import { rowSourceLabel, slotLabel } from '../../utils/format';
 import { BatchToggle, FavoriteToggle } from '../RowToggles';
 import { DeltaCell } from './DeltaCell';
@@ -20,7 +21,7 @@ export type RowContext = {
 	/** What the set-bonus hint and the %-rule note are measured against; it has no ranking while a run is in flight. */
 	tip: SetBonusTipContext;
 	/** The names of the selected sets that hold an item (ticket 430); one array per item, so the name cell's memo holds. */
-	tagsOf: (itemId: number) => readonly string[];
+	tagsOf: (itemId: number) => readonly RowTag[];
 	/** What the ΔDPS column sorts on; undefined is the bare ΔDPS. */
 	dpsKey?: DpsSortKey;
 };

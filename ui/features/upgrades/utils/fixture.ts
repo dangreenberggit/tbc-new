@@ -44,6 +44,9 @@ export type TabFixture = {
 
 export type FixtureLoadResult = { ok: true; rows: number } | { ok: false; reason: string; detail?: string };
 
+/** The reason a file is refused before the page sees it: its text is not JSON. */
+export const FIXTURE_NOT_JSON = 'not_json';
+
 /** What `window.__upgradesRanking` hands the recorder: the ranking plus what it was measured against. */
 export type FixtureRecording = { ranking: Ranking; spec: SpecId | undefined; phase: number; gear: unknown };
 

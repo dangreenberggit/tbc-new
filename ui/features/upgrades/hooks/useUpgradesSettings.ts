@@ -7,7 +7,7 @@ import { bisTagPhaseFor, poolFor } from '../model/data/data';
 import type { ContentPhase } from '../model/engine/types';
 import { specIdFor } from '../model/run';
 import type { RunSettings } from '../model/run_reducer';
-import { type SetSelection, setSelection, type SettingsOffer, settingsOffer, settingsView } from '../model/settings_pool';
+import { eligibleCountOf, runSettingsOf, type SetSelection, setSelection, type SettingsOffer, settingsOffer } from '../model/settings_pool';
 import { initialSettings, settingsReducer } from '../model/settings_reducer';
 
 /**
@@ -63,8 +63,15 @@ export function useUpgradesSettings(seed: { iterations: number; candidateCap?: n
 	// Memoised on the picked sets alone, so it keeps its identity while other settings change: the results
 	// area builds its row badges from it, and a new selection renders every row again.
 	const selection = useMemo(() => setSelection(offer, state.selectedSetKeys, phase), [offer, state.selectedSetKeys, phase]);
-	// Memoised for the same renders: the effective pool is a filter over the whole pool.
-	const view = useMemo(() => settingsView(offer, selection, state, phase), [offer, selection, state, phase]);
+	const runSettings = runSettingsOf(selection, state);
+	const { excludedSources } = state;
+	const prune = runSettings.prune ?? false;
+	// Memoised for the same renders, on the pool filters alone: the effective pool is a filter over the whole pool,
+	// which an iterations or cap keystroke must not run again.
+	const eligibleCount = useMemo(
+		() => eligibleCountOf(offer, { excludedSources, selectedSetItemIds: selection.selectedItemIds, prune }, phase),
+		[offer, excludedSources, selection, prune, phase],
+	);
 
 	const scope = specId && `${specId}:${phase}`;
 	if (scope && state.defaultsFor !== scope) {
@@ -75,11 +82,11 @@ export function useUpgradesSettings(seed: { iterations: number; candidateCap?: n
 		selectedOptions: selection.selectedOptions,
 		selectedKeys: selection.selectedKeys,
 		chips: selection.chips,
-		runSettings: view.runSettings,
+		runSettings,
 		sources: offer.sources,
 		excludedSources: state.excludedSources,
 		prune: state.prune,
-		eligibleCount: specId ? view.eligibleCount : undefined,
+		eligibleCount: specId ? eligibleCount : undefined,
 		iterationsField,
 		capField,
 		toggleSource: key => dispatch({ type: 'toggleSource', key }),

@@ -12,6 +12,7 @@ import type { SimOrderName } from '../model/engine/slots';
 import { SOURCE_LABELS } from '../model/engine/view';
 import type { SortLabels } from '../model/results_sort';
 import type { RunPhase, RunProgressView } from '../model/run_progress';
+import { FIXTURE_NOT_JSON, type FixtureLoadResult } from './fixture';
 
 const ONE_DECIMAL = { minimumFractionDigits: 1, maximumFractionDigits: 1 };
 
@@ -71,6 +72,13 @@ export const rowSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>): str
 
 /** The slot and source columns sort on the text their cells show; the export sorts with the same labels, so its order is the order on screen. */
 export const SORT_LABELS: SortLabels<Pick<RankedItem, 'slot' | 'slotChoice' | 'source' | 'sources'>> = { slot: slotLabel, source: rowSourceLabel };
+
+/** What loading a fixture file did, in the page's words. */
+export const fixtureOutcomeText = (outcome: FixtureLoadResult): string => {
+	if (outcome.ok) return i18n.t('upgrades_tab.settings.fixture_loaded', { rows: outcome.rows });
+	if (outcome.reason === FIXTURE_NOT_JSON) return i18n.t('upgrades_tab.settings.fixture_not_json');
+	return i18n.t('upgrades_tab.settings.fixture_rejected', { reason: outcome.detail ?? outcome.reason });
+};
 
 /** A dropped candidate's reason as the page shows it: the first line, and where the rest went when it was cut. */
 export const substitutionText = (detail: string): string => {

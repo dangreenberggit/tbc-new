@@ -8,18 +8,19 @@ import { WowheadIcon } from '@ui-kit/WowheadIcon';
 import { memo } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
+import type { RowTag } from '../../model/settings_pool';
 
 export interface ItemNameCellProps {
 	row: Pick<RankedItem, 'itemId' | 'name' | 'bisTags' | 'owned'>;
 	quality: ItemQuality | undefined;
-	/** The selected sets that hold the item, by name (ticket 430). */
-	tags: readonly string[];
+	/** The selected sets that hold the item (ticket 430). */
+	tags: readonly RowTag[];
 }
 
 /** A row in no selected set shows the universe's own BiS or Alt tag instead. */
-const listBadge = (bisTags: RankedItem['bisTags']): string[] => {
-	if (bisTags.includes('BiS')) return [i18n.t('upgrades_tab.results.bis_badge')];
-	if (bisTags.includes('Alt')) return [i18n.t('upgrades_tab.results.alt_badge')];
+const listBadge = (bisTags: RankedItem['bisTags']): RowTag[] => {
+	if (bisTags.includes('BiS')) return [{ key: 'BiS', label: i18n.t('upgrades_tab.results.bis_badge') }];
+	if (bisTags.includes('Alt')) return [{ key: 'Alt', label: i18n.t('upgrades_tab.results.alt_badge') }];
 	return [];
 };
 
@@ -45,8 +46,8 @@ export const ItemNameCell = memo(({ row, quality, tags }: ItemNameCellProps) => 
 					{(badges.length > 0 || row.owned) && (
 						<span className="flex flex-wrap items-center gap-1 text-xs">
 							{badges.map(badge => (
-								<span key={badge} className="rounded-full bg-warning px-1.5 text-black" data-testid="upgrades-bis-badge">
-									{badge}
+								<span key={badge.key} className="rounded-full bg-warning px-1.5 text-black" data-testid="upgrades-bis-badge">
+									{badge.label}
 								</span>
 							))}
 							{row.owned && <span>({i18n.t('upgrades_tab.results.owned')})</span>}
