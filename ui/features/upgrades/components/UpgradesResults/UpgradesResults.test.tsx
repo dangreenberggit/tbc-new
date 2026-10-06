@@ -101,6 +101,19 @@ describe('UpgradesResults', () => {
 		expect(within(activePane(unmeasured.container)).queryAllByTestId('upgrades-set-bonus')).toHaveLength(0);
 	});
 
+	it('lists the candidates the engine dropped under a finished or a stopped run, and not while one runs', () => {
+		const done = show({ status: 'done', runId: 1, result: RANKING_FIXTURE });
+		expect(within(done.container).getByTestId('upgrades-substitutions')).not.toBeNull();
+		done.unmount();
+
+		const stopped = show({ status: 'stopped', runId: 1, result: STOPPED_FIXTURE });
+		expect(within(stopped.container).getByTestId('upgrades-substitutions')).not.toBeNull();
+		stopped.unmount();
+
+		const running = show({ status: 'running', runId: 1, startedAt: 0, landedRows: [fixtureRow(0)], stopping: false });
+		expect(within(running.container).queryByTestId('upgrades-substitutions')).toBeNull();
+	});
+
 	it('says what to do before the first run', () => {
 		const { getByTestId } = show({ status: 'idle' });
 		expect(getByTestId('upgrades-empty-state').textContent).toContain('No ranking yet');

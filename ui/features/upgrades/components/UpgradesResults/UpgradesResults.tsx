@@ -7,6 +7,7 @@ import type { RunState } from '../../model/run_reducer';
 import { EmptyState } from '../EmptyState';
 import { ResultsPanes } from '../ResultsPanes';
 import { PlainResultsHead, ResultRows, ResultsTable, type RowContext } from '../ResultsTable';
+import { SubstitutionsList } from '../SubstitutionsList';
 
 export interface UpgradesResultsProps {
 	run: RunState;
@@ -14,7 +15,8 @@ export interface UpgradesResultsProps {
 
 /**
  * The results area: the rows landed so far while a run is in flight, the
- * sub-tabs once it settles, or what to say in their place.
+ * sub-tabs and the dropped candidates once it settles, or what to say in
+ * their place.
  */
 export const UpgradesResults = ({ run }: UpgradesResultsProps) => {
 	const { sim } = useSimHost();
@@ -47,11 +49,19 @@ export const UpgradesResults = ({ run }: UpgradesResultsProps) => {
 				</p>
 			);
 		case 'done':
-		case 'stopped': {
-			if (view && view.rows.length > 0) return <ResultsPanes view={view} rowContext={rowContext} />;
-			// A stopped run with no finished row: the status line already says so.
-			if (run.status === 'stopped') return null;
-			return <EmptyState title={i18n.t('upgrades_tab.results.empty_no_upgrades')} body={i18n.t('upgrades_tab.results.empty_no_upgrades_body')} />;
-		}
+		case 'stopped':
+			return (
+				<>
+					{view && view.rows.length > 0 ? (
+						<ResultsPanes view={view} rowContext={rowContext} />
+					) : (
+						// A stopped run with no finished row: the status line already says so.
+						run.status === 'done' && (
+							<EmptyState title={i18n.t('upgrades_tab.results.empty_no_upgrades')} body={i18n.t('upgrades_tab.results.empty_no_upgrades_body')} />
+						)
+					)}
+					{run.result.substitutions.length > 0 && <SubstitutionsList substitutions={run.result.substitutions} />}
+				</>
+			);
 	}
 };

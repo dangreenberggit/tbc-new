@@ -2,6 +2,7 @@ import { useSimHost } from '@sim/context/SimHostContext';
 import { useEffect, useReducer, useRef } from 'react';
 
 import { equippedItemIds } from '../model/adapters/player_gear_source';
+import { type AssumptionsContext, assumptionsLine, substitutionConsoleLines } from '../model/assumptions';
 import type { Ranking } from '../model/engine/rank';
 import { clearProgress } from '../model/progress_channel';
 import { createRunContext, type RunContext, type RunFn, specIdFor } from '../model/run';
@@ -26,6 +27,16 @@ const measuredOnPage = (host: ReturnType<typeof useSimHost>): MeasuredOn => ({
 	wornItemIds: equippedItemIds(host.player),
 	specId: specIdFor(host.player.getSpec()),
 });
+
+/**
+ * The run's assumptions for whoever diagnoses a bad ranking (ticket 318), and
+ * the full text of each dropped-candidate reason the page cuts to one line
+ * (ticket 311). Logged once when a ranking arrives, never from a render.
+ */
+const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'substitutions'>, context: AssumptionsContext) => {
+	console.info(assumptionsLine(result, context));
+	for (const line of substitutionConsoleLines(result.substitutions)) console.warn(line);
+};
 
 /** What outlives a render: the run in flight, the id that tells its callbacks from a superseded run's, and the tab's workers. */
 type RunSession = { controller: AbortController | null; runId: number; context: RunContext | null };
@@ -57,13 +68,18 @@ export function useUpgradesRun(runFn: RunFn): UpgradesRun {
 		const runId = ++current.runId;
 
 		clearProgress(host.player);
-		dispatch({ type: 'started', runId, startedAt: Date.now(), measuredOn: measuredOnPage(host) });
+		const measuredOn = measuredOnPage(host);
+		dispatch({ type: 'started', runId, startedAt: Date.now(), measuredOn });
 		runFn(host, settings, {
 			signal: controller.signal,
 			onLanded: row => dispatch({ type: 'landed', runId, row }),
 			runContext: () => (current.context ??= createRunContext(RUNNER_ENV)),
 		}).then(
-			result => dispatch(settledAction(runId, result)),
+			result => {
+				dispatch(settledAction(runId, result));
+				// A superseded run's result is dropped by the reducer, so it is not logged either.
+				if (runId === current.runId) logAssumptions(result, { specId: measuredOn.specId, settings });
+			},
 			(error: unknown) => dispatch({ type: 'failed', runId, message: describeRunError(error) }),
 		);
 	};
@@ -79,7 +95,9 @@ export function useUpgradesRun(runFn: RunFn): UpgradesRun {
 	const dispatchFixture = (ranking: Ranking) => {
 		const current = session.current;
 		current.controller?.abort();
-		dispatch({ type: 'fixtureLoaded', runId: ++current.runId, ranking, measuredOn: measuredOnPage(host) });
+		const measuredOn = measuredOnPage(host);
+		dispatch({ type: 'fixtureLoaded', runId: ++current.runId, ranking, measuredOn });
+		logAssumptions(ranking, { specId: measuredOn.specId });
 	};
 
 	return { run, start, stop, dispatchFixture };

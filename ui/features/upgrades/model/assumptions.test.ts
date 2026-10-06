@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
-import { assumptionsLine } from './assumptions';
+import { assumptionsLine, substitutionConsoleLines, substitutionFirstLine } from './assumptions';
 
 describe('assumptionsLine', () => {
 	it('names the seeds, iterations and phase of a ranking with nothing else known, as for a loaded fixture', () => {
@@ -27,5 +27,22 @@ describe('assumptionsLine', () => {
 
 	it('names the bundled pool file the spec’s run drew from', () => {
 		expect(assumptionsLine(RANKING_FIXTURE, { specId: 'ret' })).toMatch(/ · pool source: ret-p3\.universe\.json \(\d+ entries\)/);
+	});
+});
+
+describe('substitutionFirstLine', () => {
+	it('keeps a crash trace’s first line, whether its breaks are real or written out as backslash-n', () => {
+		expect(substitutionFirstLine('panic: boom\ngoroutine 1')).toEqual({ line: 'panic: boom', truncated: true });
+		expect(substitutionFirstLine('panic: boom\\ngoroutine 1')).toEqual({ line: 'panic: boom', truncated: true });
+		expect(substitutionFirstLine('Kept the worn hit gems.')).toEqual({ line: 'Kept the worn hit gems.', truncated: false });
+	});
+});
+
+describe('substitutionConsoleLines', () => {
+	it('gives the full text of each reason the page shortened, for the console the page points to', () => {
+		expect(substitutionConsoleLines(RANKING_FIXTURE.substitutions)).toEqual([
+			'[upgrades] candidate 32837 (mainhand): Warglaive of Azzinoth was dropped from the ranking: the sim failed on this swap — panic: runtime error\ngoroutine 1 [running]:\nmain.main()',
+		]);
+		expect(substitutionConsoleLines([{ field: 'hit cap', detail: 'Kept the worn hit gems.' }])).toEqual([]);
 	});
 });

@@ -4,9 +4,10 @@ import { TabNav, type TabNavTab, TabPanel, TabPanels } from '@ui-kit/TabNav';
 import { useState } from 'react';
 
 import type { ViewResult } from '../../model/engine/view';
-import { nextSort, type ResultsSort, type ResultsSortKey } from '../../model/results_sort';
+import { nextSort, type ResultsSort, type ResultsSortKey, sortRows } from '../../model/results_sort';
 import { paneRows, type ResultsTabId, SHOPPING_LIST_TAB, slotTabs } from '../../model/results_view';
-import { simSlotLabel } from '../../utils/format';
+import { simSlotLabel, SORT_LABELS } from '../../utils/format';
+import { ExportPanel } from '../ExportPanel';
 import { ResultsPane } from '../ResultsPane';
 import type { RowContext } from '../ResultsTable';
 
@@ -20,8 +21,8 @@ const paneId = (tab: ResultsTabId) => `upgrades-pane-${tab}`;
 
 /**
  * A settled ranking as sub-tabs: the Upgrades list, then one pane per slot
- * with a row. The open tab and the one column sort shared by every pane
- * (ticket 280) live here; neither is stored.
+ * with a row, then the export. The open tab and the one column sort shared by
+ * every pane and the export (ticket 280) live here; neither is stored.
  */
 type Pane = { id: ResultsTabId; label: string; badge?: string; className?: string };
 
@@ -46,18 +47,21 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 	const tabs: TabNavTab[] = panes.map(pane => ({ ...pane, ariaControls: paneId(pane.id) }));
 
 	return (
-		<Tabs.Root value={shownTab} onValueChange={next => setActiveTab(String(next))}>
-			<TabNav tabs={tabs} testId="upgrades-tab-tabs" />
-			<TabPanels>
-				{panes.map(pane => {
-					const { shortlist, belowCutoff } = paneRows(view, pane.id);
-					return (
-						<TabPanel key={pane.id} value={pane.id} id={paneId(pane.id)}>
-							<ResultsPane shortlist={shortlist} belowCutoff={belowCutoff} rowContext={rowContext} sort={sort} onSort={onSort} />
-						</TabPanel>
-					);
-				})}
-			</TabPanels>
-		</Tabs.Root>
+		<>
+			<Tabs.Root value={shownTab} onValueChange={next => setActiveTab(String(next))}>
+				<TabNav tabs={tabs} testId="upgrades-tab-tabs" />
+				<TabPanels>
+					{panes.map(pane => {
+						const { shortlist, belowCutoff } = paneRows(view, pane.id);
+						return (
+							<TabPanel key={pane.id} value={pane.id} id={paneId(pane.id)}>
+								<ResultsPane shortlist={shortlist} belowCutoff={belowCutoff} rowContext={rowContext} sort={sort} onSort={onSort} />
+							</TabPanel>
+						);
+					})}
+				</TabPanels>
+			</Tabs.Root>
+			<ExportPanel rows={sortRows(view.shortlist, sort, SORT_LABELS)} />
+		</>
 	);
 };

@@ -7,6 +7,7 @@
  */
 
 import { bisTagPhaseFor, cutoffIsUnmeasuredFor, epWeightsDisclosureFor, poolSourceFor, unsourcedCountFor } from './data/data';
+import type { Substitution } from './engine/disclosure';
 import type { Ranking } from './engine/rank';
 import type { SpecId } from './engine/types';
 import type { RunSettings } from './run_reducer';
@@ -43,3 +44,18 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions'>, { specId,
 	}
 	return `[upgrades] assumptions — ${lines.join(' · ')}`;
 }
+
+/**
+ * A substitution caused by a sim crash carries the whole Go stack trace, and
+ * its first line already says what went wrong (ticket 311). The trace's breaks
+ * arrive both as real newlines and as written-out backslash-n pairs, because
+ * the sim's error object is stringified into the detail.
+ */
+export function substitutionFirstLine(detail: string): { line: string; truncated: boolean } {
+	const line = detail.split(/\r?\n|\\n/, 1)[0] ?? detail;
+	return { line, truncated: line !== detail };
+}
+
+/** The full text of every reason the page shortens; the page says it is in the console. */
+export const substitutionConsoleLines = (substitutions: readonly Substitution[]): string[] =>
+	substitutions.filter(s => substitutionFirstLine(s.detail).truncated).map(s => `[upgrades] ${s.field}: ${s.detail}`);

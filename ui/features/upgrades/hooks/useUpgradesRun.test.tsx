@@ -3,7 +3,7 @@ import { SimHostProvider } from '@sim/context/SimHostContext';
 import { fakeHost } from '@sim/testing';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { PartialRanking } from '../model/engine/rank';
 import type { RunDeps, RunFn } from '../model/run';
@@ -54,6 +54,7 @@ beforeEach(() => {
 	contexts.length = 0;
 	equipped = [];
 });
+afterEach(() => vi.restoreAllMocks());
 
 describe('useUpgradesRun', () => {
 	it('runs from idle through landed rows to done', async () => {
@@ -172,5 +173,34 @@ describe('useUpgradesRun', () => {
 			status: 'done',
 			measuredOn: { wornItemIds: [28830, ...Array.from({ length: 16 }, () => 0)], specId: 'ret' },
 		});
+	});
+
+	it('logs the run’s assumptions once when it settles, with the full text of each reason the page shortens', async () => {
+		const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const { runFn, call } = controllableRun();
+		const { result } = mount(runFn);
+		act(() => result.current.start(SETTINGS));
+		expect(info).not.toHaveBeenCalled();
+
+		await act(async () => call(0).settle({ ...RANKING_FIXTURE, durationMs: 1 }));
+		expect(info).toHaveBeenCalledTimes(1);
+		expect(info.mock.calls[0]?.[0]).toMatch(
+			/^\[upgrades\] assumptions — seeds: 11, 22, 33, 44, 55 · iterations: 3000 · max phase: 3 · candidate pool: every eligible item/,
+		);
+		expect(warn.mock.calls).toEqual([[expect.stringMatching(/^\[upgrades\] candidate 32837 \(mainhand\): Warglaive of Azzinoth .*\ngoroutine 1/s)]]);
+	});
+
+	it('logs nothing for a run a newer one superseded, and logs a loaded fixture once', async () => {
+		const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+		vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const { runFn, call } = controllableRun();
+		const { result } = mount(runFn);
+		act(() => result.current.start(SETTINGS));
+		act(() => result.current.dispatchFixture(RANKING_FIXTURE));
+		expect(info).toHaveBeenCalledTimes(1);
+
+		await act(async () => call(0).settle(partialOf()));
+		expect(info).toHaveBeenCalledTimes(1);
 	});
 });

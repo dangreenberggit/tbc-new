@@ -79,6 +79,29 @@ describe('ResultsPanes', () => {
 		]);
 	});
 
+	it('exports the Upgrades list in the order the shared sort shows it, whichever pane is open', () => {
+		const { container } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
+		const exportedIds = () => {
+			const payload: { items: Array<{ id: number }> } = JSON.parse(
+				container.querySelector<HTMLTextAreaElement>('[data-testid="upgrades-export-area"]')?.value ?? '',
+			);
+			return payload.items.map(item => item.id);
+		};
+		const shownIds = () =>
+			within(activePane(container))
+				.getAllByTestId('upgrades-result-row')
+				.filter(row => row.dataset.owned !== 'true')
+				.map(row => Number(row.dataset.itemId));
+
+		fireEvent.click(within(activePane(container)).getByTestId('upgrades-sort-item'));
+		fireEvent.click(within(activePane(container)).getByTestId('upgrades-sort-item'));
+		clickTab(container, 'Head');
+		clickTab(container, 'Upgrades');
+		// Lightbringer Greaves (30993) exports its tier token, 31098; every other shortlisted row exports its own id.
+		expect(exportedIds()).toEqual(shownIds().map(id => (id === 30993 ? 31098 : id)));
+		expect(exportedIds()).toContain(31098);
+	});
+
 	it('falls back to the Upgrades list when the open slot has no rows in a new result', () => {
 		const { container, rerender } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
 		clickTab(container, 'Legs');
