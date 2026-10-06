@@ -14,7 +14,7 @@ import (
 // rebuilt their proc manager inside an item-swap callback. That registered
 // a new callback after the environment was finalized, and the sim panicked.
 
-var enhancementShamanSpec = offClassSpec{"../ui/shaman/enhancement/gear_sets", "p1", "../ui/shaman/enhancement/apls", "default", func() *proto.Player {
+var enhancementShamanSpec = offClassSpec{"../ui/specs/shaman/enhancement/gear_sets", "p1", "../ui/specs/shaman/enhancement/apls", "default", func() *proto.Player {
 	return &proto.Player{
 		Class:         proto.Class_ClassShaman,
 		Race:          proto.Race_RaceOrc,
@@ -33,7 +33,7 @@ const (
 
 // The Enhancement page's default swap set (sim.ts), used for Fire Elemental.
 func truncheonSwap() *proto.ItemSwap {
-	data, err := os.ReadFile("../ui/shaman/enhancement/gear_sets/p1.truncheon.itemswap.json")
+	data, err := os.ReadFile("../ui/specs/shaman/enhancement/gear_sets/p1.truncheon.itemswap.json")
 	if err != nil {
 		panic(err)
 	}
@@ -129,13 +129,13 @@ func TestWeaponProcsWithItemSwap(t *testing.T) {
 		// swapOffDps is the DPS with item swap off, recorded before the fix.
 		swapOffDps float64
 	}{
-		{"world-breaker", enhancementShamanSpec, 30090, true, truncheonSwap, 36111, 0, 694.888225},
-		{"despair", enhancementShamanSpec, 28573, true, truncheonSwap, 34580, 0, 700.757428},
-		{"bonereavers-edge", enhancementShamanSpec, 17076, true, truncheonSwap, 21153, 0, 600.407765},
-		{"devastation", enhancementShamanSpec, 30316, true, truncheonSwap, 36479, 0, 852.737327},
-		{"warp-slicer", enhancementShamanSpec, 30311, false, truncheonSwap, 36479, 0, 974.986922},
-		{"infinity-blade", enhancementShamanSpec, 30312, false, truncheonSwap, 36478, 0, 886.523976},
-		{"blinkstrike", enhancementShamanSpec, 31332, false, truncheonSwap, 0, 31332, 809.797248},
+		{"world-breaker", enhancementShamanSpec, 30090, true, truncheonSwap, 36111, 0, 694.665727},
+		{"despair", enhancementShamanSpec, 28573, true, truncheonSwap, 34580, 0, 679.150148},
+		{"bonereavers-edge", enhancementShamanSpec, 17076, true, truncheonSwap, 21153, 0, 602.113526},
+		{"devastation", enhancementShamanSpec, 30316, true, truncheonSwap, 36479, 0, 823.296484},
+		{"warp-slicer", enhancementShamanSpec, 30311, false, truncheonSwap, 36479, 0, 960.968448},
+		{"infinity-blade", enhancementShamanSpec, 30312, false, truncheonSwap, 36478, 0, 879.045304},
+		{"blinkstrike", enhancementShamanSpec, 31332, false, truncheonSwap, 0, 31332, 819.329036},
 		// Rod's effect returns early without an energy or rage bar, so a
 		// shaman never reaches the swap callback.
 		{"rod-of-the-sun-king", furyWarriorSpec, 29996, false, furyWeaponSwap, 36070, 0, 633.261564},
@@ -184,7 +184,7 @@ func TestWeaponProcSwappedIn(t *testing.T) {
 // attach, so a weapon of the keyed type that arrives by swap never procs.
 // Each test starts with no weapon of the keyed type and swaps one in.
 
-var armsMaceWarriorSpec = offClassSpec{"../ui/warrior/dps/gear_sets", "p1_arms", "../ui/warrior/dps/apls", "arms", func() *proto.Player {
+var armsMaceWarriorSpec = offClassSpec{"../ui/specs/warrior/dps/gear_sets", "p1_arms", "../ui/specs/warrior/dps/apls", "arms", func() *proto.Player {
 	p := armsWarriorSpec.player()
 	// armsWarriorSpec's arms tree with its 5 points moved from Sword
 	// Specialization to Mace Specialization (proto/warrior.proto fields 14, 15).

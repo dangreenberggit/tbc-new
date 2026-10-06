@@ -24,7 +24,7 @@ type offClassSpec struct {
 }
 
 var (
-	furyWarriorSpec = offClassSpec{"../ui/warrior/dps/gear_sets", "p1_fury", "../ui/warrior/dps/apls", "fury", func() *proto.Player {
+	furyWarriorSpec = offClassSpec{"../ui/specs/warrior/dps/gear_sets", "p1_fury", "../ui/specs/warrior/dps/apls", "fury", func() *proto.Player {
 		return &proto.Player{
 			Class:         proto.Class_ClassWarrior,
 			Race:          proto.Race_RaceOrc,
@@ -34,12 +34,12 @@ var (
 			}}},
 		}
 	}}
-	armsWarriorSpec = offClassSpec{"../ui/warrior/dps/gear_sets", "p1_arms", "../ui/warrior/dps/apls", "arms", func() *proto.Player {
+	armsWarriorSpec = offClassSpec{"../ui/specs/warrior/dps/gear_sets", "p1_arms", "../ui/specs/warrior/dps/apls", "arms", func() *proto.Player {
 		p := furyWarriorSpec.player()
 		p.TalentsString = "32005011352010500221-0550000500521203"
 		return p
 	}}
-	elementalShamanSpec = offClassSpec{"../ui/shaman/elemental/gear_sets", "p1_h", "../ui/shaman/elemental/apls", "default", func() *proto.Player {
+	elementalShamanSpec = offClassSpec{"../ui/specs/shaman/elemental/gear_sets", "p1_h", "../ui/specs/shaman/elemental/apls", "default", func() *proto.Player {
 		return &proto.Player{
 			Class:         proto.Class_ClassShaman,
 			Race:          proto.Race_RaceTroll,
@@ -49,7 +49,7 @@ var (
 			}}},
 		}
 	}}
-	bmHunterSpec = offClassSpec{"../ui/hunter/dps/gear_sets/phase_1/bm", "2h_6p", "../ui/hunter/dps/apls", "default", func() *proto.Player {
+	bmHunterSpec = offClassSpec{"../ui/specs/hunter/dps/gear_sets/phase_1/bm", "2h_6p", "../ui/specs/hunter/dps/apls", "default", func() *proto.Player {
 		return &proto.Player{
 			Class:         proto.Class_ClassHunter,
 			Race:          proto.Race_RaceOrc,
@@ -64,7 +64,7 @@ var (
 			}}},
 		}
 	}}
-	retPaladinSpec = offClassSpec{"../ui/paladin/retribution/gear_sets", "p1", "../ui/paladin/retribution/apls", "default", func() *proto.Player {
+	retPaladinSpec = offClassSpec{"../ui/specs/paladin/retribution/gear_sets", "p1", "../ui/specs/paladin/retribution/apls", "default", func() *proto.Player {
 		return &proto.Player{
 			Class:         proto.Class_ClassPaladin,
 			Race:          proto.Race_RaceBloodElf,
@@ -74,7 +74,7 @@ var (
 			}}},
 		}
 	}}
-	feralCatSpec = offClassSpec{"../ui/druid/feralcat/gear_sets", "p1_realistic_6p", "../ui/druid/feralcat/apls", "default", func() *proto.Player {
+	feralCatSpec = offClassSpec{"../ui/specs/druid/feralcat/gear_sets", "p1_realistic_6p", "../ui/specs/druid/feralcat/apls", "default", func() *proto.Player {
 		return &proto.Player{
 			Class:         proto.Class_ClassDruid,
 			Race:          proto.Race_RaceNightElf,
@@ -91,7 +91,7 @@ var (
 			}},
 		}
 	}}
-	swordsRogueSpec = offClassSpec{"../ui/rogue/dps/gear_sets", "p1", "../ui/rogue/dps/apls", "swords", func() *proto.Player {
+	swordsRogueSpec = offClassSpec{"../ui/specs/rogue/dps/gear_sets", "p1", "../ui/specs/rogue/dps/apls", "swords", func() *proto.Player {
 		return &proto.Player{
 			Class:         proto.Class_ClassRogue,
 			Race:          proto.Race_RaceHuman,
@@ -167,14 +167,14 @@ func TestOffClassSetBonuses(t *testing.T) {
 		{"cryptstalker-8pc-warrior", furyWarriorSpec, hunter.ItemSetCryptstalkerArmor, cryptstalker8, 0},
 		{"cryptstalker-2pc-shaman", elementalShamanSpec, hunter.ItemSetCryptstalkerArmor, cryptstalker2, 0},
 		{"cryptstalker-8pc-shaman", elementalShamanSpec, hunter.ItemSetCryptstalkerArmor, cryptstalker8, 0},
-		{"cryptstalker-2pc-hunter", bmHunterSpec, hunter.ItemSetCryptstalkerArmor, cryptstalker2, 789.706224},
-		{"cryptstalker-8pc-hunter", bmHunterSpec, hunter.ItemSetCryptstalkerArmor, cryptstalker8, 774.907778},
+		{"cryptstalker-2pc-hunter", bmHunterSpec, hunter.ItemSetCryptstalkerArmor, cryptstalker2, 789.067405},
+		{"cryptstalker-8pc-hunter", bmHunterSpec, hunter.ItemSetCryptstalkerArmor, cryptstalker8, 762.219653},
 
 		{"bold-5pc-paladin", retPaladinSpec, warrior.ItemSetBoldArmor, boldArmor5, 0},
 		{"bold-5pc-warrior", furyWarriorSpec, warrior.ItemSetBoldArmor, boldArmor5, 450.971957},
 
 		{"moonglade-5pc-warrior", armsWarriorSpec, druid.ItemSetMoongladeRaiment, moonglade5, 0},
-		{"moonglade-5pc-druid", feralCatSpec, druid.ItemSetMoongladeRaiment, moonglade5, 685.414701},
+		{"moonglade-5pc-druid", feralCatSpec, druid.ItemSetMoongladeRaiment, moonglade5, 685.931803},
 
 		{"assassination-5pc-hunter", bmHunterSpec, rogue.Dungeon3, assassination, 0},
 		{"assassination-5pc-rogue", swordsRogueSpec, rogue.Dungeon3, assassination, 553.359163},
