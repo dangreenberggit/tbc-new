@@ -23,7 +23,9 @@
 		"fmt:fix": "npx oxfmt .",
 		"type-check": "node_modules/typescript/bin/tsc --noEmit",
 		"test:unit": "vitest run",
-		"test:locales": "node ./test-locales.mjs"
+		"test:locales": "node ./test-locales.mjs",
+		"test:layout": "node ./test-layout.mjs",
+		"test:review": "node ./test-review.mjs"
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.7.0",
@@ -70,6 +72,7 @@
 		"@types/react-dom": "^19.2.7",
 		"@types/uuid": "^10.0.0",
 		"@vitejs/plugin-react": "6.1.1",
+		"axe-core": "4.13.0",
 		"cross-env": "^7.0.3",
 		"eslint-plugin-simple-import-sort": "^14.0.0",
 		"glob": "^13.0.6",
