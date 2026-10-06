@@ -5,10 +5,12 @@
  * render what this returns.
  */
 
+import { setBonusNoiseFloorDps } from './engine/cutoff';
 import { type SimSlotName, simSlotsForPoolSlot } from './engine/pool';
-import type { RankedItem } from './engine/rank';
+import type { RankedItem, Ranking } from './engine/rank';
 import { SIM_ORDER } from './engine/slots';
-import { applyView, type ViewResult, type ViewRow } from './engine/view';
+import { applyView, rankableSetPotential, type ViewResult, type ViewRow } from './engine/view';
+import type { DpsSortKey } from './results_sort';
 import type { RunState, StoppedRanking } from './run_reducer';
 
 export const SHOPPING_LIST_TAB = 'shopping-list';
@@ -68,14 +70,66 @@ export function stoppedView(result: StoppedRanking): ViewResult {
 	return { rows, shortlist, belowCutoffCount: rows.length - shortlist.length, pinBisAvailable: false };
 }
 
-/** The view a settled run renders; nothing before a run settles. */
-export function resultsViewFor(run: RunState): ViewResult | undefined {
+/**
+ * The two view toggles of a finished run (old tab C5). They reshape a ranking
+ * already measured and never change a run, so they are not run settings and
+ * do not mark a result stale.
+ */
+export type ViewToggles = { withSetPotential: boolean; onlyBis: boolean };
+
+export const NO_VIEW_TOGGLES: ViewToggles = { withSetPotential: false, onlyBis: false };
+
+/** On some phase's BiS list, as the old tab's `isBisTagged` tested it: a BiS or an Alt tag. */
+const onBisList = (row: Pick<RankedItem, 'bisTags'>): boolean => row.bisTags.length > 0;
+
+/** Whether BiS only has anything to keep. */
+export const hasBisRows = (ranking: Pick<Ranking, 'items'>): boolean => ranking.items.some(onBisList);
+
+/**
+ * The toggles the tab shows for `run`: both on a finished run only, and BiS
+ * only only when some row is on a BiS list, as the old tab chose.
+ */
+export const offeredToggles = (run: RunState): ViewToggles =>
+	run.status === 'done' ? { withSetPotential: true, onlyBis: hasBisRows(run.result) } : NO_VIEW_TOGGLES;
+
+/** The toggles that act on `run`: one the tab does not show changes nothing, so a hidden control never filters rows. */
+export function appliedToggles(run: RunState, toggles: ViewToggles): ViewToggles {
+	const offered = offeredToggles(run);
+	return { withSetPotential: offered.withSetPotential && toggles.withSetPotential, onlyBis: offered.onlyBis && toggles.onlyBis };
+}
+
+/**
+ * A view cut to its BiS-list rows. Each row's cutoff verdict depends on that
+ * row alone, so dropping rows changes only the count below the cutoff.
+ */
+function bisOnlyView(view: ViewResult): ViewResult {
+	const rows = view.rows.filter(onBisList);
+	const shortlist = view.shortlist.filter(onBisList);
+	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length };
+}
+
+/** The view a settled run renders under the toggles that act on it; nothing before a run settles. */
+export function resultsViewFor(run: RunState, toggles: ViewToggles): ViewResult | undefined {
+	const { withSetPotential, onlyBis } = appliedToggles(run, toggles);
 	switch (run.status) {
-		case 'done':
-			return applyView(run.result);
+		case 'done': {
+			const view = applyView(run.result, { withSetPotential });
+			return onlyBis ? bisOnlyView(view) : view;
+		}
 		case 'stopped':
 			return stoppedView(run.result);
 		default:
 			return undefined;
 	}
+}
+
+/**
+ * What the ΔDPS column sorts on: with Set potential, the same ΔDPS plus set
+ * credit `applyView` ranked on (`view.ts` `sortKeyFor`), so a column sort
+ * cannot disagree with the view's own order; else the bare ΔDPS (undefined).
+ */
+export function dpsSortKeyFor(ranking: Pick<Ranking, 'cutoff'> | undefined, withSetPotential: boolean): DpsSortKey | undefined {
+	if (!ranking || !withSetPotential) return undefined;
+	const noiseFloorDps = setBonusNoiseFloorDps(ranking.cutoff);
+	return row => row.deltaDps + rankableSetPotential(row, noiseFloorDps);
 }

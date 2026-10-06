@@ -11,7 +11,8 @@ import { SOURCE_LABELS } from './engine/view';
 import type { RunSettings } from './run_reducer';
 import { type SettingsState, toRunSettings } from './settings_reducer';
 
-export type SourceOption = { key: string; label: string; count: number };
+/** A source the Sources dialog lists. The page names it from its key (`utils/format.ts` `sourceKeyLabel`). */
+export type SourceOption = { key: string; count: number };
 
 /** A gear set as the settings need it: anything with item ids, which a preset's `gear` and a saved set's `gear` both are. */
 type GearItems = { items: readonly { id: number }[] };
@@ -64,7 +65,7 @@ export function sourceKeys(pool: readonly PoolEntry[]): string[] {
 }
 
 export function sourceOptions(pool: readonly PoolEntry[]): { raids: SourceOption[]; other: SourceOption[] } {
-	const options = sourceKeys(pool).map(key => ({ key, label: key, count: pool.filter(e => sourceMatches(e, key)).length }));
+	const options = sourceKeys(pool).map(key => ({ key, count: pool.filter(e => sourceMatches(e, key)).length }));
 	return { raids: options.filter(o => !ZONELESS_KEYS.has(o.key)), other: options.filter(o => ZONELESS_KEYS.has(o.key)) };
 }
 
@@ -160,6 +161,19 @@ export function rowTagLabels(itemId: number, selectedOptions: readonly SetOption
 		const shared = holding.some(other => other !== o && other.name === o.name);
 		return shared && o.phase !== undefined ? `P${o.phase} ${o.name}` : o.name;
 	});
+}
+
+const NO_TAGS: readonly string[] = [];
+
+/**
+ * `rowTagLabels` for every item at once. Each item keeps one array for as long
+ * as the selection stands, so a memoised name cell given its tags does not
+ * render again when only its row's position moves.
+ */
+export function rowTagIndex(selectedOptions: readonly SetOption[]): (itemId: number) => readonly string[] {
+	const byItem = new Map<number, readonly string[]>();
+	for (const itemId of new Set(selectedOptions.flatMap(o => o.itemIds))) byItem.set(itemId, rowTagLabels(itemId, selectedOptions));
+	return itemId => byItem.get(itemId) ?? NO_TAGS;
 }
 
 type PresetSet = { name: string; phase?: number; gear: GearItems };

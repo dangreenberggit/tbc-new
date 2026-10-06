@@ -11,10 +11,10 @@ afterAll(() => i18n.removeResourceBundle('en', 'translation'));
 
 const SOURCES = {
 	raids: [
-		{ key: 'Black Temple', label: 'Black Temple', count: 3 },
-		{ key: 'Hyjal Summit', label: 'Hyjal Summit', count: 2 },
+		{ key: 'Black Temple', count: 3 },
+		{ key: 'Hyjal Summit', count: 2 },
 	],
-	other: [{ key: 'Badge vendor', label: 'Badge vendor', count: 1 }],
+	other: [{ key: 'Badge vendor', count: 1 }],
 };
 
 /** The settings reducer's toggle in small, so the dialog shows what a click changed. */

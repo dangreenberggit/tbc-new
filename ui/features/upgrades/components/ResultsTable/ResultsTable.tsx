@@ -40,7 +40,7 @@ export const ProvisionalResultsTable = ({ rows, rowContext }: Omit<ResultRowsPro
 /** A table's rows in `sort` order, numbered from 1 in the order shown (owner ruling, ticket 287). */
 export const ResultRows = ({ rows, rowContext, sort }: ResultRowsProps) => (
 	<tbody>
-		{sortRows(rows, sort, SORT_LABELS).map((row, index) => (
+		{sortRows(rows, sort, SORT_LABELS, rowContext.dpsKey).map((row, index) => (
 			<ResultRow key={rowKey(row)} row={row} position={index + 1} context={rowContext} />
 		))}
 	</tbody>

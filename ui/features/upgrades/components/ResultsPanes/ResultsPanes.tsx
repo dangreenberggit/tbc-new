@@ -61,7 +61,7 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 					})}
 				</TabPanels>
 			</Tabs.Root>
-			<ExportPanel rows={sortRows(view.shortlist, sort, SORT_LABELS)} />
+			<ExportPanel rows={sortRows(view.shortlist, sort, SORT_LABELS, rowContext.dpsKey)} />
 		</>
 	);
 };

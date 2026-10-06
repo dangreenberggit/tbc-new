@@ -38,7 +38,7 @@ const host = fakeHost({
 const show = (run: RunState) =>
 	render(
 		<SimHostProvider host={host}>
-			<UpgradesResults run={run} />
+			<UpgradesResults run={run} selectedSets={[]} />
 		</SimHostProvider>,
 	);
 

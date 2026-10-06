@@ -49,8 +49,22 @@ export const simSlotLabel = (slot: SimOrderName): string => translateSlotName(IT
 /** `slotChoice` is set only where a pool slot maps to two sim slots; otherwise the first mapping is the slot. */
 export const slotLabel = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): string => simSlotLabel(row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0]);
 
-/** The engine's own source text, which the desktop gate's golden compares cell for cell. */
-export const sourceLabel = (source: ItemSource): string => ('zone' in source ? source.zone : (SOURCE_LABELS[source.kind] ?? source.kind));
+/**
+ * A source kind in the page's words. The engine's English `SOURCE_LABELS` stay the pool's source keys
+ * (`settings_pool.ts`); a kind the map does not know keeps its raw name, as the engine's label does.
+ */
+const kindLabel = (kind: string): string => (kind in SOURCE_LABELS ? i18n.t(`upgrades_tab.sources.${kind}`) : kind);
+
+const KIND_BY_SOURCE_KEY = new Map(Object.entries(SOURCE_LABELS).map(([kind, key]) => [key, kind]));
+
+/** A Sources dialog key in the page's words: a zone is its own name, a source bucket key is its kind's. */
+export const sourceKeyLabel = (key: string): string => {
+	const kind = KIND_BY_SOURCE_KEY.get(key);
+	return kind === undefined ? key : kindLabel(kind);
+};
+
+/** A source as its cell shows it: the zone of a drop, else its kind. */
+export const sourceLabel = (source: ItemSource): string => ('zone' in source ? source.zone : kindLabel(source.kind));
 
 /** A row with several sources names the first, as the engine orders them. */
 export const rowSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>): string => sourceLabel(row.sources?.[0] ?? row.source);

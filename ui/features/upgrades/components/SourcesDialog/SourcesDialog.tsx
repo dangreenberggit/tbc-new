@@ -4,6 +4,7 @@ import { Dialog } from '@ui-kit/Dialog';
 import { useId } from 'react';
 
 import type { SourceOption } from '../../model/settings_pool';
+import { sourceKeyLabel } from '../../utils/format';
 
 export interface SourcesDialogProps {
 	open: boolean;
@@ -34,7 +35,7 @@ const SourceSection = ({ title, options, excluded, onToggle }: SourceSectionProp
 							modObject={null}
 							config={{
 								id: `${idPrefix}-${index}`,
-								label: option.label,
+								label: sourceKeyLabel(option.key),
 								layout: 'inline',
 								value: !excluded.includes(option.key),
 								onChange: () => onToggle(option.key),

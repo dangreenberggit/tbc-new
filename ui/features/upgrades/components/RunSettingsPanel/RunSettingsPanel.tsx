@@ -5,6 +5,7 @@ import { useId, useState } from 'react';
 
 import type { UpgradesSettings } from '../../hooks/useUpgradesSettings';
 import { CandidateCapPicker } from '../CandidateCapPicker';
+import { FixtureFileInput } from '../DevTools';
 import { EligibleCount } from '../EligibleCount';
 import { PhaseSelector } from '../PhaseSelector';
 import { RunControls } from '../RunControls';
@@ -15,7 +16,7 @@ export interface RunSettingsPanelProps {
 	settings: UpgradesSettings;
 	ready: boolean;
 	running: boolean;
-	/** `?upgrades-dev`: shows the candidate cap. */
+	/** `?upgrades-dev`: shows the candidate cap and the fixture file input. */
 	devVisible: boolean;
 	onStart: () => void;
 }
@@ -49,10 +50,11 @@ export const RunSettingsPanel = ({ settings, ready, running, devVisible, onStart
 					onToggleSet={settings.toggleSet}
 					onPruneChange={settings.setPrune}
 				/>
-				{/* Always in the page: the desktop gate writes this input on a production build. Hidden without
+				{/* Always in the page: the desktop gate writes the cap input on a production build. Hidden without
 				    `?upgrades-dev`, because a cut of the candidate list the user cannot see drops real upgrades (ticket 466). */}
-				<div hidden={!devVisible}>
+				<div className="grid gap-6" hidden={!devVisible}>
 					<CandidateCapPicker capField={settings.capField} onCapChange={settings.onCapChange} />
+					<FixtureFileInput />
 				</div>
 			</div>
 			<EligibleCount count={settings.eligibleCount} />

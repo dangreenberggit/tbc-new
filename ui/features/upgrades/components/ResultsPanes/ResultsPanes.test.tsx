@@ -23,7 +23,7 @@ afterAll(() => {
 	i18n.removeResourceBundle('en', 'character');
 });
 
-const CONTEXT = { itemOf: () => undefined, tip: {} };
+const CONTEXT = { itemOf: () => undefined, tip: {}, tagsOf: () => [] };
 const VIEW = applyView(RANKING_FIXTURE);
 
 const tabStrip = (container: HTMLElement) => within(within(container).getByTestId('upgrades-tab-tabs'));

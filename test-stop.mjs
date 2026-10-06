@@ -155,7 +155,7 @@ const runAndStopExpression = (rows, timeoutMs) => `(async () => {
 		groupCount,
 		rowsKept: shortlistRows + groupCount,
 		baselineSummary: q('[data-testid="upgrades-baseline-summary"]')?.textContent.trim() ?? null,
-		errorLine: q('[data-testid="upgrades-run-error"]')?.textContent.trim() ?? null,
+		errorLine: q('[data-testid="upgrades-status-alert"]')?.textContent.trim() || null,
 		consoleErrors: window.__stopCheckErrors ?? [],
 	};
 })()`;

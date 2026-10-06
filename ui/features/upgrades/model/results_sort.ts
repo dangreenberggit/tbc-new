@@ -21,14 +21,17 @@ export const nextSort = (current: ResultsSort | undefined, key: ResultsSortKey):
 /** The text a reader sees in the slot and source cells, which those columns sort on. */
 export type SortLabels<T> = { slot: (row: T) => string; source: (row: T) => string };
 
-const sortValue = <T extends RankedItem>(key: ResultsSortKey, row: T, labels: SortLabels<T>): string | number => {
+/** What the ΔDPS column sorts on, when it is more than the row's own ΔDPS (`results_view.ts` `dpsSortKeyFor`). */
+export type DpsSortKey = (row: RankedItem) => number;
+
+const sortValue = <T extends RankedItem>(key: ResultsSortKey, row: T, labels: SortLabels<T>, dpsKey: DpsSortKey | undefined): string | number => {
 	switch (key) {
 		case 'item':
 			return row.name.toLowerCase();
 		case 'slot':
 			return labels.slot(row).toLowerCase();
 		case 'delta_dps':
-			return row.deltaDps;
+			return dpsKey ? dpsKey(row) : row.deltaDps;
 		case 'source':
 			return labels.source(row).toLowerCase();
 	}
@@ -39,12 +42,12 @@ const sortValue = <T extends RankedItem>(key: ResultsSortKey, row: T, labels: So
  * (`Array.prototype.sort` is stable), so a sort that does not tell two rows
  * apart never reshuffles them.
  */
-export function sortRows<T extends RankedItem>(rows: readonly T[], sort: ResultsSort | undefined, labels: SortLabels<T>): T[] {
+export function sortRows<T extends RankedItem>(rows: readonly T[], sort: ResultsSort | undefined, labels: SortLabels<T>, dpsKey?: DpsSortKey): T[] {
 	if (!sort) return [...rows];
 	const dir = sort.dir === 'asc' ? 1 : -1;
 	return [...rows].sort((a, b) => {
-		const ak = sortValue(sort.key, a, labels);
-		const bk = sortValue(sort.key, b, labels);
+		const ak = sortValue(sort.key, a, labels, dpsKey);
+		const bk = sortValue(sort.key, b, labels, dpsKey);
 		if (ak === bk) return 0;
 		return ak < bk ? -dir : dir;
 	});

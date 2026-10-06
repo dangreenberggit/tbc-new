@@ -14,7 +14,7 @@ beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations,
 afterAll(() => i18n.removeResourceBundle('en', 'translation'));
 
 const settingsWith = (toggleSource: UpgradesSettings['toggleSource']): UpgradesSettings => ({
-	sources: { raids: [{ key: 'Black Temple', label: 'Black Temple', count: 3 }], other: [] },
+	sources: { raids: [{ key: 'Black Temple', count: 3 }], other: [] },
 	selectedOptions: [],
 	selectedKeys: [],
 	chips: { main: [], other: [] },

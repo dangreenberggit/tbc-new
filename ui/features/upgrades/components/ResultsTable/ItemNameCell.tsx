@@ -12,19 +12,21 @@ import type { RankedItem } from '../../model/engine/rank';
 export interface ItemNameCellProps {
 	row: Pick<RankedItem, 'itemId' | 'name' | 'bisTags' | 'owned'>;
 	quality: ItemQuality | undefined;
+	/** The selected sets that hold the item, by name (ticket 430). */
+	tags: readonly string[];
 }
 
-/** Guaranteed-set badges need the set picker (P3); until then a row shows the universe's own BiS or Alt tag. */
-const badgeLabel = (bisTags: RankedItem['bisTags']): string | undefined => {
-	if (bisTags.includes('BiS')) return i18n.t('upgrades_tab.results.bis_badge');
-	if (bisTags.includes('Alt')) return i18n.t('upgrades_tab.results.alt_badge');
-	return undefined;
+/** A row in no selected set shows the universe's own BiS or Alt tag instead. */
+const listBadge = (bisTags: RankedItem['bisTags']): string[] => {
+	if (bisTags.includes('BiS')) return [i18n.t('upgrades_tab.results.bis_badge')];
+	if (bisTags.includes('Alt')) return [i18n.t('upgrades_tab.results.alt_badge')];
+	return [];
 };
 
 /** The item: its icon, its name as a wowhead link in its quality colour, and its tags beneath. `memo`: see `ResultRow`. */
-export const ItemNameCell = memo(({ row, quality }: ItemNameCellProps) => {
+export const ItemNameCell = memo(({ row, quality, tags }: ItemNameCellProps) => {
 	const { iconUrl, href } = useActionId(ActionId.fromItemId(row.itemId));
-	const badge = badgeLabel(row.bisTags);
+	const badges = tags.length > 0 ? tags : listBadge(row.bisTags);
 
 	return (
 		<td className="py-1 pr-3">
@@ -40,13 +42,13 @@ export const ItemNameCell = memo(({ row, quality }: ItemNameCellProps) => {
 						className={itemQualityClassName(quality)}>
 						{row.name}
 					</a>
-					{(badge || row.owned) && (
-						<span className="flex items-center gap-1 text-xs">
-							{badge && (
-								<span className="rounded-full bg-warning px-1.5 text-black" data-testid="upgrades-bis-badge">
+					{(badges.length > 0 || row.owned) && (
+						<span className="flex flex-wrap items-center gap-1 text-xs">
+							{badges.map(badge => (
+								<span key={badge} className="rounded-full bg-warning px-1.5 text-black" data-testid="upgrades-bis-badge">
 									{badge}
 								</span>
-							)}
+							))}
 							{row.owned && <span>({i18n.t('upgrades_tab.results.owned')})</span>}
 						</span>
 					)}

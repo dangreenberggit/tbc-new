@@ -21,7 +21,7 @@ afterAll(() => {
 	i18n.removeResourceBundle('en', 'character');
 });
 
-const CONTEXT = { itemOf: () => undefined, tip: {} };
+const CONTEXT = { itemOf: () => undefined, tip: {}, tagsOf: () => [] };
 const onSort = () => {};
 
 describe('ResultsPane', () => {

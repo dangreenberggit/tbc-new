@@ -26,7 +26,7 @@ afterAll(() => {
 	i18n.removeResourceBundle('en', 'character');
 });
 
-const CONTEXT: RowContext = { itemOf: () => undefined, tip: {} };
+const CONTEXT: RowContext = { itemOf: () => undefined, tip: {}, tagsOf: () => [] };
 const FOUR = [fixtureRow(3), fixtureRow(0), fixtureRow(2), fixtureRow(1)];
 
 const cellsOf = (row: HTMLElement | undefined) =>

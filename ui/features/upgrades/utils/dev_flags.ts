@@ -17,7 +17,9 @@ export type DevFlags = {
 };
 
 /**
- * The only reader of the `__TBC_TAB_FIXTURES__` define. Vitest has no
+ * The `__TBC_TAB_FIXTURES__` define, for every reader but `FixtureFileInput`,
+ * which reads it at its own branch so a production build drops its body
+ * whatever the bundler does across modules. Vitest has no
  * `define`, and an undeclared global read under `typeof` does not throw, so
  * the guard keeps every test importable; a production build replaces the
  * constant with `false`, so each branch on this value is dropped as dead code.

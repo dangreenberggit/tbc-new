@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import englishTranslations from '../../../../../assets/locales/en/translation.json';
 import type { RunState } from '../../model/run_reducer';
 import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
-import { StatusLine } from './StatusLine';
+import { StaleNotice, StatusLine } from './StatusLine';
 
 beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations, true, true));
 afterAll(() => i18n.removeResourceBundle('en', 'translation'));
@@ -39,23 +39,39 @@ describe('StatusLine', () => {
 		expect(getByTestId('upgrades-status-line').textContent).toBe('Stopping — finishing the current step.');
 	});
 
-	it('warns above a stale result’s baseline, finished or stopped', () => {
-		const done: RunState = { status: 'done', runId: 1, result: RANKING_FIXTURE };
-		const stopped: RunState = { status: 'stopped', runId: 1, result: { ...RANKING_FIXTURE, items: [row], complete: false, durationMs: 900 } };
-		for (const run of [done, stopped]) {
-			const { getByTestId, unmount } = render(<StatusLine run={run} stale />);
-			expect(getByTestId('upgrades-stale').textContent).toBe(
-				'settings changed since this ranking — results may be out of date Run again to rank with the current settings.',
-			);
+	it('says what the tab does before a run, in the polite region', () => {
+		const { getByTestId } = render(<StatusLine run={{ status: 'idle' }} />);
+		expect(getByTestId('upgrades-status-polite').textContent).toBe('Ranks upgrades against your current gear and settings on this page.');
+		expect(getByTestId('upgrades-status-alert').textContent).toBe('');
+	});
+
+	it('keeps both live regions in the page in every state, the polite one for progress and the alert for a failure only', () => {
+		const states: RunState[] = [
+			{ status: 'idle' },
+			{ status: 'running', runId: 1, startedAt: 0, landedRows: [row], stopping: false },
+			{ status: 'done', runId: 1, result: RANKING_FIXTURE },
+		];
+		for (const run of states) {
+			const { getByRole, unmount } = render(<StatusLine run={run} />);
+			expect(getByRole('status').getAttribute('aria-live')).toBe('polite');
+			expect(getByRole('status').getAttribute('aria-atomic')).toBe('true');
+			expect(getByRole('status').textContent).not.toBe('');
+			expect(getByRole('alert').textContent).toBe('');
 			unmount();
 		}
 	});
 
-	it('gives no warning for a current result', () => {
-		expect(render(<StatusLine run={{ status: 'done', runId: 1, result: RANKING_FIXTURE }} stale={false} />).queryByTestId('upgrades-stale')).toBeNull();
+	it('puts a failure in the alert region and leaves the polite region empty', () => {
+		const { getByRole } = render(<StatusLine run={{ status: 'error', runId: 1, message: 'Ranking failed: boom' }} />);
+		expect(getByRole('alert').textContent).toBe('Ranking failed: boom');
+		expect(getByRole('status').textContent).toBe('');
 	});
+});
 
-	it('says nothing before a run', () => {
-		expect(render(<StatusLine run={{ status: 'idle' }} />).container.textContent).toBe('');
+describe('StaleNotice', () => {
+	it('says the result is out of date and how to refresh it', () => {
+		expect(render(<StaleNotice />).getByTestId('upgrades-stale').textContent).toBe(
+			'settings changed since this ranking — results may be out of date Run again to rank with the current settings.',
+		);
 	});
 });

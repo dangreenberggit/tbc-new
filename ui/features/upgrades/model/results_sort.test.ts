@@ -56,3 +56,15 @@ describe('sortRows', () => {
 		expect(ids(input)).toEqual([32332, 32235, 30905, 33688]);
 	});
 });
+
+describe('sortRows with a ΔDPS key', () => {
+	it('sorts the ΔDPS column on the key it is given', () => {
+		const boosted = (row: { itemId: number; deltaDps: number }) => row.deltaDps + (row.itemId === 30905 ? 100 : 0);
+		expect(ids(sortRows(ROWS, { key: 'delta_dps', dir: 'desc' }, LABELS, boosted))).toEqual([30905, 32332, 32235, 33688]);
+	});
+
+	it('leaves the other columns alone', () => {
+		const constant = () => 0;
+		expect(ids(sortRows(ROWS, { key: 'item', dir: 'asc' }, LABELS, constant))).toEqual(ids(sortRows(ROWS, { key: 'item', dir: 'asc' }, LABELS)));
+	});
+});

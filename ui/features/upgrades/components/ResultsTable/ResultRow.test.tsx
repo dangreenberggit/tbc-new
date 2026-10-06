@@ -35,7 +35,7 @@ const ITEMS: Record<number, { name: string; quality: ItemQuality }> = {
 	32332: { name: 'Torch of the Damned', quality: ItemQuality.ItemQualityEpic },
 	30882: { name: 'Blade of Infamy', quality: ItemQuality.ItemQualityEpic },
 };
-const CONTEXT: RowContext = { itemOf: itemId => ITEMS[itemId], tip: { ranking: RANKING_FIXTURE, specId: 'ret' } };
+const CONTEXT: RowContext = { itemOf: itemId => ITEMS[itemId], tip: { ranking: RANKING_FIXTURE, specId: 'ret' }, tagsOf: () => [] };
 
 const renderRow = (row: RankedItem, context: RowContext = CONTEXT) => {
 	const { container } = render(

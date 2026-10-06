@@ -1,6 +1,6 @@
 import { RunProgressDialog } from '@features/upgrades/components/RunProgress';
 import { RunSettingsPanel } from '@features/upgrades/components/RunSettingsPanel';
-import { StatusLine } from '@features/upgrades/components/StatusLine';
+import { StaleNotice, StatusLine } from '@features/upgrades/components/StatusLine';
 import { UpgradesResults } from '@features/upgrades/components/UpgradesResults';
 import { useFixtureAutoload } from '@features/upgrades/hooks/useFixtureAutoload';
 import { useRunStale } from '@features/upgrades/hooks/useRunStale';
@@ -33,8 +33,9 @@ export const UpgradesTabBody = () => {
 		<div className="contents" data-testid="upgrades-tab-root" data-runner={measuredOnOf(run)?.runner}>
 			<TabPanelColumns.Left variant="stacked" className="pt-2">
 				<div data-testid="upgrades-tab-left">
-					<StatusLine run={run} stale={stale} />
-					<UpgradesResults run={run} />
+					{stale && <StaleNotice />}
+					<StatusLine run={run} />
+					<UpgradesResults run={run} selectedSets={settings.selectedOptions} />
 				</div>
 			</TabPanelColumns.Left>
 			{/* First below `xl`, where the columns stack: the run card sits above the results it governs. */}

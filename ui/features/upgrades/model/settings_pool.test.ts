@@ -6,6 +6,7 @@ import {
 	defaultSetKeys,
 	effectivePool,
 	eligibleCount,
+	rowTagIndex,
 	rowTagLabels,
 	selectedSetItemIds,
 	type SetOption,
@@ -54,13 +55,13 @@ describe('sourceOptions', () => {
 	it('lists raid zones first, then zoneless buckets, each in first-seen order with its entry count', () => {
 		expect(sourceOptions(POOL)).toEqual({
 			raids: [
-				{ key: 'Black Temple', label: 'Black Temple', count: 3 },
-				{ key: 'Hyjal Summit', label: 'Hyjal Summit', count: 2 },
-				{ key: 'Tempest Keep', label: 'Tempest Keep', count: 1 },
+				{ key: 'Black Temple', count: 3 },
+				{ key: 'Hyjal Summit', count: 2 },
+				{ key: 'Tempest Keep', count: 1 },
 			],
 			other: [
-				{ key: 'Badge vendor', label: 'Badge vendor', count: 1 },
-				{ key: 'Crafted', label: 'Crafted', count: 1 },
+				{ key: 'Badge vendor', count: 1 },
+				{ key: 'Crafted', count: 1 },
 			],
 		});
 	});
@@ -172,6 +173,26 @@ describe('rowTagLabels', () => {
 	it('prefixes the phase when two selected sets share a name', () => {
 		const selected = [option('preset:2:BiS 9%', 'BiS 9%', 2, [1]), option('preset:3:BiS 9%', 'BiS 9%', 3, [1])];
 		expect(rowTagLabels(1, selected)).toEqual(['P2 BiS 9%', 'P3 BiS 9%']);
+	});
+});
+
+describe('rowTagIndex', () => {
+	const selected: SetOption[] = [
+		{ key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [1, 2], inPool: 2 },
+		{ key: 'saved:Mine', name: 'Mine', label: 'Mine', kind: 'saved', itemIds: [2], inPool: 1 },
+	];
+
+	it('gives each item the labels rowTagLabels gives it', () => {
+		const tagsOf = rowTagIndex(selected);
+		expect(tagsOf(2)).toEqual(['P3', 'Mine']);
+		expect(tagsOf(1)).toEqual(['P3']);
+		expect(tagsOf(9)).toEqual([]);
+	});
+
+	it('returns the same array for an item on every call, so a memoised cell is not rendered again', () => {
+		const tagsOf = rowTagIndex(selected);
+		expect(tagsOf(2)).toBe(tagsOf(2));
+		expect(tagsOf(9)).toBe(tagsOf(8));
 	});
 });
 

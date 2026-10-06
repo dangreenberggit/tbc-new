@@ -1,0 +1,1 @@
+export { FixtureFileInput } from './FixtureFileInput';

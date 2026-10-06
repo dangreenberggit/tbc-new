@@ -1,8 +1,23 @@
 import { describe, expect, it } from 'vitest';
 
 import { fixtureRow, RANKING_FIXTURE, STOPPED_FIXTURE } from '../testing/ranking_fixture';
+import type { RankedItem, Ranking } from './engine/rank';
 import { applyView } from './engine/view';
-import { effectiveSlot, landedRows, paneRows, resultsViewFor, rowKey, SHOPPING_LIST_TAB, slotTabs, stoppedView } from './results_view';
+import {
+	appliedToggles,
+	dpsSortKeyFor,
+	effectiveSlot,
+	hasBisRows,
+	landedRows,
+	NO_VIEW_TOGGLES,
+	offeredToggles,
+	paneRows,
+	resultsViewFor,
+	rowKey,
+	SHOPPING_LIST_TAB,
+	slotTabs,
+	stoppedView,
+} from './results_view';
 
 const ids = (rows: ReadonlyArray<{ itemId: number }>) => rows.map(row => row.itemId);
 const VIEW = applyView(RANKING_FIXTURE);
@@ -81,17 +96,90 @@ describe('stoppedView', () => {
 	});
 });
 
+// Lightbringer Faceguard (4.42) with a measured 2-piece bonus, so Set potential credits it past Dragonspine Trophy (5.2).
+const faceguard: RankedItem = {
+	...fixtureRow(10),
+	setContext: { ...fixtureRow(10).setContext!, futureBonuses: [{ threshold: 2, piecesNeeded: 1, dps: 20.04, pieces: [], breaks: [] }] },
+};
+const WITH_POTENTIAL: Ranking = { ...RANKING_FIXTURE, items: RANKING_FIXTURE.items.map(row => (row.itemId === faceguard.itemId ? faceguard : row)) };
+const done = (result: Ranking) => ({ status: 'done' as const, runId: 1, result });
+const SET_POTENTIAL = { ...NO_VIEW_TOGGLES, withSetPotential: true };
+const ONLY_BIS = { ...NO_VIEW_TOGGLES, onlyBis: true };
+
 describe('resultsViewFor', () => {
 	it('views a finished run through applyView', () => {
-		expect(resultsViewFor({ status: 'done', runId: 1, result: RANKING_FIXTURE })).toEqual(VIEW);
+		expect(resultsViewFor(done(RANKING_FIXTURE), NO_VIEW_TOGGLES)).toEqual(VIEW);
 	});
 
-	it('views a stopped run through stoppedView', () => {
-		expect(resultsViewFor({ status: 'stopped', runId: 1, result: STOPPED_FIXTURE })).toEqual(stoppedView(STOPPED_FIXTURE));
+	it('views a stopped run through stoppedView, whatever the toggles say', () => {
+		const stopped = { status: 'stopped' as const, runId: 1, result: STOPPED_FIXTURE };
+		expect(resultsViewFor(stopped, NO_VIEW_TOGGLES)).toEqual(stoppedView(STOPPED_FIXTURE));
+		expect(resultsViewFor(stopped, { withSetPotential: true, onlyBis: true })).toEqual(stoppedView(STOPPED_FIXTURE));
 	});
 
 	it('has no view before a run settles', () => {
-		expect(resultsViewFor({ status: 'idle' })).toBeUndefined();
-		expect(resultsViewFor({ status: 'running', runId: 1, startedAt: 0, landedRows: [], stopping: false })).toBeUndefined();
+		expect(resultsViewFor({ status: 'idle' }, NO_VIEW_TOGGLES)).toBeUndefined();
+		expect(resultsViewFor({ status: 'running', runId: 1, startedAt: 0, landedRows: [], stopping: false }, NO_VIEW_TOGGLES)).toBeUndefined();
+	});
+
+	it('with Set potential, ranks a row by its ΔDPS plus its set credit', () => {
+		const faceguardBeforeTrophy = (toggles: typeof NO_VIEW_TOGGLES) => {
+			const order = ids(resultsViewFor(done(WITH_POTENTIAL), toggles)!.shortlist);
+			return order.indexOf(30989) < order.indexOf(28830);
+		};
+		expect(faceguardBeforeTrophy(NO_VIEW_TOGGLES)).toBe(false);
+		expect(faceguardBeforeTrophy(SET_POTENTIAL)).toBe(true);
+	});
+
+	it('with BiS only, keeps the rows on a BiS list and recounts the rows below the cutoff', () => {
+		const view = resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!;
+		expect(ids(view.rows)).toEqual([32332, 32235, 28830]);
+		expect(ids(view.shortlist)).toEqual([32332, 32235, 28830]);
+		expect(view.belowCutoffCount).toBe(0);
+	});
+
+	it('ignores BiS only on a ranking with no BiS-list row, where the toggle is not offered', () => {
+		const untagged = { ...RANKING_FIXTURE, items: RANKING_FIXTURE.items.map(row => ({ ...row, bisTags: [] })) };
+		expect(resultsViewFor(done(untagged), ONLY_BIS)!.rows).toHaveLength(RANKING_FIXTURE.items.length);
+	});
+});
+
+describe('hasBisRows', () => {
+	it('is true when any row carries a BiS or Alt tag', () => {
+		expect(hasBisRows(RANKING_FIXTURE)).toBe(true);
+		expect(hasBisRows({ items: [fixtureRow(1)] })).toBe(false);
+		expect(hasBisRows({ items: [fixtureRow(7)] })).toBe(true);
+	});
+});
+
+describe('offeredToggles and appliedToggles', () => {
+	const stopped = { status: 'stopped' as const, runId: 1, result: STOPPED_FIXTURE };
+	const untagged = { ...RANKING_FIXTURE, items: RANKING_FIXTURE.items.map(row => ({ ...row, bisTags: [] })) };
+	const both = { withSetPotential: true, onlyBis: true };
+
+	it('offers both toggles on a finished run with a BiS-list row, Set potential alone without one, and neither otherwise', () => {
+		expect(offeredToggles(done(RANKING_FIXTURE))).toEqual(both);
+		expect(offeredToggles(done(untagged))).toEqual(SET_POTENTIAL);
+		expect(offeredToggles(stopped)).toEqual(NO_VIEW_TOGGLES);
+		expect(offeredToggles({ status: 'idle' })).toEqual(NO_VIEW_TOGGLES);
+	});
+
+	it('applies only the toggles on offer', () => {
+		expect(appliedToggles(done(RANKING_FIXTURE), both)).toEqual(both);
+		expect(appliedToggles(done(untagged), both)).toEqual(SET_POTENTIAL);
+		expect(appliedToggles(stopped, both)).toEqual(NO_VIEW_TOGGLES);
+	});
+});
+
+describe('dpsSortKeyFor', () => {
+	it('is the bare ΔDPS (undefined) with Set potential off or no finished ranking', () => {
+		expect(dpsSortKeyFor(WITH_POTENTIAL, false)).toBeUndefined();
+		expect(dpsSortKeyFor(undefined, true)).toBeUndefined();
+	});
+
+	it('adds the set credit the view ranked on, so the column sort agrees with the view', () => {
+		const key = dpsSortKeyFor(WITH_POTENTIAL, true)!;
+		expect(key(faceguard)).toBeGreaterThan(5.2);
+		expect(key(fixtureRow(7))).toBe(5.2);
 	});
 });

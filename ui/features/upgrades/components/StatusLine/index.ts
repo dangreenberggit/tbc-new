@@ -1,1 +1,1 @@
-export { StatusLine, type StatusLineProps } from './StatusLine';
+export { StaleNotice, StatusLine, type StatusLineProps } from './StatusLine';

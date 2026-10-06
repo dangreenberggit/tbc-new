@@ -17,6 +17,7 @@ import {
 	simSlotLabel,
 	slotLabel,
 	SORT_LABELS,
+	sourceKeyLabel,
 	sourceLabel,
 	substitutionText,
 } from './format';
@@ -99,10 +100,30 @@ describe('substitutionText', () => {
 	});
 });
 
+/** Swaps one translation for the length of `check`, to show a label is read from the locale file. */
+const withTranslation = (key: string, value: string, check: () => void) => {
+	const original = i18n.t(key);
+	i18n.addResource('en', 'translation', key, value);
+	try {
+		check();
+	} finally {
+		i18n.addResource('en', 'translation', key, original);
+	}
+};
+
 describe('sourceLabel', () => {
-	it('names a zone for a drop and the engine’s label otherwise', () => {
+	it('names a zone for a drop and the source kind’s translation otherwise', () => {
 		expect(sourceLabel({ kind: 'raid', zone: 'Black Temple', boss: 'Illidan' })).toBe('Black Temple');
 		expect(sourceLabel({ kind: 'badge', cost: 75 })).toBe('Badge vendor');
+		withTranslation('upgrades_tab.sources.badge', 'Marken', () => expect(sourceLabel({ kind: 'badge', cost: 75 })).toBe('Marken'));
+	});
+});
+
+describe('sourceKeyLabel', () => {
+	it('names a zone key as the zone and a source bucket key through its kind’s translation', () => {
+		expect(sourceKeyLabel('Black Temple')).toBe('Black Temple');
+		expect(sourceKeyLabel('Badge vendor')).toBe('Badge vendor');
+		withTranslation('upgrades_tab.sources.badge', 'Marken', () => expect(sourceKeyLabel('Badge vendor')).toBe('Marken'));
 	});
 });
 

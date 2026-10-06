@@ -23,7 +23,7 @@ afterAll(() => {
 
 const ROWS = [fixtureRow(5), fixtureRow(3)];
 const [FIRST_ID, SECOND_ID] = ROWS.map(row => String(row.itemId));
-const CONTEXT = { itemOf: () => undefined, tip: {} };
+const CONTEXT = { itemOf: () => undefined, tip: {}, tagsOf: () => [] };
 
 describe('BelowCutoffGroup', () => {
 	it('starts collapsed, with its row count, and renders no table until opened', () => {

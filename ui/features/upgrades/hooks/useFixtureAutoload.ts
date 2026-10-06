@@ -13,10 +13,10 @@ export type FixtureAutoloadOptions = {
 };
 
 /**
- * The page hooks the dev server's fixture plugin and the fixture recorder call
- * (`tools/vite/tab_fixtures.mts`, the repo's `scripts/tab-fixtures/record.mjs`).
- * The only code in the tab that touches `window`; a production build installs
- * nothing.
+ * The page hooks the dev server's fixture plugin, the fixture recorder and the
+ * fixture file input call (`tools/vite/tab_fixtures.mts`, the repo's
+ * `scripts/tab-fixtures/record.mjs`, `FixtureFileInput`). The only code in the
+ * tab that installs anything on `window`; a production build installs nothing.
  */
 export function useFixtureAutoload({ onLoaded, currentRanking }: FixtureAutoloadOptions): void {
 	const host = useSimHost();
