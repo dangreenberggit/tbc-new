@@ -20,7 +20,7 @@ export const ResultsTable = ({ rows }: ResultsTableProps) => (
 		</thead>
 		<tbody>
 			{rows.map((row, index) => (
-				<ResultRow key={row.itemId} row={row} position={index + 1} />
+				<ResultRow key={`${row.itemId}:${row.slot}`} row={row} position={index + 1} />
 			))}
 		</tbody>
 	</table>

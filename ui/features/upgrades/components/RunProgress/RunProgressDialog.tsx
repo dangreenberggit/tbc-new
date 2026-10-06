@@ -19,14 +19,15 @@ export const RunProgressDialog = ({ onStop }: RunProgressDialogProps) => {
 	const [stage, setStage] = useState(() => progressStageOf(progressOf(player)));
 	const barRef = useRef<ProgressTrackerHandle>(null);
 
-	useEffect(
-		() =>
-			subscribeProgress(player, view => {
-				setStage(progressStageOf(view));
-				barRef.current?.setProgress(progressBarOf(view));
-			}),
-		[player],
-	);
+	useEffect(() => {
+		// Ticks sent between Run and this effect are not lost: the bar starts from the latest one.
+		const latest = progressOf(player);
+		if (latest) barRef.current?.setProgress(progressBarOf(latest));
+		return subscribeProgress(player, view => {
+			setStage(progressStageOf(view));
+			barRef.current?.setProgress(progressBarOf(view));
+		});
+	}, [player]);
 
 	return (
 		<ProgressTrackerDialog

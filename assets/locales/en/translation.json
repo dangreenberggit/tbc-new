@@ -2619,7 +2619,7 @@
 			"stale": "settings changed since this ranking — results may be out of date",
 			"stopped": "Stopped early. Your current gear: {{dps}} DPS. No candidate rows to show — run again for a full ranking.",
 			"running_rows": "{{label}} ({{count}} rows landed)",
-			"took": "Took {{seconds}}s.",
+			"done_took": "Your current gear: {{dps}} DPS. Took {{seconds}}s.",
 			"running": "Rows landed so far: {{count}}.",
 			"stopped_partial": "Stopped early. Your current gear: {{dps}} DPS. The rows below finished before Stop."
 		},

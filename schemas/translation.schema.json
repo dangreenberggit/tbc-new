@@ -9207,7 +9207,7 @@
 						"running_rows": {
 							"type": "string"
 						},
-						"took": {
+						"done_took": {
 							"type": "string"
 						},
 						"running": {
@@ -9218,7 +9218,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["idle", "unsupported_spec", "error", "error_sim_unavailable", "done", "elapsed", "stale", "stopped", "running_rows", "took", "running", "stopped_partial"]
+					"required": ["idle", "unsupported_spec", "error", "error_sim_unavailable", "done", "elapsed", "stale", "stopped", "running_rows", "done_took", "running", "stopped_partial"]
 				},
 				"view": {
 					"type": "object",
