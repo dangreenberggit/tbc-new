@@ -1,6 +1,6 @@
 import { ItemQuality } from '@generated/proto/common';
 import i18n from '@i18n/config';
-import { render, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import englishCharacter from '../../../../../assets/locales/en/character.json';
@@ -115,5 +115,32 @@ describe('ResultRow', () => {
 
 		expect(testIdText(renderRow(legs, { ...CONTEXT, tip: { ranking, wornItemIds: worn, specId: 'feral' } }), 'upgrades-set-bonus')).toEqual(['set detail']);
 		expect(testIdText(renderRow(legs, { ...CONTEXT, tip: { ranking, specId: 'feral' } }), 'upgrades-set-bonus')).toEqual([]);
+	});
+
+	it('opens that row’s set-bonus popover from its DPS figure, itemising the worn bonus the swap breaks', () => {
+		const worn = [8345, 30017, 30055, 29994, 30101, 29966, 31034, 30106, 31044, 28545, 29997, 30052, 30627, 29383, 32014, 0, 32387];
+		const legs: RankedItem = { ...fixtureRow(0), itemId: 30900, name: 'Bow-stitched Leggings', slot: 'legs', deltaDps: -94.1, deltaPct: -3.8 };
+		const ranking = { ...RANKING_FIXTURE, brokenSetValues: [{ setId: 676, setName: 'Thunderheart Harness', threshold: 2, dps: 106.24, se: 2 }] };
+		const tr = renderRow(legs, { ...CONTEXT, tip: { ranking, wornItemIds: worn, specId: 'feral' } });
+
+		vi.useFakeTimers();
+		try {
+			const figure = within(tr).getByRole('button', { name: '-94.1' });
+			fireEvent.mouseEnter(figure);
+			fireEvent.mouseMove(figure);
+			act(() => vi.advanceTimersByTime(1000));
+		} finally {
+			vi.useRealTimers();
+		}
+		const tip = screen.getByTestId('upgrades-set-bonus-tip');
+		expect(
+			within(tip)
+				.getAllByRole('term')
+				.map(term => term.textContent),
+		).toEqual(['Item stats', 'Breaks Thunderheart Harness 2pc', 'Total']);
+	});
+
+	it('shows a figure with nothing to itemise as plain text, not a button', () => {
+		expect(within(renderRow(fixtureRow(0))).queryByRole('button', { name: '+45.7' })).toBeNull();
 	});
 });

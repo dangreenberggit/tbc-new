@@ -6,6 +6,7 @@ import type { RankedItem } from '../../model/engine/rank';
 import { setBonusTipLines } from '../../model/set_bonus_tip';
 import { formatDelta, formatDps, simSlotLabel } from '../../utils/format';
 import { setBonusSubLineText } from '../../utils/set_bonus_labels';
+import { SetBonusPopover } from '../SetBonusPopover';
 import type { RowContext } from './ResultRow';
 
 export interface DeltaCellProps {
@@ -16,8 +17,8 @@ export interface DeltaCellProps {
 /**
  * The DPS change, with at most three short notes under it: that the row has
  * set-bonus detail, which worn item a two-item swap removes, and that only the
- * percentage rule admitted the row (ticket 254). K3 makes the figure the
- * set-bonus popover's trigger. `memo`: see `ResultRow`.
+ * percentage rule admitted the row (ticket 254). A figure with set-bonus detail
+ * is the trigger of the popover that itemises it. `memo`: see `ResultRow`.
  */
 export const DeltaCell = memo(({ row, context }: DeltaCellProps) => {
 	const tip = setBonusTipLines(row, context.tip);
@@ -27,7 +28,7 @@ export const DeltaCell = memo(({ row, context }: DeltaCellProps) => {
 	return (
 		<td className="py-1 pr-3 text-right whitespace-nowrap tabular-nums">
 			<span className="grid justify-items-end">
-				{formatDelta(row.deltaDps)}
+				{tip ? <SetBonusPopover tip={tip}>{formatDelta(row.deltaDps)}</SetBonusPopover> : formatDelta(row.deltaDps)}
 				{tip && (
 					<small className="text-muted" data-testid="upgrades-set-bonus">
 						{setBonusSubLineText(tip.subLine)}

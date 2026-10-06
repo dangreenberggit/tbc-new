@@ -101,3 +101,22 @@ export const setBonusTipText = (tip: SetBonusTip): TipTextRow[] =>
 			total: entry.label.kind === 'total',
 		};
 	});
+
+export type TipLineRow = Extract<TipTextRow, { type: 'line' }>;
+
+/** The popover's lines grouped under their headings; lines before the first heading form an untitled section. */
+export type TipSection = { heading?: string; lines: TipLineRow[] };
+
+export function tipSections(rows: readonly TipTextRow[]): TipSection[] {
+	const sections: TipSection[] = [];
+	for (const row of rows) {
+		if (row.type === 'heading') {
+			sections.push({ heading: row.text, lines: [] });
+			continue;
+		}
+		const last = sections.at(-1);
+		if (last) last.lines.push(row);
+		else sections.push({ lines: [row] });
+	}
+	return sections;
+}

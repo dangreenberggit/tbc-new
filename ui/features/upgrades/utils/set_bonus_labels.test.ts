@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import englishTranslations from '../../../../assets/locales/en/translation.json';
 import { setBonusTipLines, type TipLabel } from '../model/set_bonus_tip';
 import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
-import { setBonusSubLineText, setBonusTipText, tipLabelText } from './set_bonus_labels';
+import { setBonusSubLineText, setBonusTipText, tipLabelText, tipSections } from './set_bonus_labels';
 
 beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations, true, true));
 afterAll(() => i18n.removeResourceBundle('en', 'translation'));
@@ -81,5 +81,17 @@ describe('tipLabelText', () => {
 describe('setBonusSubLineText', () => {
 	it('prints the DPS cell’s hint line', () => {
 		expect(setBonusSubLineText('hover_hint')).toBe('set detail');
+	});
+});
+
+describe('tipSections', () => {
+	it('starts a new section at each heading and keeps the lines before the first heading in an untitled one', () => {
+		const line = (label: string) => ({ type: 'line' as const, label, value: '+1.0', total: false });
+		const sections = tipSections([line('a'), { type: 'heading', text: 'Set potential' }, line('b'), line('c')]);
+		expect(sections).toEqual([{ lines: [line('a')] }, { heading: 'Set potential', lines: [line('b'), line('c')] }]);
+	});
+
+	it('gives a popover that opens on a heading no untitled section', () => {
+		expect(tipSections([{ type: 'heading', text: 'Outcomes' }])).toEqual([{ heading: 'Outcomes', lines: [] }]);
 	});
 });
