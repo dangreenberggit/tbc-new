@@ -22,7 +22,7 @@ export const SetBonusPopover = ({ tip, children }: SetBonusPopoverProps) => (
 		triggerClassName="cursor-help text-inherit underline decoration-dotted underline-offset-2 [font:inherit] focus-visible:focus-ring"
 		openOnHover
 		side="right"
-		maxWidth="max-w-[min(30rem,var(--available-width))]"
+		maxWidth="max-w-[min(30rem,calc(100vw-1rem))]"
 		testId="upgrades-set-bonus-tip">
 		<div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 text-left">
 			{tipSections(setBonusTipText(tip)).map(section => (
