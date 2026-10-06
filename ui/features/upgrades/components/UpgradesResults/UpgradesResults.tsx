@@ -6,7 +6,7 @@ import { landedRows, resultsViewFor } from '../../model/results_view';
 import type { RunState } from '../../model/run_reducer';
 import { EmptyState } from '../EmptyState';
 import { ResultsPanes } from '../ResultsPanes';
-import { ResultsTable, type RowContext } from '../ResultsTable';
+import { PlainResultsHead, ResultRows, ResultsTable, type RowContext } from '../ResultsTable';
 
 export interface UpgradesResultsProps {
 	run: RunState;
@@ -33,7 +33,10 @@ export const UpgradesResults = ({ run }: UpgradesResultsProps) => {
 			return <EmptyState title={i18n.t('upgrades_tab.results.empty_no_ranking')} body={i18n.t('upgrades_tab.results.empty_no_ranking_body')} />;
 		case 'running':
 			return run.landedRows.length > 0 ? (
-				<ResultsTable rows={landedRows(run.landedRows)} rowContext={rowContext} provisional />
+				<ResultsTable data-provisional="true">
+					<PlainResultsHead />
+					<ResultRows rows={landedRows(run.landedRows)} rowContext={rowContext} />
+				</ResultsTable>
 			) : (
 				<EmptyState body={i18n.t('upgrades_tab.results.rows_pending')} />
 			);

@@ -4,7 +4,7 @@ import type { RankedItem } from '../../model/engine/rank';
 import type { ResultsSort, ResultsSortKey } from '../../model/results_sort';
 import { BelowCutoffGroup } from '../BelowCutoffGroup';
 import { EmptyState } from '../EmptyState';
-import { ResultsTable, type RowContext } from '../ResultsTable';
+import { ResultRows, ResultsTable, type RowContext, SortableResultsHead } from '../ResultsTable';
 
 export interface ResultsPaneProps {
 	shortlist: readonly RankedItem[];
@@ -18,7 +18,10 @@ export interface ResultsPaneProps {
 export const ResultsPane = ({ shortlist, belowCutoff, rowContext, sort, onSort }: ResultsPaneProps) => (
 	<>
 		{shortlist.length > 0 ? (
-			<ResultsTable rows={shortlist} rowContext={rowContext} sort={sort} onSort={onSort} />
+			<ResultsTable>
+				<SortableResultsHead sort={sort} onSort={onSort} />
+				<ResultRows rows={shortlist} rowContext={rowContext} sort={sort} />
+			</ResultsTable>
 		) : (
 			<EmptyState title={i18n.t('upgrades_tab.results.empty_no_upgrades')} body={i18n.t('upgrades_tab.results.empty_no_upgrades_body')} />
 		)}

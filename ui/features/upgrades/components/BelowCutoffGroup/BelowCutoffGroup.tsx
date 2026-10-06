@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
 import type { ResultsSort } from '../../model/results_sort';
-import { ResultsTable, type RowContext } from '../ResultsTable';
+import { ResultRows, ResultsTable, type RowContext } from '../ResultsTable';
 
 export interface BelowCutoffGroupProps {
 	rows: readonly RankedItem[];
@@ -26,7 +26,9 @@ export const BelowCutoffGroup = ({ rows, rowContext, sort }: BelowCutoffGroupPro
 	return (
 		<Accordion value={open} onValueChange={setOpen}>
 			<AccordionItem value={GROUP} testId="upgrades-below-cutoff" title={i18n.t('upgrades_tab.results.below_cutoff_group', { count: rows.length })}>
-				<ResultsTable rows={rows} rowContext={rowContext} sort={sort} headless />
+				<ResultsTable>
+					<ResultRows rows={rows} rowContext={rowContext} sort={sort} />
+				</ResultsTable>
 			</AccordionItem>
 		</Accordion>
 	);
