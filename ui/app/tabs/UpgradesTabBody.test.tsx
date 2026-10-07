@@ -1,3 +1,4 @@
+import type { EligibleCountProps } from '@features/upgrades/components/EligibleCount';
 import type { FixtureAutoloadOptions } from '@features/upgrades/hooks/useFixtureAutoload';
 import type { PoolEntry } from '@features/upgrades/model/engine/pool';
 import type { RunDeps } from '@features/upgrades/model/run';
@@ -65,6 +66,17 @@ vi.mock('@sim/hooks/useSimReady', () => ({ useSimReady: () => true }));
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
 vi.mock('@features/upgrades/components/RowToggles', () => ({ FavoriteToggle: () => null, BatchToggle: () => null }));
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
+/** The run card's renders, counted through a child it always renders and that is not itself memoised. */
+const runCard = { renders: 0 };
+vi.mock('@features/upgrades/components/EligibleCount', async importOriginal => {
+	const { EligibleCount } = await importOriginal<typeof import('@features/upgrades/components/EligibleCount')>();
+	return {
+		EligibleCount: (props: EligibleCountProps) => {
+			runCard.renders++;
+			return <EligibleCount {...props} />;
+		},
+	};
+});
 
 const { UpgradesTabBody } = await import('./UpgradesTabBody');
 const { useUpgradesSettings } = await import('@features/upgrades/hooks/useUpgradesSettings');
@@ -185,6 +197,18 @@ describe('UpgradesTabBody', () => {
 		expect(screen.getByTestId('upgrades-baseline-summary').textContent).toMatch(/^Stopped early\./);
 		expect(tableRows()).toHaveLength(2);
 		expect(screen.queryByTestId('upgrades-run-progress')).toBeNull();
+	});
+
+	// Nothing the run card shows changes while rows land, so a landed row must not render it again (review K2-4).
+	it('does not render the run card again for a row a run lands', () => {
+		mount();
+		const run = clickRun();
+		const rendersWhileRunning = runCard.renders;
+
+		act(() => run.deps.onLanded(rowA));
+		act(() => run.deps.onLanded(rowB));
+		expect(tableRows()).toHaveLength(2);
+		expect(runCard.renders).toBe(rendersWhileRunning);
 	});
 
 	it('shows the whole ranking and how long it took when the run finishes', async () => {

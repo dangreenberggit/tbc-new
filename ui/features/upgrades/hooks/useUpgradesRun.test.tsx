@@ -1,5 +1,6 @@
 import { Spec } from '@generated/proto/common';
 import { SimHostProvider } from '@sim/context/SimHostContext';
+import { createSimStore } from '@sim/state/sim_store';
 import { fakeHost } from '@sim/testing';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -40,10 +41,13 @@ const controllableRun = () => {
 
 /** A fresh page per case, so each case gets its own tab store (the store is keyed by the page's `Sim`). */
 const mount = (runFn: RunFn) => {
-	const host = fakeHost({ player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin } });
+	const host = fakeHost({
+		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
+		sim: { store: createSimStore() },
+	});
 	const wrapper = ({ children }: { children: ReactNode }) => <SimHostProvider host={host}>{children}</SimHostProvider>;
 	const view = renderHook(() => useUpgradesRun(runFn), { wrapper });
-	return { ...view, run: () => upgradesStoreFor(host.sim).getState().run };
+	return { ...view, run: () => upgradesStoreFor(host).getState().run };
 };
 
 beforeEach(() => {

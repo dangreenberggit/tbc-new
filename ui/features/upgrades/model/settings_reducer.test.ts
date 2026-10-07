@@ -70,6 +70,31 @@ describe('settingsReducer', () => {
 		const next = apply(excluded, { type: 'applyDefaults', key: 'ret:2', selectedSetKeys: [], validSourceKeys: ['Crafted', 'Badge vendor'] });
 		expect(next.excludedSources).toEqual(['Crafted']);
 	});
+
+	it('forgets the applied defaults and the picked sets when the scope changes, so the new scope’s defaults apply even after a deselect', () => {
+		const deselected = apply(
+			seeded(),
+			{ type: 'applyDefaults', key: 'ret:3', selectedSetKeys: ['preset:3:P3'], validSourceKeys: [] },
+			{ type: 'toggleSet', key: 'preset:3:P3' },
+		);
+		const changed = apply(deselected, { type: 'scopeChanged', validSourceKeys: [] });
+		expect(changed).toMatchObject({ selectedSetKeys: [], defaultsFor: undefined });
+
+		const back = apply(changed, { type: 'applyDefaults', key: 'ret:3', selectedSetKeys: ['preset:3:P3'], validSourceKeys: [] });
+		expect(back).toMatchObject({ selectedSetKeys: ['preset:3:P3'], defaultsFor: 'ret:3' });
+	});
+
+	it('drops on a scope change only the exclusions the new pool does not offer, and keeps the other settings', () => {
+		const edited = apply(
+			seeded(),
+			{ type: 'toggleSource', key: 'Hyjal Summit' },
+			{ type: 'toggleSource', key: 'Black Temple' },
+			{ type: 'setPrune', prune: true },
+			{ type: 'setIterations', iterations: 2000 },
+		);
+		const changed = apply(edited, { type: 'scopeChanged', validSourceKeys: ['Black Temple', 'Zul’Aman'] });
+		expect(changed).toMatchObject({ excludedSources: ['Black Temple'], prune: true, iterations: 2000 });
+	});
 });
 
 describe('pruneEffective', () => {

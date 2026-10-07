@@ -14,6 +14,7 @@ import { selectRunFn } from '@features/upgrades/utils/select_run_fn';
 import { useSim } from '@sim/context/SimHostContext';
 import { useSimReady } from '@sim/hooks/useSimReady';
 import { TabPanelColumns } from '@ui-kit/TabPanelColumns';
+import { useCallback } from 'react';
 
 // Chosen once: the flags are read once per page load, and a production build always gets the live run.
 const RUN_FN = selectRunFn(DEV_FLAGS);
@@ -24,9 +25,12 @@ export const UpgradesTabBody = () => {
 	const run = useUpgradesStore(selectRun);
 	const { start, stop, loadFixture } = useUpgradesRun(RUN_FN);
 	const settings = useUpgradesSettings();
-	const stale = useRunStale(settings.runSettings);
-	// Read when Run is clicked or a fixture lands, so it records the page as it is then.
-	const signatureNow = () => inputsSignature({ liveKey: liveInputsKey(sim), settings: settings.runSettings });
+	const { runSettings } = settings;
+	const stale = useRunStale(runSettings);
+	// Read when Run is clicked or a fixture lands, so it records the page as it is then. Memoised with `onStart`, so
+	// a row a run lands hands the run card, a `memo` component, the same handler (review K2-4).
+	const signatureNow = useCallback(() => inputsSignature({ liveKey: liveInputsKey(sim), settings: runSettings }), [sim, runSettings]);
+	const onStart = useCallback(() => start(runSettings, signatureNow()), [start, runSettings, signatureNow]);
 	useFixtureAutoload({ onLoaded: ranking => loadFixture(ranking, signatureNow()), currentRanking: () => shownRanking(run) });
 
 	return (
@@ -47,7 +51,7 @@ export const UpgradesTabBody = () => {
 						ready={ready}
 						running={run.status === 'running'}
 						devVisible={DEV_FLAGS.dev ?? false}
-						onStart={() => start(settings.runSettings, signatureNow())}
+						onStart={onStart}
 					/>
 				</div>
 			</TabPanelColumns.Right>

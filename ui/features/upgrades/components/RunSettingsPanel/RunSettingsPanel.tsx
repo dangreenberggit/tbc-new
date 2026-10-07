@@ -1,7 +1,7 @@
 import i18n from '@i18n/config';
 import { Button } from '@ui-kit/Button';
 import clsx from 'clsx';
-import { useId, useState } from 'react';
+import { memo, useId, useState } from 'react';
 
 import type { UpgradesSettings } from '../../hooks/useUpgradesSettings';
 import { CandidateCapPicker } from '../CandidateCapPicker';
@@ -24,9 +24,10 @@ export interface RunSettingsPanelProps {
 /**
  * The run card. Below `xl` the settings sit behind a summary button, so a
  * phone does not scroll past them to reach the results; the eligible count
- * and Run stay outside it and never collapse (ticket 321).
+ * and Run stay outside it and never collapse (ticket 321). Memoised: the tab
+ * renders again for every row a run lands, which changes none of its props.
  */
-export const RunSettingsPanel = ({ settings, ready, running, devVisible, onStart }: RunSettingsPanelProps) => {
+export const RunSettingsPanel = memo(({ settings, ready, running, devVisible, onStart }: RunSettingsPanelProps) => {
 	const [open, setOpen] = useState(false);
 	const bodyId = useId();
 	return (
@@ -61,4 +62,4 @@ export const RunSettingsPanel = ({ settings, ready, running, devVisible, onStart
 			<RunControls ready={ready} running={running} store={settings.store} onIterationsChange={settings.setIterations} onStart={onStart} />
 		</div>
 	);
-};
+});

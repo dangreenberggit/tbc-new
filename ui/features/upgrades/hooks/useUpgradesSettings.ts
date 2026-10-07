@@ -65,7 +65,9 @@ export function useUpgradesSettings(): UpgradesSettings {
 	// Memoised on the picked sets alone, so it keeps its identity while other settings change: the results
 	// area builds its row badges from it, and a new selection renders every row again.
 	const selection = useMemo(() => setSelection(offer, state.selectedSetKeys, phase), [offer, state.selectedSetKeys, phase]);
-	const runSettings = runSettingsOf(selection, state);
+	// Memoised, as is the result below, so a render that changes no setting (a row a run lands) hands the run card
+	// the same settings and its `memo` skips the render (review K2-4).
+	const runSettings = useMemo(() => runSettingsOf(selection, state), [selection, state]);
 	const { excludedSources } = state;
 	const prune = runSettings.prune ?? false;
 	// Memoised for the same renders, on the pool filters alone: the effective pool is a filter over the whole pool,
@@ -75,22 +77,23 @@ export function useUpgradesSettings(): UpgradesSettings {
 		[offer, excludedSources, selection, prune, phase],
 	);
 
-	const write = (action: SettingsAction) => settingsActionIn(store, scope, defaultsOf(offer), action);
-
-	return {
-		selectedOptions: selection.selectedOptions,
-		selectedKeys: selection.selectedKeys,
-		chips: selection.chips,
-		runSettings,
-		sources: offer.sources,
-		excludedSources,
-		prune: state.prune,
-		eligibleCount: specId ? eligibleCount : undefined,
-		store,
-		toggleSource: key => write({ type: 'toggleSource', key }),
-		toggleSet: key => write({ type: 'toggleSet', key }),
-		setPrune: prune => write({ type: 'setPrune', prune }),
-		setIterations: iterations => write({ type: 'setIterations', iterations }),
-		setCandidateCap: cap => write({ type: 'setCandidateCap', cap }),
-	};
+	return useMemo((): UpgradesSettings => {
+		const write = (action: SettingsAction) => settingsActionIn(store, scope, defaultsOf(offer), action);
+		return {
+			selectedOptions: selection.selectedOptions,
+			selectedKeys: selection.selectedKeys,
+			chips: selection.chips,
+			runSettings,
+			sources: offer.sources,
+			excludedSources,
+			prune: state.prune,
+			eligibleCount: specId ? eligibleCount : undefined,
+			store,
+			toggleSource: key => write({ type: 'toggleSource', key }),
+			toggleSet: key => write({ type: 'toggleSet', key }),
+			setPrune: prune => write({ type: 'setPrune', prune }),
+			setIterations: iterations => write({ type: 'setIterations', iterations }),
+			setCandidateCap: cap => write({ type: 'setCandidateCap', cap }),
+		};
+	}, [selection, runSettings, offer, excludedSources, state.prune, specId, eligibleCount, store, scope]);
 }

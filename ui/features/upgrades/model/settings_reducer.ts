@@ -24,7 +24,8 @@ export type SettingsAction =
 	| { type: 'setPrune'; prune: boolean }
 	| { type: 'setCandidateCap'; cap: number | undefined }
 	| { type: 'setIterations'; iterations: number }
-	| { type: 'applyDefaults'; key: string; selectedSetKeys: readonly string[]; validSourceKeys: readonly string[] };
+	| { type: 'applyDefaults'; key: string; selectedSetKeys: readonly string[]; validSourceKeys: readonly string[] }
+	| { type: 'scopeChanged'; validSourceKeys: readonly string[] };
 
 /** The old tab's cap field read 0 as "no cap" (C6). */
 const normaliseCap = (cap: number | undefined): number | undefined => (cap !== undefined && cap > 0 ? cap : undefined);
@@ -63,6 +64,14 @@ export function settingsReducer(state: SettingsState, action: SettingsAction): S
 				excludedSources: state.excludedSources.filter(key => valid.has(key)),
 				defaultsFor: action.key,
 			};
+		}
+		case 'scopeChanged': {
+			// The page moved to another spec:phase, which gets its own default sets
+			// when next applied, as on the old tab whatever the user had picked. An
+			// exclusion the new pool does not offer is dropped now, so it stays
+			// dropped on the way back, as when the old tab applied that phase.
+			const valid = new Set(action.validSourceKeys);
+			return { ...state, selectedSetKeys: [], excludedSources: state.excludedSources.filter(key => valid.has(key)), defaultsFor: undefined };
 		}
 	}
 }

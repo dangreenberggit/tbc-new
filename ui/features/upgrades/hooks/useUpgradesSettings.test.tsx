@@ -7,6 +7,7 @@ import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { PoolEntry } from '../model/engine/pool';
+import type { UpgradesSettings } from './useUpgradesSettings';
 
 const entry = (itemId: number, zone: string, phase: number, bis = false): PoolEntry => ({
 	itemId,
@@ -44,7 +45,7 @@ const mount = (spec = Spec.SpecRetributionPaladin) => {
 	patchSlice(store, 'sim', { phase: 3 });
 	const host = fakeHost({
 		player: { getSpec: () => spec },
-		sim: { store },
+		sim: { store, getPhase: () => store.getState().sim.phase },
 		individualConfig: { presets: { gear: PRESETS } },
 		getSavedGearStorageKey: () => 'upgrades-settings-test-gear',
 	});
@@ -53,7 +54,7 @@ const mount = (spec = Spec.SpecRetributionPaladin) => {
 	return {
 		view: render(),
 		render,
-		tabStore: upgradesStoreFor(host.sim),
+		tabStore: upgradesStoreFor(host),
 		setPhase: (phase: number) => act(() => patchSlice(store, 'sim', { phase })),
 	};
 };
@@ -115,7 +116,7 @@ describe('useUpgradesSettings', () => {
 		expect(tabStore.getState().settings.defaultsFor).toBeUndefined();
 	});
 
-	it('shows the new phase’s defaults right after a phase change, with no write', () => {
+	it('shows the new phase’s defaults right after a phase change, before the tab writes them', () => {
 		const { view, setPhase, tabStore } = mount();
 		setPhase(4);
 		expect(selectedKeys(view.result.current)).toEqual(['preset:4:P4']);
@@ -134,6 +135,36 @@ describe('useUpgradesSettings', () => {
 		setPhase(4);
 		expect(selectedKeys(other.result.current)).toEqual(['preset:4:P4']);
 		expect(other.result.current.runSettings).toEqual(view.result.current.runSettings);
+	});
+
+	// As on the old tab, which applied each phase's defaults on every phase change (bb6d447aa
+	// `useUpgradesSettings.ts:76-79`), the result must not depend on an unrelated edit in between (review K2-1).
+	it.each([
+		{ path: 'with no edit at phase 4', editAtPhase4: () => {} },
+		{ path: 'with an iterations edit at phase 4', editAtPhase4: (settings: UpgradesSettings) => settings.setIterations(2000) },
+	])('selects the phase’s default sets again after a round trip to another phase, $path', ({ editAtPhase4 }) => {
+		const { view, render, setPhase } = mount();
+		const outside = render();
+		const expectAgreement = () => expect(outside.result.current.runSettings).toEqual(view.result.current.runSettings);
+		act(() => {
+			view.result.current.toggleSet('preset:3:P3');
+			view.result.current.toggleSource('Hyjal Summit');
+			view.result.current.toggleSource('Black Temple');
+		});
+		expect(selectedKeys(view.result.current)).toEqual([]);
+		expectAgreement();
+
+		setPhase(4);
+		act(() => editAtPhase4(view.result.current));
+		expect(selectedKeys(view.result.current)).toEqual(['preset:4:P4']);
+		// Phase 4's pool offers Black Temple but not Hyjal Summit.
+		expect(view.result.current.excludedSources).toEqual(['Black Temple']);
+		expectAgreement();
+
+		setPhase(3);
+		expect(selectedKeys(view.result.current)).toEqual(['preset:3:P3']);
+		expect(view.result.current.excludedSources).toEqual(['Black Temple']);
+		expectAgreement();
 	});
 
 	it('keeps the selected sets’ identity while only other settings change, so the row badges do not render again', () => {
