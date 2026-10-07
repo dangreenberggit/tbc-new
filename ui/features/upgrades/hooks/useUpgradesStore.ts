@@ -1,5 +1,6 @@
 import { useSim } from '@sim/context/SimHostContext';
 import type { Sim } from '@sim/sim';
+import type { StoreSubscribe } from '@sim/state/subscriptions';
 import { useStore } from 'zustand';
 
 import { DEFAULT_ITERATIONS } from '../model/run_reducer';
@@ -28,6 +29,20 @@ export function upgradesStoreFor(sim: Sim): UpgradesStore {
 }
 
 export const useUpgradesStoreApi = (): UpgradesStore => upgradesStoreFor(useSim());
+
+/**
+ * A number picker's change source and read for one tab setting, with the tab
+ * store as its model. It rings on that field alone, so a row a run lands does
+ * not rewrite the field. Writes go through `useUpgradesSettings`, which
+ * applies the scope's default sets first.
+ */
+export const numberSettingSource = (field: 'iterations' | 'candidateCap') => ({
+	storeSubscribe:
+		(store: UpgradesStore): StoreSubscribe =>
+		listener =>
+			store.subscribe(state => state.settings[field], listener),
+	getValue: (store: UpgradesStore): number => store.getState().settings[field] ?? 0,
+});
 
 /** A read of the tab's run state, the way `useBulkState` reads the Bulk tab's slice. */
 export const useUpgradesStore = <T>(selector: (state: UpgradesState) => T): T => useStore(useUpgradesStoreApi(), selector);

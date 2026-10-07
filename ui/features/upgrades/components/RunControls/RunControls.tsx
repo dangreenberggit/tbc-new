@@ -2,7 +2,10 @@ import i18n from '@i18n/config';
 import { Button } from '@ui-kit/Button';
 import { NumberPicker } from '@ui-kit/NumberPicker';
 
+import { numberSettingSource } from '../../hooks/useUpgradesStore';
 import type { UpgradesStore } from '../../model/upgrades_store';
+
+const ITERATIONS = numberSettingSource('iterations');
 
 export interface RunControlsProps {
 	ready: boolean;
@@ -23,10 +26,8 @@ export const RunControls = ({ ready, running, store, onIterationsChange, onStart
 				id: 'upgrades-iterations',
 				label: i18n.t('upgrades_tab.iterations_label'),
 				positive: true,
-				// The iterations alone, so a row a run lands does not ring the field.
-				storeSubscribe: tabStore => listener => tabStore.subscribe(state => state.settings.iterations, listener),
-				getValue: tabStore => tabStore.getState().settings.iterations,
-				setValue: (_tabStore, next) => onIterationsChange(next),
+				...ITERATIONS,
+				setValue: (_store, next) => onIterationsChange(next),
 			}}
 		/>
 		<Button data-testid="upgrades-run-button" disabled={!ready || running} onClick={onStart}>

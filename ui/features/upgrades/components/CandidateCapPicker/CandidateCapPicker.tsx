@@ -1,7 +1,10 @@
 import i18n from '@i18n/config';
 import { NumberPicker } from '@ui-kit/NumberPicker';
 
+import { numberSettingSource } from '../../hooks/useUpgradesStore';
 import type { UpgradesStore } from '../../model/upgrades_store';
+
+const CANDIDATE_CAP = numberSettingSource('candidateCap');
 
 export interface CandidateCapPickerProps {
 	/** The tab's store, which the picker reads the cap back from. */
@@ -19,10 +22,8 @@ export const CandidateCapPicker = ({ store, onCapChange }: CandidateCapPickerPro
 			label: i18n.t('upgrades_tab.candidates_label'),
 			positive: true,
 			showZeroes: false,
-			// The cap alone, so a row a run lands does not ring the field.
-			storeSubscribe: tabStore => listener => tabStore.subscribe(state => state.settings.candidateCap, listener),
-			getValue: tabStore => tabStore.getState().settings.candidateCap ?? 0,
-			setValue: (_tabStore, next) => onCapChange(next),
+			...CANDIDATE_CAP,
+			setValue: (_store, next) => onCapChange(next),
 		}}
 	/>
 );

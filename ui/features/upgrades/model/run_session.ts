@@ -67,7 +67,10 @@ const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'substitutions'>, 
  */
 export function createRunSession(store: UpgradesStore, host: IndividualSimHost<Spec>, runFn: RunFn, env: RunSessionEnv): RunSession {
 	let controller: AbortController | null = null;
-	let runId = 0;
+	// From the store, which outlives a session: a remount mid-run builds a new session, and the old run's late
+	// callbacks must still read as superseded.
+	const stored = store.getState().run;
+	let runId = stored.status === 'idle' ? 0 : stored.runId;
 	let context: RunContext | null = null;
 
 	const start = (settings: RunSettings, inputsSignature: string) => {

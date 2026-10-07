@@ -51,9 +51,8 @@ const settled = () => new Promise(resolve => setTimeout(resolve, 0));
 /** The page's gear, which a test changes between a click and a settle. */
 let equipped: Array<{ id: number } | null> = [];
 
-const setup = () => {
+const setup = (store = createUpgradesStore({ iterations: 3000 })) => {
 	const { runFn, call } = controllableRun();
-	const store = createUpgradesStore({ iterations: 3000 });
 	const host = fakeHost({ player: { getGear: () => ({ getEquippedItems: () => equipped }), getSpec: () => Spec.SpecRetributionPaladin } });
 	const session = createRunSession(store, host, runFn, ENV);
 	return { store, session, call, run: () => store.getState().run };
@@ -180,5 +179,19 @@ describe('createRunSession', () => {
 		expect(run()).toMatchObject({ landedRows: [rowA] });
 		call(1).settle({ ...RANKING_FIXTURE, durationMs: 1 });
 		await vi.waitFor(() => expect(run().status).toBe('done'));
+	});
+
+	it('continues the store’s run ids in a new session, so an older session’s late row is dropped (remount mid-run)', () => {
+		const first = setup();
+		first.session.start(SETTINGS, SIGNATURE);
+		first.session.dispose();
+
+		const second = setup(first.store);
+		second.session.start(SETTINGS, SIGNATURE);
+		first.call(0).deps.onLanded(rowA);
+		expect(second.run()).toMatchObject({ status: 'running', runId: 2, landedRows: [] });
+
+		second.call(0).deps.onLanded(rowB);
+		expect(second.run()).toMatchObject({ status: 'running', runId: 2, landedRows: [rowB] });
 	});
 });
