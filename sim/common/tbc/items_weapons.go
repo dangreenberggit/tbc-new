@@ -250,7 +250,7 @@ func init() {
 	core.NewItemSet(core.ItemSet{
 		Name: "The Twin Blades of Azzinoth",
 		// Without this the set gets DefaultItemSetSlots (armor only), so its
-		// status aura never re-checks on a weapon swap (ticket 540).
+		// status aura never re-checks on a weapon swap (tbc-gear-prio ticket 540).
 		Slots: core.AllMeleeWeaponSlots(),
 		Bonuses: map[int32]core.ApplySetBonus{
 			2: func(agent core.Agent, setBonusAura *core.Aura) {

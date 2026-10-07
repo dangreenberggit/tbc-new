@@ -75,9 +75,6 @@ const getSharedWasmModule = (): Promise<WebAssembly.Module> => {
 };
 export type WorkerProgressCallback = (progressMetrics: ProgressMetrics) => void;
 
-/** The id a worker streams an async request's progress under (`ui/worker/worker_interface.ts`). */
-const progressIdOf = (id: string) => `${id}progress`;
-
 /**
  * Create random id for requests.
  * @param type The request type to prepend.
@@ -153,7 +150,7 @@ export class WorkerPool {
 	}
 
 	private getProgressName(id: string) {
-		return progressIdOf(id);
+		return `${id}progress`;
 	}
 
 	async statWeightsAsync(request: StatWeightsRequest, onProgress: WorkerProgressCallback, signals: SimSignals): Promise<StatWeightsResult> {
@@ -558,7 +555,8 @@ class SimWorker {
 
 	private hasWaitersOtherThan(id: string): boolean {
 		if (this.readyWaiters.size > 0) return true;
-		const progressId = progressIdOf(id);
+		// The id the worker streams this request's progress under, as `WorkerPool.getProgressName` names it.
+		const progressId = `${id}progress`;
 		return Object.keys(this.taskIdsToPromiseFuncs).some(key => key !== id && key !== progressId);
 	}
 

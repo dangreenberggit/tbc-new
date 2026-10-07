@@ -12,7 +12,7 @@ var ItemSetBoldArmor = core.NewItemSet(core.ItemSet{
 	Name: "Bold Armor",
 	Bonuses: map[int32]core.ApplySetBonus{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
-			// Ticket 532 (this repo): a paladin can wear this plate set.
+			// tbc-gear-prio ticket 532: a paladin can wear this plate set.
 			// Class-mask bits are per class, so on a paladin SpellMaskShouts
 			// cuts the cost of unrelated paladin spells.
 			if _, ok := agent.(WarriorAgent); !ok {

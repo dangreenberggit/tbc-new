@@ -64,7 +64,7 @@ var ItemSetMoongladeRaiment = core.NewItemSet(core.ItemSet{
 		},
 		// Reduces the mana cost of all shapeshifting by 25%.
 		4: func(agent core.Agent, setBonusAura *core.Aura) {
-			// Ticket 532 (this repo): other classes can wear this leather
+			// tbc-gear-prio ticket 532: other classes can wear this leather
 			// set. Class-mask bits are per class, so on them these bits cut
 			// the cost of unrelated spells, such as warrior Slam.
 			if _, ok := agent.(DruidAgent); !ok {

@@ -14,7 +14,7 @@ var ItemSetCryptstalkerArmor = core.NewItemSet(core.ItemSet{
 	Bonuses: map[int32]core.ApplySetBonus{
 		// (2) Set: Increases the duration of your Rapid Fire by 4 secs.
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
-			// Ticket 532 (this repo): class-mask bits are per class, so on
+			// tbc-gear-prio ticket 532: class-mask bits are per class, so on
 			// another class HunterSpellRapidFire's bit names a spell such
 			// as warrior Charge, which has no RelatedSelfBuff for
 			// BuffDuration_Flat to extend, and the sim panics.

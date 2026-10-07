@@ -38,7 +38,7 @@ export const SimTabsSection = memo(({ host }: SimTabsSectionProps) => (
 				<TalentsTabBody />
 			</SimTabPane>
 		</SimTabDef>
-		{/* The four tabs that only mean something once a sim has run. A gear planner never runs one. */}
+		{/* The three tabs that only mean something once a sim has run. A gear planner never runs one. */}
 		{!host.simDisabled && (
 			<>
 				<SimTabDef id="rotation-tab" title={i18n.t('rotation_tab.title')}>
