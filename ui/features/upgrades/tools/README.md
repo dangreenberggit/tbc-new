@@ -110,18 +110,14 @@ landed row count every 500 ms from the Run click to the end of the run; with it,
 `--out` names a directory that gets `result.json` and `tail.jsonl`,
 `--force-fallback`, which installs a one-shot `window.Worker` throw so the tab's
 transport probe fails and it falls back to the WASM runner over HTTP — the
-gate's screen-check twin and its forced-fallback negative — and `--bulk-http`,
-which sets the `upgradesTab.runner` localStorage key before navigation so the
-tab selects the Go bulk runner. `--bulk-http` and `--iterations` exist for ticket
-411's wall-clock measurement only; the shipped default is the per-candidate loop
-at 3000 iterations, and a fresh Chromium profile per launch keeps the key from
-leaking between runs.
+gate's screen-check twin and its forced-fallback negative. `--iterations` exists
+for ticket 411's wall-clock measurement; the shipped default is 3000 iterations.
 
 Two timing fields are recorded on every run: **`firstRowS`** — Run click to the
 first `[data-testid="upgrades-result-row"]` (via a
 `MutationObserver` installed before the click; `null` if no row lands) — and
-**`clickToDoneS`** — click to the `Took` status. Two request-selection fields
-echo the flags: **`iterationsRequested`** and **`bulkHttpRequested`**.
+**`clickToDoneS`** — click to the `Took` status. **`iterationsRequested`** echoes
+the `--iterations` flag.
 
 Ticket 522's cold-worker check adds opt-in flags. Without them the run is
 unchanged:

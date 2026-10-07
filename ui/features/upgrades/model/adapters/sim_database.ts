@@ -73,7 +73,7 @@ export function simDatabaseResolverFor(
 ): (equipment: readonly SimItemSpec[]) => Readonly<Record<string, unknown>> | undefined {
 	// The seam keeps the request opaque (`engine/seams/sim-runner.ts` header),
 	// so the path to the player is typed here, and `fromJson`'s `JsonValue`
-	// gets the same `Record<string, never>` cast `bulk_request_builder.ts` uses.
+	// gets a `Record<string, never>` cast.
 	const skeletonPlayer = (skeleton as { raid?: { parties?: Array<{ players?: Array<{ database?: unknown }> }> } }).raid?.parties?.[0]?.players?.[0];
 	const skeletonDb = SimDatabase.fromJson((skeletonPlayer?.database ?? {}) as Record<string, never>, { ignoreUnknownFields: true });
 	// A skeleton with no player database gives empty rows, which is what the
@@ -90,6 +90,8 @@ export function simDatabaseResolverFor(
 		const spec = EquipmentSpec.fromJson({ items: equipment.map(item => ({ ...item })) }, { ignoreUnknownFields: true });
 		const gear = db.lookupEquipmentSpec(spec);
 		const swap = player.itemSwapSettings.getGear().toDatabase(db);
-		return SimDatabase.toJson(Database.mergeSimDatabases(Database.mergeSimDatabases(gear.toDatabase(db), swap), pageRows)) as Readonly<Record<string, unknown>>;
+		return SimDatabase.toJson(Database.mergeSimDatabases(Database.mergeSimDatabases(gear.toDatabase(db), swap), pageRows)) as Readonly<
+			Record<string, unknown>
+		>;
 	};
 }

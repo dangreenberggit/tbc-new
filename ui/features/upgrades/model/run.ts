@@ -7,11 +7,10 @@
 import { Spec } from '@generated/proto/common';
 import type { IndividualSimHost } from '@sim/sim_host';
 
-import { makeSimRunner, type RunnerEnv } from './adapters/bulk_wasm_sim_runner';
 import { PlayerGearSource } from './adapters/player_gear_source';
 import { simDatabaseResolverFor } from './adapters/sim_database';
 import { currentPageSkeleton } from './adapters/skeleton';
-import type { WorkerPoolSimRunner } from './adapters/worker_pool_sim_runner';
+import { type RunnerEnv, workerCountFor, WorkerPoolSimRunner } from './adapters/worker_pool_sim_runner';
 import { epWeightsFor, poolFor } from './data/data';
 import { type Progress, type RankedItem, RankError, type RankInput, rankUpgrades } from './engine/rank';
 import { MemoryStore } from './engine/seams/store';
@@ -61,11 +60,9 @@ export const specIdFor = (spec: Spec): SpecId | undefined => SPEC_ID_BY_PROTO_SP
 /**
  * One runner and one store per mounted tab, not per run: each worker is a WASM
  * instantiation, and the store's job is to reuse identical sims across runs.
- * The runner is built with bulk screening off, so the engine takes its
- * per-candidate path.
  */
 export function createRunContext(env: RunnerEnv): RunContext {
-	const simRunner = makeSimRunner(env);
+	const simRunner = new WorkerPoolSimRunner(workerCountFor(env), env.deviceMemoryGiB);
 	return { simRunner, store: new MemoryStore(), terminate: () => simRunner.terminate() };
 }
 

@@ -8,8 +8,8 @@
 import type { Spec } from '@generated/proto/common';
 import type { IndividualSimHost } from '@sim/sim_host';
 
-import type { RunnerEnv } from './adapters/bulk_wasm_sim_runner';
 import { equippedItemIds } from './adapters/player_gear_source';
+import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
 import { type AssumptionsContext, assumptionsLine, substitutionConsoleLines } from './assumptions';
 import type { Ranking } from './engine/rank';
 import { clearProgress } from './progress_channel';

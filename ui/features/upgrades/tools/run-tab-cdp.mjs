@@ -22,13 +22,10 @@
 // Usage:
 //   node run-tab-cdp.mjs --origin http://localhost:3333 [--page /tbc/paladin/retribution/]
 //        [--phase 3] [--candidates N] [--iterations N] [--timeout-ms 2700000]
-//        [--out out.json] [--trace-tail] [--force-fallback] [--bulk-http]
+//        [--out out.json] [--trace-tail] [--force-fallback]
 //        [--preset-tab <name> --preset <chip|?>] [--wasm-concurrency N]
 //        [--capture-requests <dir> [--page-sim]]
 //
-// --bulk-http sets the `upgradesTab.runner` localStorage key before navigation so
-//   the tab selects the Go bulk runner (ticket 411 measurement only; the default
-//   is the per-candidate loop). Readback: bulkHttpRequested.
 // Every element is found by its data-testid (the React tab, ticket 560). The
 // phase defaults to 3, the page's own default phase; pass --phase for another.
 // --trace-tail samples the progress dialog's message and counter and the landed row count
@@ -74,7 +71,6 @@ function parseArgs(argv) {
 		out: null,
 		traceTail: false,
 		forceFallback: false,
-		bulkHttp: false,
 		presetTab: null,
 		preset: null,
 		wasmConcurrency: null,
@@ -92,7 +88,6 @@ function parseArgs(argv) {
 		else if (a === '--out') args.out = argv[++i];
 		else if (a === '--trace-tail') args.traceTail = true;
 		else if (a === '--force-fallback') args.forceFallback = true;
-		else if (a === '--bulk-http') args.bulkHttp = true;
 		else if (a === '--preset-tab') args.presetTab = argv[++i];
 		else if (a === '--preset') args.preset = argv[++i];
 		else if (a === '--wasm-concurrency') args.wasmConcurrency = parseInt(argv[++i], 10);
@@ -300,9 +295,6 @@ const setIterations = n => `(async () => {
 	if (String(settled) !== '${n}') return {error:'iterations did not stick: settled='+settled};
 	return {ok:true, iterationsSet: settled};
 })()`;
-
-// Sets the runner localStorage key before navigation (ticket 411, --bulk-http).
-const bulkHttpSource = `try{localStorage.setItem('upgradesTab.runner','bulk-http')}catch{}`;
 
 // Install a MutationObserver before the Run click that records performance.now()
 // at the first results-table row. firstRowS is (firstRowAt - clickAt); on the
@@ -834,9 +826,6 @@ async function main() {
 		if (args.forceFallback) {
 			await psend('Page.addScriptToEvaluateOnNewDocument', { source: blockWorkerSource });
 		}
-		if (args.bulkHttp) {
-			await psend('Page.addScriptToEvaluateOnNewDocument', { source: bulkHttpSource });
-		}
 		if (args.wasmConcurrency !== null) {
 			await psend('Page.addScriptToEvaluateOnNewDocument', { source: wasmConcurrencySource(args.wasmConcurrency) });
 		}
@@ -922,7 +911,6 @@ async function main() {
 			eligibleCount: pre?.eligibleCount ?? null,
 			candidatesRequested: args.candidates,
 			iterationsRequested: args.iterations > 0 ? args.iterations : null,
-			bulkHttpRequested: args.bulkHttp,
 			firstRowS,
 			clickToDoneS,
 			runnerBeforeRun: pre?.runnerBeforeRun ?? null,

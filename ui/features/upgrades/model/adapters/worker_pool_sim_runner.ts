@@ -19,21 +19,9 @@
  * candidate, unsharded, and the pool's own least-busy-worker balancing
  * (`WorkerPoolManager`) is what runs several candidates concurrently.
  *
- * Plan §2.4 justified the per-candidate loop with "there is no bulk RPC —
- * upstream's own Batch tab loops one ordinary sim per combination client-side".
- * That is **no longer true of this tree**, and the correction matters to anyone
- * reading this class as the only path available. A bulk path now exists: the
- * screening pass goes through `runBulkScreen` on the `SimRunner` seam, served by
- * `BulkWasmSimRunner` and `BulkHttpSimRunner`. What remains true is narrower —
- * the WASM *worker* still has no bulk RPC, because `sim_worker.ts:15-18,107`
- * stubs `bulkSimAsync` to log and return an empty buffer, which is why the WASM
- * runner drives upstream's in-browser TS tournament instead. The HTTP worker
- * maps the RPC for real (`worker_http.ts:64`).
- *
- * This class keeps the per-candidate loop regardless, and that is deliberate
- * rather than unconverted: `run()` serves the accurate final pass (paired-seed
- * replication) and the set-bonus sims, which need one request per measurement.
- * Only screening batches.
+ * This class has no `runBulkScreen`, so `rankUpgrades` screens candidates one
+ * sim at a time too. The old tab's bulk screening runners were measured slower
+ * than this loop and deleted (tbc-gear-prio tickets 411 and 567).
  */
 
 import { ComputeStatsRequest, RaidSimRequest as RaidSimRequestProto } from '@generated/proto/api';
@@ -143,6 +131,54 @@ export function memoryCapFromDeviceMemory(deviceMemoryGiB: number | undefined): 
 	return Math.max(1, cap);
 }
 
+/**
+ * The browser values the tab sizes its worker pool from. `model/` may not touch
+ * browser globals (`.oxlintrc.json`), so `utils/runner_env.ts` reads them and
+ * the caller passes them in.
+ */
+export type RunnerEnv = {
+	/** `localStorage.getItem`; may throw when storage is unavailable. */
+	storageRead: (key: string) => string | null;
+	/** `navigator.hardwareConcurrency`; 0 or undefined when unknown. */
+	hardwareConcurrency: number | undefined;
+	/** `navigator.deviceMemory` in GiB; undefined outside Chromium. */
+	deviceMemoryGiB: number | undefined;
+};
+
+/** The user's own worker-count choice in the site's settings; `0` is a deliberate "off". */
+const WASM_CONCURRENCY_KEY = '__tbc_new_wasmconcurrency';
+
+/**
+ * The user's worker-count setting: the default when the key is absent, the
+ * stored number when it is readable, and undefined when the store throws or
+ * the value is not a finite number.
+ */
+function readWasmConcurrency(storageRead: RunnerEnv['storageRead']): number | undefined {
+	try {
+		const raw = storageRead(WASM_CONCURRENCY_KEY);
+		if (raw === null) return DEFAULT_WORKER_COUNT;
+		const parsed = Number(JSON.parse(raw));
+		return Number.isFinite(parsed) ? parsed : undefined;
+	} catch {
+		return undefined;
+	}
+}
+
+/**
+ * How many workers the tab's pool gets. A choice above one is capped by the
+ * cores and by `memoryCapFromDeviceMemory`, with a floor of two; no choice
+ * counts as the default and is capped the same way. Off (`0`) and `1` get one
+ * worker, because the tab cannot rank with none. An unreadable setting gets
+ * the default, uncapped.
+ */
+export function workerCountFor(env: RunnerEnv): number {
+	const setting = readWasmConcurrency(env.storageRead);
+	if (setting === undefined) return DEFAULT_WORKER_COUNT;
+	if (setting <= 1) return 1;
+	const cores = env.hardwareConcurrency || DEFAULT_WORKER_COUNT;
+	return Math.max(2, Math.min(setting, cores, memoryCapFromDeviceMemory(env.deviceMemoryGiB)));
+}
+
 export class WorkerPoolSimRunner implements SimRunner {
 	private readonly pool: WorkerPool;
 	private readonly signalManager = new SimSignalManager();
@@ -224,10 +260,7 @@ export class WorkerPoolSimRunner implements SimRunner {
 	 * `getCharacterStatsForGear`). Meta repair reads hit from it.
 	 */
 	async computeStats(req: RaidSimRequest): Promise<PlayerStatsObservation> {
-		const proto = ComputeStatsRequest.fromJson(
-			{ raid: req.raid, encounter: req.encounter } as JsonValue,
-			{ ignoreUnknownFields: true },
-		);
+		const proto = ComputeStatsRequest.fromJson({ raid: req.raid, encounter: req.encounter } as JsonValue, { ignoreUnknownFields: true });
 		const result = await this.pool.computeStats(proto);
 		if (result.errorResult !== '') {
 			throw new Error(`computeStats error: ${result.errorResult}`);

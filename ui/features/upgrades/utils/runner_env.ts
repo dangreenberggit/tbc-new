@@ -1,4 +1,4 @@
-import type { RunnerEnv } from '../model/adapters/bulk_wasm_sim_runner';
+import type { RunnerEnv } from '../model/adapters/worker_pool_sim_runner';
 
 // The only file in the Upgrades feature that reads these browser globals:
 // `model/` is lint-barred from them, so the run model takes this value instead.
