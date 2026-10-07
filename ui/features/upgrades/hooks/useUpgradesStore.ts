@@ -10,7 +10,7 @@ import { DEFAULT_ITERATIONS } from '../model/run_reducer';
 import { createUpgradesStore, type SettingsSeed, type UpgradesState, type UpgradesStore } from '../model/upgrades_store';
 import { DEV_FLAGS } from '../utils/dev_flags';
 
-export { selectMeasuredOn, selectRun, selectRunStatus, selectSettledSignature, selectShownRanking } from '../model/upgrades_store';
+export { selectRun, selectRunStatus, selectSettledSignature } from '../model/upgrades_store';
 
 /** The dev link's iterations and cap, read once per page load. One constant, so the store starts the same whichever reader creates it. */
 const SETTINGS_SEED: SettingsSeed = { iterations: DEV_FLAGS.iterations ?? DEFAULT_ITERATIONS, candidateCap: DEV_FLAGS.cap };
@@ -20,7 +20,11 @@ const stores = new WeakMap<Sim, UpgradesStore>();
 /**
  * The Upgrades tab's store for a page, one per `Sim` as upstream keeps one sim
  * store per `Sim` (ticket 564). Any reader on the page finds it from the host
- * it already has, with no provider; the first reader creates it.
+ * it already has, with no provider; the first reader creates it. That reader is
+ * usually a render, so the render that creates the store also installs the
+ * page-lifetime phase subscription (`followPhase`); it writes no state, and the
+ * `WeakMap` hands a repeated render (StrictMode) the same store. Whether a
+ * render React discards before commit leaves a store behind is untested.
  */
 export function upgradesStoreFor(host: IndividualSimHost<Spec>): UpgradesStore {
 	let store = stores.get(host.sim);

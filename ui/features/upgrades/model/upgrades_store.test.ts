@@ -9,7 +9,6 @@ import {
 	dispatchSettings,
 	selectRunStatus,
 	selectSettledSignature,
-	selectShownRanking,
 	settingsActionIn,
 } from './upgrades_store';
 
@@ -109,12 +108,10 @@ describe('run selectors', () => {
 
 		dispatchRun(store, { type: 'finished', runId: 1, result: RANKING_FIXTURE });
 		expect(selectSettledSignature(store.getState())).toBe('sig-at-click');
-		expect(selectShownRanking(store.getState())).toBe(RANKING_FIXTURE);
 
 		dispatchRun(store, { type: 'started', runId: 2, startedAt: 2000, measuredOn: MEASURED });
 		const partial: PartialRanking & { durationMs: number } = { ...RANKING_FIXTURE, items: [rowA!], complete: false, durationMs: 9 };
 		dispatchRun(store, { type: 'stopped', runId: 2, result: partial });
 		expect(selectSettledSignature(store.getState())).toBe('sig-at-click');
-		expect(selectShownRanking(store.getState())).toBeUndefined();
 	});
 });

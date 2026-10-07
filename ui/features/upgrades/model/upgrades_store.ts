@@ -8,7 +8,7 @@
 import { subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 
-import { type FinishedRanking, IDLE_RUN, type MeasuredOn, measuredOnOf, type RunAction, runReducer, type RunState, shownRanking } from './run_reducer';
+import { IDLE_RUN, type RunAction, runReducer, type RunState } from './run_reducer';
 import { initialSettings, type SettingsAction, settingsReducer, type SettingsState } from './settings_reducer';
 
 export type UpgradesState = { run: RunState; settings: SettingsState };
@@ -63,8 +63,6 @@ export function settingsActionIn(store: UpgradesStore, scope: string | undefined
 
 export const selectRun = (state: UpgradesState): RunState => state.run;
 export const selectRunStatus = (state: UpgradesState): RunState['status'] => state.run.status;
-export const selectShownRanking = (state: UpgradesState): FinishedRanking | undefined => shownRanking(state.run);
-export const selectMeasuredOn = (state: UpgradesState): MeasuredOn | undefined => measuredOnOf(state.run);
 
 /** The signature the result on screen was measured on; none while a run is in flight, which is never stale (ticket 560). */
 export const selectSettledSignature = (state: UpgradesState): string | undefined =>
