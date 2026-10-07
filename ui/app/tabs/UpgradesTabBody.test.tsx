@@ -49,7 +49,11 @@ vi.mock('@features/upgrades/model/data/data', async importOriginal => ({
 	bisTagPhaseFor: (_spec: string, phase: number) => ({ tagsFromPhase: phase, requestedPhase: phase }),
 }));
 
-/** The page's change source: every listener hears every page edit. */
+/**
+ * The page's change source: every listener hears every page edit. The tab store's phase listener hears them too,
+ * and a phase set with `patchSlice` rings none of them, so `useUpgradesSettings.test.tsx`, on real subscriptions,
+ * is the test of the picks a phase change resets.
+ */
 const listeners = new Set<() => void>();
 const pageChanged = () => listeners.forEach(listener => listener());
 vi.mock('@sim/state/subscriptions', async () =>
@@ -204,6 +208,8 @@ describe('UpgradesTabBody', () => {
 		mount();
 		const run = clickRun();
 		const rendersWhileRunning = runCard.renders;
+		// The counter counts: the card rendered at mount and when the run started.
+		expect(rendersWhileRunning).toBeGreaterThan(0);
 
 		act(() => run.deps.onLanded(rowA));
 		act(() => run.deps.onLanded(rowB));
