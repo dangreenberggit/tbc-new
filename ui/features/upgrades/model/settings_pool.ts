@@ -58,21 +58,20 @@ function sourceMatches(entry: PoolEntry, key: string): boolean {
 
 const ZONELESS_KEYS = new Set(Object.values(SOURCE_LABELS));
 
-/** Every source key the pool offers: raid zones first, then zoneless buckets, each in first-seen order. */
-export function sourceKeys(pool: readonly PoolEntry[]): string[] {
+/**
+ * Every source key the pool offers, raid zones first, then zoneless buckets,
+ * each in first-seen order. These are the keys the Sources dialog lists and the
+ * only ones a scope's exclusions may name; the offer and the phase reset
+ * (`follow_phase.ts`) both read them, so a reset never keeps or drops a source
+ * the dialog disagrees on.
+ */
+export function validSourceKeysOf(pool: readonly PoolEntry[]): string[] {
 	const keys = [...new Set(pool.map(sourceKeyOf))];
 	return [...keys.filter(k => !ZONELESS_KEYS.has(k)), ...keys.filter(k => ZONELESS_KEYS.has(k))];
 }
 
-/**
- * The sources a scope's exclusions may name: the keys its Sources dialog
- * lists. The offer and the phase reset (`follow_phase.ts`) both read it, so a
- * reset never keeps or drops a source the dialog disagrees on.
- */
-export const validSourceKeysOf = (pool: readonly PoolEntry[]): readonly string[] => sourceKeys(pool);
-
 export function sourceOptions(pool: readonly PoolEntry[]): { raids: SourceOption[]; other: SourceOption[] } {
-	const options = sourceKeys(pool).map(key => ({ key, count: pool.filter(e => sourceMatches(e, key)).length }));
+	const options = validSourceKeysOf(pool).map(key => ({ key, count: pool.filter(e => sourceMatches(e, key)).length }));
 	return { raids: options.filter(o => !ZONELESS_KEYS.has(o.key)), other: options.filter(o => ZONELESS_KEYS.has(o.key)) };
 }
 
@@ -148,7 +147,7 @@ export const selectedSetItemIds = (options: readonly SetOption[], selectedKeys: 
  */
 export function effectivePool(pool: readonly PoolEntry[], { excludedSources, selectedSetItemIds, prune }: PoolFilter): PoolEntry[] {
 	const excluded = new Set(excludedSources);
-	const ticked = sourceKeys(pool).filter(key => !excluded.has(key));
+	const ticked = validSourceKeysOf(pool).filter(key => !excluded.has(key));
 	const inSets = new Set(selectedSetItemIds);
 	return pool.filter(e => ticked.some(key => sourceMatches(e, key)) && (!prune || inSets.has(e.itemId)));
 }

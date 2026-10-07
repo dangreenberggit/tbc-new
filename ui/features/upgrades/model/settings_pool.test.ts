@@ -75,9 +75,10 @@ describe('sourceOptions', () => {
 });
 
 describe('validSourceKeysOf', () => {
-	it('is the keys the Sources dialog lists, so a phase reset keeps exactly the exclusions the dialog can show', () => {
+	it('lists raid zones first, then zoneless buckets, which are the keys the Sources dialog lists', () => {
+		expect(validSourceKeysOf(POOL)).toEqual(['Black Temple', 'Hyjal Summit', 'Tempest Keep', 'Badge vendor', 'Crafted']);
 		const { raids, other } = sourceOptions(POOL);
-		expect(validSourceKeysOf(POOL)).toEqual([...raids, ...other].map(o => o.key));
+		expect([...raids, ...other].map(o => o.key)).toEqual(validSourceKeysOf(POOL));
 	});
 });
 
