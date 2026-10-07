@@ -13,6 +13,8 @@
 //   on a recorded fixture (TBC_TAB_FIXTURE), at each width, in the open pane
 //   with its below-cutoff group open:
 //     (6) slot and ΔDPS figures on one line;
+//     (1) the page does not scroll sideways (a table scrolls inside its own
+//         box, and nothing positioned inside it escapes that box);
 //     (7) no clipped text, and nothing in a table cell past the cell;
 //     (12) the ΔDPS figure inside its cell;
 //     (13) at 1280, at least 8 px between the two columns;
@@ -140,6 +142,7 @@ const postRunExpression = `(async () => {
 		figureOutside: figureOutside.slice(0, 10), counts: [multiLine.length, clipped.length, pastCell.length, figureOutside.length],
 		a1: { measuredRows: groupTable ? groupTable.querySelectorAll('tbody tr').length : 0, offsets, maxAbs: Math.max(0, ...offsets.map(Math.abs)) },
 		columnGap: Math.round(card.left - left.right), cardBesideResults: card.top < left.bottom && card.left > left.left,
+		page: { scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth },
 	};
 })()`;
 
@@ -174,6 +177,8 @@ function judgePreRun(width, m) {
 
 function judgePostRun(width, m, facts) {
 	if (m.error) throw new Unmeasured(`post-run @${width}: ${m.error}`);
+	const pageFits = m.page.scrollWidth <= m.page.clientWidth + TOL;
+	check(1, width, pageFits, pageFits ? undefined : m.page);
 	check(6, width, m.multiLine.length === 0, m.multiLine.length ? m.multiLine : undefined);
 	check(
 		7,

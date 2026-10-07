@@ -15,10 +15,13 @@ export type ResultsTableProps = Omit<ComponentPropsWithoutRef<'table'>, 'classNa
  * read and its column widths. The caller composes its head, if it has one, and
  * `ResultRows` inside. Every table is equally wide, the full width with a
  * floor that leaves the item column room, so with the shared widths every
- * column of one table lines up with the same column of the others.
+ * column of one table lines up with the same column of the others. The scroll
+ * box is `relative` so it is the containing block of the head's screen-reader
+ * labels (`sr-only` is absolutely positioned): otherwise they escape the box's
+ * clip and widen the page at 375 px (layout gate check 1, post-run).
  */
 export const ResultsTable = ({ children, ...attributes }: ResultsTableProps) => (
-	<div data-testid="upgrades-table-scroll" className="overflow-x-auto">
+	<div data-testid="upgrades-table-scroll" className="relative overflow-x-auto">
 		<table {...attributes} className="w-full min-w-160 table-fixed" data-testid="upgrades-results-table">
 			{RESULTS_COLUMNS}
 			{children}
