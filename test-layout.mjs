@@ -12,6 +12,8 @@
 //     axe on the tab.
 //   on a recorded fixture (TBC_TAB_FIXTURE), at each width, in the open pane
 //   with its below-cutoff group open:
+//     (15) the open pane has result rows, so the checks below measured some
+//         (the fixture loader settles on a row anywhere on the page);
 //     (6) slot and ΔDPS figures on one line;
 //     (1) the page does not scroll sideways (a table scrolls inside its own
 //         box, and nothing positioned inside it escapes that box);
@@ -188,6 +190,7 @@ function judgePreRun(width, m) {
 
 function judgePostRun(width, m, facts) {
 	if (m.error) throw new Unmeasured(`post-run @${width}: ${m.error}`);
+	check(15, width, m.rows > 0, m.rows > 0 ? undefined : { pane: m.pane, rows: m.rows });
 	const pageFits = m.page.scrollWidth <= m.page.clientWidth + TOL;
 	check(1, width, pageFits, pageFits ? undefined : m.page);
 	check(6, width, m.multiLine.length === 0, m.multiLine.length ? m.multiLine : undefined);
