@@ -49,7 +49,7 @@ export const ResultRow = memo(({ row, position, context }: ResultRowProps) => (
 		data-owned={row.owned ? 'true' : undefined}>
 		<td className="py-1 pr-3 tabular-nums">{position}</td>
 		<ItemNameCell row={row} quality={context.itemOf(row.itemId)?.quality} tags={context.tagsOf(row.itemId)} />
-		<td className="py-1 pr-3 whitespace-nowrap">{slotLabel(row)}</td>
+		<td className="py-1 pr-3">{slotLabel(row)}</td>
 		<DeltaCell row={row} context={context} />
 		<td className="py-1 pr-3">{rowSourceLabel(row)}</td>
 		<td className="py-1">

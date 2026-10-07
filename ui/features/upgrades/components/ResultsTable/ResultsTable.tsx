@@ -5,7 +5,7 @@ import { type ResultsSort, sortRows } from '../../model/results_sort';
 import { rowKey } from '../../model/results_view';
 import { SORT_LABELS } from '../../utils/format';
 import { ResultRow, type RowContext } from './ResultRow';
-import { PlainResultsHead, ResultsColumns } from './ResultsTableHead';
+import { PlainResultsHead, RESULTS_COLUMNS } from './ResultsTableHead';
 
 /** Table attributes pass through, so a variant can mark itself; the testid the gates read is fixed after them. */
 export type ResultsTableProps = Omit<ComponentPropsWithoutRef<'table'>, 'className'>;
@@ -20,7 +20,7 @@ export type ResultsTableProps = Omit<ComponentPropsWithoutRef<'table'>, 'classNa
 export const ResultsTable = ({ children, ...attributes }: ResultsTableProps) => (
 	<div data-testid="upgrades-table-scroll" className="overflow-x-auto">
 		<table {...attributes} className="w-full min-w-160 table-fixed" data-testid="upgrades-results-table">
-			<ResultsColumns />
+			{RESULTS_COLUMNS}
 			{children}
 		</table>
 	</div>

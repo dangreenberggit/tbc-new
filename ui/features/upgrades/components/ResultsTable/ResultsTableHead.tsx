@@ -7,30 +7,35 @@ import type { ResultsSort, ResultsSortKey } from '../../model/results_sort';
 
 const SORT_COLUMNS: readonly ResultsSortKey[] = ['item', 'slot', 'delta_dps', 'source'];
 
+type Column = 'rank' | ResultsSortKey | 'favorite' | 'batch';
+
+/** Every column in head order: `HeadRow`'s Rank, the sortable columns, then its two toggle columns. */
+const COLUMNS: readonly Column[] = ['rank', ...SORT_COLUMNS, 'favorite', 'batch'];
+
 /**
- * One width per column, in head order, shared by every results table (fixed
+ * One width per column, shared by every results table (fixed
  * layout) so the below-cutoff group's columns sit under the shortlist's head.
  * Each width is a little over the widest cell the ret-p3-p2 and feral-p3-p2bis
  * fixtures put in that column with the content's own widths (rank 50, slot 90,
- * ΔDPS 76, toggles 30 px at 1280); item and source text wraps. The item column
+ * ΔDPS 76, toggles 30 px at 1280); item, slot and source text wraps. The item column
  * has no width and takes the rest of the table, so a long word in an item name
  * breaks (`ItemNameCell`) rather than run into the next column.
  */
-const COLUMN_WIDTHS: ReadonlyArray<readonly [column: string, width: string | undefined]> = [
-	['rank', 'w-15'],
-	['item', undefined],
-	['slot', 'w-28'],
-	['delta_dps', 'w-24'],
-	['source', 'w-36'],
-	['favorite', 'w-9'],
-	['batch', 'w-9'],
-];
+const COLUMN_WIDTH: Record<Column, string | undefined> = {
+	rank: 'w-15',
+	item: undefined,
+	slot: 'w-28',
+	delta_dps: 'w-24',
+	source: 'w-36',
+	favorite: 'w-9',
+	batch: 'w-9',
+};
 
-/** The shared widths; `ResultsTable` renders it first in every results table. */
-export const ResultsColumns = () => (
+/** The shared widths; `ResultsTable` renders it first in every results table. Static, so built once. */
+export const RESULTS_COLUMNS = (
 	<colgroup>
-		{COLUMN_WIDTHS.map(([column, width]) => (
-			<col key={column} className={width} />
+		{COLUMNS.map(column => (
+			<col key={column} className={COLUMN_WIDTH[column]} />
 		))}
 	</colgroup>
 );
