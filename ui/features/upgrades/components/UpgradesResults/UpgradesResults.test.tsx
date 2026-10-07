@@ -1,4 +1,5 @@
 import { ItemQuality } from '@generated/proto/common';
+import { UIItem } from '@generated/proto/ui';
 import i18n from '@i18n/config';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { fakeHost } from '@sim/testing';
@@ -33,7 +34,11 @@ afterAll(() => {
 });
 
 const host = fakeHost({
-	sim: { db: { getItemById: (id: number) => (id === 32332 ? { name: 'Torch of the Damned', quality: ItemQuality.ItemQualityEpic } : undefined) } },
+	sim: {
+		db: {
+			getItemById: (id: number) => (id === 32332 ? UIItem.create({ id, name: 'Torch of the Damned', quality: ItemQuality.ItemQualityEpic }) : undefined),
+		},
+	},
 });
 const show = (run: RunState) =>
 	render(

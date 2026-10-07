@@ -1,5 +1,9 @@
 import { ItemQuality } from '@generated/proto/common';
+import { DungeonDifficulty, UIItem } from '@generated/proto/ui';
 import i18n from '@i18n/config';
+import { SimHostProvider } from '@sim/context/SimHostContext';
+import { ActionId } from '@sim/proto/action_id';
+import { fakeHost } from '@sim/testing';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -37,13 +41,18 @@ const ITEMS: Record<number, { name: string; quality: ItemQuality }> = {
 };
 const CONTEXT: RowContext = { itemOf: itemId => ITEMS[itemId], tip: { ranking: RANKING_FIXTURE, specId: 'ret' }, tagsOf: () => [] };
 
-const renderRow = (row: RankedItem, context: RowContext = CONTEXT) => {
+/** A page whose sim database has no items, so the Source cell shows the engine's label. */
+const NO_ITEMS = fakeHost({ sim: { db: { getItemById: () => undefined } } });
+
+const renderRow = (row: RankedItem, context: RowContext = CONTEXT, page = NO_ITEMS) => {
 	const { container } = render(
-		<table>
-			<tbody>
-				<ResultRow row={row} position={3} context={context} />
-			</tbody>
-		</table>,
+		<SimHostProvider host={page}>
+			<table>
+				<tbody>
+					<ResultRow row={row} position={3} context={context} />
+				</tbody>
+			</table>
+		</SimHostProvider>,
 	);
 	const tr = container.querySelector('tr');
 	if (!tr) throw new Error('no row rendered');
@@ -64,6 +73,40 @@ describe('ResultRow', () => {
 		expect(cells[6]?.querySelector('[data-testid="batch-stub"]')).not.toBeNull();
 		expect(tr.dataset.itemId).toBe('32332');
 		expect(tr.dataset.testid).toBe('upgrades-result-row');
+	});
+
+	it('links a raid drop’s zone and boss as the gear picker does, from the site’s database', () => {
+		const BLACK_TEMPLE = 3959;
+		const ILLIDAN = 22917;
+		const torch = UIItem.create({
+			id: 32332,
+			sources: [
+				{
+					source: {
+						oneofKind: 'drop',
+						drop: { zoneId: BLACK_TEMPLE, npcId: ILLIDAN, difficulty: DungeonDifficulty.DifficultyNormal, otherName: '', category: '' },
+					},
+				},
+			],
+		});
+		const page = fakeHost({
+			sim: {
+				db: {
+					getItemById: (id: number) => (id === torch.id ? torch : undefined),
+					getZone: (id: number) => (id === BLACK_TEMPLE ? { id, name: 'Black Temple' } : null),
+					getNpc: (id: number) => (id === ILLIDAN ? { id, name: 'Illidan Stormrage' } : null),
+				},
+			},
+		});
+		const link = within(renderRow(fixtureRow(0), CONTEXT, page)).getByRole('link', { name: /Illidan Stormrage/ });
+		expect(link.textContent).toBe('Black Temple (N)Illidan Stormrage');
+		expect(link.getAttribute('href')).toBe(ActionId.makeNpcUrl(ILLIDAN));
+	});
+
+	it('shows the engine’s label as plain text when the site has no source to link', () => {
+		const tr = renderRow(fixtureRow(0));
+		expect(within(tr).queryByRole('link', { name: /Black Temple/ })).toBeNull();
+		expect(within(tr).getByText('Black Temple').tagName).toBe('SMALL');
 	});
 
 	it('colours the item name by its quality', () => {

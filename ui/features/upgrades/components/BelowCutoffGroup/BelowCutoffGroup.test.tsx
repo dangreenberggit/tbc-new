@@ -1,10 +1,11 @@
 import i18n from '@i18n/config';
-import { fireEvent, render, within } from '@testing-library/react';
+import { fireEvent, within } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import englishCharacter from '../../../../../assets/locales/en/character.json';
 import englishTranslations from '../../../../../assets/locales/en/translation.json';
 import { fixtureRow } from '../../testing/ranking_fixture';
+import { renderOnPage } from '../../testing/render_on_page';
 
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
 vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favorite-stub" />, BatchToggle: () => <span data-testid="batch-stub" /> }));
@@ -32,21 +33,21 @@ const HEAD = (
 
 describe('BelowCutoffGroup', () => {
 	it('starts collapsed, with its row count, and renders no table until opened', () => {
-		const { getByTestId, queryByTestId } = render(<BelowCutoffGroup head={HEAD} rows={ROWS} rowContext={CONTEXT} />);
+		const { getByTestId, queryByTestId } = renderOnPage(<BelowCutoffGroup head={HEAD} rows={ROWS} rowContext={CONTEXT} />);
 
 		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('2 item(s) below the cutoff');
 		expect(queryByTestId('upgrades-results-table')).toBeNull();
 	});
 
 	it('renders the head it is given above its rows', () => {
-		const { getByTestId } = render(<BelowCutoffGroup head={HEAD} rows={ROWS} rowContext={CONTEXT} />);
+		const { getByTestId } = renderOnPage(<BelowCutoffGroup head={HEAD} rows={ROWS} rowContext={CONTEXT} />);
 		fireEvent.click(getByTestId('upgrades-below-cutoff-trigger'));
 
 		expect(within(getByTestId('upgrades-results-table')).getByTestId('head-stub')).not.toBeNull();
 	});
 
 	it('shows its rows, numbered from 1, when opened', () => {
-		const { getByTestId } = render(<BelowCutoffGroup head={HEAD} rows={ROWS} rowContext={CONTEXT} />);
+		const { getByTestId } = renderOnPage(<BelowCutoffGroup head={HEAD} rows={ROWS} rowContext={CONTEXT} />);
 		fireEvent.click(getByTestId('upgrades-below-cutoff-trigger'));
 
 		const table = getByTestId('upgrades-results-table');
@@ -58,7 +59,7 @@ describe('BelowCutoffGroup', () => {
 	});
 
 	it('orders its rows by the shared sort', () => {
-		const { getByTestId } = render(<BelowCutoffGroup head={HEAD} rows={ROWS} rowContext={CONTEXT} sort={{ key: 'delta_dps', dir: 'desc' }} />);
+		const { getByTestId } = renderOnPage(<BelowCutoffGroup head={HEAD} rows={ROWS} rowContext={CONTEXT} sort={{ key: 'delta_dps', dir: 'desc' }} />);
 		fireEvent.click(getByTestId('upgrades-below-cutoff-trigger'));
 
 		const ids = within(getByTestId('upgrades-results-table'))

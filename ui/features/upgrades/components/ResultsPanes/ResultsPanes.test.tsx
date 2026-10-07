@@ -1,5 +1,5 @@
 import i18n from '@i18n/config';
-import { fireEvent, render, within } from '@testing-library/react';
+import { fireEvent, within } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import englishCharacter from '../../../../../assets/locales/en/character.json';
@@ -7,6 +7,7 @@ import englishTranslations from '../../../../../assets/locales/en/translation.js
 import { applyView } from '../../model/engine/view';
 import { stoppedView } from '../../model/results_view';
 import { RANKING_FIXTURE, STOPPED_FIXTURE } from '../../testing/ranking_fixture';
+import { renderOnPage } from '../../testing/render_on_page';
 
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
 vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favorite-stub" />, BatchToggle: () => <span data-testid="batch-stub" /> }));
@@ -44,12 +45,12 @@ const namesIn = (pane: HTMLElement) =>
 
 describe('ResultsPanes', () => {
 	it('offers the Upgrades list and one tab per slot with a row, in slot order, counting each slot’s shortlist', () => {
-		const { container } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
+		const { container } = renderOnPage(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
 		expect(tabLabels(container)).toEqual(['Upgrades', 'Head (2)', 'Chest (2)', 'Legs (1)', 'Trinket 1 (1)', 'Main Hand (4)']);
 	});
 
 	it('links each tab to its own pane', () => {
-		const { container } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
+		const { container } = renderOnPage(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
 		for (const tab of tabStrip(container).getAllByRole('tab')) {
 			const paneId = tab.getAttribute('aria-controls');
 			expect(paneId).toMatch(/^upgrades-pane-/);
@@ -58,7 +59,7 @@ describe('ResultsPanes', () => {
 	});
 
 	it('opens on the Upgrades list and shows a slot’s rows when its tab is clicked', () => {
-		const { container } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
+		const { container } = renderOnPage(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
 		expect(namesIn(activePane(container))).toHaveLength(VIEW.shortlist.length);
 
 		clickTab(container, 'Head');
@@ -66,7 +67,7 @@ describe('ResultsPanes', () => {
 	});
 
 	it('applies a sort chosen in one pane to every pane', () => {
-		const { container } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
+		const { container } = renderOnPage(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
 		fireEvent.click(within(activePane(container)).getByTestId('upgrades-sort-item'));
 		fireEvent.click(within(activePane(container)).getByTestId('upgrades-sort-item'));
 
@@ -80,7 +81,7 @@ describe('ResultsPanes', () => {
 	});
 
 	it('exports the Upgrades list in the order the shared sort shows it, whichever pane is open', () => {
-		const { container } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
+		const { container } = renderOnPage(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
 		const exportedIds = () => {
 			const payload: { items: Array<{ id: number }> } = JSON.parse(
 				container.querySelector<HTMLTextAreaElement>('[data-testid="upgrades-export-area"]')?.value ?? '',
@@ -103,7 +104,7 @@ describe('ResultsPanes', () => {
 	});
 
 	it('falls back to the Upgrades list when the open slot has no rows in a new result', () => {
-		const { container, rerender } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
+		const { container, rerender } = renderOnPage(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
 		clickTab(container, 'Legs');
 		expect(namesIn(activePane(container))).toEqual(['Lightbringer Greaves']);
 

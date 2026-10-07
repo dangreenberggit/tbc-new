@@ -6,10 +6,11 @@ import type { RankedItem } from '../../model/engine/rank';
 import type { DpsSortKey } from '../../model/results_sort';
 import type { SetBonusTipContext } from '../../model/set_bonus_tip';
 import type { RowTag } from '../../model/settings_pool';
-import { rowSourceLabel, slotLabel } from '../../utils/format';
+import { slotLabel } from '../../utils/format';
 import { BatchToggle, FavoriteToggle } from '../RowToggles';
 import { DeltaCell } from './DeltaCell';
 import { ItemNameCell } from './ItemNameCell';
+import { SourceCell } from './SourceCell';
 
 /**
  * What every table and row of one results area shares. Built once per area and
@@ -38,7 +39,7 @@ export interface ResultRowProps {
  *
  * `memo`, because a run lands rows one at a time and each landing renders the table: without it every
  * row already shown renders again, which a 467-row replay measured at over 20 s. A landing row or a sort
- * still moves `position` for the rows below it, so the two costly cells are memoised on their own and
+ * still moves `position` for the rows below it, so the costly cells are memoised on their own and
  * only the Rank cell changes.
  */
 export const ResultRow = memo(({ row, position, context }: ResultRowProps) => (
@@ -51,7 +52,7 @@ export const ResultRow = memo(({ row, position, context }: ResultRowProps) => (
 		<ItemNameCell row={row} quality={context.itemOf(row.itemId)?.quality} tags={context.tagsOf(row.itemId)} />
 		<td className="py-1 pr-3">{slotLabel(row)}</td>
 		<DeltaCell row={row} context={context} />
-		<td className="py-1 pr-3">{rowSourceLabel(row)}</td>
+		<SourceCell row={row} />
 		<td className="py-1">
 			<FavoriteToggle itemId={row.itemId} />
 		</td>

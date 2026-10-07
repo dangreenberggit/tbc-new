@@ -1,4 +1,5 @@
 import { ItemQuality } from '@generated/proto/common';
+import { UIItem } from '@generated/proto/ui';
 import i18n from '@i18n/config';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { fakeHost } from '@sim/testing';
@@ -27,7 +28,7 @@ afterAll(() => {
 	i18n.removeResourceBundle('en', 'character');
 });
 
-const host = fakeHost({ sim: { db: { getItemById: () => ({ name: 'Item', quality: ItemQuality.ItemQualityEpic }) } } });
+const host = fakeHost({ sim: { db: { getItemById: (id: number) => UIItem.create({ id, name: 'Item', quality: ItemQuality.ItemQualityEpic }) } } });
 const show = (run: RunState, selectedSets: readonly SetOption[] = []) =>
 	render(
 		<SimHostProvider host={host}>
