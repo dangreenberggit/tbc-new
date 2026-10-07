@@ -30,7 +30,10 @@
 // phase defaults to 3, the page's own default phase; pass --phase for another.
 // --trace-tail samples the progress dialog's message and counter and the landed row count
 //   every 500 ms from the Run click to the end of the run (ticket 560 F12). With
-//   it, --out names a directory, which gets result.json and tail.jsonl.
+//   it, --out names a directory, which gets result.json and tail.jsonl. It also
+//   records every distinct text of the dialog's done/total counter, with seconds
+//   since the click, as result.json's counterChanges (ticket 566): the 500 ms
+//   samples can miss the last change before the dialog closes.
 // --iterations N sets the iterations NumberPicker at click time (default 3000).
 //   Readback: iterationsRequested. Two timings are always recorded: firstRowS
 //   (Run click to the first results-table row) and clickToDoneS (click to Took).
@@ -312,6 +315,25 @@ const installFirstRowObserver = `(() => {
 	obs.observe(document.body, { subtree: true, childList: true });
 	return {ok:true, already:false};
 })()`;
+
+// Watches the whole body, because the progress dialog and its counter mount
+// only after Run; records each counter text that differs from the last one.
+const installCounterObserver = `(() => {
+	const sel = '[data-testid="progress-tracker-modal-progress-text"]';
+	const changes = (window.__harnessCounterChanges = []);
+	const record = () => {
+		const text = document.querySelector(sel)?.innerText;
+		if (text == null || changes[changes.length - 1]?.text === text) return;
+		changes.push({ at: performance.now(), text });
+	};
+	new MutationObserver(record).observe(document.body, { subtree: true, childList: true, characterData: true });
+	return { ok: true };
+})()`;
+
+const readCounterChanges = `(() => (window.__harnessCounterChanges ?? []).map(c => ({
+	s: +((c.at - window.__harnessClickAt) / 1000).toFixed(2),
+	counter: c.text,
+})))()`;
 
 // Read the three timing marks after the run settles.
 const readTimings = `(() => ({
@@ -876,6 +898,7 @@ async function main() {
 		}
 
 		await evaluate(psend, pageSession, installFirstRowObserver);
+		if (args.traceTail) await evaluate(psend, pageSession, installCounterObserver);
 
 		let captureInstall = null;
 		if (args.captureRequests) {
@@ -889,6 +912,7 @@ async function main() {
 
 		tail = done.tail ?? [];
 		delete done.tail;
+		const counterChanges = args.traceTail ? await evaluate(psend, pageSession, readCounterChanges) : null;
 		const results = await evaluate(psend, pageSession, readResults);
 		if (results?.error) throw new Error(`read results failed: ${results.error}`);
 
@@ -936,6 +960,7 @@ async function main() {
 			recordedAt: new Date().toISOString(),
 		};
 
+		if (counterChanges !== null) out.counterChanges = counterChanges;
 		if (args.preset !== null) Object.assign(out, { presetTab: args.presetTab, preset: args.preset });
 		if (args.wasmConcurrency !== null) out.wasmConcurrency = args.wasmConcurrency;
 		if (args.captureRequests) {
