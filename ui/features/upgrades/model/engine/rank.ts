@@ -259,6 +259,13 @@ export type Progress =
   | { stage: "reading-gear" }
   | { stage: "composing" }
   | { stage: "building-pool" }
+  /**
+   * `total` counts sims (baseline, candidates, paired replicas). The first
+   * total is a budget: it counts replicas for up to `PAIRED_REPLICATE_TOP_N`
+   * rows before the run knows how many rows clear the cutoff. The first
+   * `simming` after `ranking` repeats `done` with the exact total, and the run
+   * ends on `done === total` (ticket 566).
+   */
   | { stage: "simming"; done: number; total: number }
   /**
    * A single candidate's row finished — fired as each sim finishes, ahead of
@@ -1418,7 +1425,8 @@ export async function rankUpgrades(
       (e, i) => i < cap || equippedIds.has(e.itemId)
     );
 
-    // Counted here, after the cap decides the full-iteration set.
+    // Counted here, after the cap decides the full-iteration set. A budget
+    // until `replicateTopItems` restates it with the rows it re-sims.
     const replicaSims = usesPairedReplication(seeds)
       ? (seeds.length - 1) *
         (1 + Math.min(PAIRED_REPLICATE_TOP_N, simCandidates.length))
@@ -1767,11 +1775,21 @@ export async function rankUpgrades(
     ranked: RankedItem[],
     winningRequests: ReadonlyMap<number, RaidSimRequest>
   ): Promise<Array<{ item: RankedItem; deltas: number[] }>> {
-    if (!usesPairedReplication(seeds)) return [];
-
-    const top = ranked
-      .filter((item) => !item.belowCutoff && item.simmed !== false)
-      .slice(0, PAIRED_REPLICATE_TOP_N);
+    const top = usesPairedReplication(seeds)
+      ? ranked
+          .filter((item) => !item.belowCutoff && item.simmed !== false)
+          .slice(0, PAIRED_REPLICATE_TOP_N)
+      : [];
+    // The total sent so far budgeted re-sims for up to top-N rows; only now is
+    // the number of rows known, so the total is restated as the sims done
+    // plus the sims this function will run (ticket 566).
+    totalSimsForProgress =
+      simsDone + (top.length === 0 ? 0 : (seeds.length - 1) * (1 + top.length));
+    onProgress?.({
+      stage: "simming",
+      done: simsDone,
+      total: totalSimsForProgress,
+    });
     if (top.length === 0) return [];
     const baselineBySeed = new Map<number, number>();
     for (const s of seeds) {

@@ -7,9 +7,12 @@
  * `Progress` events arrive in (`rank.ts`): the pre-sim stages; the first
  * `simming` event (the baseline, `done` 1) and one per candidate; a set phase
  * that runs sims but sends nothing and is not counted in `total`; `ranking`;
- * then one `simming` event per replication sim. The only thing that tells the
- * last candidate from the start of the set phase is the candidate count, which
- * `replicationBoundary` solves from the first event's `total`.
+ * one `simming` event that repeats `done` with the run's exact total; then one
+ * `simming` event per replication sim. The only thing that tells the last
+ * candidate from the start of the set phase is the candidate count, which
+ * `replicationBoundary` solves from the first event's `total`. That first
+ * total is a budget, so the tracker takes the final count from the first
+ * event after `ranking` (ticket 566).
  */
 
 import type { Progress } from './engine/rank';
@@ -92,18 +95,22 @@ export type RunTimeline = {
 	readonly seedCount: number;
 	/** The most rows replication re-sims (`PAIRED_REPLICATE_TOP_N`). */
 	readonly topN: number;
+	/** The exact total from the first `simming` event after `ranking`; undefined before it. */
+	readonly finalTotal?: number;
 };
 
 /**
- * The `done` the run ends on. Replication re-sims only the rows that cleared
+ * The `done` the run ends on: `finalTotal` once the engine has sent it.
+ * Before that, a projection. Replication re-sims only the rows that cleared
  * the cutoff, at most `topN`, with `seedCount - 1` sims each plus as many for
- * the baseline, and none at all when no row qualifies; `total` budgets for
- * `min(topN, c)` rows, so it is only an upper bound. Before the last
- * candidate, the qualifying rows so far are scaled up to the whole pool. A
- * replication event past the result means the count was wrong, and `total`
- * is used. `total` also when the boundary is unknown.
+ * the baseline, and none at all when no row qualifies; the first `total`
+ * budgets for `min(topN, c)` rows, so it is only an upper bound. Before the
+ * last candidate, the qualifying rows so far are scaled up to the whole pool.
+ * A replication event past the projection means the count was wrong, and
+ * `total` is used. `total` also when the boundary is unknown.
  */
 export function expectedFinalDone(run: RunTimeline): number {
+	if (run.finalTotal !== undefined) return run.finalTotal;
 	const boundary = run.boundary;
 	if (boundary === null) return run.total;
 	const c = boundary - 1;
@@ -226,6 +233,7 @@ export class RunProgressTracker {
 	private phase: RunPhase = 'preparing';
 	private stage: RunProgressView['stage'] = 'resolving';
 	private total: number | undefined;
+	private finalTotal: number | undefined;
 	private boundary: number | null = null;
 	private readonly sims: Array<{ t: number; done: number; afterRanking: boolean }> = [];
 	private rankingAt: number | undefined;
@@ -309,6 +317,7 @@ export class RunProgressTracker {
 		}
 		this.total = total;
 		const afterRanking = this.rankingAt !== undefined;
+		if (afterRanking && this.finalTotal === undefined) this.finalTotal = total;
 		this.sims.push({ t: nowMs, done, afterRanking });
 		if (afterRanking) {
 			this.phase = this.stopped || done >= expectedFinalDone(this.timeline(nowMs)!) ? 'ranking' : 'replication';
@@ -335,6 +344,7 @@ export class RunProgressTracker {
 			qualifyingRows: this.qualifyingRows,
 			seedCount: this.options.seedCount,
 			topN: this.options.topN,
+			...(this.finalTotal === undefined ? {} : { finalTotal: this.finalTotal }),
 		};
 	}
 
