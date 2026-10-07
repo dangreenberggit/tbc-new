@@ -2,7 +2,7 @@ import { ItemQuality } from '@generated/proto/common';
 import i18n from '@i18n/config';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { fakeHost } from '@sim/testing';
-import { fireEvent, render, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import englishCharacter from '../../../../../assets/locales/en/character.json';
@@ -42,6 +42,10 @@ const rowIds = (container: HTMLElement) =>
 	within(activePane(container))
 		.getAllByTestId('upgrades-result-row')
 		.map(row => Number(row.dataset.itemId));
+const rowOf = (container: HTMLElement, itemId: number) =>
+	within(activePane(container))
+		.getAllByTestId('upgrades-result-row')
+		.find(row => Number(row.dataset.itemId) === itemId)!;
 const tick = (container: HTMLElement, testId: string) => fireEvent.click(within(within(container).getByTestId(testId)).getByRole('checkbox'));
 
 // Lightbringer Faceguard (4.42) with a measured 2-piece bonus, which Set potential credits past Dragonspine Trophy (5.2).
@@ -89,6 +93,25 @@ describe('UpgradesResults view toggles', () => {
 
 		fireEvent.click(getAllByTestId('upgrades-sort-delta_dps')[0]!);
 		expect(ahead(rowIds(container), 30989, 28830)).toBe(true);
+	});
+
+	it('with Set potential, shows the popover total in the set row’s ΔDPS cell, and the bare ΔDPS without it', () => {
+		const { container } = show(done(WITH_POTENTIAL));
+		const figure = () => within(rowOf(container, faceguard.itemId)).getByRole('button');
+		expect(figure().textContent).toBe('+4.4');
+
+		tick(container, 'upgrades-view-set-potential');
+		vi.useFakeTimers();
+		try {
+			fireEvent.mouseEnter(figure());
+			fireEvent.mouseMove(figure());
+			act(() => vi.advanceTimersByTime(1000));
+		} finally {
+			vi.useRealTimers();
+		}
+		const total = within(screen.getByTestId('upgrades-set-bonus-tip-total')).getByRole('definition').textContent;
+		expect(total).toBe('+24.5');
+		expect(figure().textContent).toBe(total);
 	});
 
 	it('badges a row with the name of each selected set that holds it', () => {

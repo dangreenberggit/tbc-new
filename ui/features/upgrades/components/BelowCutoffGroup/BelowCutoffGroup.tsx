@@ -4,7 +4,7 @@ import { useState } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
 import type { ResultsSort } from '../../model/results_sort';
-import { PlainResultsHead, ResultRows, ResultsTable, type RowContext } from '../ResultsTable';
+import { ResultRows, ResultsTable, type RowContext } from '../ResultsTable';
 
 export interface BelowCutoffGroupProps {
 	rows: readonly RankedItem[];
@@ -26,15 +26,9 @@ export const BelowCutoffGroup = ({ rows, rowContext, sort }: BelowCutoffGroupPro
 	return (
 		<Accordion value={open} onValueChange={setOpen}>
 			<AccordionItem value={GROUP} testId="upgrades-below-cutoff" title={i18n.t('upgrades_tab.results.below_cutoff_group', { count: rows.length })}>
-				{/* The shortlist's head, collapsed to no height, so this table sizes its columns from the same header text and
-				    sits closer under the shortlist's columns. Measured at 1280 on ret-p3-p2: the largest column offset fell from
-				    30 px to 17 px, not to zero, because the cells' own text still sets each table's widths. */}
-				<div className="[&_thead]:collapse">
-					<ResultsTable>
-						<PlainResultsHead />
-						<ResultRows rows={rows} rowContext={rowContext} sort={sort} />
-					</ResultsTable>
-				</div>
+				<ResultsTable>
+					<ResultRows rows={rows} rowContext={rowContext} sort={sort} />
+				</ResultsTable>
 			</AccordionItem>
 		</Accordion>
 	);

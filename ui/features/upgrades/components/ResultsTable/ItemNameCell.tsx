@@ -33,7 +33,7 @@ export const ItemNameCell = memo(({ row, quality, tags }: ItemNameCellProps) => 
 		<td className="py-1 pr-3">
 			<span className="flex items-center gap-2">
 				<WowheadIcon as="div" className="size-6 shrink-0" iconUrl={iconUrl} />
-				<span className="grid min-w-0">
+				<span className="grid min-w-0 wrap-anywhere">
 					<a
 						href={href || undefined}
 						target="_blank"

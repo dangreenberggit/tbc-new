@@ -7,6 +7,34 @@ import type { ResultsSort, ResultsSortKey } from '../../model/results_sort';
 
 const SORT_COLUMNS: readonly ResultsSortKey[] = ['item', 'slot', 'delta_dps', 'source'];
 
+/**
+ * One width per column, in head order, shared by every results table (fixed
+ * layout) so the below-cutoff group's columns sit under the shortlist's head.
+ * Each width is a little over the widest cell the ret-p3-p2 and feral-p3-p2bis
+ * fixtures put in that column with the content's own widths (rank 50, slot 90,
+ * ΔDPS 76, toggles 30 px at 1280); item and source text wraps. The item column
+ * has no width and takes the rest of the table, so a long word in an item name
+ * breaks (`ItemNameCell`) rather than run into the next column.
+ */
+const COLUMN_WIDTHS: ReadonlyArray<readonly [column: string, width: string | undefined]> = [
+	['rank', 'w-15'],
+	['item', undefined],
+	['slot', 'w-28'],
+	['delta_dps', 'w-24'],
+	['source', 'w-36'],
+	['favorite', 'w-9'],
+	['batch', 'w-9'],
+];
+
+/** The shared widths; `ResultsTable` renders it first in every results table. */
+export const ResultsColumns = () => (
+	<colgroup>
+		{COLUMN_WIDTHS.map(([column, width]) => (
+			<col key={column} className={width} />
+		))}
+	</colgroup>
+);
+
 const columnClass = (key: ResultsSortKey) => clsx('py-1 pr-3', key === 'delta_dps' && 'text-right');
 
 const ariaSort = (sort: ResultsSort | undefined, key: ResultsSortKey) => {

@@ -117,4 +117,21 @@ describe('ResultsTable', () => {
 		expect(positionsOf(table)).toEqual(['1', '2', '3', '4']);
 		expect(namesOf(table)[0]).toBe("Vengeful Gladiator's Greatsword");
 	});
+
+	it('gives a table with a head and one without the same column widths, one per head cell', () => {
+		const widths = (table: HTMLElement) => [...table.querySelectorAll('col')].map(col => col.className);
+		const { getAllByTestId } = render(
+			<>
+				<ResultsTable>
+					<PlainResultsHead />
+					<ResultRows rows={FOUR} rowContext={CONTEXT} />
+				</ResultsTable>
+				{bare(FOUR)}
+			</>,
+		);
+		const [headed, headless] = getAllByTestId('upgrades-results-table') as [HTMLElement, HTMLElement];
+
+		expect(widths(headed)).toHaveLength(headed.querySelectorAll('thead th').length);
+		expect(widths(headless)).toEqual(widths(headed));
+	});
 });

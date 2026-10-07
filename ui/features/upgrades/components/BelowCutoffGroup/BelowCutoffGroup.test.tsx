@@ -33,12 +33,12 @@ describe('BelowCutoffGroup', () => {
 		expect(queryByTestId('upgrades-results-table')).toBeNull();
 	});
 
-	it('shows its rows, numbered from 1, when opened, under a collapsed copy of the shortlist head that sizes its columns', () => {
+	it('shows its rows, numbered from 1, when opened, in a table with no head of its own', () => {
 		const { getByTestId } = render(<BelowCutoffGroup rows={ROWS} rowContext={CONTEXT} />);
 		fireEvent.click(getByTestId('upgrades-below-cutoff-trigger'));
 
 		const table = getByTestId('upgrades-results-table');
-		expect([...table.querySelectorAll('thead th')].map(th => th.textContent)).toEqual(['Rank', 'Item', 'Slot', 'DPS', 'Source', 'Favorite', 'Batch sim']);
+		expect(table.querySelector('thead')).toBeNull();
 		const rows = within(table).getAllByTestId('upgrades-result-row');
 		expect(rows.map(row => [within(row).getAllByRole('cell')[0]?.textContent, row.dataset.itemId])).toEqual([
 			['1', FIRST_ID],

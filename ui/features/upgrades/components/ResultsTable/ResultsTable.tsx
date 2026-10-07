@@ -5,18 +5,22 @@ import { type ResultsSort, sortRows } from '../../model/results_sort';
 import { rowKey } from '../../model/results_view';
 import { SORT_LABELS } from '../../utils/format';
 import { ResultRow, type RowContext } from './ResultRow';
-import { PlainResultsHead } from './ResultsTableHead';
+import { PlainResultsHead, ResultsColumns } from './ResultsTableHead';
 
 /** Table attributes pass through, so a variant can mark itself; the testid the gates read is fixed after them. */
 export type ResultsTableProps = Omit<ComponentPropsWithoutRef<'table'>, 'className'>;
 
 /**
- * The frame every results table shares: the scroll box and the table the gates
- * read. The caller composes its head, if it has one, and `ResultRows` inside.
+ * The frame every results table shares: the scroll box, the table the gates
+ * read and its column widths. The caller composes its head, if it has one, and
+ * `ResultRows` inside. Every table is equally wide, the full width with a
+ * floor that leaves the item column room, so with the shared widths every
+ * column of one table lines up with the same column of the others.
  */
 export const ResultsTable = ({ children, ...attributes }: ResultsTableProps) => (
 	<div data-testid="upgrades-table-scroll" className="overflow-x-auto">
-		<table {...attributes} className="w-full" data-testid="upgrades-results-table">
+		<table {...attributes} className="w-full min-w-160 table-fixed" data-testid="upgrades-results-table">
+			<ResultsColumns />
 			{children}
 		</table>
 	</div>
