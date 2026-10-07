@@ -1,6 +1,7 @@
 import { Raid as RaidProto } from '@generated/proto/api';
 import { Encounter as EncounterProto, Spec } from '@generated/proto/common';
 import { SimHostProvider } from '@sim/context/SimHostContext';
+import { createSimStore, patchKeyed, patchSlice, PLAYER_FIELDS, type PlayerSlice, seedKeyed, zeroVersions } from '@sim/state/sim_store';
 import { fakeHost } from '@sim/testing';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
@@ -10,15 +11,6 @@ import { inputsSignature, liveInputsKey } from '../model/run_inputs';
 import type { RunOutcome, RunSettings } from '../model/run_reducer';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 
-/** The page's change source: every listener hears every page edit. */
-const listeners = new Set<() => void>();
-const pageChanged = () => listeners.forEach(listener => listener());
-vi.mock('@sim/state/subscriptions', async () =>
-	(await import('@sim/testing')).mockSubscriptions(listener => {
-		listeners.add(listener);
-		return () => listeners.delete(listener);
-	}),
-);
 vi.mock('../model/run', async importOriginal => ({
 	...(await importOriginal<typeof import('../model/run')>()),
 	createRunContext: () => ({ terminate: () => {} }),
@@ -31,10 +23,20 @@ const { selectRunStatus, useUpgradesStore } = await import('./useUpgradesStore')
 /** The page the key reads: one player's raid proto, which a test edits. */
 let raidName = 'worn gear A';
 const SETTINGS: RunSettings = { iterations: 500, excludedSources: [], guaranteedSetKeys: [], guaranteedSetItemIds: [], prune: false };
+const PLAYER_KEY = 1;
 
-/** A fresh page per case, so each case gets its own tab store (the store is keyed by the page's `Sim`). */
+/**
+ * A fresh page per case, so each case gets its own tab store (the store is keyed by the page's `Sim`).
+ * The page's sim store and its subscriptions are real, so an edit notifies the hook only if upstream's
+ * `subscribeSimChange` selector sees it; the protos the key reads are stand-ins.
+ */
 const makePage = () => {
+	const store = createSimStore();
+	// The selector watches a raid member's version counters, not the slice's values.
+	seedKeyed(store, 'players', PLAYER_KEY, { v: zeroVersions(PLAYER_FIELDS) } as PlayerSlice);
+	patchSlice(store, 'raid', { composition: [[PLAYER_KEY]] });
 	const sim = {
+		store,
 		raid: { toProto: () => RaidProto.create({ parties: [{ players: [{ name: raidName }] }] }) },
 		encounter: { toProto: () => EncounterProto.create({ duration: 180 }) },
 		getPhase: () => 3,
@@ -45,29 +47,35 @@ const makePage = () => {
 	});
 	const wrapper = ({ children }: { children: ReactNode }) => <SimHostProvider host={host}>{children}</SimHostProvider>;
 	const signatureNow = (settings: RunSettings) => inputsSignature({ liveKey: liveInputsKey(sim), settings });
-	return { wrapper, signatureNow };
+	/** A gear edit, written to the store the way a gear setter writes it. */
+	const changeGear = () => {
+		raidName = 'worn gear B';
+		patchKeyed(store, 'players', PLAYER_KEY, {}, ['gear']);
+	};
+	/** A page edit the run does not read. */
+	const changeSeed = () => patchSlice(store, 'sim', { fixedRngSeed: 7 });
+	return { wrapper, signatureNow, changeGear, changeSeed };
 };
 
 /** The tab's run and its staleness, with a run the test settles by hand. */
 const mountRun = () => {
-	const { wrapper, signatureNow } = makePage();
+	const { wrapper, ...page } = makePage();
 	let settle: (outcome: RunOutcome) => void = () => {};
 	const runFn = () => new Promise<RunOutcome>(resolve => (settle = resolve));
 	const view = renderHook(({ settings }) => ({ ...useUpgradesRun(runFn), status: useUpgradesStore(selectRunStatus), stale: useRunStale(settings) }), {
 		wrapper,
 		initialProps: { settings: SETTINGS },
 	});
-	return { view, signatureNow, settle: (outcome: RunOutcome) => settle(outcome) };
+	return { view, ...page, settle: (outcome: RunOutcome) => settle(outcome) };
 };
 
 beforeEach(() => {
 	raidName = 'worn gear A';
-	listeners.clear();
 });
 
 describe('useRunStale', () => {
 	it('shows a fresh run as current, and as stale once the gear changes', async () => {
-		const { view, settle, signatureNow } = mountRun();
+		const { view, settle, signatureNow, changeGear } = mountRun();
 		act(() => view.result.current.start(SETTINGS, signatureNow(SETTINGS)));
 		expect(view.result.current.stale).toBe(false);
 
@@ -75,22 +83,16 @@ describe('useRunStale', () => {
 		expect(view.result.current.status).toBe('done');
 		expect(view.result.current.stale).toBe(false);
 
-		act(() => {
-			raidName = 'worn gear B';
-			pageChanged();
-		});
+		act(changeGear);
 		expect(view.result.current.stale).toBe(true);
 	});
 
 	it('shows a fresh fixture as current, and as stale once the gear changes', () => {
-		const { view, signatureNow } = mountRun();
+		const { view, signatureNow, changeGear } = mountRun();
 		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
 		expect(view.result.current.stale).toBe(false);
 
-		act(() => {
-			raidName = 'worn gear B';
-			pageChanged();
-		});
+		act(changeGear);
 		expect(view.result.current.stale).toBe(true);
 	});
 
@@ -107,11 +109,11 @@ describe('useRunStale', () => {
 	});
 
 	it('keeps a result current through an edit the run does not read, and a render with the same settings', () => {
-		const { view, signatureNow } = mountRun();
+		const { view, signatureNow, changeSeed } = mountRun();
 		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
 
-		// A fixed seed or a display toggle notifies, but leaves raid, encounter and phase alone.
-		act(() => pageChanged());
+		// A fixed seed notifies, but leaves raid, encounter and phase alone.
+		act(changeSeed);
 		view.rerender({ settings: { ...SETTINGS } });
 		expect(view.result.current.stale).toBe(false);
 	});
@@ -124,7 +126,7 @@ describe('useRunStale', () => {
 
 	// Every render counts: a page key cached from before the result would show the warning for one paint.
 	it('never renders a fresh result as stale, though the gear changed after the tab mounted', () => {
-		const { wrapper, signatureNow } = makePage();
+		const { wrapper, signatureNow, changeGear } = makePage();
 		const seen: boolean[] = [];
 		const view = renderHook(
 			() => {
@@ -134,10 +136,7 @@ describe('useRunStale', () => {
 			},
 			{ wrapper },
 		);
-		act(() => {
-			raidName = 'worn gear B';
-			pageChanged();
-		});
+		act(changeGear);
 		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
 		expect(seen).not.toContain(true);
 	});

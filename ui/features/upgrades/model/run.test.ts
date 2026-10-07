@@ -3,8 +3,9 @@ import type { IndividualSimHost } from '@sim/sim_host';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
+import { simDatabaseResolverFor } from './adapters/sim_database';
 import type { WorkerPoolSimRunner } from './adapters/worker_pool_sim_runner';
-import { poolFor } from './data/data';
+import { epWeightsFor, poolFor } from './data/data';
 import type { Deps, PartialRanking, Progress, RankedItem, RankInput } from './engine/rank';
 import { MemoryStore } from './engine/seams/store';
 import { progressOf } from './progress_channel';
@@ -13,9 +14,10 @@ import { createRunContext, rankForPlayer, type RunContext, type RunDeps } from '
 // The page adapters read a live sim page, which a unit test does not have; the
 // engine itself is covered by the repo's E-W3 parity test. This test covers what
 // the run model adds around the engine: where the runner comes from, the ticks,
-// the landed rows, Stop and the duration.
-vi.mock('./adapters/skeleton', () => ({ currentPageSkeleton: () => ({}) }));
-vi.mock('./adapters/sim_database', () => ({ simDatabaseResolverFor: () => () => undefined }));
+// the landed rows, Stop and the duration, and the engine options it passes.
+const { PAGE_SKELETON, pageDatabase } = vi.hoisted(() => ({ PAGE_SKELETON: { raid: 'page' }, pageDatabase: () => undefined }));
+vi.mock('./adapters/skeleton', () => ({ currentPageSkeleton: () => PAGE_SKELETON }));
+vi.mock('./adapters/sim_database', () => ({ simDatabaseResolverFor: vi.fn(() => pageDatabase) }));
 vi.mock('./adapters/player_gear_source', () => ({ PlayerGearSource: class {} }));
 
 type RankCall = { input: RankInput; deps: Deps; onProgress?: (p: Progress) => void };
@@ -50,15 +52,12 @@ const depsFor = (overrides: Partial<RunDeps> = {}): RunDeps => {
 	return { signal: new AbortController().signal, onLanded: () => {}, runContext: () => context, ...overrides };
 };
 
-/** Emits each row as the engine does, then resolves the whole ranking, or a partial on Stop. */
-const streamRows = async ({ deps, onProgress }: RankCall) => {
+/** Emits each row as the engine does, then resolves the whole ranking. */
+const streamRows = async ({ onProgress }: RankCall) => {
 	onProgress?.({ stage: 'resolving' });
-	const items: RankedItem[] = [];
 	for (const [i, row] of RANKING_FIXTURE.items.entries()) {
 		onProgress?.({ stage: 'simming', done: i + 1, total: RANKING_FIXTURE.items.length });
 		onProgress?.({ kind: 'row', row });
-		items.push(row);
-		if (deps.signal?.aborted) return { ...RANKING_FIXTURE, items, complete: false as const };
 		await Promise.resolve();
 	}
 	onProgress?.({ stage: 'ranking' });
@@ -86,6 +85,21 @@ describe('rankForPlayer', () => {
 		expect(input).toMatchObject({ spec: 'ret', maxPhase: 3, iterations: 500, candidateCap: 10 });
 	});
 
+	// These options change the numbers and nothing else checks them: the engine is mocked here, and a
+	// re-recorded fixture would pin whatever values a dropped option gives (review A1).
+	it('ranks the page skeleton with its sim database and the spec’s EP weights, broken set bonuses measured and the set screen on', async () => {
+		const host = fakeHost();
+		await rankForPlayer(host, SETTINGS, depsFor());
+
+		const [{ deps }] = rankCalls as [RankCall];
+		expect(deps.raidSimSkeleton).toBe(PAGE_SKELETON);
+		expect(simDatabaseResolverFor).toHaveBeenCalledWith(host.player, PAGE_SKELETON);
+		expect(deps.simDatabaseFor).toBe(pageDatabase);
+		expect(deps.epWeights).toBe(epWeightsFor('ret'));
+		expect(deps.measureBrokenSetValue).toBe(true);
+		expect(deps.setScreen).toBe('on');
+	});
+
 	it('hands every landed row to onLanded, in order', async () => {
 		const landed: RankedItem[] = [];
 		await rankForPlayer(fakeHost(), SETTINGS, depsFor({ onLanded: row => landed.push(row) }));
@@ -98,18 +112,15 @@ describe('rankForPlayer', () => {
 		expect(progressOf(host.player)).toMatchObject({ done: RANKING_FIXTURE.items.length, total: RANKING_FIXTURE.items.length });
 	});
 
-	it('resolves the partial ranking when Stop lands mid-run', async () => {
+	it('hands Stop to the engine as its signal, and resolves the partial ranking the engine returns with a duration', async () => {
+		const partial: PartialRanking = { ...RANKING_FIXTURE, items: RANKING_FIXTURE.items.slice(0, 2), complete: false };
+		rankBehaviour = ({ deps }) => new Promise(resolve => deps.signal?.addEventListener('abort', () => resolve(partial), { once: true }));
 		const controller = new AbortController();
-		let landed = 0;
-		const onLanded = () => {
-			landed += 1;
-			if (landed === 2) controller.abort();
-		};
-		const result = await rankForPlayer(fakeHost(), SETTINGS, depsFor({ signal: controller.signal, onLanded }));
+		const pending = rankForPlayer(fakeHost(), SETTINGS, depsFor({ signal: controller.signal }));
+		await vi.waitFor(() => expect(rankCalls).toHaveLength(1));
 
-		expect(result.complete).toBe(false);
-		expect(result.items).toHaveLength(2);
-		expect(result.durationMs).toBeGreaterThanOrEqual(0);
+		controller.abort();
+		expect(await pending).toEqual({ ...partial, durationMs: expect.any(Number), runner: 'WorkerPoolSimRunner' });
 	});
 
 	it('takes the run context before its first await, so an unmount after the click can end it', () => {
