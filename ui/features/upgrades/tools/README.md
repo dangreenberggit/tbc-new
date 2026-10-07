@@ -65,9 +65,9 @@ throwaway `ret-p5-run.mjs`. It drives a full or capped ret upgrades run against
 the packaged desktop binary on `:3333` — and writes a readback JSON recording
 what the tab actually did, not what the origin implies. The outer repo's
 `scripts/check_desktop_tab.py` (`pnpm desktop-gate:check`) drives it and judges
-the four transport signals; the harness only measures.
+the transport signals; the harness only measures.
 
-The four signals in the JSON:
+The three signals in the JSON:
 
 - **S1 `runner`** — the runner class the tab chose, from the `data-runner`
   attribute the tab writes on `[data-testid="upgrades-tab-root"]` after a live
@@ -81,8 +81,10 @@ The four signals in the JSON:
 - **S3 `servedWorker`** — a plain `fetch` of `sim_worker.js`, recording
   `wasmRefs` and `readyFalse` (the embedded server rewrites it to
   `net_worker.js`).
-- **S4 `screeningFallbackWarnings`** — count of page-console messages starting
-  `[upgrades] screening fell back`; must be 0 on a clean screened run.
+
+S4, a count of page-console messages starting `[upgrades] screening fell back`,
+is removed: nothing prints that message since the bulk screening pass was
+deleted (ticket 567).
 
 Run it from anywhere (Node 22+, no npm deps):
 

@@ -12,10 +12,12 @@
 //                  a dedicated Web Worker, its own CDP target, so page-session
 //                  Network.enable alone sees none of it
 //   - servedWorker the body the origin serves at sim_worker.js (S3)
-//   - screeningFallbackWarnings  count of "[upgrades] screening fell back" (S4)
+//
+// S4, a count of "[upgrades] screening fell back" console lines, is removed:
+// nothing prints that line since the bulk screening pass was deleted (ticket 567).
 //
 // The caller owns the server; this harness owns only the browser. See the
-// desktop-transport-gate stage plan for the four signals and the gate that
+// desktop-transport-gate stage plan for the signals and the gate that
 // judges them (scripts/check_desktop_tab.py). Node 22+ only (global WebSocket
 // and fetch, no npm deps).
 //
@@ -781,7 +783,6 @@ async function main() {
 	const requestsBySession = {};
 	const firstUrls = { bulkSimAsync: [], raidSimAsync: [], asyncProgress: [], other: [] };
 	let workerSessionsAttached = 0;
-	const screeningFallbackWarnings = [];
 
 	function classify(url) {
 		try {
@@ -813,14 +814,6 @@ async function main() {
 		requestsBySession[sk][kind] = (requestsBySession[sk][kind] || 0) + 1;
 		if (firstUrls[kind].length < 5) firstUrls[kind].push(params.response.url);
 	});
-	// Page-console capture for the screening-fallback warnings (S4, C30).
-	client.on(pageSession, 'Runtime.consoleAPICalled', params => {
-		const first = params.args?.[0]?.value;
-		if (typeof first === 'string' && first.startsWith('[upgrades] screening fell back')) {
-			screeningFallbackWarnings.push(first);
-		}
-	});
-
 	// Worker auto-attach: installed ONCE, before navigation, kept for the whole
 	// run. Every worker attach gets Network.enable + runIfWaitingForDebugger, or
 	// a respawned worker stays frozen (C25/G1).
@@ -947,8 +940,6 @@ async function main() {
 			workerSessionsAttached,
 			poolSize: pool?.poolSize ?? null,
 			poolSizeSource: pool?.poolSizeSource ?? null,
-			screeningFallbackWarnings: screeningFallbackWarnings.length,
-			screeningFallbackTexts: screeningFallbackWarnings,
 			forcedFallback: args.forceFallback,
 			forceFallbackRemaining,
 			phaseSet: phase.phaseSet,
@@ -1019,7 +1010,7 @@ async function main() {
 		`origin=${out.origin} runner=${out.runner} rows=${out.rowCount} ` +
 			`bulk=${out.requests.bulkSimAsync} raid=${out.requests.raidSimAsync} ` +
 			`workerSessions=${out.workerSessionsAttached} poolSize=${out.poolSize} ` +
-			`fallbackWarnings=${out.screeningFallbackWarnings} done=${out.done} elapsedS=${out.elapsedS} ` +
+			`done=${out.done} elapsedS=${out.elapsedS} ` +
 			`firstRowS=${out.firstRowS} clickToDoneS=${out.clickToDoneS}`,
 	);
 	if (args.captureRequests) {
