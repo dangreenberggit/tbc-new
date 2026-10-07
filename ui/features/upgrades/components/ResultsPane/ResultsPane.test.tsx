@@ -1,11 +1,11 @@
 import i18n from '@i18n/config';
-import { fireEvent, within } from '@testing-library/react';
+import { fakeHost } from '@sim/testing';
+import { fireEvent, render, within } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import englishCharacter from '../../../../../assets/locales/en/character.json';
 import englishTranslations from '../../../../../assets/locales/en/translation.json';
 import { fixtureRow } from '../../testing/ranking_fixture';
-import { renderOnPage } from '../../testing/render_on_page';
 
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
 vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favorite-stub" />, BatchToggle: () => <span data-testid="batch-stub" /> }));
@@ -22,12 +22,12 @@ afterAll(() => {
 	i18n.removeResourceBundle('en', 'character');
 });
 
-const CONTEXT = { itemOf: () => undefined, tip: {}, tagsOf: () => [] };
+const CONTEXT = { itemOf: () => undefined, sim: fakeHost().sim, tip: {}, tagsOf: () => [] };
 const onSort = () => {};
 
 describe('ResultsPane', () => {
 	it('shows the shortlist in a sortable table and the rest in a collapsed group', () => {
-		const { getAllByTestId, getByTestId } = renderOnPage(
+		const { getAllByTestId, getByTestId } = render(
 			<ResultsPane shortlist={[fixtureRow(0), fixtureRow(1)]} belowCutoff={[fixtureRow(5)]} rowContext={CONTEXT} onSort={onSort} />,
 		);
 
@@ -38,7 +38,7 @@ describe('ResultsPane', () => {
 	});
 
 	it('names the group columns for screen readers only, with the shared sort, under the shortlist head', () => {
-		const { getByTestId } = renderOnPage(
+		const { getByTestId } = render(
 			<ResultsPane
 				shortlist={[fixtureRow(0)]}
 				belowCutoff={[fixtureRow(5)]}
@@ -57,7 +57,7 @@ describe('ResultsPane', () => {
 	});
 
 	it('gives the group its own sortable head when no shortlist sits above it', () => {
-		const { getByTestId } = renderOnPage(<ResultsPane shortlist={[]} belowCutoff={[fixtureRow(5)]} rowContext={CONTEXT} onSort={onSort} />);
+		const { getByTestId } = render(<ResultsPane shortlist={[]} belowCutoff={[fixtureRow(5)]} rowContext={CONTEXT} onSort={onSort} />);
 		const group = getByTestId('upgrades-below-cutoff');
 		fireEvent.click(within(group).getByTestId('upgrades-below-cutoff-trigger'));
 
@@ -65,12 +65,12 @@ describe('ResultsPane', () => {
 	});
 
 	it('has no group when every row cleared the cutoff', () => {
-		const { queryByTestId } = renderOnPage(<ResultsPane shortlist={[fixtureRow(0)]} belowCutoff={[]} rowContext={CONTEXT} onSort={onSort} />);
+		const { queryByTestId } = render(<ResultsPane shortlist={[fixtureRow(0)]} belowCutoff={[]} rowContext={CONTEXT} onSort={onSort} />);
 		expect(queryByTestId('upgrades-below-cutoff')).toBeNull();
 	});
 
 	it('says no row cleared the cutoff in place of an empty table', () => {
-		const { getByTestId, queryByTestId } = renderOnPage(<ResultsPane shortlist={[]} belowCutoff={[fixtureRow(5)]} rowContext={CONTEXT} onSort={onSort} />);
+		const { getByTestId, queryByTestId } = render(<ResultsPane shortlist={[]} belowCutoff={[fixtureRow(5)]} rowContext={CONTEXT} onSort={onSort} />);
 
 		expect(queryByTestId('upgrades-results-table')).toBeNull();
 		expect(getByTestId('upgrades-empty-state').textContent).toContain('No upgrades found');

@@ -1,11 +1,11 @@
 import i18n from '@i18n/config';
-import { fireEvent, within } from '@testing-library/react';
+import { fakeHost } from '@sim/testing';
+import { fireEvent, render, within } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import englishCharacter from '../../../../../assets/locales/en/character.json';
 import englishTranslations from '../../../../../assets/locales/en/translation.json';
 import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
-import { renderOnPage } from '../../testing/render_on_page';
 
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
 vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favorite-stub" />, BatchToggle: () => <span data-testid="batch-stub" /> }));
@@ -27,7 +27,7 @@ afterAll(() => {
 	i18n.removeResourceBundle('en', 'character');
 });
 
-const CONTEXT: RowContext = { itemOf: () => undefined, tip: {}, tagsOf: () => [] };
+const CONTEXT: RowContext = { itemOf: () => undefined, sim: fakeHost().sim, tip: {}, tagsOf: () => [] };
 const FOUR = [fixtureRow(3), fixtureRow(0), fixtureRow(2), fixtureRow(1)];
 
 const cellsOf = (row: HTMLElement | undefined) =>
@@ -50,7 +50,7 @@ const bare = (rows: readonly RankedItem[], sort?: ResultsSort) => (
 
 describe('ResultsTable', () => {
 	it('shows rank, item, slot, DPS change and source for every row, in order', () => {
-		const { getByTestId } = renderOnPage(bare(RANKING_FIXTURE.items));
+		const { getByTestId } = render(bare(RANKING_FIXTURE.items));
 		const rows = rowsOf(getByTestId('upgrades-results-table'));
 
 		expect(rows).toHaveLength(RANKING_FIXTURE.items.length);
@@ -59,7 +59,7 @@ describe('ResultsTable', () => {
 
 	it('keeps each row’s element when rows arrive ahead of it, because rows are keyed by item', () => {
 		const [first, second] = [fixtureRow(0), fixtureRow(1)];
-		const { getByTestId, rerender } = renderOnPage(bare([second]));
+		const { getByTestId, rerender } = render(bare([second]));
 		const before = getByTestId('upgrades-results-table').querySelector(`[data-item-id="${second.itemId}"]`);
 
 		rerender(bare([first, second]));
@@ -67,7 +67,7 @@ describe('ResultsTable', () => {
 	});
 
 	it('orders rows by the sort it is given and numbers them in the order shown', () => {
-		const { getByTestId } = renderOnPage(bare(FOUR, { key: 'item', dir: 'asc' }));
+		const { getByTestId } = render(bare(FOUR, { key: 'item', dir: 'asc' }));
 		const table = getByTestId('upgrades-results-table');
 
 		expect(namesOf(table)).toEqual(["Cataclysm's Edge", 'Cursed Vision of Sargeras', 'Torch of the Damned', "Vengeful Gladiator's Greatsword"]);
@@ -75,13 +75,13 @@ describe('ResultsTable', () => {
 	});
 
 	it('keeps the order it is given when there is no sort', () => {
-		const { getByTestId } = renderOnPage(bare(FOUR));
+		const { getByTestId } = render(bare(FOUR));
 		expect(namesOf(getByTestId('upgrades-results-table'))).toEqual(FOUR.map(row => row.name));
 	});
 
 	it('asks for a sort by the header clicked, and marks the sorted column for assistive tech', () => {
 		const onSort = vi.fn();
-		const { getByTestId, getAllByRole } = renderOnPage(
+		const { getByTestId, getAllByRole } = render(
 			<ResultsTable>
 				<SortableResultsHead sort={{ key: 'delta_dps', dir: 'desc' }} onSort={onSort} />
 				<ResultRows rows={FOUR} rowContext={CONTEXT} sort={{ key: 'delta_dps', dir: 'desc' }} />
@@ -98,7 +98,7 @@ describe('ResultsTable', () => {
 	});
 
 	it('has a plain head with no sort buttons while a run is in flight', () => {
-		const { getByTestId, queryByTestId } = renderOnPage(
+		const { getByTestId, queryByTestId } = render(
 			<ResultsTable data-provisional="true">
 				<PlainResultsHead />
 				<ResultRows rows={FOUR} rowContext={CONTEXT} />
@@ -111,7 +111,7 @@ describe('ResultsTable', () => {
 	});
 
 	it('has no head when composed without one, and still sorts and numbers its rows', () => {
-		const { getByTestId } = renderOnPage(bare(FOUR, { key: 'item', dir: 'desc' }));
+		const { getByTestId } = render(bare(FOUR, { key: 'item', dir: 'desc' }));
 		const table = getByTestId('upgrades-results-table');
 
 		expect(table.querySelector('thead')).toBeNull();
@@ -121,7 +121,7 @@ describe('ResultsTable', () => {
 
 	it('gives a table with a visible head and one with a screen-reader head the same column widths, one per head cell', () => {
 		const widths = (table: HTMLElement) => [...table.querySelectorAll('col')].map(col => col.className);
-		const { getAllByTestId } = renderOnPage(
+		const { getAllByTestId } = render(
 			<>
 				<ResultsTable>
 					<PlainResultsHead />

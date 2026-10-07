@@ -1,19 +1,21 @@
 import { ItemSource } from '@features/gear/components/SelectorModal/ItemSource';
 import { Profession } from '@generated/proto/common';
 import { RepFaction, RepLevel, UIItem } from '@generated/proto/ui';
-import type { Sim } from '@sim/sim';
+import { fakeHost } from '@sim/testing';
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { itemSourceShows } from './item_source';
 
 const ZONE_ID = 10;
-const sim = {
-	db: {
-		getZone: (id: number) => (id === ZONE_ID ? { id, name: 'Black Temple' } : null),
-		getNpc: (id: number) => (id === 20 ? { id, name: 'Illidan Stormrage' } : null),
+const { sim } = fakeHost({
+	sim: {
+		db: {
+			getZone: (id: number) => (id === ZONE_ID ? { id, name: 'Black Temple' } : null),
+			getNpc: (id: number) => (id === 20 ? { id, name: 'Illidan Stormrage' } : null),
+		},
 	},
-} as Partial<Sim> as Sim;
+});
 
 const drop = (zoneId: number) => ({ source: { oneofKind: 'drop' as const, drop: { zoneId, npcId: 20, difficulty: 0, otherName: '', category: '' } } });
 const quest = (name: string) => ({ source: { oneofKind: 'quest' as const, quest: { id: 1, name } } });

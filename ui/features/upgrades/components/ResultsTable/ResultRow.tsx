@@ -1,4 +1,5 @@
-import type { ItemQuality } from '@generated/proto/common';
+import type { UIItem } from '@generated/proto/ui';
+import type { Sim } from '@sim/sim';
 import clsx from 'clsx';
 import { memo } from 'react';
 
@@ -17,8 +18,10 @@ import { SourceCell } from './SourceCell';
  * kept stable, so a memoised row renders again only when its own row changes.
  */
 export type RowContext = {
-	/** The sim database's name and quality for an item, or undefined when it has none. */
-	itemOf: (itemId: number) => { name: string; quality: ItemQuality } | undefined;
+	/** The sim database's item, or undefined when it has none. */
+	itemOf: (itemId: number) => UIItem | undefined;
+	/** The page's sim, whose database the Source cell's links read. */
+	sim: Sim;
 	/** What the set-bonus hint and the %-rule note are measured against; it has no ranking while a run is in flight. */
 	tip: SetBonusTipContext;
 	/** The names of the selected sets that hold an item (ticket 430); one array per item, so the name cell's memo holds. */
@@ -52,7 +55,7 @@ export const ResultRow = memo(({ row, position, context }: ResultRowProps) => (
 		<ItemNameCell row={row} quality={context.itemOf(row.itemId)?.quality} tags={context.tagsOf(row.itemId)} />
 		<td className="py-1 pr-3">{slotLabel(row)}</td>
 		<DeltaCell row={row} context={context} />
-		<SourceCell row={row} />
+		<SourceCell row={row} item={context.itemOf(row.itemId)} sim={context.sim} />
 		<td className="py-1">
 			<FavoriteToggle itemId={row.itemId} />
 		</td>

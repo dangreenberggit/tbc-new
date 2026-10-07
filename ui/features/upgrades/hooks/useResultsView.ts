@@ -36,6 +36,7 @@ export function useResultsView(run: RunState, selectedSets: readonly SetOption[]
 	const rowContext = useMemo<RowContext>(
 		() => ({
 			itemOf: itemId => sim.db.getItemById(itemId),
+			sim,
 			tip: { ranking, wornItemIds: measuredOn?.wornItemIds, specId: measuredOn?.specId, withSetPotential },
 			tagsOf,
 			dpsKey: dpsSortKeyFor(ranking, withSetPotential),

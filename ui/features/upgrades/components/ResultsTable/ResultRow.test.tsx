@@ -1,7 +1,6 @@
 import { ItemQuality } from '@generated/proto/common';
 import { DungeonDifficulty, UIItem } from '@generated/proto/ui';
 import i18n from '@i18n/config';
-import { SimHostProvider } from '@sim/context/SimHostContext';
 import { ActionId } from '@sim/proto/action_id';
 import { fakeHost } from '@sim/testing';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
@@ -35,24 +34,20 @@ afterAll(() => {
 	i18n.removeResourceBundle('en', 'character');
 });
 
-const ITEMS: Record<number, { name: string; quality: ItemQuality }> = {
-	32332: { name: 'Torch of the Damned', quality: ItemQuality.ItemQualityEpic },
-	30882: { name: 'Blade of Infamy', quality: ItemQuality.ItemQualityEpic },
+// Items with no source, so the Source cell shows the engine's label.
+const ITEMS: Record<number, UIItem> = {
+	32332: UIItem.create({ id: 32332, name: 'Torch of the Damned', quality: ItemQuality.ItemQualityEpic }),
+	30882: UIItem.create({ id: 30882, name: 'Blade of Infamy', quality: ItemQuality.ItemQualityEpic }),
 };
-const CONTEXT: RowContext = { itemOf: itemId => ITEMS[itemId], tip: { ranking: RANKING_FIXTURE, specId: 'ret' }, tagsOf: () => [] };
+const CONTEXT: RowContext = { itemOf: itemId => ITEMS[itemId], sim: fakeHost().sim, tip: { ranking: RANKING_FIXTURE, specId: 'ret' }, tagsOf: () => [] };
 
-/** A page whose sim database has no items, so the Source cell shows the engine's label. */
-const NO_ITEMS = fakeHost({ sim: { db: { getItemById: () => undefined } } });
-
-const renderRow = (row: RankedItem, context: RowContext = CONTEXT, page = NO_ITEMS) => {
+const renderRow = (row: RankedItem, context: RowContext = CONTEXT) => {
 	const { container } = render(
-		<SimHostProvider host={page}>
-			<table>
-				<tbody>
-					<ResultRow row={row} position={3} context={context} />
-				</tbody>
-			</table>
-		</SimHostProvider>,
+		<table>
+			<tbody>
+				<ResultRow row={row} position={3} context={context} />
+			</tbody>
+		</table>,
 	);
 	const tr = container.querySelector('tr');
 	if (!tr) throw new Error('no row rendered');
@@ -89,16 +84,16 @@ describe('ResultRow', () => {
 				},
 			],
 		});
-		const page = fakeHost({
+		const { sim } = fakeHost({
 			sim: {
 				db: {
-					getItemById: (id: number) => (id === torch.id ? torch : undefined),
 					getZone: (id: number) => (id === BLACK_TEMPLE ? { id, name: 'Black Temple' } : null),
 					getNpc: (id: number) => (id === ILLIDAN ? { id, name: 'Illidan Stormrage' } : null),
 				},
 			},
 		});
-		const link = within(renderRow(fixtureRow(0), CONTEXT, page)).getByRole('link', { name: /Illidan Stormrage/ });
+		const context = { ...CONTEXT, itemOf: (id: number) => (id === torch.id ? torch : undefined), sim };
+		const link = within(renderRow(fixtureRow(0), context)).getByRole('link', { name: /Illidan Stormrage/ });
 		expect(link.textContent).toBe('Black Temple (N)Illidan Stormrage');
 		expect(link.getAttribute('href')).toBe(ActionId.makeNpcUrl(ILLIDAN));
 	});

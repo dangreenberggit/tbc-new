@@ -70,7 +70,7 @@ export const sourceLabel = (source: ItemSource): string => ('zone' in source ? s
 /** A row with several sources names the first, as the engine orders them. */
 export const rowSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>): string => sourceLabel(row.sources?.[0] ?? row.source);
 
-/** The slot column sorts on its cell's text and the source column on the engine's label (a drop's zone, which its linked cell names first, else the source's kind); the export sorts with the same labels, so its order is the order on screen. */
+/** The slot column sorts on its cell's text and the source column on the engine's label (a drop's zone, which its linked cell names first, else the source's kind), as the old tab's did; the export sorts with the same labels, so its order is the order on screen. */
 export const SORT_LABELS: SortLabels<Pick<RankedItem, 'slot' | 'slotChoice' | 'source' | 'sources'>> = { slot: slotLabel, source: rowSourceLabel };
 
 /** What loading a fixture file did, in the page's words. */

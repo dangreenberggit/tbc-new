@@ -1,5 +1,6 @@
 import { ItemSource } from '@features/gear/components/SelectorModal/ItemSource';
-import { useSim } from '@sim/context/SimHostContext';
+import type { UIItem } from '@generated/proto/ui';
+import type { Sim } from '@sim/sim';
 import { memo } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
@@ -8,6 +9,9 @@ import { itemSourceShows } from '../../utils/item_source';
 
 export interface SourceCellProps {
 	row: RankedItem;
+	/** The sim database's item; undefined when it has none. */
+	item: UIItem | undefined;
+	sim: Sim;
 }
 
 /**
@@ -17,12 +21,8 @@ export interface SourceCellProps {
  * with the row's other costly cells, so a landing row renders only the Rank
  * cell again.
  */
-export const SourceCell = memo(({ row }: SourceCellProps) => {
-	const sim = useSim();
-	const item = sim.db.getItemById(row.itemId);
-	return (
-		<td className="py-1 pr-3">
-			{item && itemSourceShows(item, sim) ? <ItemSource item={item} sim={sim} /> : <small className="text-muted">{rowSourceLabel(row)}</small>}
-		</td>
-	);
-});
+export const SourceCell = memo(({ row, item, sim }: SourceCellProps) => (
+	<td className="py-1 pr-3">
+		{item && itemSourceShows(item, sim) ? <ItemSource item={item} sim={sim} /> : <small className="text-muted">{rowSourceLabel(row)}</small>}
+	</td>
+));

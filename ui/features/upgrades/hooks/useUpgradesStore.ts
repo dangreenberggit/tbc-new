@@ -23,8 +23,9 @@ const stores = new WeakMap<Sim, UpgradesStore>();
  * it already has, with no provider; the first reader creates it. That reader is
  * usually a render, so the render that creates the store also installs the
  * page-lifetime phase subscription (`followPhase`); it writes no state, and the
- * `WeakMap` hands a repeated render (StrictMode) the same store. Whether a
- * render React discards before commit leaves a store behind is untested.
+ * `WeakMap` hands a repeated render (StrictMode) the same store. The store is
+ * in the map before `followPhase` runs, so a render React discards before
+ * commit leaves the one store the next render for that `Sim` finds.
  */
 export function upgradesStoreFor(host: IndividualSimHost<Spec>): UpgradesStore {
 	let store = stores.get(host.sim);
