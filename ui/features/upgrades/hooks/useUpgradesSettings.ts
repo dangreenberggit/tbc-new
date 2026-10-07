@@ -69,12 +69,12 @@ export function useUpgradesSettings(): UpgradesSettings {
 	// the same settings and its `memo` skips the render (review K2-4).
 	const runSettings = useMemo(() => runSettingsOf(selection, state), [selection, state]);
 	const { excludedSources } = state;
-	const prune = runSettings.prune ?? false;
+	const effectivePrune = runSettings.prune ?? false;
 	// Memoised for the same renders, on the pool filters alone: the effective pool is a filter over the whole pool,
 	// which an iterations or cap keystroke must not run again.
 	const eligibleCount = useMemo(
-		() => eligibleCountOf(offer, { excludedSources, selectedSetItemIds: selection.selectedItemIds, prune }, phase),
-		[offer, excludedSources, selection, prune, phase],
+		() => eligibleCountOf(offer, { excludedSources, selectedSetItemIds: selection.selectedItemIds, prune: effectivePrune }, phase),
+		[offer, excludedSources, selection, effectivePrune, phase],
 	);
 
 	return useMemo((): UpgradesSettings => {

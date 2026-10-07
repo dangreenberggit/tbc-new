@@ -17,8 +17,10 @@ describe('ViewToggles', () => {
 	});
 
 	it('shows only the toggles on offer, each checked as set', () => {
-		const { queryByTestId } = render(<ViewToggles offered={{ withSetPotential: true, onlyBis: false }} toggles={BOTH} maxPhase={3} onChange={vi.fn()} />);
-		expect(within(queryByTestId('upgrades-view-set-potential')!).getByRole('checkbox').getAttribute('aria-checked')).toBe('true');
+		const { getByTestId, queryByTestId } = render(
+			<ViewToggles offered={{ withSetPotential: true, onlyBis: false }} toggles={BOTH} maxPhase={3} onChange={vi.fn()} />,
+		);
+		expect(within(getByTestId('upgrades-view-set-potential')).getByRole('checkbox').getAttribute('aria-checked')).toBe('true');
 		expect(queryByTestId('upgrades-view-only-bis')).toBeNull();
 	});
 

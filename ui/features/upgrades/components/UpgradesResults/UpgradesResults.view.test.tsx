@@ -85,13 +85,13 @@ describe('UpgradesResults view toggles', () => {
 	});
 
 	it('with Set potential, moves a row with set credit above a plain row of higher ΔDPS, in the view and in the ΔDPS sort', () => {
-		const { container, getAllByTestId } = show(done(WITH_POTENTIAL));
+		const { container } = show(done(WITH_POTENTIAL));
 		expect(ahead(rowIds(container), 28830, 30989)).toBe(true);
 
 		tick(container, 'upgrades-view-set-potential');
 		expect(ahead(rowIds(container), 30989, 28830)).toBe(true);
 
-		fireEvent.click(getAllByTestId('upgrades-sort-delta_dps')[0]!);
+		fireEvent.click(within(activePane(container)).getByTestId('upgrades-sort-delta_dps'));
 		expect(ahead(rowIds(container), 30989, 28830)).toBe(true);
 	});
 

@@ -2,13 +2,13 @@
  * The Upgrades tab's dev-only URL flags, read in this one file so `model/`
  * never sees `location` and no component reads the query itself.
  *
- * `?upgrades-fixture=<name>` renders a saved ranking with no sim run;
- * `?upgrades-runner=replay:<name>` streams that ranking through the real run
- * path; `?upgrades-dev&cap=N&iterations=M` seeds a short live run.
+ * `?upgrades-runner=replay:<name>` streams a saved ranking through the real
+ * run path; `?upgrades-dev&cap=N&iterations=M` seeds a short live run. The
+ * fixture link `?upgrades-fixture=<name>` is read by the script the fixture
+ * plugin injects (`tools/vite/tab_fixtures.mts`), not here.
  */
 
 export type DevFlags = {
-	fixture?: string;
 	replay?: string;
 	cap?: number;
 	iterations?: number;
@@ -37,9 +37,6 @@ const positiveInteger = (raw: string | null): number | undefined => {
 export function readDevFlags(search: string): DevFlags {
 	const params = new URLSearchParams(search);
 	const flags: DevFlags = {};
-
-	const fixture = params.get('upgrades-fixture');
-	if (fixture) flags.fixture = fixture;
 
 	const runner = params.get('upgrades-runner');
 	if (runner?.startsWith(REPLAY_PREFIX) && runner.length > REPLAY_PREFIX.length) {

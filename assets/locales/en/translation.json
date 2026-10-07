@@ -2643,8 +2643,7 @@
 			"set_potential": "Set potential",
 			"set_potential_tooltip": "When on, a set piece's DPS gain includes the gain of equipping the other set pieces its set bonus needs, if that adds to the total.",
 			"only_bis": "BiS only",
-			"only_bis_tooltip": "Show only items on the phase's curated BiS list.",
-			"only_bis_qualifier": "{{phase}} list"
+			"only_bis_tooltip": "Show only items on the phase's curated BiS list. {{phase}} list"
 		},
 		"export": {
 			"title": "JSON export",

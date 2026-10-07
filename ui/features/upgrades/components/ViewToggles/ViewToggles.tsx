@@ -53,7 +53,7 @@ export const ViewToggles = ({ offered, toggles, maxPhase, onChange }: ViewToggle
 				<ViewToggle
 					testId="upgrades-view-only-bis"
 					label={i18n.t('upgrades_tab.view.only_bis')}
-					tooltip={`${i18n.t('upgrades_tab.view.only_bis_tooltip')} ${i18n.t('upgrades_tab.view.only_bis_qualifier', { phase: i18n.t(`common.phases.${maxPhase}`) })}`}
+					tooltip={i18n.t('upgrades_tab.view.only_bis_tooltip', { phase: i18n.t(`common.phases.${maxPhase}`) })}
 					checked={toggles.onlyBis}
 					onChange={on => onChange('onlyBis', on)}
 				/>

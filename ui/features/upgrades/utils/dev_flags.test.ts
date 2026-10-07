@@ -16,10 +16,6 @@ describe('readDevFlags', () => {
 		});
 	});
 
-	it('reads the fixture name', () => {
-		expect(readDevFlags('?upgrades-fixture=feral-p3-nordrassil4')).toEqual({ fixture: 'feral-p3-nordrassil4' });
-	});
-
 	it('ignores cap and iterations without upgrades-dev', () => {
 		expect(readDevFlags('?cap=10&iterations=500')).toEqual({});
 	});
