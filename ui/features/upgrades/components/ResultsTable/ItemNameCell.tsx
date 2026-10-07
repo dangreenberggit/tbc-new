@@ -33,6 +33,7 @@ export const ItemNameCell = memo(({ row, quality, tags }: ItemNameCellProps) => 
 		<td className="py-1 pr-3">
 			<span className="flex items-center gap-2">
 				<WowheadIcon as="div" className="size-6 shrink-0" iconUrl={iconUrl} />
+				{/* The table's floor fits every name's widest word (`ResultsTable`); `wrap-anywhere` only keeps a longer one inside the fixed cell. */}
 				<span className="grid min-w-0 wrap-anywhere">
 					<a
 						href={href || undefined}
