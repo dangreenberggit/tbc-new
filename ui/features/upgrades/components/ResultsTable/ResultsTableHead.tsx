@@ -87,17 +87,19 @@ export const PlainResultsHead = () => (
 	</HeadRow>
 );
 
+const isSortColumn = (column: Column): column is ResultsSortKey => (SORT_COLUMNS as readonly Column[]).includes(column);
+
 /**
- * A head only screen readers get, for a table that sits under another table's
- * visible head (the below-cutoff group): every column named, the names
- * visually hidden, so the row takes no height and the shared widths still
- * place each column under the visible head.
+ * A head only screen readers get, for a table under another table's visible
+ * head (the below-cutoff group under the shortlist): every column named and
+ * the sort said, the names visually hidden, so the row takes no height and the
+ * shared widths still place each column under the visible head.
  */
-export const ScreenReaderResultsHead = () => (
+export const ScreenReaderResultsHead = ({ sort }: { sort?: ResultsSort }) => (
 	<thead>
 		<tr>
 			{COLUMNS.map(column => (
-				<th key={column}>
+				<th key={column} aria-sort={isSortColumn(column) ? ariaSort(sort, column) : undefined}>
 					<span className="sr-only">{columnName(column)}</span>
 				</th>
 			))}

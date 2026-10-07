@@ -12,7 +12,7 @@ vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favor
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
 
 const { ResultRows, ResultsTable } = await import('./ResultsTable');
-const { PlainResultsHead, SortableResultsHead } = await import('./ResultsTableHead');
+const { PlainResultsHead, ScreenReaderResultsHead, SortableResultsHead } = await import('./ResultsTableHead');
 type RowContext = import('./ResultRow').RowContext;
 type ResultsSort = import('../../model/results_sort').ResultsSort;
 type RankedItem = import('../../model/engine/rank').RankedItem;
@@ -118,7 +118,7 @@ describe('ResultsTable', () => {
 		expect(namesOf(table)[0]).toBe("Vengeful Gladiator's Greatsword");
 	});
 
-	it('gives a table with a head and one without the same column widths, one per head cell', () => {
+	it('gives a table with a visible head and one with a screen-reader head the same column widths, one per head cell', () => {
 		const widths = (table: HTMLElement) => [...table.querySelectorAll('col')].map(col => col.className);
 		const { getAllByTestId } = render(
 			<>
@@ -126,12 +126,16 @@ describe('ResultsTable', () => {
 					<PlainResultsHead />
 					<ResultRows rows={FOUR} rowContext={CONTEXT} />
 				</ResultsTable>
-				{bare(FOUR)}
+				<ResultsTable>
+					<ScreenReaderResultsHead />
+					<ResultRows rows={FOUR} rowContext={CONTEXT} />
+				</ResultsTable>
 			</>,
 		);
-		const [headed, headless] = getAllByTestId('upgrades-results-table') as [HTMLElement, HTMLElement];
+		const [visible, screenReader] = getAllByTestId('upgrades-results-table') as [HTMLElement, HTMLElement];
 
-		expect(widths(headed)).toHaveLength(headed.querySelectorAll('thead th').length);
-		expect(widths(headless)).toEqual(widths(headed));
+		expect(widths(visible)).toHaveLength(visible.querySelectorAll('thead th').length);
+		expect(widths(screenReader)).toHaveLength(screenReader.querySelectorAll('thead th').length);
+		expect(widths(screenReader)).toEqual(widths(visible));
 	});
 });

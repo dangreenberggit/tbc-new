@@ -1,5 +1,5 @@
 import i18n from '@i18n/config';
-import { render, within } from '@testing-library/react';
+import { fireEvent, render, within } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import englishCharacter from '../../../../../assets/locales/en/character.json';
@@ -34,6 +34,33 @@ describe('ResultsPane', () => {
 		expect(within(getByTestId('upgrades-results-table')).getAllByTestId('upgrades-result-row')).toHaveLength(2);
 		expect(getByTestId('upgrades-sort-item')).not.toBeNull();
 		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 item(s) below the cutoff');
+	});
+
+	it('names the group columns for screen readers only, with the shared sort, under the shortlist head', () => {
+		const { getByTestId } = render(
+			<ResultsPane
+				shortlist={[fixtureRow(0)]}
+				belowCutoff={[fixtureRow(5)]}
+				rowContext={CONTEXT}
+				sort={{ key: 'delta_dps', dir: 'desc' }}
+				onSort={onSort}
+			/>,
+		);
+		const group = getByTestId('upgrades-below-cutoff');
+		fireEvent.click(within(group).getByTestId('upgrades-below-cutoff-trigger'));
+
+		const headers = within(within(group).getByTestId('upgrades-results-table')).getAllByRole('columnheader');
+		expect(headers.map(header => header.textContent)).toEqual(['Rank', 'Item', 'Slot', 'DPS', 'Source', 'Favorite', 'Batch sim']);
+		expect(headers.map(header => header.getAttribute('aria-sort'))).toEqual([null, 'none', 'none', 'descending', 'none', null, null]);
+		expect(within(group).queryByRole('button', { name: /^Item/ })).toBeNull();
+	});
+
+	it('gives the group its own sortable head when no shortlist sits above it', () => {
+		const { getByTestId } = render(<ResultsPane shortlist={[]} belowCutoff={[fixtureRow(5)]} rowContext={CONTEXT} onSort={onSort} />);
+		const group = getByTestId('upgrades-below-cutoff');
+		fireEvent.click(within(group).getByTestId('upgrades-below-cutoff-trigger'));
+
+		expect(within(group).getByTestId('upgrades-sort-item')).not.toBeNull();
 	});
 
 	it('has no group when every row cleared the cutoff', () => {
