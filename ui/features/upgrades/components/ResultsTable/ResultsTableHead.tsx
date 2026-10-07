@@ -40,6 +40,8 @@ export const RESULTS_COLUMNS = (
 	</colgroup>
 );
 
+const columnName = (column: Column) => i18n.t(`upgrades_tab.results.${column}`);
+
 const columnClass = (key: ResultsSortKey) => clsx('py-1 pr-3', key === 'delta_dps' && 'text-right');
 
 const ariaSort = (sort: ResultsSort | undefined, key: ResultsSortKey) => {
@@ -62,13 +64,13 @@ const SortIndicator = ({ dir }: { dir: ResultsSort['dir'] }) => (
 const HeadRow = ({ children }: { children: ReactNode }) => (
 	<thead>
 		<tr className="border-b border-b-border text-left">
-			<th className="py-1 pr-3">{i18n.t('upgrades_tab.results.rank')}</th>
+			<th className="py-1 pr-3">{columnName('rank')}</th>
 			{children}
 			<th className="py-1">
-				<span className="sr-only">{i18n.t('upgrades_tab.results.favorite')}</span>
+				<span className="sr-only">{columnName('favorite')}</span>
 			</th>
 			<th className="py-1">
-				<span className="sr-only">{i18n.t('upgrades_tab.results.batch')}</span>
+				<span className="sr-only">{columnName('batch')}</span>
 			</th>
 		</tr>
 	</thead>
@@ -79,10 +81,28 @@ export const PlainResultsHead = () => (
 	<HeadRow>
 		{SORT_COLUMNS.map(key => (
 			<th key={key} className={columnClass(key)}>
-				{i18n.t(`upgrades_tab.results.${key}`)}
+				{columnName(key)}
 			</th>
 		))}
 	</HeadRow>
+);
+
+/**
+ * A head only screen readers get, for a table that sits under another table's
+ * visible head (the below-cutoff group): every column named, the names
+ * visually hidden, so the row takes no height and the shared widths still
+ * place each column under the visible head.
+ */
+export const ScreenReaderResultsHead = () => (
+	<thead>
+		<tr>
+			{COLUMNS.map(column => (
+				<th key={column}>
+					<span className="sr-only">{columnName(column)}</span>
+				</th>
+			))}
+		</tr>
+	</thead>
 );
 
 export interface SortableResultsHeadProps {
@@ -100,7 +120,7 @@ export const SortableResultsHead = ({ sort, onSort }: SortableResultsHeadProps) 
 					className="text-inherit [font:inherit] focus-visible:focus-ring"
 					data-testid={`upgrades-sort-${key}`}
 					onClick={() => onSort(key)}>
-					{i18n.t(`upgrades_tab.results.${key}`)}
+					{columnName(key)}
 					{sort?.key === key && <SortIndicator dir={sort.dir} />}
 				</Button>
 			</th>

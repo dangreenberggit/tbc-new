@@ -33,12 +33,19 @@ describe('BelowCutoffGroup', () => {
 		expect(queryByTestId('upgrades-results-table')).toBeNull();
 	});
 
-	it('shows its rows, numbered from 1, when opened, in a table with no head of its own', () => {
+	it('names its columns for screen readers, as the shortlist head does', () => {
+		const { getByTestId } = render(<BelowCutoffGroup rows={ROWS} rowContext={CONTEXT} />);
+		fireEvent.click(getByTestId('upgrades-below-cutoff-trigger'));
+
+		const headers = within(getByTestId('upgrades-results-table')).getAllByRole('columnheader');
+		expect(headers.map(header => header.textContent)).toEqual(['Rank', 'Item', 'Slot', 'DPS', 'Source', 'Favorite', 'Batch sim']);
+	});
+
+	it('shows its rows, numbered from 1, when opened', () => {
 		const { getByTestId } = render(<BelowCutoffGroup rows={ROWS} rowContext={CONTEXT} />);
 		fireEvent.click(getByTestId('upgrades-below-cutoff-trigger'));
 
 		const table = getByTestId('upgrades-results-table');
-		expect(table.querySelector('thead')).toBeNull();
 		const rows = within(table).getAllByTestId('upgrades-result-row');
 		expect(rows.map(row => [within(row).getAllByRole('cell')[0]?.textContent, row.dataset.itemId])).toEqual([
 			['1', FIRST_ID],
