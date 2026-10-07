@@ -18,8 +18,8 @@ const COLUMNS: readonly Column[] = ['rank', ...SORT_COLUMNS, 'favorite', 'batch'
  * Each width is a little over the widest cell the ret-p3-p2 and feral-p3-p2bis
  * fixtures put in that column with the content's own widths (rank 50, slot 90,
  * ΔDPS 76, toggles 30 px at 1280); item, slot and source text wraps. The item column
- * has no width and takes the rest of the table, so a long word in an item name
- * breaks (`ItemNameCell`) rather than run into the next column.
+ * has no width and takes the rest of the table; the table's floor
+ * (`ResultsTable`) sets how narrow it can get.
  */
 const COLUMN_WIDTH: Record<Column, string | undefined> = {
 	rank: 'w-15',

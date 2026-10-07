@@ -17,6 +17,8 @@
 //         box, and nothing positioned inside it escapes that box);
 //     (7) no clipped text, and nothing in a table cell past the cell;
 //     (12) the ΔDPS figure inside its cell;
+//     (14) no item name breaks inside a word (a break sits at a space or
+//         after a hyphen; A-K5-name-wrap);
 //     (13) at 1280, at least 8 px between the two columns;
 //     the A1 fact: how far each below-cutoff column sits from its head;
 //     axe once, at 653.
@@ -98,7 +100,7 @@ const postRunExpression = `(async () => {
 		await waitFor(() => group.querySelector('[data-testid="upgrades-results-table"] tbody tr'), 5000);
 		await sleep(200);
 	}
-	const multiLine = [], clipped = [], pastCell = [], figureOutside = [];
+	const multiLine = [], clipped = [], pastCell = [], figureOutside = [], midWord = [];
 	const tables = [...pane.querySelectorAll('[data-testid="upgrades-results-table"]')];
 	let rows = 0;
 	for (const tr of tables.flatMap(t => [...t.querySelectorAll('tbody tr')])) {
@@ -111,6 +113,14 @@ const postRunExpression = `(async () => {
 			const range = document.createRange(); range.selectNodeContents(figure);
 			const f = range.getBoundingClientRect(), c = delta.getBoundingClientRect();
 			if (f.left < c.left - TOL || f.right > c.right + TOL) figureOutside.push(delta.textContent.trim());
+		}
+	}
+	const charTop = (node, i) => { const r = document.createRange(); r.setStart(node, i); r.setEnd(node, i + 1); return Math.round(r.getBoundingClientRect().top); };
+	for (const a of tables.flatMap(t => [...t.querySelectorAll('[data-testid="upgrades-item-name"]')])) {
+		const text = a.textContent, node = a.firstChild;
+		for (let i = 1; i < text.length; i++) {
+			if (charTop(node, i) <= charTop(node, i - 1)) continue;
+			if (text[i - 1] !== ' ' && text[i] !== ' ' && text[i - 1] !== '-') midWord.push(text.slice(0, i) + '|' + text.slice(i));
 		}
 	}
 	for (const cell of tables.flatMap(t => [...t.querySelectorAll('td, th')])) {
@@ -139,7 +149,8 @@ const postRunExpression = `(async () => {
 	const card = byTestId('upgrades-run-settings').getBoundingClientRect();
 	return {
 		pane: pane.id, rows, multiLine: multiLine.slice(0, 10), clipped: clipped.slice(0, 10), pastCell: pastCell.slice(0, 10),
-		figureOutside: figureOutside.slice(0, 10), counts: [multiLine.length, clipped.length, pastCell.length, figureOutside.length],
+		figureOutside: figureOutside.slice(0, 10), midWord: midWord.slice(0, 10),
+		counts: [multiLine.length, clipped.length, pastCell.length, figureOutside.length, midWord.length],
 		a1: { measuredRows: groupTable ? groupTable.querySelectorAll('tbody tr').length : 0, offsets, maxAbs: Math.max(0, ...offsets.map(Math.abs)) },
 		columnGap: Math.round(card.left - left.right), cardBesideResults: card.top < left.bottom && card.left > left.left,
 		page: { scrollWidth: document.documentElement.scrollWidth, clientWidth: document.documentElement.clientWidth },
@@ -187,6 +198,7 @@ function judgePostRun(width, m, facts) {
 		m.clipped.length || m.pastCell.length ? { clipped: m.clipped, pastCell: m.pastCell } : undefined,
 	);
 	check(12, width, m.figureOutside.length === 0, m.figureOutside.length ? m.figureOutside : undefined);
+	check(14, width, m.midWord.length === 0, m.midWord.length ? m.midWord : undefined);
 	if (width >= XL) check(13, width, m.cardBesideResults && m.columnGap >= MIN_COLUMN_GAP, { columnGap: m.columnGap });
 	facts.push({ fact: 'a1-below-cutoff-column-offsets', width, pane: m.pane, rows: m.rows, ...m.a1 });
 }

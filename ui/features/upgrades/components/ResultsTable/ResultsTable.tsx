@@ -15,9 +15,10 @@ export type ResultsTableProps = Omit<ComponentPropsWithoutRef<'table'>, 'classNa
  * read and its column widths. The caller composes its head, if it has one, and
  * `ResultRows` inside. Every table is equally wide, the full width, so with the
  * shared widths every column of one table lines up with the same column of the
- * others. Its floor (602 px) leaves the item column 139 px for text, wider than
- * the widest word in any universe's item names ("Shadowmaster's", 125.5 px), so
- * a name breaks only between words; below the floor the box scrolls. The scroll
+ * others. Its floor (602 px) leaves 139 px for item-name text (measured in the
+ * gate's Chromium), wider than the widest unhyphenated word in any universe's
+ * item names ("Shadowmaster's", 125.5 px), so a name breaks only between words
+ * (layout gate check 14); below the floor the box scrolls. The scroll
  * box is `relative` so it is the containing block of the head's screen-reader
  * labels (`sr-only` is absolutely positioned): otherwise they escape the box's
  * clip and widen the page at 375 px (layout gate check 1, post-run).
