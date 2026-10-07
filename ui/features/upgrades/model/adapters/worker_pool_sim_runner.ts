@@ -19,9 +19,8 @@
  * candidate, unsharded, and the pool's own least-busy-worker balancing
  * (`WorkerPoolManager`) is what runs several candidates concurrently.
  *
- * This class has no `runBulkScreen`, so `rankUpgrades` screens candidates one
- * sim at a time too. The old tab's bulk screening runners were measured slower
- * than this loop and deleted (tbc-gear-prio tickets 411 and 567).
+ * The old tab's bulk screening runners were measured slower than this loop and
+ * deleted, with the engine's bulk branch (tbc-gear-prio tickets 411 and 567).
  */
 
 import { ComputeStatsRequest, RaidSimRequest as RaidSimRequestProto } from '@generated/proto/api';

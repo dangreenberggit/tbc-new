@@ -40,103 +40,15 @@ export type SimObservation = {
   allValues?: readonly number[];
 };
 
-/**
- * One candidate in a bulk screening batch. `index` is the caller's own
- * numbering and is what comes back on the matching row, so a runner may
- * reorder freely (the WASM tournament sorts its rows by descending DPS).
- */
-export type BulkScreenCandidate = {
-  index: number;
-  gear: Readonly<Record<string, unknown>>;
-};
-
-export type BulkScreenRequest = {
-  baseRequest: RaidSimRequest;
-  candidates: readonly BulkScreenCandidate[];
-  iterations: number;
-  /**
-   * The seed the batch is simulated at, carried explicitly rather than left to
-   * the request builder's own constant. The caller already chooses a seed for
-   * the per-candidate path (`SimRunOpts.seed`), and the screening pass must run
-   * at the same one — a builder-side default is only correct for as long as it
-   * happens to equal the caller's first seed.
-   */
-  seed: number;
-  /**
-   * The caller's Stop (ticket 347). A runner that observes it aborts the
-   * in-flight chunk and issues no further chunk, then rejects with
-   * `BulkScreenAbortedError`. Optional so a runner without cancel support — and
-   * every recorded fixture — stays valid.
-   */
-  signal?: AbortSignal;
-};
-
-/**
- * `baseline` is its own field, never an n+1th row — both transports keep the
- * two separate, and screening deltas are taken against it.
- */
-export type BulkScreenResult = {
-  baseline: SimObservation;
-  rows: ReadonlyArray<{ index: number; observation: SimObservation }>;
-  /**
-   * Chunks whose request failed for an engine-reported or transport reason
-   * (ticket 347's rider). Their candidates have no row, and the caller sims
-   * them itself through the per-candidate loop. Absent when nothing failed, so
-   * a clean run's result type is unchanged.
-   */
-  failures?: ReadonlyArray<{ indices: readonly number[]; reason: string }>;
-};
-
-/**
- * The caller's `signal` fired: the in-flight chunk was aborted and no further
- * chunk was issued. Distinct from every other failure because the caller asked
- * for it — `rank.ts` treats it as an abort observed before the pass, not an
- * error.
- */
-export class BulkScreenAbortedError extends Error {
-  override readonly name = "BulkScreenAbortedError";
-
-  constructor() {
-    super("bulk screen aborted by the caller's signal");
-  }
-}
-
-/**
- * A bulk response that is structurally wrong — a row shortfall, or no baseline.
- * These are the checks that stand between a silent cull and a truncated
- * ranking, so they must never degrade to the per-candidate loop the way an
- * engine-reported or transport failure does; the driver rethrows this class
- * unconditionally.
- *
- * It lives in the seam rather than beside the check that throws it because
- * `rank.ts` names it, and the engine may not import from `adapters/`.
- */
-export class BulkScreenIntegrityError extends Error {
-  override readonly name = "BulkScreenIntegrityError";
-
-  constructor(message: string) {
-    super(message);
-  }
-}
-
 export interface SimRunner {
   version(): Promise<string>;
   run(req: RaidSimRequest, opts: SimRunOpts): Promise<SimObservation>;
   /**
-   * Optional bulk screening capability. When a runner offers it, the ranking's
-   * screening pass hands it whole batches instead of looping `run` per
-   * candidate; when it is absent the loop runs unchanged, so this is additive
-   * and every existing runner stays valid. Stated in protojson vocabulary for
-   * the same reason `RaidSimRequest` is (see this file's header): the engine
-   * stays proto-unaware, and the adapter bridges to typed protos.
-   */
-  runBulkScreen?(req: BulkScreenRequest): Promise<BulkScreenResult>;
-  /**
    * Optional stats read (ticket 535): the first player's final stats for the
    * request's gear, with no sim. Meta repair reads the baseline's hit with it,
    * and each set-phase version's, so hit counts only up to the cap. When a
-   * runner lacks it, repair values hit at full weight, so this is additive
-   * like `runBulkScreen`.
+   * runner lacks it, repair values hit at full weight, so a runner without it
+   * stays valid.
    */
   computeStats?(req: RaidSimRequest): Promise<PlayerStatsObservation>;
 }
@@ -165,24 +77,6 @@ export function simCacheKey(
 }
 
 /**
- * Stable key for a whole screening batch, same scheme as `simCacheKey` (D4):
- * canonical JSON, no digest. The candidate list is part of the key because a
- * different batch is a different question, and so are the seed and iteration
- * count — the same batch simulated at a different seed is a different
- * measurement, and omitting the seed would let two of them collide on one
- * recording. Note the key is transport-blind by its fields only; `simVersion` is
- * supplied by whichever runner recorded it.
- */
-export function bulkScreenCacheKey(
-  req: BulkScreenRequest,
-  simVersion: string
-): string {
-  return `bulk:${stableStringify(req.baseRequest)}:${stableStringify(
-    req.candidates
-  )}:${simVersion}:${req.seed}:${req.iterations}`;
-}
-
-/**
  * Canonical JSON with object keys sorted, so two equal requests give one
  * string. Exported for the set phase's per-request stats-read cache
  * (ticket 535).
@@ -207,32 +101,8 @@ function sortKeys(value: unknown): unknown {
 export class RecordedSimRunner implements SimRunner {
   constructor(
     private readonly simVersion: string,
-    private readonly recordings: ReadonlyMap<string, SimObservation>,
-    /**
-     * Absent means this runner offers no bulk capability, so a test built from
-     * it exercises the per-candidate loop — which is what every existing
-     * fixture wants. Supplying it opts a fixture into the bulk branch.
-     */
-    private readonly bulkRecordings?: ReadonlyMap<string, BulkScreenResult>
-  ) {
-    // An own property, not a prototype method: `rank.ts` treats
-    // `deps.sim.runBulkScreen` as a truthy capability check, so a recorded
-    // runner given no bulk fixtures must not appear to have the capability at
-    // all. A prototype method could not be hidden this way — `delete` does not
-    // remove inherited members.
-    if (bulkRecordings !== undefined) {
-      this.runBulkScreen = async (req: BulkScreenRequest) => {
-        const key = bulkScreenCacheKey(req, this.simVersion);
-        const hit = bulkRecordings.get(key);
-        if (!hit) {
-          throw new Error(`no recording for bulk screen key ${key}`);
-        }
-        return hit;
-      };
-    }
-  }
-
-  runBulkScreen?: (req: BulkScreenRequest) => Promise<BulkScreenResult>;
+    private readonly recordings: ReadonlyMap<string, SimObservation>
+  ) {}
 
   async version(): Promise<string> {
     return this.simVersion;

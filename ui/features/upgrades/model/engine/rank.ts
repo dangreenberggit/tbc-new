@@ -110,9 +110,6 @@ import {
 } from "./se";
 import type { FightSummary, GearSource } from "./seams/gear-source";
 import {
-  // Value imports: these classes are tested with `instanceof`.
-  BulkScreenAbortedError,
-  BulkScreenIntegrityError,
   type PlayerStatsObservation,
   type RaidSimRequest,
   simCacheKey,
@@ -249,10 +246,7 @@ export type Deps = {
   /**
    * Stop signal (candidate-pool.md §5.1.4). On abort, in-flight per-candidate
    * sims finish and the run returns a `PartialRanking` (`complete: false`); no
-   * further candidates are dispatched. An in-flight bulk **screening chunk** is
-   * aborted rather than finished (ticket 347) — a chunk costs seconds on the Go
-   * transport and minutes on the in-browser one, which no honest reading of
-   * "in-flight work finishes" covers. A Stop during the set phase or during
+   * further candidates are dispatched. A Stop during the set phase or during
    * paired replication lets the sim in flight finish, sends no further sim,
    * and returns the same `PartialRanking` as a Stop during the last
    * candidate sim (ticket 533).
@@ -656,18 +650,6 @@ export type Ranking = {
   setScreen?: SetScreen;
   plausibilityWarnings?: PlausibilityWarning[];
   /**
-   * Screening chunks that failed for an engine or transport reason, and whose
-   * candidates were priced by the per-candidate loop instead (ticket 347's
-   * rider). The ranking is unaffected in content — the loop measures the same
-   * question — but it cost more sims than it should have, and saying so is the
-   * difference between a slow run and an inexplicable one.
-   *
-   * Absent when nothing fell back, so a run that took the bulk route cleanly is
-   * byte-identical to one on a runner with no bulk capability at all — which is
-   * what the route-equivalence tests compare.
-   */
-  screeningFallbacks?: readonly { candidates: number; reason: string }[];
-  /**
    * `true` unless Stop cut this run short (candidate-pool.md §5.1.4).
    *
    * The literal type does real work at every consumer that names `Ranking`
@@ -694,13 +676,6 @@ export type PartialRanking = Omit<Ranking, "complete"> & { complete: false };
 
 type BestSwap = {
   deltaDps: number;
-  /**
-   * The baseline `deltaDps` was measured against — the loop's own baseline, or
-   * the bulk engine's probe when this attempt came from the screening pass
-   * (see `screenCandidates`). Carried so `deltaPct` divides by the same
-   * reference the delta was taken from rather than assuming the loop's.
-   */
-  baselineDps: number;
   stdev: number;
   request: RaidSimRequest;
   slotChoice?: SimSlotName;
@@ -717,8 +692,7 @@ type BestSwap = {
 /**
  * Flat and fixed, for the accurate final pass rather than for speed. The owner's
  * standing decision is that the ranking's published numbers come from a full
- * per-candidate sim at this count, which is why the bulk screening pass changes
- * only where a screening DPS comes from and never what the final pass measures.
+ * per-candidate sim at this count.
  *
  * Deliberately not adaptive. Raising the base count and adopting an
  * adaptive-iteration scheme are held together as one open decision in ticket
@@ -726,16 +700,6 @@ type BestSwap = {
  * affordable), so neither moves alone.
  *
  * Changing it is not local: the value is part of every ranking cache key.
- *
- * It does not, however, threaten the no-culling batch bound in
- * `bulk/partition.ts`. That boundary moves DOWN as iterations rise, but it
- * floors: n = 25 and n = 26 are single-stage at every count measured up to
- * 1,000,000, and the first multi-stage n settles at 27 above 28,000 iterations
- * (upstream's own estimator, measured in
- * `packages/core/test/bulk-boundary.test.ts`). The shipped bound of 25 is
- * therefore iteration-invariant, and `assertSingleStageChunk` checks every
- * built chunk against that estimator regardless, so a raised constant fails
- * loudly instead of culling silently (ticket 349).
  */
 const DEFAULT_ITERATIONS = 5000;
 /**
@@ -863,60 +827,6 @@ export async function rankUpgrades(
       // answer ("this request needs no extra rows") and must be written
       // through, where `undefined` means no resolver at all — the CLI path.
       ...(database !== undefined ? { database } : {}),
-    });
-  };
-
-  /**
-   * The base request for a *bulk* screening pass. Identical to `composeFor`
-   * except that the embedded database is the union over every gear set the
-   * request can ask the sim to equip, not just the baseline's.
-   *
-   * A bulk request is one request spanning n gear sets, and the browser's WASM
-   * sim is built without `with_db`, so its item registry starts empty and is
-   * filled per request from the player's database (`adapters/sim_database.ts`
-   * doc comment; `compose.ts:48` writes it to the player, not the request
-   * root). A candidate item the character does not wear therefore appears in
-   * no database the baseline ever built, and environment construction dies on
-   * its id — "No item with id: N" — before a single iteration runs.
-   *
-   * The per-candidate loop never hits this because it composes each request
-   * from that candidate's own gear. Screening must widen the database instead.
-   * Each gear set is resolved separately and the repeated fields merged by row
-   * identity: handing `simDatabaseFor` a flat list of candidate ids instead
-   * fails inside `lookupEquipmentSpec` with "No slots left to equip", because
-   * it assigns items to slots and cannot place several same-slot items at once.
-   */
-  const composeForBulk = (
-    candidateGear: readonly (readonly SimItemSpec[])[]
-  ) => {
-    if (!deps.simDatabaseFor) return composeFor(equipment);
-    const byField = new Map<string, Map<string, unknown>>();
-    for (const gear of [equipment, ...candidateGear]) {
-      const database = deps.simDatabaseFor(gear) as
-        | Record<string, unknown>
-        | undefined;
-      if (!database) continue;
-      for (const [field, rows] of Object.entries(database)) {
-        if (!Array.isArray(rows)) continue;
-        const seen = byField.get(field) ?? new Map<string, unknown>();
-        // `JSON.stringify` is enough for row identity here (rather than a
-        // key-order-stable hash): every row in this union comes from one
-        // `simDatabaseFor` implementation within a single run, so equal rows
-        // are built the same way and serialise identically. Duplicates only
-        // cost bytes anyway — the failure this dedupe avoids is a bloated
-        // request, never a wrong one.
-        for (const row of rows) seen.set(JSON.stringify(row), row);
-        byField.set(field, seen);
-      }
-    }
-    const database = Object.fromEntries(
-      [...byField].map(([field, seen]) => [field, [...seen.values()]])
-    );
-    return compose(deps.raidSimSkeleton, {
-      name: input.character.name.toLowerCase(),
-      race,
-      equipment,
-      database,
     });
   };
 
@@ -1273,12 +1183,6 @@ export async function rankUpgrades(
       slot: string;
       reason: string;
     }[] = [];
-    /**
-     * Screening chunks that failed for an engine or transport reason, whose
-     * candidates the per-candidate loop priced instead. Disclosed on the
-     * `Ranking` so a slow run is explicable rather than mysterious.
-     */
-    const screeningFallbacks: { candidates: number; reason: string }[] = [];
     const individualDeltasByItemId = new Map<number, IndividualDelta>();
 
     const talentsString = talentsStringFromRequest(request);
@@ -1288,33 +1192,12 @@ export async function rankUpgrades(
       ...(talentsString !== undefined ? { talentsString } : {}),
     });
 
-    /** Screening observations are keyed by the attempt, not by the item. */
-    const screenKey = (itemId: number, slotIndex: number) =>
-      `${itemId}:${slotIndex}`;
-
     /**
      * Which `(item, slot)` attempts are eligible to be priced at all.
      *
-     * One implementation for both routes on purpose. The screening pass and the
-     * pricing loop each walk the same candidates and must agree *exactly* on the
-     * resulting attempt set, because `screenKey` is only `itemId:slotIndex` — it
-     * holds no fingerprint of the gear the observation was measured on. If the
-     * two routes ever disagreed about which attempts exist while both still
-     * continued past the disagreement, the loop could read a screened DPS that
-     * was measured on different gear than the `candReq` it records into
-     * `winningRequests`, and nothing would report it: a wrong number rather than
-     * a failure.
-     *
-     * Deliberately returns *why* an attempt is ineligible rather than a boolean,
-     * so the loop can keep the one behaviour that legitimately differs between
-     * the routes — an unmappable slot is a bug assertion the loop throws on,
-     * while screening has no run to fail and simply does not screen it. Every
-     * other outcome is shared.
-     *
-     * Meta-gem repair is NOT part of this: `candidateSwapWithRepairs` is
-     * deterministic over the same immutable `equipment`/`gems`, so both routes
-     * throw on exactly the same attempts, and only the loop records the
-     * `candidateSkips` disclosure — keeping that in one place is the point.
+     * Returns *why* an attempt is ineligible rather than a boolean, because
+     * the loop treats the two outcomes differently: an unmappable slot is a
+     * bug assertion it throws on, while a skipped attempt is simply not priced.
      */
     const attemptEligibility = (
       entry: PoolEntry,
@@ -1363,144 +1246,6 @@ export async function rankUpgrades(
     };
 
     /**
-     * Prices every (item, slot) attempt through the runner's bulk capability,
-     * returning one observation per attempt **and the baseline those
-     * observations must be differenced against**. Returns undefined when the
-     * runner has no such capability, which is what keeps the per-candidate path
-     * the default and this branch purely additive.
-     *
-     * The baseline comes back with the observations because it is not
-     * interchangeable with the loop's. The bulk pass probes its own baseline
-     * inside the same batch, at a seed it picks itself, and the two probes can
-     * land far apart: the local HTTP measurement recorded in
-     * `.scratch/stage-gate/batch-sim-web-local/execution-ledger-local.md` put
-     * the loop's seed-11 baseline at 2246.99 DPS and the bulk pass's own probe
-     * at 2181.67 — 65.3 DPS apart, against a cutoff of 3.4.
-     *
-     * That gap is a SEED artifact, not an engine one, and the distinction
-     * matters for anyone tempted to "correct" for it elsewhere. The same ledger
-     * records the loop at seed 777 giving 2181.37 — within 0.3 DPS of the bulk
-     * probe — so two runs of the *same* route at different seeds differ by more
-     * than the two routes do. The engines agree; the seeds do not.
-     *
-     * Either way the rule is the same and holds under both readings: a delta is
-     * only meaningful against the baseline measured in the same run as the
-     * observation. Differencing a bulk-measured candidate against the
-     * loop-measured baseline would push the whole gap into every screened row's
-     * `deltaDps`. Because both halves of a screened delta come from one run, a
-     * shared offset cancels inside the subtraction — which is why the stored
-     * delta needs no later re-scaling (see `individualDeltasByItemId.set`).
-     *
-     * One baseline for the whole pass, not one per chunk. The shared chunk
-     * driver keeps the first probe it gets (`baseline ??=`) — the first
-     * SUCCESSFUL chunk's, since a chunk that fails contributes no probe and its
-     * candidates fall through to the loop — and that is the correct choice: a
-     * single shared offset is invisible to the sort that produces the
-     * ranking, whereas a per-chunk baseline would apply a *different* noise
-     * term to each disjoint subset of rows and make candidates from different
-     * chunks non-comparable in exactly the global sort and absolute cutoff this
-     * function feeds. Nothing cancels per chunk either — every chunk is built
-     * from the same `randomSeed` (`adapters/bulk_request_builder.ts`), so a
-     * later chunk's probe is a redundant re-measurement of the same stream, not
-     * a paired one.
-     *
-     * Composition happens here exactly as it does in the loop — same
-     * `candidateSwapWithRepairs`, same `composeFor` — so the gear the screening
-     * pass prices is the gear the loop would have priced. An attempt whose
-     * repairs throw is simply not screened; the loop hits the same throw and
-     * records the `candidateSkips` row, so the disclosure stays in one place.
-     */
-    async function screenCandidates(entries: readonly PoolEntry[]): Promise<
-      | {
-          baselineDps: number;
-          byKey: ReadonlyMap<string, SimObservation>;
-        }
-      | undefined
-    > {
-      const runBulkScreen = deps.sim.runBulkScreen?.bind(deps.sim);
-      if (!runBulkScreen) return undefined;
-
-      const attempts: { key: string; gear: readonly SimItemSpec[] }[] = [];
-      for (const entry of entries) {
-        const slotNames = simSlotsForPoolSlot(
-          entry.slot,
-          input.spec,
-          entry.itemId
-        );
-        for (const slotName of slotNames) {
-          const eligibility = attemptEligibility(entry, slotName);
-          // An unmappable slot is a bug the loop asserts on. Screening has no
-          // run to fail here — the loop reaches the same attempt and throws —
-          // so it simply does not screen it.
-          if (eligibility.kind !== "ok") continue;
-          const { slotIndex } = eligibility;
-          try {
-            const outcome = candidateSwapWithRepairs(
-              equipment,
-              slotIndex,
-              entry.itemId,
-              gems
-            );
-            attempts.push({
-              key: screenKey(entry.itemId, slotIndex),
-              gear: outcome.equipment,
-            });
-          } catch (err) {
-            if (!(err instanceof MetaRepairError)) throw err;
-          }
-        }
-      }
-      if (attempts.length === 0) return undefined;
-
-      let result;
-      try {
-        result = await runBulkScreen({
-          baseRequest: composeForBulk(attempts.map((attempt) => attempt.gear)),
-          candidates: attempts.map((attempt, index) => ({
-            index,
-            gear: { items: attempt.gear.map((item) => ({ ...item })) },
-          })),
-          iterations,
-          // The same seed the per-candidate path would have used, so the
-          // screening pass measures the question the loop asks.
-          seed: runOpts.seed,
-          // Ticket 347: the runner aborts the in-flight chunk on Stop and
-          // issues no further one.
-          signal: deps.signal,
-        });
-      } catch (err) {
-        // Stop: no screening numbers, and the caller's own abort handling
-        // takes it from here — the loop dispatches nothing either.
-        if (err instanceof BulkScreenAbortedError) return undefined;
-        // A structurally wrong bulk response is not something to work around
-        // quietly; it is exactly what the integrity checks exist to report.
-        if (err instanceof BulkScreenIntegrityError) throw err;
-        // Everything else — an engine-reported failure, a dead worker, an HTTP
-        // status — costs speed, not correctness: every attempt falls through to
-        // `deps.sim.run` below, which measures the same question the batch
-        // would have. Disclosed rather than silent.
-        screeningFallbacks.push({
-          candidates: attempts.length,
-          reason: err instanceof Error ? err.message : String(err),
-        });
-        return undefined;
-      }
-      for (const failure of result.failures ?? []) {
-        screeningFallbacks.push({
-          candidates: failure.indices.length,
-          reason: failure.reason,
-        });
-      }
-
-      const byKey = new Map<string, SimObservation>();
-      for (const row of result.rows) {
-        const attempt = attempts[row.index];
-        if (attempt) byKey.set(attempt.key, row.observation);
-      }
-      return { baselineDps: result.baseline.dps, byKey };
-    }
-
-    /**
      * One candidate's full slot-attempt loop, unchanged from the old serial
      * body except that it is now a `promisePool` task rather than one turn
      * of a `for` loop (candidate-pool.md §5.1.2) — every mutation below
@@ -1524,9 +1269,7 @@ export async function rankUpgrades(
 
       for (let s = 0; s < slotNames.length; s++) {
         const slotName = slotNames[s]!;
-        // Shared with the screening pass — see `attemptEligibility` for why the
-        // two routes must agree on the attempt set, and for the reasoning behind
-        // each guard.
+        // See `attemptEligibility` for the reasoning behind each guard.
         const eligibility = attemptEligibility(entry, slotName);
         if (eligibility.kind === "unmapped") {
           throw new Error(
@@ -1561,44 +1304,7 @@ export async function rankUpgrades(
           continue;
         }
         const candReq = composeFor(swapped);
-        // The bulk screening pass, when one ran, has already priced this exact
-        // (item, slot) attempt — everything else about the attempt is computed
-        // here exactly as the per-candidate path computes it, so only the DPS
-        // observation differs by route. `composeFor` still runs: it is pure and
-        // pre-sim, and `winningRequests` (used by `replicateTopItems`) must hold
-        // the same request either way.
-        // Which baseline this attempt's delta is taken against travels with the
-        // observation, because the two are only meaningful as a pair: a
-        // screened observation was measured alongside the screening pass's own
-        // baseline probe and must be differenced against it (see
-        // `screenCandidates` for the measured 65.3 DPS gap that makes mixing
-        // them wrong), while a looped or cached observation belongs to
-        // `baselineDps`.
-        let candBaselineDps = baselineDps;
-        let candObs = screened?.byKey.get(screenKey(entry.itemId, slotIndex));
-        if (candObs) {
-          candBaselineDps = screened!.baselineDps;
-          // Stored so a re-run screens from the store instead of re-simming;
-          // see `cacheScreenResult` for why this is its own key namespace.
-          await cacheScreenResult(deps, candReq, simVersion, runOpts, {
-            observation: candObs,
-            baselineDps: candBaselineDps,
-          });
-        } else {
-          const cachedScreen = await readCachedScreen(
-            deps,
-            candReq,
-            simVersion,
-            runOpts
-          );
-          if (cachedScreen) {
-            candObs = cachedScreen.observation;
-            candBaselineDps = cachedScreen.baselineDps;
-          }
-        }
-        if (!candObs) {
-          candObs = await readCachedSim(deps, candReq, simVersion, runOpts);
-        }
+        let candObs = await readCachedSim(deps, candReq, simVersion, runOpts);
         if (!candObs) {
           try {
             candObs = await deps.sim.run(candReq, runOpts);
@@ -1614,13 +1320,12 @@ export async function rankUpgrades(
           }
           await cacheSimResult(deps, candReq, simVersion, runOpts, candObs);
         }
-        const deltaDps = candObs.dps - candBaselineDps;
+        const deltaDps = candObs.dps - baselineDps;
         const note = setBreakNote(equipment, slotIndex, entry.itemId);
         if (!best || deltaDps > best.deltaDps) {
           const statDelta = statDeltaBetween(equipment, swapped);
           const next: BestSwap = {
             deltaDps,
-            baselineDps: candBaselineDps,
             stdev: candObs.stdev,
             request: candReq,
             slotIndex,
@@ -1653,30 +1358,6 @@ export async function rankUpgrades(
 
       if (!best) return;
 
-      // Stored as measured, with NO re-basing onto the loop's baseline — and
-      // that is the correct thing to do, which is worth stating because the
-      // opposite is an inviting mistake.
-      //
-      // This map is combined arithmetically with a loop-measured number:
-      // `buildSetBonuses` sims each package through `deps.sim.run` and
-      // `computeSynergy` (set-value.ts) computes `bonusDps = (packageDps -
-      // baseline) - sum(addedPieceDeltas)`. So the deltas summed here must be on
-      // the same footing as that package delta. They already are. A screened
-      // delta is `screenedCandidateDps - screenedBaselineDps` — a difference of
-      // two readings from the SAME run — so whatever separates that run from the
-      // loop's, seed or engine, cancels inside the subtraction before the value
-      // is ever stored. Both routes yield an estimate of the item's own DPS
-      // effect, carrying no run-specific term. The ledger measures the two
-      // routes' deltas agreeing to ~0.1 DPS mean while their baselines sat 65.3
-      // apart, which is that cancellation observed rather than assumed.
-      //
-      // Adding `(best.baselineDps - baselineDps)` here to "convert to the loop's
-      // scale" would INJECT that 65.3 rather than remove it, once per added
-      // piece, against real bonuses of tens of DPS — and the 2-piece result
-      // compounds into the 4-piece calculation through `twoPieceBonus`. Only an
-      // absolute DPS reading needs re-basing; a same-run delta does not. The
-      // set-bonus assertions in `bulk-screen-branch.test.ts` pin this: they go
-      // red if a scale correction is reintroduced here.
       individualDeltasByItemId.set(entry.itemId, {
         itemId: entry.itemId,
         slotIndex: best.slotIndex,
@@ -1685,9 +1366,7 @@ export async function rankUpgrades(
       });
 
       const deltaPct =
-        best.baselineDps === 0
-          ? 0
-          : (best.deltaDps / best.baselineDps) * 100;
+        baselineDps === 0 ? 0 : (best.deltaDps / baselineDps) * 100;
       const belowCutoff = !meetsCutoff(best.deltaDps, deltaPct, cutoff);
       const item: RankedItem = {
         rank: null,
@@ -1756,20 +1435,6 @@ export async function rankUpgrades(
     // rather than a race between this check and the pool's own loop.
     const signal = deps.signal;
 
-    // Cheap screening pass, when the runner offers one (batch-sim plan Step 8).
-    // It supplies nothing but the DPS number for each (item, slot) attempt; the
-    // per-candidate loop below still composes every request, computes every stat
-    // delta and populates every row-metadata collection exactly as it always
-    // has. The accurate final pass — paired-seed replication against a single
-    // baseline — is untouched, so the ranking's estimand does not change.
-    //
-    // Absent capability, or an abort already raised, means no screening pass and
-    // the loop runs exactly as before. An abort raised *during* the pass
-    // is reported as `BulkScreenAbortedError` and is handled the same way: no
-    // screening numbers, and the loop below dispatches nothing either.
-    const screened = signal?.aborted
-      ? undefined
-      : await screenCandidates(simCandidates);
     const dispatchedCandidates = signal?.aborted ? [] : simCandidates;
     const tasks = dispatchedCandidates.map(
       (entry) => () => runCandidate(entry)
@@ -2064,7 +1729,6 @@ export async function rankUpgrades(
         ? { setScreen: setBonusResult.setScreen }
         : {}),
       ...(warnings.length > 0 ? { plausibilityWarnings: warnings } : {}),
-      ...(screeningFallbacks.length > 0 ? { screeningFallbacks } : {}),
     };
 
     if (aborted) {
@@ -4079,66 +3743,6 @@ function emptySetPhase(): Awaited<ReturnType<typeof buildSetBonuses>> {
     crossingGates: [],
     candidateSlotIndex: new Map(),
   };
-}
-
-/**
- * A screened observation is stored under its own key namespace, deliberately
- * NOT under `simStoreKey`.
- *
- * The loop's key is `sim:<request>:<version>:<seed>:<iterations>` and records
- * nothing about which run produced the number — in particular not the screening
- * pass's own probe seed, which it picks itself. A screened observation filed
- * there would be read back by two callers that must never see one: the
- * per-candidate loop, which differences against the loop's own baseline, and —
- * because `simFor` shares `readCachedSim` and replication re-sims at
- * `seeds[0]`, the same seed `runOpts` holds — `replicateTopItems`, whose
- * paired-seed contract is that candidate and baseline come from the same run.
- * Either would pair an observation with a baseline it was not measured against,
- * reintroducing the gap `screenCandidates` documents, and the second would push
- * it into the accurate final pass the screening pass is designed not to touch.
- *
- * Scoping the key to the screening route keeps the reuse (a re-run screens from
- * the store instead of re-simming) while making the observation unreachable
- * from the paths that would misread it. The stored value keeps the baseline
- * it was measured against for the same reason the in-memory result does: the
- * observation and its baseline are only meaningful as a pair.
- */
-type CachedScreenObservation = {
-  observation: SimObservation;
-  baselineDps: number;
-};
-
-function screenStoreKey(
-  req: RaidSimRequest,
-  simVersion: string,
-  opts: SimRunOpts
-): string {
-  return `screen:${simCacheKey(req, simVersion, opts)}`;
-}
-
-async function readCachedScreen(
-  deps: Deps,
-  req: RaidSimRequest,
-  simVersion: string,
-  opts: SimRunOpts
-): Promise<CachedScreenObservation | undefined> {
-  return asInternal(() =>
-    deps.store.get<CachedScreenObservation>(
-      screenStoreKey(req, simVersion, opts)
-    )
-  );
-}
-
-async function cacheScreenResult(
-  deps: Deps,
-  req: RaidSimRequest,
-  simVersion: string,
-  opts: SimRunOpts,
-  value: CachedScreenObservation
-): Promise<void> {
-  await asInternal(() =>
-    deps.store.put(screenStoreKey(req, simVersion, opts), value)
-  );
 }
 
 async function asInternal<T>(op: () => Promise<T>): Promise<T> {

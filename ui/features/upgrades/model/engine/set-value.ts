@@ -151,12 +151,10 @@ export type PackageSelectionResult =
  * `packageSample.dps - baseline.dps`, so each one has to be an effect estimate
  * rather than an absolute reading tied to a particular engine's scale.
  *
- * A same-engine difference satisfies this automatically, including one measured
- * by the fork's bulk screening pass against that pass's own baseline probe: a
- * systematic offset between engines cancels inside the subtraction. Re-basing
+ * A same-run difference satisfies this automatically: an offset the run puts on
+ * both readings, such as its seed's, cancels inside the subtraction. Re-basing
  * such a delta onto some other baseline would BREAK the invariant rather than
- * restore it, by reintroducing the very offset the subtraction removed. See the
- * comment at `rank.ts`'s `individualDeltasByItemId.set` call.
+ * restore it, by reintroducing the very offset the subtraction removed.
  */
 export type IndividualDelta = {
   itemId: number;
