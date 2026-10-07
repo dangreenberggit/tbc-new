@@ -126,6 +126,29 @@ export async function startServer() {
 	throw new Error('http-server did not answer in time');
 }
 
+/**
+ * The origin a gate script drives, and how to stop it. TBC_FORK_PORT names a
+ * running server to reuse (a dev server serves fixtures too); otherwise this
+ * builds the fixture-enabled bundle into dist/ and serves it, so the gate
+ * tests the current tree.
+ */
+export async function serveTab() {
+	const port = process.env.TBC_FORK_PORT;
+	if (port) {
+		const base = `http://localhost:${port}`;
+		try {
+			if ((await fetch(`${base}${PAGE_PATH}`)).ok) return { base, stop: () => {} };
+		} catch {
+			// not running: build and serve below
+		}
+	}
+	if (!fs.existsSync(path.join(OUT_DIR, WASM_FILE)) || !fs.existsSync(path.join(OUT_DIR, 'assets')))
+		throw new Error(`dist/tbc/${WASM_FILE} or dist/tbc/assets is missing -- run \`make -C <fork> dist/tbc/.dirstamp\` once`);
+	await build();
+	const server = await startServer();
+	return { base: `http://127.0.0.1:${server.port}`, stop: () => server.proc.kill() };
+}
+
 // ---------------------------------------------------------------------------
 // CDP session over the global WebSocket.
 // ---------------------------------------------------------------------------
@@ -319,9 +342,9 @@ export const fixtureSettledExpression = `(document.querySelectorAll(${JSON.strin
 
 // Navigate `send`'s page to the fixture's spec, load it and wait until settled.
 // Returns { ok, rows, ms } or { error }.
-export async function loadFixturePage(send, port, fixtureText) {
+export async function loadFixturePage(send, base, fixtureText) {
 	const fixture = JSON.parse(fixtureText);
-	await send('Page.navigate', { url: `http://127.0.0.1:${port}${pagePathFor(fixture.spec)}` });
+	await send('Page.navigate', { url: `${base}${pagePathFor(fixture.spec)}` });
 	await sleep(300);
 	const t0 = Date.now();
 	const loaded = await evaluate(send, loadFixtureExpression(fixtureText));

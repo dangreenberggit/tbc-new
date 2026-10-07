@@ -25,9 +25,8 @@
 // scripts/check_layout_gate.py parses: "measured" when every width ran,
 // "unmeasured" with a reason when a prerequisite stopped it.
 //
-// Server: TBC_FORK_PORT names a running server to reuse (a dev server serves
-// fixtures too); otherwise this builds the fixture-enabled bundle into dist/
-// and serves it.
+// Server: test-tab-harness.mjs `serveTab` (TBC_FORK_PORT reuses a running
+// server; otherwise the fixture-enabled bundle is built into dist/ and served).
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -152,38 +151,14 @@ function fixturePath() {
 	return found;
 }
 
-async function serverBase() {
-	const port = process.env.TBC_FORK_PORT;
-	if (port) {
-		const base = `http://localhost:${port}`;
-		try {
-			if ((await fetch(`${base}${H.PAGE_PATH}`)).ok) return { base, stop: () => {} };
-		} catch {
-			// not running: build and serve below
-		}
-	}
-	if (!fs.existsSync(path.join(H.OUT_DIR, H.WASM_FILE)) || !fs.existsSync(path.join(H.OUT_DIR, 'assets')))
-		throw new Unmeasured(`dist/tbc/${H.WASM_FILE} or dist/tbc/assets is missing -- run \`make -C <fork> dist/tbc/.dirstamp\` once`);
-	await H.build();
-	const server = await H.startServer();
-	return { base: `http://127.0.0.1:${server.port}`, stop: () => server.proc.kill() };
-}
-
 async function setWidth(send, width) {
 	await send('Emulation.setDeviceMetricsOverride', { width, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
 	await H.sleep(400);
 }
 
 async function loadFixture(send, base, text) {
-	await send('Page.navigate', { url: `${base}${H.pagePathFor(JSON.parse(text).spec)}` });
-	await H.sleep(300);
-	const loaded = await H.evaluate(send, H.loadFixtureExpression(text));
-	if (!loaded?.ok) throw new Unmeasured(`fixture load failed: ${loaded?.error ?? loaded?.reason ?? 'no answer'}`);
-	const deadline = Date.now() + H.FIXTURE_DEADLINE_MS;
-	while (!(await H.evaluate(send, H.fixtureSettledExpression))) {
-		if (Date.now() > deadline) throw new Unmeasured('fixture did not settle');
-		await H.sleep(250);
-	}
+	const loaded = await H.loadFixturePage(send, base, text);
+	if (loaded.error) throw new Unmeasured(`fixture load failed: ${loaded.error}`);
 }
 
 function judgePreRun(width, m) {
@@ -227,7 +202,7 @@ async function main() {
 		for (const f of cls.fail) console.log(`FAIL a11y [${state} ${width}] ${f.id} ${f.selector} (${f.impact})`);
 	};
 
-	const { base, stop } = await serverBase();
+	const { base, stop } = await H.serveTab();
 	const chrome = await H.launchChrome();
 	const client = H.cdp(chrome.wsUrl, { callTimeoutMs: 120000 });
 	try {
