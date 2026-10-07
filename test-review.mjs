@@ -32,9 +32,10 @@
 // Every (entry, width) gets a fresh page, so one entry's clicks never leak into
 // another's, and one width's into the next.
 //
-// Fact ops (rect, style, text and attr read the first visible match, else the
+// Fact ops (rect, style, text, attr and prop read the first visible match, else the
 // first match): rect:<sel>; style:<sel>:<prop>; text:<sel> (trimmed
-// textContent); attr:<sel>:<name>; exists:<sel>; count:<sel> (all matches);
+// textContent); attr:<sel>:<name>; prop:<sel>:<name> (a DOM property, such as
+// scrollWidth); exists:<sel>; count:<sel> (all matches);
 // shown:<sel> (visible matches).
 
 import { spawnSync } from 'node:child_process';
@@ -73,7 +74,7 @@ function factExpression(spec) {
 	const op = spec.slice(0, colon);
 	const rest = spec.slice(colon + 1);
 	const last = rest.lastIndexOf(':');
-	const [sel, name] = op === 'style' || op === 'attr' ? [rest.slice(0, last), rest.slice(last + 1)] : [rest, null];
+	const [sel, name] = ['style', 'attr', 'prop'].includes(op) ? [rest.slice(0, last), rest.slice(last + 1)] : [rest, null];
 	const s = JSON.stringify(sel);
 	const n = JSON.stringify(name);
 	const read = {
@@ -81,6 +82,7 @@ function factExpression(spec) {
 		style: `{ const el = pick(${s}); return el ? getComputedStyle(el)[${n}] : null; }`,
 		text: `{ const el = pick(${s}); return el ? (el.textContent || '').trim() : null; }`,
 		attr: `{ const el = pick(${s}); return el ? el.getAttribute(${n}) : null; }`,
+		prop: `{ const el = pick(${s}); return el ? el[${n}] ?? null : null; }`,
 		exists: `{ return !!document.querySelector(${s}); }`,
 		count: `{ return document.querySelectorAll(${s}).length; }`,
 		shown: `{ return [...document.querySelectorAll(${s})].filter(isShown).length; }`,
@@ -147,33 +149,51 @@ async function interact(send, step, specs, steps, errors) {
 	await H.sleep(400);
 }
 
+const MAX_CLIP_HEIGHT = 16000;
+// Room above a clip for upstream's sticky site nav, which would cover a target
+// scrolled to the very top.
+const CLIP_MARGIN = 200;
+
 /**
- * Clip the first visible match of `sel` to a PNG. Scrolled into view first and
- * clipped in document coordinates: a region past the viewport that never
- * painted clips as an empty box. `inPlace` clips without scrolling, for the
- * first capture after a hover, because a scroll moves the page under the
- * pointer and closes the popup.
+ * Clip the first visible match of `sel` to a PNG. The page scrolls inside the
+ * app's own scroller, not the window, so content past the viewport never
+ * paints and a document-coordinate clip of it comes out blank (stage 558-p3
+ * visual review K5, B2). So the viewport is made tall enough for the target
+ * plus a margin, the target is centred below the sticky nav, and the clip is
+ * taken in viewport coordinates; the height is restored afterwards. `inPlace`
+ * clips where the target already is, for the first capture after a hover,
+ * because a scroll moves the page under the pointer and closes the popup.
  */
-async function clip(send, sel, file, inPlace) {
-	const rect = await H.evaluate(
-		send,
-		`(() => { ${PAGE_HELPERS}
-			const el = firstShown(${JSON.stringify(sel)});
-			if (!el) return null;
-			if (!${inPlace}) el.scrollIntoView({ block: 'start', inline: 'nearest' });
-			const r = el.getBoundingClientRect();
-			return { x: r.left + window.scrollX, y: r.top + window.scrollY, width: r.width, height: r.height };
-		})()`,
-	);
-	if (!rect) return `capture selector missing or not visible: ${sel}`;
-	await H.sleep(150);
-	const { data } = await send('Page.captureScreenshot', { format: 'png', clip: { ...rect, scale: 1 }, captureBeyondViewport: !inPlace });
-	fs.writeFileSync(file, Buffer.from(data, 'base64'));
-	return null;
+async function clip(send, sel, file, width, inPlace) {
+	const measure = centre => `(async () => { ${PAGE_HELPERS}
+		const el = firstShown(${JSON.stringify(sel)});
+		if (!el) return null;
+		if (${centre}) { el.scrollIntoView({ block: 'center', inline: 'nearest' }); await new Promise(r => setTimeout(r, 200)); }
+		const r = el.getBoundingClientRect();
+		return { x: r.left, y: r.top, width: r.width, height: r.height };
+	})()`;
+	const size = await H.evaluate(send, measure(false));
+	if (!size) return `capture selector missing or not visible: ${sel}`;
+	const tall = !inPlace && size.height + 2 * CLIP_MARGIN > HEIGHT;
+	if (tall) await setViewport(send, width, Math.min(MAX_CLIP_HEIGHT, Math.ceil(size.height) + 2 * CLIP_MARGIN));
+	try {
+		const rect = inPlace ? size : await H.evaluate(send, measure(true));
+		await H.sleep(150);
+		const { data } = await send('Page.captureScreenshot', { format: 'png', clip: { ...rect, scale: 1 }, captureBeyondViewport: false });
+		fs.writeFileSync(file, Buffer.from(data, 'base64'));
+		return null;
+	} finally {
+		if (tall) await setViewport(send, width, HEIGHT);
+	}
 }
 
+const setViewport = async (send, width, height) => {
+	await send('Emulation.setDeviceMetricsOverride', { width, height, deviceScaleFactor: 1, mobile: false });
+	await H.sleep(250);
+};
+
 async function openPage(send, base, entry, width) {
-	await send('Emulation.setDeviceMetricsOverride', { width, height: HEIGHT, deviceScaleFactor: 1, mobile: false });
+	await setViewport(send, width, HEIGHT);
 	if (entry.state === 'post-run') {
 		if (!entry.fixture) return 'a post-run entry needs a fixture (this script runs no sim)';
 		const loaded = await H.loadFixturePage(send, base, fixtureText(entry.fixture));
@@ -205,13 +225,16 @@ async function captureOnPage(send, base, outDir, entry, width, baseline, matched
 	}
 	const steps = {};
 	for (const step of entry.interactions ?? []) await interact(send, step, entry.facts, steps, record.errors);
+	const hovered = (entry.interactions ?? []).some(step => step.hover);
+	// The pointer stays where the last click left it, and a tooltip it opened would cover the clips.
+	if (!hovered) await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: 2, y: 2 });
 
 	const pane = entry.pane !== false;
 	const selectors = pane ? [ROOT_CLIP, ...(entry.capture ?? [])] : [...(entry.capture ?? [])];
-	const hoverFirst = !pane && (entry.interactions ?? []).some(step => step.hover);
+	const hoverFirst = !pane && hovered;
 	const shoot = async n => {
 		const file = `${entry.ticket}-${entry.state}-${width}-${n}.png`;
-		const err = await clip(send, selectors[n], path.join(outDir, file), hoverFirst && n === 0);
+		const err = await clip(send, selectors[n], path.join(outDir, file), width, hoverFirst && n === 0);
 		if (err) record.errors.push(err);
 		else record.files.push(file);
 	};
