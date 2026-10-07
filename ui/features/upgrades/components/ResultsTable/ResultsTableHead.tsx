@@ -92,14 +92,15 @@ const isSortColumn = (column: Column): column is ResultsSortKey => (SORT_COLUMNS
 /**
  * A head only screen readers get, for a table under another table's visible
  * head (the below-cutoff group under the shortlist): every column named and
- * the sort said, the names visually hidden, so the row takes no height and the
- * shared widths still place each column under the visible head.
+ * the sort said, the names visually hidden and the cells unpadded (the
+ * browser's default cell padding would leave a 2 px row), so the row takes no
+ * height and the shared widths still place each column under the visible head.
  */
 export const ScreenReaderResultsHead = ({ sort }: { sort?: ResultsSort }) => (
 	<thead>
 		<tr>
 			{COLUMNS.map(column => (
-				<th key={column} aria-sort={isSortColumn(column) ? ariaSort(sort, column) : undefined}>
+				<th key={column} className="p-0" aria-sort={isSortColumn(column) ? ariaSort(sort, column) : undefined}>
 					<span className="sr-only">{columnName(column)}</span>
 				</th>
 			))}
