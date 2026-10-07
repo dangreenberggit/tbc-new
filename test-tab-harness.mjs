@@ -7,8 +7,8 @@
 //
 // Re-created for the React tab (ticket 558): selectors are the tab's
 // data-testids and the tab is opened through the sim tab strip. The layout and
-// review gates (test-layout.mjs, test-review.mjs) and their accessibility
-// helpers come back in P3; until then both scripts exit 2.
+// review gates (test-layout.mjs, test-review.mjs) share the accessibility
+// helpers at the end of this file.
 
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -351,4 +351,87 @@ export function activateTabExpression() {
 		if (!card) return { error: 'the Upgrades run card never became visible after opening the tab' };
 		return { ok: true };
 	})()`;
+}
+
+// ---------------------------------------------------------------------------
+// Accessibility: axe-core in the page, and the baseline of accepted debt
+// (data/wowsims-fork-a11y-baseline.json, passed as TBC_A11Y_BASELINE). Shared
+// by test-layout.mjs and test-review.mjs.
+// ---------------------------------------------------------------------------
+
+let axeSource = null;
+
+/** Runs axe on `scope` (a CSS selector) and returns `{ violations, ms }`, each node as `{ target, html }`. */
+export async function axeRun(send, scope, tags = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice']) {
+	if (!(await evaluate(send, `typeof window.axe !== 'undefined'`))) {
+		axeSource ??= fs.readFileSync(path.join(__dirname, 'node_modules', 'axe-core', 'axe.min.js'), 'utf8');
+		// The bundle's own value is large and unused; only its side effect, window.axe, is needed.
+		await send('Runtime.evaluate', { expression: axeSource, returnByValue: false, awaitPromise: false });
+	}
+	const t0 = Date.now();
+	const out = await evaluate(
+		send,
+		`(async () => {
+			const scope = document.querySelector(${JSON.stringify(scope)});
+			if (!scope) return { error: 'axe scope not found: ' + ${JSON.stringify(scope)} };
+			const res = await window.axe.run(scope, { runOnly: { type: 'tag', values: ${JSON.stringify(tags)} }, resultTypes: ['violations'] });
+			return { violations: res.violations.map(v => ({ id: v.id, impact: v.impact, tags: v.tags, helpUrl: v.helpUrl,
+				nodes: v.nodes.map(n => ({ target: n.target, html: (n.html || '').slice(0, 300) })) })) };
+		})()`,
+	);
+	if (out?.error) throw new Error(out.error);
+	return { violations: out.violations, ms: Date.now() - t0 };
+}
+
+/** The baseline entries, `[]` without TBC_A11Y_BASELINE (strict). An unreadable file throws: a gate must not run strict by accident. */
+export function readA11yBaseline() {
+	const p = process.env.TBC_A11Y_BASELINE;
+	if (!p) return [];
+	const data = JSON.parse(fs.readFileSync(p, 'utf8'));
+	return Array.isArray(data.entries) ? data.entries : [];
+}
+
+// A `match: "css"` entry's selector is a compound of `[attr="value"]` and
+// `.class` parts, matched against the attributes of the node's HTML snippet
+// (classification runs in Node, with no live DOM to call `matches` on).
+const cssMatchesHtml = (selector, html) => {
+	const open = /^<[^>]*>/.exec(html || '')?.[0] ?? '';
+	const attr = name => new RegExp(`\\s${name}="([^"]*)"`).exec(open)?.[1];
+	const classes = new Set((attr('class') ?? '').split(/\s+/).filter(Boolean));
+	const parts = selector.match(/\[[^\]]+\]|\.[\w-]+/g) ?? [];
+	if (parts.length === 0) return false;
+	return parts.every(part => {
+		if (part.startsWith('.')) return classes.has(part.slice(1));
+		const [, name, value] = /^\[([\w-]+)="([^"]*)"\]$/.exec(part) ?? [];
+		return name !== undefined && attr(name) === value;
+	});
+};
+
+const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'];
+
+/**
+ * Splits axe violations into `fail` (critical or serious, a WCAG rule, not in
+ * the baseline) and `warn` (everything else), each `{ id, selector, impact }`,
+ * and returns the indices of the baseline entries that matched.
+ */
+export function a11yClassify(violations, baseline) {
+	const fail = [];
+	const warn = [];
+	const matched = new Set();
+	for (const v of violations) {
+		for (const node of v.nodes) {
+			const selector = node.target.join(' ');
+			const finding = { id: v.id, selector, impact: v.impact ?? null };
+			const entry = baseline.findIndex(e => e.ruleId === v.id && (e.match === 'css' ? cssMatchesHtml(e.selector, node.html) : e.selector === selector));
+			if (entry >= 0) {
+				matched.add(entry);
+				warn.push({ ...finding, baselined: true });
+			} else if ((v.impact === 'critical' || v.impact === 'serious') && v.tags.some(t => WCAG_TAGS.includes(t))) {
+				fail.push(finding);
+			} else {
+				warn.push(finding);
+			}
+		}
+	}
+	return { fail, warn, matched };
 }

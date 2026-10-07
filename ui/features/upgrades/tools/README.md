@@ -70,8 +70,8 @@ the four transport signals; the harness only measures.
 The four signals in the JSON:
 
 - **S1 `runner`** — the runner class the tab chose, from the `data-runner`
-  attribute the tab writes on `.upgrades-status` (`BulkHttpSimRunner` on the HTTP
-  transport, `WorkerPoolSimRunner` on WASM or a forced fallback).
+  attribute the tab writes on `[data-testid="upgrades-tab-root"]` after a live
+  run. The React tab always runs `WorkerPoolSimRunner`.
 - **S2 `requests`** — counts of completed 200 sim responses per endpoint,
   summed over the page session **and every auto-attached worker session**. Every
   `/bulkSimAsync` and `/raidSimAsync` fetch is issued inside a dedicated Web
@@ -90,10 +90,24 @@ Run it from anywhere (Node 22+, no npm deps):
 node run-tab-cdp.mjs --origin http://localhost:3333 --candidates 40 --out out.json
 ```
 
+The harness finds every element by its `data-testid` (the React tab, ticket
+560): the tab button, the phase selector (`phase-selector`, inside the settings
+column, opened through `upgrades-run-settings-summary` below `xl`), the
+candidates and iterations pickers (`upgrades-candidates-picker`, always in the
+DOM inside a wrapper hidden unless `?upgrades-dev`; `upgrades-iterations-picker`),
+the eligible count (`upgrades-eligible-count`, its `data-count`), the run button,
+the status line (`upgrades-status`) and the rows of the Upgrades list pane
+(`#upgrades-pane-shopping-list`, below-cutoff group opened first). Each picker
+value is read back after it is set and the run stops with "did not stick" when
+it differs.
+
 Flags: `--origin <url>` (required), `--page` (default
-`/tbc/paladin/retribution/`), `--phase` (default 5), `--candidates N` (0 =
-uncapped), `--iterations N` (0 = leave the picker at its default 3000),
-`--timeout-ms` (default 2 700 000), `--out <json>` (stdout if omitted),
+`/tbc/paladin/retribution/`), `--phase` (default 3, the page's default phase),
+`--candidates N` (0 = uncapped), `--iterations N` (0 = leave the picker at its
+default 3000), `--timeout-ms` (default 2 700 000), `--out <json>` (stdout if
+omitted), `--trace-tail`, which samples the progress dialog's message and counter and the
+landed row count every 500 ms from the Run click to the end of the run; with it,
+`--out` names a directory that gets `result.json` and `tail.jsonl`,
 `--force-fallback`, which installs a one-shot `window.Worker` throw so the tab's
 transport probe fails and it falls back to the WASM runner over HTTP — the
 gate's screen-check twin and its forced-fallback negative — and `--bulk-http`,
@@ -104,7 +118,7 @@ at 3000 iterations, and a fresh Chromium profile per launch keeps the key from
 leaking between runs.
 
 Two timing fields are recorded on every run: **`firstRowS`** — Run click to the
-first `.upgrades-results table.upgrades-results-table tbody tr` (via a
+first `[data-testid="upgrades-result-row"]` (via a
 `MutationObserver` installed before the click; `null` if no row lands) — and
 **`clickToDoneS`** — click to the `Took` status. Two request-selection fields
 echo the flags: **`iterationsRequested`** and **`bulkHttpRequested`**.
@@ -124,7 +138,9 @@ unchanged:
 - `--page-sim` (needs `--capture-requests`) then runs the page's Simulate at
   seed 11 and the tab's iterations, writes `<dir>/page.json`, and replays that
   request once on the tab's pool with `debugFirstIteration: false` and the
-  tab's player name (`<dir>/replay.json`).
+  tab's player name (`<dir>/replay.json`). It sets `#simui-fixed-rng-seed`,
+  which upstream renders in the settings dialog; whether that input is in the
+  DOM while the dialog is closed is untested on the React page.
 
 New readback fields: `presetTab`, `preset`, `wasmConcurrency`, `captureError`,
 `tabSimCalls`, `pageSimCalls`, `calls`, `tabBaseline`,

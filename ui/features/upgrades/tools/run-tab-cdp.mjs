@@ -4,7 +4,8 @@
 // desktop binary on :3333) and writes a readback JSON that records what the tab
 // actually did rather than what the origin implies:
 //
-//   - runner       the runner class the tab chose (data-runner attribute, S1)
+//   - runner       the runner class the tab chose (data-runner on
+//                  [data-testid="upgrades-tab-root"], S1)
 //   - requests     completed 200 sim responses per endpoint, summed over the
 //                  page session AND every auto-attached worker session (S2) —
 //                  every /bulkSimAsync and /raidSimAsync fetch is issued inside
@@ -20,14 +21,19 @@
 //
 // Usage:
 //   node run-tab-cdp.mjs --origin http://localhost:3333 [--page /tbc/paladin/retribution/]
-//        [--phase 5] [--candidates N] [--iterations N] [--timeout-ms 2700000]
-//        [--out out.json] [--force-fallback] [--bulk-http]
+//        [--phase 3] [--candidates N] [--iterations N] [--timeout-ms 2700000]
+//        [--out out.json] [--trace-tail] [--force-fallback] [--bulk-http]
 //        [--preset-tab <name> --preset <chip|?>] [--wasm-concurrency N]
 //        [--capture-requests <dir> [--page-sim]]
 //
 // --bulk-http sets the `upgradesTab.runner` localStorage key before navigation so
 //   the tab selects the Go bulk runner (ticket 411 measurement only; the default
 //   is the per-candidate loop). Readback: bulkHttpRequested.
+// Every element is found by its data-testid (the React tab, ticket 560). The
+// phase defaults to 3, the page's own default phase; pass --phase for another.
+// --trace-tail samples the progress dialog's message and counter and the landed row count
+//   every 500 ms from the Run click to the end of the run (ticket 560 F12). With
+//   it, --out names a directory, which gets result.json and tail.jsonl.
 // --iterations N sets the iterations NumberPicker at click time (default 3000).
 //   Readback: iterationsRequested. Two timings are always recorded: firstRowS
 //   (Run click to the first results-table row) and clickToDoneS (click to Took).
@@ -61,11 +67,12 @@ function parseArgs(argv) {
 	const args = {
 		origin: null,
 		page: '/tbc/paladin/retribution/',
-		phase: 5,
+		phase: 3,
 		candidates: 0, // 0 = uncapped
 		iterations: 0, // 0 = leave the picker at its default (3000)
 		timeoutMs: 2700000,
 		out: null,
+		traceTail: false,
 		forceFallback: false,
 		bulkHttp: false,
 		presetTab: null,
@@ -83,6 +90,7 @@ function parseArgs(argv) {
 		else if (a === '--iterations') args.iterations = parseInt(argv[++i], 10);
 		else if (a === '--timeout-ms') args.timeoutMs = parseInt(argv[++i], 10);
 		else if (a === '--out') args.out = argv[++i];
+		else if (a === '--trace-tail') args.traceTail = true;
 		else if (a === '--force-fallback') args.forceFallback = true;
 		else if (a === '--bulk-http') args.bulkHttp = true;
 		else if (a === '--preset-tab') args.presetTab = argv[++i];
@@ -99,6 +107,7 @@ function parseArgs(argv) {
 	if (args.presetTab === '?' && args.preset !== '?') throw new Error('--preset-tab "?" needs --preset "?"');
 	if (args.wasmConcurrency !== null && !(args.wasmConcurrency >= 1)) throw new Error('--wasm-concurrency needs a positive integer');
 	if (args.pageSim && !args.captureRequests) throw new Error('--page-sim needs --capture-requests <dir>');
+	if (args.traceTail && !args.out) throw new Error('--trace-tail needs --out <dir>');
 	args.origin = args.origin.replace(/\/+$/, '');
 	return args;
 }
@@ -216,80 +225,78 @@ function cdp(wsUrl) {
 }
 
 async function evaluate(send, sessionId, expression) {
-	const { result, exceptionDetails } = await send(
-		'Runtime.evaluate',
-		{ expression, returnByValue: true, awaitPromise: true },
-		sessionId,
-	);
+	const { result, exceptionDetails } = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true }, sessionId);
 	if (exceptionDetails) {
 		throw new Error(`eval: ${exceptionDetails.text} ${exceptionDetails.exception?.description ?? ''}`);
 	}
 	return result.value;
 }
 
-// --- page scripts (unchanged from ret-p5-run.mjs except where noted) ---
+// --- page scripts: every element by its data-testid (ticket 560) ---
+
+const WF = `const wf = async (fn,ms)=>{const e=Date.now()+ms;while(Date.now()<e){const v=fn();if(v)return v;await new Promise(r=>setTimeout(r,100));}return fn();};`;
 
 const activate = `(async () => {
-	const wf = async (fn,ms)=>{const e=Date.now()+ms;while(Date.now()<e){const v=fn();if(v)return v;await new Promise(r=>setTimeout(r,100));}return fn();};
-	const nav = await wf(()=>document.querySelector('button[data-bs-target="#upgrades-tab"]'),30000);
-	if(!nav) return {error:'no nav'};
+	${WF}
+	const nav = await wf(()=>document.querySelector('[data-testid="sim-tabs"] [data-testid="upgrades-tab"]'),30000);
+	if(!nav) return {error:'no Upgrades tab button'};
 	nav.click();
-	const host = await wf(()=>{const h=document.querySelector('#upgrades-tab .upgrades-view-controls-host');return h&&(h.offsetParent!==null||h.getBoundingClientRect().width>0)?h:null;},15000);
-	if(!host) return {error:'no host'};
+	const card = await wf(()=>{const c=document.querySelector('[data-testid="upgrades-run-controls"]');return c&&c.getBoundingClientRect().width>0?c:null;},15000);
+	if(!card) return {error:'the Upgrades run controls never became visible'};
 	return {ok:true};
 })()`;
 
-// Set the phase selector. Same mechanism as ret-p5-run.mjs, parameterised.
+// Below the xl breakpoint the settings column is behind its summary button;
+// open it so the phase selector can be set.
 const setPhase = phase => `(async () => {
-	const wf = async (fn,ms)=>{const e=Date.now()+ms;while(Date.now()<e){const v=fn();if(v)return v;await new Promise(r=>setTimeout(r,100));}return fn();};
-	const summary = await wf(()=>document.querySelector('.upgrades-run-settings-summary'),15000);
-	if(!summary) return {error:'no run-settings summary'};
-	if(summary.getAttribute('aria-expanded') !== 'true') summary.click();
+	${WF}
+	const summary = document.querySelector('[data-testid="upgrades-run-settings-summary"]');
+	if(summary && summary.getBoundingClientRect().width > 0 && summary.getAttribute('aria-expanded') !== 'true') summary.click();
 	await new Promise(r=>setTimeout(r,400));
-	const sel = await wf(()=>document.querySelector('#phase-selector'),15000);
-	if(!sel) return {error:'no #phase-selector'};
+	const sel = await wf(()=>document.querySelector('[data-testid="phase-selector"] select'),15000);
+	if(!sel) return {error:'no [data-testid="phase-selector"] select'};
 	const before = sel.value;
 	const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLSelectElement.prototype,'value').set;
 	nativeSetter.call(sel,'${phase}');
 	sel.dispatchEvent(new Event('change',{bubbles:true}));
 	await new Promise(r=>setTimeout(r,1500));
-	const settled = document.querySelector('#phase-selector').value;
+	const settled = document.querySelector('[data-testid="phase-selector"] select').value;
 	if (settled !== '${phase}') return {error:'phase did not stick: before='+before+' settled='+settled};
 	return {ok:true, phaseSet: settled, phaseBefore: before};
 })()`;
 
-// Set the Candidates NumberPicker's input. Same native-setter + input/change
-// idiom as setPhase; the picker binds a change listener that writes candidateCap
-// (upgrades_tab.tsx:889-912). Read the value back and assert it stuck, so a
-// silently-rejected cap cannot pose as an uncapped run.
+// Set the Candidates NumberPicker's input. It is always in the DOM, inside a
+// wrapper hidden unless ?upgrades-dev, so this works on a production bundle.
+// The picker writes the tab store (ticket 564); the value is read back and
+// asserted, so a silently rejected cap cannot pose as an uncapped run.
 const setCandidates = n => `(async () => {
-	const wf = async (fn,ms)=>{const e=Date.now()+ms;while(Date.now()<e){const v=fn();if(v)return v;await new Promise(r=>setTimeout(r,100));}return fn();};
-	const input = await wf(()=>document.querySelector('.upgrades-candidates-picker input'),15000);
+	${WF}
+	const sel = '[data-testid="upgrades-candidates-picker"] input';
+	const input = await wf(()=>document.querySelector(sel),15000);
 	if(!input) return {error:'no candidates input'};
 	const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
 	nativeSetter.call(input,'${n}');
 	input.dispatchEvent(new Event('input',{bubbles:true}));
 	input.dispatchEvent(new Event('change',{bubbles:true}));
 	await new Promise(r=>setTimeout(r,400));
-	const settled = document.querySelector('.upgrades-candidates-picker input').value;
+	const settled = document.querySelector(sel).value;
 	if (String(settled) !== '${n}') return {error:'candidates did not stick: settled='+settled};
 	return {ok:true, candidatesSet: settled};
 })()`;
 
-// Set the iterations NumberPicker's input. Same native-setter + input/change
-// idiom as setCandidates; the picker (id 'upgrades-iterations') is read at click
-// time and drives both the loop's per-candidate sims and highStageIterations
-// (rank.ts, C10). Read the value back and assert it stuck.
+// Set the iterations NumberPicker's input the same way; the run reads it from
+// the tab store at the click.
 const setIterations = n => `(async () => {
-	const wf = async (fn,ms)=>{const e=Date.now()+ms;while(Date.now()<e){const v=fn();if(v)return v;await new Promise(r=>setTimeout(r,100));}return fn();};
-	const input = await wf(()=>document.querySelector('.upgrades-iterations-picker input'),15000);
+	${WF}
+	const sel = '[data-testid="upgrades-iterations-picker"] input';
+	const input = await wf(()=>document.querySelector(sel),15000);
 	if(!input) return {error:'no iterations input'};
 	const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
 	nativeSetter.call(input,'${n}');
 	input.dispatchEvent(new Event('input',{bubbles:true}));
 	input.dispatchEvent(new Event('change',{bubbles:true}));
 	await new Promise(r=>setTimeout(r,400));
-	const settled = document.querySelector('.upgrades-iterations-picker input').value;
+	const settled = document.querySelector(sel).value;
 	if (String(settled) !== '${n}') return {error:'iterations did not stick: settled='+settled};
 	return {ok:true, iterationsSet: settled};
 })()`;
@@ -302,7 +309,7 @@ const bulkHttpSource = `try{localStorage.setItem('upgradesTab.runner','bulk-http
 // screening path the first row cannot land before both chunks finish (C20).
 const installFirstRowObserver = `(() => {
 	window.__harnessFirstRowAt = null;
-	const sel = '.upgrades-results table.upgrades-results-table tbody tr';
+	const sel = '[data-testid="upgrades-result-row"]';
 	if (document.querySelector(sel)) { window.__harnessFirstRowAt = performance.now(); return {ok:true, already:true}; }
 	const obs = new MutationObserver(() => {
 		if (window.__harnessFirstRowAt == null && document.querySelector(sel)) {
@@ -321,74 +328,82 @@ const readTimings = `(() => ({
 	doneAt: window.__harnessDoneAt ?? null,
 }))()`;
 
-// Read the eligible-candidate count from the Candidates placeholder (C13) and
-// the runner attribute before the run (expected null on a fresh page, F4).
+// Read the eligible-candidate count and the runner attribute before the run
+// (the attribute is expected absent on a fresh page, F4).
 const preRun = `(() => {
-	const input = document.querySelector('.upgrades-candidates-picker input');
-	const ph = input ? (input.placeholder || '') : '';
-	const m = ph.match(/all\\s+([0-9]+)\\s+eligible/i);
-	const st = document.querySelector('.upgrades-status');
+	const count = document.querySelector('[data-testid="upgrades-eligible-count"]')?.dataset.count;
+	const root = document.querySelector('[data-testid="upgrades-tab-root"]');
 	return {
-		eligibleCount: m ? parseInt(m[1],10) : null,
-		placeholder: ph,
-		runnerBeforeRun: st ? (st.getAttribute('data-runner') ?? null) : null,
+		eligibleCount: count === undefined ? null : Number(count),
+		runnerBeforeRun: root ? (root.getAttribute('data-runner') ?? null) : null,
 	};
 })()`;
 
 const clickRun = `(async () => {
-	const btn = document.querySelector('.upgrades-run-button');
+	const btn = document.querySelector('[data-testid="upgrades-run-button"]');
 	if(!btn) return {error:'no run button'};
 	window.__harnessClickAt = performance.now();
 	btn.click();
 	return {ok:true};
 })()`;
 
-const pollDone = ms => `(async () => {
+// The done line ("… Took Ns.") is in the status line's polite region and an
+// error in its alert region; both are inside [data-testid="upgrades-status"].
+// With `trace`, one sample every 500 ms: seconds since the click, the progress
+// dialog's message and its done/total counter, and the rows landed so far.
+const pollDone = (ms, trace) => `(async () => {
 	const deadline = Date.now() + ${ms};
-	// Ticket 416 moved the "Your current gear: N DPS. Took Ns." done line out of
-	// .upgrades-status into .upgrades-baseline-summary, so the done signal is read
-	// from both. "Ranking failed" still renders in .upgrades-status.
-	const statusText = () => [
-		document.querySelector('.upgrades-status')?.innerText ?? '',
-		document.querySelector('.upgrades-baseline-summary')?.innerText ?? '',
-	].join(' ');
+	const statusText = () => document.querySelector('[data-testid="upgrades-status"]')?.innerText ?? '';
+	const tail = [];
+	const sample = () => {
+		if (!${trace}) return;
+		tail.push({
+			s: +((performance.now() - window.__harnessClickAt) / 1000).toFixed(2),
+			message: document.querySelector('[data-testid="progress-tracker-modal-message"]')?.innerText ?? null,
+			counter: document.querySelector('[data-testid="progress-tracker-modal-progress-text"]')?.innerText ?? null,
+			rows: document.querySelectorAll('[data-testid="upgrades-result-row"]').length,
+		});
+	};
 	while (Date.now() < deadline) {
+		sample();
 		const t = statusText();
-		if (/Took\\s/i.test(t)) { window.__harnessDoneAt = performance.now(); return {done:true, status:t}; }
-		if (/Ranking failed/i.test(t)) return {done:false, failed:true, status:t};
+		if (/Took\\s/i.test(t)) { window.__harnessDoneAt = performance.now(); return {done:true, status:t, tail}; }
+		if (/Ranking failed/i.test(t)) return {done:false, failed:true, status:t, tail};
 		await new Promise(r=>setTimeout(r,500));
 	}
-	return {done:false, timeout:true, status:statusText()};
+	return {done:false, timeout:true, status:statusText(), tail};
 })()`;
 
-const readResults = `(() => {
-	const root = document.querySelector('.upgrades-results');
-	if(!root) return {error:'no results root'};
-	// The below-cutoff rows live inside a collapsed <details>; while collapsed
-	// their cells' innerText reads empty, so a positional parse yields empty
-	// item/slot and T1's key-set check degenerates. Expand every disclosure
-	// before reading so below-cutoff rows carry their real item/slot (the rows
-	// are already in the DOM via replaceChildren; open only reveals them).
-	for (const d of root.querySelectorAll('details')) d.open = true;
-	const parseDelta = s => {
-		const m = (s||'').match(/([+-]?[0-9]+(?:\\.[0-9]+)?)\\s*DPS/i);
-		return m ? parseFloat(m[1]) : null;
+// Reads the Upgrades list pane, which holds every row: its shortlist, then the
+// below-cutoff group, opened first because its table mounts only when open.
+// Cells are read by position: rank, item, slot, ΔDPS, source.
+const readResults = `(async () => {
+	${WF}
+	const pane = document.getElementById('upgrades-pane-shopping-list');
+	if(!pane) return {error:'no Upgrades list pane'};
+	const group = pane.querySelector('[data-testid="upgrades-below-cutoff"]');
+	if (group && !group.querySelector('[data-testid="upgrades-results-table"]')) {
+		group.querySelector('[data-testid="upgrades-below-cutoff-trigger"]')?.click();
+		if (!await wf(()=>group.querySelector('[data-testid="upgrades-results-table"] tbody tr'),10000)) return {error:'the below-cutoff group did not open'};
+	}
+	const number = s => {
+		const m = (s||'').replace(/,/g,'').match(/[+-]?[0-9]+(?:\\.[0-9]+)?/);
+		return m ? parseFloat(m[0]) : null;
 	};
 	const rows = [];
 	const aboveCutoffItems = [];
-	for (const table of root.querySelectorAll('table.upgrades-results-table')) {
-		const below = table.classList.contains('upgrades-below-cutoff-table');
+	for (const table of pane.querySelectorAll('[data-testid="upgrades-results-table"]')) {
+		const below = group !== null && group.contains(table);
 		for (const tr of table.querySelectorAll('tbody tr')) {
 			const tds = Array.from(tr.querySelectorAll('td'));
 			if (tds.length < 5) continue;
 			const text = i => (tds[i]?.innerText ?? '').trim();
-			const itemCell = text(1);
-			const item = itemCell.split('\\n')[0].trim();
+			const item = text(1).split('\\n')[0].trim();
 			const row = {
 				rank: text(0),
 				item,
 				slot: text(2),
-				dps: parseDelta(text(3)),
+				dps: number(text(3).split('\\n')[0]),
 				source: text(4),
 				belowCutoff: below,
 			};
@@ -396,22 +411,19 @@ const readResults = `(() => {
 			if (!below) aboveCutoffItems.push(item);
 		}
 	}
-	const statusEl = document.querySelector('.upgrades-status');
-	const statusText = statusEl ? statusEl.innerText : '';
-	const runner = statusEl ? (statusEl.getAttribute('data-runner') ?? null) : null;
+	const root = document.querySelector('[data-testid="upgrades-tab-root"]');
+	const runner = root ? (root.getAttribute('data-runner') ?? null) : null;
+	const statusText = document.querySelector('[data-testid="upgrades-status"]')?.innerText ?? '';
 	const bodyText = document.body.innerText || '';
-	const mBase = statusText.match(/Your current gear:\\s*([0-9]+(?:\\.[0-9]+)?)\\s*DPS/i)
-		|| bodyText.match(/Your current gear:\\s*([0-9]+(?:\\.[0-9]+)?)\\s*DPS/i);
-	const mTook = statusText.match(/Took\\s*([0-9]+(?:\\.[0-9]+)?)s/i)
-		|| bodyText.match(/Took\\s*([0-9]+(?:\\.[0-9]+)?)s/i);
-	const mAbove = bodyText.match(/([0-9]+)\\s+above the cutoff/i);
+	const mBase = statusText.match(/Your current gear:\\s*([0-9][0-9,]*(?:\\.[0-9]+)?)\\s*DPS/i);
+	const mTook = statusText.match(/Took\\s*([0-9][0-9,]*(?:\\.[0-9]+)?)s/i);
 	return {
 		rows,
 		rowCount: rows.length,
-		aboveCutoff: mAbove ? parseInt(mAbove[1],10) : aboveCutoffItems.length,
+		aboveCutoff: aboveCutoffItems.length,
 		aboveCutoffItems,
-		baselineDps: mBase ? parseFloat(mBase[1]) : null,
-		elapsedS: mTook ? parseFloat(mTook[1]) : null,
+		baselineDps: mBase ? number(mBase[1]) : null,
+		elapsedS: mTook ? number(mTook[1]) : null,
 		panicHit: /panic|goroutine/i.test(statusText) || /panic|goroutine/i.test(bodyText),
 		runner,
 		statusText,
@@ -458,24 +470,23 @@ const readPoolSize = `(() => {
 
 // The same DOM steps as scripts/tab-fixtures/record.mjs in the outer repo. It
 // must run before `activate`: the picker is in the Gear tab, and once the
-// Upgrades tab is active its chips fail the offsetParent filter. The 3 s
-// settle mirrors record.mjs, which waits 5 s after navigating, so a chip click
-// cannot land before the page's own init applies its default gear.
+// Upgrades tab is active its chips fail the offsetParent filter. On a fresh
+// page the chips render seconds after the phase tabs, so they are polled.
 const loadPreset = (tabName, chipName) => `(async () => {
-	const wf = async (fn,ms)=>{const e=Date.now()+ms;while(Date.now()<e){const v=fn();if(v)return v;await new Promise(r=>setTimeout(r,100));}return fn();};
+	${WF}
 	const sleep = ms => new Promise(r=>setTimeout(r,ms));
-	if(!await wf(()=>document.querySelector('.preset-group-picker .preset-group-phase-tab'),30000)) return {error:'no .preset-group-picker .preset-group-phase-tab after 30 s'};
-	await sleep(3000);
-	const picker = document.querySelector('.preset-group-picker');
-	const tabs = [...picker.querySelectorAll('.preset-group-phase-tab')];
+	const tabsOf = () => [...document.querySelectorAll('[data-testid="preset-group-phase-tabs"] button')];
+	if(!await wf(()=>tabsOf().length > 0,30000)) return {error:'no preset phase tabs after 30 s'};
+	const tabs = tabsOf();
 	const tabNames = tabs.map(t=>t.textContent.trim());
+	const gearChips = () => [...document.querySelectorAll('[data-testid="preset-group-picker"] [data-testid="content-block"]')]
+		.filter(s=>s.querySelector('[data-testid="content-block-title"]')?.textContent.trim()==='Gear Sets')
+		.flatMap(s=>[...s.querySelectorAll('[data-testid="saved-data-set-chip"]')])
+		.filter(c=>c.offsetParent);
 	const visibleChips = async t => {
 		t.click();
-		await sleep(400);
-		return [...picker.querySelectorAll('.preset-group-section')]
-			.filter(s=>s.querySelector('h6')?.textContent.trim()==='Gear Sets')
-			.flatMap(s=>[...s.querySelectorAll('.saved-data-set-chip')])
-			.filter(c=>c.offsetParent);
+		await wf(()=>gearChips().length > 0,30000);
+		return gearChips();
 	};
 	const names = chips => chips.map(c=>c.textContent.trim()).join(' | ');
 	const want = ${JSON.stringify(tabName)};
@@ -492,12 +503,13 @@ const loadPreset = (tabName, chipName) => `(async () => {
 	}
 	const tab = tabs.find(t=>t.textContent.trim()===want);
 	if (!tab) return {error:'no preset phase tab '+want+'; tabs: '+tabNames.join(' | ')};
-	const chips = await visibleChips(tab);
-	const chip = chips.find(c=>c.textContent.trim()===chipWant);
-	if (!chip) return {error:'no Gear Sets chip '+chipWant+' under '+want+'; visible: '+names(chips)+'; tabs: '+tabNames.join(' | ')};
-	(chip.querySelector('.saved-data-set-name') ?? chip).click();
+	await visibleChips(tab);
+	const chip = await wf(()=>gearChips().find(c=>c.textContent.trim()===chipWant),30000);
+	if (!chip) return {error:'no Gear Sets chip '+chipWant+' under '+want+'; visible: '+names(gearChips())+'; tabs: '+tabNames.join(' | ')};
+	(chip.querySelector('[data-testid="saved-data-set-name"]') ?? chip).click();
 	await sleep(1500);
-	return {ok:true};
+	const worn = [...document.querySelectorAll('[data-testid="gear-picker-root"] [data-testid="item-picker-name"]')].map(e=>e.textContent.trim()).filter(Boolean).slice(0,5);
+	return {ok:true, worn};
 })()`;
 
 const wasmConcurrencySource = n => `try{localStorage.setItem('__tbc_new_wasmconcurrency','${n}')}catch{}`;
@@ -510,8 +522,8 @@ const wasmConcurrencySource = n => `try{localStorage.setItem('__tbc_new_wasmconc
 const installSimCapture = `(async () => {
 	let wp, api;
 	try {
-		wp = await import('/tbc/core/worker_pool.ts');
-		api = await import('/tbc/core/proto/api.ts');
+		wp = await import('/tbc/sim/workers/worker_pool.ts');
+		api = await import('/tbc/generated/proto/api.ts');
 	} catch (e) {
 		return {captureError: String((e && e.message) || e)};
 	}
@@ -568,8 +580,8 @@ const runPageSim = (iterations, timeoutMs) => `(async () => {
 	if (err) return {error: err};
 	err = await setNum('#simui-iterations', '${iterations}');
 	if (err) return {error: err};
-	const btn = await wf(()=>{const b=document.querySelector('button.dps-action');return b&&!b.disabled?b:null;},30000);
-	if(!btn) return {error:'no enabled button.dps-action after 30 s'};
+	const btn = await wf(()=>{const b=document.querySelector('[data-testid="dps-action"]');return b&&!b.disabled?b:null;},30000);
+	if(!btn) return {error:'no enabled [data-testid="dps-action"] after 30 s'};
 	btn.click();
 	const deadline = Date.now() + ${timeoutMs};
 	const found = () => window.__harnessSimCalls.find(e=>e.phase==='page' && e.tabPool===false && e.done);
@@ -813,6 +825,7 @@ async function main() {
 	});
 
 	let out;
+	let tail = [];
 	let captureFiles = null;
 	try {
 		await psend('Page.enable', {});
@@ -883,8 +896,10 @@ async function main() {
 		const run = await evaluate(psend, pageSession, clickRun);
 		if (!run?.ok) throw new Error(`run click failed: ${run?.error ?? 'unknown'}`);
 
-		const done = await evaluate(psend, pageSession, pollDone(args.timeoutMs));
+		const done = await evaluate(psend, pageSession, pollDone(args.timeoutMs, args.traceTail));
 
+		tail = done.tail ?? [];
+		delete done.tail;
 		const results = await evaluate(psend, pageSession, readResults);
 		if (results?.error) throw new Error(`read results failed: ${results.error}`);
 
@@ -925,6 +940,7 @@ async function main() {
 			forcedFallback: args.forceFallback,
 			forceFallbackRemaining,
 			phaseSet: phase.phaseSet,
+			eligibleCountSource: '[data-testid="upgrades-eligible-count"] data-count',
 			done: !!done.done,
 			runTimedOut: !!done.timeout,
 			runFailed: !!done.failed,
@@ -963,8 +979,8 @@ async function main() {
 				Object.assign(extra, cap);
 				delete extra.replayRequest;
 				if (cap.tabBaseline && typeof cap.tabBaseline.dps === 'number') {
-					// The tab shows the baseline with toFixed(1) (upgrades_tab.tsx:2058), so
-					// this checks that the first tab-phase call really was the baseline.
+					// The tab shows the baseline to one decimal, so this checks that the
+					// first tab-phase call really was the baseline.
 					extra.tabBaselineMatchesDisplay = Number(cap.tabBaseline.dps.toFixed(1)) === results.baselineDps;
 				}
 			}
@@ -980,7 +996,11 @@ async function main() {
 	}
 
 	const json = JSON.stringify(out, null, 2);
-	if (args.out) await fsp.writeFile(args.out, json);
+	if (args.traceTail) {
+		await fsp.mkdir(args.out, { recursive: true });
+		await fsp.writeFile(path.join(args.out, 'result.json'), json);
+		await fsp.writeFile(path.join(args.out, 'tail.jsonl'), tail.map(row => JSON.stringify(row)).join('\n') + '\n');
+	} else if (args.out) await fsp.writeFile(args.out, json);
 	else process.stdout.write(json + '\n');
 	console.error(
 		`origin=${out.origin} runner=${out.runner} rows=${out.rowCount} ` +
