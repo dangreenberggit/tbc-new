@@ -18,6 +18,7 @@ import {
 	sourceKeyOf,
 	sourceOptions,
 	splitSetChips,
+	validSourceKeysOf,
 } from './settings_pool';
 import { initialSettings, settingsReducer } from './settings_reducer';
 
@@ -70,6 +71,13 @@ describe('sourceOptions', () => {
 
 	it('leaves out an empty section', () => {
 		expect(sourceOptions([entry(4, { kind: 'badge', cost: 75 })]).raids).toEqual([]);
+	});
+});
+
+describe('validSourceKeysOf', () => {
+	it('is the keys the Sources dialog lists, so a phase reset keeps exactly the exclusions the dialog can show', () => {
+		const { raids, other } = sourceOptions(POOL);
+		expect(validSourceKeysOf(POOL)).toEqual([...raids, ...other].map(o => o.key));
 	});
 });
 

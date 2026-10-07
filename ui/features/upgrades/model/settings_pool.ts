@@ -64,6 +64,13 @@ export function sourceKeys(pool: readonly PoolEntry[]): string[] {
 	return [...keys.filter(k => !ZONELESS_KEYS.has(k)), ...keys.filter(k => ZONELESS_KEYS.has(k))];
 }
 
+/**
+ * The sources a scope's exclusions may name: the keys its Sources dialog
+ * lists. The offer and the phase reset (`follow_phase.ts`) both read it, so a
+ * reset never keeps or drops a source the dialog disagrees on.
+ */
+export const validSourceKeysOf = (pool: readonly PoolEntry[]): readonly string[] => sourceKeys(pool);
+
 export function sourceOptions(pool: readonly PoolEntry[]): { raids: SourceOption[]; other: SourceOption[] } {
 	const options = sourceKeys(pool).map(key => ({ key, count: pool.filter(e => sourceMatches(e, key)).length }));
 	return { raids: options.filter(o => !ZONELESS_KEYS.has(o.key)), other: options.filter(o => ZONELESS_KEYS.has(o.key)) };
@@ -203,7 +210,7 @@ export function settingsOffer({
 	bisTagPhase: number | undefined;
 }): SettingsOffer {
 	const options = setOptions({ presets, savedSets, pool });
-	return { pool, sources: sourceOptions(pool), sourceKeys: sourceKeys(pool), options, defaultKeys: defaultSetKeys(options, pool, bisTagPhase) };
+	return { pool, sources: sourceOptions(pool), sourceKeys: validSourceKeysOf(pool), options, defaultKeys: defaultSetKeys(options, pool, bisTagPhase) };
 }
 
 /** What the user's picks make of an offer: the chips, the run they ask for and its candidate count. */
