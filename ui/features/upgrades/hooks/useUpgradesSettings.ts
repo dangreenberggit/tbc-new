@@ -1,22 +1,17 @@
 import { useSavedGear } from '@features/gear/hooks/useSavedGear';
-import { useSimHost } from '@sim/context/SimHostContext';
+import { useSimHost, useSpecPresets } from '@sim/context/SimHostContext';
 import { useSimStore } from '@sim/hooks/useSimStore';
-import { useMemo, useReducer, useState } from 'react';
+import { useMemo } from 'react';
+import { useStore } from 'zustand';
 
 import { bisTagPhaseFor, poolFor } from '../model/data/data';
 import type { ContentPhase } from '../model/engine/types';
 import { specIdFor } from '../model/run';
 import type { RunSettings } from '../model/run_reducer';
 import { eligibleCountOf, runSettingsOf, type SetSelection, setSelection, type SettingsOffer, settingsOffer } from '../model/settings_pool';
-import { initialSettings, settingsReducer } from '../model/settings_reducer';
-
-/**
- * A number field's value holder, which a `NumberPicker` reads as its model.
- * One object for the tab's lifetime: the picker re-reads it on its own
- * notification, before this hook's next render, so it must already hold the
- * value the user typed (`ui-kit/input.ts`, `getValue`).
- */
-export type NumberField = { current: number };
+import type { SettingsAction } from '../model/settings_reducer';
+import { appliedSettings, settingsActionIn, type SettingsDefaults, type UpgradesStore } from '../model/upgrades_store';
+import { useUpgradesStoreApi } from './useUpgradesStore';
 
 export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
 	runSettings: RunSettings;
@@ -25,29 +20,32 @@ export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
 	prune: boolean;
 	/** Undefined when the page's spec has no ranking data. */
 	eligibleCount: number | undefined;
-	iterationsField: NumberField;
-	capField: NumberField;
+	/** The tab's store, which the number pickers read their value from. */
+	store: UpgradesStore;
 	toggleSource: (key: string) => void;
 	toggleSet: (key: string) => void;
 	setPrune: (prune: boolean) => void;
-	onIterationsChange: (iterations: number) => void;
-	onCapChange: (cap: number) => void;
+	setIterations: (iterations: number) => void;
+	setCandidateCap: (cap: number) => void;
 };
 
+const defaultsOf = (offer: SettingsOffer): SettingsDefaults => ({ selectedSetKeys: offer.defaultKeys, validSourceKeys: offer.sourceKeys });
+
 /**
- * The tab's run settings over the page's spec, phase, gear presets and saved
- * gear sets. The default sets are applied once per spec and phase, during
- * render, so a phase change re-selects them before anything shows.
+ * The tab's effective run settings over the page's spec, phase, gear presets
+ * and saved gear sets, for any component on the page (ticket 564). The default
+ * sets of the page's spec and phase are a derivation over the stored settings,
+ * so every caller shows them from the first render and right after a phase
+ * change; the first write stores them along with the user's change.
  */
-export function useUpgradesSettings(seed: { iterations: number; candidateCap?: number }): UpgradesSettings {
+export function useUpgradesSettings(): UpgradesSettings {
 	const host = useSimHost();
 	const specId = specIdFor(host.player.getSpec());
 	const phase = useSimStore('phase') as ContentPhase;
-	const presets = host.individualConfig.presets.gear;
+	const presets = useSpecPresets().gear;
 	const saved = useSavedGear().entries;
-	const [state, dispatch] = useReducer(settingsReducer, seed, initialSettings);
-	const [iterationsField] = useState<NumberField>(() => ({ current: seed.iterations }));
-	const [capField] = useState<NumberField>(() => ({ current: seed.candidateCap ?? 0 }));
+	const store = useUpgradesStoreApi();
+	const stored = useStore(store, state => state.settings);
 
 	// Memoised: `poolFor` builds a new pool on each call, and the tab renders again on every row a run lands.
 	const offer = useMemo(
@@ -60,6 +58,10 @@ export function useUpgradesSettings(seed: { iterations: number; candidateCap?: n
 			}),
 		[specId, phase, presets, saved],
 	);
+	const scope = specId ? `${specId}:${phase}` : undefined;
+	// Memoised for the same renders: until a write stores the defaults, the derivation builds a new state on each
+	// call, and the selection and eligible count below key on its fields.
+	const state = useMemo(() => appliedSettings(stored, scope, defaultsOf(offer)), [stored, scope, offer]);
 	// Memoised on the picked sets alone, so it keeps its identity while other settings change: the results
 	// area builds its row badges from it, and a new selection renders every row again.
 	const selection = useMemo(() => setSelection(offer, state.selectedSetKeys, phase), [offer, state.selectedSetKeys, phase]);
@@ -73,10 +75,7 @@ export function useUpgradesSettings(seed: { iterations: number; candidateCap?: n
 		[offer, excludedSources, selection, prune, phase],
 	);
 
-	const scope = specId && `${specId}:${phase}`;
-	if (scope && state.defaultsFor !== scope) {
-		dispatch({ type: 'applyDefaults', key: scope, selectedSetKeys: offer.defaultKeys, validSourceKeys: offer.sourceKeys });
-	}
+	const write = (action: SettingsAction) => settingsActionIn(store, scope, defaultsOf(offer), action);
 
 	return {
 		selectedOptions: selection.selectedOptions,
@@ -84,21 +83,14 @@ export function useUpgradesSettings(seed: { iterations: number; candidateCap?: n
 		chips: selection.chips,
 		runSettings,
 		sources: offer.sources,
-		excludedSources: state.excludedSources,
+		excludedSources,
 		prune: state.prune,
 		eligibleCount: specId ? eligibleCount : undefined,
-		iterationsField,
-		capField,
-		toggleSource: key => dispatch({ type: 'toggleSource', key }),
-		toggleSet: key => dispatch({ type: 'toggleSet', key }),
-		setPrune: prune => dispatch({ type: 'setPrune', prune }),
-		onIterationsChange: iterations => {
-			iterationsField.current = iterations;
-			dispatch({ type: 'setIterations', iterations });
-		},
-		onCapChange: cap => {
-			capField.current = cap;
-			dispatch({ type: 'setCandidateCap', cap });
-		},
+		store,
+		toggleSource: key => write({ type: 'toggleSource', key }),
+		toggleSet: key => write({ type: 'toggleSet', key }),
+		setPrune: prune => write({ type: 'setPrune', prune }),
+		setIterations: iterations => write({ type: 'setIterations', iterations }),
+		setCandidateCap: cap => write({ type: 'setCandidateCap', cap }),
 	};
 }

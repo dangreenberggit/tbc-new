@@ -1,26 +1,28 @@
 import i18n from '@i18n/config';
 import { NumberPicker } from '@ui-kit/NumberPicker';
 
-import type { NumberField } from '../../hooks/useUpgradesSettings';
+import type { UpgradesStore } from '../../model/upgrades_store';
 
 export interface CandidateCapPickerProps {
-	/** The settings hook's holder, which the picker reads the typed value back from. */
-	capField: NumberField;
+	/** The tab's store, which the picker reads the cap back from. */
+	store: UpgradesStore;
 	onCapChange: (cap: number) => void;
 }
 
 /** The candidate cap: keep the first N candidates of the EP order; empty or 0 is no cap. */
-export const CandidateCapPicker = ({ capField, onCapChange }: CandidateCapPickerProps) => (
+export const CandidateCapPicker = ({ store, onCapChange }: CandidateCapPickerProps) => (
 	<NumberPicker
-		modObject={capField}
+		modObject={store}
 		testId="upgrades-candidates-picker"
 		config={{
 			id: 'upgrades-candidates',
 			label: i18n.t('upgrades_tab.candidates_label'),
 			positive: true,
 			showZeroes: false,
-			getValue: field => field.current,
-			setValue: (_field, next) => onCapChange(next),
+			// The cap alone, so a row a run lands does not ring the field.
+			storeSubscribe: tabStore => listener => tabStore.subscribe(state => state.settings.candidateCap, listener),
+			getValue: tabStore => tabStore.getState().settings.candidateCap ?? 0,
+			setValue: (_tabStore, next) => onCapChange(next),
 		}}
 	/>
 );

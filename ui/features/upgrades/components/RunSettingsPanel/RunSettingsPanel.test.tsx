@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import englishTranslations from '../../../../../assets/locales/en/translation.json';
 import type { UpgradesSettings } from '../../hooks/useUpgradesSettings';
+import { createUpgradesStore } from '../../model/upgrades_store';
 
 // The phase picker reads the page's sim; `PhaseSelector.test.tsx` covers it.
 vi.mock('../PhaseSelector', () => ({ PhaseSelector: () => null }));
@@ -22,13 +23,12 @@ const settingsWith = (toggleSource: UpgradesSettings['toggleSource']): UpgradesS
 	excludedSources: [],
 	prune: false,
 	eligibleCount: 3,
-	iterationsField: { current: 500 },
-	capField: { current: 0 },
+	store: createUpgradesStore({ iterations: 500 }),
 	toggleSource,
 	toggleSet: () => {},
 	setPrune: () => {},
-	onIterationsChange: () => {},
-	onCapChange: () => {},
+	setIterations: () => {},
+	setCandidateCap: () => {},
 });
 
 const mount = (devVisible = false) => {

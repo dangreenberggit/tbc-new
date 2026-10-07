@@ -26,35 +26,38 @@ vi.mock('../model/run', async importOriginal => ({
 
 const { useRunStale } = await import('./useRunStale');
 const { useUpgradesRun } = await import('./useUpgradesRun');
+const { selectRunStatus, useUpgradesStore } = await import('./useUpgradesStore');
 
 /** The page the key reads: one player's raid proto, which a test edits. */
 let raidName = 'worn gear A';
-const sim = {
-	raid: { toProto: () => RaidProto.create({ parties: [{ players: [{ name: raidName }] }] }) },
-	encounter: { toProto: () => EncounterProto.create({ duration: 180 }) },
-	getPhase: () => 3,
-};
-const host = fakeHost({
-	sim,
-	player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
-});
-const wrapper = ({ children }: { children: ReactNode }) => <SimHostProvider host={host}>{children}</SimHostProvider>;
-
 const SETTINGS: RunSettings = { iterations: 500, excludedSources: [], guaranteedSetKeys: [], guaranteedSetItemIds: [], prune: false };
-const signatureNow = (settings: RunSettings) => inputsSignature({ liveKey: liveInputsKey(sim), settings });
+
+/** A fresh page per case, so each case gets its own tab store (the store is keyed by the page's `Sim`). */
+const makePage = () => {
+	const sim = {
+		raid: { toProto: () => RaidProto.create({ parties: [{ players: [{ name: raidName }] }] }) },
+		encounter: { toProto: () => EncounterProto.create({ duration: 180 }) },
+		getPhase: () => 3,
+	};
+	const host = fakeHost({
+		sim,
+		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
+	});
+	const wrapper = ({ children }: { children: ReactNode }) => <SimHostProvider host={host}>{children}</SimHostProvider>;
+	const signatureNow = (settings: RunSettings) => inputsSignature({ liveKey: liveInputsKey(sim), settings });
+	return { wrapper, signatureNow };
+};
 
 /** The tab's run and its staleness, with a run the test settles by hand. */
 const mountRun = () => {
+	const { wrapper, signatureNow } = makePage();
 	let settle: (outcome: RunOutcome) => void = () => {};
 	const runFn = () => new Promise<RunOutcome>(resolve => (settle = resolve));
-	const view = renderHook(
-		({ settings }) => {
-			const tab = useUpgradesRun(runFn);
-			return { ...tab, stale: useRunStale(tab.run, settings) };
-		},
-		{ wrapper, initialProps: { settings: SETTINGS } },
-	);
-	return { view, settle: (outcome: RunOutcome) => settle(outcome) };
+	const view = renderHook(({ settings }) => ({ ...useUpgradesRun(runFn), status: useUpgradesStore(selectRunStatus), stale: useRunStale(settings) }), {
+		wrapper,
+		initialProps: { settings: SETTINGS },
+	});
+	return { view, signatureNow, settle: (outcome: RunOutcome) => settle(outcome) };
 };
 
 beforeEach(() => {
@@ -64,12 +67,12 @@ beforeEach(() => {
 
 describe('useRunStale', () => {
 	it('shows a fresh run as current, and as stale once the gear changes', async () => {
-		const { view, settle } = mountRun();
+		const { view, settle, signatureNow } = mountRun();
 		act(() => view.result.current.start(SETTINGS, signatureNow(SETTINGS)));
 		expect(view.result.current.stale).toBe(false);
 
 		await act(async () => settle({ ...RANKING_FIXTURE, durationMs: 10 }));
-		expect(view.result.current.run.status).toBe('done');
+		expect(view.result.current.status).toBe('done');
 		expect(view.result.current.stale).toBe(false);
 
 		act(() => {
@@ -80,8 +83,8 @@ describe('useRunStale', () => {
 	});
 
 	it('shows a fresh fixture as current, and as stale once the gear changes', () => {
-		const { view } = mountRun();
-		act(() => view.result.current.dispatchFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
+		const { view, signatureNow } = mountRun();
+		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
 		expect(view.result.current.stale).toBe(false);
 
 		act(() => {
@@ -92,8 +95,8 @@ describe('useRunStale', () => {
 	});
 
 	it('marks a result stale when a tab setting or the iterations change', () => {
-		const { view } = mountRun();
-		act(() => view.result.current.dispatchFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
+		const { view, signatureNow } = mountRun();
+		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
 
 		view.rerender({ settings: { ...SETTINGS, excludedSources: ['Black Temple'] } });
 		expect(view.result.current.stale).toBe(true);
@@ -104,8 +107,8 @@ describe('useRunStale', () => {
 	});
 
 	it('keeps a result current through an edit the run does not read, and a render with the same settings', () => {
-		const { view } = mountRun();
-		act(() => view.result.current.dispatchFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
+		const { view, signatureNow } = mountRun();
+		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
 
 		// A fixed seed or a display toggle notifies, but leaves raid, encounter and phase alone.
 		act(() => pageChanged());
@@ -121,12 +124,12 @@ describe('useRunStale', () => {
 
 	// Every render counts: a page key cached from before the result would show the warning for one paint.
 	it('never renders a fresh result as stale, though the gear changed after the tab mounted', () => {
+		const { wrapper, signatureNow } = makePage();
 		const seen: boolean[] = [];
 		const view = renderHook(
 			() => {
 				const tab = useUpgradesRun(() => new Promise<RunOutcome>(() => {}));
-				const stale = useRunStale(tab.run, SETTINGS);
-				seen.push(stale);
+				seen.push(useRunStale(SETTINGS));
 				return tab;
 			},
 			{ wrapper },
@@ -135,7 +138,7 @@ describe('useRunStale', () => {
 			raidName = 'worn gear B';
 			pageChanged();
 		});
-		act(() => view.result.current.dispatchFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
+		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
 		expect(seen).not.toContain(true);
 	});
 });

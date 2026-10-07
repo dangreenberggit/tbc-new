@@ -10,6 +10,7 @@ import { SimHostProvider } from '@sim/context/SimHostContext';
 import { createSimStore, patchSlice } from '@sim/state/sim_store';
 import { fakeHost } from '@sim/testing';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { type ReactNode, StrictMode } from 'react';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import englishCharacter from '../../../assets/locales/en/character.json';
@@ -17,25 +18,34 @@ import englishTranslations from '../../../assets/locales/en/translation.json';
 
 /** The live run, replaced by one the test settles by hand; the engine is never loaded. */
 const runs: Array<{ settings: RunSettings; deps: RunDeps; settle: (outcome: RunOutcome) => void }> = [];
+const contexts: Array<{ terminate: () => void }> = [];
 vi.mock('@features/upgrades/model/run', () => ({
 	rankForPlayer: (_host: unknown, settings: RunSettings, deps: RunDeps) => new Promise<RunOutcome>(settle => runs.push({ settings, deps, settle })),
-	createRunContext: () => ({ terminate: () => {} }),
+	createRunContext: () => {
+		const context = { terminate: vi.fn() };
+		contexts.push(context);
+		return context;
+	},
 	specIdFor: () => 'ret',
 }));
 
-/** A small phase-3 pool in two raids, whose BiS tags speak for phase 3, so the P3 preset is the default set. */
-const entry = (itemId: number, zone: string, bis = false): PoolEntry => ({
+const entry = (itemId: number, zone: string, bis = false, phase = 3): PoolEntry => ({
 	itemId,
 	name: `item ${itemId}`,
 	slot: 'head',
-	phase: 3,
+	phase,
 	source: { kind: 'raid', zone },
 	...(bis ? { bisTags: ['BiS'] } : {}),
 });
+/** A small pool per phase whose BiS tags speak for that phase, so the P3 preset is phase 3's default set and P4 phase 4's. */
+const POOLS: Record<number, PoolEntry[]> = {
+	3: [entry(1, 'Black Temple', true), entry(2, 'Hyjal Summit'), entry(3, 'Black Temple')],
+	4: [entry(1, 'Black Temple'), entry(4, 'Zul’Aman', true, 4)],
+};
 vi.mock('@features/upgrades/model/data/data', async importOriginal => ({
 	...(await importOriginal<typeof import('@features/upgrades/model/data/data')>()),
-	poolFor: () => [entry(1, 'Black Temple', true), entry(2, 'Hyjal Summit'), entry(3, 'Black Temple')],
-	bisTagPhaseFor: () => ({ tagsFromPhase: 3, requestedPhase: 3 }),
+	poolFor: (_spec: string, phase: number) => POOLS[phase] ?? [],
+	bisTagPhaseFor: (_spec: string, phase: number) => ({ tagsFromPhase: phase, requestedPhase: phase }),
 }));
 
 /** The page's change source: every listener hears every page edit. */
@@ -57,6 +67,8 @@ vi.mock('@features/upgrades/components/RowToggles', () => ({ FavoriteToggle: () 
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
 
 const { UpgradesTabBody } = await import('./UpgradesTabBody');
+const { useUpgradesSettings } = await import('@features/upgrades/hooks/useUpgradesSettings');
+const { selectRunStatus, useUpgradesStore } = await import('@features/upgrades/hooks/useUpgradesStore');
 
 beforeAll(() => {
 	i18n.addResourceBundle('en', 'translation', englishTranslations, true, true);
@@ -69,33 +81,46 @@ afterAll(() => {
 
 /** The worn gear the key reads; a test changes it to edit the page. */
 let worn = 'P2 preset';
-const store = createSimStore();
-const HOST = fakeHost({
-	player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
-	sim: {
-		store,
-		db: { getItemById: () => undefined },
-		raid: { toProto: () => RaidProto.create({ parties: [{ players: [{ name: worn }] }] }) },
-		encounter: { toProto: () => EncounterProto.create({ duration: 180 }) },
-		getPhase: () => store.getState().sim.phase,
-		setPhase: (phase: number) => patchSlice(store, 'sim', { phase }),
-	},
-	individualConfig: { presets: { gear: [{ name: 'P3', phase: 3, gear: EquipmentSpec.create({ items: [{ id: 1 }] }) }] } },
-	getSavedGearStorageKey: () => 'upgrades-tab-body-test-gear',
-});
+const PRESETS = [
+	{ name: 'P3', phase: 3, gear: EquipmentSpec.create({ items: [{ id: 1 }] }) },
+	{ name: 'P4', phase: 4, gear: EquipmentSpec.create({ items: [{ id: 4 }] }) },
+];
+
+/** A fresh page per case, so each case gets its own tab store (the store is keyed by the page's `Sim`). */
+const makeHost = () => {
+	const store = createSimStore();
+	patchSlice(store, 'sim', { phase: 3 });
+	const host = fakeHost({
+		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
+		sim: {
+			store,
+			db: { getItemById: () => undefined },
+			raid: { toProto: () => RaidProto.create({ parties: [{ players: [{ name: worn }] }] }) },
+			encounter: { toProto: () => EncounterProto.create({ duration: 180 }) },
+			getPhase: () => store.getState().sim.phase,
+			setPhase: (phase: number) => patchSlice(store, 'sim', { phase }),
+		},
+		individualConfig: { presets: { gear: PRESETS } },
+		getSavedGearStorageKey: () => 'upgrades-tab-body-test-gear',
+	});
+	return { host, store };
+};
+let current = makeHost();
 
 const rowA = fixtureRow(0);
 const rowB = fixtureRow(1);
 
 beforeEach(() => {
 	runs.length = 0;
+	contexts.length = 0;
 	worn = 'P2 preset';
-	patchSlice(store, 'sim', { phase: 3 });
+	current = makeHost();
 });
 
-const mount = () =>
+const mount = (outside?: ReactNode) =>
 	render(
-		<SimHostProvider host={HOST}>
+		<SimHostProvider host={current.host}>
+			{outside}
 			<UpgradesTabBody />
 		</SimHostProvider>,
 	);
@@ -114,6 +139,30 @@ const tableRows = () => {
 };
 
 const tabRoot = () => screen.getByTestId('upgrades-tab-root');
+
+/** Code outside the tab that reads the tab's run state and effective settings, as another part of the page would. */
+const Probe = () => {
+	const status = useUpgradesStore(selectRunStatus);
+	const { selectedKeys, runSettings } = useUpgradesSettings();
+	return (
+		<>
+			<span data-testid="probe-run-status">{status}</span>
+			<span data-testid="probe-set-keys">{[...selectedKeys].sort().join(',')}</span>
+			<span data-testid="probe-iterations">{runSettings.iterations}</span>
+		</>
+	);
+};
+const probe = (field: string) => screen.getByTestId(`probe-${field}`).textContent;
+
+/** The sets the tab's chips show as selected. */
+const tabSetKeys = () =>
+	screen
+		.getAllByTestId('upgrades-set-chip')
+		.filter(chip => chip.querySelector('[aria-pressed="true"]'))
+		.map(chip => chip.dataset.setKey)
+		.sort()
+		.join(',');
+const tabIterations = () => (within(screen.getByTestId('upgrades-iterations-picker')).getByRole('textbox') as HTMLInputElement).value;
 
 describe('UpgradesTabBody', () => {
 	it('shows rows as they land, and keeps them when Stop ends the run', async () => {
@@ -205,5 +254,46 @@ describe('UpgradesTabBody', () => {
 		if (!chip) throw new Error('no P3 chip');
 		fireEvent.click(within(chip).getByRole('button'));
 		expect(screen.getByTestId('upgrades-stale')).not.toBeNull();
+	});
+	it('lets code outside the tab, mounted before it, read the tab’s run state and effective settings', async () => {
+		const error = vi.spyOn(console, 'error');
+		mount(<Probe />);
+		expect(probe('run-status')).toBe('idle');
+		expect(probe('set-keys')).toBe('preset:3:P3');
+		expect(probe('set-keys')).toBe(tabSetKeys());
+		expect(probe('iterations')).toBe('3000');
+		expect(probe('iterations')).toBe(tabIterations());
+
+		act(() => patchSlice(current.store, 'sim', { phase: 4 }));
+		expect(probe('set-keys')).toBe('preset:4:P4');
+		expect(probe('set-keys')).toBe(tabSetKeys());
+		// A store written during a render would warn here (ticket 564).
+		expect(error).not.toHaveBeenCalled();
+		error.mockRestore();
+
+		const run = clickRun();
+		expect(probe('run-status')).toBe('running');
+		await act(async () => run.settle({ ...RANKING_FIXTURE, durationMs: 1 }));
+		expect(probe('run-status')).toBe('done');
+	});
+
+	// Development renders mount, unmount and mount again, so the run session is disposed before the first Run.
+	it('runs under StrictMode after the development remount', async () => {
+		render(
+			<StrictMode>
+				<SimHostProvider host={current.host}>
+					<UpgradesTabBody />
+				</SimHostProvider>
+			</StrictMode>,
+		);
+		const run = clickRun();
+		const context = run.deps.runContext();
+		expect(contexts).toEqual([context]);
+
+		act(() => run.deps.onLanded(rowA));
+		expect(tableRows()).toHaveLength(1);
+		await act(async () => run.settle({ ...RANKING_FIXTURE, durationMs: 1 }));
+		expect(screen.getByTestId('upgrades-baseline-summary').textContent).toMatch(/Took/);
+		expect(context.terminate).not.toHaveBeenCalled();
 	});
 });

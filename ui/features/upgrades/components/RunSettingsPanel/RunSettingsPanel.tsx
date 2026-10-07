@@ -53,18 +53,12 @@ export const RunSettingsPanel = ({ settings, ready, running, devVisible, onStart
 				{/* Always in the page: the desktop gate writes the cap input on a production build. Hidden without
 				    `?upgrades-dev`, because a cut of the candidate list the user cannot see drops real upgrades (ticket 466). */}
 				<div className="grid gap-6" hidden={!devVisible}>
-					<CandidateCapPicker capField={settings.capField} onCapChange={settings.onCapChange} />
+					<CandidateCapPicker store={settings.store} onCapChange={settings.setCandidateCap} />
 					<FixtureFileInput />
 				</div>
 			</div>
 			<EligibleCount count={settings.eligibleCount} />
-			<RunControls
-				ready={ready}
-				running={running}
-				iterationsField={settings.iterationsField}
-				onIterationsChange={settings.onIterationsChange}
-				onStart={onStart}
-			/>
+			<RunControls ready={ready} running={running} store={settings.store} onIterationsChange={settings.setIterations} onStart={onStart} />
 		</div>
 	);
 };

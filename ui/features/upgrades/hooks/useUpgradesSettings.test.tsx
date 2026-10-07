@@ -29,6 +29,7 @@ vi.mock('../model/data/data', async importOriginal => ({
 }));
 
 const { useUpgradesSettings } = await import('./useUpgradesSettings');
+const { upgradesStoreFor } = await import('./useUpgradesStore');
 
 const gear = (...ids: number[]) => EquipmentSpec.create({ items: ids.map(id => ({ id })) });
 const PRESETS = [
@@ -37,6 +38,7 @@ const PRESETS = [
 	{ name: 'P4', phase: 4, gear: gear(4) },
 ];
 
+/** A fresh page per case, so each case gets its own tab store (the store is keyed by the page's `Sim`). */
 const mount = (spec = Spec.SpecRetributionPaladin) => {
 	const store = createSimStore();
 	patchSlice(store, 'sim', { phase: 3 });
@@ -47,8 +49,13 @@ const mount = (spec = Spec.SpecRetributionPaladin) => {
 		getSavedGearStorageKey: () => 'upgrades-settings-test-gear',
 	});
 	const wrapper = ({ children }: { children: ReactNode }) => <SimHostProvider host={host}>{children}</SimHostProvider>;
-	const view = renderHook(() => useUpgradesSettings({ iterations: 500 }), { wrapper });
-	return { view, setPhase: (phase: number) => act(() => patchSlice(store, 'sim', { phase })) };
+	const render = () => renderHook(() => useUpgradesSettings(), { wrapper });
+	return {
+		view: render(),
+		render,
+		tabStore: upgradesStoreFor(host.sim),
+		setPhase: (phase: number) => act(() => patchSlice(store, 'sim', { phase })),
+	};
 };
 
 const selectedKeys = (settings: { selectedOptions: readonly { key: string }[] }) => settings.selectedOptions.map(o => o.key);
@@ -87,20 +94,46 @@ describe('useUpgradesSettings', () => {
 		expect(view.result.current.eligibleCount).toBe(3);
 	});
 
-	it('writes a typed number into its field before the picker re-reads it', () => {
-		const { view } = mount();
-		const { iterationsField, capField } = view.result.current;
-		expect(iterationsField.current).toBe(500);
-		expect(capField.current).toBe(0);
+	it('writes a typed number to the tab store, which the pickers read back', () => {
+		const { view, tabStore } = mount();
+		expect(view.result.current.store).toBe(tabStore);
+		expect(tabStore.getState().settings).toMatchObject({ iterations: 3000, candidateCap: undefined });
 
 		act(() => {
-			view.result.current.onIterationsChange(2000);
-			// What the picker's notification reads, before this hook renders again.
-			expect(iterationsField.current).toBe(2000);
-			view.result.current.onCapChange(40);
+			view.result.current.setIterations(2000);
+			view.result.current.setCandidateCap(40);
 		});
-		expect(view.result.current.iterationsField).toBe(iterationsField);
+		expect(tabStore.getState().settings).toMatchObject({ iterations: 2000, candidateCap: 40 });
 		expect(view.result.current.runSettings).toMatchObject({ iterations: 2000, candidateCap: 40 });
+	});
+
+	it('shows the phase’s default sets before any write, though the store holds none yet', () => {
+		const { view, tabStore } = mount();
+		expect(selectedKeys(view.result.current)).toEqual(['preset:3:P3']);
+		expect(view.result.current.runSettings.guaranteedSetKeys).toEqual(['preset:3:P3']);
+		expect(tabStore.getState().settings.selectedSetKeys).toEqual([]);
+		expect(tabStore.getState().settings.defaultsFor).toBeUndefined();
+	});
+
+	it('shows the new phase’s defaults right after a phase change, with no write', () => {
+		const { view, setPhase, tabStore } = mount();
+		setPhase(4);
+		expect(selectedKeys(view.result.current)).toEqual(['preset:4:P4']);
+		expect(tabStore.getState().settings.defaultsFor).toBeUndefined();
+	});
+
+	it('gives every reader on the page the same effective settings', () => {
+		const { view, render, setPhase } = mount();
+		const other = render();
+		expect(other.result.current.runSettings).toEqual(view.result.current.runSettings);
+
+		act(() => view.result.current.toggleSource('Hyjal Summit'));
+		expect(other.result.current.runSettings).toEqual(view.result.current.runSettings);
+		expect(other.result.current.runSettings.excludedSources).toEqual(['Hyjal Summit']);
+
+		setPhase(4);
+		expect(selectedKeys(other.result.current)).toEqual(['preset:4:P4']);
+		expect(other.result.current.runSettings).toEqual(view.result.current.runSettings);
 	});
 
 	it('keeps the selected sets’ identity while only other settings change, so the row badges do not render again', () => {
@@ -108,7 +141,7 @@ describe('useUpgradesSettings', () => {
 		const before = view.result.current.selectedOptions;
 
 		act(() => view.result.current.setPrune(true));
-		act(() => view.result.current.onIterationsChange(2000));
+		act(() => view.result.current.setIterations(2000));
 		act(() => view.result.current.toggleSource('Hyjal Summit'));
 		expect(view.result.current.selectedOptions).toBe(before);
 
