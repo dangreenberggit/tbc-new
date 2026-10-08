@@ -1287,22 +1287,6 @@
       "curationHint": 110.07
     },
     {
-      "itemId": 22504,
-      "name": "Plagueheart Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 109.0
-    },
-    {
       "itemId": 21848,
       "name": "Spellfire Robe",
       "slot": "chest",
@@ -1394,22 +1378,6 @@
         }
       ],
       "curationHint": 86.21
-    },
-    {
-      "itemId": 22512,
-      "name": "Robe of Faith",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 78.67
     },
     {
       "itemId": 20034,
@@ -2031,22 +1999,6 @@
       "curationHint": 65.62
     },
     {
-      "itemId": 22508,
-      "name": "Plagueheart Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 63.74
-    },
-    {
       "itemId": 16437,
       "name": "Marshal's Silk Footwraps",
       "slot": "feet",
@@ -2093,22 +2045,6 @@
         }
       ],
       "curationHint": 62.3
-    },
-    {
-      "itemId": 22516,
-      "name": "Sandals of Faith",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 58.4
     },
     {
       "itemId": 32975,
@@ -4627,38 +4563,6 @@
       "curationHint": 69.25
     },
     {
-      "itemId": 22517,
-      "name": "Gloves of Faith",
-      "slot": "hands",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 63.23
-    },
-    {
-      "itemId": 22509,
-      "name": "Plagueheart Gloves",
-      "slot": "hands",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 59.05
-    },
-    {
       "itemId": 20618,
       "name": "Gloves of Delusional Power",
       "slot": "hands",
@@ -4910,22 +4814,6 @@
       "curationHint": 110.17
     },
     {
-      "itemId": 22506,
-      "name": "Plagueheart Circlet",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 105.71
-    },
-    {
       "itemId": 28756,
       "name": "Headdress of the High Potentate",
       "slot": "head",
@@ -5032,22 +4920,6 @@
         }
       ],
       "curationHint": 80.69
-    },
-    {
-      "itemId": 22514,
-      "name": "Circlet of Faith",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 76.02
     },
     {
       "itemId": 16441,
@@ -5516,38 +5388,6 @@
         }
       ],
       "curationHint": 88.44
-    },
-    {
-      "itemId": 22513,
-      "name": "Leggings of Faith",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 81.26
-    },
-    {
-      "itemId": 22505,
-      "name": "Plagueheart Leggings",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 80.53
     },
     {
       "itemId": 32112,
@@ -7366,22 +7206,6 @@
       "curationHint": 72.99
     },
     {
-      "itemId": 22507,
-      "name": "Plagueheart Shoulderpads",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 70.12
-    },
-    {
       "itemId": 22499,
       "name": "Frostfire Shoulderpads",
       "slot": "shoulder",
@@ -7396,22 +7220,6 @@
         }
       ],
       "curationHint": 67.68
-    },
-    {
-      "itemId": 22515,
-      "name": "Shoulderpads of Faith",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 57.32
     },
     {
       "itemId": 32108,
@@ -8911,38 +8719,6 @@
         }
       ],
       "curationHint": 62.3
-    },
-    {
-      "itemId": 22518,
-      "name": "Belt of Faith",
-      "slot": "waist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 61.43
-    },
-    {
-      "itemId": 22510,
-      "name": "Plagueheart Belt",
-      "slot": "waist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 60.5
     },
     {
       "itemId": 32974,
@@ -11677,22 +11453,6 @@
       "curationHint": 51.51
     },
     {
-      "itemId": 22519,
-      "name": "Bindings of Faith",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 48.95
-    },
-    {
       "itemId": 22503,
       "name": "Frostfire Bindings",
       "slot": "wrist",
@@ -11755,22 +11515,6 @@
         }
       ],
       "curationHint": 45.2
-    },
-    {
-      "itemId": 22511,
-      "name": "Plagueheart Bindings",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 41.34
     },
     {
       "itemId": 28405,

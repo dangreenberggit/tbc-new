@@ -1512,38 +1512,6 @@
       "curationHint": 86.0
     },
     {
-      "itemId": 22504,
-      "name": "Plagueheart Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 85.36
-    },
-    {
-      "itemId": 22496,
-      "name": "Frostfire Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 82.61
-    },
-    {
       "itemId": 30169,
       "name": "Cataclysm Chestpiece",
       "slot": "chest",
@@ -2067,38 +2035,6 @@
       "curationHint": 29.4
     },
     {
-      "itemId": 22488,
-      "name": "Dreamwalker Tunic",
-      "slot": "chest",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 29.25
-    },
-    {
-      "itemId": 22512,
-      "name": "Robe of Faith",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.75
-    },
-    {
       "itemId": 22464,
       "name": "Earthshatter Tunic",
       "slot": "chest",
@@ -2416,22 +2352,6 @@
       "curationHint": 4.25
     },
     {
-      "itemId": 22436,
-      "name": "Cryptstalker Tunic",
-      "slot": "chest",
-      "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 3.75
-    },
-    {
       "itemId": 33579,
       "name": "Vestments of Hibernation",
       "slot": "chest",
@@ -2466,22 +2386,6 @@
     {
       "itemId": 22009,
       "name": "Darkmantle Tunic",
-      "slot": "chest",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22476,
-      "name": "Bonescythe Breastplate",
       "slot": "chest",
       "armorType": 2,
       "handType": null,
@@ -3090,22 +2994,6 @@
       "curationHint": 48.85
     },
     {
-      "itemId": 22508,
-      "name": "Plagueheart Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 47.9
-    },
-    {
       "itemId": 28517,
       "name": "Boots of Foretelling",
       "slot": "feet",
@@ -3126,22 +3014,6 @@
         "p1_a",
         "p1_h"
       ]
-    },
-    {
-      "itemId": 22500,
-      "name": "Frostfire Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 44.4
     },
     {
       "itemId": 32993,
@@ -3536,38 +3408,6 @@
         }
       ],
       "curationHint": 23.5
-    },
-    {
-      "itemId": 22492,
-      "name": "Dreamwalker Boots",
-      "slot": "feet",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 21.0
-    },
-    {
-      "itemId": 22516,
-      "name": "Sandals of Faith",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 20.5
     },
     {
       "itemId": 22468,
@@ -4049,22 +3889,6 @@
       "curationHint": 3.0
     },
     {
-      "itemId": 22440,
-      "name": "Cryptstalker Boots",
-      "slot": "feet",
-      "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 2.0
-    },
-    {
       "itemId": 21532,
       "name": "Drudge Boots",
       "slot": "feet",
@@ -4099,22 +3923,6 @@
     {
       "itemId": 22003,
       "name": "Darkmantle Boots",
-      "slot": "feet",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22480,
-      "name": "Bonescythe Sabatons",
       "slot": "feet",
       "armorType": 2,
       "handType": null,
@@ -7167,22 +6975,6 @@
       "curationHint": 43.25
     },
     {
-      "itemId": 22509,
-      "name": "Plagueheart Gloves",
-      "slot": "hands",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 42.15
-    },
-    {
       "itemId": 30668,
       "name": "Grasp of the Dead",
       "slot": "hands",
@@ -7204,22 +6996,6 @@
         }
       ],
       "curationHint": 42.04
-    },
-    {
-      "itemId": 22501,
-      "name": "Frostfire Gloves",
-      "slot": "hands",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 40.75
     },
     {
       "itemId": 34351,
@@ -7418,22 +7194,6 @@
       "curationHint": 26.0
     },
     {
-      "itemId": 22493,
-      "name": "Dreamwalker Handguards",
-      "slot": "hands",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 23.5
-    },
-    {
       "itemId": 28508,
       "name": "Gloves of Saintly Blessings",
       "slot": "hands",
@@ -7466,22 +7226,6 @@
         }
       ],
       "curationHint": 20.0
-    },
-    {
-      "itemId": 22517,
-      "name": "Gloves of Faith",
-      "slot": "hands",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 19.25
     },
     {
       "itemId": 22469,
@@ -7732,40 +7476,8 @@
       "curationHint": 4.25
     },
     {
-      "itemId": 22441,
-      "name": "Cryptstalker Handguards",
-      "slot": "hands",
-      "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 3.75
-    },
-    {
       "itemId": 18544,
       "name": "Doomhide Gauntlets",
-      "slot": "hands",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22481,
-      "name": "Bonescythe Gauntlets",
       "slot": "hands",
       "armorType": 2,
       "handType": null,
@@ -8200,22 +7912,6 @@
       "curationHint": 92.9
     },
     {
-      "itemId": 22498,
-      "name": "Frostfire Circlet",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 81.51
-    },
-    {
       "itemId": 33972,
       "name": "Mask of Primal Power",
       "slot": "head",
@@ -8264,22 +7960,6 @@
         }
       ],
       "curationHint": 80.8
-    },
-    {
-      "itemId": 22506,
-      "name": "Plagueheart Circlet",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 80.01
     },
     {
       "itemId": 28586,
@@ -8757,38 +8437,6 @@
       "curationHint": 30.5
     },
     {
-      "itemId": 22514,
-      "name": "Circlet of Faith",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 30.5
-    },
-    {
-      "itemId": 22490,
-      "name": "Dreamwalker Headpiece",
-      "slot": "head",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 29.75
-    },
-    {
       "itemId": 32090,
       "name": "Cowl of Naaru Blessings",
       "slot": "head",
@@ -9119,22 +8767,6 @@
       "curationHint": 5.0
     },
     {
-      "itemId": 22438,
-      "name": "Cryptstalker Headpiece",
-      "slot": "head",
-      "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 3.0
-    },
-    {
       "itemId": 20623,
       "name": "Circlet of Restless Dreams",
       "slot": "head",
@@ -9169,22 +8801,6 @@
     {
       "itemId": 22005,
       "name": "Darkmantle Cap",
-      "slot": "head",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22478,
-      "name": "Bonescythe Helmet",
       "slot": "head",
       "armorType": 2,
       "handType": null,
@@ -9712,22 +9328,6 @@
       "curationHint": 75.25
     },
     {
-      "itemId": 22497,
-      "name": "Frostfire Leggings",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 69.46
-    },
-    {
       "itemId": 29972,
       "name": "Trousers of the Astromancer",
       "slot": "legs",
@@ -9806,22 +9406,6 @@
         }
       ],
       "curationHint": 55.25
-    },
-    {
-      "itemId": 22505,
-      "name": "Plagueheart Leggings",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 55.15
     },
     {
       "itemId": 33530,
@@ -10259,38 +9843,6 @@
       "curationHint": 31.5
     },
     {
-      "itemId": 22489,
-      "name": "Dreamwalker Legguards",
-      "slot": "legs",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.5
-    },
-    {
-      "itemId": 22513,
-      "name": "Leggings of Faith",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.5
-    },
-    {
       "itemId": 22465,
       "name": "Earthshatter Legguards",
       "slot": "legs",
@@ -10683,22 +10235,6 @@
       "curationHint": 4.0
     },
     {
-      "itemId": 22437,
-      "name": "Cryptstalker Legguards",
-      "slot": "legs",
-      "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 2.5
-    },
-    {
       "itemId": 12903,
       "name": "Legguards of the Chromatic Defier",
       "slot": "legs",
@@ -10733,22 +10269,6 @@
     {
       "itemId": 20627,
       "name": "Dark Heart Pants",
-      "slot": "legs",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22477,
-      "name": "Bonescythe Legplates",
       "slot": "legs",
       "armorType": 2,
       "handType": null,
@@ -12933,22 +12453,6 @@
       "curationHint": 57.85
     },
     {
-      "itemId": 22507,
-      "name": "Plagueheart Shoulderpads",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 55.96
-    },
-    {
       "itemId": 29037,
       "name": "Cyclone Shoulderguards",
       "slot": "shoulder",
@@ -12990,22 +12494,6 @@
         }
       ],
       "curationHint": 42.25
-    },
-    {
-      "itemId": 22499,
-      "name": "Frostfire Shoulderpads",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 40.5
     },
     {
       "itemId": 30111,
@@ -13264,38 +12752,6 @@
       "curationHint": 24.7
     },
     {
-      "itemId": 22491,
-      "name": "Dreamwalker Spaulders",
-      "slot": "shoulder",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 21.5
-    },
-    {
-      "itemId": 22515,
-      "name": "Shoulderpads of Faith",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 21.5
-    },
-    {
       "itemId": 16580,
       "name": "Warlord's Mail Spaulders",
       "slot": "shoulder",
@@ -13520,40 +12976,8 @@
       "curationHint": 4.25
     },
     {
-      "itemId": 22439,
-      "name": "Cryptstalker Spaulders",
-      "slot": "shoulder",
-      "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 2.5
-    },
-    {
       "itemId": 20633,
       "name": "Unnatural Leather Spaulders",
-      "slot": "shoulder",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22479,
-      "name": "Bonescythe Pauldrons",
       "slot": "shoulder",
       "armorType": 2,
       "handType": null,
@@ -15295,22 +14719,6 @@
       "curationHint": 54.15
     },
     {
-      "itemId": 22502,
-      "name": "Frostfire Belt",
-      "slot": "waist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 50.21
-    },
-    {
       "itemId": 28799,
       "name": "Belt of Divine Inspiration",
       "slot": "waist",
@@ -15327,22 +14735,6 @@
         }
       ],
       "curationHint": 49.5
-    },
-    {
-      "itemId": 22510,
-      "name": "Plagueheart Belt",
-      "slot": "waist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 48.9
     },
     {
       "itemId": 32998,
@@ -15668,38 +15060,6 @@
         }
       ],
       "curationHint": 24.9
-    },
-    {
-      "itemId": 22494,
-      "name": "Dreamwalker Girdle",
-      "slot": "waist",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 22.75
-    },
-    {
-      "itemId": 22518,
-      "name": "Belt of Faith",
-      "slot": "waist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 21.75
     },
     {
       "itemId": 22470,
@@ -16069,38 +15429,6 @@
         }
       ],
       "curationHint": 3.75
-    },
-    {
-      "itemId": 22442,
-      "name": "Cryptstalker Girdle",
-      "slot": "waist",
-      "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 3.0
-    },
-    {
-      "itemId": 22482,
-      "name": "Bonescythe Waistguard",
-      "slot": "waist",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
     },
     {
       "itemId": 28750,
@@ -20713,22 +20041,6 @@
       "curationHint": 31.25
     },
     {
-      "itemId": 22503,
-      "name": "Frostfire Bindings",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 30.75
-    },
-    {
       "itemId": 28453,
       "name": "Bracers of the White Stag",
       "slot": "wrist",
@@ -20847,22 +20159,6 @@
         }
       ],
       "curationHint": 26.75
-    },
-    {
-      "itemId": 22511,
-      "name": "Plagueheart Bindings",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 26.5
     },
     {
       "itemId": 30062,
@@ -21052,38 +20348,6 @@
         }
       ],
       "curationHint": 20.5
-    },
-    {
-      "itemId": 22495,
-      "name": "Dreamwalker Wristguards",
-      "slot": "wrist",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 18.0
-    },
-    {
-      "itemId": 22519,
-      "name": "Bindings of Faith",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 17.75
     },
     {
       "itemId": 19830,
@@ -21505,38 +20769,6 @@
       "name": "Bracers of Eternal Reckoning",
       "slot": "wrist",
       "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22443,
-      "name": "Cryptstalker Wristguards",
-      "slot": "wrist",
-      "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22483,
-      "name": "Bonescythe Bracers",
-      "slot": "wrist",
-      "armorType": 2,
       "handType": null,
       "quality": 4,
       "phase": 1,

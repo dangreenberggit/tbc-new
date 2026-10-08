@@ -1407,38 +1407,6 @@
       "curationHint": 72.76
     },
     {
-      "itemId": 22504,
-      "name": "Plagueheart Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 65.78
-    },
-    {
-      "itemId": 22496,
-      "name": "Frostfire Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 62.08
-    },
-    {
       "itemId": 31340,
       "name": "Will of Edward the Odd",
       "slot": "chest",
@@ -2123,22 +2091,6 @@
       "curationHint": 37.8
     },
     {
-      "itemId": 22508,
-      "name": "Plagueheart Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 35.62
-    },
-    {
       "itemId": 34926,
       "name": "Slippers of Dutiful Mending",
       "slot": "feet",
@@ -2235,22 +2187,6 @@
         }
       ],
       "curationHint": 33.62
-    },
-    {
-      "itemId": 22500,
-      "name": "Frostfire Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 32.84
     },
     {
       "itemId": 19131,
@@ -5164,22 +5100,6 @@
       "curationHint": 38.43
     },
     {
-      "itemId": 22501,
-      "name": "Frostfire Gloves",
-      "slot": "hands",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 38.24
-    },
-    {
       "itemId": 31060,
       "name": "Gloves of Absolution",
       "slot": "hands",
@@ -5210,22 +5130,6 @@
         }
       ],
       "curationHint": 30.87
-    },
-    {
-      "itemId": 22509,
-      "name": "Plagueheart Gloves",
-      "slot": "hands",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 29.68
     },
     {
       "itemId": 33587,
@@ -5621,22 +5525,6 @@
       "curationHint": 65.34
     },
     {
-      "itemId": 22498,
-      "name": "Frostfire Circlet",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 52.5
-    },
-    {
       "itemId": 28586,
       "name": "Wicked Witch's Hat",
       "slot": "head",
@@ -5653,22 +5541,6 @@
         }
       ],
       "curationHint": 51.36
-    },
-    {
-      "itemId": 22506,
-      "name": "Plagueheart Circlet",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 50.62
     },
     {
       "itemId": 31063,
@@ -6242,22 +6114,6 @@
       "curationHint": 64.0
     },
     {
-      "itemId": 22497,
-      "name": "Frostfire Leggings",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 59.46
-    },
-    {
       "itemId": 29972,
       "name": "Trousers of the Astromancer",
       "slot": "legs",
@@ -6413,22 +6269,6 @@
         }
       ],
       "curationHint": 41.34
-    },
-    {
-      "itemId": 22505,
-      "name": "Plagueheart Leggings",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 41.16
     },
     {
       "itemId": 31343,
@@ -8591,22 +8431,6 @@
       ]
     },
     {
-      "itemId": 22507,
-      "name": "Plagueheart Shoulderpads",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 47.52
-    },
-    {
       "itemId": 30079,
       "name": "Illidari Shoulderpads",
       "slot": "shoulder",
@@ -8640,22 +8464,6 @@
         }
       ],
       "curationHint": 40.19
-    },
-    {
-      "itemId": 22499,
-      "name": "Frostfire Shoulderpads",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 38.07
     },
     {
       "itemId": 28726,
@@ -10289,22 +10097,6 @@
       "curationHint": 42.12
     },
     {
-      "itemId": 22502,
-      "name": "Frostfire Belt",
-      "slot": "waist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 41.16
-    },
-    {
       "itemId": 28565,
       "name": "Nethershard Girdle",
       "slot": "waist",
@@ -10353,22 +10145,6 @@
         }
       ],
       "curationHint": 37.8
-    },
-    {
-      "itemId": 22510,
-      "name": "Plagueheart Belt",
-      "slot": "waist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 37.38
     },
     {
       "itemId": 28409,
@@ -13650,22 +13426,6 @@
       "curationHint": 28.8
     },
     {
-      "itemId": 22503,
-      "name": "Frostfire Bindings",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 27.9
-    },
-    {
       "itemId": 30871,
       "name": "Bracers of Martyrdom",
       "slot": "wrist",
@@ -13780,22 +13540,6 @@
         }
       ],
       "curationHint": 25.01
-    },
-    {
-      "itemId": 22511,
-      "name": "Plagueheart Bindings",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 23.84
     },
     {
       "itemId": 35174,

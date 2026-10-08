@@ -1062,22 +1062,6 @@
       "curationHint": 84.18
     },
     {
-      "itemId": 22496,
-      "name": "Frostfire Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 82.58
-    },
-    {
       "itemId": 28964,
       "name": "Voidheart Robe",
       "slot": "chest",
@@ -1290,22 +1274,6 @@
         "destro_preraid",
         "destro_t4"
       ]
-    },
-    {
-      "itemId": 22512,
-      "name": "Robe of Faith",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 33.71
     },
     {
       "itemId": 22075,
@@ -1664,22 +1632,6 @@
       "curationHint": 47.4
     },
     {
-      "itemId": 22500,
-      "name": "Frostfire Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 46.32
-    },
-    {
       "itemId": 28670,
       "name": "Boots of the Infernal Coven",
       "slot": "feet",
@@ -1955,22 +1907,6 @@
         }
       ],
       "curationHint": 27.08
-    },
-    {
-      "itemId": 22516,
-      "name": "Sandals of Faith",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 25.1
     },
     {
       "itemId": 22084,
@@ -4154,22 +4090,6 @@
       "curationHint": 43.94
     },
     {
-      "itemId": 22501,
-      "name": "Frostfire Gloves",
-      "slot": "hands",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 43.22
-    },
-    {
       "itemId": 32353,
       "name": "Gloves of Unfailing Faith",
       "slot": "hands",
@@ -4264,22 +4184,6 @@
         }
       ],
       "curationHint": 23.5
-    },
-    {
-      "itemId": 22517,
-      "name": "Gloves of Faith",
-      "slot": "hands",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 23.14
     },
     {
       "itemId": 30764,
@@ -4439,22 +4343,6 @@
         }
       ],
       "curationHint": 81.68
-    },
-    {
-      "itemId": 22498,
-      "name": "Frostfire Circlet",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 80.54
     },
     {
       "itemId": 22506,
@@ -4666,22 +4554,6 @@
         }
       ],
       "curationHint": 35.7
-    },
-    {
-      "itemId": 22514,
-      "name": "Circlet of Faith",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 34.81
     },
     {
       "itemId": 32090,
@@ -4896,22 +4768,6 @@
         "preraid",
         "t4"
       ]
-    },
-    {
-      "itemId": 22497,
-      "name": "Frostfire Leggings",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 69.72
     },
     {
       "itemId": 29972,
@@ -5176,22 +5032,6 @@
         }
       ],
       "curationHint": 35.22
-    },
-    {
-      "itemId": 22513,
-      "name": "Leggings of Faith",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 31.88
     },
     {
       "itemId": 22700,
@@ -6823,22 +6663,6 @@
       "curationHint": 46.02
     },
     {
-      "itemId": 22499,
-      "name": "Frostfire Shoulderpads",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 42.84
-    },
-    {
       "itemId": 32273,
       "name": "Amice of Brilliant Light",
       "slot": "shoulder",
@@ -6905,22 +6729,6 @@
         }
       ],
       "curationHint": 31.46
-    },
-    {
-      "itemId": 22515,
-      "name": "Shoulderpads of Faith",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 24.71
     },
     {
       "itemId": 20061,
@@ -8027,22 +7835,6 @@
       "curationHint": 50.04
     },
     {
-      "itemId": 22502,
-      "name": "Frostfire Belt",
-      "slot": "waist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 49.82
-    },
-    {
       "itemId": 32799,
       "name": "Veteran's Dreadweave Belt",
       "slot": "waist",
@@ -8274,22 +8066,6 @@
         "destro_preraid",
         "destro_t4"
       ]
-    },
-    {
-      "itemId": 22518,
-      "name": "Belt of Faith",
-      "slot": "waist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 24.74
     },
     {
       "itemId": 20625,
@@ -10644,22 +10420,6 @@
       "curationHint": 33.98
     },
     {
-      "itemId": 22503,
-      "name": "Frostfire Bindings",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 32.7
-    },
-    {
       "itemId": 32811,
       "name": "Veteran's Dreadweave Cuffs",
       "slot": "wrist",
@@ -10858,22 +10618,6 @@
         }
       ],
       "curationHint": 22.08
-    },
-    {
-      "itemId": 22519,
-      "name": "Bindings of Faith",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 19.7
     },
     {
       "itemId": 32973,
