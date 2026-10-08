@@ -12,7 +12,6 @@ import { checker } from 'vite-plugin-checker';
 import i18nextLoader from 'vite-plugin-i18next-loader';
 
 import { SPEC_PAGE_TEMPLATE, specPages } from './tools/vite/spec_pages.mjs';
-import { tabFixtures } from './tools/vite/tab_fixtures.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -139,12 +138,6 @@ export default defineConfig(({ command, mode }) => {
 
 	return {
 		...baseConfig,
-		define: {
-			// The Upgrades tab's recorded-fixture loader (ticket 504) is compiled in
-			// on the dev server and in the gate harness's build, which sets this env,
-			// and dropped from every other build as dead code.
-			__TBC_TAB_FIXTURES__: JSON.stringify(command === 'serve' || process.env.TBC_TAB_FIXTURES === '1'),
-		},
 		plugins: [
 			// Fast Refresh only: on vite 8 this plugin carries no transform of its own, it turns on
 			// `oxc.jsx.refresh` for `serve` and lets rolldown's native refresh wrapper instrument the
@@ -164,8 +157,6 @@ export default defineConfig(({ command, mode }) => {
 			]),
 			serveExternalAssets(),
 			specPages(BASE_PATH),
-			// The repo's recorded fixtures: this fork is checked out at <repo>/vendor/tbc-new-fork.
-			tabFixtures(path.resolve(__dirname, '../../data/tab-fixtures')),
 			checker({
 				root: BASE_PATH,
 				typescript: { root: __dirname, tsconfigPath: 'tsconfig.json' },

@@ -7,7 +7,8 @@
  * rankings with p2 weights are usable but degraded" — EP only drives the
  * prefilter and gem fill, never the ranking numbers themselves, which sims
  * produce). Feral mirrors this with p1 EP weights covering p2-p3 universes.
- * See PROVENANCE.md in this directory for the exact source files and dates.
+ * The outer repo's docs/fork-provenance/data.md records the exact source files
+ * and dates.
  */
 
 import { type PoolEntry, poolFromUniverse, type UniverseEntry } from "../engine/pool";
@@ -179,8 +180,8 @@ const EP_WEIGHTS_BY_SPEC: Record<SpecId, Readonly<Record<string, number>>> = {
 
 /**
  * The highest universe phase this spec actually has data for, at or below
- * `maxPhase`. Ret p3-p5 all trace back to p2 sources for tags/EP (see this
- * directory's PROVENANCE.md); the *pool membership* file chosen here is
+ * `maxPhase`. Ret p3-p5 all trace back to p2 sources for tags/EP (see the outer
+ * repo's docs/fork-provenance/data.md); the *pool membership* file chosen here is
  * still the phase-appropriate one — filterPoolByPhase (pool.ts) does the
  * per-item phase cut once the pool is loaded.
  */
@@ -235,8 +236,8 @@ export function poolSourceFor(
  * would be the same silent degradation the disclosure exists to prevent.
  *
  * These are the phases named by `data/presets/ep-weights-by-phase.json` for
- * each bundled file. Ret and feral keep the values their own PROVENANCE
- * already records.
+ * each bundled file. Ret and feral keep the values the outer repo's
+ * docs/fork-provenance/data.md already records.
  */
 const EP_WEIGHTS_PHASE_BY_SPEC: Record<SpecId, number | undefined> = {
   ret: 2,
