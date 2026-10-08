@@ -26,23 +26,25 @@ export const ExportPanel = ({ rows }: ExportPanelProps) => {
 	const json = JSON.stringify(payload, null, 2);
 
 	return (
-		<ContentBlock testId="upgrades-export" className="mt-4" config={{ header: { title: i18n.t('upgrades_tab.export.title') } }}>
-			<p className="mb-2">{i18n.t('upgrades_tab.export.caveat')}</p>
+		<ContentBlock testId="upgrades-export" className="mt-4" config={{ header: { title: i18n.t('upgrades_tab.export.title', { ns: 'upgrades' }) } }}>
+			<p className="mb-2">{i18n.t('upgrades_tab.export.caveat', { ns: 'upgrades' })}</p>
 			<BooleanPicker
 				modObject={null}
 				config={{
 					id: flavourId,
-					label: i18n.t('upgrades_tab.export.flavour_toggle'),
+					label: i18n.t('upgrades_tab.export.flavour_toggle', { ns: 'upgrades' }),
 					layout: 'inline',
 					value: flavour === 'token',
 					onChange: tokens => setFlavour(tokens ? 'token' : 'gear'),
 				}}
 			/>
-			<p className="mb-2 text-muted">{i18n.t(flavour === 'token' ? 'upgrades_tab.export.flavour_tokens' : 'upgrades_tab.export.flavour_gear')}</p>
-			<TextArea readOnly rows={6} aria-label={i18n.t('upgrades_tab.export.title')} data-testid="upgrades-export-area" value={json} />
+			<p className="mb-2 text-muted">
+				{i18n.t(flavour === 'token' ? 'upgrades_tab.export.flavour_tokens' : 'upgrades_tab.export.flavour_gear', { ns: 'upgrades' })}
+			</p>
+			<TextArea readOnly rows={6} aria-label={i18n.t('upgrades_tab.export.title', { ns: 'upgrades' })} data-testid="upgrades-export-area" value={json} />
 			<div className="mt-2 flex items-center justify-between gap-2">
-				<span data-testid="upgrades-export-count">{i18n.t('upgrades_tab.export.count', { count: payload.items.length })}</span>
-				<CopyButton variant="secondary" getContent={() => json} text={i18n.t('upgrades_tab.export.copy')} />
+				<span data-testid="upgrades-export-count">{i18n.t('upgrades_tab.export.count', { ns: 'upgrades', count: payload.items.length })}</span>
+				<CopyButton variant="secondary" getContent={() => json} text={i18n.t('upgrades_tab.export.copy', { ns: 'upgrades' })} />
 			</div>
 		</ContentBlock>
 	);

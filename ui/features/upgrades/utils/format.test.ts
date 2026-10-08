@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import englishCharacter from '../../../../assets/locales/en/character.json';
 import englishTranslations from '../../../../assets/locales/en/translation.json';
+import upgradesTranslations from '../../../../assets/locales/en/upgrades.json';
 import { RankError } from '../model/engine/rank';
 import type { RunProgressView } from '../model/run_progress';
 import {
@@ -25,10 +26,12 @@ import {
 
 beforeAll(() => {
 	i18n.addResourceBundle('en', 'translation', englishTranslations, true, true);
+	i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true);
 	i18n.addResourceBundle('en', 'character', englishCharacter, true, true);
 });
 afterAll(() => {
 	i18n.removeResourceBundle('en', 'translation');
+	i18n.removeResourceBundle('en', 'upgrades');
 	i18n.removeResourceBundle('en', 'character');
 });
 
@@ -103,12 +106,12 @@ describe('substitutionText', () => {
 
 /** Swaps one translation for the length of `check`, to show a label is read from the locale file. */
 const withTranslation = (key: string, value: string, check: () => void) => {
-	const original = i18n.t(key);
-	i18n.addResource('en', 'translation', key, value);
+	const original = i18n.t(key, { ns: 'upgrades' });
+	i18n.addResource('en', 'upgrades', key, value);
 	try {
 		check();
 	} finally {
-		i18n.addResource('en', 'translation', key, original);
+		i18n.addResource('en', 'upgrades', key, original);
 	}
 };
 

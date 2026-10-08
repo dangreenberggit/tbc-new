@@ -25,9 +25,9 @@ export const FavoriteToggle = ({ itemId }: { itemId: number }) => {
 	return (
 		<Button
 			iconOnly
-			aria-label={i18n.t('upgrades_tab.results.favorite')}
+			aria-label={i18n.t('upgrades_tab.results.favorite', { ns: 'upgrades' })}
 			aria-pressed={favourite}
-			title={i18n.t(favourite ? 'upgrades_tab.toggles.favorite_remove' : 'upgrades_tab.toggles.favorite_add')}
+			title={i18n.t(favourite ? 'upgrades_tab.toggles.favorite_remove' : 'upgrades_tab.toggles.favorite_add', { ns: 'upgrades' })}
 			className={clsx('w-8', favourite && 'text-brand')}
 			data-testid="upgrades-favorite-toggle"
 			onClick={toggle}>

@@ -40,7 +40,7 @@ export const RESULTS_COLUMNS = (
 	</colgroup>
 );
 
-const columnName = (column: Column) => i18n.t(`upgrades_tab.results.${column}`);
+const columnName = (column: Column) => i18n.t(`upgrades_tab.results.${column}`, { ns: 'upgrades' });
 
 const columnClass = (key: ResultsSortKey) => clsx('py-1 pr-3', key === 'delta_dps' && 'text-right');
 
@@ -52,7 +52,9 @@ const ariaSort = (sort: ResultsSort | undefined, key: ResultsSortKey) => {
 const SortIndicator = ({ dir }: { dir: ResultsSort['dir'] }) => (
 	<>
 		<span aria-hidden="true">{dir === 'asc' ? '▲' : '▼'}</span>
-		<span className="sr-only">{i18n.t(dir === 'asc' ? 'upgrades_tab.results.sort_ascending' : 'upgrades_tab.results.sort_descending')}</span>
+		<span className="sr-only">
+			{i18n.t(dir === 'asc' ? 'upgrades_tab.results.sort_ascending' : 'upgrades_tab.results.sort_descending', { ns: 'upgrades' })}
+		</span>
 	</>
 );
 

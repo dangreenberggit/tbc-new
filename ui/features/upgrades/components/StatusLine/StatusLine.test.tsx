@@ -3,12 +3,15 @@ import { render } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import englishTranslations from '../../../../../assets/locales/en/translation.json';
+import upgradesTranslations from '../../../../../assets/locales/en/upgrades.json';
 import type { RunState } from '../../model/run_reducer';
 import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
 import { StaleNotice, StatusLine } from './StatusLine';
 
 beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations, true, true));
+beforeAll(() => i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true));
 afterAll(() => i18n.removeResourceBundle('en', 'translation'));
+afterAll(() => i18n.removeResourceBundle('en', 'upgrades'));
 
 const row = fixtureRow(0);
 const summaryOf = (run: RunState) => render(<StatusLine run={run} />).queryByTestId('upgrades-baseline-summary')?.textContent;

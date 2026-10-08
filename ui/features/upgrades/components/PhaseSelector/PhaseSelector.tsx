@@ -16,7 +16,7 @@ export const PhaseSelector = () => {
 			testId="phase-selector"
 			config={{
 				id,
-				label: i18n.t('upgrades_tab.settings.phase_label'),
+				label: i18n.t('upgrades_tab.settings.phase_label', { ns: 'upgrades' }),
 				values: PHASES.map(phase => ({ name: i18n.t(`common.phases.${phase}`), value: phase })),
 				storeField: 'sim:phase',
 				getValue: subject => subject.getPhase(),

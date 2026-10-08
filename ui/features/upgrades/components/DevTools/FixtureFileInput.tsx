@@ -32,7 +32,7 @@ export const FixtureFileInput = () => {
 
 	return (
 		<div className="grid gap-1">
-			<FieldLabel htmlFor={inputId}>{i18n.t('upgrades_tab.settings.fixture_file')}</FieldLabel>
+			<FieldLabel htmlFor={inputId}>{i18n.t('upgrades_tab.settings.fixture_file', { ns: 'upgrades' })}</FieldLabel>
 			<input id={inputId} type="file" accept=".json" data-testid="upgrades-fixture-file" onChange={onChange} />
 			{outcome && (
 				<p className="mb-0 text-sm text-muted" data-testid="upgrades-fixture-file-result">

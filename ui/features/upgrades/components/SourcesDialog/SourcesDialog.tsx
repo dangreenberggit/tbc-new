@@ -56,8 +56,18 @@ export const SourcesDialog = ({ open, onOpenChange, sources, excluded, onToggle 
 		testId="upgrades-sources-dialog"
 		size="md"
 		bodyGap="gap-3"
-		title={i18n.t('upgrades_tab.settings.sources_title')}>
-		<SourceSection title={i18n.t('upgrades_tab.settings.sources_section_raids')} options={sources.raids} excluded={excluded} onToggle={onToggle} />
-		<SourceSection title={i18n.t('upgrades_tab.settings.sources_section_other')} options={sources.other} excluded={excluded} onToggle={onToggle} />
+		title={i18n.t('upgrades_tab.settings.sources_title', { ns: 'upgrades' })}>
+		<SourceSection
+			title={i18n.t('upgrades_tab.settings.sources_section_raids', { ns: 'upgrades' })}
+			options={sources.raids}
+			excluded={excluded}
+			onToggle={onToggle}
+		/>
+		<SourceSection
+			title={i18n.t('upgrades_tab.settings.sources_section_other', { ns: 'upgrades' })}
+			options={sources.other}
+			excluded={excluded}
+			onToggle={onToggle}
+		/>
 	</Dialog>
 );

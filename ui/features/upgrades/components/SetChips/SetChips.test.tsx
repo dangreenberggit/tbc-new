@@ -3,11 +3,14 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import englishTranslations from '../../../../../assets/locales/en/translation.json';
+import upgradesTranslations from '../../../../../assets/locales/en/upgrades.json';
 import type { SetOption } from '../../model/settings_pool';
 import { SetChips, type SetChipsProps } from './SetChips';
 
 beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations, true, true));
+beforeAll(() => i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true));
 afterAll(() => i18n.removeResourceBundle('en', 'translation'));
+afterAll(() => i18n.removeResourceBundle('en', 'upgrades'));
 
 const option = (key: string, label: string, inPool: number): SetOption => ({ key, name: label, label, kind: 'preset', itemIds: [1, 2, 3], inPool });
 const P3 = option('preset:3:P3', 'P3', 3);

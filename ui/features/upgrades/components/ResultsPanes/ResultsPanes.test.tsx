@@ -5,6 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import englishCharacter from '../../../../../assets/locales/en/character.json';
 import englishTranslations from '../../../../../assets/locales/en/translation.json';
+import upgradesTranslations from '../../../../../assets/locales/en/upgrades.json';
 import { applyView } from '../../model/engine/view';
 import { stoppedView } from '../../model/results_view';
 import { RANKING_FIXTURE, STOPPED_FIXTURE } from '../../testing/ranking_fixture';
@@ -17,10 +18,12 @@ const { ResultsPanes } = await import('./ResultsPanes');
 
 beforeAll(() => {
 	i18n.addResourceBundle('en', 'translation', englishTranslations, true, true);
+	i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true);
 	i18n.addResourceBundle('en', 'character', englishCharacter, true, true);
 });
 afterAll(() => {
 	i18n.removeResourceBundle('en', 'translation');
+	i18n.removeResourceBundle('en', 'upgrades');
 	i18n.removeResourceBundle('en', 'character');
 });
 

@@ -39,7 +39,7 @@ export const RunSettingsPanel = memo(({ settings, ready, running, devVisible, on
 				aria-expanded={open}
 				aria-controls={bodyId}
 				onClick={() => setOpen(wasOpen => !wasOpen)}>
-				{i18n.t('upgrades_tab.settings_title')}
+				{i18n.t('upgrades_tab.settings_title', { ns: 'upgrades' })}
 			</Button>
 			<div id={bodyId} className={clsx(open ? 'grid' : 'hidden', 'gap-6 xl:grid')} data-testid="upgrades-run-settings-body">
 				<PhaseSelector />

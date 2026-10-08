@@ -3,10 +3,13 @@ import { render, screen } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import englishTranslations from '../../../../../assets/locales/en/translation.json';
+import upgradesTranslations from '../../../../../assets/locales/en/upgrades.json';
 import { EligibleCount } from './EligibleCount';
 
 beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations, true, true));
+beforeAll(() => i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true));
 afterAll(() => i18n.removeResourceBundle('en', 'translation'));
+afterAll(() => i18n.removeResourceBundle('en', 'upgrades'));
 
 describe('EligibleCount', () => {
 	it('gives the count in words, and as data for the gate scripts', () => {

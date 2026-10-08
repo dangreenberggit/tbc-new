@@ -27,7 +27,10 @@ export const BelowCutoffGroup = ({ head, rows, rowContext, sort }: BelowCutoffGr
 
 	return (
 		<Accordion value={open} onValueChange={setOpen}>
-			<AccordionItem value={GROUP} testId="upgrades-below-cutoff" title={i18n.t('upgrades_tab.results.below_cutoff_group', { count: rows.length })}>
+			<AccordionItem
+				value={GROUP}
+				testId="upgrades-below-cutoff"
+				title={i18n.t('upgrades_tab.results.below_cutoff_group', { ns: 'upgrades', count: rows.length })}>
 				<ResultsTable>
 					{head}
 					<ResultRows rows={rows} rowContext={rowContext} sort={sort} />

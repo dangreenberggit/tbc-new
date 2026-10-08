@@ -20,15 +20,15 @@ export const SourcesButton = ({ sources, excluded, onToggle }: SourcesButtonProp
 	return (
 		<div className="grid justify-items-start gap-1" role="group" aria-labelledby={titleId}>
 			<FieldLabel as="span" id={titleId}>
-				{i18n.t('upgrades_tab.settings.sources_title')}
+				{i18n.t('upgrades_tab.settings.sources_title', { ns: 'upgrades' })}
 			</FieldLabel>
 			<Button variant="secondary" data-testid="upgrades-sources-button" disabled={total === 0} onClick={() => setOpen(true)}>
-				{i18n.t('upgrades_tab.settings.sources_button')}
+				{i18n.t('upgrades_tab.settings.sources_button', { ns: 'upgrades' })}
 			</Button>
 			<p className="mb-0 text-sm text-muted" data-testid="upgrades-sources-summary">
 				{excluded.length === 0
-					? i18n.t('upgrades_tab.settings.sources_summary_none', { m: total })
-					: i18n.t('upgrades_tab.settings.sources_summary', { n: excluded.length, m: total })}
+					? i18n.t('upgrades_tab.settings.sources_summary_none', { ns: 'upgrades', m: total })
+					: i18n.t('upgrades_tab.settings.sources_summary', { ns: 'upgrades', n: excluded.length, m: total })}
 			</p>
 			<SourcesDialog open={open} onOpenChange={setOpen} sources={sources} excluded={excluded} onToggle={onToggle} />
 		</div>

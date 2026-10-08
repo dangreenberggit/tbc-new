@@ -38,7 +38,7 @@ const ChipRow = ({ options, selectedKeys, tooltipId, onToggleSet }: ChipRowProps
 					disabled={unavailable}
 					onSelect={unavailable ? undefined : () => onToggleSet(option.key)}
 					chipTooltipId={tooltipId}
-					tooltip={i18n.t('upgrades_tab.settings.sets_in_pool', { n: option.inPool, m: option.itemIds.length })}
+					tooltip={i18n.t('upgrades_tab.settings.sets_in_pool', { ns: 'upgrades', n: option.inPool, m: option.itemIds.length })}
 					rootProps={{ 'data-set-key': option.key }}
 					nameProps={{ 'aria-pressed': selected, 'aria-disabled': unavailable || undefined }}
 				/>
@@ -57,7 +57,7 @@ export const SetChips = ({ chips, selectedKeys, prune, onToggleSet, onPruneChang
 	return (
 		<div className="grid justify-items-start gap-2" role="group" aria-labelledby={titleId}>
 			<FieldLabel as="span" id={titleId}>
-				{i18n.t('upgrades_tab.settings.sets_title')}
+				{i18n.t('upgrades_tab.settings.sets_title', { ns: 'upgrades' })}
 			</FieldLabel>
 			<ChipRow options={chips.main} selectedKeys={selectedKeys} tooltipId={tooltipId} onToggleSet={onToggleSet} />
 			{chips.other.length > 0 && (
@@ -69,7 +69,7 @@ export const SetChips = ({ chips, selectedKeys, prune, onToggleSet, onPruneChang
 						aria-expanded={otherOpen}
 						aria-controls={otherId}
 						onClick={() => setOtherOpen(open => !open)}>
-						{i18n.t('upgrades_tab.settings.sets_other_phases', { n: chips.other.length })}
+						{i18n.t('upgrades_tab.settings.sets_other_phases', { ns: 'upgrades', n: chips.other.length })}
 					</Button>
 					<div id={otherId} hidden={!otherOpen}>
 						<ChipRow options={chips.other} selectedKeys={selectedKeys} tooltipId={tooltipId} onToggleSet={onToggleSet} />
@@ -80,7 +80,13 @@ export const SetChips = ({ chips, selectedKeys, prune, onToggleSet, onPruneChang
 				<div data-testid="upgrades-prune">
 					<BooleanPicker
 						modObject={null}
-						config={{ id: pruneId, label: i18n.t('upgrades_tab.prune.only_bis'), layout: 'inline', value: prune, onChange: onPruneChange }}
+						config={{
+							id: pruneId,
+							label: i18n.t('upgrades_tab.prune.only_bis', { ns: 'upgrades' }),
+							layout: 'inline',
+							value: prune,
+							onChange: onPruneChange,
+						}}
 					/>
 				</div>
 			)}

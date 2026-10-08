@@ -1,0 +1,602 @@
+{
+	"type": "object",
+	"properties": {
+		"tab_title": {
+			"type": "string"
+		},
+		"tab_badge": {
+			"type": "string"
+		},
+		"upgrades_tab": {
+			"type": "object",
+			"properties": {
+				"title": {
+					"type": "string"
+				},
+				"title_badge": {
+					"type": "string"
+				},
+				"description": {
+					"type": "string"
+				},
+				"subtabs": {
+					"type": "object",
+					"properties": {
+						"shopping_list": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["shopping_list"]
+				},
+				"run": {
+					"type": "string"
+				},
+				"stop": {
+					"type": "string"
+				},
+				"settings_title": {
+					"type": "string"
+				},
+				"settings": {
+					"type": "object",
+					"properties": {
+						"phase_label": {
+							"type": "string"
+						},
+						"sources_title": {
+							"type": "string"
+						},
+						"sources_button": {
+							"type": "string"
+						},
+						"sources_summary": {
+							"type": "string"
+						},
+						"sources_summary_none": {
+							"type": "string"
+						},
+						"sources_section_raids": {
+							"type": "string"
+						},
+						"sources_section_other": {
+							"type": "string"
+						},
+						"sets_title": {
+							"type": "string"
+						},
+						"sets_in_pool": {
+							"type": "string"
+						},
+						"sets_other_phases": {
+							"type": "string"
+						},
+						"fixture_file": {
+							"type": "string"
+						},
+						"fixture_loaded": {
+							"type": "string"
+						},
+						"fixture_rejected": {
+							"type": "string"
+						},
+						"fixture_not_json": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": [
+						"phase_label",
+						"sources_title",
+						"sources_button",
+						"sources_summary",
+						"sources_summary_none",
+						"sources_section_raids",
+						"sources_section_other",
+						"sets_title",
+						"sets_in_pool",
+						"sets_other_phases",
+						"fixture_file",
+						"fixture_loaded",
+						"fixture_rejected",
+						"fixture_not_json"
+					]
+				},
+				"sources": {
+					"type": "object",
+					"properties": {
+						"badge": {
+							"type": "string"
+						},
+						"crafted": {
+							"type": "string"
+						},
+						"rep": {
+							"type": "string"
+						},
+						"pvp": {
+							"type": "string"
+						},
+						"world": {
+							"type": "string"
+						},
+						"heroic": {
+							"type": "string"
+						},
+						"unknown": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["badge", "crafted", "rep", "pvp", "world", "heroic", "unknown"]
+				},
+				"iterations_label": {
+					"type": "string"
+				},
+				"candidates_label": {
+					"type": "string"
+				},
+				"candidates_placeholder": {
+					"type": "string"
+				},
+				"candidates_placeholder_uncapped": {
+					"type": "string"
+				},
+				"eligible_count": {
+					"type": "string"
+				},
+				"eligible_count_unknown": {
+					"type": "string"
+				},
+				"status": {
+					"type": "object",
+					"properties": {
+						"idle": {
+							"type": "string"
+						},
+						"unsupported_spec": {
+							"type": "string"
+						},
+						"error": {
+							"type": "string"
+						},
+						"error_sim_unavailable": {
+							"type": "string"
+						},
+						"done": {
+							"type": "string"
+						},
+						"elapsed": {
+							"type": "string"
+						},
+						"stale": {
+							"type": "string"
+						},
+						"stale_hint": {
+							"type": "string"
+						},
+						"stopped": {
+							"type": "string"
+						},
+						"running_rows": {
+							"type": "string"
+						},
+						"done_took": {
+							"type": "string"
+						},
+						"running": {
+							"type": "string"
+						},
+						"stopped_partial": {
+							"type": "string"
+						},
+						"stopping": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": [
+						"idle",
+						"unsupported_spec",
+						"error",
+						"error_sim_unavailable",
+						"done",
+						"elapsed",
+						"stale",
+						"stale_hint",
+						"stopped",
+						"running_rows",
+						"done_took",
+						"running",
+						"stopped_partial",
+						"stopping"
+					]
+				},
+				"view": {
+					"type": "object",
+					"properties": {
+						"title": {
+							"type": "string"
+						},
+						"set_potential": {
+							"type": "string"
+						},
+						"set_potential_tooltip": {
+							"type": "string"
+						},
+						"only_bis": {
+							"type": "string"
+						},
+						"only_bis_tooltip": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["title", "set_potential", "set_potential_tooltip", "only_bis", "only_bis_tooltip"]
+				},
+				"export": {
+					"type": "object",
+					"properties": {
+						"title": {
+							"type": "string"
+						},
+						"caveat": {
+							"type": "string"
+						},
+						"count": {
+							"type": "string"
+						},
+						"copy": {
+							"type": "string"
+						},
+						"copied": {
+							"type": "string"
+						},
+						"flavour_toggle": {
+							"type": "string"
+						},
+						"flavour_tokens": {
+							"type": "string"
+						},
+						"flavour_gear": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["title", "caveat", "count", "copy", "copied", "flavour_toggle", "flavour_tokens", "flavour_gear"]
+				},
+				"set_bonus": {
+					"type": "object",
+					"properties": {
+						"hover_hint": {
+							"type": "string"
+						},
+						"not_counted": {
+							"type": "string"
+						},
+						"tip_item_stats": {
+							"type": "string"
+						},
+						"tip_item_stats_with_bonus": {
+							"type": "string"
+						},
+						"tip_item_stats_with_broken": {
+							"type": "string"
+						},
+						"tip_item_stats_add_broken": {
+							"type": "string"
+						},
+						"tip_breaks": {
+							"type": "string"
+						},
+						"tip_breaks_several": {
+							"type": "string"
+						},
+						"tip_couldnt_measure": {
+							"type": "string"
+						},
+						"tip_bonus": {
+							"type": "string"
+						},
+						"tip_piece_stats": {
+							"type": "string"
+						},
+						"tip_set_potential": {
+							"type": "string"
+						},
+						"tip_set_potential_totals": {
+							"type": "string"
+						},
+						"tip_stop": {
+							"type": "string"
+						},
+						"tip_stop_breaks": {
+							"type": "string"
+						},
+						"tip_step": {
+							"type": "string"
+						},
+						"tip_step_breaks": {
+							"type": "string"
+						},
+						"tip_item_alone": {
+							"type": "string"
+						},
+						"tip_item_alone_breaks": {
+							"type": "string"
+						},
+						"tip_dps_more": {
+							"type": "string"
+						},
+						"tip_dps_less": {
+							"type": "string"
+						},
+						"tip_figure_marker": {
+							"type": "string"
+						},
+						"tip_total": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": [
+						"hover_hint",
+						"not_counted",
+						"tip_item_stats",
+						"tip_item_stats_with_bonus",
+						"tip_item_stats_with_broken",
+						"tip_item_stats_add_broken",
+						"tip_breaks",
+						"tip_breaks_several",
+						"tip_couldnt_measure",
+						"tip_bonus",
+						"tip_piece_stats",
+						"tip_set_potential",
+						"tip_set_potential_totals",
+						"tip_stop",
+						"tip_stop_breaks",
+						"tip_step",
+						"tip_step_breaks",
+						"tip_item_alone",
+						"tip_item_alone_breaks",
+						"tip_dps_more",
+						"tip_dps_less",
+						"tip_figure_marker",
+						"tip_total"
+					]
+				},
+				"cutoff": {
+					"type": "object",
+					"properties": {
+						"pct_arm": {
+							"type": "string"
+						},
+						"pct_arm_title": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["pct_arm", "pct_arm_title"]
+				},
+				"prune": {
+					"type": "object",
+					"properties": {
+						"only_bis": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["only_bis"]
+				},
+				"progress": {
+					"type": "object",
+					"properties": {
+						"aria_label": {
+							"type": "string"
+						},
+						"resolving": {
+							"type": "string"
+						},
+						"reading_gear": {
+							"type": "string"
+						},
+						"composing": {
+							"type": "string"
+						},
+						"building_pool": {
+							"type": "string"
+						},
+						"simming": {
+							"type": "string"
+						},
+						"ranking": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["aria_label", "resolving", "reading_gear", "composing", "building_pool", "simming", "ranking"]
+				},
+				"run_progress": {
+					"type": "object",
+					"properties": {
+						"title": {
+							"type": "string"
+						},
+						"phase_candidates": {
+							"type": "string"
+						},
+						"phase_set_bonuses": {
+							"type": "string"
+						},
+						"phase_replication": {
+							"type": "string"
+						},
+						"rows_landed_one": {
+							"type": "string"
+						},
+						"rows_landed_other": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["title", "phase_candidates", "phase_set_bonuses", "phase_replication", "rows_landed_one", "rows_landed_other"]
+				},
+				"results": {
+					"type": "object",
+					"properties": {
+						"rank": {
+							"type": "string"
+						},
+						"item": {
+							"type": "string"
+						},
+						"slot": {
+							"type": "string"
+						},
+						"delta_dps": {
+							"type": "string"
+						},
+						"delta_dps_value": {
+							"type": "string"
+						},
+						"source": {
+							"type": "string"
+						},
+						"favorite": {
+							"type": "string"
+						},
+						"batch": {
+							"type": "string"
+						},
+						"owned": {
+							"type": "string"
+						},
+						"bis_badge": {
+							"type": "string"
+						},
+						"alt_badge": {
+							"type": "string"
+						},
+						"empty_no_ranking": {
+							"type": "string"
+						},
+						"empty_no_ranking_body": {
+							"type": "string"
+						},
+						"rows_pending": {
+							"type": "string"
+						},
+						"empty_no_upgrades": {
+							"type": "string"
+						},
+						"empty_no_upgrades_body": {
+							"type": "string"
+						},
+						"empty_unsupported_spec_body": {
+							"type": "string"
+						},
+						"below_cutoff_group": {
+							"type": "string"
+						},
+						"removes_worn": {
+							"type": "string"
+						},
+						"sort_ascending": {
+							"type": "string"
+						},
+						"sort_descending": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": [
+						"rank",
+						"item",
+						"slot",
+						"delta_dps",
+						"delta_dps_value",
+						"source",
+						"favorite",
+						"batch",
+						"owned",
+						"bis_badge",
+						"alt_badge",
+						"empty_no_ranking",
+						"empty_no_ranking_body",
+						"rows_pending",
+						"empty_no_upgrades",
+						"empty_no_upgrades_body",
+						"empty_unsupported_spec_body",
+						"below_cutoff_group",
+						"removes_worn",
+						"sort_ascending",
+						"sort_descending"
+					]
+				},
+				"toggles": {
+					"type": "object",
+					"properties": {
+						"favorite_add": {
+							"type": "string"
+						},
+						"favorite_remove": {
+							"type": "string"
+						},
+						"batch_add": {
+							"type": "string"
+						},
+						"batch_remove": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["favorite_add", "favorite_remove", "batch_add", "batch_remove"]
+				},
+				"assumptions": {
+					"type": "object",
+					"properties": {
+						"substitutions_title": {
+							"type": "string"
+						},
+						"substitution_truncated_suffix": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["substitutions_title", "substitution_truncated_suffix"]
+				}
+			},
+			"additionalProperties": false,
+			"required": [
+				"title",
+				"title_badge",
+				"description",
+				"subtabs",
+				"run",
+				"stop",
+				"settings_title",
+				"settings",
+				"sources",
+				"iterations_label",
+				"candidates_label",
+				"candidates_placeholder",
+				"candidates_placeholder_uncapped",
+				"eligible_count",
+				"eligible_count_unknown",
+				"status",
+				"view",
+				"export",
+				"set_bonus",
+				"cutoff",
+				"prune",
+				"progress",
+				"run_progress",
+				"results",
+				"toggles",
+				"assumptions"
+			]
+		}
+	},
+	"additionalProperties": false,
+	"required": ["tab_title", "tab_badge", "upgrades_tab"]
+}

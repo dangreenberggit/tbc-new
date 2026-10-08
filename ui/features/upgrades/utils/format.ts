@@ -22,7 +22,7 @@ export const formatSeconds = (ms: number): string => formatToNumber(ms / 1000, {
 
 /** The sign comes from the number: a hard-coded `+` once printed "+-41.0" for a loss. */
 export const formatDelta = (deltaDps: number): string =>
-	i18n.t('upgrades_tab.results.delta_dps_value', { delta: `${deltaDps > 0 ? '+' : ''}${formatDps(deltaDps)}` });
+	i18n.t('upgrades_tab.results.delta_dps_value', { ns: 'upgrades', delta: `${deltaDps > 0 ? '+' : ''}${formatDps(deltaDps)}` });
 
 const ITEM_SLOT_BY_SIM_SLOT: Record<SimOrderName, ItemSlot> = {
 	head: ItemSlot.ItemSlotHead,
@@ -54,7 +54,7 @@ export const slotLabel = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): string 
  * A source kind in the page's words. The engine's English `SOURCE_LABELS` stay the pool's source keys
  * (`settings_pool.ts`); a kind the map does not know keeps its raw name, as the engine's label does.
  */
-const kindLabel = (kind: string): string => (kind in SOURCE_LABELS ? i18n.t(`upgrades_tab.sources.${kind}`) : kind);
+const kindLabel = (kind: string): string => (kind in SOURCE_LABELS ? i18n.t(`upgrades_tab.sources.${kind}`, { ns: 'upgrades' }) : kind);
 
 const KIND_BY_SOURCE_KEY = new Map(Object.entries(SOURCE_LABELS).map(([kind, key]) => [key, kind]));
 
@@ -75,20 +75,20 @@ export const SORT_LABELS: SortLabels<Pick<RankedItem, 'slot' | 'slotChoice' | 's
 
 /** What loading a fixture file did, in the page's words. */
 export const fixtureOutcomeText = (outcome: FixtureLoadResult): string => {
-	if (outcome.ok) return i18n.t('upgrades_tab.settings.fixture_loaded', { rows: outcome.rows });
-	if (outcome.reason === FIXTURE_NOT_JSON) return i18n.t('upgrades_tab.settings.fixture_not_json');
-	return i18n.t('upgrades_tab.settings.fixture_rejected', { reason: outcome.detail ?? outcome.reason });
+	if (outcome.ok) return i18n.t('upgrades_tab.settings.fixture_loaded', { ns: 'upgrades', rows: outcome.rows });
+	if (outcome.reason === FIXTURE_NOT_JSON) return i18n.t('upgrades_tab.settings.fixture_not_json', { ns: 'upgrades' });
+	return i18n.t('upgrades_tab.settings.fixture_rejected', { ns: 'upgrades', reason: outcome.detail ?? outcome.reason });
 };
 
 /** A dropped candidate's reason as the page shows it: the first line, and where the rest went when it was cut. */
 export const substitutionText = (detail: string): string => {
 	const { line, truncated } = substitutionFirstLine(detail);
-	return truncated ? `${line}${i18n.t('upgrades_tab.assumptions.substitution_truncated_suffix')}` : line;
+	return truncated ? `${line}${i18n.t('upgrades_tab.assumptions.substitution_truncated_suffix', { ns: 'upgrades' })}` : line;
 };
 
 export const describeRunError = (error: unknown): string => {
-	if (error instanceof RankError && error.kind === 'not-implemented') return i18n.t('upgrades_tab.status.unsupported_spec');
-	return i18n.t('upgrades_tab.status.error', { message: error instanceof Error ? error.message : String(error) });
+	if (error instanceof RankError && error.kind === 'not-implemented') return i18n.t('upgrades_tab.status.unsupported_spec', { ns: 'upgrades' });
+	return i18n.t('upgrades_tab.status.error', { ns: 'upgrades', message: error instanceof Error ? error.message : String(error) });
 };
 
 /** What the progress dialog names: the engine's stage until sims start, the run phase after. */
@@ -103,21 +103,21 @@ export const progressStageOf = (view: RunProgressView | null): ProgressStage => 
 export const progressLabel = (stage: ProgressStage): string => {
 	switch (stage) {
 		case 'resolving':
-			return i18n.t('upgrades_tab.progress.resolving');
+			return i18n.t('upgrades_tab.progress.resolving', { ns: 'upgrades' });
 		case 'reading-gear':
-			return i18n.t('upgrades_tab.progress.reading_gear');
+			return i18n.t('upgrades_tab.progress.reading_gear', { ns: 'upgrades' });
 		case 'composing':
-			return i18n.t('upgrades_tab.progress.composing');
+			return i18n.t('upgrades_tab.progress.composing', { ns: 'upgrades' });
 		case 'building-pool':
-			return i18n.t('upgrades_tab.progress.building_pool');
+			return i18n.t('upgrades_tab.progress.building_pool', { ns: 'upgrades' });
 		case 'candidates':
-			return i18n.t('upgrades_tab.run_progress.phase_candidates');
+			return i18n.t('upgrades_tab.run_progress.phase_candidates', { ns: 'upgrades' });
 		case 'set-bonuses':
-			return i18n.t('upgrades_tab.run_progress.phase_set_bonuses');
+			return i18n.t('upgrades_tab.run_progress.phase_set_bonuses', { ns: 'upgrades' });
 		case 'replication':
-			return i18n.t('upgrades_tab.run_progress.phase_replication');
+			return i18n.t('upgrades_tab.run_progress.phase_replication', { ns: 'upgrades' });
 		case 'ranking':
-			return i18n.t('upgrades_tab.progress.ranking');
+			return i18n.t('upgrades_tab.progress.ranking', { ns: 'upgrades' });
 	}
 };
 

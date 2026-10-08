@@ -38,8 +38,8 @@ export const RunProgressDialog = ({ onStop, stopping }: RunProgressDialogProps) 
 		<ProgressTrackerDialog
 			open
 			testId="upgrades-run-progress"
-			title={i18n.t('upgrades_tab.run_progress.title')}
-			state={{ stage, message: stopping ? i18n.t('upgrades_tab.status.stopping') : progressLabel(stage) }}
+			title={i18n.t('upgrades_tab.run_progress.title', { ns: 'upgrades' })}
+			state={{ stage, message: stopping ? i18n.t('upgrades_tab.status.stopping', { ns: 'upgrades' }) : progressLabel(stage) }}
 			hasProgressBar
 			onCancel={onStop}
 			ref={barRef}

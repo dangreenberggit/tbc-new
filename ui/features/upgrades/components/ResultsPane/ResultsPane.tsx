@@ -28,7 +28,10 @@ export const ResultsPane = ({ shortlist, belowCutoff, rowContext, sort, onSort }
 				<ResultRows rows={shortlist} rowContext={rowContext} sort={sort} />
 			</ResultsTable>
 		) : (
-			<EmptyState title={i18n.t('upgrades_tab.results.empty_no_upgrades')} body={i18n.t('upgrades_tab.results.empty_no_upgrades_body')} />
+			<EmptyState
+				title={i18n.t('upgrades_tab.results.empty_no_upgrades', { ns: 'upgrades' })}
+				body={i18n.t('upgrades_tab.results.empty_no_upgrades_body', { ns: 'upgrades' })}
+			/>
 		)}
 		{belowCutoff.length > 0 && (
 			<BelowCutoffGroup

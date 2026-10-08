@@ -4,6 +4,7 @@ import { render, within } from '@testing-library/react';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import englishTranslations from '../../../../../assets/locales/en/translation.json';
+import upgradesTranslations from '../../../../../assets/locales/en/upgrades.json';
 import type { RankedItem } from '../../model/engine/rank';
 import { type RowTag, rowTagIndex, type SetOption } from '../../model/settings_pool';
 import { fixtureRow } from '../../testing/ranking_fixture';
@@ -14,7 +15,9 @@ vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '',
 const { ItemNameCell } = await import('./ItemNameCell');
 
 beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations, true, true));
+beforeAll(() => i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true));
 afterAll(() => i18n.removeResourceBundle('en', 'translation'));
+afterAll(() => i18n.removeResourceBundle('en', 'upgrades'));
 
 const set = (key: string, name: string, phase: number | undefined, itemIds: number[]): SetOption => ({
 	key,

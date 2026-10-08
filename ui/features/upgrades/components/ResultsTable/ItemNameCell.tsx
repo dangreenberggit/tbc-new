@@ -19,8 +19,8 @@ export interface ItemNameCellProps {
 
 /** A row in no selected set shows the universe's own BiS or Alt tag instead. */
 const listBadge = (bisTags: RankedItem['bisTags']): RowTag[] => {
-	if (bisTags.includes('BiS')) return [{ key: 'BiS', label: i18n.t('upgrades_tab.results.bis_badge') }];
-	if (bisTags.includes('Alt')) return [{ key: 'Alt', label: i18n.t('upgrades_tab.results.alt_badge') }];
+	if (bisTags.includes('BiS')) return [{ key: 'BiS', label: i18n.t('upgrades_tab.results.bis_badge', { ns: 'upgrades' }) }];
+	if (bisTags.includes('Alt')) return [{ key: 'Alt', label: i18n.t('upgrades_tab.results.alt_badge', { ns: 'upgrades' }) }];
 	return [];
 };
 
@@ -51,7 +51,7 @@ export const ItemNameCell = memo(({ row, quality, tags }: ItemNameCellProps) => 
 									{badge.label}
 								</span>
 							))}
-							{row.owned && <span>({i18n.t('upgrades_tab.results.owned')})</span>}
+							{row.owned && <span>({i18n.t('upgrades_tab.results.owned', { ns: 'upgrades' })})</span>}
 						</span>
 					)}
 				</span>

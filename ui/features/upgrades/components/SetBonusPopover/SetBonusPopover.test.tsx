@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import englishTranslations from '../../../../../assets/locales/en/translation.json';
+import upgradesTranslations from '../../../../../assets/locales/en/upgrades.json';
 import type { SetBonusTip } from '../../model/set_bonus_tip';
 import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
 
@@ -16,7 +17,9 @@ const { SetBonusPopover } = await import('./SetBonusPopover');
 const { setBonusTipLines } = await import('../../model/set_bonus_tip');
 
 beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations, true, true));
+beforeAll(() => i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true));
 afterAll(() => i18n.removeResourceBundle('en', 'translation'));
+afterAll(() => i18n.removeResourceBundle('en', 'upgrades'));
 
 const FACEGUARD_TIP = setBonusTipLines(fixtureRow(10), { ranking: RANKING_FIXTURE });
 

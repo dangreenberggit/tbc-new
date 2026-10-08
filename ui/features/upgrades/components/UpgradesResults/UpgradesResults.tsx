@@ -31,12 +31,17 @@ export const UpgradesResults = memo(({ run, selectedSets }: UpgradesResultsProps
 
 	switch (run.status) {
 		case 'idle':
-			return <EmptyState title={i18n.t('upgrades_tab.results.empty_no_ranking')} body={i18n.t('upgrades_tab.results.empty_no_ranking_body')} />;
+			return (
+				<EmptyState
+					title={i18n.t('upgrades_tab.results.empty_no_ranking', { ns: 'upgrades' })}
+					body={i18n.t('upgrades_tab.results.empty_no_ranking_body', { ns: 'upgrades' })}
+				/>
+			);
 		case 'running':
 			return run.landedRows.length > 0 ? (
 				<ProvisionalResultsTable rows={landedRows(run.landedRows)} rowContext={rowContext} />
 			) : (
-				<EmptyState body={i18n.t('upgrades_tab.results.rows_pending')} />
+				<EmptyState body={i18n.t('upgrades_tab.results.rows_pending', { ns: 'upgrades' })} />
 			);
 		case 'error':
 			// The status line's alert region says what failed.
@@ -51,7 +56,10 @@ export const UpgradesResults = memo(({ run, selectedSets }: UpgradesResultsProps
 					<ViewToggles offered={offered} toggles={toggles} maxPhase={run.result.assumptions.maxPhase} onChange={setToggle} />
 					{hasRows && <ResultsPanes view={view} rowContext={rowContext} />}
 					{noUpgrades && (
-						<EmptyState title={i18n.t('upgrades_tab.results.empty_no_upgrades')} body={i18n.t('upgrades_tab.results.empty_no_upgrades_body')} />
+						<EmptyState
+							title={i18n.t('upgrades_tab.results.empty_no_upgrades', { ns: 'upgrades' })}
+							body={i18n.t('upgrades_tab.results.empty_no_upgrades_body', { ns: 'upgrades' })}
+						/>
 					)}
 					{run.result.substitutions.length > 0 && <SubstitutionsList substitutions={run.result.substitutions} />}
 				</>

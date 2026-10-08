@@ -11,19 +11,25 @@ export interface StatusLineProps {
 const RunStatusText = ({ run }: StatusLineProps) => {
 	switch (run.status) {
 		case 'idle':
-			return i18n.t('upgrades_tab.status.idle');
+			return i18n.t('upgrades_tab.status.idle', { ns: 'upgrades' });
 		case 'running':
 			return (
 				<span data-testid="upgrades-status-line">
-					{run.stopping ? i18n.t('upgrades_tab.status.stopping') : i18n.t('upgrades_tab.status.running', { count: run.landedRows.length })}
+					{run.stopping
+						? i18n.t('upgrades_tab.status.stopping', { ns: 'upgrades' })
+						: i18n.t('upgrades_tab.status.running', { ns: 'upgrades', count: run.landedRows.length })}
 				</span>
 			);
 		case 'done':
 			return (
 				<span data-testid="upgrades-baseline-summary">
 					{run.result.durationMs === undefined
-						? i18n.t('upgrades_tab.status.done', { dps: formatDps(run.result.baseline.dps) })
-						: i18n.t('upgrades_tab.status.done_took', { dps: formatDps(run.result.baseline.dps), seconds: formatSeconds(run.result.durationMs) })}
+						? i18n.t('upgrades_tab.status.done', { ns: 'upgrades', dps: formatDps(run.result.baseline.dps) })
+						: i18n.t('upgrades_tab.status.done_took', {
+								ns: 'upgrades',
+								dps: formatDps(run.result.baseline.dps),
+								seconds: formatSeconds(run.result.durationMs),
+							})}
 				</span>
 			);
 		case 'stopped': {
@@ -31,7 +37,9 @@ const RunStatusText = ({ run }: StatusLineProps) => {
 			const dps = formatDps(run.result.baseline.dps);
 			return (
 				<span className="text-warning" data-testid="upgrades-baseline-summary">
-					{visibleRows(run).length > 0 ? i18n.t('upgrades_tab.status.stopped_partial', { dps }) : i18n.t('upgrades_tab.status.stopped', { dps })}
+					{visibleRows(run).length > 0
+						? i18n.t('upgrades_tab.status.stopped_partial', { ns: 'upgrades', dps })
+						: i18n.t('upgrades_tab.status.stopped', { ns: 'upgrades', dps })}
 				</span>
 			);
 		}
@@ -59,6 +67,6 @@ export const StatusLine = ({ run }: StatusLineProps) => (
 /** Says that the result on screen was measured on other inputs than the page and the settings hold now. */
 export const StaleNotice = () => (
 	<p className="mb-0 text-warning" data-testid="upgrades-stale">
-		<strong>{i18n.t('upgrades_tab.status.stale')}</strong> {i18n.t('upgrades_tab.status.stale_hint')}
+		<strong>{i18n.t('upgrades_tab.status.stale', { ns: 'upgrades' })}</strong> {i18n.t('upgrades_tab.status.stale_hint', { ns: 'upgrades' })}
 	</p>
 );

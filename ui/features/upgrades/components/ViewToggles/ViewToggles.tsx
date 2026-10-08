@@ -39,12 +39,12 @@ export const ViewToggles = ({ offered, toggles, maxPhase, onChange }: ViewToggle
 	if (!offered.withSetPotential && !offered.onlyBis) return null;
 	return (
 		<fieldset className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-1" data-testid="upgrades-view-toggles">
-			<legend className="float-left mr-6 mb-0 text-sm font-bold">{i18n.t('upgrades_tab.view.title')}</legend>
+			<legend className="float-left mr-6 mb-0 text-sm font-bold">{i18n.t('upgrades_tab.view.title', { ns: 'upgrades' })}</legend>
 			{offered.withSetPotential && (
 				<ViewToggle
 					testId="upgrades-view-set-potential"
-					label={i18n.t('upgrades_tab.view.set_potential')}
-					tooltip={i18n.t('upgrades_tab.view.set_potential_tooltip')}
+					label={i18n.t('upgrades_tab.view.set_potential', { ns: 'upgrades' })}
+					tooltip={i18n.t('upgrades_tab.view.set_potential_tooltip', { ns: 'upgrades' })}
 					checked={toggles.withSetPotential}
 					onChange={on => onChange('withSetPotential', on)}
 				/>
@@ -52,8 +52,8 @@ export const ViewToggles = ({ offered, toggles, maxPhase, onChange }: ViewToggle
 			{offered.onlyBis && (
 				<ViewToggle
 					testId="upgrades-view-only-bis"
-					label={i18n.t('upgrades_tab.view.only_bis')}
-					tooltip={i18n.t('upgrades_tab.view.only_bis_tooltip', { phase: i18n.t(`common.phases.${maxPhase}`) })}
+					label={i18n.t('upgrades_tab.view.only_bis', { ns: 'upgrades' })}
+					tooltip={i18n.t('upgrades_tab.view.only_bis_tooltip', { ns: 'upgrades', phase: i18n.t(`common.phases.${maxPhase}`) })}
 					checked={toggles.onlyBis}
 					onChange={on => onChange('onlyBis', on)}
 				/>

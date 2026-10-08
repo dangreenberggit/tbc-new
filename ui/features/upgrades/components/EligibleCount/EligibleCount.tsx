@@ -8,6 +8,8 @@ export interface EligibleCountProps {
 /** How many candidates the next run sims, beside Run. */
 export const EligibleCount = ({ count }: EligibleCountProps) => (
 	<p className="mb-0" data-testid="upgrades-eligible-count" data-count={count}>
-		{count === undefined ? i18n.t('upgrades_tab.eligible_count_unknown') : i18n.t('upgrades_tab.eligible_count', { count })}
+		{count === undefined
+			? i18n.t('upgrades_tab.eligible_count_unknown', { ns: 'upgrades' })
+			: i18n.t('upgrades_tab.eligible_count', { ns: 'upgrades', count })}
 	</p>
 );

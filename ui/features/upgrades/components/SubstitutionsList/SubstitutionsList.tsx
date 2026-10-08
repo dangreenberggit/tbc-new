@@ -14,7 +14,7 @@ export interface SubstitutionsListProps {
  */
 export const SubstitutionsList = ({ substitutions }: SubstitutionsListProps) => (
 	<section className="mt-4">
-		<p className="mb-1 font-bold">{i18n.t('upgrades_tab.assumptions.substitutions_title', { count: substitutions.length })}</p>
+		<p className="mb-1 font-bold">{i18n.t('upgrades_tab.assumptions.substitutions_title', { ns: 'upgrades', count: substitutions.length })}</p>
 		<dl className="mb-0 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1" data-testid="upgrades-substitutions">
 			{substitutions.map(substitution => (
 				// The engine names each substitution by what it is about; the detail tells two about one field apart.

@@ -24,14 +24,14 @@ export const RunControls = ({ ready, running, store, onIterationsChange, onStart
 			testId="upgrades-iterations-picker"
 			config={{
 				id: 'upgrades-iterations',
-				label: i18n.t('upgrades_tab.iterations_label'),
+				label: i18n.t('upgrades_tab.iterations_label', { ns: 'upgrades' }),
 				positive: true,
 				...ITERATIONS,
 				setValue: (_store, next) => onIterationsChange(next),
 			}}
 		/>
 		<Button data-testid="upgrades-run-button" disabled={!ready || running} onClick={onStart}>
-			{i18n.t('upgrades_tab.run')}
+			{i18n.t('upgrades_tab.run', { ns: 'upgrades' })}
 		</Button>
 	</div>
 );

@@ -33,7 +33,7 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 	const onSort = (key: ResultsSortKey) => setSort(current => nextSort(current, key));
 
 	const panes: Pane[] = [
-		{ id: SHOPPING_LIST_TAB, label: i18n.t('upgrades_tab.subtabs.shopping_list') },
+		{ id: SHOPPING_LIST_TAB, label: i18n.t('upgrades_tab.subtabs.shopping_list', { ns: 'upgrades' }) },
 		...slotTabs(view).map(slot => ({
 			id: slot.id,
 			label: simSlotLabel(slot.id),

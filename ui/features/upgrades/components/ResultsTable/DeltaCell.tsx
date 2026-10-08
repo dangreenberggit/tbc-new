@@ -41,6 +41,7 @@ export const DeltaCell = memo(({ row, context }: DeltaCellProps) => {
 				{row.removedItems?.map(removed => (
 					<small key={`${removed.itemId}:${removed.slot}`} className="text-right whitespace-normal text-muted" data-testid="upgrades-removed-items">
 						{i18n.t('upgrades_tab.results.removes_worn', {
+							ns: 'upgrades',
 							name: context.itemOf(removed.itemId)?.name ?? String(removed.itemId),
 							slot: simSlotLabel(removed.slot),
 						})}
@@ -50,8 +51,8 @@ export const DeltaCell = memo(({ row, context }: DeltaCellProps) => {
 					<small
 						className="text-muted"
 						data-testid="upgrades-cutoff-arm"
-						title={i18n.t('upgrades_tab.cutoff.pct_arm_title', { pct: String(cutoff.pct), abs: formatDps(cutoff.absDps) })}>
-						{i18n.t('upgrades_tab.cutoff.pct_arm')}
+						title={i18n.t('upgrades_tab.cutoff.pct_arm_title', { ns: 'upgrades', pct: String(cutoff.pct), abs: formatDps(cutoff.absDps) })}>
+						{i18n.t('upgrades_tab.cutoff.pct_arm', { ns: 'upgrades' })}
 					</small>
 				)}
 			</span>

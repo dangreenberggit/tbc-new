@@ -19,7 +19,7 @@ export const CandidateCapPicker = ({ store, onCapChange }: CandidateCapPickerPro
 		testId="upgrades-candidates-picker"
 		config={{
 			id: 'upgrades-candidates',
-			label: i18n.t('upgrades_tab.candidates_label'),
+			label: i18n.t('upgrades_tab.candidates_label', { ns: 'upgrades' }),
 			positive: true,
 			showZeroes: false,
 			...CANDIDATE_CAP,

@@ -21,9 +21,9 @@ export const BatchToggle = ({ itemId }: { itemId: number }) => {
 	return (
 		<Button
 			iconOnly
-			aria-label={i18n.t('upgrades_tab.results.batch')}
+			aria-label={i18n.t('upgrades_tab.results.batch', { ns: 'upgrades' })}
 			aria-pressed={inBatch}
-			title={i18n.t(inBatch ? 'upgrades_tab.toggles.batch_remove' : 'upgrades_tab.toggles.batch_add')}
+			title={i18n.t(inBatch ? 'upgrades_tab.toggles.batch_remove' : 'upgrades_tab.toggles.batch_add', { ns: 'upgrades' })}
 			className={clsx('w-8', inBatch && 'text-brand')}
 			data-testid="upgrades-batch-toggle"
 			onClick={() => (inBatch ? removeBulkItem : addBulkItem)(player, spec)}>

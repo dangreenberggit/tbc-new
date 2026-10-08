@@ -16,6 +16,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 
 import englishCharacter from '../../../assets/locales/en/character.json';
 import englishTranslations from '../../../assets/locales/en/translation.json';
+import upgradesTranslations from '../../../assets/locales/en/upgrades.json';
 
 /** The live run, replaced by one the test settles by hand; the engine is never loaded. */
 const runs: Array<{ settings: RunSettings; deps: RunDeps; settle: (outcome: RunOutcome) => void }> = [];
@@ -88,10 +89,12 @@ const { selectRunStatus, useUpgradesStore } = await import('@features/upgrades/h
 
 beforeAll(() => {
 	i18n.addResourceBundle('en', 'translation', englishTranslations, true, true);
+	i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true);
 	i18n.addResourceBundle('en', 'character', englishCharacter, true, true);
 });
 afterAll(() => {
 	i18n.removeResourceBundle('en', 'translation');
+	i18n.removeResourceBundle('en', 'upgrades');
 	i18n.removeResourceBundle('en', 'character');
 });
 
