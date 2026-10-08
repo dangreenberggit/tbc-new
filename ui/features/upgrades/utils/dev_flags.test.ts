@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { DEV_FLAGS, FIXTURES_ENABLED, readDevFlags } from './dev_flags';
+import { readDevFlags } from './dev_flags';
 
 describe('readDevFlags', () => {
 	it('reads nothing from an empty query', () => {
@@ -33,21 +33,34 @@ describe('readDevFlags', () => {
 
 describe('DEV_FLAGS', () => {
 	afterEach(() => {
-		vi.unstubAllGlobals();
+		vi.unstubAllEnvs();
 		vi.resetModules();
 		window.history.replaceState(null, '', '/');
 	});
 
-	it('is empty under vitest, where the define does not exist', () => {
-		expect(FIXTURES_ENABLED).toBe(false);
-		expect(DEV_FLAGS).toEqual({});
-	});
-
-	it('reads the page query when the define is true', async () => {
-		vi.stubGlobal('__TBC_TAB_FIXTURES__', true);
+	/** `FIXTURES_ENABLED` and `DEV_FLAGS` are read once at module load, so each switch value needs a fresh module. */
+	const importWith = async (dev: boolean, harness: string) => {
+		vi.stubEnv('DEV', dev);
+		vi.stubEnv('VITE_TBC_TAB_FIXTURES', harness);
 		window.history.replaceState(null, '', '/?upgrades-runner=replay:ret-p3-p2');
 		vi.resetModules();
-		const fresh = await import('./dev_flags');
+		return import('./dev_flags');
+	};
+
+	it('is empty on a production build, whatever the query says', async () => {
+		const fresh = await importWith(false, '');
+		expect(fresh.FIXTURES_ENABLED).toBe(false);
+		expect(fresh.DEV_FLAGS).toEqual({});
+	});
+
+	it('reads the page query on the dev server', async () => {
+		const fresh = await importWith(true, '');
+		expect(fresh.FIXTURES_ENABLED).toBe(true);
+		expect(fresh.DEV_FLAGS).toEqual({ replay: 'ret-p3-p2' });
+	});
+
+	it('reads the page query in the gate harness build', async () => {
+		const fresh = await importWith(false, '1');
 		expect(fresh.FIXTURES_ENABLED).toBe(true);
 		expect(fresh.DEV_FLAGS).toEqual({ replay: 'ret-p3-p2' });
 	});

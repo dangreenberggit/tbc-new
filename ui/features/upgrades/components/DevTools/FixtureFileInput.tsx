@@ -14,8 +14,8 @@ import { fixtureOutcomeText } from '../../utils/format';
 export const FixtureFileInput = () => {
 	const inputId = useId();
 	const [outcome, setOutcome] = useState<FixtureLoadResult>();
-	// The define is read here, not through `dev_flags.ts`, so a production build drops this component's body.
-	if (!(typeof __TBC_TAB_FIXTURES__ !== 'undefined' && __TBC_TAB_FIXTURES__)) return null;
+	// The switch is read here, not through `dev_flags.ts`, so a production build drops this component's body.
+	if (!(import.meta.env.DEV || import.meta.env.VITE_TBC_TAB_FIXTURES === '1')) return null;
 
 	const onChange = async (event: ChangeEvent<HTMLInputElement>) => {
 		const file = event.target.files?.[0];

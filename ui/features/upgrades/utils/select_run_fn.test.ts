@@ -6,16 +6,18 @@ import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 const rankForPlayer = vi.fn();
 vi.mock('../model/run', () => ({ rankForPlayer, specIdFor: () => 'ret' }));
 
-/** `FIXTURES_ENABLED` is read once at module load, so each define value needs a fresh module graph. */
+/** `FIXTURES_ENABLED` is read once at module load, so each switch value needs a fresh module graph. */
 const importModules = async (enabled: boolean) => {
 	vi.resetModules();
-	vi.stubGlobal('__TBC_TAB_FIXTURES__', enabled);
+	vi.stubEnv('DEV', enabled);
+	vi.stubEnv('VITE_TBC_TAB_FIXTURES', '');
 	const { selectRunFn } = await import('./select_run_fn');
 	return selectRunFn;
 };
 
 afterEach(() => {
 	vi.unstubAllGlobals();
+	vi.unstubAllEnvs();
 });
 
 describe('selectRunFn', () => {

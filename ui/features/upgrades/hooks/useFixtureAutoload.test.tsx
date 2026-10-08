@@ -27,12 +27,13 @@ const host = fakeHost({
 type Options = { onLoaded: (ranking: Ranking) => void; currentRanking: () => Ranking | undefined };
 
 /**
- * `FIXTURES_ENABLED` is read once at module load, so each define value needs a
+ * `FIXTURES_ENABLED` is read once at module load, so each switch value needs a
  * fresh module graph, and the provider must come from the same graph as the hook.
  */
 const importHook = async (enabled: boolean) => {
 	vi.resetModules();
-	vi.stubGlobal('__TBC_TAB_FIXTURES__', enabled);
+	vi.stubEnv('DEV', enabled);
+	vi.stubEnv('VITE_TBC_TAB_FIXTURES', '');
 	const { useFixtureAutoload } = await import('./useFixtureAutoload');
 	const { SimHostProvider } = await import('@sim/context/SimHostContext');
 	const wrapper = ({ children }: { children: ReactNode }) => <SimHostProvider host={host}>{children}</SimHostProvider>;
@@ -46,7 +47,7 @@ const installedLoader = () => {
 };
 
 afterEach(() => {
-	vi.unstubAllGlobals();
+	vi.unstubAllEnvs();
 });
 
 describe('useFixtureAutoload on a dev build', () => {

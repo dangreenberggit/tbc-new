@@ -17,14 +17,14 @@ export type DevFlags = {
 };
 
 /**
- * The `__TBC_TAB_FIXTURES__` define, for every reader but `FixtureFileInput`,
- * which reads it at its own branch so a production build drops its body
- * whatever the bundler does across modules. Vitest has no
- * `define`, and an undeclared global read under `typeof` does not throw, so
- * the guard keeps every test importable; a production build replaces the
- * constant with `false`, so each branch on this value is dropped as dead code.
+ * The fixture switch, for every reader but `FixtureFileInput`, which reads it
+ * at its own branch so a production build drops its body whatever the bundler
+ * does across modules. On by default on the dev server; the gate harness's
+ * build turns it on with `VITE_TBC_TAB_FIXTURES=1`. A production build without
+ * that variable replaces both reads with `false`, so each branch on this
+ * value is dropped as dead code.
  */
-export const FIXTURES_ENABLED: boolean = typeof __TBC_TAB_FIXTURES__ !== 'undefined' && __TBC_TAB_FIXTURES__;
+export const FIXTURES_ENABLED: boolean = import.meta.env.DEV || import.meta.env.VITE_TBC_TAB_FIXTURES === '1';
 
 const REPLAY_PREFIX = 'replay:';
 

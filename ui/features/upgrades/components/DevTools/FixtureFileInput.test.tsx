@@ -11,7 +11,7 @@ beforeAll(() => i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, t
 afterAll(() => i18n.removeResourceBundle('en', 'translation'));
 afterAll(() => i18n.removeResourceBundle('en', 'upgrades'));
 afterEach(() => {
-	vi.unstubAllGlobals();
+	vi.unstubAllEnvs();
 	delete window.__upgradesFixture;
 });
 
@@ -22,11 +22,14 @@ const choose = (text: string) => {
 
 describe('FixtureFileInput', () => {
 	it('renders nothing in a build without fixtures', () => {
+		vi.stubEnv('DEV', false);
+		vi.stubEnv('VITE_TBC_TAB_FIXTURES', '');
 		expect(render(<FixtureFileInput />).container.innerHTML).toBe('');
 	});
 
 	it('hands a chosen file to the page’s fixture hook and says how many rows it loaded', async () => {
-		vi.stubGlobal('__TBC_TAB_FIXTURES__', true);
+		vi.stubEnv('DEV', true);
+		vi.stubEnv('VITE_TBC_TAB_FIXTURES', '');
 		const load = vi.fn().mockResolvedValue({ ok: true, rows: 467 });
 		window.__upgradesFixture = load;
 		render(<FixtureFileInput />);
@@ -37,7 +40,8 @@ describe('FixtureFileInput', () => {
 	});
 
 	it('says why the hook rejected a file', async () => {
-		vi.stubGlobal('__TBC_TAB_FIXTURES__', true);
+		vi.stubEnv('DEV', true);
+		vi.stubEnv('VITE_TBC_TAB_FIXTURES', '');
 		window.__upgradesFixture = vi.fn().mockResolvedValue({ ok: false, reason: 'spec', detail: 'fixture is feral, page is ret' });
 		render(<FixtureFileInput />);
 
@@ -46,7 +50,8 @@ describe('FixtureFileInput', () => {
 	});
 
 	it('says a file that is not JSON is not JSON, without calling the hook', async () => {
-		vi.stubGlobal('__TBC_TAB_FIXTURES__', true);
+		vi.stubEnv('DEV', true);
+		vi.stubEnv('VITE_TBC_TAB_FIXTURES', '');
 		const load = vi.fn();
 		window.__upgradesFixture = load;
 		render(<FixtureFileInput />);
