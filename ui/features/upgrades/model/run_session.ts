@@ -1,6 +1,6 @@
 /**
  * The tab's one run, outside React (ticket 564): the run in flight, the id
- * that tells its callbacks from a superseded run's, and the tab's workers.
+ * that tells its callbacks from a superseded run's, and the run context.
  * It writes the run state to the tab's store; the hook that owns it only
  * creates it once and disposes it on unmount.
  */
@@ -61,9 +61,8 @@ const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'substitutions'>, 
 };
 
 /**
- * The worker pool is built on the first run that asks for it and kept for the
- * tab's lifetime, as the old tab did: each worker is a WASM instantiation, and
- * the store inside the context reuses sims across runs.
+ * The run context is built on the first run that asks for it and kept for the
+ * session's lifetime: the store inside it reuses sims across runs.
  */
 export function createRunSession(store: UpgradesStore, host: IndividualSimHost<Spec>, runFn: RunFn, env: RunSessionEnv): RunSession {
 	let controller: AbortController | null = null;
@@ -111,15 +110,14 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 	};
 
 	/**
-	 * Leaves the session usable: StrictMode unmounts and remounts every
+	 * Aborts the run and nothing more. StrictMode unmounts and remounts every
 	 * component once in development, so this runs before the first Run, and
-	 * the next `start` builds new workers. The run id keeps counting, so a
-	 * callback of the aborted run still reads as superseded.
+	 * the session must stay usable. The workers live for the page's life, as
+	 * wowsims' own do (`worker_pool_sim_runner.ts`). The run id keeps counting,
+	 * so a callback of the aborted run still reads as superseded.
 	 */
 	const dispose = () => {
 		controller?.abort();
-		context?.terminate();
-		context = null;
 	};
 
 	return { start, stop, loadFixture, dispose };

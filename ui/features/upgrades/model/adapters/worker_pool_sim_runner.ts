@@ -37,64 +37,6 @@ import type { PlayerStatsObservation, RaidSimRequest, SimObservation, SimRunner,
 export const DEFAULT_WORKER_COUNT = 4;
 
 /**
- * How long a tab worker may send nothing while a request waits on it before
- * the request fails and the worker restarts (tickets 545, 553, 556, 557). Measured in the
- * browser build (tbc-gear-prio `.scratch/stage-gate/545-worker-silence-check/measurement.md`,
- * `.scratch/stage-gate/553-554-silence-followups/probe.md` and
- * `.scratch/stage-gate/555-557-silence-followups/557-page-sims.md`) and in the desktop build
- * (`.scratch/stage-gate/555-557-silence-followups/557-desktop.md`):
- * - start-up: ten times 1.777 s plus 120 s = 137.8 s, rounded up to the next 10 s
- *   (measurement.md:13); 1.777 s is the longest silence from creation to `ready`, and the
- *   120 s is for the wasm download, which localhost cannot measure;
- * - presim: ten times the longest warm-up pass at the default boss health (enhancement
- *   shaman, 21.43 s, 557-page-sims.md), rounded up to the next 10 s: 214.3 → 220 s; 120 s
- *   until ticket 557, from feral's 11.7 s. A warm-up pass runs from a sim's post to its
- *   first `PresimRunning: false`;
- * - run: ten times the longest main-loop silence measured, floor 30 s, cap 90 s
- *   (measurement.md:14): feral cat on the desktop build, 4.483 s (557-desktop.md), gives
- *   44.83 s; the 30 s floor until ticket 557. All four tab workers were silent in the same
- *   window of that run; the cause is unknown (557-desktop.md).
- * The factor of ten is a margin, not derived from a measurement. The 545 plan's claim C17
- * reads "Margin: 10× covers a 1,000-DPS spec (2.5×) and a machine 4× slower" (hypothesis,
- * untested). Its 2.5× rests on "the presim scales with fight length" (545 plan.md:33), and
- * the measured warm-ups contradict that: enhancement shaman's 3,039 s fight warmed up in
- * 21.4 s and shadow priest's 3,822 s fight in 4.5 s (557-page-sims.md, probe.md). 220 s is
- * 10.3× the longest measured warm-up (220 / 21.43). A spec not listed below may warm up for
- * longer, and a slower machine stretches every number (both hypotheses, untested).
- *
- * The warm-up is a fixed 100-iteration run (`sim/core/presim.go:35`), run only when the fight
- * ends at a health value (`presim.go:66`), and one round for DPS specs because the only
- * presimmer is the tank healing model (`sim/core/health.go:272`). So the 220 s limit fails a
- * spec whose single iteration at default boss health takes more than 2.2 s (slowest
- * measured: 214 ms, enhancement shaman).
- *
- * Silence is per worker: a second sim posted to a worker is judged from that worker's last
- * message, and the worker's answer to the second request's id counts as a message
- * (ticket 556).
- *
- * At these limits a freeze that ends about 40-50 s into a main-loop silence, or about
- * 199-225 s into a warm-up silence, fails a healthy worker (see the `worker_silence.ts`
- * header).
- *
- * Longest silences measured, per spec (warm-up at the default boss health;
- * main loop):
- * - feral cat: warm-up 11.7 s, main loop 1.0 s (ticket 545; 1.020 s per ticket 553 — the
- *   1.144 s in measurement.md:53 was a warm-up silence under the regime rule)
- * - warlock: warm-up 1.8 s, main loop 0.2 s (ticket 553)
- * - shadow priest: warm-up 4.5 s, main loop 0.5 s (ticket 553)
- * - hunter (beast mastery, pet): warm-up 15.1 s, main loop 1.2 s (ticket 557)
- * - enhancement shaman (totems): warm-up 21.4 s, main loop 1.3 s (ticket 557)
- * - rogue (combat, dual wield): warm-up 15.7 s, main loop 1.5 s (ticket 557)
- * - feral cat, desktop build (HTTP worker, `:3333`): start-up 0.7 s, warm-up regime 4.3 s,
- *   main loop 4.5 s (ticket 557, 557-desktop.md); the desktop worker leaves the warm-up
- *   regime at its first poll, so its warm-up is judged against the run limit
- * The hunter, enhancement shaman and rogue lines are from 557-page-sims.md: dev machine, four
- * page workers at once. The desktop line is from 557-desktop.md: dev machine, one Upgrades-tab
- * run with four tab workers, on a fight that ends at 441,198 health.
- */
-export const WORKER_SILENCE_LIMITS = { startMs: 140_000, runMs: 44_830, presimMs: 220_000 } as const;
-
-/**
  * E-W5 measured **183.8 MB** peak RSS for one `wowsimcli` process running
  * 5,000 iterations (candidate-pool.md §3.1) — the Node/CLI sim binary, not
  * this browser's WASM worker. No in-browser RSS-per-worker measurement
@@ -178,6 +120,29 @@ export function workerCountFor(env: RunnerEnv): number {
 	return Math.max(2, Math.min(setting, cores, memoryCapFromDeviceMemory(env.deviceMemoryGiB)));
 }
 
+/**
+ * The tab's one pool, kept for the page's life and never ended, as wowsims'
+ * own `Sim` keeps its pool (`ui/sim/sim.ts`: created once, then only
+ * resized). `WorkerPool` has no public way to end its workers, so a second
+ * runner on the same page (a remount after a run) must reuse this pool;
+ * a new one would leave the old workers running with nothing to reach them.
+ */
+let sharedPool: WorkerPool | undefined;
+
+function sharedPoolOf(numWorkers: number): WorkerPool {
+	if (!sharedPool) {
+		sharedPool = new WorkerPool(numWorkers);
+	} else if (sharedPool.getNumWorkers() !== numWorkers) {
+		sharedPool.setNumWorkers(numWorkers);
+	}
+	return sharedPool;
+}
+
+/** Tests only: the next runner builds a new pool. The old pool's workers are not ended. */
+export function resetWorkerPoolForTests(): void {
+	sharedPool = undefined;
+}
+
 export class WorkerPoolSimRunner implements SimRunner {
 	private readonly pool: WorkerPool;
 	private readonly signalManager = new SimSignalManager();
@@ -195,17 +160,12 @@ export class WorkerPoolSimRunner implements SimRunner {
 	readonly concurrency: number;
 
 	constructor(numWorkers: number = DEFAULT_WORKER_COUNT, deviceMemoryGiB?: number) {
-		this.pool = new WorkerPool(numWorkers, { silence: WORKER_SILENCE_LIMITS });
+		this.pool = sharedPoolOf(numWorkers);
 		this.concurrency = Math.max(1, Math.min(numWorkers, memoryCapFromDeviceMemory(deviceMemoryGiB)));
 	}
 
 	async version(): Promise<string> {
 		return `api-v${CURRENT_API_VERSION}`;
-	}
-
-	/** Ends this runner's WASM workers; the tab calls it when it unmounts. */
-	terminate(): void {
-		this.pool.terminate();
 	}
 
 	async run(req: RaidSimRequest, opts: SimRunOpts): Promise<SimObservation> {

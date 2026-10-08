@@ -13,7 +13,7 @@ import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 
 vi.mock('../model/run', async importOriginal => ({
 	...(await importOriginal<typeof import('../model/run')>()),
-	createRunContext: () => ({ terminate: () => {} }),
+	createRunContext: () => ({}),
 }));
 
 const { useRunStale } = await import('./useRunStale');

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import { simDatabaseResolverFor } from './adapters/sim_database';
-import type { WorkerPoolSimRunner } from './adapters/worker_pool_sim_runner';
+import { resetWorkerPoolForTests, type WorkerPoolSimRunner } from './adapters/worker_pool_sim_runner';
 import { epWeightsFor, poolFor } from './data/data';
 import type { Deps, PartialRanking, Progress, RankedItem, RankInput } from './engine/rank';
 import { MemoryStore } from './engine/seams/store';
@@ -42,7 +42,6 @@ const fakeHost = (spec = Spec.SpecRetributionPaladin) =>
 const fakeContext = (): RunContext => ({
 	simRunner: { concurrency: 2 } as unknown as WorkerPoolSimRunner,
 	store: new MemoryStore(),
-	terminate: vi.fn(),
 });
 
 const SETTINGS = { iterations: 500, candidateCap: 10 };
@@ -181,20 +180,18 @@ describe('rankForPlayer', () => {
 describe('createRunContext', () => {
 	class FakeWorker {
 		static instances: FakeWorker[] = [];
-		terminated = false;
 		constructor() {
 			FakeWorker.instances.push(this);
 		}
 		addEventListener() {}
 		postMessage() {}
-		terminate() {
-			this.terminated = true;
-		}
+		terminate() {}
 	}
 
 	beforeEach(() => {
 		FakeWorker.instances = [];
 		vi.stubGlobal('Worker', FakeWorker);
+		resetWorkerPoolForTests();
 	});
 	afterEach(() => vi.unstubAllGlobals());
 
@@ -207,8 +204,10 @@ describe('createRunContext', () => {
 		expect(context.simRunner.concurrency).toBe(3);
 	});
 
-	it('ends every worker on terminate', () => {
-		createRunContext(ENV).terminate();
-		expect(FakeWorker.instances.every(worker => worker.terminated)).toBe(true);
+	it('shares one worker pool between run contexts on the same page', () => {
+		const first = createRunContext(ENV);
+		const second = createRunContext(ENV);
+		expect(FakeWorker.instances).toHaveLength(3);
+		expect(second.store).not.toBe(first.store);
 	});
 });

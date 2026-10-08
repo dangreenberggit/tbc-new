@@ -9,11 +9,11 @@ import type { RunDeps, RunFn } from './run';
 import type { RunOutcome, RunResult } from './run_reducer';
 import { createUpgradesStore } from './upgrades_store';
 
-const contexts: Array<{ terminate: () => void }> = [];
+const contexts: Array<object> = [];
 vi.mock('./run', async importOriginal => ({
 	...(await importOriginal<typeof import('./run')>()),
 	createRunContext: () => {
-		const context = { terminate: vi.fn() };
+		const context = {};
 		contexts.push(context);
 		return context;
 	},
@@ -153,17 +153,16 @@ describe('createRunSession', () => {
 		expect(contexts).toHaveLength(1);
 	});
 
-	it('aborts the run and ends the workers on dispose', () => {
+	it('aborts the run on dispose', () => {
 		const { session, call } = setup();
 		session.start(SETTINGS, SIGNATURE);
-		const context = call(0).deps.runContext();
+		call(0).deps.runContext();
 
 		session.dispose();
 		expect(call(0).deps.signal.aborted).toBe(true);
-		expect(context.terminate).toHaveBeenCalledOnce();
 	});
 
-	it('runs again after dispose, with new workers and the run id counting on (StrictMode remount)', async () => {
+	it('runs again after dispose, with the same run context and the run id counting on (StrictMode remount)', async () => {
 		const { session, call, run } = setup();
 		session.start(SETTINGS, SIGNATURE);
 		const first = call(0).deps.runContext();
@@ -171,9 +170,8 @@ describe('createRunSession', () => {
 
 		session.start(SETTINGS, SIGNATURE);
 		expect(run()).toMatchObject({ status: 'running', runId: 2 });
-		const second = call(1).deps.runContext();
-		expect(second).not.toBe(first);
-		expect(contexts).toHaveLength(2);
+		expect(call(1).deps.runContext()).toBe(first);
+		expect(contexts).toHaveLength(1);
 
 		call(1).deps.onLanded(rowA);
 		expect(run()).toMatchObject({ landedRows: [rowA] });

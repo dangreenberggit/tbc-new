@@ -19,11 +19,11 @@ import englishTranslations from '../../../assets/locales/en/translation.json';
 
 /** The live run, replaced by one the test settles by hand; the engine is never loaded. */
 const runs: Array<{ settings: RunSettings; deps: RunDeps; settle: (outcome: RunOutcome) => void }> = [];
-const contexts: Array<{ terminate: () => void }> = [];
+const contexts: Array<object> = [];
 vi.mock('@features/upgrades/model/run', () => ({
 	rankForPlayer: (_host: unknown, settings: RunSettings, deps: RunDeps) => new Promise<RunOutcome>(settle => runs.push({ settings, deps, settle })),
 	createRunContext: () => {
-		const context = { terminate: vi.fn() };
+		const context = {};
 		contexts.push(context);
 		return context;
 	},
@@ -318,12 +318,12 @@ describe('UpgradesTabBody', () => {
 		);
 		const run = clickRun();
 		const context = run.deps.runContext();
-		expect(contexts).toEqual([context]);
+		expect(contexts).toHaveLength(1);
+		expect(contexts[0]).toBe(context);
 
 		act(() => run.deps.onLanded(rowA));
 		expect(tableRows()).toHaveLength(1);
 		await act(async () => run.settle({ ...RANKING_FIXTURE, durationMs: 1 }));
 		expect(screen.getByTestId('upgrades-baseline-summary').textContent).toMatch(/Took/);
-		expect(context.terminate).not.toHaveBeenCalled();
 	});
 });

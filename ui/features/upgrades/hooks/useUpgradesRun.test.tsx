@@ -10,11 +10,11 @@ import type { RunDeps, RunFn } from '../model/run';
 import type { RunOutcome } from '../model/run_reducer';
 import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
 
-const contexts: Array<{ terminate: () => void }> = [];
+const contexts: Array<object> = [];
 vi.mock('../model/run', async importOriginal => ({
 	...(await importOriginal<typeof import('../model/run')>()),
 	createRunContext: () => {
-		const context = { terminate: vi.fn() };
+		const context = {};
 		contexts.push(context);
 		return context;
 	},
@@ -101,14 +101,13 @@ describe('useUpgradesRun', () => {
 		expect(run()).toMatchObject({ status: 'done', result: RANKING_FIXTURE, measuredOn: { inputsSignature: SIGNATURE } });
 	});
 
-	it('aborts the run and ends the workers on unmount', () => {
+	it('aborts the run on unmount', () => {
 		const { runFn, call } = controllableRun();
 		const { result, unmount } = mount(runFn);
 		act(() => result.current.start(SETTINGS, SIGNATURE));
-		const context = call(0).deps.runContext();
+		call(0).deps.runContext();
 
 		unmount();
 		expect(call(0).deps.signal.aborted).toBe(true);
-		expect(context.terminate).toHaveBeenCalledOnce();
 	});
 });

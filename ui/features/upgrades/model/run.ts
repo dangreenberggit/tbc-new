@@ -24,7 +24,6 @@ import { effectivePool } from './settings_pool';
 export type RunContext = {
 	simRunner: WorkerPoolSimRunner;
 	store: MemoryStore;
-	terminate(): void;
 };
 
 export type RunDeps = {
@@ -58,17 +57,16 @@ const SPEC_ID_BY_PROTO_SPEC: Partial<Record<Spec, SpecId>> = {
 export const specIdFor = (spec: Spec): SpecId | undefined => SPEC_ID_BY_PROTO_SPEC[spec];
 
 /**
- * One runner and one store per mounted tab, not per run: each worker is a WASM
- * instantiation, and the store's job is to reuse identical sims across runs.
+ * One runner and one store per mounted tab, not per run: the store's job is to
+ * reuse identical sims across runs. Every runner on the page shares one worker
+ * pool (`worker_pool_sim_runner.ts`).
  */
 export function createRunContext(env: RunnerEnv): RunContext {
 	const simRunner = new WorkerPoolSimRunner(workerCountFor(env), env.deviceMemoryGiB);
-	return { simRunner, store: new MemoryStore(), terminate: () => simRunner.terminate() };
+	return { simRunner, store: new MemoryStore() };
 }
 
 export const rankForPlayer: RunFn = async (host, settings, deps) => {
-	// Taken before the first await: the tab is mounted while the click runs, so
-	// the bundle exists before an unmount's cleanup can look for it to end it.
 	const { simRunner, store } = deps.runContext();
 	const startedAt = Date.now();
 
