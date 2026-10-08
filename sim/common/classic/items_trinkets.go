@@ -13,7 +13,14 @@ func init() {
 		character := agent.GetCharacter()
 		var handOfJusticeSpell *core.Spell
 
-		dpm := character.NewDynamicLegacyProcForTypes(0, 0.013333, proto.WeaponType_WeaponTypeSword)
+		extraAttackDPM := func() *core.DynamicProcManager {
+			return character.NewFixedProcChanceManager(
+				0.013333,
+				character.GetProcMaskForTypes(proto.WeaponType_WeaponTypeSword),
+			)
+		}
+
+		dpm := extraAttackDPM()
 
 		procTrigger := character.MakeProcTriggerAura(core.ProcTrigger{
 			Name:               "Hand Of Justice",
@@ -32,6 +39,10 @@ func init() {
 			config.ActionID = config.ActionID.WithTag(11815)
 			config.Flags |= core.SpellFlagPassiveSpell
 			handOfJusticeSpell = character.GetOrRegisterSpell(config)
+		})
+
+		character.RegisterItemSwapCallback(core.AllMeleeWeaponSlots(), func(sim *core.Simulation, slot proto.ItemSlot) {
+			dpm = extraAttackDPM()
 		})
 
 		character.ItemSwap.RegisterProc(11815, procTrigger)

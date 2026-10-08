@@ -377,11 +377,14 @@ func (war *Warrior) registerMaceSpecialization() {
 		},
 	})
 
-	dpm := war.NewDynamicLegacyProcForTypes(
-		0.3*float64(war.Talents.MaceSpecialization), // 5/5 has 1.5 PPM - No data for any other ranks, so this is an estimate
-		0,
-		proto.WeaponType_WeaponTypeMace,
-	)
+	newMaceSpecializationDPM := func() *core.DynamicProcManager {
+		return war.NewStaticLegacyPPMManager(
+			0.3*float64(war.Talents.MaceSpecialization), // 5/5 has 1.5 PPM - No data for any other ranks, so this is an estimate
+			war.GetProcMaskForTypes(proto.WeaponType_WeaponTypeMace),
+		)
+	}
+
+	dpm := newMaceSpecializationDPM()
 
 	war.MakeProcTriggerAura(core.ProcTrigger{
 		Name:               "Mace Specialization",
@@ -393,6 +396,10 @@ func (war *Warrior) registerMaceSpecialization() {
 			spell.Cast(sim, result.Target)
 		},
 	})
+
+	war.RegisterItemSwapCallback(core.AllMeleeWeaponSlots(), func(sim *core.Simulation, slot proto.ItemSlot) {
+		dpm = newMaceSpecializationDPM()
+	})
 }
 
 func (war *Warrior) registerSwordSpecialization() {
@@ -403,7 +410,14 @@ func (war *Warrior) registerSwordSpecialization() {
 	var swordSpecializationSpell *core.Spell
 	procChance := spellData.SwordSpecialization.ProcChanceAt(war.Talents.SwordSpecialization)
 
-	dpm := war.NewDynamicLegacyProcForTypes(0, procChance, proto.WeaponType_WeaponTypeSword)
+	newSwordSpecializationDPM := func() *core.DynamicProcManager {
+		return war.NewFixedProcChanceManager(
+			procChance,
+			war.GetProcMaskForTypes(proto.WeaponType_WeaponTypeSword),
+		)
+	}
+
+	dpm := newSwordSpecializationDPM()
 
 	procTrigger := war.MakeProcTriggerAura(core.ProcTrigger{
 		Name:               "Sword Specialization",
@@ -427,6 +441,10 @@ func (war *Warrior) registerSwordSpecialization() {
 		config.ActionID = config.ActionID.WithTag(12281)
 		config.Flags |= core.SpellFlagPassiveSpell
 		swordSpecializationSpell = war.GetOrRegisterSpell(config)
+	})
+
+	war.RegisterItemSwapCallback(core.AllMeleeWeaponSlots(), func(sim *core.Simulation, slot proto.ItemSlot) {
+		dpm = newSwordSpecializationDPM()
 	})
 }
 

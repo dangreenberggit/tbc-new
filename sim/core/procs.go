@@ -88,16 +88,6 @@ func (character *Character) NewDynamicLegacyProcForWeapon(itemID int32, ppm floa
 	})
 }
 
-// Dynamic Proc Manager for dynamic ProcMasks keyed on weapon type. It
-// rebuilds in place on item swap because a proc trigger keeps the pointer
-// it was given at attach (aura_helpers.go AttachProcTriggerCallback), so a
-// manager rebuilt into a new variable is never read (tbc-gear-prio ticket 540).
-func (character *Character) NewDynamicLegacyProcForTypes(ppm float64, fixedProcChance float64, weaponTypes ...proto.WeaponType) *DynamicProcManager {
-	return character.newDynamicProcManagerWithDynamicProcMask(ppm, fixedProcChance, func() ProcMask {
-		return character.GetProcMaskForTypes(weaponTypes...)
-	})
-}
-
 func (character *Character) newDynamicProcManagerWithDynamicProcMask(ppm float64, fixedProcChance float64, procMaskFn func() ProcMask) *DynamicProcManager {
 	dpm := character.newDynamicWeaponProcManager(ppm, fixedProcChance, procMaskFn())
 	character.RegisterItemSwapCallback(AllWeaponSlots(), func(sim *Simulation, slot proto.ItemSlot) {

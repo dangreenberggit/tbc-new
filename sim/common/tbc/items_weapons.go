@@ -188,7 +188,14 @@ func init() {
 		character := agent.GetCharacter()
 		var blinkStrikeSpell *core.Spell
 
-		dpm := character.NewDynamicLegacyProcForWeapon(31332, 1, 0)
+		extraAttackDPM := func() *core.DynamicProcManager {
+			return character.NewStaticLegacyPPMManager(
+				1,
+				*character.GetDynamicProcMaskForWeaponEffect(31332),
+			)
+		}
+
+		dpm := extraAttackDPM()
 
 		procTrigger := character.MakeProcTriggerAura(core.ProcTrigger{
 			Name:               "Blinkstrike",
@@ -207,6 +214,10 @@ func init() {
 			config.ActionID = config.ActionID.WithTag(31332)
 			config.Flags |= core.SpellFlagPassiveSpell
 			blinkStrikeSpell = character.GetOrRegisterSpell(config)
+		})
+
+		character.RegisterItemSwapCallback(core.AllMeleeWeaponSlots(), func(sim *core.Simulation, slot proto.ItemSlot) {
+			dpm = extraAttackDPM()
 		})
 
 		character.ItemSwap.RegisterProc(31332, procTrigger)
@@ -249,9 +260,6 @@ func init() {
 	// Warglaives of Azzinoth
 	core.NewItemSet(core.ItemSet{
 		Name: "The Twin Blades of Azzinoth",
-		// Without this the set gets DefaultItemSetSlots (armor only), so its
-		// status aura never re-checks on a weapon swap (tbc-gear-prio ticket 540).
-		Slots: core.AllMeleeWeaponSlots(),
 		Bonuses: map[int32]core.ApplySetBonus{
 			2: func(agent core.Agent, setBonusAura *core.Aura) {
 				character := agent.GetCharacter()
@@ -267,7 +275,14 @@ func init() {
 					time.Second*10,
 				)
 
-				dpm := character.NewDynamicLegacyProcForTypes(1, 0, proto.WeaponType_WeaponTypeSword)
+				hasteDPM := func() *core.DynamicProcManager {
+					return character.NewStaticLegacyPPMManager(
+						1,
+						character.GetProcMaskForTypes(proto.WeaponType_WeaponTypeSword),
+					)
+				}
+
+				dpm := hasteDPM()
 
 				setBonusAura.
 					AttachProcTrigger(core.ProcTrigger{
@@ -297,6 +312,10 @@ func init() {
 						}
 					}).
 					ExposeToAPL(41434)
+
+				character.RegisterItemSwapCallback(core.AllMeleeWeaponSlots(), func(sim *core.Simulation, slot proto.ItemSlot) {
+					dpm = hasteDPM()
+				})
 			},
 		},
 	})

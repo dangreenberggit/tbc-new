@@ -31,12 +31,6 @@ var Dungeon3 = core.NewItemSet(core.ItemSet{
 		},
 		4: func(agent core.Agent, setBonusAura *core.Aura) {
 			// Your Eviscerate and Envenom abilities cost 10 less energy.
-			// tbc-gear-prio ticket 532: other classes can wear this leather
-			// set. Class-mask bits are per class, so on them these bits cut
-			// the cost of unrelated spells, such as hunter Aimed Shot.
-			if _, ok := agent.(RogueAgent); !ok {
-				return
-			}
 			setBonusAura.AttachSpellMod(core.SpellModConfig{
 				Kind:      core.SpellMod_PowerCost_Flat,
 				ClassMask: RogueSpellEviscerate | RogueSpellEnvenom,

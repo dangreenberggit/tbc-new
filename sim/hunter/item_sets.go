@@ -14,13 +14,6 @@ var ItemSetCryptstalkerArmor = core.NewItemSet(core.ItemSet{
 	Bonuses: map[int32]core.ApplySetBonus{
 		// (2) Set: Increases the duration of your Rapid Fire by 4 secs.
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
-			// tbc-gear-prio ticket 532: class-mask bits are per class, so on
-			// another class HunterSpellRapidFire's bit names a spell such
-			// as warrior Charge, which has no RelatedSelfBuff for
-			// BuffDuration_Flat to extend, and the sim panics.
-			if _, ok := agent.(HunterAgent); !ok {
-				return
-			}
 			setBonusAura.AttachSpellMod(core.SpellModConfig{
 				Kind:      core.SpellMod_BuffDuration_Flat,
 				ClassMask: HunterSpellRapidFire,
@@ -29,10 +22,7 @@ var ItemSetCryptstalkerArmor = core.NewItemSet(core.ItemSet{
 		},
 		// (4) Set: While your pet is active, increases Attack Power by 50 for both you and your pet.
 		4: func(agent core.Agent, setBonusAura *core.Aura) {
-			hunter, ok := hunterFromAgent(agent)
-			if !ok {
-				return
-			}
+			hunter := agent.(HunterAgent).GetHunter()
 			if hunter.Pet == nil {
 				return
 			}
@@ -70,10 +60,7 @@ var ItemSetCryptstalkerArmor = core.NewItemSet(core.ItemSet{
 		},
 		// (6) Set: Your ranged critical hits cause an Adrenaline Rush, granting you 50 mana.
 		6: func(agent core.Agent, setBonusAura *core.Aura) {
-			hunter, ok := hunterFromAgent(agent)
-			if !ok {
-				return
-			}
+			hunter := agent.(HunterAgent).GetHunter()
 			manaMetrics := hunter.NewManaMetrics(core.ActionID{SpellID: 28753})
 
 			setBonusAura.AttachProcTrigger(core.ProcTrigger{
@@ -90,11 +77,6 @@ var ItemSetCryptstalkerArmor = core.NewItemSet(core.ItemSet{
 		},
 		// (8) Set: Reduces the mana cost of your Multi-Shot and Aimed Shot by 20.
 		8: func(agent core.Agent, setBonusAura *core.Aura) {
-			// Same class-mask problem as the 2pc: on another class these
-			// bits cut the cost of unrelated spells.
-			if _, ok := agent.(HunterAgent); !ok {
-				return
-			}
 			setBonusAura.AttachSpellMod(core.SpellModConfig{
 				Kind:      core.SpellMod_PowerCost_Flat,
 				ClassMask: HunterSpellMultiShot | HunterSpellAimedShot,
@@ -111,10 +93,7 @@ var ItemSetBeastLordArmor = core.NewItemSet(core.ItemSet{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
 		},
 		4: func(agent core.Agent, setBonusAura *core.Aura) {
-			hunter, ok := hunterFromAgent(agent)
-			if !ok {
-				return
-			}
+			hunter := agent.(HunterAgent).GetHunter()
 
 			exploitedWeakness := hunter.RegisterAura(core.Aura{
 				Label:    "Exploited Weakness",
@@ -156,10 +135,7 @@ var ItemSetRiftStalkerArmor = core.NewItemSet(core.ItemSet{
 	ID:   652,
 	Bonuses: map[int32]core.ApplySetBonus{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
-			hunter, ok := hunterFromAgent(agent)
-			if !ok {
-				return
-			}
+			hunter := agent.(HunterAgent).GetHunter()
 			if hunter.Pet == nil {
 				return
 			}
@@ -192,10 +168,7 @@ var ItemSetGronnstalkersArmor = core.NewItemSet(core.ItemSet{
 	ID:   669,
 	Bonuses: map[int32]core.ApplySetBonus{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
-			hunter, ok := hunterFromAgent(agent)
-			if !ok {
-				return
-			}
+			hunter := agent.(HunterAgent).GetHunter()
 			hunter.GronnStalker2PcAura = setBonusAura.ExposeToAPL(38390)
 		},
 		4: func(agent core.Agent, setBonusAura *core.Aura) {
@@ -319,10 +292,7 @@ func init() {
 	// Ashtongue Talisman of Swiftness
 	const AshtongueTalismanOfSwiftnessItemID = 32487
 	core.NewItemEffect(AshtongueTalismanOfSwiftnessItemID, func(agent core.Agent) {
-		hunter, ok := hunterFromAgent(agent)
-		if !ok {
-			return
-		}
+		hunter := agent.(HunterAgent).GetHunter()
 		eligibleSlots := hunter.ItemSwap.EligibleSlotsForItem(AshtongueTalismanOfSwiftnessItemID)
 
 		statsAura := hunter.NewTemporaryStatsAura(
@@ -355,10 +325,7 @@ func init() {
 	// Talon of Al'ar
 	const TalonOfAlarItemID = 30448
 	core.NewItemEffect(TalonOfAlarItemID, func(agent core.Agent) {
-		hunter, ok := hunterFromAgent(agent)
-		if !ok {
-			return
-		}
+		hunter := agent.(HunterAgent).GetHunter()
 
 		hunter.TalonOfAlarAura = hunter.RegisterAura(core.Aura{
 			Label:    "Shot Power",
