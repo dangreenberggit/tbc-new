@@ -38,7 +38,7 @@ export interface ResultRowProps {
 }
 
 /**
- * One ranked item. The cell order is read by position by the desktop gate (`tools/run-tab-cdp.mjs`).
+ * One ranked item. The cell order is read by position by the desktop gate (`scripts/tab-harness/run-tab-cdp.mjs` in the main repo).
  *
  * `memo`, because a run lands rows one at a time and each landing renders the table: without it every
  * row already shown renders again, which a 467-row replay measured at over 20 s. A landing row or a sort
