@@ -43,6 +43,24 @@ describe('dispatchRun', () => {
 		expect(store.getState().run).toMatchObject({ status: 'running', landedRows: [rowA] });
 	});
 
+	it('opens a new run in the engine order, whatever the last result was sorted by', () => {
+		const store = createUpgradesStore(SEED);
+		setSort(store, [{ id: 'item', desc: false }]);
+
+		dispatchRun(store, { type: 'started', runId: 1, startedAt: 1000 });
+
+		expect(selectSort(store.getState())).toEqual([]);
+	});
+
+	it('keeps the sort when a recorded ranking loads, since no run started', () => {
+		const store = createUpgradesStore(SEED);
+		setSort(store, [{ id: 'item', desc: false }]);
+
+		dispatchRun(store, { type: 'fixtureLoaded', runId: 1, ranking: RANKING_FIXTURE });
+
+		expect(selectSort(store.getState())).toEqual([{ id: 'item', desc: false }]);
+	});
+
 	it('leaves the settings object alone', () => {
 		const store = createUpgradesStore(SEED);
 		const settings = store.getState().settings;

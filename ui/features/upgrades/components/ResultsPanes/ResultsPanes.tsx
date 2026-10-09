@@ -31,6 +31,8 @@ const paneId = (tab: ResultsTabId) => `upgrades-pane-${tab}`;
  * pane, and only the shown pane's tab names a pane it controls.
  */
 type Pane = { id: ResultsTabId; label: string; badge?: string; className?: string };
+/** A pane's rows, and its slot for every pane but the Upgrades list. */
+type PaneContent = { id: ResultsTabId; rows: ReturnType<typeof paneRows>; slot?: ReturnType<typeof slotTabs>[number] };
 
 export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 	// A string, because the tab strip reports any tab's value; `shownTab` checks it against this view's panes.
@@ -47,28 +49,32 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 	const exportTable = useResultsTable(view.shortlist, rowContext);
 	// Memoised on the view: `paneRows` filters new arrays on every call, and a new array rebuilds that pane's
 	// tables, so without it every sort click would rebuild every pane's tables, not just re-sort them.
-	const rowsByPane = useMemo(() => {
-		const ids: ResultsTabId[] = [SHOPPING_LIST_TAB, ...slotTabs(view).map(slot => slot.id)];
-		return new Map(ids.map(id => [id, paneRows(view, id)] as const));
-	}, [view]);
+	const contents = useMemo(
+		(): PaneContent[] => [
+			{ id: SHOPPING_LIST_TAB, rows: paneRows(view, SHOPPING_LIST_TAB) },
+			...slotTabs(view).map(slot => ({ id: slot.id, slot, rows: paneRows(view, slot.id) })),
+		],
+		[view],
+	);
 	// A group that a new view takes away closes, as it did when it lived in its own pane: it unmounted with
 	// its rows. Adjusted during render, so no frame shows it open.
 	if (groupsSeenFor !== view) {
 		setGroupsSeenFor(view);
-		const kept = [...openGroups].filter(pane => (rowsByPane.get(pane)?.belowCutoff.length ?? 0) > 0);
+		const kept = [...openGroups].filter(id => contents.some(pane => pane.id === id && pane.rows.belowCutoff.length > 0));
 		if (kept.length !== openGroups.size) setOpenGroups(new Set(kept));
 	}
 
-	const panes: Pane[] = [
-		{ id: SHOPPING_LIST_TAB, label: i18n.t('upgrades_tab.subtabs.shopping_list', { ns: 'upgrades' }) },
-		...slotTabs(view).map(slot => ({
-			id: slot.id,
-			label: simSlotLabel(slot.id),
-			badge: String(slot.count),
-			// A slot with nothing above the cutoff keeps its tab, dimmed, so the user can open it and see why.
-			className: slot.count === 0 ? 'opacity-60' : undefined,
-		})),
-	];
+	const panes: Pane[] = contents.map(({ id, slot }) =>
+		slot
+			? {
+					id,
+					label: simSlotLabel(slot.id),
+					badge: String(slot.count),
+					// A slot with nothing above the cutoff keeps its tab, dimmed, so the user can open it and see why.
+					className: slot.count === 0 ? 'opacity-60' : undefined,
+				}
+			: { id, label: i18n.t('upgrades_tab.subtabs.shopping_list', { ns: 'upgrades' }) },
+	);
 	// A new result without the open slot falls back to the Upgrades list, as the old tab did.
 	const shownTab = panes.find(pane => pane.id === activeTab)?.id ?? SHOPPING_LIST_TAB;
 	// `TabNav` falls back to the tab's own value when this is undefined, which is not a pane's id, so a tab whose pane is
@@ -80,20 +86,17 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 			<Tabs.Root value={shownTab} onValueChange={next => setActiveTab(String(next))}>
 				<TabNav tabs={tabs} testId="upgrades-tab-tabs" />
 				<TabPanels>
-					{panes.map(pane => {
-						const { shortlist, belowCutoff } = rowsByPane.get(pane.id) ?? paneRows(view, pane.id);
-						return (
-							<TabPanel key={pane.id} value={pane.id} id={paneId(pane.id)} keepMounted={false}>
-								<ResultsPane
-									shortlist={shortlist}
-									belowCutoff={belowCutoff}
-									rowContext={rowContext}
-									groupOpen={openGroups.has(pane.id)}
-									onGroupOpenChange={open => setGroupOpen(pane.id, open)}
-								/>
-							</TabPanel>
-						);
-					})}
+					{contents.map(({ id, rows }) => (
+						<TabPanel key={id} value={id} id={paneId(id)} keepMounted={false}>
+							<ResultsPane
+								shortlist={rows.shortlist}
+								belowCutoff={rows.belowCutoff}
+								rowContext={rowContext}
+								groupOpen={openGroups.has(id)}
+								onGroupOpenChange={open => setGroupOpen(id, open)}
+							/>
+						</TabPanel>
+					))}
 				</TabPanels>
 			</Tabs.Root>
 			<ExportPanel rows={exportTable.getRowModel().rows.map(row => row.original)} />

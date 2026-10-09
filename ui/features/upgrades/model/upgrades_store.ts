@@ -20,7 +20,7 @@ export type ResultsSort = Array<{ id: string; desc: boolean }>;
 
 /**
  * `sort` is the one column sort every results table and the export follow
- * (ticket 280). It lasts as long as the page's store and is never saved.
+ * (ticket 280). A new run clears it (`dispatchRun`), and it is never saved.
  */
 export type UpgradesState = { run: RunState; settings: SettingsState; sort: ResultsSort };
 
@@ -36,11 +36,16 @@ export function createUpgradesStore(seed: SettingsSeed) {
 	return createStore<UpgradesState>()(subscribeWithSelector((): UpgradesState => ({ run: IDLE_RUN, settings: initialSettings(seed), sort: [] })));
 }
 
-/** A reducer that returns the state it was given writes nothing, so a superseded run's late row notifies nobody. */
+/**
+ * A reducer that returns the state it was given writes nothing, so a superseded run's late row notifies nobody.
+ * A run that starts also clears the sort: each run opens in the engine's ΔDPS order, as it did when the sort was
+ * state of the results panes, which unmount while a run is in flight (ticket 582).
+ */
 export function dispatchRun(store: UpgradesStore, action: RunAction): void {
 	const { run } = store.getState();
 	const next = runReducer(run, action);
-	if (next !== run) store.setState({ run: next });
+	if (next === run) return;
+	store.setState(action.type === 'started' ? { run: next, sort: [] } : { run: next });
 }
 
 export function dispatchSettings(store: UpgradesStore, action: SettingsAction): void {
