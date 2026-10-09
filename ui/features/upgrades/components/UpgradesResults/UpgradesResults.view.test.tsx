@@ -15,6 +15,11 @@ import { fixtureRow, RANKING_FIXTURE, STOPPED_FIXTURE } from '../../testing/rank
 vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span />, BatchToggle: () => <span /> }));
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
 
+// Every row, so the assertions are about the table's order rather than what it windowed; `useVirtualRows.test.tsx` covers the windowing.
+vi.mock('../../hooks/useVirtualRows', () => ({
+	useVirtualRows: (keys: readonly string[]) => ({ indexes: keys.map((_key, index) => index), paddingTop: 0, paddingBottom: 0, measureRow: () => {} }),
+}));
+
 const { UpgradesResults } = await import('./UpgradesResults');
 const { upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
 const { setSort } = await import('../../model/upgrades_store');

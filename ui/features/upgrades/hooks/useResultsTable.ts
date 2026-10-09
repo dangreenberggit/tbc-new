@@ -13,8 +13,7 @@ import { useMemo } from 'react';
 
 import type { RowContext } from '../components/ResultsTable/ResultRow';
 import type { RankedItem } from '../model/engine/rank';
-import { compareSortValues, SORT_COLUMN_IDS, sortValue } from '../model/results_columns';
-import type { DpsSortKey, SortLabels } from '../model/results_sort';
+import { compareSortValues, type DpsSortKey, SORT_COLUMN_IDS, type SortLabels, sortValue } from '../model/results_columns';
 import { rowKey } from '../model/results_view';
 import { selectSort, setSort, type UpgradesState } from '../model/upgrades_store';
 import { SORT_LABELS } from '../utils/format';

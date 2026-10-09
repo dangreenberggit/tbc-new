@@ -2,7 +2,7 @@ import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import type { IndividualSimHost } from '@sim/sim_host';
 import { fakeHost } from '@sim/testing';
-import { fireEvent, render, within } from '@testing-library/react';
+import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { applyView, type ViewResult } from '../../model/engine/view';
@@ -12,6 +12,11 @@ import { RANKING_FIXTURE, STOPPED_FIXTURE } from '../../testing/ranking_fixture'
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
 vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favorite-stub" />, BatchToggle: () => <span data-testid="batch-stub" /> }));
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
+
+// Every row, so the assertions are about the table's order rather than what it windowed; `useVirtualRows.test.tsx` covers the windowing.
+vi.mock('../../hooks/useVirtualRows', () => ({
+	useVirtualRows: (keys: readonly string[]) => ({ indexes: keys.map((_key, index) => index), paddingTop: 0, paddingBottom: 0, measureRow: () => {} }),
+}));
 
 const { ResultsPanes } = await import('./ResultsPanes');
 
@@ -53,13 +58,43 @@ describe('ResultsPanes', () => {
 		expect(tabLabels(container)).toEqual(['Upgrades', 'Head (2)', 'Chest (2)', 'Legs (1)', 'Trinket 1 (1)', 'Main Hand (4)']);
 	});
 
-	it('links each tab to its own pane', () => {
+	// Only the shown pane is mounted (ticket 565), so only its tab can name the pane it controls.
+	it('links the shown tab to its pane and the other tabs to none', async () => {
 		const { container } = render(panes(VIEW));
-		for (const tab of tabStrip(container).getAllByRole('tab')) {
-			const paneId = tab.getAttribute('aria-controls');
-			expect(paneId).toMatch(/^upgrades-pane-/);
-			expect(container.querySelector(`#${paneId}`)?.getAttribute('data-testid')).toBe('tab-pane');
-		}
+		const controls = () =>
+			tabStrip(container)
+				.getAllByRole('tab')
+				.map(tab => tab.getAttribute('aria-controls'));
+		expect(controls()).toEqual(['upgrades-pane-shopping-list', '', '', '', '', '']);
+		expect(container.querySelector('#upgrades-pane-shopping-list')?.getAttribute('data-testid')).toBe('tab-pane');
+
+		clickTab(container, 'Head');
+		expect(controls()).toEqual(['', 'upgrades-pane-head', '', '', '', '']);
+		await waitFor(() => expect(container.querySelector('#upgrades-pane-head')?.getAttribute('data-testid')).toBe('tab-pane'));
+	});
+
+	it('keeps no hidden pane in the document', async () => {
+		const { container } = render(panes(VIEW));
+		expect(container.querySelectorAll('[data-testid="tab-pane"]')).toHaveLength(1);
+
+		clickTab(container, 'Head');
+		await waitFor(() => expect(container.querySelectorAll('[data-testid="tab-pane"]')).toHaveLength(1));
+		expect(container.querySelector('#upgrades-pane-shopping-list')).toBeNull();
+		expect(namesIn(activePane(container))).toEqual(['Cursed Vision of Sargeras', 'Lightbringer Faceguard']);
+	});
+
+	it('keeps a below-cutoff group open across a switch to another pane and back', async () => {
+		const { container } = render(panes(VIEW));
+		fireEvent.click(within(activePane(container)).getByTestId('upgrades-below-cutoff-trigger'));
+		const groupRows = () => within(within(activePane(container)).getByTestId('upgrades-below-cutoff')).queryAllByTestId('upgrades-result-row');
+		const opened = groupRows().length;
+		expect(opened).toBeGreaterThan(0);
+
+		clickTab(container, 'Head');
+		await waitFor(() => expect(container.querySelector('#upgrades-pane-shopping-list')).toBeNull());
+		clickTab(container, 'Upgrades');
+		await waitFor(() => expect(container.querySelector('#upgrades-pane-head')).toBeNull());
+		expect(groupRows()).toHaveLength(opened);
 	});
 
 	it('opens on the Upgrades list and shows a slot’s rows when its tab is clicked', () => {
@@ -105,6 +140,18 @@ describe('ResultsPanes', () => {
 		// Lightbringer Greaves (30993) exports its tier token, 31098; every other shortlisted row exports its own id.
 		expect(exportedIds()).toEqual(shownIds().map(id => (id === 30993 ? 31098 : id)));
 		expect(exportedIds()).toContain(31098);
+	});
+
+	it('closes a below-cutoff group that a new result took away, as before its state moved here', () => {
+		const { container, rerender } = render(panes(VIEW));
+		const trigger = () => within(activePane(container)).queryByTestId('upgrades-below-cutoff-trigger');
+		fireEvent.click(trigger()!);
+		expect(trigger()?.getAttribute('aria-expanded')).toBe('true');
+
+		rerender(panes({ ...VIEW, rows: VIEW.rows.filter(row => !row.belowCutoffInView) }));
+		expect(trigger()).toBeNull();
+		rerender(panes(VIEW));
+		expect(trigger()?.getAttribute('aria-expanded')).toBe('false');
 	});
 
 	it('falls back to the Upgrades list when the open slot has no rows in a new result', () => {

@@ -15,6 +15,9 @@ type Column = 'rank' | ResultsSortKey | 'favorite' | 'batch';
 /** Every column in head order: `HeadRow`'s Rank, the sortable columns, then its two toggle columns. */
 const COLUMNS: readonly Column[] = ['rank', ...SORT_COLUMNS, 'favorite', 'batch'];
 
+/** How many cells a row spans, for a cell that stands in for a whole row. */
+export const RESULTS_COLUMN_COUNT = COLUMNS.length;
+
 /**
  * One width per column, shared by every results table (fixed
  * layout) so the below-cutoff group's columns sit under the shortlist's head.

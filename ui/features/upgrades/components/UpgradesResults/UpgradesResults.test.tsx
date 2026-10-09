@@ -13,6 +13,11 @@ import { fixtureRow, RANKING_FIXTURE, STOPPED_FIXTURE } from '../../testing/rank
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
 vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favorite-stub" />, BatchToggle: () => <span data-testid="batch-stub" /> }));
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
+
+// Every row, so the assertions are about the table's order rather than what it windowed; `useVirtualRows.test.tsx` covers the windowing.
+vi.mock('../../hooks/useVirtualRows', () => ({
+	useVirtualRows: (keys: readonly string[]) => ({ indexes: keys.map((_key, index) => index), paddingTop: 0, paddingBottom: 0, measureRow: () => {} }),
+}));
 // The engine reads set membership from the sim database, which a unit test does not load.
 vi.mock('../../model/engine/items', async importOriginal => ({
 	...(await importOriginal<typeof import('../../model/engine/items')>()),

@@ -1,9 +1,10 @@
-import type { ComponentPropsWithoutRef } from 'react';
+import { type ComponentPropsWithoutRef, useMemo, useRef } from 'react';
 
 import { type ResultsTableModel, useResultsTable } from '../../hooks/useResultsTable';
+import { useVirtualRows } from '../../hooks/useVirtualRows';
 import type { RankedItem } from '../../model/engine/rank';
 import { ResultRow, type RowContext } from './ResultRow';
-import { PlainResultsHead, RESULTS_COLUMNS } from './ResultsTableHead';
+import { PlainResultsHead, RESULTS_COLUMN_COUNT, RESULTS_COLUMNS } from './ResultsTableHead';
 
 /** Table attributes pass through, so a variant can mark itself; the testid the gates read is fixed after them. */
 export type ResultsTableProps = Omit<ComponentPropsWithoutRef<'table'>, 'className'>;
@@ -52,11 +53,34 @@ export const ProvisionalResultsTable = ({ rows, rowContext }: ProvisionalResults
 	);
 };
 
-/** A table's rows in its sort order, numbered from 1 in the order shown (owner ruling, ticket 287). Each row is keyed by `rowKey`, the table's row id. */
-export const ResultRows = ({ table, rowContext }: ResultRowsProps) => (
-	<tbody>
-		{table.getRowModel().rows.map((row, index) => (
-			<ResultRow key={row.id} row={row.original} position={index + 1} context={rowContext} />
-		))}
-	</tbody>
+/** Stands in for the rows not rendered, so the table keeps its full height and the scroll bar its place. */
+const RowSpacer = ({ height }: { height: number }) => (
+	<tr data-testid="upgrades-row-spacer" aria-hidden="true">
+		<td colSpan={RESULTS_COLUMN_COUNT} style={{ height }} />
+	</tr>
 );
+
+/**
+ * A table's rows in its sort order, numbered from 1 in the order shown (owner ruling, ticket 287). Each
+ * row is keyed by `rowKey`, the table's row id. Only the rows in or near the page's view are rendered
+ * (ticket 565), so the tbody carries the table's full row count for the gates, which cannot count rows.
+ */
+export const ResultRows = ({ table, rowContext }: ResultRowsProps) => {
+	const rows = table.getRowModel().rows;
+	const tbodyRef = useRef<HTMLTableSectionElement>(null);
+	// Memoised on the row model, which TanStack keeps while the data and sort hold: a new array is a new
+	// `getItemKey`, which makes the virtualiser recompute every row's position.
+	const keys = useMemo(() => rows.map(row => row.id), [rows]);
+	const { indexes, paddingTop, paddingBottom, measureRow } = useVirtualRows(keys, tbodyRef);
+	return (
+		<tbody ref={tbodyRef} data-testid="upgrades-result-rows" data-row-count={rows.length}>
+			{paddingTop > 0 && <RowSpacer height={paddingTop} />}
+			{indexes.map(index => {
+				const row = rows[index];
+				if (!row) return null;
+				return <ResultRow key={row.id} ref={measureRow} row={row.original} position={index + 1} context={rowContext} />;
+			})}
+			{paddingBottom > 0 && <RowSpacer height={paddingBottom} />}
+		</tbody>
+	);
+};

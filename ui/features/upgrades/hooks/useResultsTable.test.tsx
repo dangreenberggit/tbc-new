@@ -3,7 +3,7 @@ import { act, renderHook } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
 import type { RankedItem } from '../model/engine/rank';
-import type { DpsSortKey } from '../model/results_sort';
+import type { DpsSortKey } from '../model/results_columns';
 import { fixtureRow } from '../testing/ranking_fixture';
 import { RESULTS_TABLE_OPTIONS, resultsColumns } from './useResultsTable';
 

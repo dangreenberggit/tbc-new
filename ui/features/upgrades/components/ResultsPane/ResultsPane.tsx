@@ -10,6 +10,9 @@ export interface ResultsPaneProps {
 	shortlist: readonly RankedItem[];
 	belowCutoff: readonly RankedItem[];
 	rowContext: RowContext;
+	/** Whether the below-cutoff group is open; `ResultsPanes` keeps it per pane, so it survives a switch to another pane. */
+	groupOpen: boolean;
+	onGroupOpenChange: (open: boolean) => void;
 }
 
 /**
@@ -19,7 +22,7 @@ export interface ResultsPaneProps {
  * the group gets the sortable head. Both tables follow the tab store's one
  * sort, so a click on either head orders both.
  */
-export const ResultsPane = ({ shortlist, belowCutoff, rowContext }: ResultsPaneProps) => {
+export const ResultsPane = ({ shortlist, belowCutoff, rowContext, groupOpen, onGroupOpenChange }: ResultsPaneProps) => {
 	const shortlistTable = useResultsTable(shortlist, rowContext);
 	const groupTable = useResultsTable(belowCutoff, rowContext);
 	return (
@@ -40,6 +43,8 @@ export const ResultsPane = ({ shortlist, belowCutoff, rowContext }: ResultsPaneP
 					head={shortlist.length > 0 ? <ScreenReaderResultsHead table={groupTable} /> : <SortableResultsHead table={groupTable} />}
 					table={groupTable}
 					rowContext={rowContext}
+					open={groupOpen}
+					onOpenChange={onGroupOpenChange}
 				/>
 			)}
 		</>

@@ -1,10 +1,10 @@
 import type { UIItem } from '@generated/proto/ui';
 import type { Sim } from '@sim/sim';
 import clsx from 'clsx';
-import { memo } from 'react';
+import { memo, type Ref } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
-import type { DpsSortKey } from '../../model/results_sort';
+import type { DpsSortKey } from '../../model/results_columns';
 import type { SetBonusTipContext } from '../../model/set_bonus_tip';
 import type { RowTag } from '../../model/settings_pool';
 import { slotLabel } from '../../utils/format';
@@ -35,6 +35,8 @@ export interface ResultRowProps {
 	/** The row's place in its own table, which is what the Rank column shows (owner ruling, ticket 287). */
 	position: number;
 	context: RowContext;
+	/** The virtualiser's measuring ref (`useVirtualRows`). */
+	ref?: Ref<HTMLTableRowElement>;
 }
 
 /**
@@ -44,11 +46,16 @@ export interface ResultRowProps {
  * row already shown renders again, which a 467-row replay measured at over 20 s. A landing row or a sort
  * still moves `position` for the rows below it, so the costly cells are memoised on their own and
  * only the Rank cell changes.
+ *
+ * `data-index` is the row's index in its table, which the virtualiser reads when it measures the row
+ * and the gates read to collect a table's rows across scroll positions.
  */
-export const ResultRow = memo(({ row, position, context }: ResultRowProps) => (
+export const ResultRow = memo(({ row, position, context, ref }: ResultRowProps) => (
 	<tr
+		ref={ref}
 		className={clsx('border-b border-b-border', row.owned && 'text-muted')}
 		data-testid="upgrades-result-row"
+		data-index={position - 1}
 		data-item-id={row.itemId}
 		data-owned={row.owned ? 'true' : undefined}>
 		<td className="py-1 pr-3 tabular-nums">{position}</td>

@@ -10,7 +10,7 @@ import { simSlotsForPoolSlot } from '../model/engine/pool';
 import { type RankedItem, RankError } from '../model/engine/rank';
 import type { SimOrderName } from '../model/engine/slots';
 import { SOURCE_LABELS } from '../model/engine/view';
-import type { SortLabels } from '../model/results_sort';
+import type { SortLabels } from '../model/results_columns';
 import type { RunPhase, RunProgressView } from '../model/run_progress';
 import { FIXTURE_NOT_JSON, type FixtureLoadResult } from './fixture';
 

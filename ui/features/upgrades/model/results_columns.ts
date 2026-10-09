@@ -7,7 +7,12 @@
  */
 
 import type { RankedItem } from './engine/rank';
-import type { DpsSortKey, SortLabels } from './results_sort';
+
+/** The text a reader sees in the slot and source cells, which those columns sort on. */
+export type SortLabels<T> = { slot: (row: T) => string; source: (row: T) => string };
+
+/** What the ΔDPS column sorts on, when it is more than the row's own ΔDPS (`results_view.ts` `dpsSortKeyFor`). */
+export type DpsSortKey = (row: RankedItem) => number;
 
 /** The sortable columns in head order; each id is also the `upgrades-sort-<id>` test id the gates click. */
 export const SORT_COLUMN_IDS = ['item', 'slot', 'delta_dps', 'source'] as const;

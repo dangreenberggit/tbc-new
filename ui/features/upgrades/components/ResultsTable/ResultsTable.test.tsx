@@ -14,6 +14,11 @@ vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favor
 // The icon lookup fetches from wowhead; the row's own cells are under test.
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
 
+// Every row, so the assertions are about the table's order rather than what it windowed; `useVirtualRows.test.tsx` covers the windowing.
+vi.mock('../../hooks/useVirtualRows', () => ({
+	useVirtualRows: (keys: readonly string[]) => ({ indexes: keys.map((_key, index) => index), paddingTop: 0, paddingBottom: 0, measureRow: () => {} }),
+}));
+
 const { ProvisionalResultsTable, ResultRows, ResultsTable } = await import('./ResultsTable');
 const { ScreenReaderResultsHead, SortableResultsHead } = await import('./ResultsTableHead');
 const { useResultsTable } = await import('../../hooks/useResultsTable');

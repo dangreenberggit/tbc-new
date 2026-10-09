@@ -24,12 +24,26 @@ const paneId = (tab: ResultsTabId) => `upgrades-pane-${tab}`;
  * with a row, then the export. The open tab lives here and is not stored; the
  * one column sort shared by every pane and the export (ticket 280) lives in the
  * tab store (ticket 565), which every results table reads.
+ *
+ * Only the shown pane is mounted (ticket 565): a hidden pane has no size, so
+ * its rows could not be windowed. Which below-cutoff groups are open is kept
+ * here for that reason, so a group stays open across a switch to another
+ * pane, and only the shown pane's tab names a pane it controls.
  */
 type Pane = { id: ResultsTabId; label: string; badge?: string; className?: string };
 
 export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 	// A string, because the tab strip reports any tab's value; `shownTab` checks it against this view's panes.
 	const [activeTab, setActiveTab] = useState<string>(SHOPPING_LIST_TAB);
+	const [openGroups, setOpenGroups] = useState<ReadonlySet<ResultsTabId>>(new Set());
+	const [groupsSeenFor, setGroupsSeenFor] = useState(view);
+	const setGroupOpen = (pane: ResultsTabId, open: boolean) =>
+		setOpenGroups(current => {
+			const next = new Set(current);
+			if (open) next.add(pane);
+			else next.delete(pane);
+			return next;
+		});
 	const exportTable = useResultsTable(view.shortlist, rowContext);
 	// Memoised on the view: `paneRows` filters new arrays on every call, and a new array rebuilds that pane's
 	// tables, so without it every sort click would rebuild every pane's tables, not just re-sort them.
@@ -37,6 +51,13 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 		const ids: ResultsTabId[] = [SHOPPING_LIST_TAB, ...slotTabs(view).map(slot => slot.id)];
 		return new Map(ids.map(id => [id, paneRows(view, id)] as const));
 	}, [view]);
+	// A group that a new view takes away closes, as it did when it lived in its own pane: it unmounted with
+	// its rows. Adjusted during render, so no frame shows it open.
+	if (groupsSeenFor !== view) {
+		setGroupsSeenFor(view);
+		const kept = [...openGroups].filter(pane => (rowsByPane.get(pane)?.belowCutoff.length ?? 0) > 0);
+		if (kept.length !== openGroups.size) setOpenGroups(new Set(kept));
+	}
 
 	const panes: Pane[] = [
 		{ id: SHOPPING_LIST_TAB, label: i18n.t('upgrades_tab.subtabs.shopping_list', { ns: 'upgrades' }) },
@@ -50,7 +71,9 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 	];
 	// A new result without the open slot falls back to the Upgrades list, as the old tab did.
 	const shownTab = panes.find(pane => pane.id === activeTab)?.id ?? SHOPPING_LIST_TAB;
-	const tabs: TabNavTab[] = panes.map(pane => ({ ...pane, ariaControls: paneId(pane.id) }));
+	// `TabNav` falls back to the tab's own value when this is undefined, which is not a pane's id, so a tab whose pane is
+	// not mounted gets an empty list instead.
+	const tabs: TabNavTab[] = panes.map(pane => ({ ...pane, ariaControls: pane.id === shownTab ? paneId(pane.id) : '' }));
 
 	return (
 		<>
@@ -60,8 +83,14 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 					{panes.map(pane => {
 						const { shortlist, belowCutoff } = rowsByPane.get(pane.id) ?? paneRows(view, pane.id);
 						return (
-							<TabPanel key={pane.id} value={pane.id} id={paneId(pane.id)}>
-								<ResultsPane shortlist={shortlist} belowCutoff={belowCutoff} rowContext={rowContext} />
+							<TabPanel key={pane.id} value={pane.id} id={paneId(pane.id)} keepMounted={false}>
+								<ResultsPane
+									shortlist={shortlist}
+									belowCutoff={belowCutoff}
+									rowContext={rowContext}
+									groupOpen={openGroups.has(pane.id)}
+									onGroupOpenChange={open => setGroupOpen(pane.id, open)}
+								/>
 							</TabPanel>
 						);
 					})}
