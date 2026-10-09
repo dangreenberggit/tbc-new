@@ -2,7 +2,7 @@ import { Spinner } from '@ui-kit/Spinner';
 import { lazy, Suspense, useLayoutEffect, useRef, useState } from 'react';
 
 // A dynamic import, so the tab's code and its bundled item data stay out of every spec page's first download (ticket 575).
-const UpgradesTabBodyInner = lazy(() => import('@features/upgrades/app/UpgradesTabBodyInner').then(module => ({ default: module.UpgradesTabBodyInner })));
+const UpgradesTabBodyInner = lazy(() => import('@features/upgrades/components/UpgradesTab').then(module => ({ default: module.UpgradesTabBodyInner })));
 
 /**
  * Renders the tab body the first time its pane is shown. Panes stay mounted and no context says which tab is open,

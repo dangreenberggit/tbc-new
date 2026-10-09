@@ -84,7 +84,7 @@ vi.mock('@features/upgrades/components/EligibleCount', async importOriginal => {
 });
 
 const { UpgradesTabBody } = await import('./UpgradesTabBody');
-const { UpgradesTabBodyInner } = await import('@features/upgrades/app/UpgradesTabBodyInner');
+const { UpgradesTabBodyInner } = await import('@features/upgrades/components/UpgradesTab');
 const { useUpgradesSettings } = await import('@features/upgrades/hooks/useUpgradesSettings');
 const { selectRunStatus, useUpgradesStore } = await import('@features/upgrades/hooks/useUpgradesStore');
 
