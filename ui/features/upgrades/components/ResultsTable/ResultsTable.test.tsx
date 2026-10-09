@@ -1,7 +1,11 @@
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
+import { SimHostProvider } from '@sim/context/SimHostContext';
+import type { IndividualSimHost } from '@sim/sim_host';
 import { fakeHost } from '@sim/testing';
+import type { SortingState } from '@tanstack/react-table';
 import { fireEvent, render, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import type { ReactNode } from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
 
@@ -10,10 +14,12 @@ vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favor
 // The icon lookup fetches from wowhead; the row's own cells are under test.
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
 
-const { ResultRows, ResultsTable } = await import('./ResultsTable');
-const { PlainResultsHead, ScreenReaderResultsHead, SortableResultsHead } = await import('./ResultsTableHead');
+const { ProvisionalResultsTable, ResultRows, ResultsTable } = await import('./ResultsTable');
+const { ScreenReaderResultsHead, SortableResultsHead } = await import('./ResultsTableHead');
+const { useResultsTable } = await import('../../hooks/useResultsTable');
+const { selectSort, upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
+const { setSort } = await import('../../model/upgrades_store');
 type RowContext = import('./ResultRow').RowContext;
-type ResultsSort = import('../../model/results_sort').ResultsSort;
 type RankedItem = import('../../model/engine/rank').RankedItem;
 
 loadEnglishBundles({ character: true });
@@ -32,12 +38,51 @@ const rowsOf = (table: HTMLElement) => within(table).getAllByTestId('upgrades-re
 const namesOf = (table: HTMLElement) => rowsOf(table).map(row => within(row).getByTestId('upgrades-item-name').textContent);
 const positionsOf = (table: HTMLElement) => rowsOf(table).map(row => cellsOf(row)[0]);
 
+// A page per test, so a sort one test stores does not reach the next.
+let host: IndividualSimHost<any>;
+beforeEach(() => {
+	host = fakeHost({ player: { getSpec: () => undefined } });
+});
+const onPage = (node: ReactNode) => <SimHostProvider host={host}>{node}</SimHostProvider>;
+const storeSort = (sorting: SortingState) => setSort(upgradesStoreFor(host), sorting);
+const storedSort = () => selectSort(upgradesStoreFor(host).getState());
+
 /** A table with no head, as the below-cutoff group composes it. */
-const bare = (rows: readonly RankedItem[], sort?: ResultsSort) => (
-	<ResultsTable>
-		<ResultRows rows={rows} rowContext={CONTEXT} sort={sort} />
-	</ResultsTable>
-);
+const Bare = ({ rows }: { rows: readonly RankedItem[] }) => {
+	const table = useResultsTable(rows, CONTEXT);
+	return (
+		<ResultsTable>
+			<ResultRows table={table} rowContext={CONTEXT} />
+		</ResultsTable>
+	);
+};
+
+/** A settled table with its sortable head, as the shortlist composes it. */
+const Sortable = ({ rows }: { rows: readonly RankedItem[] }) => {
+	const table = useResultsTable(rows, CONTEXT);
+	return (
+		<ResultsTable>
+			<SortableResultsHead table={table} />
+			<ResultRows table={table} rowContext={CONTEXT} />
+		</ResultsTable>
+	);
+};
+
+/** A table under another table's head, as the below-cutoff group sits under a shortlist. */
+const UnderAnotherHead = ({ rows }: { rows: readonly RankedItem[] }) => {
+	const table = useResultsTable(rows, CONTEXT);
+	return (
+		<ResultsTable>
+			<ScreenReaderResultsHead table={table} />
+			<ResultRows table={table} rowContext={CONTEXT} />
+		</ResultsTable>
+	);
+};
+
+const bare = (rows: readonly RankedItem[], sorting?: SortingState) => {
+	if (sorting) storeSort(sorting);
+	return onPage(<Bare rows={rows} />);
+};
 
 describe('ResultsTable', () => {
 	it('shows rank, item, slot, DPS change and source for every row, in order', () => {
@@ -58,7 +103,7 @@ describe('ResultsTable', () => {
 	});
 
 	it('orders rows by the sort it is given and numbers them in the order shown', () => {
-		const { getByTestId } = render(bare(FOUR, { key: 'item', dir: 'asc' }));
+		const { getByTestId } = render(bare(FOUR, [{ id: 'item', desc: false }]));
 		const table = getByTestId('upgrades-results-table');
 
 		expect(namesOf(table)).toEqual(["Cataclysm's Edge", 'Cursed Vision of Sargeras', 'Torch of the Damned', "Vengeful Gladiator's Greatsword"]);
@@ -70,39 +115,41 @@ describe('ResultsTable', () => {
 		expect(namesOf(getByTestId('upgrades-results-table'))).toEqual(FOUR.map(row => row.name));
 	});
 
-	it('asks for a sort by the header clicked, and marks the sorted column for assistive tech', () => {
-		const onSort = vi.fn();
-		const { getByTestId, getAllByRole } = render(
-			<ResultsTable>
-				<SortableResultsHead sort={{ key: 'delta_dps', dir: 'desc' }} onSort={onSort} />
-				<ResultRows rows={FOUR} rowContext={CONTEXT} sort={{ key: 'delta_dps', dir: 'desc' }} />
-			</ResultsTable>,
-		);
-
-		fireEvent.click(getByTestId('upgrades-sort-source'));
-		fireEvent.click(getByTestId('upgrades-sort-item'));
-		expect(onSort.mock.calls).toEqual([['source'], ['item']]);
+	it('marks the sorted column for assistive tech, and stores the sort of the header clicked', () => {
+		storeSort([{ id: 'delta_dps', desc: true }]);
+		const { getByTestId, getAllByRole } = render(onPage(<Sortable rows={FOUR} />));
 
 		const ariaSorts = getAllByRole('columnheader').map(th => th.getAttribute('aria-sort'));
 		expect(ariaSorts).toEqual([null, 'none', 'none', 'descending', 'none', null, null]);
 		expect(getByTestId('upgrades-sort-delta_dps').textContent).toBe('DPS▼sorted descending');
+
+		fireEvent.click(getByTestId('upgrades-sort-source'));
+		expect(storedSort()).toEqual([{ id: 'source', desc: true }]);
+		fireEvent.click(getByTestId('upgrades-sort-item'));
+		expect(storedSort()).toEqual([{ id: 'item', desc: true }]);
+		fireEvent.click(getByTestId('upgrades-sort-item'));
+		expect(storedSort()).toEqual([{ id: 'item', desc: false }]);
+		expect(getByTestId('upgrades-sort-item').textContent).toBe('Item▲sorted ascending');
+		expect(namesOf(getByTestId('upgrades-results-table'))).toEqual([
+			"Cataclysm's Edge",
+			'Cursed Vision of Sargeras',
+			'Torch of the Damned',
+			"Vengeful Gladiator's Greatsword",
+		]);
 	});
 
-	it('has a plain head with no sort buttons while a run is in flight', () => {
-		const { getByTestId, queryByTestId } = render(
-			<ResultsTable data-provisional="true">
-				<PlainResultsHead />
-				<ResultRows rows={FOUR} rowContext={CONTEXT} />
-			</ResultsTable>,
-		);
+	it('has a plain head with no sort buttons while a run is in flight, and keeps the order given whatever the stored sort', () => {
+		storeSort([{ id: 'item', desc: false }]);
+		const { getByTestId, queryByTestId } = render(onPage(<ProvisionalResultsTable rows={FOUR} rowContext={CONTEXT} />));
 
 		expect(getByTestId('upgrades-results-table').dataset.provisional).toBe('true');
 		expect(queryByTestId('upgrades-sort-item')).toBeNull();
 		expect(within(getByTestId('upgrades-results-table')).getAllByRole('columnheader')).toHaveLength(7);
+		expect(namesOf(getByTestId('upgrades-results-table'))).toEqual(FOUR.map(row => row.name));
 	});
 
 	it('has no head when composed without one, and still sorts and numbers its rows', () => {
-		const { getByTestId } = render(bare(FOUR, { key: 'item', dir: 'desc' }));
+		const { getByTestId } = render(bare(FOUR, [{ id: 'item', desc: true }]));
 		const table = getByTestId('upgrades-results-table');
 
 		expect(table.querySelector('thead')).toBeNull();
@@ -113,16 +160,12 @@ describe('ResultsTable', () => {
 	it('gives a table with a visible head and one with a screen-reader head the same column widths, one per head cell', () => {
 		const widths = (table: HTMLElement) => [...table.querySelectorAll('col')].map(col => col.className);
 		const { getAllByTestId } = render(
-			<>
-				<ResultsTable>
-					<PlainResultsHead />
-					<ResultRows rows={FOUR} rowContext={CONTEXT} />
-				</ResultsTable>
-				<ResultsTable>
-					<ScreenReaderResultsHead />
-					<ResultRows rows={FOUR} rowContext={CONTEXT} />
-				</ResultsTable>
-			</>,
+			onPage(
+				<>
+					<ProvisionalResultsTable rows={FOUR} rowContext={CONTEXT} />
+					<UnderAnotherHead rows={FOUR} />
+				</>,
+			),
 		);
 		const [visible, screenReader] = getAllByTestId('upgrades-results-table') as [HTMLElement, HTMLElement];
 

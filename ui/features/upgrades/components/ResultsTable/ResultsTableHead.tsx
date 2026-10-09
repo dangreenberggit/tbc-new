@@ -3,9 +3,12 @@ import { Button } from '@ui-kit/Button';
 import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
-import type { ResultsSort, ResultsSortKey } from '../../model/results_sort';
+import type { ResultsTableModel } from '../../hooks/useResultsTable';
+import { type ResultsSortKey, SORT_COLUMN_IDS } from '../../model/results_columns';
 
-const SORT_COLUMNS: readonly ResultsSortKey[] = ['item', 'slot', 'delta_dps', 'source'];
+const SORT_COLUMNS: readonly ResultsSortKey[] = SORT_COLUMN_IDS;
+
+type SortDir = 'asc' | 'desc';
 
 type Column = 'rank' | ResultsSortKey | 'favorite' | 'batch';
 
@@ -44,12 +47,15 @@ const columnName = (column: Column) => i18n.t(`upgrades_tab.results.${column}`, 
 
 const columnClass = (key: ResultsSortKey) => clsx('py-1 pr-3', key === 'delta_dps' && 'text-right');
 
-const ariaSort = (sort: ResultsSort | undefined, key: ResultsSortKey) => {
-	if (sort?.key !== key) return 'none';
-	return sort.dir === 'asc' ? 'ascending' : 'descending';
+/** How the table sorts on `key`: its direction, or false when another column (or none) sorts it. */
+const sortDirOf = (table: ResultsTableModel, key: ResultsSortKey): SortDir | false => table.getColumn(key)?.getIsSorted() ?? false;
+
+const ariaSort = (dir: SortDir | false) => {
+	if (!dir) return 'none';
+	return dir === 'asc' ? 'ascending' : 'descending';
 };
 
-const SortIndicator = ({ dir }: { dir: ResultsSort['dir'] }) => (
+const SortIndicator = ({ dir }: { dir: SortDir }) => (
 	<>
 		<span aria-hidden="true">{dir === 'asc' ? '▲' : '▼'}</span>
 		<span className="sr-only">
@@ -98,11 +104,11 @@ const isSortColumn = (column: Column): column is ResultsSortKey => (SORT_COLUMNS
  * browser's default cell padding would leave a 2 px row), so the row takes no
  * height and the shared widths still place each column under the visible head.
  */
-export const ScreenReaderResultsHead = ({ sort }: { sort?: ResultsSort }) => (
+export const ScreenReaderResultsHead = ({ table }: { table: ResultsTableModel }) => (
 	<thead>
 		<tr>
 			{COLUMNS.map(column => (
-				<th key={column} className="p-0" aria-sort={isSortColumn(column) ? ariaSort(sort, column) : undefined}>
+				<th key={column} className="p-0" aria-sort={isSortColumn(column) ? ariaSort(sortDirOf(table, column)) : undefined}>
 					<span className="sr-only">{columnName(column)}</span>
 				</th>
 			))}
@@ -111,24 +117,26 @@ export const ScreenReaderResultsHead = ({ sort }: { sort?: ResultsSort }) => (
 );
 
 export interface SortableResultsHeadProps {
-	sort?: ResultsSort;
-	onSort: (key: ResultsSortKey) => void;
+	table: ResultsTableModel;
 }
 
 /** The head of a settled table: each data column sorts on a click, and says how it is sorted. */
-export const SortableResultsHead = ({ sort, onSort }: SortableResultsHeadProps) => (
+export const SortableResultsHead = ({ table }: SortableResultsHeadProps) => (
 	<HeadRow>
-		{SORT_COLUMNS.map(key => (
-			<th key={key} className={columnClass(key)} aria-sort={ariaSort(sort, key)}>
-				<Button
-					variant="unstyled"
-					className="text-inherit [font:inherit] focus-visible:focus-ring"
-					data-testid={`upgrades-sort-${key}`}
-					onClick={() => onSort(key)}>
-					{columnName(key)}
-					{sort?.key === key && <SortIndicator dir={sort.dir} />}
-				</Button>
-			</th>
-		))}
+		{SORT_COLUMNS.map(key => {
+			const dir = sortDirOf(table, key);
+			return (
+				<th key={key} className={columnClass(key)} aria-sort={ariaSort(dir)}>
+					<Button
+						variant="unstyled"
+						className="text-inherit [font:inherit] focus-visible:focus-ring"
+						data-testid={`upgrades-sort-${key}`}
+						onClick={() => table.getColumn(key)?.toggleSorting()}>
+						{columnName(key)}
+						{dir && <SortIndicator dir={dir} />}
+					</Button>
+				</th>
+			);
+		})}
 	</HeadRow>
 );

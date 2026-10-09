@@ -4,7 +4,7 @@ import { UIItem } from '@generated/proto/ui';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { fakeHost } from '@sim/testing';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RankedItem, Ranking } from '../../model/engine/rank';
 import type { RunState } from '../../model/run_reducer';
@@ -16,10 +16,17 @@ vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span />, BatchToggle: (
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
 
 const { UpgradesResults } = await import('./UpgradesResults');
+const { upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
+const { setSort } = await import('../../model/upgrades_store');
 
 loadEnglishBundles({ character: true });
 
-const host = fakeHost({ sim: { db: { getItemById: (id: number) => UIItem.create({ id, name: 'Item', quality: ItemQuality.ItemQualityEpic }) } } });
+const host = fakeHost({
+	player: { getSpec: () => undefined },
+	sim: { db: { getItemById: (id: number) => UIItem.create({ id, name: 'Item', quality: ItemQuality.ItemQualityEpic }) } },
+});
+// The sort lives in the page's store, which every test here shares; each starts from the engine order.
+beforeEach(() => setSort(upgradesStoreFor(host), []));
 const show = (run: RunState, selectedSets: readonly SetOption[] = []) =>
 	render(
 		<SimHostProvider host={host}>

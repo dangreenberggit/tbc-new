@@ -5,13 +5,20 @@
  * here call them and write the result.
  */
 
+import type { SortingState } from '@tanstack/react-table';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 
 import { IDLE_RUN, type RunAction, runReducer, type RunState } from './run_reducer';
 import { initialSettings, type SettingsAction, settingsReducer, type SettingsState } from './settings_reducer';
 
-export type UpgradesState = { run: RunState; settings: SettingsState };
+/**
+ * `sort` is the one column sort every results table and the export follow
+ * (ticket 280), in TanStack Table's shape so each table reads it as its
+ * controlled `sorting` (ticket 565). Empty is the engine's order. It lasts as
+ * long as the page's store and is never saved.
+ */
+export type UpgradesState = { run: RunState; settings: SettingsState; sort: SortingState };
 
 /** The settings a new store starts with: the dev link's iterations and cap, or the defaults. */
 export type SettingsSeed = { iterations: number; candidateCap?: number };
@@ -22,7 +29,7 @@ export type SettingsDefaults = { selectedSetKeys: readonly string[]; validSource
 export type UpgradesStore = ReturnType<typeof createUpgradesStore>;
 
 export function createUpgradesStore(seed: SettingsSeed) {
-	return createStore<UpgradesState>()(subscribeWithSelector(() => ({ run: IDLE_RUN, settings: initialSettings(seed) })));
+	return createStore<UpgradesState>()(subscribeWithSelector((): UpgradesState => ({ run: IDLE_RUN, settings: initialSettings(seed), sort: [] })));
 }
 
 /** A reducer that returns the state it was given writes nothing, so a superseded run's late row notifies nobody. */
@@ -36,6 +43,11 @@ export function dispatchSettings(store: UpgradesStore, action: SettingsAction): 
 	const { settings } = store.getState();
 	const next = settingsReducer(settings, action);
 	if (next !== settings) store.setState({ settings: next });
+}
+
+/** The sort a table's head chose; the same sort again notifies nobody. */
+export function setSort(store: UpgradesStore, next: SortingState): void {
+	if (next !== store.getState().sort) store.setState({ sort: next });
 }
 
 export const applyDefaultsAction = (scope: string, defaults: SettingsDefaults): SettingsAction => ({
@@ -62,6 +74,7 @@ export function settingsActionIn(store: UpgradesStore, scope: string | undefined
 }
 
 export const selectRun = (state: UpgradesState): RunState => state.run;
+export const selectSort = (state: UpgradesState): SortingState => state.sort;
 export const selectRunStatus = (state: UpgradesState): RunState['status'] => state.run.status;
 
 /** The signature the result on screen was measured on; none while a run is in flight, which is never stale (ticket 560). */

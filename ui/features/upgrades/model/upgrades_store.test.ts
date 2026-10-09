@@ -9,6 +9,8 @@ import {
 	dispatchSettings,
 	selectRunStatus,
 	selectSettledSignature,
+	selectSort,
+	setSort,
 	settingsActionIn,
 } from './upgrades_store';
 
@@ -113,5 +115,37 @@ describe('run selectors', () => {
 		const partial: PartialRanking & { durationMs: number } = { ...RANKING_FIXTURE, items: [rowA!], complete: false, durationMs: 9 };
 		dispatchRun(store, { type: 'stopped', runId: 2, result: partial });
 		expect(selectSettledSignature(store.getState())).toBe('sig-at-click');
+	});
+});
+
+describe('setSort', () => {
+	it('starts with no sort, the engine order', () => {
+		expect(selectSort(createUpgradesStore(SEED).getState())).toEqual([]);
+	});
+
+	it('stores the sort it is given', () => {
+		const store = createUpgradesStore(SEED);
+		setSort(store, [{ id: 'item', desc: true }]);
+		setSort(store, [{ id: 'item', desc: false }]);
+		expect(selectSort(store.getState())).toEqual([{ id: 'item', desc: false }]);
+	});
+
+	it('tells every reader of the store, so a second table follows the first', () => {
+		const store = createUpgradesStore(SEED);
+		const first = vi.fn();
+		const second = vi.fn();
+		store.subscribe(selectSort, first);
+		store.subscribe(selectSort, second);
+		setSort(store, [{ id: 'delta_dps', desc: true }]);
+		expect(first).toHaveBeenCalledWith([{ id: 'delta_dps', desc: true }], []);
+		expect(second).toHaveBeenCalledWith([{ id: 'delta_dps', desc: true }], []);
+	});
+
+	it('notifies nobody when given the sort it already holds', () => {
+		const store = createUpgradesStore(SEED);
+		const listener = vi.fn();
+		store.subscribe(listener);
+		setSort(store, selectSort(store.getState()));
+		expect(listener).not.toHaveBeenCalled();
 	});
 });

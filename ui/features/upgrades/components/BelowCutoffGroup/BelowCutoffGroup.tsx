@@ -2,16 +2,15 @@ import i18n from '@i18n/config';
 import { Accordion, AccordionItem } from '@ui-kit/Accordion';
 import { type ReactNode, useState } from 'react';
 
-import type { RankedItem } from '../../model/engine/rank';
-import type { ResultsSort } from '../../model/results_sort';
+import type { ResultsTableModel } from '../../hooks/useResultsTable';
 import { ResultRows, ResultsTable, type RowContext } from '../ResultsTable';
 
 export interface BelowCutoffGroupProps {
 	/** The table's head: the caller knows whether another head above already names the columns on screen. */
 	head: ReactNode;
-	rows: readonly RankedItem[];
+	/** The group's table (`useResultsTable` over the rows below the cutoff); the caller builds it, because the head reads it too. */
+	table: ResultsTableModel;
 	rowContext: RowContext;
-	sort?: ResultsSort;
 }
 
 const GROUP = 'below-cutoff';
@@ -22,7 +21,7 @@ const GROUP = 'below-cutoff';
  * mounted until then. The shared sort orders it too, so the order does not
  * stop at the fold (ticket 280).
  */
-export const BelowCutoffGroup = ({ head, rows, rowContext, sort }: BelowCutoffGroupProps) => {
+export const BelowCutoffGroup = ({ head, table, rowContext }: BelowCutoffGroupProps) => {
 	const [open, setOpen] = useState<string[]>([]);
 
 	return (
@@ -30,10 +29,10 @@ export const BelowCutoffGroup = ({ head, rows, rowContext, sort }: BelowCutoffGr
 			<AccordionItem
 				value={GROUP}
 				testId="upgrades-below-cutoff"
-				title={i18n.t('upgrades_tab.results.below_cutoff_group', { ns: 'upgrades', count: rows.length })}>
+				title={i18n.t('upgrades_tab.results.below_cutoff_group', { ns: 'upgrades', count: table.options.data.length })}>
 				<ResultsTable>
 					{head}
-					<ResultRows rows={rows} rowContext={rowContext} sort={sort} />
+					<ResultRows table={table} rowContext={rowContext} />
 				</ResultsTable>
 			</AccordionItem>
 		</Accordion>

@@ -1,7 +1,9 @@
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
+import { SimHostProvider } from '@sim/context/SimHostContext';
+import type { IndividualSimHost } from '@sim/sim_host';
 import { fakeHost } from '@sim/testing';
 import { fireEvent, render, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { fixtureRow } from '../../testing/ranking_fixture';
 
@@ -10,6 +12,10 @@ vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favor
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
 
 const { BelowCutoffGroup } = await import('./BelowCutoffGroup');
+const { useResultsTable } = await import('../../hooks/useResultsTable');
+const { upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
+const { setSort } = await import('../../model/upgrades_store');
+type RankedItem = import('../../model/engine/rank').RankedItem;
 
 loadEnglishBundles({ character: true });
 
@@ -22,23 +28,41 @@ const HEAD = (
 	</thead>
 );
 
+// A page per test, so a sort one test stores does not reach the next.
+let host: IndividualSimHost<any>;
+beforeEach(() => {
+	host = fakeHost({ player: { getSpec: () => undefined } });
+});
+
+/** The group over `rows` with its own table, as `ResultsPane` builds it. */
+const Group = ({ rows }: { rows: readonly RankedItem[] }) => {
+	const table = useResultsTable(rows, CONTEXT);
+	return <BelowCutoffGroup head={HEAD} table={table} rowContext={CONTEXT} />;
+};
+const group = () =>
+	render(
+		<SimHostProvider host={host}>
+			<Group rows={ROWS} />
+		</SimHostProvider>,
+	);
+
 describe('BelowCutoffGroup', () => {
 	it('starts collapsed, with its row count, and renders no table until opened', () => {
-		const { getByTestId, queryByTestId } = render(<BelowCutoffGroup head={HEAD} rows={ROWS} rowContext={CONTEXT} />);
+		const { getByTestId, queryByTestId } = group();
 
 		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('2 item(s) below the cutoff');
 		expect(queryByTestId('upgrades-results-table')).toBeNull();
 	});
 
 	it('renders the head it is given above its rows', () => {
-		const { getByTestId } = render(<BelowCutoffGroup head={HEAD} rows={ROWS} rowContext={CONTEXT} />);
+		const { getByTestId } = group();
 		fireEvent.click(getByTestId('upgrades-below-cutoff-trigger'));
 
 		expect(within(getByTestId('upgrades-results-table')).getByTestId('head-stub')).not.toBeNull();
 	});
 
 	it('shows its rows, numbered from 1, when opened', () => {
-		const { getByTestId } = render(<BelowCutoffGroup head={HEAD} rows={ROWS} rowContext={CONTEXT} />);
+		const { getByTestId } = group();
 		fireEvent.click(getByTestId('upgrades-below-cutoff-trigger'));
 
 		const table = getByTestId('upgrades-results-table');
@@ -50,7 +74,8 @@ describe('BelowCutoffGroup', () => {
 	});
 
 	it('orders its rows by the shared sort', () => {
-		const { getByTestId } = render(<BelowCutoffGroup head={HEAD} rows={ROWS} rowContext={CONTEXT} sort={{ key: 'delta_dps', dir: 'desc' }} />);
+		setSort(upgradesStoreFor(host), [{ id: 'delta_dps', desc: true }]);
+		const { getByTestId } = group();
 		fireEvent.click(getByTestId('upgrades-below-cutoff-trigger'));
 
 		const ids = within(getByTestId('upgrades-results-table'))

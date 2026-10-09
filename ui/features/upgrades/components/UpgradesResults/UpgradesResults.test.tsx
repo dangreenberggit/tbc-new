@@ -4,7 +4,7 @@ import { UIItem } from '@generated/proto/ui';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { fakeHost } from '@sim/testing';
 import { render, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RankedItem } from '../../model/engine/rank';
 import type { RunState } from '../../model/run_reducer';
@@ -21,16 +21,21 @@ vi.mock('../../model/engine/items', async importOriginal => ({
 }));
 
 const { UpgradesResults } = await import('./UpgradesResults');
+const { upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
+const { setSort } = await import('../../model/upgrades_store');
 
 loadEnglishBundles({ character: true });
 
 const host = fakeHost({
+	player: { getSpec: () => undefined },
 	sim: {
 		db: {
 			getItemById: (id: number) => (id === 32332 ? UIItem.create({ id, name: 'Torch of the Damned', quality: ItemQuality.ItemQualityEpic }) : undefined),
 		},
 	},
 });
+// The sort lives in the page's store, which every test here shares; each starts from the engine order.
+beforeEach(() => setSort(upgradesStoreFor(host), []));
 const show = (run: RunState) =>
 	render(
 		<SimHostProvider host={host}>

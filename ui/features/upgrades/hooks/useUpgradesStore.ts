@@ -10,7 +10,7 @@ import { DEFAULT_ITERATIONS } from '../model/run_reducer';
 import { createUpgradesStore, type SettingsSeed, type UpgradesState, type UpgradesStore } from '../model/upgrades_store';
 import { DEV_FLAGS } from '../utils/dev_flags';
 
-export { selectRun, selectRunStatus, selectSettledSignature } from '../model/upgrades_store';
+export { selectRun, selectRunStatus, selectSettledSignature, selectSort } from '../model/upgrades_store';
 
 /** The dev link's iterations and cap, read once per page load. One constant, so the store starts the same whichever reader creates it. */
 const SETTINGS_SEED: SettingsSeed = { iterations: DEV_FLAGS.iterations ?? DEFAULT_ITERATIONS, candidateCap: DEV_FLAGS.cap };

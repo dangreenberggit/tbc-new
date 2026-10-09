@@ -1,9 +1,7 @@
 import type { ComponentPropsWithoutRef } from 'react';
 
+import { type ResultsTableModel, useResultsTable } from '../../hooks/useResultsTable';
 import type { RankedItem } from '../../model/engine/rank';
-import { type ResultsSort, sortRows } from '../../model/results_sort';
-import { rowKey } from '../../model/results_view';
-import { SORT_LABELS } from '../../utils/format';
 import { ResultRow, type RowContext } from './ResultRow';
 import { PlainResultsHead, RESULTS_COLUMNS } from './ResultsTableHead';
 
@@ -33,25 +31,32 @@ export const ResultsTable = ({ children, ...attributes }: ResultsTableProps) => 
 );
 
 export interface ResultRowsProps {
-	rows: readonly RankedItem[];
+	/** The table whose rows these are (`useResultsTable`), already in the order it sorts them. */
+	table: ResultsTableModel;
 	rowContext: RowContext;
-	/** Absent: the order given. */
-	sort?: ResultsSort;
 }
 
-/** The table of a run in flight: the rows so far, best first, under a head with nothing to click. */
-export const ProvisionalResultsTable = ({ rows, rowContext }: Omit<ResultRowsProps, 'sort'>) => (
-	<ResultsTable data-provisional="true">
-		<PlainResultsHead />
-		<ResultRows rows={rows} rowContext={rowContext} />
-	</ResultsTable>
-);
+export interface ProvisionalResultsTableProps {
+	rows: readonly RankedItem[];
+	rowContext: RowContext;
+}
 
-/** A table's rows in `sort` order, numbered from 1 in the order shown (owner ruling, ticket 287). */
-export const ResultRows = ({ rows, rowContext, sort }: ResultRowsProps) => (
+/** The table of a run in flight: the rows so far, best first, under a head with nothing to click, so the stored sort does not apply. */
+export const ProvisionalResultsTable = ({ rows, rowContext }: ProvisionalResultsTableProps) => {
+	const table = useResultsTable(rows, rowContext, { sortable: false });
+	return (
+		<ResultsTable data-provisional="true">
+			<PlainResultsHead />
+			<ResultRows table={table} rowContext={rowContext} />
+		</ResultsTable>
+	);
+};
+
+/** A table's rows in its sort order, numbered from 1 in the order shown (owner ruling, ticket 287). Each row is keyed by `rowKey`, the table's row id. */
+export const ResultRows = ({ table, rowContext }: ResultRowsProps) => (
 	<tbody>
-		{sortRows(rows, sort, SORT_LABELS, rowContext.dpsKey).map((row, index) => (
-			<ResultRow key={rowKey(row)} row={row} position={index + 1} context={rowContext} />
+		{table.getRowModel().rows.map((row, index) => (
+			<ResultRow key={row.id} row={row.original} position={index + 1} context={rowContext} />
 		))}
 	</tbody>
 );

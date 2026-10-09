@@ -1,12 +1,12 @@
 import { Tabs } from '@base-ui/react/tabs';
 import i18n from '@i18n/config';
 import { TabNav, type TabNavTab, TabPanel, TabPanels } from '@ui-kit/TabNav';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
+import { useResultsTable } from '../../hooks/useResultsTable';
 import type { ViewResult } from '../../model/engine/view';
-import { nextSort, type ResultsSort, type ResultsSortKey, sortRows } from '../../model/results_sort';
 import { paneRows, type ResultsTabId, SHOPPING_LIST_TAB, slotTabs } from '../../model/results_view';
-import { simSlotLabel, SORT_LABELS } from '../../utils/format';
+import { simSlotLabel } from '../../utils/format';
 import { ExportPanel } from '../ExportPanel';
 import { ResultsPane } from '../ResultsPane';
 import type { RowContext } from '../ResultsTable';
@@ -21,16 +21,22 @@ const paneId = (tab: ResultsTabId) => `upgrades-pane-${tab}`;
 
 /**
  * A settled ranking as sub-tabs: the Upgrades list, then one pane per slot
- * with a row, then the export. The open tab and the one column sort shared by
- * every pane and the export (ticket 280) live here; neither is stored.
+ * with a row, then the export. The open tab lives here and is not stored; the
+ * one column sort shared by every pane and the export (ticket 280) lives in the
+ * tab store (ticket 565), which every results table reads.
  */
 type Pane = { id: ResultsTabId; label: string; badge?: string; className?: string };
 
 export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 	// A string, because the tab strip reports any tab's value; `shownTab` checks it against this view's panes.
 	const [activeTab, setActiveTab] = useState<string>(SHOPPING_LIST_TAB);
-	const [sort, setSort] = useState<ResultsSort>();
-	const onSort = (key: ResultsSortKey) => setSort(current => nextSort(current, key));
+	const exportTable = useResultsTable(view.shortlist, rowContext);
+	// Memoised on the view: `paneRows` filters new arrays on every call, and a new array rebuilds that pane's
+	// tables, so without it every sort click would rebuild every pane's tables, not just re-sort them.
+	const rowsByPane = useMemo(() => {
+		const ids: ResultsTabId[] = [SHOPPING_LIST_TAB, ...slotTabs(view).map(slot => slot.id)];
+		return new Map(ids.map(id => [id, paneRows(view, id)] as const));
+	}, [view]);
 
 	const panes: Pane[] = [
 		{ id: SHOPPING_LIST_TAB, label: i18n.t('upgrades_tab.subtabs.shopping_list', { ns: 'upgrades' }) },
@@ -52,16 +58,16 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 				<TabNav tabs={tabs} testId="upgrades-tab-tabs" />
 				<TabPanels>
 					{panes.map(pane => {
-						const { shortlist, belowCutoff } = paneRows(view, pane.id);
+						const { shortlist, belowCutoff } = rowsByPane.get(pane.id) ?? paneRows(view, pane.id);
 						return (
 							<TabPanel key={pane.id} value={pane.id} id={paneId(pane.id)}>
-								<ResultsPane shortlist={shortlist} belowCutoff={belowCutoff} rowContext={rowContext} sort={sort} onSort={onSort} />
+								<ResultsPane shortlist={shortlist} belowCutoff={belowCutoff} rowContext={rowContext} />
 							</TabPanel>
 						);
 					})}
 				</TabPanels>
 			</Tabs.Root>
-			<ExportPanel rows={sortRows(view.shortlist, sort, SORT_LABELS, rowContext.dpsKey)} />
+			<ExportPanel rows={exportTable.getRowModel().rows.map(row => row.original)} />
 		</>
 	);
 };

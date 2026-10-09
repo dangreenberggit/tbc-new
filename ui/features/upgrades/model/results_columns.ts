@@ -1,0 +1,40 @@
+/**
+ * What the results tables sort on (tickets 280, 565): the sortable columns and
+ * each one's value for a row. The table itself is TanStack Table's, built in
+ * `hooks/useResultsTable.ts` with its one sort kept in the tab store, so every
+ * pane, the below-cutoff group and the export follow the same click. A display
+ * concern only: it never re-runs the view.
+ */
+
+import type { RankedItem } from './engine/rank';
+import type { DpsSortKey, SortLabels } from './results_sort';
+
+/** The sortable columns in head order; each id is also the `upgrades-sort-<id>` test id the gates click. */
+export const SORT_COLUMN_IDS = ['item', 'slot', 'delta_dps', 'source'] as const;
+
+export type ResultsSortKey = (typeof SORT_COLUMN_IDS)[number];
+
+/** A row's value in a sortable column: names, slots and sources sort on their lower-cased text, ΔDPS on `dpsKey` when the view gives one. */
+export const sortValue = (key: ResultsSortKey, row: RankedItem, labels: SortLabels<RankedItem>, dpsKey: DpsSortKey | undefined): string | number => {
+	switch (key) {
+		case 'item':
+			return row.name.toLowerCase();
+		case 'slot':
+			return labels.slot(row).toLowerCase();
+		case 'delta_dps':
+			return dpsKey ? dpsKey(row) : row.deltaDps;
+		case 'source':
+			return labels.source(row).toLowerCase();
+	}
+};
+
+/**
+ * Plain `<`, 0 on a tie. The table breaks a tie on the row's index, so rows a
+ * sort does not tell apart keep the engine's order in both directions.
+ * TanStack's built-in text sort is not used because it splits on digits,
+ * which the old sort did not.
+ */
+export const compareSortValues = (a: string | number, b: string | number): number => {
+	if (a === b) return 0;
+	return a < b ? -1 : 1;
+};

@@ -1,9 +1,11 @@
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
+import { SimHostProvider } from '@sim/context/SimHostContext';
+import type { IndividualSimHost } from '@sim/sim_host';
 import { fakeHost } from '@sim/testing';
 import { fireEvent, render, within } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { applyView } from '../../model/engine/view';
+import { applyView, type ViewResult } from '../../model/engine/view';
 import { stoppedView } from '../../model/results_view';
 import { RANKING_FIXTURE, STOPPED_FIXTURE } from '../../testing/ranking_fixture';
 
@@ -17,6 +19,17 @@ loadEnglishBundles({ character: true });
 
 const CONTEXT = { itemOf: () => undefined, sim: fakeHost().sim, tip: {}, tagsOf: () => [] };
 const VIEW = applyView(RANKING_FIXTURE);
+
+// A page per test, so a sort one test stores does not reach the next.
+let host: IndividualSimHost<any>;
+beforeEach(() => {
+	host = fakeHost({ player: { getSpec: () => undefined } });
+});
+const panes = (view: ViewResult) => (
+	<SimHostProvider host={host}>
+		<ResultsPanes view={view} rowContext={CONTEXT} />
+	</SimHostProvider>
+);
 
 const tabStrip = (container: HTMLElement) => within(within(container).getByTestId('upgrades-tab-tabs'));
 const tabLabels = (container: HTMLElement) =>
@@ -36,12 +49,12 @@ const namesIn = (pane: HTMLElement) =>
 
 describe('ResultsPanes', () => {
 	it('offers the Upgrades list and one tab per slot with a row, in slot order, counting each slot’s shortlist', () => {
-		const { container } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
+		const { container } = render(panes(VIEW));
 		expect(tabLabels(container)).toEqual(['Upgrades', 'Head (2)', 'Chest (2)', 'Legs (1)', 'Trinket 1 (1)', 'Main Hand (4)']);
 	});
 
 	it('links each tab to its own pane', () => {
-		const { container } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
+		const { container } = render(panes(VIEW));
 		for (const tab of tabStrip(container).getAllByRole('tab')) {
 			const paneId = tab.getAttribute('aria-controls');
 			expect(paneId).toMatch(/^upgrades-pane-/);
@@ -50,7 +63,7 @@ describe('ResultsPanes', () => {
 	});
 
 	it('opens on the Upgrades list and shows a slot’s rows when its tab is clicked', () => {
-		const { container } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
+		const { container } = render(panes(VIEW));
 		expect(namesIn(activePane(container))).toHaveLength(VIEW.shortlist.length);
 
 		clickTab(container, 'Head');
@@ -58,7 +71,7 @@ describe('ResultsPanes', () => {
 	});
 
 	it('applies a sort chosen in one pane to every pane', () => {
-		const { container } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
+		const { container } = render(panes(VIEW));
 		fireEvent.click(within(activePane(container)).getByTestId('upgrades-sort-item'));
 		fireEvent.click(within(activePane(container)).getByTestId('upgrades-sort-item'));
 
@@ -72,7 +85,7 @@ describe('ResultsPanes', () => {
 	});
 
 	it('exports the Upgrades list in the order the shared sort shows it, whichever pane is open', () => {
-		const { container } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
+		const { container } = render(panes(VIEW));
 		const exportedIds = () => {
 			const payload: { items: Array<{ id: number }> } = JSON.parse(
 				container.querySelector<HTMLTextAreaElement>('[data-testid="upgrades-export-area"]')?.value ?? '',
@@ -95,12 +108,12 @@ describe('ResultsPanes', () => {
 	});
 
 	it('falls back to the Upgrades list when the open slot has no rows in a new result', () => {
-		const { container, rerender } = render(<ResultsPanes view={VIEW} rowContext={CONTEXT} />);
+		const { container, rerender } = render(panes(VIEW));
 		clickTab(container, 'Legs');
 		expect(namesIn(activePane(container))).toEqual(['Lightbringer Greaves']);
 
 		const withoutLegs = stoppedView({ ...STOPPED_FIXTURE, items: STOPPED_FIXTURE.items.filter(row => row.slot !== 'legs') });
-		rerender(<ResultsPanes view={withoutLegs} rowContext={CONTEXT} />);
+		rerender(panes(withoutLegs));
 		expect(tabLabels(container)).not.toContain('Legs (1)');
 		expect(namesIn(activePane(container))).toHaveLength(withoutLegs.shortlist.length);
 	});
