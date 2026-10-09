@@ -7,6 +7,9 @@
 		"tab_badge": {
 			"type": "string"
 		},
+		"load_failed": {
+			"type": "string"
+		},
 		"upgrades_tab": {
 			"type": "object",
 			"properties": {
@@ -543,5 +546,5 @@
 		}
 	},
 	"additionalProperties": false,
-	"required": ["tab_title", "tab_badge", "upgrades_tab"]
+	"required": ["tab_title", "tab_badge", "load_failed", "upgrades_tab"]
 }

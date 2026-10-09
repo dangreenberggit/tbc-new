@@ -1,6 +1,7 @@
 {
 	"tab_title": "Upgrades",
 	"tab_badge": "New",
+	"load_failed": "The Upgrades tab could not load. Reload the page to try again.",
 	"upgrades_tab": {
 		"subtabs": {
 			"shopping_list": "Upgrades"
