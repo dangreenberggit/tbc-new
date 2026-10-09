@@ -1,17 +1,12 @@
-import i18n from '@i18n/config';
+import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import englishTranslations from '../../../../../assets/locales/en/translation.json';
-import upgradesTranslations from '../../../../../assets/locales/en/upgrades.json';
 import { createUpgradesStore, dispatchRun, dispatchSettings } from '../../model/upgrades_store';
 import { fixtureRow } from '../../testing/ranking_fixture';
 import { CandidateCapPicker } from './CandidateCapPicker';
 
-beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations, true, true));
-beforeAll(() => i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true));
-afterAll(() => i18n.removeResourceBundle('en', 'translation'));
-afterAll(() => i18n.removeResourceBundle('en', 'upgrades'));
+loadEnglishBundles();
 
 const input = () => within(screen.getByTestId('upgrades-candidates-picker')).getByRole('textbox') as HTMLInputElement;
 

@@ -1,16 +1,11 @@
-import i18n from '@i18n/config';
+import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { render, screen, within } from '@testing-library/react';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import englishTranslations from '../../../../../assets/locales/en/translation.json';
-import upgradesTranslations from '../../../../../assets/locales/en/upgrades.json';
 import { RANKING_FIXTURE } from '../../testing/ranking_fixture';
 import { SubstitutionsList } from './SubstitutionsList';
 
-beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations, true, true));
-beforeAll(() => i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true));
-afterAll(() => i18n.removeResourceBundle('en', 'translation'));
-afterAll(() => i18n.removeResourceBundle('en', 'upgrades'));
+loadEnglishBundles();
 
 describe('SubstitutionsList', () => {
 	it('lists each dropped candidate with the first line of the reason the engine gave', () => {

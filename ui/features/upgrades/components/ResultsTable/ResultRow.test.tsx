@@ -1,14 +1,11 @@
+import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { ItemQuality } from '@generated/proto/common';
 import { DungeonDifficulty, UIItem } from '@generated/proto/ui';
-import i18n from '@i18n/config';
 import { ActionId } from '@sim/proto/action_id';
 import { fakeHost } from '@sim/testing';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import englishCharacter from '../../../../../assets/locales/en/character.json';
-import englishTranslations from '../../../../../assets/locales/en/translation.json';
-import upgradesTranslations from '../../../../../assets/locales/en/upgrades.json';
 import type { RankedItem } from '../../model/engine/rank';
 import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
 
@@ -26,16 +23,7 @@ vi.mock('../../model/engine/items', async importOriginal => ({
 const { ResultRow } = await import('./ResultRow');
 type RowContext = import('./ResultRow').RowContext;
 
-beforeAll(() => {
-	i18n.addResourceBundle('en', 'translation', englishTranslations, true, true);
-	i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true);
-	i18n.addResourceBundle('en', 'character', englishCharacter, true, true);
-});
-afterAll(() => {
-	i18n.removeResourceBundle('en', 'translation');
-	i18n.removeResourceBundle('en', 'upgrades');
-	i18n.removeResourceBundle('en', 'character');
-});
+loadEnglishBundles({ character: true });
 
 // Items with no source, so the Source cell shows the engine's label.
 const ITEMS: Record<number, UIItem> = {

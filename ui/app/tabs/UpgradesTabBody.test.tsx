@@ -3,20 +3,16 @@ import type { FixtureAutoloadOptions } from '@features/upgrades/hooks/useFixture
 import type { PoolEntry } from '@features/upgrades/model/engine/pool';
 import type { RunDeps } from '@features/upgrades/model/run';
 import type { RunOutcome, RunSettings } from '@features/upgrades/model/run_reducer';
+import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { fixtureRow, RANKING_FIXTURE } from '@features/upgrades/testing/ranking_fixture';
 import { Raid as RaidProto } from '@generated/proto/api';
 import { Encounter as EncounterProto, EquipmentSpec, Spec } from '@generated/proto/common';
-import i18n from '@i18n/config';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { createSimStore, patchSlice } from '@sim/state/sim_store';
 import { fakeHost } from '@sim/testing';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { type ReactNode, StrictMode } from 'react';
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-
-import englishCharacter from '../../../assets/locales/en/character.json';
-import englishTranslations from '../../../assets/locales/en/translation.json';
-import upgradesTranslations from '../../../assets/locales/en/upgrades.json';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 /** The live run, replaced by one the test settles by hand; the engine is never loaded. */
 const runs: Array<{ settings: RunSettings; deps: RunDeps; settle: (outcome: RunOutcome) => void }> = [];
@@ -88,16 +84,7 @@ const { UpgradesTabBodyInner } = await import('@features/upgrades/components/Upg
 const { useUpgradesSettings } = await import('@features/upgrades/hooks/useUpgradesSettings');
 const { selectRunStatus, useUpgradesStore } = await import('@features/upgrades/hooks/useUpgradesStore');
 
-beforeAll(() => {
-	i18n.addResourceBundle('en', 'translation', englishTranslations, true, true);
-	i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true);
-	i18n.addResourceBundle('en', 'character', englishCharacter, true, true);
-});
-afterAll(() => {
-	i18n.removeResourceBundle('en', 'translation');
-	i18n.removeResourceBundle('en', 'upgrades');
-	i18n.removeResourceBundle('en', 'character');
-});
+loadEnglishBundles({ character: true });
 
 /** The worn gear the key reads; a test changes it to edit the page. */
 let worn = 'P2 preset';

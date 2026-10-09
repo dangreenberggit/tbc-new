@@ -1,9 +1,7 @@
-import i18n from '@i18n/config';
+import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { fireEvent, render, screen } from '@testing-library/react';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import englishTranslations from '../../../../../assets/locales/en/translation.json';
-import upgradesTranslations from '../../../../../assets/locales/en/upgrades.json';
 import type { UpgradesSettings } from '../../hooks/useUpgradesSettings';
 import { createUpgradesStore } from '../../model/upgrades_store';
 
@@ -12,10 +10,7 @@ vi.mock('../PhaseSelector', () => ({ PhaseSelector: () => null }));
 
 const { RunSettingsPanel } = await import('./RunSettingsPanel');
 
-beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations, true, true));
-beforeAll(() => i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true));
-afterAll(() => i18n.removeResourceBundle('en', 'translation'));
-afterAll(() => i18n.removeResourceBundle('en', 'upgrades'));
+loadEnglishBundles();
 
 const settingsWith = (toggleSource: UpgradesSettings['toggleSource']): UpgradesSettings => ({
 	sources: { raids: [{ key: 'Black Temple', count: 3 }], other: [] },

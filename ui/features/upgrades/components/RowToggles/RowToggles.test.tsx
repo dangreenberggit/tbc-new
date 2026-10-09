@@ -1,17 +1,15 @@
 import { addBulkItems, hasBulkItem, seedBulkPickerGroups } from '@features/bulk/model/items';
+import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { ItemSlot, ItemSpec } from '@generated/proto/common';
 import { DatabaseFilters } from '@generated/proto/ui';
-import i18n from '@i18n/config';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { seedBulkSettings } from '@sim/settings/bulk_settings';
 import { createSimStore, PLAYER_FIELDS, seedKeyed, zeroVersions } from '@sim/state/sim_store';
 import { fakeHost } from '@sim/testing';
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import type { ReactNode } from 'react';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import englishTranslations from '../../../../../assets/locales/en/translation.json';
-import upgradesTranslations from '../../../../../assets/locales/en/upgrades.json';
 import { BatchToggle, FavoriteToggle } from '.';
 
 // Every item fits one ring slot, so the batch has one picker group to file it in.
@@ -25,10 +23,7 @@ vi.mock('@sim/bulk/utils', async () => ({
 	getBulkPlayerCanDualWield: () => false,
 }));
 
-beforeAll(() => i18n.addResourceBundle('en', 'translation', englishTranslations, true, true));
-beforeAll(() => i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true));
-afterAll(() => i18n.removeResourceBundle('en', 'translation'));
-afterAll(() => i18n.removeResourceBundle('en', 'upgrades'));
+loadEnglishBundles();
 
 const STORE_KEY = 4;
 const ITEM_ID = 32332;

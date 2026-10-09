@@ -1,9 +1,7 @@
+import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import i18n from '@i18n/config';
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import englishCharacter from '../../../../assets/locales/en/character.json';
-import englishTranslations from '../../../../assets/locales/en/translation.json';
-import upgradesTranslations from '../../../../assets/locales/en/upgrades.json';
 import { RankError } from '../model/engine/rank';
 import type { RunProgressView } from '../model/run_progress';
 import {
@@ -24,16 +22,7 @@ import {
 	substitutionText,
 } from './format';
 
-beforeAll(() => {
-	i18n.addResourceBundle('en', 'translation', englishTranslations, true, true);
-	i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true);
-	i18n.addResourceBundle('en', 'character', englishCharacter, true, true);
-});
-afterAll(() => {
-	i18n.removeResourceBundle('en', 'translation');
-	i18n.removeResourceBundle('en', 'upgrades');
-	i18n.removeResourceBundle('en', 'character');
-});
+loadEnglishBundles({ character: true });
 
 const view = (overrides: Partial<RunProgressView>): RunProgressView => ({
 	phase: 'preparing',

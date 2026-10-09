@@ -1,11 +1,8 @@
-import i18n from '@i18n/config';
+import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { fakeHost } from '@sim/testing';
 import { fireEvent, render, within } from '@testing-library/react';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import englishCharacter from '../../../../../assets/locales/en/character.json';
-import englishTranslations from '../../../../../assets/locales/en/translation.json';
-import upgradesTranslations from '../../../../../assets/locales/en/upgrades.json';
 import { fixtureRow } from '../../testing/ranking_fixture';
 
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
@@ -14,16 +11,7 @@ vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '',
 
 const { BelowCutoffGroup } = await import('./BelowCutoffGroup');
 
-beforeAll(() => {
-	i18n.addResourceBundle('en', 'translation', englishTranslations, true, true);
-	i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true);
-	i18n.addResourceBundle('en', 'character', englishCharacter, true, true);
-});
-afterAll(() => {
-	i18n.removeResourceBundle('en', 'translation');
-	i18n.removeResourceBundle('en', 'upgrades');
-	i18n.removeResourceBundle('en', 'character');
-});
+loadEnglishBundles({ character: true });
 
 const ROWS = [fixtureRow(5), fixtureRow(3)];
 const [FIRST_ID, SECOND_ID] = ROWS.map(row => String(row.itemId));

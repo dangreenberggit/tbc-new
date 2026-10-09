@@ -1,14 +1,11 @@
+import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { ItemQuality } from '@generated/proto/common';
 import { UIItem } from '@generated/proto/ui';
-import i18n from '@i18n/config';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { fakeHost } from '@sim/testing';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import englishCharacter from '../../../../../assets/locales/en/character.json';
-import englishTranslations from '../../../../../assets/locales/en/translation.json';
-import upgradesTranslations from '../../../../../assets/locales/en/upgrades.json';
 import type { RankedItem, Ranking } from '../../model/engine/rank';
 import type { RunState } from '../../model/run_reducer';
 import type { SetOption } from '../../model/settings_pool';
@@ -20,16 +17,7 @@ vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '',
 
 const { UpgradesResults } = await import('./UpgradesResults');
 
-beforeAll(() => {
-	i18n.addResourceBundle('en', 'translation', englishTranslations, true, true);
-	i18n.addResourceBundle('en', 'upgrades', upgradesTranslations, true, true);
-	i18n.addResourceBundle('en', 'character', englishCharacter, true, true);
-});
-afterAll(() => {
-	i18n.removeResourceBundle('en', 'translation');
-	i18n.removeResourceBundle('en', 'upgrades');
-	i18n.removeResourceBundle('en', 'character');
-});
+loadEnglishBundles({ character: true });
 
 const host = fakeHost({ sim: { db: { getItemById: (id: number) => UIItem.create({ id, name: 'Item', quality: ItemQuality.ItemQualityEpic }) } } });
 const show = (run: RunState, selectedSets: readonly SetOption[] = []) =>
