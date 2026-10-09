@@ -15,9 +15,12 @@ vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favor
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
 
 // Every row, so the assertions are about the table's order rather than what it windowed; `useVirtualRows.test.tsx` covers the windowing.
-vi.mock('../../hooks/useVirtualRows', () => ({
-	useVirtualRows: (keys: readonly string[]) => ({ indexes: keys.map((_key, index) => index), paddingTop: 0, paddingBottom: 0, measureRow: () => {} }),
-}));
+// One `measureRow` for every render, as the real hook's `virtualizer.measureElement` is. With a new ref each render,
+// every memoised row renders again, so a test cannot see a row that skipped a render it needed.
+vi.mock('../../hooks/useVirtualRows', () => {
+	const measureRow = () => {};
+	return { useVirtualRows: (keys: readonly string[]) => ({ indexes: keys.map((_key, index) => index), paddingTop: 0, paddingBottom: 0, measureRow }) };
+});
 
 const { ProvisionalResultsTable, ResultRows, ResultsTable } = await import('./ResultsTable');
 const { ScreenReaderResultsHead, SortableResultsHead } = await import('./ResultsTableHead');
@@ -42,6 +45,11 @@ const cellsOf = (row: HTMLElement | undefined) =>
 const rowsOf = (table: HTMLElement) => within(table).getAllByTestId('upgrades-result-row');
 const namesOf = (table: HTMLElement) => rowsOf(table).map(row => within(row).getByTestId('upgrades-item-name').textContent);
 const positionsOf = (table: HTMLElement) => rowsOf(table).map(row => cellsOf(row)[0]);
+// What the main repo's tab harness reads of each row: `data-index`, the item and the Rank cell.
+const placesOf = (table: HTMLElement) => rowsOf(table).map(row => [row.dataset.index, row.dataset.itemId, cellsOf(row)[0]]);
+const ID_BY_NAME = new Map(FOUR.map(row => [row.name, String(row.itemId)]));
+/** The places `placesOf` reads when the rows of `FOUR` with these names are shown in this order. */
+const placesFor = (names: readonly string[]) => names.map((name, index) => [String(index), ID_BY_NAME.get(name), String(index + 1)]);
 
 // A page per test, so a sort one test stores does not reach the next.
 let host: IndividualSimHost<any>;
@@ -105,6 +113,8 @@ describe('ResultsTable', () => {
 
 		rerender(bare([first, second]));
 		expect(getByTestId('upgrades-results-table').querySelector(`[data-item-id="${second.itemId}"]`)).toBe(before);
+		// The kept row moved down one place, so it renders its new index and rank.
+		expect(placesOf(getByTestId('upgrades-results-table'))).toEqual(placesFor([first.name, second.name]));
 	});
 
 	it('orders rows by the sort it is given and numbers them in the order shown', () => {
@@ -141,6 +151,25 @@ describe('ResultsTable', () => {
 			'Torch of the Damned',
 			"Vengeful Gladiator's Greatsword",
 		]);
+	});
+
+	it('renumbers the rows it moves when a header is clicked on a table already shown', () => {
+		const { getByTestId } = render(onPage(<Sortable rows={FOUR} />));
+		const table = getByTestId('upgrades-results-table');
+		const elementsBefore = new Map(rowsOf(table).map(row => [row.dataset.itemId, row]));
+		expect(placesOf(table)).toEqual(placesFor(FOUR.map(row => row.name)));
+
+		const ascending = ["Cataclysm's Edge", 'Cursed Vision of Sargeras', 'Torch of the Damned', "Vengeful Gladiator's Greatsword"];
+		fireEvent.click(getByTestId('upgrades-sort-item'));
+		expect(storedSort()).toEqual([{ id: 'item', desc: true }]);
+		expect(placesOf(table)).toEqual(placesFor([...ascending].reverse()));
+		// Moved, not rebuilt: each row is the element it was, so the memoised row had to render its new place.
+		expect(rowsOf(table).every(row => elementsBefore.get(row.dataset.itemId) === row)).toBe(true);
+
+		fireEvent.click(getByTestId('upgrades-sort-item'));
+		expect(storedSort()).toEqual([{ id: 'item', desc: false }]);
+		expect(placesOf(table)).toEqual(placesFor(ascending));
+		expect(rowsOf(table).every(row => elementsBefore.get(row.dataset.itemId) === row)).toBe(true);
 	});
 
 	it('replaces the sort on a shift-click rather than adding a second column', () => {

@@ -43,16 +43,21 @@ describe('dispatchRun', () => {
 		expect(store.getState().run).toMatchObject({ status: 'running', landedRows: [rowA] });
 	});
 
-	it('opens a new run in the engine order, whatever the last result was sorted by', () => {
+	it('keeps the sort the user chose when the next run starts and lands', () => {
 		const store = createUpgradesStore(SEED);
+		dispatchRun(store, { type: 'started', runId: 1, startedAt: 1000 });
+		dispatchRun(store, { type: 'finished', runId: 1, result: RANKING_FIXTURE });
 		setSort(store, [{ id: 'item', desc: false }]);
 
-		dispatchRun(store, { type: 'started', runId: 1, startedAt: 1000 });
+		dispatchRun(store, { type: 'started', runId: 2, startedAt: 2000 });
+		expect(selectSort(store.getState())).toEqual([{ id: 'item', desc: false }]);
 
-		expect(selectSort(store.getState())).toEqual([]);
+		dispatchRun(store, { type: 'landed', runId: 2, row: rowA! });
+		dispatchRun(store, { type: 'finished', runId: 2, result: RANKING_FIXTURE });
+		expect(selectSort(store.getState())).toEqual([{ id: 'item', desc: false }]);
 	});
 
-	it('keeps the sort when a recorded ranking loads, since no run started', () => {
+	it('keeps the sort when a recorded ranking loads', () => {
 		const store = createUpgradesStore(SEED);
 		setSort(store, [{ id: 'item', desc: false }]);
 
