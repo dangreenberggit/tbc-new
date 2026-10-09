@@ -1,61 +1,38 @@
-import { RunProgressDialog } from '@features/upgrades/components/RunProgress';
-import { RunSettingsPanel } from '@features/upgrades/components/RunSettingsPanel';
-import { StaleNotice, StatusLine } from '@features/upgrades/components/StatusLine';
-import { UpgradesResults } from '@features/upgrades/components/UpgradesResults';
-import { useFixtureAutoload } from '@features/upgrades/hooks/useFixtureAutoload';
-import { useRunStale } from '@features/upgrades/hooks/useRunStale';
-import { useUpgradesRun } from '@features/upgrades/hooks/useUpgradesRun';
-import { useUpgradesSettings } from '@features/upgrades/hooks/useUpgradesSettings';
-import { selectRun, useUpgradesStore } from '@features/upgrades/hooks/useUpgradesStore';
-import { inputsSignature, liveInputsKey } from '@features/upgrades/model/run_inputs';
-import { measuredOnOf, shownRanking } from '@features/upgrades/model/run_reducer';
-import { DEV_FLAGS } from '@features/upgrades/utils/dev_flags';
-import { selectRunFn } from '@features/upgrades/utils/select_run_fn';
-import { useSim } from '@sim/context/SimHostContext';
-import { useSimReady } from '@sim/hooks/useSimReady';
-import { TabPanelColumns } from '@ui-kit/TabPanelColumns';
-import { useCallback } from 'react';
+import { Spinner } from '@ui-kit/Spinner';
+import { lazy, Suspense, useLayoutEffect, useRef, useState } from 'react';
 
-// Chosen once: the flags are read once per page load, and a production build always gets the live run.
-const RUN_FN = selectRunFn(DEV_FLAGS);
+// A dynamic import, so the tab's code and its bundled item data stay out of every spec page's first download (ticket 575).
+const UpgradesTabBodyInner = lazy(() => import('@features/upgrades/app/UpgradesTabBodyInner').then(module => ({ default: module.UpgradesTabBodyInner })));
 
+/**
+ * Renders the tab body the first time its pane is shown. Panes stay mounted and no context says which tab is open,
+ * so the pane watches the `hidden` attribute Base UI keeps on a closed `Tabs.Panel`; this needs no change to the
+ * tab strip's code. Outside a tab panel the body renders at once.
+ */
 export const UpgradesTabBody = () => {
-	const sim = useSim();
-	const ready = useSimReady();
-	const run = useUpgradesStore(selectRun);
-	const { start, stop, loadFixture } = useUpgradesRun(RUN_FN);
-	const settings = useUpgradesSettings();
-	const { runSettings } = settings;
-	const stale = useRunStale(runSettings);
-	// Read when Run is clicked or a fixture lands, so it records the page as it is then. Memoised with `onStart`, so
-	// a row a run lands hands the run card, a `memo` component, the same handler (review K2-4).
-	const signatureNow = useCallback(() => inputsSignature({ liveKey: liveInputsKey(sim), settings: runSettings }), [sim, runSettings]);
-	const onStart = useCallback(() => start(runSettings, signatureNow()), [start, runSettings, signatureNow]);
-	useFixtureAutoload({ onLoaded: ranking => loadFixture(ranking, signatureNow()), currentRanking: () => shownRanking(run) });
+	const probe = useRef<HTMLDivElement>(null);
+	const [opened, setOpened] = useState(false);
 
+	useLayoutEffect(() => {
+		if (opened) return;
+		const panel = probe.current?.closest('[role="tabpanel"]');
+		if (!panel) {
+			setOpened(true);
+			return;
+		}
+		const check = () => {
+			if (!panel.hasAttribute('hidden')) setOpened(true);
+		};
+		check();
+		const observer = new MutationObserver(check);
+		observer.observe(panel, { attributes: true, attributeFilter: ['hidden', 'data-hidden'] });
+		return () => observer.disconnect();
+	}, [opened]);
+
+	if (!opened) return <div ref={probe} hidden />;
 	return (
-		// `contents`, so the two columns stay the pane's own flex items.
-		<div className="contents" data-testid="upgrades-tab-root" data-runner={measuredOnOf(run)?.runner}>
-			<TabPanelColumns.Left variant="stacked" className="pt-2">
-				<div data-testid="upgrades-tab-left">
-					{stale && <StaleNotice />}
-					<StatusLine run={run} />
-					<UpgradesResults run={run} selectedSets={settings.selectedOptions} />
-				</div>
-			</TabPanelColumns.Left>
-			{/* First below `xl`, where the columns stack: the run card sits above the results it governs. */}
-			<TabPanelColumns.Right className="max-xl:order-first">
-				<div className="sticky top-sim-header pt-6">
-					<RunSettingsPanel
-						settings={settings}
-						ready={ready}
-						running={run.status === 'running'}
-						devVisible={DEV_FLAGS.dev ?? false}
-						onStart={onStart}
-					/>
-				</div>
-			</TabPanelColumns.Right>
-			{run.status === 'running' && <RunProgressDialog onStop={stop} stopping={run.stopping} />}
-		</div>
+		<Suspense fallback={<Spinner className="mx-auto mt-6" />}>
+			<UpgradesTabBodyInner />
+		</Suspense>
 	);
 };

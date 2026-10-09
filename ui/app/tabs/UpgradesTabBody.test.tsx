@@ -84,6 +84,7 @@ vi.mock('@features/upgrades/components/EligibleCount', async importOriginal => {
 });
 
 const { UpgradesTabBody } = await import('./UpgradesTabBody');
+const { UpgradesTabBodyInner } = await import('@features/upgrades/app/UpgradesTabBodyInner');
 const { useUpgradesSettings } = await import('@features/upgrades/hooks/useUpgradesSettings');
 const { selectRunStatus, useUpgradesStore } = await import('@features/upgrades/hooks/useUpgradesStore');
 
@@ -140,7 +141,7 @@ const mount = (outside?: ReactNode) =>
 	render(
 		<SimHostProvider host={current.host}>
 			{outside}
-			<UpgradesTabBody />
+			<UpgradesTabBodyInner />
 		</SimHostProvider>,
 	);
 
@@ -315,7 +316,7 @@ describe('UpgradesTabBody', () => {
 		render(
 			<StrictMode>
 				<SimHostProvider host={current.host}>
-					<UpgradesTabBody />
+					<UpgradesTabBodyInner />
 				</SimHostProvider>
 			</StrictMode>,
 		);
@@ -328,5 +329,23 @@ describe('UpgradesTabBody', () => {
 		expect(tableRows()).toHaveLength(1);
 		await act(async () => run.settle({ ...RANKING_FIXTURE, durationMs: 1 }));
 		expect(screen.getByTestId('upgrades-baseline-summary').textContent).toMatch(/Took/);
+	});
+});
+
+describe('UpgradesTabBody before its tab is first opened', () => {
+	// A closed tab's panel carries `hidden`, as Base UI's closed `Tabs.Panel` does; the pane stays mounted.
+	it('renders the tab body only once its panel stops being hidden', async () => {
+		render(
+			<SimHostProvider host={current.host}>
+				<div role="tabpanel" hidden data-testid="closed-panel">
+					<UpgradesTabBody />
+				</div>
+			</SimHostProvider>,
+		);
+		await act(() => new Promise(resolve => setTimeout(resolve, 50)));
+		expect(screen.queryByTestId('upgrades-tab-root')).toBeNull();
+
+		act(() => screen.getByTestId('closed-panel').removeAttribute('hidden'));
+		expect(await screen.findByTestId('upgrades-tab-root')).not.toBeNull();
 	});
 });
