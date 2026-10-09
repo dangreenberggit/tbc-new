@@ -78,6 +78,11 @@ const renderTable = () => {
 const tbodyOf = (container: HTMLElement) => container.querySelector<HTMLElement>('[data-testid="upgrades-result-rows"]')!;
 const renderedIndexes = (container: HTMLElement) =>
 	[...container.querySelectorAll<HTMLElement>('[data-testid="upgrades-result-row"]')].map(row => row.dataset.index);
+/** Each rendered row's `data-index` paired with the item it shows, to tie the index to `ROWS`. */
+const renderedPairs = (container: HTMLElement) =>
+	[...container.querySelectorAll<HTMLElement>('[data-testid="upgrades-result-row"]')].map(row => [row.dataset.index, row.dataset.itemId]);
+/** The pairs `renderedPairs` reads when the row at `data-index={i}` shows `ROWS[i]`. */
+const ownRows = (indexes: readonly (string | undefined)[]) => indexes.map(index => [index, String(ROWS[Number(index)].itemId)]);
 const spacers = (container: HTMLElement) => container.querySelectorAll('[data-testid="upgrades-row-spacer"]');
 
 /** `count` consecutive indexes from `first`, as strings, the way `data-index` reads. */
@@ -92,6 +97,8 @@ describe('ResultRows windowed by useVirtualRows', () => {
 		expect(indexes.length).toBeGreaterThan(0);
 		expect(indexes.length).toBeLessThan(RANKED);
 		expect(indexes).toEqual(run(0, indexes.length));
+		// The harness reads a row's content by its `data-index`, so the row there must be that ranked row.
+		expect(renderedPairs(container)).toEqual(ownRows(indexes));
 		// The rows not rendered below the screen keep the table's full height.
 		expect(spacers(container)).toHaveLength(1);
 	});
@@ -109,6 +116,7 @@ describe('ResultRows windowed by useVirtualRows', () => {
 		expect(Number(indexes[0])).toBeGreaterThan(0);
 		expect(Number(indexes.at(-1))).toBeLessThan(RANKED - 1);
 		expect(indexes).toEqual(run(Number(indexes[0]), indexes.length));
+		expect(renderedPairs(container)).toEqual(ownRows(indexes));
 		expect(spacers(container)).toHaveLength(2);
 	});
 });
