@@ -2,14 +2,10 @@
 	"tab_title": "Upgrades",
 	"tab_badge": "New",
 	"upgrades_tab": {
-		"title": "Upgrades",
-		"title_badge": "New",
-		"description": "<span className=\"bold\">Upgrades</span> sim swaps in each included item one at a time, comparing the result to your current gear. Run it to get a ranked list of upgrades.<br />This is an <span className=\"text-brand\">Alpha</span> feature (currently DPS-only), so if you have feedback or find a bug, please report it!",
 		"subtabs": {
 			"shopping_list": "Upgrades"
 		},
 		"run": "Simulate",
-		"stop": "Stop",
 		"settings_title": "Run settings",
 		"settings": {
 			"phase_label": "Phase",
@@ -38,21 +34,16 @@
 		},
 		"iterations_label": "Iterations",
 		"candidates_label": "Candidates",
-		"candidates_placeholder": "all {{count}} eligible",
-		"candidates_placeholder_uncapped": "all eligible",
 		"eligible_count": "{{count}} eligible items",
 		"eligible_count_unknown": "No ranking data for this spec",
 		"status": {
 			"idle": "Ranks upgrades against your current gear and settings on this page.",
 			"unsupported_spec": "This spec has no ranking data yet.",
 			"error": "Ranking failed: {{message}}",
-			"error_sim_unavailable": "Something went wrong running the sim. Refresh the page.",
 			"done": "Your current gear: {{dps}} DPS.",
-			"elapsed": "Took {{seconds}}s.",
 			"stale": "settings changed since this ranking — results may be out of date",
 			"stale_hint": "Run again to rank with the current settings.",
 			"stopped": "Stopped early. Your current gear: {{dps}} DPS. No candidate rows to show — run again for a full ranking.",
-			"running_rows": "{{label}} ({{count}} rows landed)",
 			"done_took": "Your current gear: {{dps}} DPS. Took {{seconds}}s.",
 			"running": "Rows landed so far: {{count}}.",
 			"stopped_partial": "Stopped early. Your current gear: {{dps}} DPS. The rows below finished before Stop.",
@@ -70,7 +61,6 @@
 			"caveat": "Copy the upgrades above as JSON.",
 			"count": "{{count}} items",
 			"copy": "Copy JSON",
-			"copied": "Copied",
 			"flavour_toggle": "Use tier token ids (for a loot-priority tool, e.g. ThatsMyBis)",
 			"flavour_tokens": "Exporting the token ID for tier pieces — the item that actually drops.",
 			"flavour_gear": "Exporting the gear item ID for every row."
@@ -108,21 +98,17 @@
 			"only_bis": "Sim only selected set items"
 		},
 		"progress": {
-			"aria_label": "Ranking progress",
 			"resolving": "Starting…",
 			"reading_gear": "Reading your gear…",
 			"composing": "Preparing your character…",
 			"building_pool": "Building the candidate pool…",
-			"simming": "Simming {{done}}/{{total}}…",
 			"ranking": "Ranking results…"
 		},
 		"run_progress": {
 			"title": "Ranking upgrades",
 			"phase_candidates": "Simming candidates",
 			"phase_set_bonuses": "Measuring set bonuses",
-			"phase_replication": "Re-simming the top rows",
-			"rows_landed_one": "{{count}} row landed",
-			"rows_landed_other": "{{count}} rows landed"
+			"phase_replication": "Re-simming the top rows"
 		},
 		"results": {
 			"rank": "Rank",
@@ -141,7 +127,6 @@
 			"rows_pending": "Rows appear here as their sims finish.",
 			"empty_no_upgrades": "No upgrades found",
 			"empty_no_upgrades_body": "Every candidate simmed at or below your current gear. Widen the phase or content filter to consider more items.",
-			"empty_unsupported_spec_body": "Ranking data has not been built for this spec yet, so there is nothing to run.",
 			"below_cutoff_group": "{{count}} item(s) below the cutoff",
 			"removes_worn": "removes worn {{name}} ({{slot}})",
 			"sort_ascending": "sorted ascending",

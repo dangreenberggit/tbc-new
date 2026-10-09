@@ -10,15 +10,6 @@
 		"upgrades_tab": {
 			"type": "object",
 			"properties": {
-				"title": {
-					"type": "string"
-				},
-				"title_badge": {
-					"type": "string"
-				},
-				"description": {
-					"type": "string"
-				},
 				"subtabs": {
 					"type": "object",
 					"properties": {
@@ -30,9 +21,6 @@
 					"required": ["shopping_list"]
 				},
 				"run": {
-					"type": "string"
-				},
-				"stop": {
 					"type": "string"
 				},
 				"settings_title": {
@@ -136,12 +124,6 @@
 				"candidates_label": {
 					"type": "string"
 				},
-				"candidates_placeholder": {
-					"type": "string"
-				},
-				"candidates_placeholder_uncapped": {
-					"type": "string"
-				},
 				"eligible_count": {
 					"type": "string"
 				},
@@ -160,13 +142,7 @@
 						"error": {
 							"type": "string"
 						},
-						"error_sim_unavailable": {
-							"type": "string"
-						},
 						"done": {
-							"type": "string"
-						},
-						"elapsed": {
 							"type": "string"
 						},
 						"stale": {
@@ -176,9 +152,6 @@
 							"type": "string"
 						},
 						"stopped": {
-							"type": "string"
-						},
-						"running_rows": {
 							"type": "string"
 						},
 						"done_took": {
@@ -199,13 +172,10 @@
 						"idle",
 						"unsupported_spec",
 						"error",
-						"error_sim_unavailable",
 						"done",
-						"elapsed",
 						"stale",
 						"stale_hint",
 						"stopped",
-						"running_rows",
 						"done_took",
 						"running",
 						"stopped_partial",
@@ -249,9 +219,6 @@
 						"copy": {
 							"type": "string"
 						},
-						"copied": {
-							"type": "string"
-						},
 						"flavour_toggle": {
 							"type": "string"
 						},
@@ -263,7 +230,7 @@
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "caveat", "count", "copy", "copied", "flavour_toggle", "flavour_tokens", "flavour_gear"]
+					"required": ["title", "caveat", "count", "copy", "flavour_toggle", "flavour_tokens", "flavour_gear"]
 				},
 				"set_bonus": {
 					"type": "object",
@@ -391,9 +358,6 @@
 				"progress": {
 					"type": "object",
 					"properties": {
-						"aria_label": {
-							"type": "string"
-						},
 						"resolving": {
 							"type": "string"
 						},
@@ -406,15 +370,12 @@
 						"building_pool": {
 							"type": "string"
 						},
-						"simming": {
-							"type": "string"
-						},
 						"ranking": {
 							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["aria_label", "resolving", "reading_gear", "composing", "building_pool", "simming", "ranking"]
+					"required": ["resolving", "reading_gear", "composing", "building_pool", "ranking"]
 				},
 				"run_progress": {
 					"type": "object",
@@ -430,16 +391,10 @@
 						},
 						"phase_replication": {
 							"type": "string"
-						},
-						"rows_landed_one": {
-							"type": "string"
-						},
-						"rows_landed_other": {
-							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "phase_candidates", "phase_set_bonuses", "phase_replication", "rows_landed_one", "rows_landed_other"]
+					"required": ["title", "phase_candidates", "phase_set_bonuses", "phase_replication"]
 				},
 				"results": {
 					"type": "object",
@@ -492,9 +447,6 @@
 						"empty_no_upgrades_body": {
 							"type": "string"
 						},
-						"empty_unsupported_spec_body": {
-							"type": "string"
-						},
 						"below_cutoff_group": {
 							"type": "string"
 						},
@@ -526,7 +478,6 @@
 						"rows_pending",
 						"empty_no_upgrades",
 						"empty_no_upgrades_body",
-						"empty_unsupported_spec_body",
 						"below_cutoff_group",
 						"removes_worn",
 						"sort_ascending",
@@ -568,19 +519,13 @@
 			},
 			"additionalProperties": false,
 			"required": [
-				"title",
-				"title_badge",
-				"description",
 				"subtabs",
 				"run",
-				"stop",
 				"settings_title",
 				"settings",
 				"sources",
 				"iterations_label",
 				"candidates_label",
-				"candidates_placeholder",
-				"candidates_placeholder_uncapped",
 				"eligible_count",
 				"eligible_count_unknown",
 				"status",
