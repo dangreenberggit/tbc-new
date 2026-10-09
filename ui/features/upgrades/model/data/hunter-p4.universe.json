@@ -1523,22 +1523,6 @@
       "curationHint": 36.71
     },
     {
-      "itemId": 22009,
-      "name": "Darkmantle Tunic",
-      "slot": "chest",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 33.4
-    },
-    {
       "itemId": 12757,
       "name": "Breastplate of Bloodthirst",
       "slot": "chest",
@@ -1553,38 +1537,6 @@
         }
       ],
       "curationHint": 26.54
-    },
-    {
-      "itemId": 22113,
-      "name": "Feralheart Vest",
-      "slot": "chest",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 10.13
-    },
-    {
-      "itemId": 22102,
-      "name": "Vest of The Five Thunders",
-      "slot": "chest",
-      "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.89
     },
     {
       "itemId": 28735,
@@ -1952,22 +1904,6 @@
       "curationHint": 0.28
     },
     {
-      "itemId": 22069,
-      "name": "Sorcerer's Robes",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.25
-    },
-    {
       "itemId": 33203,
       "name": "Robes of Heavenly Purpose",
       "slot": "chest",
@@ -1984,38 +1920,6 @@
         }
       ],
       "curationHint": 0.23
-    },
-    {
-      "itemId": 22075,
-      "name": "Deathmist Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.22
-    },
-    {
-      "itemId": 22083,
-      "name": "Virtuous Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.22
     },
     {
       "itemId": 20635,
@@ -2698,22 +2602,6 @@
       "curationHint": 26.12
     },
     {
-      "itemId": 22003,
-      "name": "Darkmantle Boots",
-      "slot": "feet",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 24.0
-    },
-    {
       "itemId": 21532,
       "name": "Drudge Boots",
       "slot": "feet",
@@ -2728,38 +2616,6 @@
         }
       ],
       "curationHint": 17.78
-    },
-    {
-      "itemId": 22107,
-      "name": "Feralheart Boots",
-      "slot": "feet",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 7.84
-    },
-    {
-      "itemId": 22096,
-      "name": "Boots of The Five Thunders",
-      "slot": "feet",
-      "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.84
     },
     {
       "itemId": 20629,
@@ -3380,54 +3236,6 @@
         }
       ],
       "curationHint": 0.18
-    },
-    {
-      "itemId": 22064,
-      "name": "Sorcerer's Boots",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.16
-    },
-    {
-      "itemId": 22076,
-      "name": "Deathmist Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.14
-    },
-    {
-      "itemId": 22084,
-      "name": "Virtuous Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.13
     },
     {
       "itemId": 20621,
@@ -6941,22 +6749,6 @@
       "curationHint": 45.9
     },
     {
-      "itemId": 22005,
-      "name": "Darkmantle Cap",
-      "slot": "head",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 39.66
-    },
-    {
       "itemId": 32088,
       "name": "Cowl of Beastly Rage",
       "slot": "head",
@@ -7019,22 +6811,6 @@
         }
       ],
       "curationHint": 13.66
-    },
-    {
-      "itemId": 22109,
-      "name": "Feralheart Cowl",
-      "slot": "head",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 10.01
     },
     {
       "itemId": 28803,
@@ -7442,70 +7218,6 @@
         }
       ],
       "curationHint": 0.25
-    },
-    {
-      "itemId": 22065,
-      "name": "Sorcerer's Crown",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.25
-    },
-    {
-      "itemId": 22074,
-      "name": "Deathmist Mask",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.24
-    },
-    {
-      "itemId": 22097,
-      "name": "Coif of The Five Thunders",
-      "slot": "head",
-      "armorType": 3,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.21
-    },
-    {
-      "itemId": 22080,
-      "name": "Virtuous Crown",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.17
     },
     {
       "itemId": 19132,

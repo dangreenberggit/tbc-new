@@ -915,22 +915,6 @@
       "curationHint": 117.69
     },
     {
-      "itemId": 22009,
-      "name": "Darkmantle Tunic",
-      "slot": "chest",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 88.22
-    },
-    {
       "itemId": 21374,
       "name": "Stormcaller's Hauberk",
       "slot": "chest",
@@ -961,22 +945,6 @@
         }
       ],
       "curationHint": 77.04
-    },
-    {
-      "itemId": 22113,
-      "name": "Feralheart Vest",
-      "slot": "chest",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 57.86
     },
     {
       "itemId": 30107,
@@ -1331,38 +1299,6 @@
       "curationHint": 12.42
     },
     {
-      "itemId": 22069,
-      "name": "Sorcerer's Robes",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 10.96
-    },
-    {
-      "itemId": 22075,
-      "name": "Deathmist Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 10.3
-    },
-    {
       "itemId": 32148,
       "name": "Chancellor's Ringmail Chestguard",
       "slot": "chest",
@@ -1377,22 +1313,6 @@
         }
       ],
       "curationHint": 10.26
-    },
-    {
-      "itemId": 22083,
-      "name": "Virtuous Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 9.6
     },
     {
       "itemId": 21527,
@@ -1827,38 +1747,6 @@
       "curationHint": 51.48
     },
     {
-      "itemId": 22107,
-      "name": "Feralheart Boots",
-      "slot": "feet",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 44.86
-    },
-    {
-      "itemId": 22003,
-      "name": "Darkmantle Boots",
-      "slot": "feet",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 38.88
-    },
-    {
       "itemId": 20629,
       "name": "Malignant Footguards",
       "slot": "feet",
@@ -2163,22 +2051,6 @@
       "curationHint": 13.84
     },
     {
-      "itemId": 22064,
-      "name": "Sorcerer's Boots",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 13.04
-    },
-    {
       "itemId": 28752,
       "name": "Forestlord Striders",
       "slot": "feet",
@@ -2270,38 +2142,6 @@
         }
       ],
       "curationHint": 9.28
-    },
-    {
-      "itemId": 22076,
-      "name": "Deathmist Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 7.84
-    },
-    {
-      "itemId": 22084,
-      "name": "Virtuous Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 7.76
     },
     {
       "itemId": 20631,
@@ -4619,22 +4459,6 @@
       "curationHint": 107.52
     },
     {
-      "itemId": 22005,
-      "name": "Darkmantle Cap",
-      "slot": "head",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 94.94
-    },
-    {
       "itemId": 32085,
       "name": "Warpstalker Helm",
       "slot": "head",
@@ -4761,22 +4585,6 @@
         }
       ],
       "curationHint": 56.46
-    },
-    {
-      "itemId": 22109,
-      "name": "Feralheart Cowl",
-      "slot": "head",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 55.7
     },
     {
       "itemId": 30171,
@@ -5090,22 +4898,6 @@
       "curationHint": 16.24
     },
     {
-      "itemId": 22074,
-      "name": "Deathmist Mask",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 15.28
-    },
-    {
       "itemId": 22466,
       "name": "Earthshatter Headpiece",
       "slot": "head",
@@ -5200,38 +4992,6 @@
         }
       ],
       "curationHint": 10.96
-    },
-    {
-      "itemId": 22065,
-      "name": "Sorcerer's Crown",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 9.98
-    },
-    {
-      "itemId": 22080,
-      "name": "Virtuous Crown",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 9.34
     },
     {
       "itemId": 12752,

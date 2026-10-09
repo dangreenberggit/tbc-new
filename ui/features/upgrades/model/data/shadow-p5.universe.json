@@ -1706,22 +1706,6 @@
       "curationHint": 20.5
     },
     {
-      "itemId": 22069,
-      "name": "Sorcerer's Robes",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 18.49
-    },
-    {
       "itemId": 22083,
       "name": "Virtuous Robe",
       "slot": "chest",
@@ -1736,22 +1720,6 @@
         }
       ],
       "curationHint": 16.7
-    },
-    {
-      "itemId": 22075,
-      "name": "Deathmist Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 15.98
     },
     {
       "itemId": 21527,
@@ -2384,22 +2352,6 @@
       "curationHint": 23.37
     },
     {
-      "itemId": 22064,
-      "name": "Sorcerer's Boots",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 23.06
-    },
-    {
       "itemId": 28663,
       "name": "Boots of the Incorrupt",
       "slot": "feet",
@@ -2480,22 +2432,6 @@
         }
       ],
       "curationHint": 14.17
-    },
-    {
-      "itemId": 22076,
-      "name": "Deathmist Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 12.84
     },
     {
       "itemId": 20631,
@@ -5764,22 +5700,6 @@
       "curationHint": 28.79
     },
     {
-      "itemId": 22074,
-      "name": "Deathmist Mask",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.24
-    },
-    {
       "itemId": 32090,
       "name": "Cowl of Naaru Blessings",
       "slot": "head",
@@ -5810,22 +5730,6 @@
         }
       ],
       "curationHint": 19.14
-    },
-    {
-      "itemId": 22065,
-      "name": "Sorcerer's Crown",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 16.7
     },
     {
       "itemId": 22080,

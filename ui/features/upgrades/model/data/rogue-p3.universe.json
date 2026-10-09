@@ -1218,22 +1218,6 @@
       "curationHint": 62.1
     },
     {
-      "itemId": 22113,
-      "name": "Feralheart Vest",
-      "slot": "chest",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 37.3
-    },
-    {
       "itemId": 30913,
       "name": "Robes of Rhonin",
       "slot": "chest",
@@ -1428,22 +1412,6 @@
       "curationHint": 0.28
     },
     {
-      "itemId": 22075,
-      "name": "Deathmist Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.27
-    },
-    {
       "itemId": 28602,
       "name": "Robe of the Elder Scribes",
       "slot": "chest",
@@ -1460,22 +1428,6 @@
         }
       ],
       "curationHint": 0.27
-    },
-    {
-      "itemId": 22083,
-      "name": "Virtuous Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.21
     },
     {
       "itemId": 21527,
@@ -1508,22 +1460,6 @@
         }
       ],
       "curationHint": 0.16
-    },
-    {
-      "itemId": 22069,
-      "name": "Sorcerer's Robes",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.14
     },
     {
       "itemId": 31340,
@@ -1922,22 +1858,6 @@
       "curationHint": 51.39
     },
     {
-      "itemId": 22107,
-      "name": "Feralheart Boots",
-      "slot": "feet",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.52
-    },
-    {
       "itemId": 32609,
       "name": "Boots of the Divine Light",
       "slot": "feet",
@@ -2329,22 +2249,6 @@
       "curationHint": 0.25
     },
     {
-      "itemId": 22076,
-      "name": "Deathmist Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.24
-    },
-    {
       "itemId": 28663,
       "name": "Boots of the Incorrupt",
       "slot": "feet",
@@ -2440,40 +2344,8 @@
       "curationHint": 0.19
     },
     {
-      "itemId": 22064,
-      "name": "Sorcerer's Boots",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.14
-    },
-    {
       "itemId": 20631,
       "name": "Mendicant's Slippers",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.12
-    },
-    {
-      "itemId": 22084,
-      "name": "Virtuous Sandals",
       "slot": "feet",
       "armorType": 1,
       "handType": null,
@@ -5293,22 +5165,6 @@
       "curationHint": 72.14
     },
     {
-      "itemId": 22109,
-      "name": "Feralheart Cowl",
-      "slot": "head",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 35.1
-    },
-    {
       "itemId": 28804,
       "name": "Collar of Cho'gall",
       "slot": "head",
@@ -5508,22 +5364,6 @@
       "curationHint": 0.28
     },
     {
-      "itemId": 22074,
-      "name": "Deathmist Mask",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.24
-    },
-    {
       "itemId": 29986,
       "name": "Cowl of the Grand Engineer",
       "slot": "head",
@@ -5546,38 +5386,6 @@
       "name": "Deviate Growth Cap",
       "slot": "head",
       "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.16
-    },
-    {
-      "itemId": 22065,
-      "name": "Sorcerer's Crown",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.16
-    },
-    {
-      "itemId": 22080,
-      "name": "Virtuous Crown",
-      "slot": "head",
-      "armorType": 1,
       "handType": null,
       "quality": 4,
       "phase": 1,

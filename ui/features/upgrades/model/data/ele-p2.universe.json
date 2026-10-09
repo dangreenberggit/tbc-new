@@ -1098,22 +1098,6 @@
       "curationHint": 30.15
     },
     {
-      "itemId": 22075,
-      "name": "Deathmist Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 29.4
-    },
-    {
       "itemId": 22464,
       "name": "Earthshatter Tunic",
       "slot": "chest",
@@ -1160,54 +1144,6 @@
         }
       ],
       "curationHint": 25.9
-    },
-    {
-      "itemId": 22069,
-      "name": "Sorcerer's Robes",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 22.25
-    },
-    {
-      "itemId": 22083,
-      "name": "Virtuous Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 19.5
-    },
-    {
-      "itemId": 22113,
-      "name": "Feralheart Vest",
-      "slot": "chest",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 16.25
     },
     {
       "itemId": 28599,
@@ -1296,22 +1232,6 @@
     {
       "itemId": 12757,
       "name": "Breastplate of Bloodthirst",
-      "slot": "chest",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22009,
-      "name": "Darkmantle Tunic",
       "slot": "chest",
       "armorType": 2,
       "handType": null,
@@ -1802,22 +1722,6 @@
       "curationHint": 25.5
     },
     {
-      "itemId": 22064,
-      "name": "Sorcerer's Boots",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 25.0
-    },
-    {
       "itemId": 28663,
       "name": "Boots of the Incorrupt",
       "slot": "feet",
@@ -1886,38 +1790,6 @@
       "curationHint": 18.0
     },
     {
-      "itemId": 22076,
-      "name": "Deathmist Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 15.5
-    },
-    {
-      "itemId": 22084,
-      "name": "Virtuous Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 15.25
-    },
-    {
       "itemId": 22096,
       "name": "Boots of The Five Thunders",
       "slot": "feet",
@@ -1932,22 +1804,6 @@
         }
       ],
       "curationHint": 15.0
-    },
-    {
-      "itemId": 22107,
-      "name": "Feralheart Boots",
-      "slot": "feet",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 14.0
     },
     {
       "itemId": 30104,
@@ -2173,22 +2029,6 @@
     {
       "itemId": 21613,
       "name": "Wormhide Boots",
-      "slot": "feet",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22003,
-      "name": "Darkmantle Boots",
       "slot": "feet",
       "armorType": 2,
       "handType": null,
@@ -4628,22 +4468,6 @@
       "curationHint": 40.6
     },
     {
-      "itemId": 22074,
-      "name": "Deathmist Mask",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 38.96
-    },
-    {
       "itemId": 20628,
       "name": "Deviate Growth Cap",
       "slot": "head",
@@ -4779,22 +4603,6 @@
       "curationHint": 29.25
     },
     {
-      "itemId": 22065,
-      "name": "Sorcerer's Crown",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 29.15
-    },
-    {
       "itemId": 12752,
       "name": "Cap of the Scarlet Savant",
       "slot": "head",
@@ -4809,22 +4617,6 @@
         }
       ],
       "curationHint": 28.8
-    },
-    {
-      "itemId": 22080,
-      "name": "Virtuous Crown",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 27.15
     },
     {
       "itemId": 16578,
@@ -4889,22 +4681,6 @@
         }
       ],
       "curationHint": 22.25
-    },
-    {
-      "itemId": 22109,
-      "name": "Feralheart Cowl",
-      "slot": "head",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 20.25
     },
     {
       "itemId": 28671,
@@ -5025,22 +4801,6 @@
     {
       "itemId": 21614,
       "name": "Wormhide Protector",
-      "slot": "head",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22005,
-      "name": "Darkmantle Cap",
       "slot": "head",
       "armorType": 2,
       "handType": null,

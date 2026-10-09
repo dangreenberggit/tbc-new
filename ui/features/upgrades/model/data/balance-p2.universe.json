@@ -1011,22 +1011,6 @@
       "curationHint": 40.84
     },
     {
-      "itemId": 22075,
-      "name": "Deathmist Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 33.98
-    },
-    {
       "itemId": 32132,
       "name": "Chancellor's Wyrmhide Tunic",
       "slot": "chest",
@@ -1041,22 +1025,6 @@
         }
       ],
       "curationHint": 31.72
-    },
-    {
-      "itemId": 22069,
-      "name": "Sorcerer's Robes",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 31.08
     },
     {
       "itemId": 16452,
@@ -1089,22 +1057,6 @@
         }
       ],
       "curationHint": 28.28
-    },
-    {
-      "itemId": 22083,
-      "name": "Virtuous Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.0
     },
     {
       "itemId": 19838,
@@ -1221,22 +1173,6 @@
     {
       "itemId": 12757,
       "name": "Breastplate of Bloodthirst",
-      "slot": "chest",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22009,
-      "name": "Darkmantle Tunic",
       "slot": "chest",
       "armorType": 2,
       "handType": null,
@@ -1662,22 +1598,6 @@
       "curationHint": 34.16
     },
     {
-      "itemId": 22064,
-      "name": "Sorcerer's Boots",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 31.16
-    },
-    {
       "itemId": 22492,
       "name": "Dreamwalker Boots",
       "slot": "feet",
@@ -1790,38 +1710,6 @@
       "curationHint": 21.4
     },
     {
-      "itemId": 22084,
-      "name": "Virtuous Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 21.0
-    },
-    {
-      "itemId": 22076,
-      "name": "Deathmist Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 19.84
-    },
-    {
       "itemId": 22107,
       "name": "Feralheart Boots",
       "slot": "feet",
@@ -1872,22 +1760,6 @@
     {
       "itemId": 21613,
       "name": "Wormhide Boots",
-      "slot": "feet",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22003,
-      "name": "Darkmantle Boots",
       "slot": "feet",
       "armorType": 2,
       "handType": null,
@@ -4214,22 +4086,6 @@
       "curationHint": 52.12
     },
     {
-      "itemId": 22074,
-      "name": "Deathmist Mask",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 44.32
-    },
-    {
       "itemId": 32129,
       "name": "Chancellor's Wyrmhide Helm",
       "slot": "head",
@@ -4340,38 +4196,6 @@
         }
       ],
       "curationHint": 39.82
-    },
-    {
-      "itemId": 22065,
-      "name": "Sorcerer's Crown",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 36.34
-    },
-    {
-      "itemId": 22080,
-      "name": "Virtuous Crown",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 32.34
     },
     {
       "itemId": 12752,
@@ -4536,22 +4360,6 @@
     {
       "itemId": 21614,
       "name": "Wormhide Protector",
-      "slot": "head",
-      "armorType": 2,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22005,
-      "name": "Darkmantle Cap",
       "slot": "head",
       "armorType": 2,
       "handType": null,

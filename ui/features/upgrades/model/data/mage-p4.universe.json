@@ -1478,22 +1478,6 @@
       "curationHint": 56.85
     },
     {
-      "itemId": 22083,
-      "name": "Virtuous Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 56.5
-    },
-    {
       "itemId": 32111,
       "name": "Chancellor's Silk Raiment",
       "slot": "chest",
@@ -1508,22 +1492,6 @@
         }
       ],
       "curationHint": 55.74
-    },
-    {
-      "itemId": 22075,
-      "name": "Deathmist Robe",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 51.6
     },
     {
       "itemId": 21527,
@@ -2111,22 +2079,6 @@
       "curationHint": 47.5
     },
     {
-      "itemId": 22084,
-      "name": "Virtuous Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 43.19
-    },
-    {
       "itemId": 20631,
       "name": "Mendicant's Slippers",
       "slot": "feet",
@@ -2141,22 +2093,6 @@
         }
       ],
       "curationHint": 34.93
-    },
-    {
-      "itemId": 22076,
-      "name": "Deathmist Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 30.34
     },
     {
       "itemId": 30680,
@@ -4968,38 +4904,6 @@
         }
       ],
       "curationHint": 67.13
-    },
-    {
-      "itemId": 22074,
-      "name": "Deathmist Mask",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 65.84
-    },
-    {
-      "itemId": 22080,
-      "name": "Virtuous Crown",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 61.33
     },
     {
       "itemId": 19132,
