@@ -8,7 +8,8 @@ rules the sim already owns — see ticket 301, where a hand-ported copy of
 `canEquipItem` drifted and offered a rogue a two-handed sword.
 
 Nothing here is part of the site build. These files are not imported by any UI
-code and are not under `engine/`, so they carry no `PROVENANCE.md` row.
+code and are not under `engine/`, so they carry no row in the outer repo's
+provenance record for ported engine files, `docs/fork-provenance/engine.md`.
 
 `equiv-campaign.mts` and `bulk-spike.mts` were not carried over when this folder
 moved from `ui/core/components/individual_sim_ui/upgrades/tools/` (fork branch
