@@ -2,7 +2,7 @@ import i18n from '@i18n/config';
 import { Spinner } from '@ui-kit/Spinner';
 import { Component, lazy, type ReactNode, Suspense, useLayoutEffect, useRef, useState } from 'react';
 
-// A dynamic import, so the tab's code and its bundled item data stay out of every spec page's first download (ticket 575).
+// A dynamic import, so the tab's code and its bundled item data stay out of every spec page's first download.
 const UpgradesTabBodyInner = lazy(() => import('@features/upgrades/components/UpgradesTab').then(module => ({ default: module.UpgradesTabBodyInner })));
 
 /**

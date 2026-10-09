@@ -288,7 +288,7 @@ describe('UpgradesTabBody', () => {
 		act(() => patchSlice(current.store, 'sim', { phase: 4 }));
 		expect(probe('set-keys')).toBe('preset:4:P4');
 		expect(probe('set-keys')).toBe(tabSetKeys());
-		// A store written during a render would warn here (ticket 564).
+		// A store written during a render would warn here.
 		expect(error).not.toHaveBeenCalled();
 		error.mockRestore();
 
