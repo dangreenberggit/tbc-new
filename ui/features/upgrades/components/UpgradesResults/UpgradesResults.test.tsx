@@ -2,12 +2,12 @@ import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { ItemQuality } from '@generated/proto/common';
 import { UIItem } from '@generated/proto/ui';
 import { SimHostProvider } from '@sim/context/SimHostContext';
-import { fakeHost } from '@sim/testing';
 import { render, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RankedItem } from '../../model/engine/rank';
 import type { RunState } from '../../model/run_reducer';
+import { fakeTabHost } from '../../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE, STOPPED_FIXTURE } from '../../testing/ranking_fixture';
 
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
@@ -30,7 +30,7 @@ const { upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
 
 loadEnglishBundles({ character: true });
 
-const host = fakeHost({
+const host = fakeTabHost({
 	player: { getSpec: () => undefined },
 	sim: {
 		db: {

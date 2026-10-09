@@ -1,12 +1,12 @@
 import { EquipmentSpec, Spec } from '@generated/proto/common';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { createSimStore, patchSlice } from '@sim/state/sim_store';
-import { fakeHost } from '@sim/testing';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { PoolEntry } from '../model/engine/pool';
+import { fakeTabHost } from '../testing/fake_tab_host';
 import type { UpgradesSettings } from './useUpgradesSettings';
 
 const entry = (itemId: number, zone: string, phase: number, bis = false): PoolEntry => ({
@@ -43,7 +43,7 @@ const PRESETS = [
 const mount = (spec = Spec.SpecRetributionPaladin) => {
 	const store = createSimStore();
 	patchSlice(store, 'sim', { phase: 3 });
-	const host = fakeHost({
+	const host = fakeTabHost({
 		player: { getSpec: () => spec },
 		sim: { store, getPhase: () => store.getState().sim.phase },
 		individualConfig: { presets: { gear: PRESETS } },

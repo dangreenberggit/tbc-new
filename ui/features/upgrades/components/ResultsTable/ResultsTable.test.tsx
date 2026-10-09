@@ -1,12 +1,12 @@
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import type { IndividualSimHost } from '@sim/sim_host';
-import { fakeHost } from '@sim/testing';
 import type { SortingState } from '@tanstack/react-table';
 import { fireEvent, render, within } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { fakeTabHost } from '../../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
 
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
@@ -32,7 +32,7 @@ type RankedItem = import('../../model/engine/rank').RankedItem;
 
 loadEnglishBundles({ character: true });
 
-const CONTEXT: RowContext = { itemOf: () => undefined, sim: fakeHost().sim, tip: {}, tagsOf: () => [] };
+const CONTEXT: RowContext = { itemOf: () => undefined, sim: fakeTabHost().sim, tip: {}, tagsOf: () => [] };
 const FOUR = [fixtureRow(3), fixtureRow(0), fixtureRow(2), fixtureRow(1)];
 
 const cellsOf = (row: HTMLElement | undefined) =>
@@ -54,7 +54,7 @@ const placesFor = (names: readonly string[]) => names.map((name, index) => [Stri
 // A page per test, so a sort one test stores does not reach the next.
 let host: IndividualSimHost<any>;
 beforeEach(() => {
-	host = fakeHost({ player: { getSpec: () => undefined } });
+	host = fakeTabHost({ player: { getSpec: () => undefined } });
 });
 const onPage = (node: ReactNode) => <SimHostProvider host={host}>{node}</SimHostProvider>;
 const storeSort = (sorting: SortingState) => setSort(upgradesStoreFor(host), sorting);

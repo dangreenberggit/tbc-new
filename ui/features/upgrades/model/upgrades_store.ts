@@ -20,20 +20,30 @@ export type ResultsSort = Array<{ id: string; desc: boolean }>;
 
 /**
  * `sort` is the one column sort every results table and the export follow
- * (ticket 280). It lasts as long as the page's store, across runs, and is never saved.
+ * (ticket 280). It holds across runs, and the page saves it with the settings
+ * (`saved_settings.ts`).
  */
 export type UpgradesState = { run: RunState; settings: SettingsState; sort: ResultsSort };
 
 /** The settings a new store starts with: the dev link's iterations and cap, or the defaults. */
 export type SettingsSeed = { iterations: number; candidateCap?: number };
 
+/** What a store restores from storage over its seed: only the fields that read back valid. */
+export type RestoredTab = { settings?: Partial<SettingsState>; sort?: ResultsSort };
+
 /** The sets a scope selects before the user picks any, and the sources its pool offers. */
 export type SettingsDefaults = { selectedSetKeys: readonly string[]; validSourceKeys: readonly string[] };
 
 export type UpgradesStore = ReturnType<typeof createUpgradesStore>;
 
-export function createUpgradesStore(seed: SettingsSeed) {
-	return createStore<UpgradesState>()(subscribeWithSelector((): UpgradesState => ({ run: IDLE_RUN, settings: initialSettings(seed), sort: [] })));
+export function createUpgradesStore(seed: SettingsSeed, restored: RestoredTab = {}) {
+	return createStore<UpgradesState>()(
+		subscribeWithSelector((): UpgradesState => ({
+			run: IDLE_RUN,
+			settings: { ...initialSettings(seed), ...restored.settings },
+			sort: restored.sort ?? [],
+		})),
+	);
 }
 
 /**

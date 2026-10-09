@@ -3,13 +3,13 @@ import type { FixtureAutoloadOptions } from '@features/upgrades/hooks/useFixture
 import type { PoolEntry } from '@features/upgrades/model/engine/pool';
 import type { RunDeps } from '@features/upgrades/model/run';
 import type { RunOutcome, RunSettings } from '@features/upgrades/model/run_reducer';
+import { fakeTabHost } from '@features/upgrades/testing/fake_tab_host';
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { fixtureRow, RANKING_FIXTURE } from '@features/upgrades/testing/ranking_fixture';
 import { Raid as RaidProto } from '@generated/proto/api';
 import { Encounter as EncounterProto, EquipmentSpec, Spec } from '@generated/proto/common';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { createSimStore, patchSlice } from '@sim/state/sim_store';
-import { fakeHost } from '@sim/testing';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { type ReactNode, StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -97,7 +97,7 @@ const PRESETS = [
 const makeHost = () => {
 	const store = createSimStore();
 	patchSlice(store, 'sim', { phase: 3 });
-	const host = fakeHost({
+	const host = fakeTabHost({
 		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
 		sim: {
 			store,

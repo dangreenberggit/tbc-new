@@ -1,13 +1,13 @@
 import { Spec } from '@generated/proto/common';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { createSimStore } from '@sim/state/sim_store';
-import { fakeHost } from '@sim/testing';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RunDeps, RunFn } from '../model/run';
 import type { RunOutcome } from '../model/run_reducer';
+import { fakeTabHost } from '../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
 
 const contexts: Array<object> = [];
@@ -41,7 +41,7 @@ const controllableRun = () => {
 
 /** A fresh page per case, so each case gets its own tab store (the store is keyed by the page's `Sim`). */
 const mount = (runFn: RunFn) => {
-	const host = fakeHost({
+	const host = fakeTabHost({
 		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
 		sim: { store: createSimStore() },
 	});

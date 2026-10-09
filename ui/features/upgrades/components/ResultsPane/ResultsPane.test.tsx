@@ -1,11 +1,11 @@
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import type { IndividualSimHost } from '@sim/sim_host';
-import { fakeHost } from '@sim/testing';
 import { fireEvent, render, within } from '@testing-library/react';
 import { type ComponentProps, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { fakeTabHost } from '../../testing/fake_tab_host';
 import { fixtureRow } from '../../testing/ranking_fixture';
 
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
@@ -23,12 +23,12 @@ const { setSort } = await import('../../model/upgrades_store');
 
 loadEnglishBundles({ character: true });
 
-const CONTEXT = { itemOf: () => undefined, sim: fakeHost().sim, tip: {}, tagsOf: () => [] };
+const CONTEXT = { itemOf: () => undefined, sim: fakeTabHost().sim, tip: {}, tagsOf: () => [] };
 
 // A page per test, so a sort one test stores does not reach the next.
 let host: IndividualSimHost<any>;
 beforeEach(() => {
-	host = fakeHost({ player: { getSpec: () => undefined } });
+	host = fakeTabHost({ player: { getSpec: () => undefined } });
 });
 type PaneProps = Omit<ComponentProps<typeof ResultsPane>, 'groupOpen' | 'onGroupOpenChange'>;
 /** The pane with its group's open state, as `ResultsPanes` keeps it. */

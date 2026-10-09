@@ -8,13 +8,19 @@ import { useStore } from 'zustand';
 
 import { followPhase } from '../model/follow_phase';
 import { DEFAULT_ITERATIONS } from '../model/run_reducer';
-import { createUpgradesStore, type SettingsSeed, type UpgradesState, type UpgradesStore } from '../model/upgrades_store';
+import { type LinkedSettings, openSavedUpgradesStore, UPGRADES_SETTINGS_STORAGE_KEY } from '../model/saved_settings';
+import type { SettingsSeed, UpgradesState, UpgradesStore } from '../model/upgrades_store';
 import { DEV_FLAGS } from '../utils/dev_flags';
 
 export { selectRun, selectRunStatus, selectSettledSignature, selectSort } from '../model/upgrades_store';
 
-/** The dev link's iterations and cap, read once per page load. One constant, so the store starts the same whichever reader creates it. */
-const SETTINGS_SEED: SettingsSeed = { iterations: DEV_FLAGS.iterations ?? DEFAULT_ITERATIONS, candidateCap: DEV_FLAGS.cap };
+const SETTINGS_SEED: SettingsSeed = { iterations: DEFAULT_ITERATIONS };
+
+/** The dev link's iterations and cap, read once per page load; a field the link leaves out is absent, so the saved one stands. */
+const DEV_LINK: LinkedSettings = {
+	...(DEV_FLAGS.iterations !== undefined && { iterations: DEV_FLAGS.iterations }),
+	...(DEV_FLAGS.cap !== undefined && { candidateCap: DEV_FLAGS.cap }),
+};
 
 const stores = new WeakMap<Sim, UpgradesStore>();
 
@@ -26,12 +32,14 @@ const stores = new WeakMap<Sim, UpgradesStore>();
  * page-lifetime phase subscription (`followPhase`); it writes no state, and the
  * `WeakMap` hands a repeated render (StrictMode) the same store. The store is
  * in the map before `followPhase` runs, so a render React discards before
- * commit leaves the one store the next render for that `Sim` finds.
+ * commit leaves the one store the next render for that `Sim` finds. The store
+ * starts from the settings and sort this spec's page saved last, under the
+ * spec's key as upstream saves the sim's own settings.
  */
 export function upgradesStoreFor(host: IndividualSimHost<Spec>): UpgradesStore {
 	let store = stores.get(host.sim);
 	if (!store) {
-		store = createUpgradesStore(SETTINGS_SEED);
+		store = openSavedUpgradesStore(SETTINGS_SEED, host.sim.env.storage, host.getStorageKey(UPGRADES_SETTINGS_STORAGE_KEY), DEV_LINK);
 		stores.set(host.sim, store);
 		followPhase(store, host);
 	}

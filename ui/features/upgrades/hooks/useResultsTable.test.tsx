@@ -1,6 +1,5 @@
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { SimHostProvider } from '@sim/context/SimHostContext';
-import { fakeHost } from '@sim/testing';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -9,6 +8,7 @@ import type { RowContext } from '../components/ResultsTable/ResultRow';
 import type { RankedItem } from '../model/engine/rank';
 import type { DpsSortKey } from '../model/results_columns';
 import { type ResultsSort, selectSort, setSort } from '../model/upgrades_store';
+import { fakeTabHost } from '../testing/fake_tab_host';
 import { fixtureRow } from '../testing/ranking_fixture';
 import { useResultsTable } from './useResultsTable';
 import { upgradesStoreFor } from './useUpgradesStore';
@@ -19,9 +19,9 @@ loadEnglishBundles({ character: true });
 const ROWS = [fixtureRow(0), fixtureRow(2), fixtureRow(6), fixtureRow(3)];
 
 // A page per test, so a sort one test stores does not reach the next.
-let host: ReturnType<typeof fakeHost>;
+let host: ReturnType<typeof fakeTabHost>;
 beforeEach(() => {
-	host = fakeHost({ player: { getSpec: () => undefined } });
+	host = fakeTabHost({ player: { getSpec: () => undefined } });
 });
 
 const storedSort = () => selectSort(upgradesStoreFor(host).getState());

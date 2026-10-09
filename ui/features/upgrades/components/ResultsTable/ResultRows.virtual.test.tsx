@@ -1,9 +1,9 @@
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { SimHostProvider } from '@sim/context/SimHostContext';
-import { fakeHost } from '@sim/testing';
 import { act, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { fakeTabHost } from '../../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
 
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
@@ -27,7 +27,7 @@ const ROW_HEIGHT = 43;
 /** Where the table starts in the page's content: below the tab's settings, as on the page. */
 const TABLE_TOP = 300;
 
-const CONTEXT: RowContext = { itemOf: () => undefined, sim: fakeHost().sim, tip: {}, tagsOf: () => [] };
+const CONTEXT: RowContext = { itemOf: () => undefined, sim: fakeTabHost().sim, tip: {}, tagsOf: () => [] };
 const ROWS: RankedItem[] = Array.from({ length: RANKED }, (_unused, index) => ({
 	...fixtureRow(index % RANKING_FIXTURE.items.length),
 	itemId: 100_000 + index,
@@ -68,7 +68,7 @@ afterEach(() => {
 const renderTable = () => {
 	const container = scrollBox.appendChild(document.createElement('div'));
 	return render(
-		<SimHostProvider host={fakeHost({ player: { getSpec: () => undefined } })}>
+		<SimHostProvider host={fakeTabHost({ player: { getSpec: () => undefined } })}>
 			<Bare rows={ROWS} />
 		</SimHostProvider>,
 		{ container },

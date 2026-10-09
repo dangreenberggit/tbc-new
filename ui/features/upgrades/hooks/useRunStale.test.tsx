@@ -2,13 +2,13 @@ import { Raid as RaidProto } from '@generated/proto/api';
 import { Encounter as EncounterProto, Spec } from '@generated/proto/common';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { createSimStore, patchKeyed, patchSlice, PLAYER_FIELDS, type PlayerSlice, seedKeyed, zeroVersions } from '@sim/state/sim_store';
-import { fakeHost } from '@sim/testing';
 import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { inputsSignature, liveInputsKey } from '../model/run_inputs';
 import type { RunOutcome, RunSettings } from '../model/run_reducer';
+import { fakeTabHost } from '../testing/fake_tab_host';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 
 vi.mock('../model/run', async importOriginal => ({
@@ -41,7 +41,7 @@ const makePage = () => {
 		encounter: { toProto: () => EncounterProto.create({ duration: 180 }) },
 		getPhase: () => 3,
 	};
-	const host = fakeHost({
+	const host = fakeTabHost({
 		sim,
 		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
 	});

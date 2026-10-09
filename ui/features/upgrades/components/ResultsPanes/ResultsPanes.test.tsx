@@ -1,12 +1,12 @@
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import type { IndividualSimHost } from '@sim/sim_host';
-import { fakeHost } from '@sim/testing';
 import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { applyView, type ViewResult } from '../../model/engine/view';
 import { stoppedView } from '../../model/results_view';
+import { fakeTabHost } from '../../testing/fake_tab_host';
 import { RANKING_FIXTURE, STOPPED_FIXTURE } from '../../testing/ranking_fixture';
 
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
@@ -22,13 +22,13 @@ const { ResultsPanes } = await import('./ResultsPanes');
 
 loadEnglishBundles({ character: true });
 
-const CONTEXT = { itemOf: () => undefined, sim: fakeHost().sim, tip: {}, tagsOf: () => [] };
+const CONTEXT = { itemOf: () => undefined, sim: fakeTabHost().sim, tip: {}, tagsOf: () => [] };
 const VIEW = applyView(RANKING_FIXTURE);
 
 // A page per test, so a sort one test stores does not reach the next.
 let host: IndividualSimHost<any>;
 beforeEach(() => {
-	host = fakeHost({ player: { getSpec: () => undefined } });
+	host = fakeTabHost({ player: { getSpec: () => undefined } });
 });
 const panes = (view: ViewResult) => (
 	<SimHostProvider host={host}>
