@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import { openSavedUpgradesStore } from './saved_settings';
-import { dispatchRun, dispatchSettings, setSort } from './upgrades_store';
+import { dispatchRun, dispatchSettings, setSort, setViewToggle } from './upgrades_store';
 
 const KEY = '__tbc_new_feral_druid__upgradesSettings__';
 const SEED = { iterations: 1000 };
@@ -42,6 +42,24 @@ describe('openSavedUpgradesStore', () => {
 		expect(reloaded.getState().sort).toEqual([{ id: 'slot', desc: false }]);
 	});
 
+	it('restores the view toggles a user set in a fresh store', () => {
+		const storage = memoryStorage();
+		const first = openSavedUpgradesStore(SEED, storage, KEY);
+		setViewToggle(first, 'withSetPotential', true);
+		setViewToggle(first, 'onlyBis', true);
+		setViewToggle(first, 'withSetPotential', false);
+
+		expect(openSavedUpgradesStore(SEED, storage, KEY).getState().view).toEqual({ withSetPotential: false, onlyBis: true });
+	});
+
+	it('restores a version-1 entry saved before the view toggles were, with the toggles off', () => {
+		const raw = JSON.stringify({ version: 1, settings: { iterations: 5000 }, sort: [{ id: 'slot', desc: true }] });
+		const state = openSavedUpgradesStore(SEED, memoryStorage({ [KEY]: raw }), KEY).getState();
+		expect(state.settings.iterations).toBe(5000);
+		expect(state.sort).toEqual([{ id: 'slot', desc: true }]);
+		expect(state.view).toEqual({ withSetPotential: false, onlyBis: false });
+	});
+
 	it('lets the dev link’s iterations and cap win over the saved ones, as a settings link wins over saved settings upstream', () => {
 		const storage = memoryStorage();
 		const first = openSavedUpgradesStore(SEED, storage, KEY);
@@ -61,16 +79,20 @@ describe('openSavedUpgradesStore', () => {
 
 		dispatchSettings(store, { type: 'setIterations', iterations: 2000 });
 		const stored = JSON.parse(storage.entries.get(KEY)!);
-		expect(Object.keys(stored).sort()).toEqual(['settings', 'sort', 'version']);
+		expect(Object.keys(stored).sort()).toEqual(['settings', 'sort', 'version', 'view']);
 		expect(JSON.stringify(stored)).not.toContain('sig');
 	});
 
 	describe('falls back to the defaults without throwing', () => {
-		const DEFAULT_STATE = { settings: { excludedSources: [], selectedSetKeys: [], prune: false, iterations: 1000 }, sort: [] };
+		const DEFAULT_STATE = {
+			settings: { excludedSources: [], selectedSetKeys: [], prune: false, iterations: 1000 },
+			sort: [],
+			view: { withSetPotential: false, onlyBis: false },
+		};
 		const restoredFrom = (raw: string | undefined) => {
 			const store = openSavedUpgradesStore(SEED, memoryStorage(raw === undefined ? {} : { [KEY]: raw }), KEY);
-			const { settings, sort } = store.getState();
-			return { settings, sort };
+			const { settings, sort, view } = store.getState();
+			return { settings, sort, view };
 		};
 		const saved = (body: object) => JSON.stringify({ version: 1, ...body });
 
@@ -98,10 +120,12 @@ describe('openSavedUpgradesStore', () => {
 					defaultsFor: 'feral:3',
 				},
 				sort: [{ id: 'slot', desc: true }],
+				view: { withSetPotential: 'yes', onlyBis: true },
 			});
 			expect(restoredFrom(raw)).toEqual({
 				settings: { ...DEFAULT_STATE.settings, selectedSetKeys: ['preset:P3'], defaultsFor: 'feral:3' },
 				sort: [{ id: 'slot', desc: true }],
+				view: { withSetPotential: false, onlyBis: true },
 			});
 		});
 

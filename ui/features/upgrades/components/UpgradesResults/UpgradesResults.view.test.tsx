@@ -63,6 +63,18 @@ const WITH_POTENTIAL = { ...RANKING_FIXTURE, items: RANKING_FIXTURE.items.map(ro
 const ahead = (ids: number[], first: number, second: number) => ids.indexOf(first) < ids.indexOf(second);
 
 describe('UpgradesResults view toggles', () => {
+	it('keeps a ticked toggle in the tab store, so the results shown again keep it ticked', () => {
+		const first = show(done(RANKING_FIXTURE));
+		tick(first.container, 'upgrades-view-only-bis');
+		first.unmount();
+
+		expect(upgradesStoreFor(host).getState().view).toEqual({ withSetPotential: false, onlyBis: true });
+		const again = show(done(RANKING_FIXTURE));
+		const checked = (testId: string) => within(again.getByTestId(testId)).getByRole('checkbox').getAttribute('aria-checked');
+		expect(checked('upgrades-view-only-bis')).toBe('true');
+		expect(checked('upgrades-view-set-potential')).toBe('false');
+	});
+
 	it('shows both toggles over a finished run only, and BiS only only when a row is on a BiS list', () => {
 		const finished = show(done(RANKING_FIXTURE));
 		expect(finished.queryByTestId('upgrades-view-set-potential')).not.toBeNull();

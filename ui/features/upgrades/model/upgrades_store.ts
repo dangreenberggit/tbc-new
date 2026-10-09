@@ -8,6 +8,7 @@
 import { subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 
+import { NO_VIEW_TOGGLES, type ViewToggles } from './results_view';
 import { IDLE_RUN, type RunAction, runReducer, type RunState } from './run_reducer';
 import { initialSettings, type SettingsAction, settingsReducer, type SettingsState } from './settings_reducer';
 
@@ -20,16 +21,17 @@ export type ResultsSort = Array<{ id: string; desc: boolean }>;
 
 /**
  * `sort` is the one column sort every results table and the export follow
- * (ticket 280). It holds across runs, and the page saves it with the settings
- * (`saved_settings.ts`).
+ * (ticket 280). `view` is the view toggles as the user set them; a run that
+ * does not offer one shows it off (`appliedToggles`). Both hold across runs,
+ * and the page saves them with the settings (`saved_settings.ts`).
  */
-export type UpgradesState = { run: RunState; settings: SettingsState; sort: ResultsSort };
+export type UpgradesState = { run: RunState; settings: SettingsState; sort: ResultsSort; view: ViewToggles };
 
 /** The settings a new store starts with: the dev link's iterations and cap, or the defaults. */
 export type SettingsSeed = { iterations: number; candidateCap?: number };
 
 /** What a store restores from storage over its seed: only the fields that read back valid. */
-export type RestoredTab = { settings?: Partial<SettingsState>; sort?: ResultsSort };
+export type RestoredTab = { settings?: Partial<SettingsState>; sort?: ResultsSort; view?: Partial<ViewToggles> };
 
 /** The sets a scope selects before the user picks any, and the sources its pool offers. */
 export type SettingsDefaults = { selectedSetKeys: readonly string[]; validSourceKeys: readonly string[] };
@@ -42,6 +44,7 @@ export function createUpgradesStore(seed: SettingsSeed, restored: RestoredTab = 
 			run: IDLE_RUN,
 			settings: { ...initialSettings(seed), ...restored.settings },
 			sort: restored.sort ?? [],
+			view: { ...NO_VIEW_TOGGLES, ...restored.view },
 		})),
 	);
 }
@@ -65,6 +68,12 @@ export function dispatchSettings(store: UpgradesStore, action: SettingsAction): 
 /** The sort a table's head chose; the same sort again notifies nobody. */
 export function setSort(store: UpgradesStore, next: ResultsSort): void {
 	if (next !== store.getState().sort) store.setState({ sort: next });
+}
+
+/** One view toggle as the user set it; setting it to what it already is notifies nobody. */
+export function setViewToggle(store: UpgradesStore, toggle: keyof ViewToggles, on: boolean): void {
+	const { view } = store.getState();
+	if (view[toggle] !== on) store.setState({ view: { ...view, [toggle]: on } });
 }
 
 export const applyDefaultsAction = (scope: string, defaults: SettingsDefaults): SettingsAction => ({
@@ -92,6 +101,7 @@ export function settingsActionIn(store: UpgradesStore, scope: string | undefined
 
 export const selectRun = (state: UpgradesState): RunState => state.run;
 export const selectSort = (state: UpgradesState): ResultsSort => state.sort;
+export const selectViewToggles = (state: UpgradesState): ViewToggles => state.view;
 export const selectRunStatus = (state: UpgradesState): RunState['status'] => state.run.status;
 
 /** The signature the result on screen was measured on; none while a run is in flight, which is never stale (ticket 560). */
