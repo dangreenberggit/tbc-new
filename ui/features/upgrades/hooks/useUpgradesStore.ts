@@ -2,6 +2,7 @@ import type { Spec } from '@generated/proto/common';
 import { useSimHost } from '@sim/context/SimHostContext';
 import type { Sim } from '@sim/sim';
 import type { IndividualSimHost } from '@sim/sim_host';
+import { subscribeGated } from '@sim/state/batch';
 import type { StoreSubscribe } from '@sim/state/subscriptions';
 import { useStore } from 'zustand';
 
@@ -43,13 +44,15 @@ export const useUpgradesStoreApi = (): UpgradesStore => upgradesStoreFor(useSimH
  * A number picker's change source and read for one tab setting, with the tab
  * store as its model. It rings on that field alone, so a row a run lands does
  * not rewrite the field. Writes go through `useUpgradesSettings`, which
- * applies the scope's default sets first.
+ * applies the scope's default sets first. Gated like every upstream picker
+ * source (`subscriptions.ts` `fromSelector`), so a write inside `batch()` rings
+ * once, at the batch's end.
  */
 export const numberSettingSource = (field: 'iterations' | 'candidateCap') => ({
 	storeSubscribe:
 		(store: UpgradesStore): StoreSubscribe =>
 		listener =>
-			store.subscribe(state => state.settings[field], listener),
+			subscribeGated(store.subscribe, state => state.settings[field], listener),
 	getValue: (store: UpgradesStore): number => store.getState().settings[field] ?? 0,
 });
 

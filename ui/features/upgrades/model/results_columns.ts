@@ -36,8 +36,9 @@ export const sortValue = (key: ResultsSortKey, row: RankedItem, labels: SortLabe
 /**
  * Plain `<`, 0 on a tie. The table breaks a tie on the row's index, so rows a
  * sort does not tell apart keep the engine's order in both directions.
- * TanStack's built-in text sort is not used because it splits on digits,
- * which the old sort did not.
+ * TanStack's `sortFn: 'auto'` is not used because it picks `alphanumeric` for
+ * a text column with a digit in it, which splits on digits; the old sort did
+ * not. This is the comparison TanStack's `sortFn_basic` makes.
  */
 export const compareSortValues = (a: string | number, b: string | number): number => {
 	if (a === b) return 0;

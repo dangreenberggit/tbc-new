@@ -69,4 +69,22 @@ describe('useVirtualRows', () => {
 		expect(paddingTop).toBeGreaterThan(0);
 		expect(paddingBottom).toBe(0);
 	});
+
+	it('keeps a measured row’s height with the row when a sort moves it', () => {
+		const { tbodyRef } = pageWith();
+		const { result, rerender } = renderHook(({ order }) => useVirtualRows(order, tbodyRef), { initialProps: { order: keys(100) } });
+		const unmeasured = { indexes: result.current.indexes, paddingBottom: result.current.paddingBottom };
+
+		// `row-0`, first in this order, is 200 px tall: 157 px more than the estimate.
+		const tall = document.createElement('tr');
+		tall.dataset.index = '0';
+		tall.getBoundingClientRect = () => DOMRect.fromRect({ width: 1280, height: 200 });
+		act(() => result.current.measureRow(tall));
+
+		// A sort moves `row-0` last, out of view; the row first now has never been measured.
+		rerender({ order: keys(100).reverse() });
+
+		expect(result.current.indexes).toEqual(unmeasured.indexes);
+		expect(result.current.paddingBottom).toBeCloseTo(unmeasured.paddingBottom + 157);
+	});
 });

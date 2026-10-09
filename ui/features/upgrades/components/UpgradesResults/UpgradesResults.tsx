@@ -2,7 +2,6 @@ import i18n from '@i18n/config';
 import { memo } from 'react';
 
 import { useResultsView } from '../../hooks/useResultsView';
-import { landedRows } from '../../model/results_view';
 import type { RunState } from '../../model/run_reducer';
 import type { SetOption } from '../../model/settings_pool';
 import { EmptyState } from '../EmptyState';
@@ -39,7 +38,7 @@ export const UpgradesResults = memo(({ run, selectedSets }: UpgradesResultsProps
 			);
 		case 'running':
 			return run.landedRows.length > 0 ? (
-				<ProvisionalResultsTable rows={landedRows(run.landedRows)} rowContext={rowContext} />
+				<ProvisionalResultsTable landedRows={run.landedRows} rowContext={rowContext} />
 			) : (
 				<EmptyState body={i18n.t('upgrades_tab.results.rows_pending', { ns: 'upgrades' })} />
 			);

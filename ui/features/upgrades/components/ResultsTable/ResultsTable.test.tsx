@@ -143,14 +143,27 @@ describe('ResultsTable', () => {
 		]);
 	});
 
-	it('has a plain head with no sort buttons while a run is in flight, and keeps the order given whatever the stored sort', () => {
+	it('replaces the sort on a shift-click rather than adding a second column', () => {
+		const { getByTestId } = render(onPage(<Sortable rows={FOUR} />));
+
+		fireEvent.click(getByTestId('upgrades-sort-source'));
+		fireEvent.click(getByTestId('upgrades-sort-item'), { shiftKey: true });
+		expect(storedSort()).toEqual([{ id: 'item', desc: true }]);
+	});
+
+	it('has a plain head with no sort buttons while a run is in flight, and shows the rows landed so far best first whatever the stored sort', () => {
 		storeSort([{ id: 'item', desc: false }]);
-		const { getByTestId, queryByTestId } = render(onPage(<ProvisionalResultsTable rows={FOUR} rowContext={CONTEXT} />));
+		const { getByTestId, queryByTestId } = render(onPage(<ProvisionalResultsTable landedRows={FOUR} rowContext={CONTEXT} />));
 
 		expect(getByTestId('upgrades-results-table').dataset.provisional).toBe('true');
 		expect(queryByTestId('upgrades-sort-item')).toBeNull();
 		expect(within(getByTestId('upgrades-results-table')).getAllByRole('columnheader')).toHaveLength(7);
-		expect(namesOf(getByTestId('upgrades-results-table'))).toEqual(FOUR.map(row => row.name));
+		expect(namesOf(getByTestId('upgrades-results-table'))).toEqual([
+			'Torch of the Damned',
+			"Cataclysm's Edge",
+			'Cursed Vision of Sargeras',
+			"Vengeful Gladiator's Greatsword",
+		]);
 	});
 
 	it('has no head when composed without one, and still sorts and numbers its rows', () => {
@@ -167,7 +180,7 @@ describe('ResultsTable', () => {
 		const { getAllByTestId } = render(
 			onPage(
 				<>
-					<ProvisionalResultsTable rows={FOUR} rowContext={CONTEXT} />
+					<ProvisionalResultsTable landedRows={FOUR} rowContext={CONTEXT} />
 					<UnderAnotherHead rows={FOUR} />
 				</>,
 			),

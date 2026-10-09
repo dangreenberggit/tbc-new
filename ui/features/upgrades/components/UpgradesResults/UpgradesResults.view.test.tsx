@@ -22,7 +22,6 @@ vi.mock('../../hooks/useVirtualRows', () => ({
 
 const { UpgradesResults } = await import('./UpgradesResults');
 const { upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
-const { setSort } = await import('../../model/upgrades_store');
 
 loadEnglishBundles({ character: true });
 
@@ -30,8 +29,11 @@ const host = fakeHost({
 	player: { getSpec: () => undefined },
 	sim: { db: { getItemById: (id: number) => UIItem.create({ id, name: 'Item', quality: ItemQuality.ItemQualityEpic }) } },
 });
-// The sort lives in the page's store, which every test here shares; each starts from the engine order.
-beforeEach(() => setSort(upgradesStoreFor(host), []));
+// Every test here shares the page's store, so each starts from its initial state (zustand's reset guide).
+beforeEach(() => {
+	const store = upgradesStoreFor(host);
+	store.setState(store.getInitialState(), true);
+});
 const show = (run: RunState, selectedSets: readonly SetOption[] = []) =>
 	render(
 		<SimHostProvider host={host}>

@@ -27,7 +27,6 @@ vi.mock('../../model/engine/items', async importOriginal => ({
 
 const { UpgradesResults } = await import('./UpgradesResults');
 const { upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
-const { setSort } = await import('../../model/upgrades_store');
 
 loadEnglishBundles({ character: true });
 
@@ -39,8 +38,11 @@ const host = fakeHost({
 		},
 	},
 });
-// The sort lives in the page's store, which every test here shares; each starts from the engine order.
-beforeEach(() => setSort(upgradesStoreFor(host), []));
+// Every test here shares the page's store, so each starts from its initial state (zustand's reset guide).
+beforeEach(() => {
+	const store = upgradesStoreFor(host);
+	store.setState(store.getInitialState(), true);
+});
 const show = (run: RunState) =>
 	render(
 		<SimHostProvider host={host}>

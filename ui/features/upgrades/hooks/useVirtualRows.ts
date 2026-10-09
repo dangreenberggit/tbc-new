@@ -7,11 +7,22 @@ import { type RefObject, useCallback, useLayoutEffect, useState } from 'react';
  * group open, at 1280 x 900 in headless Chrome (ticket 565, 2026-10-09). Measured
  * by scrolling `div[data-testid="sim-ui"]` top to bottom and reading each row's
  * `getBoundingClientRect().height` once by `data-index`; the 10th and 90th
- * percentiles were 29 and 77.5 px.
+ * percentiles were 29 and 77.5 px. The median, not the largest likely height the
+ * Virtual docs suggest: at 78 px, scrolling up from the middle or the bottom of
+ * that list moved the rows on screen by up to 35 px, against 1 px at 43, though
+ * it cleared the 19 px blank band the first frame of each upward step shows at 43.
  */
 const ESTIMATED_ROW_HEIGHT = 43;
 
 const OVERSCAN = 10;
+
+/**
+ * Firefox measures a table row's collapsed border differently, so it keeps
+ * virtual-core's default measure, as TanStack Table's virtualized-rows example
+ * does. Firefox still measures each row, rounded; whether that error is smaller
+ * there than the border's is not measured (ticket 565).
+ */
+const IS_FIREFOX = typeof navigator !== 'undefined' && navigator.userAgent.includes('Firefox');
 
 /**
  * The page's scroll box (`SimShell`). Found by test id, not by `findScrollParent`:
@@ -85,9 +96,14 @@ export const useVirtualRows = (keys: readonly string[], tbodyRef: RefObject<HTML
 		overscan: OVERSCAN,
 		scrollMargin,
 		// The fractional height: the default rounds each row, and the rounding adds up over hundreds of rows.
-		measureElement: row => row.getBoundingClientRect().height,
+		measureElement: IS_FIREFOX ? undefined : row => row.getBoundingClientRect().height,
 		// Until the scroll box is measured, as `VirtualList` does: with no height the first render has no rows.
 		initialRect: { width: 0, height: 900 },
+		// The default flushes from a row's ref callback, which React 19 warns about; with the default, scrolling up
+		// into rows not yet measured moved the rows on screen by up to 262 px. The cost: the first frame after a
+		// scroll can show the spacer before the rows, 19-27 px on a half-screen step, the whole view after a jump
+		// (ticket 565).
+		useFlushSync: false,
 	});
 
 	const items = virtualizer.getVirtualItems();

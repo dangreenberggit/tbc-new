@@ -3,6 +3,7 @@ import { type ComponentPropsWithoutRef, useMemo, useRef } from 'react';
 import { type ResultsTableModel, useResultsTable } from '../../hooks/useResultsTable';
 import { useVirtualRows } from '../../hooks/useVirtualRows';
 import type { RankedItem } from '../../model/engine/rank';
+import { landedRows as bestFirst } from '../../model/results_view';
 import { ResultRow, type RowContext } from './ResultRow';
 import { PlainResultsHead, RESULTS_COLUMN_COUNT, RESULTS_COLUMNS } from './ResultsTableHead';
 
@@ -38,12 +39,15 @@ export interface ResultRowsProps {
 }
 
 export interface ProvisionalResultsTableProps {
-	rows: readonly RankedItem[];
+	/** The run's rows so far, in the order they landed (`RunState.landedRows`). */
+	landedRows: readonly RankedItem[];
 	rowContext: RowContext;
 }
 
 /** The table of a run in flight: the rows so far, best first, under a head with nothing to click, so the stored sort does not apply. */
-export const ProvisionalResultsTable = ({ rows, rowContext }: ProvisionalResultsTableProps) => {
+export const ProvisionalResultsTable = ({ landedRows, rowContext }: ProvisionalResultsTableProps) => {
+	// Memoised on the run's array, which changes only when a row lands: TanStack rebuilds every row on new data.
+	const rows = useMemo(() => bestFirst(landedRows), [landedRows]);
 	const table = useResultsTable(rows, rowContext, { sortable: false });
 	return (
 		<ResultsTable data-provisional="true">
