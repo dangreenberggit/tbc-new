@@ -25,6 +25,7 @@ import type { IndividualSimHost } from '@sim/sim_host';
 import type { Ranking } from '../model/engine/rank';
 import type { SpecId } from '../model/engine/types';
 import { specIdFor } from '../model/run';
+import { isRecord } from '../model/saved_entry';
 
 export const FIXTURE_SCHEMA_VERSION = 1;
 
@@ -56,8 +57,6 @@ declare global {
 		__upgradesRanking?: () => FixtureRecording | null;
 	}
 }
-
-const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 /** The first thing a payload lacks, or undefined when it is a fixture. Checks the fields the tab reads. */
 function fixtureProblem(payload: unknown): string | undefined {

@@ -10,7 +10,7 @@ import type { Env } from '@sim/state/env';
 import type { ExportFlavour } from './export';
 import { SORT_COLUMN_IDS } from './results_columns';
 import { NO_VIEW_TOGGLES } from './results_view';
-import { SAVED_VERSION } from './saved_entry';
+import { isRecord, SAVED_VERSION } from './saved_entry';
 import { createUpgradesStore, type RestoredTab, type ResultsSort, type SettingsSeed, type UpgradesState, type UpgradesStore } from './upgrades_store';
 
 type Storage = Env['storage'];
@@ -24,7 +24,6 @@ type Settings = UpgradesState['settings'];
  */
 type SavedSettings = Omit<Settings, 'candidateCap'>;
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const isStringList = (value: unknown): value is string[] => Array.isArray(value) && value.every(entry => typeof entry === 'string');
 const isCount = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0;
 const EXPORT_FLAVOURS: readonly ExportFlavour[] = ['token', 'gear'];

@@ -17,7 +17,7 @@ export const UPGRADES_SETTINGS_STORAGE_KEY = '__upgradesSettings__';
  */
 export const SAVED_VERSION = 1;
 
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+export const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /**
  * A phase change made while no tab store follows the phase: the saved entry forgets its sets and the scope they were

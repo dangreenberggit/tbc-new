@@ -46,8 +46,6 @@ const controllableRun = () => {
 const partialOf = (rows = [rowA]): RunResult =>
 	({ ...RANKING_FIXTURE, items: rows, complete: false, durationMs: 9 }) satisfies PartialRanking & { durationMs: number };
 
-/** Lets every promise callback already queued run, so a dropped result has had its chance to land. */
-
 /** The page's gear, which a test changes between a click and a settle. */
 let equipped: Array<{ id: number } | null> = [];
 

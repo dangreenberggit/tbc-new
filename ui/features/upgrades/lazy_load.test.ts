@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const UI = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
+const ROOT = path.dirname(UI);
 const FEATURE = path.join(UI, 'features', 'upgrades');
 const TAB_BODY = path.join(UI, 'app', 'tabs', 'UpgradesTabBody.tsx');
 
@@ -22,24 +23,21 @@ const staticImports = (source: string): string[] => {
 
 const dynamicImports = (source: string): string[] => [...source.matchAll(/\bimport\(\s*['"]([^'"]+)['"]\s*\)/g)].map(match => match[1]);
 
-/** The path aliases of the fork's `tsconfig.json`. */
-const ALIASES: Record<string, string> = {
-	'@sim/': 'sim',
-	'@generated/': 'generated',
-	'@worker/': 'worker',
-	'@ui-kit/': 'ui-kit',
-	'@features/': 'features',
-	'@app/': 'app',
-	'@specs/': 'specs',
-	'@i18n/': 'i18n',
-};
+/**
+ * The path aliases of the fork's `tsconfig.json`, as prefix and directory. Read from the file, so a new alias is
+ * followed: a copied list would miss it, and the walk would stop at its imports without an error.
+ */
+const TSCONFIG_PATHS: Record<string, string[]> = JSON.parse(readFileSync(path.join(ROOT, 'tsconfig.json'), 'utf8')).compilerOptions.paths;
+const ALIASES: Record<string, string> = Object.fromEntries(
+	Object.entries(TSCONFIG_PATHS).map(([alias, [target]]) => [alias.replace(/\*$/, ''), path.resolve(ROOT, target!.replace(/\*$/, ''))]),
+);
 const SOURCE_SUFFIXES = ['.ts', '.tsx', '/index.ts', '/index.tsx'];
 
 /** The source file a specifier names, or undefined for a package, an asset or a JSON file. */
 const resolveSource = (file: string, specifier: string): string | undefined => {
 	const alias = Object.keys(ALIASES).find(prefix => specifier.startsWith(prefix));
 	let base: string | undefined;
-	if (alias) base = path.join(UI, ALIASES[alias], specifier.slice(alias.length));
+	if (alias) base = path.join(ALIASES[alias]!, specifier.slice(alias.length));
 	else if (specifier.startsWith('.')) base = path.resolve(path.dirname(file), specifier);
 	if (!base) return undefined;
 	if (/\.tsx?$/.test(base) && existsSync(base)) return base;
@@ -101,9 +99,18 @@ describe('the Upgrades feature loads lazily', () => {
 
 	it.each(EAGER_FILES)('lets %s, which the tab body reaches statically, import nothing from the feature but the eager files', file => {
 		const full = path.join(FEATURE, file);
+		const source = readFileSync(full, 'utf8');
 		const eager = new Set(EAGER_FILES.map(name => path.join(FEATURE, name)));
-		const imported = staticImports(readFileSync(full, 'utf8')).filter(specifier => resolvesIntoFeature(full, specifier));
+		const imported = staticImports(source).filter(specifier => resolvesIntoFeature(full, specifier));
 		expect(imported.filter(specifier => !eager.has(resolveSource(full, specifier) ?? specifier))).toEqual([]);
+		// An `import()` here would run on the page's start-up path, not only when the tab opens.
+		expect(dynamicImports(source)).toEqual([]);
+	});
+
+	it('reads every alias of the fork’s tsconfig.json, each to a directory that exists', () => {
+		expect(Object.keys(ALIASES)).toContain('@features/');
+		expect(ALIASES['@features/']).toBe(path.join(UI, 'features'));
+		expect(Object.values(ALIASES).filter(dir => !existsSync(dir))).toEqual([]);
 	});
 
 	it('is reached through the tab body’s dynamic import', () => {
