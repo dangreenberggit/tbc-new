@@ -74,6 +74,7 @@ describe('upgradesStoreFor and the page’s phase (ticket 587)', () => {
 		const first = retPage(storage, 3);
 		const store = upgradesStoreFor(first.host);
 		await first.finishInit();
+		// A write with a scope is what stores that scope's defaults, as in production.
 		store.getState().setPrune(true, { key: 'ret:3', selectedSetKeys: ['preset:3:P3'], validSourceKeys: [] });
 		first.setPhase(4);
 

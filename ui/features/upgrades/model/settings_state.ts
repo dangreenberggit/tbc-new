@@ -50,7 +50,6 @@ export const withSourceToggled = (state: SettingsState, key: string): SettingsSt
 
 export const withSetToggled = (state: SettingsState, key: string): SettingsState => ({ ...state, selectedSetKeys: toggled(state.selectedSetKeys, key) });
 
-// The three setters below return the state they were given when the value already holds, so the store writes nothing.
 export const withPrune = (state: SettingsState, prune: boolean): SettingsState => (state.prune === prune ? state : { ...state, prune });
 
 export function withCandidateCap(state: SettingsState, cap: number | undefined): SettingsState {

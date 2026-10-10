@@ -106,6 +106,12 @@ describe('the settings changes', () => {
 		expect(changed).toMatchObject({ excludedSources: ['Black Temple'], prune: true, iterations: 2000 });
 	});
 
+	it('forgets the picked sets on a scope change even when no defaults were applied', () => {
+		const picked = withSetToggled(seeded(), 'preset:3:P3');
+		expect(picked.defaultsFor).toBeUndefined();
+		expect(afterScopeChange(picked, [])).toMatchObject({ selectedSetKeys: [], defaultsFor: undefined });
+	});
+
 	it('returns the state it was given on a scope change with no sets to forget and no exclusion to drop', () => {
 		const changed = afterScopeChange(withSourceToggled(seeded(), 'Black Temple'), ['Black Temple']);
 		expect(afterScopeChange(changed, ['Black Temple'])).toBe(changed);

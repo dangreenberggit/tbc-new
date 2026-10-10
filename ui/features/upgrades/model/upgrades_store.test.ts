@@ -115,6 +115,16 @@ describe('the user’s settings actions', () => {
 		expect(store.getState().settings).toMatchObject({ selectedSetKeys: [], iterations: 2000 });
 	});
 
+	it('stores the scope’s defaults on the first write even when the value already holds', () => {
+		const store = createUpgradesStore(SEED);
+		const listener = vi.fn();
+		store.subscribe(listener);
+
+		store.getState().setPrune(false, SCOPE);
+		expect(listener).toHaveBeenCalledOnce();
+		expect(store.getState().settings).toMatchObject({ selectedSetKeys: ['preset:P3'], prune: false, defaultsFor: 'ret:3' });
+	});
+
 	it('notifies nobody when a setting is set to the value it already holds', () => {
 		const store = createUpgradesStore(SEED);
 		store.getState().setPrune(false, SCOPE);
