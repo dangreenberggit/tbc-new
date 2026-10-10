@@ -1,7 +1,9 @@
 /**
  * The Upgrades tab's run state: one reducer, so the linked fields of a run
- * (its id, its landed rows, its result) change together. Pure; the hook that
- * owns it holds the abort controller and the run id counter.
+ * (its id, its landed rows, its result) change together. Pure; the tab's
+ * store holds the state and applies it (`upgrades_store.ts` `dispatchRun`),
+ * and the run session (`run_session.ts`) holds the abort controller and the
+ * run id counter.
  */
 
 import type { PartialRanking, RankedItem, Ranking } from './engine/rank';

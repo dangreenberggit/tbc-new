@@ -1,29 +1,19 @@
 import type { Env } from '@sim/state/env';
 import { describe, expect, it } from 'vitest';
 
+import { memoryStorage } from '../testing/fake_tab_host';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import { openSavedUpgradesStore } from './saved_settings';
-import { dispatchRun, dispatchSettings, setSort, setViewToggle } from './upgrades_store';
+import { dispatchRun, dispatchSettings, setExportFlavour, setSort, setViewToggle } from './upgrades_store';
 
 const KEY = '__tbc_new_feral_druid__upgradesSettings__';
 const SEED = { iterations: 1000 };
-
-const memoryStorage = (entries: Record<string, string> = {}): Env['storage'] & { entries: Map<string, string> } => {
-	const map = new Map(Object.entries(entries));
-	return {
-		entries: map,
-		getItem: key => map.get(key) ?? null,
-		setItem: (key, value) => void map.set(key, value),
-		removeItem: key => void map.delete(key),
-	};
-};
 
 describe('openSavedUpgradesStore', () => {
 	it('restores the settings and the sort a user chose in a fresh store', () => {
 		const storage = memoryStorage();
 		const first = openSavedUpgradesStore(SEED, storage, KEY);
 		dispatchSettings(first, { type: 'setIterations', iterations: 5000 });
-		dispatchSettings(first, { type: 'setCandidateCap', cap: 25 });
 		dispatchSettings(first, { type: 'toggleSource', key: 'raid:hyjal' });
 		dispatchSettings(first, { type: 'applyDefaults', key: 'feral:3', selectedSetKeys: ['preset:P3'], validSourceKeys: ['raid:hyjal'] });
 		dispatchSettings(first, { type: 'setPrune', prune: true });
@@ -35,7 +25,6 @@ describe('openSavedUpgradesStore', () => {
 			excludedSources: ['raid:hyjal'],
 			selectedSetKeys: ['preset:P3'],
 			prune: true,
-			candidateCap: 25,
 			iterations: 5000,
 			defaultsFor: 'feral:3',
 		});
@@ -52,6 +41,19 @@ describe('openSavedUpgradesStore', () => {
 		expect(openSavedUpgradesStore(SEED, storage, KEY).getState().view).toEqual({ withSetPotential: false, onlyBis: true });
 	});
 
+	it('restores the export panel’s token or gear choice in a fresh store (ticket 588)', () => {
+		const storage = memoryStorage();
+		setExportFlavour(openSavedUpgradesStore(SEED, storage, KEY), 'gear');
+		expect(openSavedUpgradesStore(SEED, storage, KEY).getState().exportFlavour).toBe('gear');
+	});
+
+	it('restores token for an entry saved before the export choice was', () => {
+		const raw = JSON.stringify({ version: 1, settings: { iterations: 5000 }, view: { onlyBis: true } });
+		const state = openSavedUpgradesStore(SEED, memoryStorage({ [KEY]: raw }), KEY).getState();
+		expect(state.exportFlavour).toBe('token');
+		expect(state.view.onlyBis).toBe(true);
+	});
+
 	it('restores a version-1 entry saved before the view toggles were, with the toggles off', () => {
 		const raw = JSON.stringify({ version: 1, settings: { iterations: 5000 }, sort: [{ id: 'slot', desc: true }] });
 		const state = openSavedUpgradesStore(SEED, memoryStorage({ [KEY]: raw }), KEY).getState();
@@ -60,14 +62,25 @@ describe('openSavedUpgradesStore', () => {
 		expect(state.view).toEqual({ withSetPotential: false, onlyBis: false });
 	});
 
-	it('lets the dev link’s iterations and cap win over the saved ones, as a settings link wins over saved settings upstream', () => {
+	it('lets the dev link’s iterations win over the saved ones, as a settings link wins over saved settings upstream', () => {
 		const storage = memoryStorage();
 		const first = openSavedUpgradesStore(SEED, storage, KEY);
 		dispatchSettings(first, { type: 'setIterations', iterations: 5000 });
-		dispatchSettings(first, { type: 'setCandidateCap', cap: 25 });
 
-		expect(openSavedUpgradesStore(SEED, storage, KEY, { iterations: 300 }).getState().settings).toMatchObject({ iterations: 300, candidateCap: 25 });
-		expect(openSavedUpgradesStore(SEED, storage, KEY, { candidateCap: 3 }).getState().settings).toMatchObject({ iterations: 5000, candidateCap: 3 });
+		expect(openSavedUpgradesStore(SEED, storage, KEY, { iterations: 300 }).getState().settings.iterations).toBe(300);
+	});
+
+	// The cap picker shows only on a page with `?upgrades-dev` (ticket 466), so a cap that came back on another page would cut the run unseen (ticket 586).
+	it('restores no cap: a page without the dev link runs uncapped whatever a dev page set', () => {
+		const storage = memoryStorage({ [KEY]: JSON.stringify({ version: 1, settings: { candidateCap: 25 } }) });
+		const devPage = openSavedUpgradesStore(SEED, storage, KEY, { candidateCap: 3 });
+		expect(devPage.getState().settings.candidateCap).toBe(3);
+		dispatchSettings(devPage, { type: 'setCandidateCap', cap: 7 });
+		dispatchSettings(devPage, { type: 'setIterations', iterations: 2000 });
+
+		const plainPage = openSavedUpgradesStore(SEED, storage, KEY).getState().settings;
+		expect(plainPage.iterations).toBe(2000);
+		expect(plainPage.candidateCap).toBeUndefined();
 	});
 
 	it('stores nothing from a run', () => {
@@ -79,7 +92,7 @@ describe('openSavedUpgradesStore', () => {
 
 		dispatchSettings(store, { type: 'setIterations', iterations: 2000 });
 		const stored = JSON.parse(storage.entries.get(KEY)!);
-		expect(Object.keys(stored).sort()).toEqual(['settings', 'sort', 'version', 'view']);
+		expect(Object.keys(stored).sort()).toEqual(['exportFlavour', 'settings', 'sort', 'version', 'view']);
 		expect(JSON.stringify(stored)).not.toContain('sig');
 	});
 
@@ -88,11 +101,12 @@ describe('openSavedUpgradesStore', () => {
 			settings: { excludedSources: [], selectedSetKeys: [], prune: false, iterations: 1000 },
 			sort: [],
 			view: { withSetPotential: false, onlyBis: false },
+			exportFlavour: 'token',
 		};
 		const restoredFrom = (raw: string | undefined) => {
 			const store = openSavedUpgradesStore(SEED, memoryStorage(raw === undefined ? {} : { [KEY]: raw }), KEY);
-			const { settings, sort, view } = store.getState();
-			return { settings, sort, view };
+			const { settings, sort, view, exportFlavour } = store.getState();
+			return { settings, sort, view, exportFlavour };
 		};
 		const saved = (body: object) => JSON.stringify({ version: 1, ...body });
 
@@ -121,11 +135,13 @@ describe('openSavedUpgradesStore', () => {
 				},
 				sort: [{ id: 'slot', desc: true }],
 				view: { withSetPotential: 'yes', onlyBis: true },
+				exportFlavour: 'pdf',
 			});
 			expect(restoredFrom(raw)).toEqual({
 				settings: { ...DEFAULT_STATE.settings, selectedSetKeys: ['preset:P3'], defaultsFor: 'feral:3' },
 				sort: [{ id: 'slot', desc: true }],
 				view: { withSetPotential: false, onlyBis: true },
+				exportFlavour: 'token',
 			});
 		});
 

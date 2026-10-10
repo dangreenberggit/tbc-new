@@ -3,14 +3,14 @@ import type { FixtureAutoloadOptions } from '@features/upgrades/hooks/useFixture
 import type { PoolEntry } from '@features/upgrades/model/engine/pool';
 import type { RunDeps } from '@features/upgrades/model/run';
 import type { RunOutcome, RunSettings } from '@features/upgrades/model/run_reducer';
-import { fakeTabHost } from '@features/upgrades/testing/fake_tab_host';
+import { fakeTabHost, memoryStorage } from '@features/upgrades/testing/fake_tab_host';
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { fixtureRow, RANKING_FIXTURE } from '@features/upgrades/testing/ranking_fixture';
 import { Raid as RaidProto } from '@generated/proto/api';
 import { Encounter as EncounterProto, EquipmentSpec, Spec } from '@generated/proto/common';
 import { SimHostProvider } from '@sim/context/SimHostContext';
 import { createSimStore, patchSlice } from '@sim/state/sim_store';
-import { act, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { type ReactNode, StrictMode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -93,14 +93,15 @@ const PRESETS = [
 	{ name: 'P4', phase: 4, gear: EquipmentSpec.create({ items: [{ id: 4 }] }) },
 ];
 
-/** A fresh page per case, so each case gets its own tab store (the store is keyed by the page's `Sim`). */
-const makeHost = () => {
+/** A fresh page per case, so each case gets its own tab store (the store is keyed by the page's `Sim`); a reload passes the last page's storage. */
+const makeHost = (storage = memoryStorage()) => {
 	const store = createSimStore();
 	patchSlice(store, 'sim', { phase: 3 });
 	const host = fakeTabHost({
 		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
 		sim: {
 			store,
+			env: { storage },
 			db: { getItemById: () => undefined },
 			raid: { toProto: () => RaidProto.create({ parties: [{ players: [{ name: worn }] }] }) },
 			encounter: { toProto: () => EncounterProto.create({ duration: 180 }) },
@@ -110,7 +111,7 @@ const makeHost = () => {
 		individualConfig: { presets: { gear: PRESETS } },
 		getSavedGearStorageKey: () => 'upgrades-tab-body-test-gear',
 	});
-	return { host, store };
+	return { host, store, storage };
 };
 let current = makeHost();
 
@@ -334,5 +335,51 @@ describe('UpgradesTabBody before its tab is first opened', () => {
 
 		act(() => screen.getByTestId('closed-panel').removeAttribute('hidden'));
 		expect(await screen.findByTestId('upgrades-tab-root')).not.toBeNull();
+	});
+
+	const settle = () => act(() => new Promise(resolve => setTimeout(resolve, 0)));
+	const SAVED_KEY = '__upgrades_test__upgradesSettings__';
+	/** The user cleared phase 3's default sets on an earlier visit, so the saved entry holds no sets for `ret:3`. */
+	const clearedAt3 = () => memoryStorage({ [SAVED_KEY]: JSON.stringify({ version: 1, settings: { selectedSetKeys: [], defaultsFor: 'ret:3' } }) });
+	const renderClosed = () =>
+		render(
+			<SimHostProvider host={current.host}>
+				<div role="tabpanel" hidden data-testid="closed-panel">
+					<UpgradesTabBody />
+				</div>
+			</SimHostProvider>,
+		);
+	/** Phase 3 to 4 and back on another tab, after the page has started up; each write rings the page's listeners as the real store would. */
+	const roundTripThroughPhase4 = async () => {
+		await settle();
+		act(() => {
+			patchSlice(current.store, 'sim', { phase: 4 });
+			pageChanged();
+			patchSlice(current.store, 'sim', { phase: 3 });
+			pageChanged();
+		});
+		await settle();
+	};
+
+	// Ticket 564: a phase change resets the tab to that phase's defaults whether or not the tab is on screen (ticket 587, A1).
+	it('selects the phase’s default sets for a phase change made before the tab opens, even one back to the saved phase', async () => {
+		current = makeHost(clearedAt3());
+		renderClosed();
+		await roundTripThroughPhase4();
+
+		act(() => screen.getByTestId('closed-panel').removeAttribute('hidden'));
+		await screen.findByTestId('upgrades-tab-root');
+		expect(tabSetKeys()).toBe('preset:3:P3');
+	});
+
+	it('saves that reset for the next page load when the tab is never opened', async () => {
+		current = makeHost(clearedAt3());
+		renderClosed();
+		await roundTripThroughPhase4();
+		cleanup();
+
+		current = makeHost(current.storage);
+		mount();
+		expect(tabSetKeys()).toBe('preset:3:P3');
 	});
 });

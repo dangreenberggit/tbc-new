@@ -1,9 +1,24 @@
+import { watchPhaseChanges } from '@features/upgrades/model/phase_changes';
 import i18n from '@i18n/config';
+import { useSimHost } from '@sim/context/SimHostContext';
+import type { IndividualSimHost } from '@sim/sim_host';
 import { Spinner } from '@ui-kit/Spinner';
-import { Component, lazy, type ReactNode, Suspense, useLayoutEffect, useRef, useState } from 'react';
+import { Component, lazy, type ReactNode, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 // A dynamic import, so the tab's code and its bundled item data stay out of every spec page's first download.
 const UpgradesTabBodyInner = lazy(() => import('@features/upgrades/components/UpgradesTab').then(module => ({ default: module.UpgradesTabBodyInner })));
+
+/**
+ * Opens the tab's store, which then follows the phase and saves each change, so a phase change made while the
+ * tab is closed reaches the saved settings even if the tab never opens on this page (ticket 587). It downloads
+ * the tab's store and data, but only on a phase change. A failed download leaves the changes recorded for the
+ * tab to replay when it opens.
+ */
+const openStoreFor = (host: IndividualSimHost<any>) => () =>
+	void import('@features/upgrades/hooks/useUpgradesStore').then(
+		({ upgradesStoreFor }) => upgradesStoreFor(host),
+		() => {},
+	);
 
 /**
  * Catches a failed download of the tab's code, for example after a site release removes the old chunk while the
@@ -33,8 +48,12 @@ class LoadFailedBoundary extends Component<{ children: ReactNode }, { failed: bo
  * tab strip's code. Outside a tab panel the body renders at once.
  */
 export const UpgradesTabBody = () => {
+	const host = useSimHost();
 	const probe = useRef<HTMLDivElement>(null);
 	const [opened, setOpened] = useState(false);
+
+	// From page start, so the tab's store sees a phase change made before the tab first opens (ticket 564's rule).
+	useEffect(() => watchPhaseChanges(host.sim, openStoreFor(host)), [host]);
 
 	useLayoutEffect(() => {
 		if (opened) return;

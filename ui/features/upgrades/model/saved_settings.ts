@@ -1,5 +1,5 @@
 /**
- * The Upgrades tab's settings, column sort and view toggles, kept across page reloads the
+ * The Upgrades tab's settings, column sort, view toggles and export choice, kept across page reloads the
  * way upstream keeps the sim's own settings (`ui/sim/state/persistence.ts`):
  * through the sim's `Env` storage, under a per-spec key, read once when the
  * store is made and written on every change after.
@@ -7,6 +7,7 @@
 
 import type { Env } from '@sim/state/env';
 
+import type { ExportFlavour } from './export';
 import { SORT_COLUMN_IDS } from './results_columns';
 import { NO_VIEW_TOGGLES } from './results_view';
 import { createUpgradesStore, type RestoredTab, type ResultsSort, type SettingsSeed, type UpgradesState, type UpgradesStore } from './upgrades_store';
@@ -25,27 +26,35 @@ const SAVED_VERSION = 1;
 type Storage = Env['storage'];
 type Settings = UpgradesState['settings'];
 
+/**
+ * Every setting but the candidate cap. Its picker shows only on a page with
+ * `?upgrades-dev` (`RunSettingsPanel`, ticket 466), so a saved cap would cut
+ * the runs of a later page that cannot show it (ticket 586). The dev link
+ * carries the cap on each load instead.
+ */
+type SavedSettings = Omit<Settings, 'candidateCap'>;
+
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 const isStringList = (value: unknown): value is string[] => Array.isArray(value) && value.every(entry => typeof entry === 'string');
 const isCount = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0;
+const EXPORT_FLAVOURS: readonly ExportFlavour[] = ['token', 'gear'];
 
-/** Each field reads back on its own, as a proto field upstream reads with `ignoreUnknownFields`: one bad field costs only itself. */
-const FIELD_CHECKS: { [K in keyof Settings]-?: (value: unknown) => boolean } = {
+/** Each field reads back on its own, so one bad field costs only itself. */
+const FIELD_CHECKS: { [K in keyof SavedSettings]-?: (value: unknown) => boolean } = {
 	excludedSources: isStringList,
 	selectedSetKeys: isStringList,
 	prune: value => typeof value === 'boolean',
-	candidateCap: value => isCount(value) && value > 0,
 	iterations: isCount,
 	defaultsFor: value => typeof value === 'string',
 };
 
-const restoredSettings = (saved: unknown): Partial<Settings> | undefined => {
+const restoredSettings = (saved: unknown): Partial<SavedSettings> | undefined => {
 	if (!isRecord(saved)) return undefined;
 	const settings: Record<string, unknown> = {};
 	for (const [field, check] of Object.entries(FIELD_CHECKS)) {
 		if (check(saved[field])) settings[field] = saved[field];
 	}
-	return settings as Partial<Settings>;
+	return settings as Partial<SavedSettings>;
 };
 
 const restoredView = (saved: unknown): RestoredTab['view'] => {
@@ -75,24 +84,37 @@ function readSavedTab(storage: Storage, key: string): RestoredTab {
 		return {};
 	}
 	if (!isRecord(saved) || saved.version !== SAVED_VERSION) return {};
-	return { settings: restoredSettings(saved.settings), sort: restoredSort(saved.sort), view: restoredView(saved.view) };
+	return {
+		settings: restoredSettings(saved.settings),
+		sort: restoredSort(saved.sort),
+		view: restoredView(saved.view),
+		exportFlavour: EXPORT_FLAVOURS.find(flavour => flavour === saved.exportFlavour),
+	};
 }
 
-const savedTabOf = ({ settings, sort, view }: UpgradesState) => ({ version: SAVED_VERSION, settings, sort, view });
+const savedTabOf = ({ settings: { candidateCap: _notSaved, ...settings }, sort, view, exportFlavour }: UpgradesState) => ({
+	version: SAVED_VERSION,
+	settings,
+	sort,
+	view,
+	exportFlavour,
+});
 
 /** The dev link's iterations and cap (`utils/dev_flags.ts`); a field the link does not set is absent. */
 export type LinkedSettings = Partial<Pick<Settings, 'iterations' | 'candidateCap'>>;
 
 /**
- * A new store over the page's saved settings, sort and view toggles, saving
- * each later change to any of them. A run changes neither, so a run writes nothing. The load
- * order is upstream's (`persistence.ts`): defaults, then saved, then the link.
+ * A new store over the page's saved settings, sort, view toggles and export
+ * choice, saving each later change to any of them. A run changes none of
+ * them, so a run writes nothing. The load order is upstream's (`persistence.ts`): defaults,
+ * then saved, then the link.
  */
 export function openSavedUpgradesStore(seed: SettingsSeed, storage: Storage, key: string, link: LinkedSettings = {}): UpgradesStore {
 	const saved = readSavedTab(storage, key);
 	const store = createUpgradesStore(seed, { ...saved, settings: { ...saved.settings, ...link } });
 	store.subscribe((state, previous) => {
-		if (state.settings === previous.settings && state.sort === previous.sort && state.view === previous.view) return;
+		const unchanged = state.settings === previous.settings && state.sort === previous.sort && state.view === previous.view;
+		if (unchanged && state.exportFlavour === previous.exportFlavour) return;
 		try {
 			storage.setItem(key, JSON.stringify(savedTabOf(state)));
 		} catch {

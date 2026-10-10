@@ -8,37 +8,44 @@ import { followPhase } from './follow_phase';
 import { validSourceKeysOf } from './settings_pool';
 import { createUpgradesStore } from './upgrades_store';
 
-/** A page at phase 3 whose tab store holds a pick, an exclusion only the phase-4 pool offers, and one no pool offers. */
-const pageAt3 = (spec: Spec) => {
+/**
+ * A page at phase 3, once it has started up (when the tab starts following the phase), whose tab store holds a
+ * pick, an exclusion only the phase-4 pool offers, and one no pool offers.
+ */
+const pageAt3 = async (spec: Spec) => {
 	const simStore = createSimStore();
 	patchSlice(simStore, 'sim', { phase: 3 });
-	const host = fakeHost({ player: { getSpec: () => spec }, sim: { store: simStore, getPhase: () => simStore.getState().sim.phase } });
+	const host = fakeHost({
+		player: { getSpec: () => spec },
+		sim: { store: simStore, getPhase: () => simStore.getState().sim.phase, waitForInit: () => Promise.resolve() },
+	});
 	const store = createUpgradesStore({ iterations: 1000 });
+	followPhase(store, host);
+	await new Promise(resolve => setTimeout(resolve, 0));
 	const offeredAt3 = validSourceKeysOf(poolFor('ret', 3));
 	const onlyAt4 = validSourceKeysOf(poolFor('ret', 4)).find(key => !offeredAt3.includes(key));
 	store.setState({
 		settings: { ...store.getState().settings, selectedSetKeys: ['preset:3:P3'], excludedSources: [onlyAt4!, 'Nowhere'], defaultsFor: 'ret:3' },
 	});
-	followPhase(store, host);
 	return { store, onlyAt4, patchSim: (patch: { phase?: number; iterations?: number }) => patchSlice(simStore, 'sim', patch) };
 };
 
 describe('followPhase', () => {
-	it('sends the settings to the new phase’s defaults on a phase change, keeping only exclusions the new pool offers', () => {
-		const { store, onlyAt4, patchSim } = pageAt3(Spec.SpecRetributionPaladin);
+	it('sends the settings to the new phase’s defaults on a phase change, keeping only exclusions the new pool offers', async () => {
+		const { store, onlyAt4, patchSim } = await pageAt3(Spec.SpecRetributionPaladin);
 		patchSim({ phase: 4 });
 		expect(store.getState().settings).toMatchObject({ selectedSetKeys: [], excludedSources: [onlyAt4], defaultsFor: undefined });
 	});
 
-	it('leaves the settings alone when another sim field changes', () => {
-		const { store, patchSim } = pageAt3(Spec.SpecRetributionPaladin);
+	it('leaves the settings alone when another sim field changes', async () => {
+		const { store, patchSim } = await pageAt3(Spec.SpecRetributionPaladin);
 		const before = store.getState().settings;
 		patchSim({ iterations: 5000 });
 		expect(store.getState().settings).toBe(before);
 	});
 
-	it('leaves the settings alone for a spec with no ranking data', () => {
-		const { store, patchSim } = pageAt3(Spec.SpecProtectionPaladin);
+	it('leaves the settings alone for a spec with no ranking data', async () => {
+		const { store, patchSim } = await pageAt3(Spec.SpecProtectionPaladin);
 		const before = store.getState().settings;
 		patchSim({ phase: 4 });
 		expect(store.getState().settings).toBe(before);

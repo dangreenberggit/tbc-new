@@ -2,7 +2,8 @@
  * The Upgrades tab's run settings: which sources are excluded, which sets are
  * selected, the prune, the candidate cap and the iteration count. One reducer,
  * because the eligible count and the run read several of them together. Pure;
- * the hook that owns it derives the options from the page.
+ * the tab's store holds the state and applies it (`upgrades_store.ts`), and
+ * `useUpgradesSettings` derives the options from the page.
  */
 
 import { type RunSettings, runSettings } from './run_reducer';
@@ -25,7 +26,8 @@ export type SettingsAction =
 	| { type: 'setCandidateCap'; cap: number | undefined }
 	| { type: 'setIterations'; iterations: number }
 	| { type: 'applyDefaults'; key: string; selectedSetKeys: readonly string[]; validSourceKeys: readonly string[] }
-	| { type: 'scopeChanged'; validSourceKeys: readonly string[] };
+	| { type: 'scopeChanged'; validSourceKeys: readonly string[] }
+	| { type: 'dropUnofferedSources'; validSourceKeys: readonly string[] };
 
 /** The old tab's cap field read 0 as "no cap" (C6). */
 const normaliseCap = (cap: number | undefined): number | undefined => (cap !== undefined && cap > 0 ? cap : undefined);
@@ -72,6 +74,12 @@ export function settingsReducer(state: SettingsState, action: SettingsAction): S
 			// dropped on the way back, as when the old tab applied that phase.
 			const valid = new Set(action.validSourceKeys);
 			return { ...state, selectedSetKeys: [], excludedSources: state.excludedSources.filter(key => valid.has(key)), defaultsFor: undefined };
+		}
+		case 'dropUnofferedSources': {
+			// A saved exclusion that a data update removed from the pool excludes nothing, but the Sources summary would count it.
+			const valid = new Set(action.validSourceKeys);
+			const kept = state.excludedSources.filter(key => valid.has(key));
+			return kept.length === state.excludedSources.length ? state : { ...state, excludedSources: kept };
 		}
 	}
 }

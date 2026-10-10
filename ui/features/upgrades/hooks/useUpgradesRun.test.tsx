@@ -43,7 +43,7 @@ const controllableRun = () => {
 const mount = (runFn: RunFn) => {
 	const host = fakeTabHost({
 		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
-		sim: { store: createSimStore() },
+		sim: { store: createSimStore(), getPhase: () => 3 },
 	});
 	const wrapper = ({ children }: { children: ReactNode }) => <SimHostProvider host={host}>{children}</SimHostProvider>;
 	const view = renderHook(() => useUpgradesRun(runFn), { wrapper });

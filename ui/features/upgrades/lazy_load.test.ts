@@ -26,6 +26,13 @@ const resolvesIntoFeature = (file: string, specifier: string): boolean => {
 	return target === FEATURE || target.startsWith(FEATURE + path.sep);
 };
 
+/**
+ * The feature files the eager tab body may import statically, to record phase changes from page start (ticket
+ * 587). Each must import nothing else from the feature, so it brings in neither the tab's code nor its data.
+ */
+const EAGER_FILES = ['model/phase_changes.ts'];
+const EAGER_SPECIFIERS = new Set(EAGER_FILES.map(file => `@features/upgrades/${file.replace(/\.ts$/, '')}`));
+
 const sourceFiles = (dir: string): string[] =>
 	readdirSync(dir, { withFileTypes: true }).flatMap(entry => {
 		const full = path.join(dir, entry.name);
@@ -42,10 +49,15 @@ describe('the Upgrades feature loads lazily', () => {
 	it('is imported statically by no production file outside its folder', () => {
 		const offenders = sourceFiles(UI).flatMap(file =>
 			staticImports(readFileSync(file, 'utf8'))
-				.filter(specifier => resolvesIntoFeature(file, specifier))
+				.filter(specifier => resolvesIntoFeature(file, specifier) && !EAGER_SPECIFIERS.has(specifier))
 				.map(specifier => `${path.relative(UI, file).split(path.sep).join('/')}: ${specifier}`),
 		);
 		expect(offenders).toEqual([]);
+	});
+
+	it.each(EAGER_FILES)('lets %s, which the tab body imports statically, import nothing else from the feature', file => {
+		const full = path.join(FEATURE, file);
+		expect(staticImports(readFileSync(full, 'utf8')).filter(specifier => resolvesIntoFeature(full, specifier))).toEqual([]);
 	});
 
 	it('is reached through the tab body’s dynamic import', () => {

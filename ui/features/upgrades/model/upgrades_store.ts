@@ -8,6 +8,7 @@
 import { subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 
+import type { ExportFlavour } from './export';
 import { NO_VIEW_TOGGLES, type ViewToggles } from './results_view';
 import { IDLE_RUN, type RunAction, runReducer, type RunState } from './run_reducer';
 import { initialSettings, type SettingsAction, settingsReducer, type SettingsState } from './settings_reducer';
@@ -22,16 +23,17 @@ export type ResultsSort = Array<{ id: string; desc: boolean }>;
 /**
  * `sort` is the one column sort every results table and the export follow
  * (ticket 280). `view` is the view toggles as the user set them; a run that
- * does not offer one shows it off (`appliedToggles`). Both hold across runs,
- * and the page saves them with the settings (`saved_settings.ts`).
+ * does not offer one shows it off (`appliedToggles`). `exportFlavour` is the
+ * export panel's token or gear choice. All three hold across runs, and the
+ * page saves them with the settings (`saved_settings.ts`).
  */
-export type UpgradesState = { run: RunState; settings: SettingsState; sort: ResultsSort; view: ViewToggles };
+export type UpgradesState = { run: RunState; settings: SettingsState; sort: ResultsSort; view: ViewToggles; exportFlavour: ExportFlavour };
 
-/** The settings a new store starts with: the dev link's iterations and cap, or the defaults. */
+/** The settings a new store starts from, before the page's saved entry and the dev link go over them (`saved_settings.ts`). */
 export type SettingsSeed = { iterations: number; candidateCap?: number };
 
 /** What a store restores from storage over its seed: only the fields that read back valid. */
-export type RestoredTab = { settings?: Partial<SettingsState>; sort?: ResultsSort; view?: Partial<ViewToggles> };
+export type RestoredTab = { settings?: Partial<SettingsState>; sort?: ResultsSort; view?: Partial<ViewToggles>; exportFlavour?: ExportFlavour };
 
 /** The sets a scope selects before the user picks any, and the sources its pool offers. */
 export type SettingsDefaults = { selectedSetKeys: readonly string[]; validSourceKeys: readonly string[] };
@@ -45,6 +47,8 @@ export function createUpgradesStore(seed: SettingsSeed, restored: RestoredTab = 
 			settings: { ...initialSettings(seed), ...restored.settings },
 			sort: restored.sort ?? [],
 			view: { ...NO_VIEW_TOGGLES, ...restored.view },
+			// The token is the default: the raid awards the token, not the tier piece (`ExportPanel`).
+			exportFlavour: restored.exportFlavour ?? 'token',
 		})),
 	);
 }
@@ -76,6 +80,11 @@ export function setViewToggle(store: UpgradesStore, toggle: keyof ViewToggles, o
 	if (view[toggle] !== on) store.setState({ view: { ...view, [toggle]: on } });
 }
 
+/** The export panel's token or gear choice; the same choice again notifies nobody. */
+export function setExportFlavour(store: UpgradesStore, flavour: ExportFlavour): void {
+	if (store.getState().exportFlavour !== flavour) store.setState({ exportFlavour: flavour });
+}
+
 export const applyDefaultsAction = (scope: string, defaults: SettingsDefaults): SettingsAction => ({
 	type: 'applyDefaults',
 	key: scope,
@@ -102,6 +111,7 @@ export function settingsActionIn(store: UpgradesStore, scope: string | undefined
 export const selectRun = (state: UpgradesState): RunState => state.run;
 export const selectSort = (state: UpgradesState): ResultsSort => state.sort;
 export const selectViewToggles = (state: UpgradesState): ViewToggles => state.view;
+export const selectExportFlavour = (state: UpgradesState): ExportFlavour => state.exportFlavour;
 export const selectRunStatus = (state: UpgradesState): RunState['status'] => state.run.status;
 
 /** The signature the result on screen was measured on; none while a run is in flight, which is never stale (ticket 560). */

@@ -3,10 +3,12 @@ import { BooleanPicker } from '@ui-kit/BooleanPicker';
 import { ContentBlock } from '@ui-kit/ContentBlock';
 import { CopyButton } from '@ui-kit/CopyButton';
 import { TextArea } from '@ui-kit/FormControl';
-import { useId, useState } from 'react';
+import { useId } from 'react';
 
+import { useUpgradesStore, useUpgradesStoreApi } from '../../hooks/useUpgradesStore';
 import type { RankedItem } from '../../model/engine/rank';
-import { type ExportFlavour, exportPayload } from '../../model/export';
+import { exportPayload } from '../../model/export';
+import { selectExportFlavour, setExportFlavour } from '../../model/upgrades_store';
 
 export interface ExportPanelProps {
 	/** The Upgrades pane's shortlist in the order on screen, so the payload keeps the cross-slot ranked order. */
@@ -15,11 +17,12 @@ export interface ExportPanelProps {
 
 /**
  * The shortlist as JSON for a loot-priority tool such as ThatsMyBis (tickets
- * 126, 314). The token flavour is the default: the raid awards the token, not
- * the tier piece. Hidden when there is nothing to export.
+ * 126, 314). The token or gear choice lives in the tab's store, which saves
+ * it with the tab's settings (ticket 588). Hidden when there is nothing to export.
  */
 export const ExportPanel = ({ rows }: ExportPanelProps) => {
-	const [flavour, setFlavour] = useState<ExportFlavour>('token');
+	const store = useUpgradesStoreApi();
+	const flavour = useUpgradesStore(selectExportFlavour);
 	const flavourId = useId();
 	const payload = exportPayload(rows, flavour);
 	if (payload.items.length === 0) return null;
@@ -35,7 +38,7 @@ export const ExportPanel = ({ rows }: ExportPanelProps) => {
 					label: i18n.t('upgrades_tab.export.flavour_toggle', { ns: 'upgrades' }),
 					layout: 'inline',
 					value: flavour === 'token',
-					onChange: tokens => setFlavour(tokens ? 'token' : 'gear'),
+					onChange: tokens => setExportFlavour(store, tokens ? 'token' : 'gear'),
 				}}
 			/>
 			<p className="mb-2 text-muted">

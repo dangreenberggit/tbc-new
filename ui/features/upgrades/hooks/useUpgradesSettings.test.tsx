@@ -55,7 +55,11 @@ const mount = (spec = Spec.SpecRetributionPaladin) => {
 		view: render(),
 		render,
 		tabStore: upgradesStoreFor(host),
-		setPhase: (phase: number) => act(() => patchSlice(store, 'sim', { phase })),
+		/** A phase change the user makes once the page has started up, which is when the tab starts following the phase. */
+		setPhase: async (phase: number) => {
+			await new Promise(resolve => setTimeout(resolve, 0));
+			act(() => patchSlice(store, 'sim', { phase }));
+		},
 	};
 };
 
@@ -71,12 +75,12 @@ describe('useUpgradesSettings', () => {
 		expect(selectedKeys(view.result.current)).toEqual([]);
 	});
 
-	it('selects the new phase’s defaults when the phase changes, and drops an exclusion the new pool lacks', () => {
+	it('selects the new phase’s defaults when the phase changes, and drops an exclusion the new pool lacks', async () => {
 		const { view, setPhase } = mount();
 		act(() => view.result.current.toggleSource('Hyjal Summit'));
 		expect(view.result.current.runSettings.excludedSources).toEqual(['Hyjal Summit']);
 
-		setPhase(4);
+		await setPhase(4);
 		expect(selectedKeys(view.result.current)).toEqual(['preset:4:P4']);
 		expect(view.result.current.runSettings.excludedSources).toEqual([]);
 		expect(view.result.current.sources.raids.map(o => o.key)).toEqual(['Black Temple', 'Zul’Aman']);
@@ -116,14 +120,14 @@ describe('useUpgradesSettings', () => {
 		expect(tabStore.getState().settings.defaultsFor).toBeUndefined();
 	});
 
-	it('shows the new phase’s defaults right after a phase change, before the tab writes them', () => {
+	it('shows the new phase’s defaults right after a phase change, before the tab writes them', async () => {
 		const { view, setPhase, tabStore } = mount();
-		setPhase(4);
+		await setPhase(4);
 		expect(selectedKeys(view.result.current)).toEqual(['preset:4:P4']);
 		expect(tabStore.getState().settings.defaultsFor).toBeUndefined();
 	});
 
-	it('gives every reader on the page the same effective settings', () => {
+	it('gives every reader on the page the same effective settings', async () => {
 		const { view, render, setPhase } = mount();
 		const other = render();
 		expect(other.result.current.runSettings).toEqual(view.result.current.runSettings);
@@ -132,7 +136,7 @@ describe('useUpgradesSettings', () => {
 		expect(other.result.current.runSettings).toEqual(view.result.current.runSettings);
 		expect(other.result.current.runSettings.excludedSources).toEqual(['Hyjal Summit']);
 
-		setPhase(4);
+		await setPhase(4);
 		expect(selectedKeys(other.result.current)).toEqual(['preset:4:P4']);
 		expect(other.result.current.runSettings).toEqual(view.result.current.runSettings);
 	});
@@ -142,7 +146,7 @@ describe('useUpgradesSettings', () => {
 	it.each([
 		{ path: 'with no edit at phase 4', editAtPhase4: () => {} },
 		{ path: 'with an iterations edit at phase 4', editAtPhase4: (settings: UpgradesSettings) => settings.setIterations(2000) },
-	])('selects the phase’s default sets again after a round trip to another phase, $path', ({ editAtPhase4 }) => {
+	])('selects the phase’s default sets again after a round trip to another phase, $path', async ({ editAtPhase4 }) => {
 		const { view, render, setPhase } = mount();
 		const outside = render();
 		const expectAgreement = () => expect(outside.result.current.runSettings).toEqual(view.result.current.runSettings);
@@ -154,14 +158,14 @@ describe('useUpgradesSettings', () => {
 		expect(selectedKeys(view.result.current)).toEqual([]);
 		expectAgreement();
 
-		setPhase(4);
+		await setPhase(4);
 		act(() => editAtPhase4(view.result.current));
 		expect(selectedKeys(view.result.current)).toEqual(['preset:4:P4']);
 		// Phase 4's pool offers Black Temple but not Hyjal Summit.
 		expect(view.result.current.excludedSources).toEqual(['Black Temple']);
 		expectAgreement();
 
-		setPhase(3);
+		await setPhase(3);
 		expect(selectedKeys(view.result.current)).toEqual(['preset:3:P3']);
 		expect(view.result.current.excludedSources).toEqual(['Black Temple']);
 		expectAgreement();

@@ -1,4 +1,7 @@
+import { fakeTabHost } from '@features/upgrades/testing/fake_tab_host';
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
+import { SimHostProvider } from '@sim/context/SimHostContext';
+import { createSimStore } from '@sim/state/sim_store';
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -17,10 +20,12 @@ describe('UpgradesTabBody when its code fails to load', () => {
 		// React reports the caught error on the console; the test expects it.
 		const error = vi.spyOn(console, 'error').mockImplementation(() => {});
 		render(
-			<div>
-				<p data-testid="other-tab">Gear</p>
-				<UpgradesTabBody />
-			</div>,
+			<SimHostProvider host={fakeTabHost({ sim: { store: createSimStore() } })}>
+				<div>
+					<p data-testid="other-tab">Gear</p>
+					<UpgradesTabBody />
+				</div>
+			</SimHostProvider>,
 		);
 
 		const message = await screen.findByTestId('upgrades-tab-load-failed');
