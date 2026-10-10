@@ -20,7 +20,7 @@ import {
 	splitSetChips,
 	validSourceKeysOf,
 } from './settings_pool';
-import { initialSettings, settingsReducer } from './settings_reducer';
+import { initialSettings, withPrune, withSetToggled, withSourceToggled } from './settings_state';
 
 const entry = (itemId: number, source: PoolEntry['source'], extra: Partial<PoolEntry> = {}): PoolEntry => ({
 	itemId,
@@ -249,10 +249,10 @@ describe('setSelection, runSettingsOf and eligibleCountOf', () => {
 	});
 
 	it('narrows the count when a source is excluded and, with prune, to the selected sets’ items', () => {
-		const excluded = settingsReducer(fresh, { type: 'toggleSource', key: 'Badge vendor' });
+		const excluded = withSourceToggled(fresh, 'Badge vendor');
 		expect(viewOf(excluded).eligibleCount).toBe(4);
 
-		const pruned = settingsReducer(settingsReducer(fresh, { type: 'toggleSet', key: 'preset:3:P3' }), { type: 'setPrune', prune: true });
+		const pruned = withPrune(withSetToggled(fresh, 'preset:3:P3'), true);
 		const view = viewOf(pruned);
 		expect(view.selectedOptions.map(o => o.key)).toEqual(['preset:3:P3']);
 		expect(view.runSettings).toMatchObject({ guaranteedSetKeys: ['preset:3:P3'], guaranteedSetItemIds: [1, 3], prune: true });
@@ -260,7 +260,7 @@ describe('setSelection, runSettingsOf and eligibleCountOf', () => {
 	});
 
 	it('drops a picked set the offer no longer has, such as a deleted saved set', () => {
-		const picked = settingsReducer(fresh, { type: 'toggleSet', key: 'saved:Gone' });
+		const picked = withSetToggled(fresh, 'saved:Gone');
 		expect(viewOf(picked).runSettings.guaranteedSetKeys).toEqual([]);
 	});
 });

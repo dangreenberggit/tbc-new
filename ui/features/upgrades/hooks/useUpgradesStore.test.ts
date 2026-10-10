@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { poolFor } from '../model/data/data';
 import { UPGRADES_SETTINGS_STORAGE_KEY } from '../model/saved_entry';
 import { validSourceKeysOf } from '../model/settings_pool';
-import { createUpgradesStore, dispatchSettings, setSort } from '../model/upgrades_store';
+import { createUpgradesStore } from '../model/upgrades_store';
 import { fakeTabHost, memoryStorage, settled } from '../testing/fake_tab_host';
 import { numberSettingSource, upgradesStoreFor } from './useUpgradesStore';
 
@@ -20,8 +20,8 @@ describe('upgradesStoreFor', () => {
 
 	it('keeps the settings and sort per spec across page loads, as upstream keys saved settings by spec', () => {
 		const feral = pageFor('__tbc_new_feral_druid');
-		dispatchSettings(feral, { type: 'setIterations', iterations: 4321 });
-		setSort(feral, [{ id: 'source', desc: true }]);
+		feral.getState().setIterations(4321, undefined);
+		feral.getState().setSort([{ id: 'source', desc: true }]);
 
 		expect(storage.entries.has('__tbc_new_feral_druid__upgradesSettings__')).toBe(true);
 		const feralReloaded = pageFor('__tbc_new_feral_druid').getState();
@@ -74,7 +74,7 @@ describe('upgradesStoreFor and the page’s phase (ticket 587)', () => {
 		const first = retPage(storage, 3);
 		const store = upgradesStoreFor(first.host);
 		await first.finishInit();
-		dispatchSettings(store, { type: 'applyDefaults', key: 'ret:3', selectedSetKeys: ['preset:3:P3'], validSourceKeys: [] });
+		store.getState().applyDefaults({ key: 'ret:3', selectedSetKeys: ['preset:3:P3'], validSourceKeys: [] });
 		first.setPhase(4);
 
 		const reloaded = retPage(storage, 4);
@@ -104,8 +104,8 @@ describe('numberSettingSource', () => {
 		// `batch` logs an error thrown inside it rather than throwing, so the count is read here and asserted after.
 		let callsInBatch = -1;
 		batch(() => {
-			dispatchSettings(store, { type: 'setIterations', iterations: 2000 });
-			dispatchSettings(store, { type: 'setIterations', iterations: 3000 });
+			store.getState().setIterations(2000, undefined);
+			store.getState().setIterations(3000, undefined);
 			callsInBatch = listener.mock.calls.length;
 		});
 
@@ -121,7 +121,7 @@ describe('numberSettingSource', () => {
 		const unsubscribe = numberSettingSource('iterations').storeSubscribe(store)(listener);
 
 		batch(() => {
-			dispatchSettings(store, { type: 'setIterations', iterations: 2000 });
+			store.getState().setIterations(2000, undefined);
 			unsubscribe();
 		});
 

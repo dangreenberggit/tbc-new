@@ -6,7 +6,7 @@ import { render, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RankedItem } from '../../model/engine/rank';
-import type { RunState } from '../../model/run_reducer';
+import type { RunState } from '../../model/run_state';
 import { fakeTabHost } from '../../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE, STOPPED_FIXTURE } from '../../testing/ranking_fixture';
 

@@ -15,7 +15,7 @@ import type { RowContext } from '../components/ResultsTable/ResultRow';
 import type { RankedItem } from '../model/engine/rank';
 import { compareSortValues, type DpsSortKey, SORT_COLUMN_IDS, type SortLabels, sortValue } from '../model/results_columns';
 import { rowKey } from '../model/results_view';
-import { selectSort, setSort, type UpgradesState } from '../model/upgrades_store';
+import { selectSort, type UpgradesState } from '../model/upgrades_store';
 import { SORT_LABELS } from '../utils/format';
 import { useUpgradesStore, useUpgradesStoreApi } from './useUpgradesStore';
 
@@ -61,6 +61,7 @@ export function useResultsTable(rows: readonly RankedItem[], rowContext: RowCont
 	const store = useUpgradesStoreApi();
 	// A table that ignores the sort selects a constant, so a sort click does not re-render it.
 	const sorting = useUpgradesStore(sortable ? selectSort : selectEngineOrder);
+	const setSort = useUpgradesStore(state => state.setSort);
 	const { dpsKey } = rowContext;
 	// Memoised because `useTable` hands back a new table object whenever its options object is new, and a new
 	// columns array rebuilds every column. Both hold only while the caller keeps `rows` the same array.
@@ -72,9 +73,9 @@ export function useResultsTable(rows: readonly RankedItem[], rowContext: RowCont
 			data: rows,
 			columns,
 			state: { sorting },
-			onSortingChange: (updater: Updater<SortingState>) => setSort(store, functionalUpdate(updater, store.getState().sort)),
+			onSortingChange: (updater: Updater<SortingState>) => setSort(functionalUpdate(updater, store.getState().sort)),
 		}),
-		[rows, columns, sorting, store],
+		[rows, columns, sorting, store, setSort],
 	);
 	return useTable(options);
 }

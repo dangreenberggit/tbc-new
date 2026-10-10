@@ -14,8 +14,8 @@ import { type AssumptionsContext, assumptionsLine, substitutionConsoleLines } fr
 import type { Ranking } from './engine/rank';
 import { clearProgress } from './progress_channel';
 import { createRunContext, type RunContext, type RunFn, specIdFor } from './run';
-import { type MeasuredOn, type RunSettings, settledAction } from './run_reducer';
-import { dispatchRun, type UpgradesStore } from './upgrades_store';
+import type { MeasuredOn, RunSettings } from './run_state';
+import type { UpgradesStore } from './upgrades_store';
 
 /**
  * What the session takes from the browser and the UI layer, which `model/`
@@ -80,18 +80,18 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 
 		clearProgress(host.player);
 		const measuredOn = measuredOnPage(host, inputsSignature);
-		dispatchRun(store, { type: 'started', runId: id, startedAt: Date.now(), measuredOn });
+		store.getState().startRun(id, Date.now(), measuredOn);
 		runFn(host, settings, {
 			signal: current.signal,
-			onLanded: row => dispatchRun(store, { type: 'landed', runId: id, row }),
+			onLanded: row => store.getState().landRow(id, row),
 			runContext: () => (context ??= createRunContext(env.runner)),
 		}).then(
 			result => {
-				dispatchRun(store, settledAction(id, result));
-				// A superseded run's result is dropped by the reducer, so it is not logged either.
+				store.getState().settleRun(id, result);
+				// The store drops a superseded run's result, so it is not logged either.
 				if (id === runId) logAssumptions(result, { specId: measuredOn.specId, settings });
 			},
-			(error: unknown) => dispatchRun(store, { type: 'failed', runId: id, message: env.describeError(error) }),
+			(error: unknown) => store.getState().failRun(id, env.describeError(error)),
 		);
 	};
 
@@ -99,13 +99,13 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 	const stop = () => {
 		if (!controller) return;
 		controller.abort();
-		dispatchRun(store, { type: 'stopping', runId });
+		store.getState().requestStop(runId);
 	};
 
 	const loadFixture = (ranking: Ranking, inputsSignature: string) => {
 		controller?.abort();
 		const measuredOn = measuredOnPage(host, inputsSignature);
-		dispatchRun(store, { type: 'fixtureLoaded', runId: ++runId, ranking, measuredOn });
+		store.getState().loadFixture(++runId, ranking, measuredOn);
 		logAssumptions(ranking, { specId: measuredOn.specId });
 	};
 

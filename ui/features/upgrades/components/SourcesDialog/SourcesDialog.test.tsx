@@ -15,7 +15,7 @@ const SOURCES = {
 	other: [{ key: 'Badge vendor', count: 1 }],
 };
 
-/** The settings reducer's toggle in small, so the dialog shows what a click changed. */
+/** The settings' source toggle in small, so the dialog shows what a click changed. */
 const Harness = ({ sources = SOURCES }: { sources?: typeof SOURCES }) => {
 	const [excluded, setExcluded] = useState<readonly string[]>([]);
 	const onToggle = (key: string) => setExcluded(keys => (keys.includes(key) ? keys.filter(k => k !== key) : [...keys, key]));

@@ -19,7 +19,6 @@ vi.mock('../../hooks/useVirtualRows', () => ({
 
 const { ResultsPane } = await import('./ResultsPane');
 const { upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
-const { setSort } = await import('../../model/upgrades_store');
 
 loadEnglishBundles({ character: true });
 
@@ -54,7 +53,9 @@ describe('ResultsPane', () => {
 	});
 
 	it('names the group columns for screen readers only, with the shared sort, under the shortlist head', () => {
-		setSort(upgradesStoreFor(host), [{ id: 'delta_dps', desc: true }]);
+		upgradesStoreFor(host)
+			.getState()
+			.setSort([{ id: 'delta_dps', desc: true }]);
 		const { getByTestId } = onPage({ shortlist: [fixtureRow(0)], belowCutoff: [fixtureRow(5)], rowContext: CONTEXT });
 		const group = getByTestId('upgrades-below-cutoff');
 		fireEvent.click(within(group).getByTestId('upgrades-below-cutoff-trigger'));

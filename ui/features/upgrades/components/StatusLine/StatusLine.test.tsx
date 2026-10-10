@@ -2,7 +2,7 @@ import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import type { RunState } from '../../model/run_reducer';
+import type { RunState } from '../../model/run_state';
 import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
 import { StaleNotice, StatusLine } from './StatusLine';
 

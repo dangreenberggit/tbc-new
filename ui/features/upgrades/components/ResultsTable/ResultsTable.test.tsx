@@ -26,7 +26,6 @@ const { ProvisionalResultsTable, ResultRows, ResultsTable } = await import('./Re
 const { ScreenReaderResultsHead, SortableResultsHead } = await import('./ResultsTableHead');
 const { useResultsTable } = await import('../../hooks/useResultsTable');
 const { selectSort, upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
-const { setSort } = await import('../../model/upgrades_store');
 type RowContext = import('./ResultRow').RowContext;
 type RankedItem = import('../../model/engine/rank').RankedItem;
 
@@ -57,7 +56,7 @@ beforeEach(() => {
 	host = fakeTabHost({ player: { getSpec: () => undefined } });
 });
 const onPage = (node: ReactNode) => <SimHostProvider host={host}>{node}</SimHostProvider>;
-const storeSort = (sorting: SortingState) => setSort(upgradesStoreFor(host), sorting);
+const storeSort = (sorting: SortingState) => upgradesStoreFor(host).getState().setSort(sorting);
 const storedSort = () => selectSort(upgradesStoreFor(host).getState());
 
 /** A table with no head, as the below-cutoff group composes it. */

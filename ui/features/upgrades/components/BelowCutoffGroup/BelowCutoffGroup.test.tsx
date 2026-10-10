@@ -20,7 +20,6 @@ vi.mock('../../hooks/useVirtualRows', () => ({
 const { BelowCutoffGroup } = await import('./BelowCutoffGroup');
 const { useResultsTable } = await import('../../hooks/useResultsTable');
 const { upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
-const { setSort } = await import('../../model/upgrades_store');
 type RankedItem = import('../../model/engine/rank').RankedItem;
 
 loadEnglishBundles({ character: true });
@@ -81,7 +80,9 @@ describe('BelowCutoffGroup', () => {
 	});
 
 	it('orders its rows by the shared sort', () => {
-		setSort(upgradesStoreFor(host), [{ id: 'delta_dps', desc: true }]);
+		upgradesStoreFor(host)
+			.getState()
+			.setSort([{ id: 'delta_dps', desc: true }]);
 		const { getByTestId } = group();
 		fireEvent.click(getByTestId('upgrades-below-cutoff-trigger'));
 

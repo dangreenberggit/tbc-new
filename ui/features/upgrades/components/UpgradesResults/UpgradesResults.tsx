@@ -2,7 +2,7 @@ import i18n from '@i18n/config';
 import { memo } from 'react';
 
 import { useResultsView } from '../../hooks/useResultsView';
-import type { RunState } from '../../model/run_reducer';
+import type { RunState } from '../../model/run_state';
 import type { SetOption } from '../../model/settings_pool';
 import { EmptyState } from '../EmptyState';
 import { ResultsPanes } from '../ResultsPanes';

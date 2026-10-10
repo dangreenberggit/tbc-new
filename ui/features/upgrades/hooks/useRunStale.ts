@@ -3,7 +3,7 @@ import { useStoreSubscribe } from '@sim/hooks/useStoreSubscribe';
 import { subscribeSimChange } from '@sim/state/subscriptions';
 
 import { inputsSignature, liveInputsKey } from '../model/run_inputs';
-import type { RunSettings } from '../model/run_reducer';
+import type { RunSettings } from '../model/run_state';
 import { selectSettledSignature, useUpgradesStore } from './useUpgradesStore';
 
 /**

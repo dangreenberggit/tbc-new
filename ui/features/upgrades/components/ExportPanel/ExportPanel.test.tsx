@@ -5,7 +5,6 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { upgradesStoreFor } from '../../hooks/useUpgradesStore';
-import { setExportFlavour } from '../../model/upgrades_store';
 import { fakeTabHost } from '../../testing/fake_tab_host';
 import { fixtureRow } from '../../testing/ranking_fixture';
 import { ExportPanel } from './ExportPanel';
@@ -49,7 +48,7 @@ describe('ExportPanel', () => {
 	// Ticket 588: the choice is saved with the tab's other settings, so it survives a reload.
 	it('starts from the choice the page saved, and keeps a new one in the tab’s store', () => {
 		const store = upgradesStoreFor(host);
-		setExportFlavour(store, 'gear');
+		store.getState().setExportFlavour('gear');
 		render(<ExportPanel rows={[GREAVES_TOKEN, TORCH]} />);
 		expect(exportedIds()).toEqual([GREAVES_TOKEN.itemId, TORCH.itemId]);
 

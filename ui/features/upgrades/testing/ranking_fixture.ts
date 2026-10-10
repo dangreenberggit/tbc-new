@@ -1,6 +1,6 @@
 import type { ItemSource } from '../model/engine/pool';
 import type { RankedItem, Ranking } from '../model/engine/rank';
-import type { StoppedRanking } from '../model/run_reducer';
+import type { StoppedRanking } from '../model/run_state';
 
 /**
  * A token source as the bundled universes carry it. `ItemSource` has no

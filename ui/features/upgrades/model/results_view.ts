@@ -11,7 +11,7 @@ import type { RankedItem, Ranking } from './engine/rank';
 import { SIM_ORDER } from './engine/slots';
 import { applyView, rankableSetPotential, type ViewResult, type ViewRow } from './engine/view';
 import type { DpsSortKey } from './results_columns';
-import type { RunState, StoppedRanking } from './run_reducer';
+import type { RunState, StoppedRanking } from './run_state';
 
 export const SHOPPING_LIST_TAB = 'shopping-list';
 

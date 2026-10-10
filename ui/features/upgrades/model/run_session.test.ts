@@ -7,7 +7,7 @@ import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
 import type { PartialRanking } from './engine/rank';
 import type { RunDeps, RunFn } from './run';
-import type { RunOutcome, RunResult } from './run_reducer';
+import type { RunOutcome, RunResult } from './run_state';
 import { createUpgradesStore } from './upgrades_store';
 
 const contexts: Array<object> = [];

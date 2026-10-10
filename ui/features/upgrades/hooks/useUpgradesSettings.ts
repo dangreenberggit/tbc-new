@@ -7,10 +7,10 @@ import { useStore } from 'zustand';
 import { bisTagPhaseFor, poolFor } from '../model/data/data';
 import type { ContentPhase } from '../model/engine/types';
 import { specIdFor } from '../model/run';
-import type { RunSettings } from '../model/run_reducer';
+import type { RunSettings } from '../model/run_state';
 import { eligibleCountOf, runSettingsOf, type SetSelection, setSelection, type SettingsOffer, settingsOffer } from '../model/settings_pool';
-import type { SettingsAction } from '../model/settings_reducer';
-import { appliedSettings, settingsActionIn, type SettingsDefaults, type UpgradesStore } from '../model/upgrades_store';
+import { appliedSettings, type SettingsScope } from '../model/settings_state';
+import type { UpgradesStore } from '../model/upgrades_store';
 import { useUpgradesStoreApi } from './useUpgradesStore';
 
 export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
@@ -29,8 +29,6 @@ export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
 	setCandidateCap: (cap: number) => void;
 };
 
-const defaultsOf = (offer: SettingsOffer): SettingsDefaults => ({ selectedSetKeys: offer.defaultKeys, validSourceKeys: offer.sourceKeys });
-
 /**
  * The tab's effective run settings over the page's spec, phase, gear presets
  * and saved gear sets, for any component on the page (ticket 564). The default
@@ -46,6 +44,11 @@ export function useUpgradesSettings(): UpgradesSettings {
 	const saved = useSavedGear().entries;
 	const store = useUpgradesStoreApi();
 	const stored = useStore(store, state => state.settings);
+	const toggleSource = useStore(store, state => state.toggleSource);
+	const toggleSet = useStore(store, state => state.toggleSet);
+	const setPrune = useStore(store, state => state.setPrune);
+	const setIterations = useStore(store, state => state.setIterations);
+	const setCandidateCap = useStore(store, state => state.setCandidateCap);
 
 	// Memoised: `poolFor` builds a new pool on each call, and the tab renders again on every row a run lands.
 	const offer = useMemo(
@@ -58,10 +61,14 @@ export function useUpgradesSettings(): UpgradesSettings {
 			}),
 		[specId, phase, presets, saved],
 	);
-	const scope = specId ? `${specId}:${phase}` : undefined;
+	const scope = useMemo(
+		(): SettingsScope | undefined =>
+			specId ? { key: `${specId}:${phase}`, selectedSetKeys: offer.defaultKeys, validSourceKeys: offer.sourceKeys } : undefined,
+		[specId, phase, offer],
+	);
 	// Memoised for the same renders: until a write stores the defaults, the derivation builds a new state on each
 	// call, and the selection and eligible count below key on its fields.
-	const state = useMemo(() => appliedSettings(stored, scope, defaultsOf(offer)), [stored, scope, offer]);
+	const state = useMemo(() => appliedSettings(stored, scope), [stored, scope]);
 	// Memoised on the picked sets alone, so it keeps its identity while other settings change: the results
 	// area builds its row badges from it, and a new selection renders every row again.
 	const selection = useMemo(() => setSelection(offer, state.selectedSetKeys, phase), [offer, state.selectedSetKeys, phase]);
@@ -77,9 +84,8 @@ export function useUpgradesSettings(): UpgradesSettings {
 		[offer, excludedSources, selection, effectivePrune, phase],
 	);
 
-	return useMemo((): UpgradesSettings => {
-		const write = (action: SettingsAction) => settingsActionIn(store, scope, defaultsOf(offer), action);
-		return {
+	return useMemo(
+		(): UpgradesSettings => ({
 			selectedOptions: selection.selectedOptions,
 			selectedKeys: selection.selectedKeys,
 			chips: selection.chips,
@@ -89,11 +95,27 @@ export function useUpgradesSettings(): UpgradesSettings {
 			prune: state.prune,
 			eligibleCount: specId ? eligibleCount : undefined,
 			store,
-			toggleSource: key => write({ type: 'toggleSource', key }),
-			toggleSet: key => write({ type: 'toggleSet', key }),
-			setPrune: prune => write({ type: 'setPrune', prune }),
-			setIterations: iterations => write({ type: 'setIterations', iterations }),
-			setCandidateCap: cap => write({ type: 'setCandidateCap', cap }),
-		};
-	}, [selection, runSettings, offer, excludedSources, state.prune, specId, eligibleCount, store, scope]);
+			toggleSource: key => toggleSource(key, scope),
+			toggleSet: key => toggleSet(key, scope),
+			setPrune: prune => setPrune(prune, scope),
+			setIterations: iterations => setIterations(iterations, scope),
+			setCandidateCap: cap => setCandidateCap(cap, scope),
+		}),
+		[
+			selection,
+			runSettings,
+			offer,
+			excludedSources,
+			state.prune,
+			specId,
+			eligibleCount,
+			store,
+			scope,
+			toggleSource,
+			toggleSet,
+			setPrune,
+			setIterations,
+			setCandidateCap,
+		],
+	);
 }

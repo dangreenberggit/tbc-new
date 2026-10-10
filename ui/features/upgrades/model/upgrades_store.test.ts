@@ -2,22 +2,12 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { PartialRanking } from './engine/rank';
-import {
-	appliedSettings,
-	createUpgradesStore,
-	dispatchRun,
-	dispatchSettings,
-	selectRunStatus,
-	selectSettledSignature,
-	selectSort,
-	setSort,
-	settingsActionIn,
-} from './upgrades_store';
+import { appliedSettings } from './settings_state';
+import { createUpgradesStore, selectRunStatus, selectSettledSignature, selectSort } from './upgrades_store';
 
 const [rowA] = RANKING_FIXTURE.items;
 const SEED = { iterations: 1000 };
-const SCOPE = 'ret:3';
-const DEFAULTS = { selectedSetKeys: ['preset:P3'], validSourceKeys: ['raid:hyjal'] };
+const SCOPE = { key: 'ret:3', selectedSetKeys: ['preset:P3'], validSourceKeys: ['raid:hyjal'] };
 const MEASURED = { inputsSignature: 'sig-at-click' };
 
 describe('createUpgradesStore', () => {
@@ -28,40 +18,40 @@ describe('createUpgradesStore', () => {
 	});
 });
 
-describe('dispatchRun', () => {
+describe('the run actions', () => {
 	it('notifies nobody when a superseded run lands a row', () => {
 		const store = createUpgradesStore(SEED);
-		dispatchRun(store, { type: 'started', runId: 2, startedAt: 1000 });
+		store.getState().startRun(2, 1000);
 		const listener = vi.fn();
 		store.subscribe(listener);
 
-		dispatchRun(store, { type: 'landed', runId: 1, row: rowA! });
+		store.getState().landRow(1, rowA!);
 		expect(listener).not.toHaveBeenCalled();
 
-		dispatchRun(store, { type: 'landed', runId: 2, row: rowA! });
+		store.getState().landRow(2, rowA!);
 		expect(listener).toHaveBeenCalledOnce();
 		expect(store.getState().run).toMatchObject({ status: 'running', landedRows: [rowA] });
 	});
 
 	it('keeps the sort the user chose when the next run starts and lands', () => {
 		const store = createUpgradesStore(SEED);
-		dispatchRun(store, { type: 'started', runId: 1, startedAt: 1000 });
-		dispatchRun(store, { type: 'finished', runId: 1, result: RANKING_FIXTURE });
-		setSort(store, [{ id: 'item', desc: false }]);
+		store.getState().startRun(1, 1000);
+		store.getState().settleRun(1, RANKING_FIXTURE);
+		store.getState().setSort([{ id: 'item', desc: false }]);
 
-		dispatchRun(store, { type: 'started', runId: 2, startedAt: 2000 });
+		store.getState().startRun(2, 2000);
 		expect(selectSort(store.getState())).toEqual([{ id: 'item', desc: false }]);
 
-		dispatchRun(store, { type: 'landed', runId: 2, row: rowA! });
-		dispatchRun(store, { type: 'finished', runId: 2, result: RANKING_FIXTURE });
+		store.getState().landRow(2, rowA!);
+		store.getState().settleRun(2, RANKING_FIXTURE);
 		expect(selectSort(store.getState())).toEqual([{ id: 'item', desc: false }]);
 	});
 
 	it('keeps the sort when a recorded ranking loads', () => {
 		const store = createUpgradesStore(SEED);
-		setSort(store, [{ id: 'item', desc: false }]);
+		store.getState().setSort([{ id: 'item', desc: false }]);
 
-		dispatchRun(store, { type: 'fixtureLoaded', runId: 1, ranking: RANKING_FIXTURE });
+		store.getState().loadFixture(1, RANKING_FIXTURE);
 
 		expect(selectSort(store.getState())).toEqual([{ id: 'item', desc: false }]);
 	});
@@ -69,7 +59,7 @@ describe('dispatchRun', () => {
 	it('leaves the settings object alone', () => {
 		const store = createUpgradesStore(SEED);
 		const settings = store.getState().settings;
-		dispatchRun(store, { type: 'started', runId: 1, startedAt: 1000 });
+		store.getState().startRun(1, 1000);
 		expect(store.getState().settings).toBe(settings);
 	});
 });
@@ -78,49 +68,49 @@ describe('appliedSettings', () => {
 	it('applies the scope defaults to a fresh state and returns the same object on a second call', () => {
 		const store = createUpgradesStore(SEED);
 		const raw = store.getState().settings;
-		const first = appliedSettings(raw, SCOPE, DEFAULTS);
-		expect(first).toMatchObject({ selectedSetKeys: ['preset:P3'], defaultsFor: SCOPE });
+		const first = appliedSettings(raw, SCOPE);
+		expect(first).toMatchObject({ selectedSetKeys: ['preset:P3'], defaultsFor: 'ret:3' });
 		expect(raw.defaultsFor).toBeUndefined();
-		expect(appliedSettings(first, SCOPE, DEFAULTS)).toBe(first);
+		expect(appliedSettings(first, SCOPE)).toBe(first);
 	});
 
 	it('returns the stored object once a write has stored the defaults', () => {
 		const store = createUpgradesStore(SEED);
-		settingsActionIn(store, SCOPE, DEFAULTS, { type: 'setPrune', prune: true });
+		store.getState().setPrune(true, SCOPE);
 		const stored = store.getState().settings;
-		expect(appliedSettings(stored, SCOPE, DEFAULTS)).toBe(stored);
+		expect(appliedSettings(stored, SCOPE)).toBe(stored);
 	});
 
 	it('applies nothing for a page whose spec has no ranking data', () => {
 		const raw = createUpgradesStore(SEED).getState().settings;
-		expect(appliedSettings(raw, undefined, DEFAULTS)).toBe(raw);
+		expect(appliedSettings(raw, undefined)).toBe(raw);
 	});
 });
 
-describe('settingsActionIn', () => {
+describe('the user’s settings actions', () => {
 	it('applies the defaults and then the toggle in one notification', () => {
 		const store = createUpgradesStore(SEED);
 		const listener = vi.fn();
 		store.subscribe(listener);
 
-		settingsActionIn(store, SCOPE, DEFAULTS, { type: 'toggleSet', key: 'saved:Tier 5' });
+		store.getState().toggleSet('saved:Tier 5', SCOPE);
 		expect(listener).toHaveBeenCalledOnce();
-		expect(store.getState().settings).toMatchObject({ selectedSetKeys: ['preset:P3', 'saved:Tier 5'], defaultsFor: SCOPE });
+		expect(store.getState().settings).toMatchObject({ selectedSetKeys: ['preset:P3', 'saved:Tier 5'], defaultsFor: 'ret:3' });
 	});
 
 	it('keeps a set the user deselected deselected on the next write in the same scope', () => {
 		const store = createUpgradesStore(SEED);
-		settingsActionIn(store, SCOPE, DEFAULTS, { type: 'toggleSet', key: 'preset:P3' });
-		settingsActionIn(store, SCOPE, DEFAULTS, { type: 'setIterations', iterations: 2000 });
+		store.getState().toggleSet('preset:P3', SCOPE);
+		store.getState().setIterations(2000, SCOPE);
 		expect(store.getState().settings).toMatchObject({ selectedSetKeys: [], iterations: 2000 });
 	});
 
 	it('notifies nobody when the write changes nothing', () => {
 		const store = createUpgradesStore(SEED);
-		settingsActionIn(store, SCOPE, DEFAULTS, { type: 'setPrune', prune: false });
+		store.getState().setPrune(false, SCOPE);
 		const listener = vi.fn();
 		store.subscribe(listener);
-		dispatchSettings(store, { type: 'applyDefaults', key: SCOPE, ...DEFAULTS });
+		store.getState().applyDefaults(SCOPE);
 		expect(listener).not.toHaveBeenCalled();
 	});
 });
@@ -128,15 +118,15 @@ describe('settingsActionIn', () => {
 describe('run selectors', () => {
 	it('gives no settled signature while a run is in flight, and the signature once it is done or stopped', () => {
 		const store = createUpgradesStore(SEED);
-		dispatchRun(store, { type: 'started', runId: 1, startedAt: 1000, measuredOn: MEASURED });
+		store.getState().startRun(1, 1000, MEASURED);
 		expect(selectSettledSignature(store.getState())).toBeUndefined();
 
-		dispatchRun(store, { type: 'finished', runId: 1, result: RANKING_FIXTURE });
+		store.getState().settleRun(1, RANKING_FIXTURE);
 		expect(selectSettledSignature(store.getState())).toBe('sig-at-click');
 
-		dispatchRun(store, { type: 'started', runId: 2, startedAt: 2000, measuredOn: MEASURED });
+		store.getState().startRun(2, 2000, MEASURED);
 		const partial: PartialRanking & { durationMs: number } = { ...RANKING_FIXTURE, items: [rowA!], complete: false, durationMs: 9 };
-		dispatchRun(store, { type: 'stopped', runId: 2, result: partial });
+		store.getState().settleRun(2, partial);
 		expect(selectSettledSignature(store.getState())).toBe('sig-at-click');
 	});
 });
@@ -148,8 +138,8 @@ describe('setSort', () => {
 
 	it('stores the sort it is given', () => {
 		const store = createUpgradesStore(SEED);
-		setSort(store, [{ id: 'item', desc: true }]);
-		setSort(store, [{ id: 'item', desc: false }]);
+		store.getState().setSort([{ id: 'item', desc: true }]);
+		store.getState().setSort([{ id: 'item', desc: false }]);
 		expect(selectSort(store.getState())).toEqual([{ id: 'item', desc: false }]);
 	});
 
@@ -159,7 +149,7 @@ describe('setSort', () => {
 		const second = vi.fn();
 		store.subscribe(selectSort, first);
 		store.subscribe(selectSort, second);
-		setSort(store, [{ id: 'delta_dps', desc: true }]);
+		store.getState().setSort([{ id: 'delta_dps', desc: true }]);
 		expect(first).toHaveBeenCalledWith([{ id: 'delta_dps', desc: true }], []);
 		expect(second).toHaveBeenCalledWith([{ id: 'delta_dps', desc: true }], []);
 	});
@@ -168,7 +158,7 @@ describe('setSort', () => {
 		const store = createUpgradesStore(SEED);
 		const listener = vi.fn();
 		store.subscribe(listener);
-		setSort(store, selectSort(store.getState()));
+		store.getState().setSort(selectSort(store.getState()));
 		expect(listener).not.toHaveBeenCalled();
 	});
 });

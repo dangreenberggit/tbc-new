@@ -4,10 +4,10 @@ import { useMemo } from 'react';
 import type { RowContext } from '../components/ResultsTable';
 import type { ViewResult } from '../model/engine/view';
 import { appliedToggles, dpsSortKeyFor, offeredToggles, resultsViewFor, type ViewToggles } from '../model/results_view';
-import type { RunState } from '../model/run_reducer';
+import type { RunState } from '../model/run_state';
 import { rowTagIndex, type SetOption } from '../model/settings_pool';
-import { selectViewToggles, setViewToggle } from '../model/upgrades_store';
-import { useUpgradesStore, useUpgradesStoreApi } from './useUpgradesStore';
+import { selectViewToggles } from '../model/upgrades_store';
+import { useUpgradesStore } from './useUpgradesStore';
 
 export type ResultsView = {
 	/** The view toggles as the user set them, and the ones the tab shows for this run. */
@@ -27,8 +27,8 @@ export type ResultsView = {
  */
 export function useResultsView(run: RunState, selectedSets: readonly SetOption[]): ResultsView {
 	const { sim } = useSimHost();
-	const store = useUpgradesStoreApi();
 	const toggles = useUpgradesStore(selectViewToggles);
+	const setToggle = useUpgradesStore(state => state.setViewToggle);
 	const offered = offeredToggles(run);
 	const { withSetPotential, onlyBis } = appliedToggles(offered, toggles);
 	const ranking = run.status === 'done' || run.status === 'stopped' ? run.result : undefined;
@@ -49,5 +49,5 @@ export function useResultsView(run: RunState, selectedSets: readonly SetOption[]
 	// Memoised for the same rows: `applyView` builds new row objects on every call.
 	const view = useMemo(() => resultsViewFor(run, { withSetPotential, onlyBis }), [run, withSetPotential, onlyBis]);
 
-	return { toggles, offered, setToggle: (toggle, on) => setViewToggle(store, toggle, on), rowContext, view };
+	return { toggles, offered, setToggle, rowContext, view };
 }

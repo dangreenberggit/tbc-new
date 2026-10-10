@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { inputsSignature, liveInputsKey } from '../model/run_inputs';
-import type { RunOutcome, RunSettings } from '../model/run_reducer';
+import type { RunOutcome, RunSettings } from '../model/run_state';
 import { fakeTabHost } from '../testing/fake_tab_host';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 

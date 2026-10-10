@@ -2,7 +2,7 @@ import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { createUpgradesStore, dispatchRun, dispatchSettings } from '../../model/upgrades_store';
+import { createUpgradesStore } from '../../model/upgrades_store';
 import { fixtureRow } from '../../testing/ranking_fixture';
 import { CandidateCapPicker } from './CandidateCapPicker';
 
@@ -13,7 +13,7 @@ const input = () => within(screen.getByTestId('upgrades-candidates-picker')).get
 /** The settings hook's contract in small: the change writes the tab store, which the picker reads back. */
 const mount = (candidateCap?: number) => {
 	const store = createUpgradesStore({ iterations: 500 }, { settings: { candidateCap } });
-	render(<CandidateCapPicker store={store} onCapChange={cap => dispatchSettings(store, { type: 'setCandidateCap', cap })} />);
+	render(<CandidateCapPicker store={store} onCapChange={cap => store.getState().setCandidateCap(cap, undefined)} />);
 	return store;
 };
 
@@ -39,8 +39,8 @@ describe('CandidateCapPicker', () => {
 		const store = mount(10);
 		input().value = '7';
 		act(() => {
-			dispatchRun(store, { type: 'started', runId: 1, startedAt: 0 });
-			dispatchRun(store, { type: 'landed', runId: 1, row: fixtureRow(0) });
+			store.getState().startRun(1, 0);
+			store.getState().landRow(1, fixtureRow(0));
 		});
 		expect(input().value).toBe('7');
 	});

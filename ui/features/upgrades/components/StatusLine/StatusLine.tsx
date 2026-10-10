@@ -1,6 +1,6 @@
 import i18n from '@i18n/config';
 
-import { type RunState, visibleRows } from '../../model/run_reducer';
+import { type RunState, visibleRows } from '../../model/run_state';
 import { formatDps, formatSeconds } from '../../utils/format';
 
 export interface StatusLineProps {

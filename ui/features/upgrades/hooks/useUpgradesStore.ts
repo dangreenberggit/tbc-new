@@ -7,7 +7,7 @@ import type { StoreSubscribe } from '@sim/state/subscriptions';
 import { useStore } from 'zustand';
 
 import { followPhase } from '../model/follow_phase';
-import { DEFAULT_ITERATIONS } from '../model/run_reducer';
+import { DEFAULT_ITERATIONS } from '../model/run_state';
 import { UPGRADES_SETTINGS_STORAGE_KEY } from '../model/saved_entry';
 import { type LinkedSettings, openSavedUpgradesStore } from '../model/saved_settings';
 import type { SettingsSeed, UpgradesState, UpgradesStore } from '../model/upgrades_store';

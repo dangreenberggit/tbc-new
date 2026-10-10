@@ -7,7 +7,7 @@
 import { Raid as RaidProto } from '@generated/proto/api';
 import { Encounter as EncounterProto } from '@generated/proto/common';
 
-import type { RunSettings } from './run_reducer';
+import type { RunSettings } from './run_state';
 
 /** The parts of the sim the key reads; the page's `Sim` is one. */
 export type LiveInputsSource = {

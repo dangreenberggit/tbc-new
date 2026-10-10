@@ -2,7 +2,7 @@ import type { EligibleCountProps } from '@features/upgrades/components/EligibleC
 import type { FixtureAutoloadOptions } from '@features/upgrades/hooks/useFixtureAutoload';
 import type { PoolEntry } from '@features/upgrades/model/engine/pool';
 import type { RunDeps } from '@features/upgrades/model/run';
-import type { RunOutcome, RunSettings } from '@features/upgrades/model/run_reducer';
+import type { RunOutcome, RunSettings } from '@features/upgrades/model/run_state';
 import { fakeTabHost, memoryStorage, settled } from '@features/upgrades/testing/fake_tab_host';
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { fixtureRow, RANKING_FIXTURE } from '@features/upgrades/testing/ranking_fixture';

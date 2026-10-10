@@ -7,7 +7,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import type { RowContext } from '../components/ResultsTable/ResultRow';
 import type { RankedItem } from '../model/engine/rank';
 import type { DpsSortKey } from '../model/results_columns';
-import { type ResultsSort, selectSort, setSort } from '../model/upgrades_store';
+import { type ResultsSort, selectSort } from '../model/upgrades_store';
 import { fakeTabHost } from '../testing/fake_tab_host';
 import { fixtureRow } from '../testing/ranking_fixture';
 import { useResultsTable } from './useResultsTable';
@@ -33,7 +33,7 @@ interface TableSetup {
 
 /** A results table on the test's page, with `stored` as the tab store's sort before it renders. */
 const renderTable = (rows: readonly RankedItem[], stored: ResultsSort, { dpsKey, sortable }: TableSetup = {}) => {
-	setSort(upgradesStoreFor(host), stored);
+	upgradesStoreFor(host).getState().setSort(stored);
 	const context: RowContext = { itemOf: () => undefined, sim: host.sim, tip: {}, tagsOf: () => [], dpsKey };
 	let renders = 0;
 	const hook = renderHook(

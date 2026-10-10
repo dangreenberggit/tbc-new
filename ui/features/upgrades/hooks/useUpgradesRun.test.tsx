@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RunDeps, RunFn } from '../model/run';
-import type { RunOutcome } from '../model/run_reducer';
+import type { RunOutcome } from '../model/run_state';
 import { fakeTabHost } from '../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
 

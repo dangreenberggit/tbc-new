@@ -10,7 +10,7 @@ import { bisTagPhaseFor, cutoffIsUnmeasuredFor, epWeightsDisclosureFor, poolSour
 import type { Substitution } from './engine/disclosure';
 import type { Ranking } from './engine/rank';
 import type { SpecId } from './engine/types';
-import type { RunSettings } from './run_reducer';
+import type { RunSettings } from './run_state';
 
 export type AssumptionsContext = {
 	/** The ranked spec; absent, the lines that depend on the bundled data are left out. */

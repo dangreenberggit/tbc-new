@@ -4,7 +4,7 @@ import { SimDatabase, SimItem } from '@generated/proto/db';
 import { describe, expect, it } from 'vitest';
 
 import { inputsSignature, liveInputsKey, type LiveInputsSource } from './run_inputs';
-import type { RunSettings } from './run_reducer';
+import type { RunSettings } from './run_state';
 
 /**
  * A page with one player wearing `itemIds`. Like the real `Player.toProto`, the

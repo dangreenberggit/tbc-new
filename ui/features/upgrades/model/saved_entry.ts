@@ -21,10 +21,10 @@ const isRecord = (value: unknown): value is Record<string, unknown> => typeof va
 
 /**
  * A phase change made while no tab store follows the phase: the saved entry forgets its sets and the scope they were
- * applied for, as the store's `scopeChanged` would, so the tab applies the new phase's default sets when it next
- * opens, on this page or after a reload. Everything else saved stays. Unlike `scopeChanged`, it cannot drop an
+ * applied for, as the store's `changeScope` would, so the tab applies the new phase's default sets when it next
+ * opens, on this page or after a reload. Everything else saved stays. Unlike `changeScope`, it cannot drop an
  * exclusion the new phase's pool does not offer, because that needs the tab's data; the store drops such an
- * exclusion against the page's phase when it opens (`applyDefaults`, `dropUnofferedSources`). An entry that is
+ * exclusion against the page's phase when it opens (`appliedSettings`, `dropUnofferedSources`). An entry that is
  * missing, unreadable or of another version is left alone: the tab reads it as nothing saved and starts from the
  * defaults anyway.
  */

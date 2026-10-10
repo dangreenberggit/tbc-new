@@ -8,8 +8,8 @@
 import { isKaelTempLegendary } from './engine/kael-temp';
 import { filterPoolByPhase, type ItemSource, type PoolEntry } from './engine/pool';
 import { SOURCE_LABELS } from './engine/view';
-import type { RunSettings } from './run_reducer';
-import { type SettingsState, toRunSettings } from './settings_reducer';
+import type { RunSettings } from './run_state';
+import { type SettingsState, toRunSettings } from './settings_state';
 
 /** A source the Sources dialog lists. The page names it from its key (`utils/format.ts` `sourceKeyLabel`). */
 export type SourceOption = { key: string; count: number };

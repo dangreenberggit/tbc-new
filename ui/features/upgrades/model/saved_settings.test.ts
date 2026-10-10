@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest';
 import { memoryStorage } from '../testing/fake_tab_host';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import { openSavedUpgradesStore } from './saved_settings';
-import { dispatchRun, dispatchSettings, setExportFlavour, setSort, setViewToggle } from './upgrades_store';
 
 const KEY = '__tbc_new_feral_druid__upgradesSettings__';
 const SEED = { iterations: 1000 };
@@ -13,11 +12,11 @@ describe('openSavedUpgradesStore', () => {
 	it('restores the settings and the sort a user chose in a fresh store', () => {
 		const storage = memoryStorage();
 		const first = openSavedUpgradesStore(SEED, storage, KEY);
-		dispatchSettings(first, { type: 'setIterations', iterations: 5000 });
-		dispatchSettings(first, { type: 'toggleSource', key: 'raid:hyjal' });
-		dispatchSettings(first, { type: 'applyDefaults', key: 'feral:3', selectedSetKeys: ['preset:P3'], validSourceKeys: ['raid:hyjal'] });
-		dispatchSettings(first, { type: 'setPrune', prune: true });
-		setSort(first, [{ id: 'slot', desc: false }]);
+		first.getState().setIterations(5000, undefined);
+		first.getState().toggleSource('raid:hyjal', undefined);
+		first.getState().applyDefaults({ key: 'feral:3', selectedSetKeys: ['preset:P3'], validSourceKeys: ['raid:hyjal'] });
+		first.getState().setPrune(true, undefined);
+		first.getState().setSort([{ id: 'slot', desc: false }]);
 
 		const reloaded = openSavedUpgradesStore(SEED, storage, KEY);
 
@@ -34,16 +33,16 @@ describe('openSavedUpgradesStore', () => {
 	it('restores the view toggles a user set in a fresh store', () => {
 		const storage = memoryStorage();
 		const first = openSavedUpgradesStore(SEED, storage, KEY);
-		setViewToggle(first, 'withSetPotential', true);
-		setViewToggle(first, 'onlyBis', true);
-		setViewToggle(first, 'withSetPotential', false);
+		first.getState().setViewToggle('withSetPotential', true);
+		first.getState().setViewToggle('onlyBis', true);
+		first.getState().setViewToggle('withSetPotential', false);
 
 		expect(openSavedUpgradesStore(SEED, storage, KEY).getState().view).toEqual({ withSetPotential: false, onlyBis: true });
 	});
 
 	it('restores the export panel’s token or gear choice in a fresh store (ticket 588)', () => {
 		const storage = memoryStorage();
-		setExportFlavour(openSavedUpgradesStore(SEED, storage, KEY), 'gear');
+		openSavedUpgradesStore(SEED, storage, KEY).getState().setExportFlavour('gear');
 		expect(openSavedUpgradesStore(SEED, storage, KEY).getState().exportFlavour).toBe('gear');
 	});
 
@@ -65,7 +64,7 @@ describe('openSavedUpgradesStore', () => {
 	it('lets the dev link’s iterations win over the saved ones, as a settings link wins over saved settings upstream', () => {
 		const storage = memoryStorage();
 		const first = openSavedUpgradesStore(SEED, storage, KEY);
-		dispatchSettings(first, { type: 'setIterations', iterations: 5000 });
+		first.getState().setIterations(5000, undefined);
 
 		expect(openSavedUpgradesStore(SEED, storage, KEY, { iterations: 300 }).getState().settings.iterations).toBe(300);
 	});
@@ -75,8 +74,8 @@ describe('openSavedUpgradesStore', () => {
 		const storage = memoryStorage({ [KEY]: JSON.stringify({ version: 1, settings: { candidateCap: 25 } }) });
 		const devPage = openSavedUpgradesStore(SEED, storage, KEY, { candidateCap: 3 });
 		expect(devPage.getState().settings.candidateCap).toBe(3);
-		dispatchSettings(devPage, { type: 'setCandidateCap', cap: 7 });
-		dispatchSettings(devPage, { type: 'setIterations', iterations: 2000 });
+		devPage.getState().setCandidateCap(7, undefined);
+		devPage.getState().setIterations(2000, undefined);
 
 		const plainPage = openSavedUpgradesStore(SEED, storage, KEY).getState().settings;
 		expect(plainPage.iterations).toBe(2000);
@@ -86,11 +85,11 @@ describe('openSavedUpgradesStore', () => {
 	it('stores nothing from a run', () => {
 		const storage = memoryStorage();
 		const store = openSavedUpgradesStore(SEED, storage, KEY);
-		dispatchRun(store, { type: 'started', runId: 1, startedAt: 1000, measuredOn: { inputsSignature: 'sig' } });
-		dispatchRun(store, { type: 'landed', runId: 1, row: RANKING_FIXTURE.items[0]! });
+		store.getState().startRun(1, 1000, { inputsSignature: 'sig' });
+		store.getState().landRow(1, RANKING_FIXTURE.items[0]!);
 		expect(storage.entries.has(KEY)).toBe(false);
 
-		dispatchSettings(store, { type: 'setIterations', iterations: 2000 });
+		store.getState().setIterations(2000, undefined);
 		const stored = JSON.parse(storage.entries.get(KEY)!);
 		expect(Object.keys(stored).sort()).toEqual(['exportFlavour', 'settings', 'sort', 'version', 'view']);
 		expect(JSON.stringify(stored)).not.toContain('sig');
@@ -170,7 +169,7 @@ describe('openSavedUpgradesStore', () => {
 				removeItem: () => {},
 			};
 			const store = openSavedUpgradesStore(SEED, blocked, KEY);
-			expect(() => dispatchSettings(store, { type: 'setIterations', iterations: 2000 })).not.toThrow();
+			expect(() => store.getState().setIterations(2000, undefined)).not.toThrow();
 			expect(store.getState().settings.iterations).toBe(2000);
 		});
 	});

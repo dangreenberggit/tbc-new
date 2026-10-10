@@ -8,7 +8,7 @@ import { useUpgradesRun } from '@features/upgrades/hooks/useUpgradesRun';
 import { useUpgradesSettings } from '@features/upgrades/hooks/useUpgradesSettings';
 import { selectRun, useUpgradesStore } from '@features/upgrades/hooks/useUpgradesStore';
 import { inputsSignature, liveInputsKey } from '@features/upgrades/model/run_inputs';
-import { measuredOnOf, shownRanking } from '@features/upgrades/model/run_reducer';
+import { measuredOnOf, shownRanking } from '@features/upgrades/model/run_state';
 import { DEV_FLAGS } from '@features/upgrades/utils/dev_flags';
 import { selectRunFn } from '@features/upgrades/utils/select_run_fn';
 import { useSim } from '@sim/context/SimHostContext';

@@ -17,7 +17,7 @@ import { MemoryStore } from './engine/seams/store';
 import type { ContentPhase, SpecId } from './engine/types';
 import { emitProgress } from './progress_channel';
 import { RUN_PROGRESS_ESTIMATOR, RUN_PROGRESS_MIN_CANDIDATES_DONE, RUN_PROGRESS_SHOW_FROM_FRACTION, RunProgressTracker } from './run_progress';
-import type { RunOutcome, RunSettings } from './run_reducer';
+import type { RunOutcome, RunSettings } from './run_state';
 import { effectivePool } from './settings_pool';
 
 /** The sim runner and the cache one mounted tab keeps across its runs. */

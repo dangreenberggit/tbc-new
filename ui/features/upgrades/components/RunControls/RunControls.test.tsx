@@ -1,7 +1,7 @@
 import { act, fireEvent, render, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-import { createUpgradesStore, dispatchRun, dispatchSettings } from '../../model/upgrades_store';
+import { createUpgradesStore } from '../../model/upgrades_store';
 import { fixtureRow } from '../../testing/ranking_fixture';
 import { RunControls } from './RunControls';
 
@@ -15,7 +15,7 @@ const mount = ({ ready = true, running = false }: { ready?: boolean; running?: b
 				ready={ready}
 				running={running}
 				store={store}
-				onIterationsChange={iterations => dispatchSettings(store, { type: 'setIterations', iterations })}
+				onIterationsChange={iterations => store.getState().setIterations(iterations, undefined)}
 				onStart={onStart}
 			/>,
 		).container,
@@ -45,7 +45,7 @@ describe('RunControls', () => {
 
 	it('shows an iterations write made elsewhere', () => {
 		const { store, field } = mount();
-		act(() => dispatchSettings(store, { type: 'setIterations', iterations: 900 }));
+		act(() => store.getState().setIterations(900, undefined));
 		expect(field.value).toBe('900');
 	});
 
@@ -54,8 +54,8 @@ describe('RunControls', () => {
 		const { store, field } = mount();
 		field.value = '12';
 		act(() => {
-			dispatchRun(store, { type: 'started', runId: 1, startedAt: 0 });
-			dispatchRun(store, { type: 'landed', runId: 1, row: fixtureRow(0) });
+			store.getState().startRun(1, 0);
+			store.getState().landRow(1, fixtureRow(0));
 		});
 		expect(field.value).toBe('12');
 	});

@@ -1,9 +1,9 @@
 /**
- * The Upgrades tab's run state: one reducer, so the linked fields of a run
- * (its id, its landed rows, its result) change together. Pure; the tab's
- * store holds the state and applies it (`upgrades_store.ts` `dispatchRun`),
- * and the run session (`run_session.ts`) holds the abort controller and the
- * run id counter.
+ * The Upgrades tab's run state and the pure functions that move it along a
+ * run's life, so the linked fields of a run (its id, its landed rows, its
+ * result) change together and are unit-tested without a store. The tab's
+ * store actions call them (`upgrades_store.ts`); the run session
+ * (`run_session.ts`) holds the abort controller and the run id counter.
  */
 
 import type { PartialRanking, RankedItem, Ranking } from './engine/rank';
@@ -69,56 +69,58 @@ export type RunState =
 	| { status: 'stopped'; runId: number; result: StoppedRanking; measuredOn?: MeasuredOn }
 	| { status: 'error'; runId: number; message: string };
 
-export type RunAction =
-	| { type: 'started'; runId: number; startedAt: number; measuredOn?: MeasuredOn }
-	| { type: 'landed'; runId: number; row: RankedItem }
-	| { type: 'stopping'; runId: number }
-	| { type: 'finished'; runId: number; result: FinishedRanking; runner?: RunnerName }
-	| { type: 'stopped'; runId: number; result: StoppedRanking; runner?: RunnerName }
-	| { type: 'failed'; runId: number; message: string }
-	| { type: 'fixtureLoaded'; runId: number; ranking: Ranking; measuredOn?: MeasuredOn };
-
 export const IDLE_RUN: RunState = { status: 'idle' };
+
+type RunningState = Extract<RunState, { status: 'running' }>;
 
 const withRunner = (measuredOn: MeasuredOn | undefined, runner: RunnerName | undefined): MeasuredOn | undefined =>
 	runner ? { ...measuredOn, runner } : measuredOn;
 
-const isCurrentRun = (state: RunState, runId: number): state is Extract<RunState, { status: 'running' }> => state.status === 'running' && state.runId === runId;
+/**
+ * A superseded run's rows, Stop and result can still arrive after a new run started or a fixture loaded. Every
+ * function below that takes the current state returns it unchanged for such a call, so the store writes nothing.
+ */
+const isCurrentRun = (state: RunState, runId: number): state is RunningState => state.status === 'running' && state.runId === runId;
 
-export function runReducer(state: RunState, action: RunAction): RunState {
-	switch (action.type) {
-		case 'started':
-			return { status: 'running', runId: action.runId, startedAt: action.startedAt, landedRows: [], stopping: false, measuredOn: action.measuredOn };
-		case 'fixtureLoaded':
-			return { status: 'done', runId: action.runId, result: action.ranking, measuredOn: action.measuredOn };
-		case 'landed':
-			// A superseded run's rows can still arrive after a new run started.
-			if (!isCurrentRun(state, action.runId)) return state;
-			return { ...state, landedRows: [...state.landedRows, action.row] };
-		case 'stopping':
-			if (!isCurrentRun(state, action.runId)) return state;
-			return { ...state, stopping: true };
-		case 'finished':
-			if (!isCurrentRun(state, action.runId)) return state;
-			return { status: 'done', runId: action.runId, result: action.result, measuredOn: withRunner(state.measuredOn, action.runner) };
-		case 'stopped':
-			if (!isCurrentRun(state, action.runId)) return state;
-			return { status: 'stopped', runId: action.runId, result: action.result, measuredOn: withRunner(state.measuredOn, action.runner) };
-		case 'failed':
-			if (!isCurrentRun(state, action.runId)) return state;
-			return { status: 'error', runId: action.runId, message: action.message };
-	}
-}
+/** A new run replaces whatever was on screen, finished or still in flight. */
+export const runStarted = (runId: number, startedAt: number, measuredOn?: MeasuredOn): RunState => ({
+	status: 'running',
+	runId,
+	startedAt,
+	landedRows: [],
+	stopping: false,
+	measuredOn,
+});
 
-/** The action a run's settled result dispatches: a partial ranking is what Stop returns. */
-export function settledAction(runId: number, outcome: RunOutcome): RunAction {
+/** A recorded ranking shows as a finished run, replacing a run in flight, whose late rows are then dropped. */
+export const fixtureLoaded = (runId: number, ranking: Ranking, measuredOn?: MeasuredOn): RunState => ({
+	status: 'done',
+	runId,
+	result: ranking,
+	measuredOn,
+});
+
+export const rowLanded = (state: RunState, runId: number, row: RankedItem): RunState =>
+	isCurrentRun(state, runId) ? { ...state, landedRows: [...state.landedRows, row] } : state;
+
+export const stopRequested = (state: RunState, runId: number): RunState => (isCurrentRun(state, runId) ? { ...state, stopping: true } : state);
+
+/**
+ * A partial ranking is what Stop returns, so it settles as stopped and a complete one as done. The runner moves off
+ * the result into `measuredOn`, so a ranking the fixture recorder saves never carries it.
+ */
+export function runSettled(state: RunState, runId: number, outcome: RunOutcome): RunState {
+	if (!isCurrentRun(state, runId)) return state;
 	if (outcome.complete) {
 		const { runner, ...result } = outcome;
-		return { type: 'finished', runId, result, runner };
+		return { status: 'done', runId, result, measuredOn: withRunner(state.measuredOn, runner) };
 	}
 	const { runner, ...result } = outcome;
-	return { type: 'stopped', runId, result, runner };
+	return { status: 'stopped', runId, result, measuredOn: withRunner(state.measuredOn, runner) };
 }
+
+export const runFailed = (state: RunState, runId: number, message: string): RunState =>
+	isCurrentRun(state, runId) ? { status: 'error', runId, message } : state;
 
 /** The rows the table shows for `run`. A stopped ranking also lists the candidates Stop never reached. */
 export function visibleRows(run: RunState): readonly RankedItem[] {

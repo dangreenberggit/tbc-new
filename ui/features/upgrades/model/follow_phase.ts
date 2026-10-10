@@ -6,7 +6,7 @@ import type { ContentPhase } from './engine/types';
 import { followPhaseChanges } from './phase_changes';
 import { specIdFor } from './run';
 import { validSourceKeysOf } from './settings_pool';
-import { dispatchSettings, type UpgradesStore } from './upgrades_store';
+import type { UpgradesStore } from './upgrades_store';
 
 /**
  * A phase change sends the settings back to the new phase's default sets, as
@@ -27,6 +27,6 @@ export function followPhase(store: UpgradesStore, host: IndividualSimHost<Spec>)
 	const specId = specIdFor(player.getSpec());
 	if (!specId) return;
 	const sourcesAt = (phase: number) => validSourceKeysOf(poolFor(specId, phase as ContentPhase));
-	followPhaseChanges(host, phase => dispatchSettings(store, { type: 'scopeChanged', validSourceKeys: sourcesAt(phase) }));
-	void sim.waitForInit().then(() => dispatchSettings(store, { type: 'dropUnofferedSources', validSourceKeys: sourcesAt(sim.getPhase()) }));
+	followPhaseChanges(host, phase => store.getState().changeScope(sourcesAt(phase)));
+	void sim.waitForInit().then(() => store.getState().dropUnofferedSources(sourcesAt(sim.getPhase())));
 }

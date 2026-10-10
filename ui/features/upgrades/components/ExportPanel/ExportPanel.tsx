@@ -5,10 +5,10 @@ import { CopyButton } from '@ui-kit/CopyButton';
 import { TextArea } from '@ui-kit/FormControl';
 import { useId } from 'react';
 
-import { useUpgradesStore, useUpgradesStoreApi } from '../../hooks/useUpgradesStore';
+import { useUpgradesStore } from '../../hooks/useUpgradesStore';
 import type { RankedItem } from '../../model/engine/rank';
 import { exportPayload } from '../../model/export';
-import { selectExportFlavour, setExportFlavour } from '../../model/upgrades_store';
+import { selectExportFlavour } from '../../model/upgrades_store';
 
 export interface ExportPanelProps {
 	/** The Upgrades pane's shortlist in the order on screen, so the payload keeps the cross-slot ranked order. */
@@ -21,8 +21,8 @@ export interface ExportPanelProps {
  * it with the tab's settings (ticket 588). Hidden when there is nothing to export.
  */
 export const ExportPanel = ({ rows }: ExportPanelProps) => {
-	const store = useUpgradesStoreApi();
 	const flavour = useUpgradesStore(selectExportFlavour);
+	const setExportFlavour = useUpgradesStore(state => state.setExportFlavour);
 	const flavourId = useId();
 	const payload = exportPayload(rows, flavour);
 	if (payload.items.length === 0) return null;
@@ -38,7 +38,7 @@ export const ExportPanel = ({ rows }: ExportPanelProps) => {
 					label: i18n.t('upgrades_tab.export.flavour_toggle', { ns: 'upgrades' }),
 					layout: 'inline',
 					value: flavour === 'token',
-					onChange: tokens => setExportFlavour(store, tokens ? 'token' : 'gear'),
+					onChange: tokens => setExportFlavour(tokens ? 'token' : 'gear'),
 				}}
 			/>
 			<p className="mb-2 text-muted">
