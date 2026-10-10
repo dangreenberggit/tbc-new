@@ -8,7 +8,8 @@ import { useStore } from 'zustand';
 
 import { followPhase } from '../model/follow_phase';
 import { DEFAULT_ITERATIONS } from '../model/run_reducer';
-import { type LinkedSettings, openSavedUpgradesStore, UPGRADES_SETTINGS_STORAGE_KEY } from '../model/saved_settings';
+import { UPGRADES_SETTINGS_STORAGE_KEY } from '../model/saved_entry';
+import { type LinkedSettings, openSavedUpgradesStore } from '../model/saved_settings';
 import type { SettingsSeed, UpgradesState, UpgradesStore } from '../model/upgrades_store';
 import { DEV_FLAGS } from '../utils/dev_flags';
 
@@ -34,8 +35,7 @@ const stores = new WeakMap<Sim, UpgradesStore>();
  * in the map before `followPhase` runs, so a render React discards before
  * commit leaves the one store the next render for that `Sim` finds. The store
  * starts from what this spec's page saved last, under the spec's key as
- * upstream saves the sim's own settings. `UpgradesTabBody` also opens it on a
- * phase change made before the tab opens (ticket 587).
+ * upstream saves the sim's own settings.
  */
 export function upgradesStoreFor(host: IndividualSimHost<Spec>): UpgradesStore {
 	let store = stores.get(host.sim);

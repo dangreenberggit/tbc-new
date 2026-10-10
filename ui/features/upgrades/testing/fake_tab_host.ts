@@ -12,6 +12,9 @@ export const memoryStorage = (initial: Record<string, string> = {}): Env['storag
 	};
 };
 
+/** Waits one timer turn, so promise callbacks queued so far have run: a page's `waitForInit` handlers, a settled run. */
+export const settled = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
+
 /**
  * Upstream's `fakeHost` plus what the tab's store reads when it is made: the
  * page's storage key, `sim.env.storage`, and `sim.waitForInit`, after which

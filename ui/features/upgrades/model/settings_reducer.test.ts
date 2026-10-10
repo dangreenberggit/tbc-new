@@ -6,18 +6,14 @@ const seeded = (): SettingsState => initialSettings({ iterations: 3000 });
 const apply = (state: SettingsState, ...actions: SettingsAction[]) => actions.reduce(settingsReducer, state);
 
 describe('initialSettings', () => {
-	it('starts with nothing excluded, no set selected, prune off and the seeded iterations and cap', () => {
-		expect(initialSettings({ iterations: 500, candidateCap: 10 })).toEqual({
+	it('starts with nothing excluded, no set selected, prune off, no cap and the seeded iterations', () => {
+		expect(initialSettings({ iterations: 500 })).toEqual({
 			excludedSources: [],
 			selectedSetKeys: [],
 			prune: false,
-			candidateCap: 10,
+			candidateCap: undefined,
 			iterations: 500,
 		});
-	});
-
-	it('treats a seeded cap of 0 as no cap', () => {
-		expect(initialSettings({ iterations: 500, candidateCap: 0 }).candidateCap).toBeUndefined();
 	});
 });
 
@@ -108,7 +104,8 @@ describe('pruneEffective', () => {
 describe('toRunSettings', () => {
 	it('carries every setting the run reads', () => {
 		const state = apply(
-			initialSettings({ iterations: 500, candidateCap: 10 }),
+			initialSettings({ iterations: 500 }),
+			{ type: 'setCandidateCap', cap: 10 },
 			{ type: 'toggleSource', key: 'Crafted' },
 			{ type: 'toggleSet', key: 'preset:3:P3' },
 			{ type: 'setPrune', prune: true },

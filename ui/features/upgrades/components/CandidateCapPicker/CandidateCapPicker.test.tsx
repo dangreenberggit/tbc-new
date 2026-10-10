@@ -12,7 +12,7 @@ const input = () => within(screen.getByTestId('upgrades-candidates-picker')).get
 
 /** The settings hook's contract in small: the change writes the tab store, which the picker reads back. */
 const mount = (candidateCap?: number) => {
-	const store = createUpgradesStore({ iterations: 500, candidateCap });
+	const store = createUpgradesStore({ iterations: 500 }, { settings: { candidateCap } });
 	render(<CandidateCapPicker store={store} onCapChange={cap => dispatchSettings(store, { type: 'setCandidateCap', cap })} />);
 	return store;
 };

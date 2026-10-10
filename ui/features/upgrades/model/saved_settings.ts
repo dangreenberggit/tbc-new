@@ -10,18 +10,8 @@ import type { Env } from '@sim/state/env';
 import type { ExportFlavour } from './export';
 import { SORT_COLUMN_IDS } from './results_columns';
 import { NO_VIEW_TOGGLES } from './results_view';
+import { SAVED_VERSION } from './saved_entry';
 import { createUpgradesStore, type RestoredTab, type ResultsSort, type SettingsSeed, type UpgradesState, type UpgradesStore } from './upgrades_store';
-
-/** The key suffix the page's spec prefix goes in front of, as upstream's `__savedGear__` and the rest. */
-export const UPGRADES_SETTINGS_STORAGE_KEY = '__upgradesSettings__';
-
-/**
- * Bumped when a field changes meaning. A new field needs no bump: an entry
- * saved before it reads back without it and the field takes its default, as
- * `view` did. Upstream migrates an old saved proto (`updateProtoVersion`);
- * this tab has no migration yet, so another version reads back as nothing saved.
- */
-const SAVED_VERSION = 1;
 
 type Storage = Env['storage'];
 type Settings = UpgradesState['settings'];
@@ -92,6 +82,9 @@ function readSavedTab(storage: Storage, key: string): RestoredTab {
 	};
 }
 
+/** The parts of the tab's state the entry holds; the run is not saved. */
+const SAVED_PARTS = ['settings', 'sort', 'view', 'exportFlavour'] as const satisfies readonly (keyof UpgradesState)[];
+
 const savedTabOf = ({ settings: { candidateCap: _notSaved, ...settings }, sort, view, exportFlavour }: UpgradesState) => ({
 	version: SAVED_VERSION,
 	settings,
@@ -113,8 +106,7 @@ export function openSavedUpgradesStore(seed: SettingsSeed, storage: Storage, key
 	const saved = readSavedTab(storage, key);
 	const store = createUpgradesStore(seed, { ...saved, settings: { ...saved.settings, ...link } });
 	store.subscribe((state, previous) => {
-		const unchanged = state.settings === previous.settings && state.sort === previous.sort && state.view === previous.view;
-		if (unchanged && state.exportFlavour === previous.exportFlavour) return;
+		if (SAVED_PARTS.every(part => state[part] === previous[part])) return;
 		try {
 			storage.setItem(key, JSON.stringify(savedTabOf(state)));
 		} catch {

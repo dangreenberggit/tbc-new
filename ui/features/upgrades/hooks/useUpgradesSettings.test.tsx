@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { PoolEntry } from '../model/engine/pool';
-import { fakeTabHost } from '../testing/fake_tab_host';
+import { fakeTabHost, settled } from '../testing/fake_tab_host';
 import type { UpgradesSettings } from './useUpgradesSettings';
 
 const entry = (itemId: number, zone: string, phase: number, bis = false): PoolEntry => ({
@@ -57,7 +57,7 @@ const mount = (spec = Spec.SpecRetributionPaladin) => {
 		tabStore: upgradesStoreFor(host),
 		/** A phase change the user makes once the page has started up, which is when the tab starts following the phase. */
 		setPhase: async (phase: number) => {
-			await new Promise(resolve => setTimeout(resolve, 0));
+			await settled();
 			act(() => patchSlice(store, 'sim', { phase }));
 		},
 	};

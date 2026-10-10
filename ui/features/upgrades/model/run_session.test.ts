@@ -2,6 +2,7 @@ import { Spec } from '@generated/proto/common';
 import { fakeHost } from '@sim/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { settled } from '../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
 import type { PartialRanking } from './engine/rank';
@@ -46,7 +47,6 @@ const partialOf = (rows = [rowA]): RunResult =>
 	({ ...RANKING_FIXTURE, items: rows, complete: false, durationMs: 9 }) satisfies PartialRanking & { durationMs: number };
 
 /** Lets every promise callback already queued run, so a dropped result has had its chance to land. */
-const settled = () => new Promise(resolve => setTimeout(resolve, 0));
 
 /** The page's gear, which a test changes between a click and a settle. */
 let equipped: Array<{ id: number } | null> = [];

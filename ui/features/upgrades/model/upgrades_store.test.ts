@@ -15,7 +15,7 @@ import {
 } from './upgrades_store';
 
 const [rowA] = RANKING_FIXTURE.items;
-const SEED = { iterations: 1000, candidateCap: 40 };
+const SEED = { iterations: 1000 };
 const SCOPE = 'ret:3';
 const DEFAULTS = { selectedSetKeys: ['preset:P3'], validSourceKeys: ['raid:hyjal'] };
 const MEASURED = { inputsSignature: 'sig-at-click' };
@@ -24,7 +24,7 @@ describe('createUpgradesStore', () => {
 	it('starts idle with the seed as the settings', () => {
 		const store = createUpgradesStore(SEED);
 		expect(selectRunStatus(store.getState())).toBe('idle');
-		expect(store.getState().settings).toEqual({ excludedSources: [], selectedSetKeys: [], prune: false, iterations: 1000, candidateCap: 40 });
+		expect(store.getState().settings).toEqual({ excludedSources: [], selectedSetKeys: [], prune: false, iterations: 1000 });
 	});
 });
 

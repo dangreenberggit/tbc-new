@@ -3,7 +3,7 @@ import type { FixtureAutoloadOptions } from '@features/upgrades/hooks/useFixture
 import type { PoolEntry } from '@features/upgrades/model/engine/pool';
 import type { RunDeps } from '@features/upgrades/model/run';
 import type { RunOutcome, RunSettings } from '@features/upgrades/model/run_reducer';
-import { fakeTabHost, memoryStorage } from '@features/upgrades/testing/fake_tab_host';
+import { fakeTabHost, memoryStorage, settled } from '@features/upgrades/testing/fake_tab_host';
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { fixtureRow, RANKING_FIXTURE } from '@features/upgrades/testing/ranking_fixture';
 import { Raid as RaidProto } from '@generated/proto/api';
@@ -337,7 +337,6 @@ describe('UpgradesTabBody before its tab is first opened', () => {
 		expect(await screen.findByTestId('upgrades-tab-root')).not.toBeNull();
 	});
 
-	const settle = () => act(() => new Promise(resolve => setTimeout(resolve, 0)));
 	const SAVED_KEY = '__upgrades_test__upgradesSettings__';
 	/** The user cleared phase 3's default sets on an earlier visit, so the saved entry holds no sets for `ret:3`. */
 	const clearedAt3 = () => memoryStorage({ [SAVED_KEY]: JSON.stringify({ version: 1, settings: { selectedSetKeys: [], defaultsFor: 'ret:3' } }) });
@@ -351,14 +350,14 @@ describe('UpgradesTabBody before its tab is first opened', () => {
 		);
 	/** Phase 3 to 4 and back on another tab, after the page has started up; each write rings the page's listeners as the real store would. */
 	const roundTripThroughPhase4 = async () => {
-		await settle();
+		await act(settled);
 		act(() => {
 			patchSlice(current.store, 'sim', { phase: 4 });
 			pageChanged();
 			patchSlice(current.store, 'sim', { phase: 3 });
 			pageChanged();
 		});
-		await settle();
+		await act(settled);
 	};
 
 	// Ticket 564: a phase change resets the tab to that phase's defaults whether or not the tab is on screen (ticket 587, A1).

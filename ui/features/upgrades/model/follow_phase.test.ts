@@ -3,6 +3,7 @@ import { createSimStore, patchSlice } from '@sim/state/sim_store';
 import { fakeHost } from '@sim/testing';
 import { describe, expect, it } from 'vitest';
 
+import { settled } from '../testing/fake_tab_host';
 import { poolFor } from './data/data';
 import { followPhase } from './follow_phase';
 import { validSourceKeysOf } from './settings_pool';
@@ -21,7 +22,7 @@ const pageAt3 = async (spec: Spec) => {
 	});
 	const store = createUpgradesStore({ iterations: 1000 });
 	followPhase(store, host);
-	await new Promise(resolve => setTimeout(resolve, 0));
+	await settled();
 	const offeredAt3 = validSourceKeysOf(poolFor('ret', 3));
 	const onlyAt4 = validSourceKeysOf(poolFor('ret', 4)).find(key => !offeredAt3.includes(key));
 	store.setState({

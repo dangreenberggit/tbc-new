@@ -30,7 +30,7 @@ export type ResultsSort = Array<{ id: string; desc: boolean }>;
 export type UpgradesState = { run: RunState; settings: SettingsState; sort: ResultsSort; view: ViewToggles; exportFlavour: ExportFlavour };
 
 /** The settings a new store starts from, before the page's saved entry and the dev link go over them (`saved_settings.ts`). */
-export type SettingsSeed = { iterations: number; candidateCap?: number };
+export type SettingsSeed = { iterations: number };
 
 /** What a store restores from storage over its seed: only the fields that read back valid. */
 export type RestoredTab = { settings?: Partial<SettingsState>; sort?: ResultsSort; view?: Partial<ViewToggles>; exportFlavour?: ExportFlavour };
@@ -47,7 +47,7 @@ export function createUpgradesStore(seed: SettingsSeed, restored: RestoredTab = 
 			settings: { ...initialSettings(seed), ...restored.settings },
 			sort: restored.sort ?? [],
 			view: { ...NO_VIEW_TOGGLES, ...restored.view },
-			// The token is the default: the raid awards the token, not the tier piece (`ExportPanel`).
+			// The token is the default: the raid awards the token, not the tier piece.
 			exportFlavour: restored.exportFlavour ?? 'token',
 		})),
 	);

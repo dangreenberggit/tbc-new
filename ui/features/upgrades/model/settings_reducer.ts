@@ -34,11 +34,18 @@ const normaliseCap = (cap: number | undefined): number | undefined => (cap !== u
 
 const toggled = (keys: readonly string[], key: string): readonly string[] => (keys.includes(key) ? keys.filter(k => k !== key) : [...keys, key]);
 
-export const initialSettings = (seed: { iterations: number; candidateCap?: number }): SettingsState => ({
+/** The exclusions a pool offering `validSourceKeys` still offers; an exclusion it does not offer would narrow it invisibly. */
+const offeredExclusions = (excluded: readonly string[], validSourceKeys: readonly string[]): readonly string[] => {
+	const valid = new Set(validSourceKeys);
+	return excluded.filter(key => valid.has(key));
+};
+
+/** No cap: only the dev link sets one (`utils/dev_flags.ts`), and it goes over these settings (`saved_settings.ts`). */
+export const initialSettings = (seed: { iterations: number }): SettingsState => ({
 	excludedSources: [],
 	selectedSetKeys: [],
 	prune: false,
-	candidateCap: normaliseCap(seed.candidateCap),
+	candidateCap: undefined,
 	iterations: seed.iterations,
 });
 
@@ -58,12 +65,10 @@ export function settingsReducer(state: SettingsState, action: SettingsAction): S
 			// Once per spec:phase, so a set the user deselects stays deselected
 			// through the re-renders a gear change causes.
 			if (state.defaultsFor === action.key) return state;
-			// An exclusion the new pool does not offer would narrow it invisibly.
-			const valid = new Set(action.validSourceKeys);
 			return {
 				...state,
 				selectedSetKeys: action.selectedSetKeys,
-				excludedSources: state.excludedSources.filter(key => valid.has(key)),
+				excludedSources: offeredExclusions(state.excludedSources, action.validSourceKeys),
 				defaultsFor: action.key,
 			};
 		}
@@ -72,13 +77,11 @@ export function settingsReducer(state: SettingsState, action: SettingsAction): S
 			// when next applied, as on the old tab whatever the user had picked. An
 			// exclusion the new pool does not offer is dropped now, so it stays
 			// dropped on the way back, as when the old tab applied that phase.
-			const valid = new Set(action.validSourceKeys);
-			return { ...state, selectedSetKeys: [], excludedSources: state.excludedSources.filter(key => valid.has(key)), defaultsFor: undefined };
+			return { ...state, selectedSetKeys: [], excludedSources: offeredExclusions(state.excludedSources, action.validSourceKeys), defaultsFor: undefined };
 		}
 		case 'dropUnofferedSources': {
 			// A saved exclusion that a data update removed from the pool excludes nothing, but the Sources summary would count it.
-			const valid = new Set(action.validSourceKeys);
-			const kept = state.excludedSources.filter(key => valid.has(key));
+			const kept = offeredExclusions(state.excludedSources, action.validSourceKeys);
 			return kept.length === state.excludedSources.length ? state : { ...state, excludedSources: kept };
 		}
 	}

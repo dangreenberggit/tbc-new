@@ -1,48 +1,42 @@
 /**
- * The page's phase changes, recorded from the moment its saved settings have
- * loaded, for the tab's store to follow (ticket 587). Small and free of the
- * tab's data on purpose: the eager `UpgradesTabBody` starts the record at page
- * start, before the tab's code is downloaded, so a phase change made before
- * the tab opens is not lost.
+ * The page's phase changes, from the moment its saved settings have loaded, for the Upgrades tab: a phase change
+ * resets the tab to that phase's default sets whether or not the tab is on screen (ticket 564). Small and free of the
+ * tab's code and data on purpose: the eager `UpgradesTabBody` starts the watch at page start, and a page whose tab
+ * never opens must download neither (tickets 587, 589).
  */
 
+import type { Spec } from '@generated/proto/common';
 import type { Sim } from '@sim/sim';
+import type { IndividualSimHost } from '@sim/sim_host';
 import { subscribeSimField } from '@sim/state/subscriptions';
 
-type Follower = (phase: number) => void;
-type PhaseRecord = { missed: number[]; follower?: Follower; onMissed?: () => void };
+import { forgetSavedSets, UPGRADES_SETTINGS_STORAGE_KEY } from './saved_entry';
 
-const records = new WeakMap<Sim, PhaseRecord>();
+type Follower = (phase: number) => void;
+
+/** Each watched page's tab store follower, once the store exists. */
+const watches = new WeakMap<Sim, { follower?: Follower }>();
 
 /**
- * Starts recording the page's phase changes, once per page. The record starts
- * after `waitForInit`: the page queues its settings load on that promise before
- * any tab code runs (`app/individual_sim_ui.tsx`), so the load's own phase write
- * is the saved phase coming back, not a change. `onMissed` runs on each change
- * that no store follows yet.
+ * Starts watching the page's phase, once per page. Until a tab store follows the phase, a change is saved straight
+ * into the tab's saved entry (`forgetSavedSets`), so the store, made later from that entry, starts from the new
+ * phase's defaults. The watch starts after `waitForInit`: the page queues its settings load on that promise before any
+ * tab code runs (`app/individual_sim_ui.tsx`), so the load's own phase write is the saved phase coming back, not a change.
  */
-export function watchPhaseChanges(sim: Sim, onMissed?: () => void): void {
-	if (records.has(sim)) return;
-	const record: PhaseRecord = { missed: [], onMissed };
-	records.set(sim, record);
+export function watchPhaseChanges(host: IndividualSimHost<Spec>): void {
+	const { sim } = host;
+	if (watches.has(sim)) return;
+	const watch: { follower?: Follower } = {};
+	watches.set(sim, watch);
 	const onPhaseChange = () => {
-		const phase = sim.getPhase();
-		if (record.follower) {
-			record.follower(phase);
-		} else {
-			record.missed.push(phase);
-			record.onMissed?.();
-		}
+		if (watch.follower) watch.follower(sim.getPhase());
+		else forgetSavedSets(sim.env.storage, host.getStorageKey(UPGRADES_SETTINGS_STORAGE_KEY));
 	};
 	void sim.waitForInit().then(() => subscribeSimField(sim, 'phase')(onPhaseChange));
 }
 
-/** Hands `follower` each phase change recorded so far, in order, and then each later one. One follower per page. */
-export function followPhaseChanges(sim: Sim, follower: Follower): void {
-	watchPhaseChanges(sim);
-	const record = records.get(sim)!;
-	record.follower = follower;
-	const missed = record.missed;
-	record.missed = [];
-	missed.forEach(follower);
+/** Hands `follower` each later phase change on the page, in place of the saved entry. One follower per page. */
+export function followPhaseChanges(host: IndividualSimHost<Spec>, follower: Follower): void {
+	watchPhaseChanges(host);
+	watches.get(host.sim)!.follower = follower;
 }
