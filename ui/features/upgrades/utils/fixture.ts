@@ -25,7 +25,7 @@ import type { IndividualSimHost } from '@sim/sim_host';
 import type { Ranking } from '../model/engine/rank';
 import type { SpecId } from '../model/engine/types';
 import { specIdFor } from '../model/run';
-import { isRecord } from '../model/saved_entry';
+import { isRecord } from './is_record';
 
 export const FIXTURE_SCHEMA_VERSION = 1;
 

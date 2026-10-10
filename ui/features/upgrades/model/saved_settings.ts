@@ -7,10 +7,11 @@
 
 import type { Env } from '@sim/state/env';
 
+import { isRecord } from '../utils/is_record';
 import type { ExportFlavour } from './export';
 import { SORT_COLUMN_IDS } from './results_columns';
 import { NO_VIEW_TOGGLES } from './results_view';
-import { isRecord, SAVED_VERSION } from './saved_entry';
+import { SAVED_VERSION } from './saved_entry';
 import { createUpgradesStore, type RestoredTab, type ResultsSort, type SettingsSeed, type UpgradesState, type UpgradesStore } from './upgrades_store';
 
 type Storage = Env['storage'];

@@ -122,6 +122,8 @@ describe('UpgradesTabBody while its tab has not been opened (ticket 589)', () =>
 		'keeps, through a phase round trip, an exclusion the middle phase does not offer',
 		async () => {
 			const { poolFor } = await import('@features/upgrades/model/data/data');
+			// The positive control: without it a mock that no longer matches the data module would pass every "downloads none" case.
+			expect(loaded.data).toBe(true);
 			const { validSourceKeysOf } = await import('@features/upgrades/model/settings_pool');
 			const offeredAt3 = validSourceKeysOf(poolFor('ret', 3));
 			const onlyAt4 = validSourceKeysOf(poolFor('ret', 4)).find(key => !offeredAt3.includes(key));

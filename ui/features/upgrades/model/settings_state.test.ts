@@ -56,6 +56,17 @@ describe('the settings changes', () => {
 		expect(withIterations(seeded(), 2000).iterations).toBe(2000);
 	});
 
+	// The store writes nothing for a change that returns the state it was given, so the page saves nothing either.
+	it('returns the state it was given when prune, the cap or the iterations already hold the value', () => {
+		const capped = withCandidateCap(seeded(), 40);
+		expect(withPrune(capped, false)).toBe(capped);
+		expect(withCandidateCap(capped, 40)).toBe(capped);
+		expect(withIterations(capped, 3000)).toBe(capped);
+
+		const uncapped = seeded();
+		expect(withCandidateCap(uncapped, 0)).toBe(uncapped);
+	});
+
 	it('applies the default sets once per spec and phase, so a later deselect survives', () => {
 		const scope = { key: 'ret:3', selectedSetKeys: ['preset:3:P3'], validSourceKeys: [] };
 		const first = appliedSettings(seeded(), scope);
@@ -93,6 +104,11 @@ describe('the settings changes', () => {
 		const edited = withIterations(withPrune(excluded, true), 2000);
 		const changed = afterScopeChange(edited, ['Black Temple', 'Zul’Aman']);
 		expect(changed).toMatchObject({ excludedSources: ['Black Temple'], prune: true, iterations: 2000 });
+	});
+
+	it('returns the state it was given on a scope change with no sets to forget and no exclusion to drop', () => {
+		const changed = afterScopeChange(withSourceToggled(seeded(), 'Black Temple'), ['Black Temple']);
+		expect(afterScopeChange(changed, ['Black Temple'])).toBe(changed);
 	});
 });
 

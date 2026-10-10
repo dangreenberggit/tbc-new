@@ -6,6 +6,8 @@
 
 import type { Env } from '@sim/state/env';
 
+import { isRecord } from '../utils/is_record';
+
 /** The key suffix the page's spec prefix goes in front of, as upstream's `__savedGear__` and the rest. */
 export const UPGRADES_SETTINGS_STORAGE_KEY = '__upgradesSettings__';
 
@@ -16,8 +18,6 @@ export const UPGRADES_SETTINGS_STORAGE_KEY = '__upgradesSettings__';
  * this tab has no migration yet, so another version reads back as nothing saved.
  */
 export const SAVED_VERSION = 1;
-
-export const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /**
  * A phase change made while no tab store follows the phase: the saved entry forgets its sets and the scope they were

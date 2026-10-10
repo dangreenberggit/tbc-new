@@ -56,6 +56,16 @@ describe('the run actions', () => {
 		expect(selectSort(store.getState())).toEqual([{ id: 'item', desc: false }]);
 	});
 
+	it('starts a new run from a finished one, keeping none of its rows or what it was measured on', () => {
+		const store = createUpgradesStore(SEED);
+		store.getState().startRun(1, 1000, MEASURED);
+		store.getState().landRow(1, rowA!);
+		store.getState().settleRun(1, RANKING_FIXTURE);
+
+		store.getState().startRun(2, 5000);
+		expect(store.getState().run).toEqual({ status: 'running', runId: 2, startedAt: 5000, landedRows: [], stopping: false });
+	});
+
 	it('leaves the settings object alone', () => {
 		const store = createUpgradesStore(SEED);
 		const settings = store.getState().settings;
@@ -105,12 +115,26 @@ describe('the user’s settings actions', () => {
 		expect(store.getState().settings).toMatchObject({ selectedSetKeys: [], iterations: 2000 });
 	});
 
-	it('notifies nobody when the write changes nothing', () => {
+	it('notifies nobody when a setting is set to the value it already holds', () => {
 		const store = createUpgradesStore(SEED);
 		store.getState().setPrune(false, SCOPE);
 		const listener = vi.fn();
 		store.subscribe(listener);
-		store.getState().applyDefaults(SCOPE);
+
+		store.getState().setPrune(false, SCOPE);
+		store.getState().setIterations(1000, SCOPE);
+		store.getState().setCandidateCap(undefined, SCOPE);
+		expect(listener).not.toHaveBeenCalled();
+	});
+
+	it('notifies nobody on a second scope change, which has nothing left to forget', () => {
+		const store = createUpgradesStore(SEED);
+		store.getState().setPrune(true, SCOPE);
+		store.getState().changeScope(['raid:hyjal']);
+		const listener = vi.fn();
+		store.subscribe(listener);
+
+		store.getState().changeScope(['raid:hyjal']);
 		expect(listener).not.toHaveBeenCalled();
 	});
 });

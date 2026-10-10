@@ -111,12 +111,9 @@ export const stopRequested = (state: RunState, runId: number): RunState => (isCu
  */
 export function runSettled(state: RunState, runId: number, outcome: RunOutcome): RunState {
 	if (!isCurrentRun(state, runId)) return state;
-	if (outcome.complete) {
-		const { runner, ...result } = outcome;
-		return { status: 'done', runId, result, measuredOn: withRunner(state.measuredOn, runner) };
-	}
 	const { runner, ...result } = outcome;
-	return { status: 'stopped', runId, result, measuredOn: withRunner(state.measuredOn, runner) };
+	const measuredOn = withRunner(state.measuredOn, runner);
+	return result.complete ? { status: 'done', runId, result, measuredOn } : { status: 'stopped', runId, result, measuredOn };
 }
 
 export const runFailed = (state: RunState, runId: number, message: string): RunState =>

@@ -1,5 +1,5 @@
 import type { Env } from '@sim/state/env';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { memoryStorage } from '../testing/fake_tab_host';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
@@ -14,8 +14,7 @@ describe('openSavedUpgradesStore', () => {
 		const first = openSavedUpgradesStore(SEED, storage, KEY);
 		first.getState().setIterations(5000, undefined);
 		first.getState().toggleSource('raid:hyjal', undefined);
-		first.getState().applyDefaults({ key: 'feral:3', selectedSetKeys: ['preset:P3'], validSourceKeys: ['raid:hyjal'] });
-		first.getState().setPrune(true, undefined);
+		first.getState().setPrune(true, { key: 'feral:3', selectedSetKeys: ['preset:P3'], validSourceKeys: ['raid:hyjal'] });
 		first.getState().setSort([{ id: 'slot', desc: false }]);
 
 		const reloaded = openSavedUpgradesStore(SEED, storage, KEY);
@@ -93,6 +92,20 @@ describe('openSavedUpgradesStore', () => {
 		const stored = JSON.parse(storage.entries.get(KEY)!);
 		expect(Object.keys(stored).sort()).toEqual(['exportFlavour', 'settings', 'sort', 'version', 'view']);
 		expect(JSON.stringify(stored)).not.toContain('sig');
+	});
+
+	it('rewrites nothing when a setting is set to the value it already holds', () => {
+		const storage = memoryStorage();
+		const store = openSavedUpgradesStore(SEED, storage, KEY);
+		store.getState().setPrune(true, undefined);
+		const setItem = vi.spyOn(storage, 'setItem');
+
+		store.getState().setPrune(true, undefined);
+		store.getState().setIterations(1000, undefined);
+		expect(setItem).not.toHaveBeenCalled();
+
+		store.getState().setIterations(2000, undefined);
+		expect(setItem).toHaveBeenCalledOnce();
 	});
 
 	describe('falls back to the defaults without throwing', () => {

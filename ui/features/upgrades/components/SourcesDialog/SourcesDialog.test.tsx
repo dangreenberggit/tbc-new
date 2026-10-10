@@ -15,7 +15,7 @@ const SOURCES = {
 	other: [{ key: 'Badge vendor', count: 1 }],
 };
 
-/** The settings' source toggle in small, so the dialog shows what a click changed. */
+/** A stand-in for the tab's settings: it keeps the excluded sources and toggles one on each click, so the dialog shows what a click changed. */
 const Harness = ({ sources = SOURCES }: { sources?: typeof SOURCES }) => {
 	const [excluded, setExcluded] = useState<readonly string[]>([]);
 	const onToggle = (key: string) => setExcluded(keys => (keys.includes(key) ? keys.filter(k => k !== key) : [...keys, key]));

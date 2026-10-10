@@ -72,7 +72,7 @@ const resolvesIntoFeature = (file: string, specifier: string): boolean => {
  * The feature files the eager tab body may import statically, to save phase changes from page start (tickets 587,
  * 589). Each imports nothing from the feature but another of them, so they bring in neither the tab's code nor its data.
  */
-const EAGER_FILES = ['model/phase_changes.ts', 'model/saved_entry.ts'];
+const EAGER_FILES = ['model/phase_changes.ts', 'model/saved_entry.ts', 'utils/is_record.ts'];
 const EAGER_SPECIFIERS = new Set(EAGER_FILES.map(file => `@features/upgrades/${file.replace(/\.ts$/, '')}`));
 
 const sourceFiles = (dir: string): string[] =>

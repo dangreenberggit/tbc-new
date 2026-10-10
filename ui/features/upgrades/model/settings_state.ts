@@ -50,11 +50,15 @@ export const withSourceToggled = (state: SettingsState, key: string): SettingsSt
 
 export const withSetToggled = (state: SettingsState, key: string): SettingsState => ({ ...state, selectedSetKeys: toggled(state.selectedSetKeys, key) });
 
-export const withPrune = (state: SettingsState, prune: boolean): SettingsState => ({ ...state, prune });
+// The three setters below return the state they were given when the value already holds, so the store writes nothing.
+export const withPrune = (state: SettingsState, prune: boolean): SettingsState => (state.prune === prune ? state : { ...state, prune });
 
-export const withCandidateCap = (state: SettingsState, cap: number | undefined): SettingsState => ({ ...state, candidateCap: normaliseCap(cap) });
+export function withCandidateCap(state: SettingsState, cap: number | undefined): SettingsState {
+	const candidateCap = normaliseCap(cap);
+	return state.candidateCap === candidateCap ? state : { ...state, candidateCap };
+}
 
-export const withIterations = (state: SettingsState, iterations: number): SettingsState => ({ ...state, iterations });
+export const withIterations = (state: SettingsState, iterations: number): SettingsState => (state.iterations === iterations ? state : { ...state, iterations });
 
 /**
  * The settings the tab shows and runs with: the stored state with the scope's default sets applied. Pure, so a
@@ -76,14 +80,14 @@ export function appliedSettings(state: SettingsState, scope: SettingsScope | und
 /**
  * The page moved to another spec:phase, which gets its own default sets when next applied, as on the old tab
  * whatever the user had picked. An exclusion the new pool does not offer is dropped now, so it stays dropped on the
- * way back, as when the old tab applied that phase.
+ * way back, as when the old tab applied that phase. With no sets to forget and no exclusion to drop, it returns the
+ * state it was given.
  */
-export const afterScopeChange = (state: SettingsState, validSourceKeys: readonly string[]): SettingsState => ({
-	...state,
-	selectedSetKeys: [],
-	excludedSources: offeredExclusions(state.excludedSources, validSourceKeys),
-	defaultsFor: undefined,
-});
+export function afterScopeChange(state: SettingsState, validSourceKeys: readonly string[]): SettingsState {
+	const excludedSources = offeredExclusions(state.excludedSources, validSourceKeys);
+	const unchanged = state.selectedSetKeys.length === 0 && state.defaultsFor === undefined && excludedSources.length === state.excludedSources.length;
+	return unchanged ? state : { ...state, selectedSetKeys: [], excludedSources, defaultsFor: undefined };
+}
 
 /** A saved exclusion that a data update removed from the pool excludes nothing, but the Sources summary would count it. */
 export function withoutUnofferedSources(state: SettingsState, validSourceKeys: readonly string[]): SettingsState {

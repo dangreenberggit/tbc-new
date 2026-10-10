@@ -74,7 +74,7 @@ describe('upgradesStoreFor and the page’s phase (ticket 587)', () => {
 		const first = retPage(storage, 3);
 		const store = upgradesStoreFor(first.host);
 		await first.finishInit();
-		store.getState().applyDefaults({ key: 'ret:3', selectedSetKeys: ['preset:3:P3'], validSourceKeys: [] });
+		store.getState().setPrune(true, { key: 'ret:3', selectedSetKeys: ['preset:3:P3'], validSourceKeys: [] });
 		first.setPhase(4);
 
 		const reloaded = retPage(storage, 4);

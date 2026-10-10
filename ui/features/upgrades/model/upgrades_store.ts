@@ -56,8 +56,9 @@ export type ResultsSort = Array<{ id: string; desc: boolean }>;
 export type UpgradesData = { run: RunState; settings: SettingsState; sort: ResultsSort; view: ViewToggles; exportFlavour: ExportFlavour };
 
 /**
- * An action whose pure function returns the state it was given writes nothing, so a superseded run's late row, or a
- * write that changes nothing, notifies nobody.
+ * An action whose pure function returns the state it was given writes nothing and notifies nobody: a superseded run's
+ * late row, a setting set to the value it holds once the scope's defaults are stored, a scope change with nothing to
+ * forget. A toggle always changes its list.
  */
 export type UpgradesActions = {
 	/** The run's id comes from the run session (`run_session.ts`), which tells a superseded run's callbacks apart by it. */
@@ -77,7 +78,6 @@ export type UpgradesActions = {
 	setPrune: (prune: boolean, scope: SettingsScope | undefined) => void;
 	setIterations: (iterations: number, scope: SettingsScope | undefined) => void;
 	setCandidateCap: (cap: number | undefined, scope: SettingsScope | undefined) => void;
-	applyDefaults: (scope: SettingsScope) => void;
 	/** The page's changes: a phase change, and the pool the page's phase offers once it has loaded (`follow_phase.ts`). */
 	changeScope: (validSourceKeys: readonly string[]) => void;
 	dropUnofferedSources: (validSourceKeys: readonly string[]) => void;
@@ -134,7 +134,6 @@ export function createUpgradesStore(seed: SettingsSeed, restored: RestoredTab = 
 				setPrune: (prune, scope) => changeInScope(scope, settings => withPrune(settings, prune)),
 				setIterations: (iterations, scope) => changeInScope(scope, settings => withIterations(settings, iterations)),
 				setCandidateCap: (cap, scope) => changeInScope(scope, settings => withCandidateCap(settings, cap)),
-				applyDefaults: scope => setSettings(settings => appliedSettings(settings, scope)),
 				changeScope: validSourceKeys => setSettings(settings => afterScopeChange(settings, validSourceKeys)),
 				dropUnofferedSources: validSourceKeys => setSettings(settings => withoutUnofferedSources(settings, validSourceKeys)),
 

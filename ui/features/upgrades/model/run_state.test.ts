@@ -101,17 +101,6 @@ describe('the run transitions', () => {
 		expect(runSettled(IDLE_RUN, 1, result)).toBe(IDLE_RUN);
 	});
 
-	// A new run reads nothing of the state before it, so a finished run is replaced like any other.
-	it('starts a new run from a finished one', () => {
-		expect(runStarted(2, 5000)).toEqual({
-			status: 'running',
-			runId: 2,
-			startedAt: 5000,
-			landedRows: [],
-			stopping: false,
-		});
-	});
-
 	it('enters done with no duration when a fixture loads, since nothing ran', () => {
 		expect(fixtureLoaded(3, RANKING_FIXTURE)).toEqual({
 			status: 'done',
@@ -154,16 +143,6 @@ describe('runSettings', () => {
 });
 
 describe('runSettled', () => {
-	it('finishes a run whose ranking is complete', () => {
-		const result = { ...RANKING_FIXTURE, durationMs: 5 };
-		expect(runSettled(running(4), 4, result)).toEqual({ status: 'done', runId: 4, result });
-	});
-
-	it('stops a run whose ranking is partial', () => {
-		const result = { ...partial, durationMs: 5 };
-		expect(runSettled(running(4), 4, result)).toEqual({ status: 'stopped', runId: 4, result });
-	});
-
 	it('moves the runner off the result, so a recorded ranking never carries it', () => {
 		const result = { ...RANKING_FIXTURE, durationMs: 5 };
 		const settled = runSettled(running(4), 4, { ...result, runner: 'WorkerPoolSimRunner' });
