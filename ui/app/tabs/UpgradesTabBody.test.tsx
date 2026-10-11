@@ -217,7 +217,7 @@ describe('UpgradesTabBody', () => {
 		expect(screen.getByTestId('upgrades-baseline-summary').textContent).toMatch(/Took 4\.2s\.$/);
 		// The Upgrades pane lists the ten rows above the cutoff; the eleventh waits in the collapsed group.
 		expect(tableRows()).toHaveLength(10);
-		expect(screen.getAllByTestId('upgrades-below-cutoff-trigger')[0]?.textContent).toBe('1 item(s) below the cutoff');
+		expect(screen.getAllByTestId('upgrades-below-cutoff-trigger')[0]?.textContent).toBe('1 item(s) below the 3 DPS cutoff');
 		expect((screen.getByTestId('upgrades-run-button') as HTMLButtonElement).disabled).toBe(false);
 	});
 
