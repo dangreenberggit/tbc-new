@@ -4,8 +4,8 @@ import type { IndividualSimHost } from '@sim/sim_host';
 import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { applyView, type ViewResult } from '../../model/engine/view';
-import { stoppedView } from '../../model/results_view';
+import { applyView } from '../../model/engine/view';
+import { type ResultsViewResult, resultsViewFor, stoppedView } from '../../model/results_view';
 import { fakeTabHost } from '../../testing/fake_tab_host';
 import { RANKING_FIXTURE, STOPPED_FIXTURE } from '../../testing/ranking_fixture';
 
@@ -30,7 +30,7 @@ let host: IndividualSimHost<any>;
 beforeEach(() => {
 	host = fakeTabHost({ player: { getSpec: () => undefined } });
 });
-const panes = (view: ViewResult) => (
+const panes = (view: ResultsViewResult) => (
 	<SimHostProvider host={host}>
 		<ResultsPanes view={view} rowContext={CONTEXT} />
 	</SimHostProvider>
@@ -152,6 +152,18 @@ describe('ResultsPanes', () => {
 		expect(trigger()).toBeNull();
 		rerender(panes(VIEW));
 		expect(trigger()?.getAttribute('aria-expanded')).toBe('false');
+	});
+
+	// Ticket 614.
+	it('under BiS only keeps every slot tab, and dims a slot with no BiS-list row at (0) over an empty pane', () => {
+		const bisOnly = resultsViewFor({ status: 'done', runId: 1, result: RANKING_FIXTURE }, { withSetPotential: false, onlyBis: true })!;
+		const { container } = render(panes(bisOnly));
+		expect(tabLabels(container)).toEqual(['Upgrades', 'Head (1)', 'Chest (0)', 'Legs (0)', 'Trinket 1 (1)', 'Main Hand (1)']);
+		// `TabNav` puts a tab's class on the list item around it.
+		expect(tabStrip(container).getByRole('tab', { name: /^Chest/ }).parentElement?.className).toContain('opacity-60');
+
+		clickTab(container, 'Chest');
+		expect(namesIn(activePane(container))).toEqual([]);
 	});
 
 	it('falls back to the Upgrades list when the open slot has no rows in a new result', () => {

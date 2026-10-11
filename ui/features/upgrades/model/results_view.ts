@@ -28,12 +28,22 @@ export const effectiveSlot = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): Sim
 export const rowKey = (row: Pick<RankedItem, 'itemId' | 'slot'>): string => `${row.itemId}:${row.slot}`;
 
 /**
- * The slot tabs: every slot with a row, in sim order, counted by its
- * above-cutoff rows. A slot whose rows are all below the cutoff keeps its tab
- * at 0, so the user can open it and see why it is empty.
+ * A view as the results area renders it. `tabSlots` is set on a view that a
+ * display filter cut down: it names the slots of the view before the cut, so
+ * each keeps its tab. The old tab's rule (cb561067 `upgrades_tab.tsx`): "a
+ * display filter must change which rows a pane shows, never which panes
+ * exist" (ticket 614).
  */
-export function slotTabs(view: ViewResult): Array<{ id: SimSlotName; count: number }> {
-	const counts = new Map<SimSlotName, number>();
+export type ResultsViewResult = ViewResult & { tabSlots?: readonly SimSlotName[] };
+
+/**
+ * The slot tabs: every slot with a row, in sim order, counted by its
+ * above-cutoff rows. A slot whose rows are all below the cutoff, or that a
+ * display filter emptied, keeps its tab at 0, so the user can open it and see
+ * why it is empty.
+ */
+export function slotTabs(view: ResultsViewResult): Array<{ id: SimSlotName; count: number }> {
+	const counts = new Map<SimSlotName, number>(view.tabSlots?.map(slot => [slot, 0]));
 	for (const row of view.rows) {
 		const slot = effectiveSlot(row);
 		counts.set(slot, (counts.get(slot) ?? 0) + (row.belowCutoffInView ? 0 : 1));
@@ -100,16 +110,18 @@ export const appliedToggles = (offered: ViewToggles, toggles: ViewToggles): View
 
 /**
  * A view cut to its BiS-list rows. Each row's cutoff verdict depends on that
- * row alone, so dropping rows changes only the count below the cutoff.
+ * row alone, so dropping rows changes only the count below the cutoff. Every
+ * slot of the whole view keeps its tab.
  */
-function bisOnlyView(view: ViewResult): ViewResult {
+function bisOnlyView(view: ViewResult): ResultsViewResult {
 	const rows = view.rows.filter(onBisList);
 	const shortlist = view.shortlist.filter(onBisList);
-	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length };
+	const tabSlots = [...new Set(view.rows.map(effectiveSlot))];
+	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length, tabSlots };
 }
 
 /** The view a settled run renders under `applied` (from `appliedToggles`); nothing before a run settles. */
-export function resultsViewFor(run: RunState, { withSetPotential, onlyBis }: ViewToggles): ViewResult | undefined {
+export function resultsViewFor(run: RunState, { withSetPotential, onlyBis }: ViewToggles): ResultsViewResult | undefined {
 	switch (run.status) {
 		case 'done': {
 			const view = applyView(run.result, { withSetPotential });

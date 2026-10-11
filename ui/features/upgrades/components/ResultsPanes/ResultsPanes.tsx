@@ -4,15 +4,14 @@ import { TabNav, type TabNavTab, TabPanel, TabPanels } from '@ui-kit/TabNav';
 import { useMemo, useState } from 'react';
 
 import { useResultsTable } from '../../hooks/useResultsTable';
-import type { ViewResult } from '../../model/engine/view';
-import { paneRows, type ResultsTabId, SHOPPING_LIST_TAB, slotTabs } from '../../model/results_view';
+import { paneRows, type ResultsTabId, type ResultsViewResult, SHOPPING_LIST_TAB, slotTabs } from '../../model/results_view';
 import { simSlotLabel } from '../../utils/format';
 import { ExportPanel } from '../ExportPanel';
 import { ResultsPane } from '../ResultsPane';
 import type { RowContext } from '../ResultsTable';
 
 export interface ResultsPanesProps {
-	view: ViewResult;
+	view: ResultsViewResult;
 	rowContext: RowContext;
 }
 

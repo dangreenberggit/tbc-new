@@ -2,8 +2,7 @@ import { useSimHost } from '@sim/context/SimHostContext';
 import { useMemo } from 'react';
 
 import type { RowContext } from '../components/ResultsTable';
-import type { ViewResult } from '../model/engine/view';
-import { appliedToggles, dpsSortKeyFor, offeredToggles, resultsViewFor, type ViewToggles } from '../model/results_view';
+import { appliedToggles, dpsSortKeyFor, offeredToggles, type ResultsViewResult, resultsViewFor, type ViewToggles } from '../model/results_view';
 import type { RunState } from '../model/run_state';
 import { rowTagIndex, type SetOption } from '../model/settings_pool';
 import { selectViewToggles } from '../model/upgrades_store';
@@ -16,7 +15,7 @@ export type ResultsView = {
 	setToggle: (toggle: keyof ViewToggles, on: boolean) => void;
 	rowContext: RowContext;
 	/** Undefined before a run settles. */
-	view: ViewResult | undefined;
+	view: ResultsViewResult | undefined;
 };
 
 /**

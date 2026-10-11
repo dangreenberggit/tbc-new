@@ -135,6 +135,19 @@ describe('resultsViewFor', () => {
 		expect(ids(view.shortlist)).toEqual([32332, 32235, 28830]);
 		expect(view.belowCutoffCount).toBe(0);
 	});
+
+	// Ticket 614: a display filter changes which rows a pane shows, never which panes exist.
+	it('with BiS only, keeps every slot tab and counts only the BiS-list rows above the cutoff', () => {
+		const view = resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!;
+		expect(slotTabs(view)).toEqual([
+			{ id: 'head', count: 1 },
+			{ id: 'chest', count: 0 },
+			{ id: 'legs', count: 0 },
+			{ id: 'trinket1', count: 1 },
+			{ id: 'mainhand', count: 1 },
+		]);
+		expect(paneRows(view, 'chest')).toEqual({ shortlist: [], belowCutoff: [] });
+	});
 });
 
 describe('hasBisRows', () => {
