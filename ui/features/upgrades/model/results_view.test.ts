@@ -53,13 +53,14 @@ describe('slotTabs', () => {
 describe('paneRows', () => {
 	it('splits the Upgrades pane into the shortlist and the below-cutoff rows', () => {
 		const pane = paneRows(VIEW, SHOPPING_LIST_TAB);
-		expect(ids(pane.shortlist)).toEqual([32332, 30902, 32235, 33688, 28830, 30989, 29993, 30990, 30993, 30905]);
+		expect(ids(pane.main)).toEqual([32332, 30902, 32235, 33688, 28830, 30989, 29993, 30990, 30993, 30905]);
 		expect(ids(pane.belowCutoff)).toEqual([32373]);
+		expect(pane.notUpgrades.size).toBe(0);
 	});
 
 	it('splits a slot pane the same way over that slot’s rows', () => {
 		const pane = paneRows(VIEW, 'head');
-		expect(ids(pane.shortlist)).toEqual([32235, 30989]);
+		expect(ids(pane.main)).toEqual([32235, 30989]);
 		expect(ids(pane.belowCutoff)).toEqual([32373]);
 	});
 
@@ -67,6 +68,67 @@ describe('paneRows', () => {
 		const ownedHelm = { ...helm, itemId: 30987, owned: true };
 		const pane = paneRows(applyView({ ...RANKING_FIXTURE, items: [helm, ownedHelm] }), 'head');
 		expect(ids(pane.belowCutoff)).toEqual([32373]);
+	});
+});
+
+// Ticket 528, owner ruling 2026-10-11 (option A). Helm of the Illidari Shatterer (2.91) misses the 3 DPS bar; Midnight
+// Chestguard, moved to -4, misses it by more. Both put on a BiS list.
+const bisHelm: RankedItem = { ...helm, bisTags: ['BiS'] };
+const altChest: RankedItem = { ...fixtureRow(6), deltaDps: -4, belowCutoff: true, bisTags: ['Alt'] };
+const WITH_BIS_BELOW: Ranking = {
+	...RANKING_FIXTURE,
+	items: RANKING_FIXTURE.items.map(row => (row.itemId === helm.itemId ? bisHelm : row.itemId === altChest.itemId ? altChest : row)),
+};
+
+describe('BiS-list rows below the cutoff', () => {
+	const view = applyView(WITH_BIS_BELOW);
+
+	it('show in the main table in gain order, marked as not upgrades, and leave the below-cutoff group', () => {
+		const pane = paneRows(view, SHOPPING_LIST_TAB);
+		expect(ids(pane.main)).toEqual([32332, 30902, 32235, 33688, 28830, 30989, 29993, 30990, 30993, 32373, 30905]);
+		expect([...pane.notUpgrades]).toEqual(['32373:head', '30905:chest']);
+		expect(pane.belowCutoff).toEqual([]);
+		expect(ids(paneRows(view, 'head').main)).toEqual([32235, 30989, 32373]);
+	});
+
+	it('count in neither the slot tabs nor the shortlist the export reads', () => {
+		expect(slotTabs(view)).toEqual([
+			{ id: 'head', count: 2 },
+			{ id: 'chest', count: 1 },
+			{ id: 'legs', count: 1 },
+			{ id: 'trinket1', count: 1 },
+			{ id: 'mainhand', count: 4 },
+		]);
+		expect(ids(view.shortlist)).not.toContain(32373);
+		expect(ids(view.shortlist)).not.toContain(30905);
+	});
+
+	it('stay out of the main table when owned, as an owned row stays out of the below-cutoff group', () => {
+		const pane = paneRows(applyView({ ...RANKING_FIXTURE, items: [{ ...bisHelm, owned: true }] }), 'head');
+		expect(pane.main).toEqual([]);
+		expect(pane.belowCutoff).toEqual([]);
+	});
+
+	it('keep the rule under BiS only and with Set potential, judged on the same effective DPS as the cutoff', () => {
+		const bisOnly = resultsViewFor(done(WITH_BIS_BELOW), ONLY_BIS)!;
+		const bisPane = paneRows(bisOnly, SHOPPING_LIST_TAB);
+		expect(ids(bisPane.main)).toEqual([32332, 32235, 28830, 32373, 30905]);
+		expect([...bisPane.notUpgrades]).toEqual(['32373:head', '30905:chest']);
+		expect(slotTabs(bisOnly).find(tab => tab.id === 'head')).toEqual({ id: 'head', count: 1 });
+
+		// Given Lightbringer Faceguard's set context with a measured 2-piece bonus, the -4 chest clears the bar on
+		// effective DPS: an upgrade, so not marked.
+		const credited: RankedItem = {
+			...altChest,
+			setContext: { ...fixtureRow(10).setContext!, futureBonuses: [{ threshold: 2, piecesNeeded: 1, dps: 20.04, pieces: [], breaks: [] }] },
+		};
+		const withPotential = resultsViewFor(
+			done({ ...WITH_BIS_BELOW, items: WITH_BIS_BELOW.items.map(row => (row.itemId === credited.itemId ? credited : row)) }),
+			SET_POTENTIAL,
+		)!;
+		const pane = paneRows(withPotential, SHOPPING_LIST_TAB);
+		expect([...pane.notUpgrades]).toEqual(['32373:head']);
+		expect(ids(withPotential.shortlist)).toContain(30905);
 	});
 });
 
@@ -146,7 +208,7 @@ describe('resultsViewFor', () => {
 			{ id: 'trinket1', count: 1 },
 			{ id: 'mainhand', count: 1 },
 		]);
-		expect(paneRows(view, 'chest')).toEqual({ shortlist: [], belowCutoff: [] });
+		expect(paneRows(view, 'chest')).toEqual({ main: [], notUpgrades: new Set(), belowCutoff: [] });
 	});
 });
 

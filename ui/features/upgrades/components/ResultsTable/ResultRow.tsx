@@ -35,6 +35,8 @@ export interface ResultRowProps {
 	/** The row's place in its own table, which is what the Rank column shows (owner ruling, ticket 287). */
 	position: number;
 	context: RowContext;
+	/** A BiS-list row the main table shows although it misses the cutoff (ticket 528). */
+	notUpgrade?: boolean;
 	/** The virtualiser's measuring ref (`useVirtualRows`). */
 	ref?: Ref<HTMLTableRowElement>;
 }
@@ -50,16 +52,17 @@ export interface ResultRowProps {
  * `data-index` is the row's index in its table, which the virtualiser reads when it measures the row
  * and the gates read to collect a table's rows across scroll positions.
  */
-export const ResultRow = memo(({ row, position, context, ref }: ResultRowProps) => (
+export const ResultRow = memo(({ row, position, context, notUpgrade = false, ref }: ResultRowProps) => (
 	<tr
 		ref={ref}
 		className={clsx('border-b border-b-border', row.owned && 'text-muted')}
 		data-testid="upgrades-result-row"
 		data-index={position - 1}
 		data-item-id={row.itemId}
-		data-owned={row.owned ? 'true' : undefined}>
+		data-owned={row.owned ? 'true' : undefined}
+		data-not-upgrade={notUpgrade ? 'true' : undefined}>
 		<td className="py-1 pr-3 tabular-nums">{position}</td>
-		<ItemNameCell row={row} quality={context.itemOf(row.itemId)?.quality} tags={context.tagsOf(row.itemId)} />
+		<ItemNameCell row={row} quality={context.itemOf(row.itemId)?.quality} tags={context.tagsOf(row.itemId)} notUpgrade={notUpgrade} />
 		<td className="py-1 pr-3">{slotLabel(row)}</td>
 		<DeltaCell row={row} context={context} />
 		<SourceCell row={row} item={context.itemOf(row.itemId)} sim={context.sim} />

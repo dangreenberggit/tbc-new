@@ -44,7 +44,7 @@ const onPage = (props: PaneProps) =>
 
 describe('ResultsPane', () => {
 	it('shows the shortlist in a sortable table and the rest in a collapsed group', () => {
-		const { getAllByTestId, getByTestId } = onPage({ shortlist: [fixtureRow(0), fixtureRow(1)], belowCutoff: [fixtureRow(5)], rowContext: CONTEXT });
+		const { getAllByTestId, getByTestId } = onPage({ main: [fixtureRow(0), fixtureRow(1)], belowCutoff: [fixtureRow(5)], rowContext: CONTEXT });
 
 		expect(getAllByTestId('upgrades-results-table')).toHaveLength(1);
 		expect(within(getByTestId('upgrades-results-table')).getAllByTestId('upgrades-result-row')).toHaveLength(2);
@@ -54,7 +54,7 @@ describe('ResultsPane', () => {
 
 	it('names the bar in DPS on the group once a ranking is shown', () => {
 		const rowContext = { ...CONTEXT, tip: { ranking: RANKING_FIXTURE } };
-		const { getByTestId } = onPage({ shortlist: [fixtureRow(0)], belowCutoff: [fixtureRow(5)], rowContext });
+		const { getByTestId } = onPage({ main: [fixtureRow(0)], belowCutoff: [fixtureRow(5)], rowContext });
 
 		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 item(s) below the 3 DPS cutoff');
 	});
@@ -63,7 +63,7 @@ describe('ResultsPane', () => {
 		upgradesStoreFor(host)
 			.getState()
 			.setSort([{ id: 'delta_dps', desc: true }]);
-		const { getByTestId } = onPage({ shortlist: [fixtureRow(0)], belowCutoff: [fixtureRow(5)], rowContext: CONTEXT });
+		const { getByTestId } = onPage({ main: [fixtureRow(0)], belowCutoff: [fixtureRow(5)], rowContext: CONTEXT });
 		const group = getByTestId('upgrades-below-cutoff');
 		fireEvent.click(within(group).getByTestId('upgrades-below-cutoff-trigger'));
 
@@ -74,7 +74,7 @@ describe('ResultsPane', () => {
 	});
 
 	it('gives the group its own sortable head when no shortlist sits above it', () => {
-		const { getByTestId } = onPage({ shortlist: [], belowCutoff: [fixtureRow(5)], rowContext: CONTEXT });
+		const { getByTestId } = onPage({ main: [], belowCutoff: [fixtureRow(5)], rowContext: CONTEXT });
 		const group = getByTestId('upgrades-below-cutoff');
 		fireEvent.click(within(group).getByTestId('upgrades-below-cutoff-trigger'));
 
@@ -82,12 +82,12 @@ describe('ResultsPane', () => {
 	});
 
 	it('has no group when every row cleared the cutoff', () => {
-		const { queryByTestId } = onPage({ shortlist: [fixtureRow(0)], belowCutoff: [], rowContext: CONTEXT });
+		const { queryByTestId } = onPage({ main: [fixtureRow(0)], belowCutoff: [], rowContext: CONTEXT });
 		expect(queryByTestId('upgrades-below-cutoff')).toBeNull();
 	});
 
 	it('says no row cleared the cutoff in place of an empty table', () => {
-		const { getByTestId, queryByTestId } = onPage({ shortlist: [], belowCutoff: [fixtureRow(5)], rowContext: CONTEXT });
+		const { getByTestId, queryByTestId } = onPage({ main: [], belowCutoff: [fixtureRow(5)], rowContext: CONTEXT });
 
 		expect(queryByTestId('upgrades-results-table')).toBeNull();
 		expect(getByTestId('upgrades-empty-state').textContent).toContain('No upgrades found');

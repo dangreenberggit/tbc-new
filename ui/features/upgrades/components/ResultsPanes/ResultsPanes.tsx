@@ -88,7 +88,8 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 					{contents.map(({ id, rows }) => (
 						<TabPanel key={id} value={id} id={paneId(id)} keepMounted={false}>
 							<ResultsPane
-								shortlist={rows.shortlist}
+								main={rows.main}
+								notUpgrades={rows.notUpgrades}
 								belowCutoff={rows.belowCutoff}
 								rowContext={rowContext}
 								groupOpen={openGroups.has(id)}

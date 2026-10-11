@@ -4,8 +4,9 @@ import type { IndividualSimHost } from '@sim/sim_host';
 import { fireEvent, render, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { RankedItem } from '../../model/engine/rank';
 import { applyView } from '../../model/engine/view';
-import { type ResultsViewResult, resultsViewFor, stoppedView } from '../../model/results_view';
+import { resultsViewFor, type ResultsViewResult, stoppedView } from '../../model/results_view';
 import { fakeTabHost } from '../../testing/fake_tab_host';
 import { RANKING_FIXTURE, STOPPED_FIXTURE } from '../../testing/ranking_fixture';
 
@@ -152,6 +153,29 @@ describe('ResultsPanes', () => {
 		expect(trigger()).toBeNull();
 		rerender(panes(VIEW));
 		expect(trigger()?.getAttribute('aria-expanded')).toBe('false');
+	});
+
+	// Ticket 528 (option A): Helm of the Illidari Shatterer (2.91) misses the 3 DPS bar but is put on a BiS list here.
+	it('shows a BiS-list row below the cutoff in the main table, marked in text, and leaves it out of the counts and the export', () => {
+		const exportedIds = (container: HTMLElement) => {
+			const payload: { items: Array<{ id: number }> } = JSON.parse(
+				container.querySelector<HTMLTextAreaElement>('[data-testid="upgrades-export-area"]')?.value ?? '',
+			);
+			return payload.items.map(item => item.id);
+		};
+		const withoutTag = exportedIds(render(panes(VIEW)).container);
+		const items = RANKING_FIXTURE.items.map((row): RankedItem => (row.itemId === 32373 ? { ...row, bisTags: ['BiS'] } : row));
+		const { container } = render(panes(applyView({ ...RANKING_FIXTURE, items })));
+		const pane = activePane(container);
+		const helmRow = within(pane)
+			.getAllByTestId('upgrades-result-row')
+			.find(row => row.dataset.itemId === '32373');
+		expect(within(helmRow!).getByTestId('upgrades-not-upgrade').textContent).toBe('(Not an upgrade)');
+		expect(within(pane).getAllByTestId('upgrades-not-upgrade')).toHaveLength(1);
+		expect(within(pane).queryByTestId('upgrades-below-cutoff')).toBeNull();
+		expect(tabLabels(container)).toContain('Head (2)');
+		expect(exportedIds(container)).toEqual(withoutTag);
+		expect(withoutTag).not.toContain(32373);
 	});
 
 	// Ticket 614.

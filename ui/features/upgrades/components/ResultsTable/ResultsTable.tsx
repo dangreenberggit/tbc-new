@@ -36,6 +36,8 @@ export interface ResultRowsProps {
 	/** The table whose rows these are (`useResultsTable`), already in the order it sorts them. */
 	table: ResultsTableModel;
 	rowContext: RowContext;
+	/** The row ids (`rowKey`) to mark as not an upgrade: a main table's rows that miss the cutoff (`paneRows`). */
+	notUpgrades?: ReadonlySet<string>;
 }
 
 export interface ProvisionalResultsTableProps {
@@ -69,7 +71,7 @@ const RowSpacer = ({ height }: { height: number }) => (
  * row is keyed by `rowKey`, the table's row id. Only the rows in or near the page's view are rendered
  * (ticket 565), so the tbody carries the table's full row count for the gates, which cannot count rows.
  */
-export const ResultRows = ({ table, rowContext }: ResultRowsProps) => {
+export const ResultRows = ({ table, rowContext, notUpgrades }: ResultRowsProps) => {
 	const rows = table.getRowModel().rows;
 	const tbodyRef = useRef<HTMLTableSectionElement>(null);
 	// Memoised on the row model, which TanStack keeps while the data and sort hold: a new array is a new
@@ -82,7 +84,16 @@ export const ResultRows = ({ table, rowContext }: ResultRowsProps) => {
 			{indexes.map(index => {
 				const row = rows[index];
 				if (!row) return null;
-				return <ResultRow key={row.id} ref={measureRow} row={row.original} position={index + 1} context={rowContext} />;
+				return (
+					<ResultRow
+						key={row.id}
+						ref={measureRow}
+						row={row.original}
+						position={index + 1}
+						context={rowContext}
+						notUpgrade={notUpgrades?.has(row.id) ?? false}
+					/>
+				);
 			})}
 			{paddingBottom > 0 && <RowSpacer height={paddingBottom} />}
 		</tbody>

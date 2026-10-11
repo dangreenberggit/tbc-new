@@ -1,7 +1,7 @@
 /**
  * Which rows each results pane shows, as the old tab chose them (cb561067
  * `upgrades_tab.tsx`): an "Upgrades" pane plus one pane per slot with a row,
- * each split into its shortlist and its below-cutoff group. Pure; the panes
+ * each split into its main table and its below-cutoff group. Pure; the panes
  * render what this returns.
  */
 
@@ -54,15 +54,33 @@ export function slotTabs(view: ResultsViewResult): Array<{ id: SimSlotName; coun
 	});
 }
 
+/** On some phase's BiS list, as the old tab's `isBisTagged` tested it: a BiS or an Alt tag. */
+const onBisList = (row: Pick<RankedItem, 'bisTags'>): boolean => row.bisTags.length > 0;
+
 /**
- * One pane's rows. Owned rows stay out of the below-cutoff group: an owned
- * item is re-simmed into the slot it already fills, so its delta is about 0
- * by construction and the group would only list the gear the player wears.
+ * One pane's rows: its main table, the keys of the rows in that table that
+ * miss the cutoff, and its below-cutoff group.
+ *
+ * The main table is the rows that meet the cutoff plus, by the owner's ruling
+ * on ticket 528 (option A, 2026-10-11), the BiS-list rows that miss it, in the
+ * view's order, so each sits where its gain puts it. `notUpgrades` marks those
+ * rows; the slot counts and the export still read only the rows that meet the
+ * cutoff (`slotTabs`, `view.shortlist`).
+ *
+ * Owned rows stay out of the below-cutoff group, and so out of the main table
+ * when they miss the cutoff: an owned item is re-simmed into the slot it
+ * already fills, so its delta is about 0 by construction and would only list
+ * the gear the player wears.
  */
-export function paneRows(view: ViewResult, tab: ResultsTabId): { shortlist: ViewRow[]; belowCutoff: ViewRow[] } {
+export function paneRows(view: ViewResult, tab: ResultsTabId): { main: ViewRow[]; notUpgrades: ReadonlySet<string>; belowCutoff: ViewRow[] } {
 	const rows = tab === SHOPPING_LIST_TAB ? view.rows : view.rows.filter(row => effectiveSlot(row) === tab);
-	const shortlist = tab === SHOPPING_LIST_TAB ? view.shortlist : rows.filter(row => !row.belowCutoffInView);
-	return { shortlist, belowCutoff: rows.filter(row => row.belowCutoffInView && !row.owned) };
+	const missed = rows.filter(row => row.belowCutoffInView && !row.owned);
+	const shownAnyway = missed.filter(onBisList);
+	return {
+		main: rows.filter(row => !row.belowCutoffInView || shownAnyway.includes(row)),
+		notUpgrades: new Set(shownAnyway.map(rowKey)),
+		belowCutoff: missed.filter(row => !onBisList(row)),
+	};
 }
 
 /** The rows a running table shows: only measured rows, best first. */
@@ -88,9 +106,6 @@ export function stoppedView(result: StoppedRanking): ViewResult {
 export type ViewToggles = { withSetPotential: boolean; onlyBis: boolean };
 
 export const NO_VIEW_TOGGLES: ViewToggles = { withSetPotential: false, onlyBis: false };
-
-/** On some phase's BiS list, as the old tab's `isBisTagged` tested it: a BiS or an Alt tag. */
-const onBisList = (row: Pick<RankedItem, 'bisTags'>): boolean => row.bisTags.length > 0;
 
 /** Whether BiS only has anything to keep. */
 export const hasBisRows = (ranking: Pick<Ranking, 'items'>): boolean => ranking.items.some(onBisList);

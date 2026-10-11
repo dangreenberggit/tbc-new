@@ -15,6 +15,8 @@ export interface ItemNameCellProps {
 	quality: ItemQuality | undefined;
 	/** The selected sets that hold the item (ticket 430). */
 	tags: readonly RowTag[];
+	/** Shown in the main table although it misses the cutoff (ticket 528): said in text beside the badges, so no hover is needed. */
+	notUpgrade?: boolean;
 }
 
 /** A row in no selected set shows the universe's own BiS or Alt tag instead. */
@@ -25,7 +27,7 @@ const listBadge = (bisTags: RankedItem['bisTags']): RowTag[] => {
 };
 
 /** The item: its icon, its name as a wowhead link in its quality colour, and its tags beneath. `memo`: see `ResultRow`. */
-export const ItemNameCell = memo(({ row, quality, tags }: ItemNameCellProps) => {
+export const ItemNameCell = memo(({ row, quality, tags, notUpgrade = false }: ItemNameCellProps) => {
 	const { iconUrl, href } = useActionId(ActionId.fromItemId(row.itemId));
 	const badges = tags.length > 0 ? tags : listBadge(row.bisTags);
 
@@ -44,7 +46,7 @@ export const ItemNameCell = memo(({ row, quality, tags }: ItemNameCellProps) => 
 						className={itemQualityClassName(quality)}>
 						{row.name}
 					</a>
-					{(badges.length > 0 || row.owned) && (
+					{(badges.length > 0 || row.owned || notUpgrade) && (
 						<span className="flex flex-wrap items-center gap-1 text-xs">
 							{badges.map(badge => (
 								<span key={badge.key} className="rounded-full bg-warning px-1.5 text-black" data-testid="upgrades-bis-badge">
@@ -52,6 +54,7 @@ export const ItemNameCell = memo(({ row, quality, tags }: ItemNameCellProps) => 
 								</span>
 							))}
 							{row.owned && <span>({i18n.t('upgrades_tab.results.owned', { ns: 'upgrades' })})</span>}
+							{notUpgrade && <span data-testid="upgrades-not-upgrade">({i18n.t('upgrades_tab.results.not_upgrade', { ns: 'upgrades' })})</span>}
 						</span>
 					)}
 				</span>
