@@ -55,7 +55,7 @@ const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string):
  * the full text of each dropped-candidate reason the page cuts to one line
  * (ticket 311). Logged once when a ranking arrives, never from a render.
  */
-const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'substitutions'>, context: AssumptionsContext) => {
+const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'cutoff' | 'substitutions'>, context: AssumptionsContext) => {
 	console.info(assumptionsLine(result, context));
 	for (const line of substitutionConsoleLines(result.substitutions)) console.warn(line);
 };

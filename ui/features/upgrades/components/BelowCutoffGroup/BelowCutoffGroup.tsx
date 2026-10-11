@@ -22,18 +22,26 @@ const GROUP = 'below-cutoff';
  * The rows the cutoff left out, behind one expand ("hidden, never deleted",
  * candidate-pool.md §6.1). Collapsed until opened, and its table is not
  * mounted until then. The shared sort orders it too, so the order does not
- * stop at the fold (ticket 280).
+ * stop at the fold (ticket 280). Its title names the bar in DPS from the
+ * ranking the rows came from, so a recorded fixture names the bar its rows
+ * were judged against (ADR-0037).
  */
-export const BelowCutoffGroup = ({ head, table, rowContext, open, onOpenChange }: BelowCutoffGroupProps) => (
-	<Accordion value={open ? [GROUP] : []} onValueChange={value => onOpenChange(value.includes(GROUP))}>
-		<AccordionItem
-			value={GROUP}
-			testId="upgrades-below-cutoff"
-			title={i18n.t('upgrades_tab.results.below_cutoff_group', { ns: 'upgrades', count: table.options.data.length })}>
-			<ResultsTable>
-				{head}
-				<ResultRows table={table} rowContext={rowContext} />
-			</ResultsTable>
-		</AccordionItem>
-	</Accordion>
-);
+export const BelowCutoffGroup = ({ head, table, rowContext, open, onOpenChange }: BelowCutoffGroupProps) => {
+	const count = table.options.data.length;
+	const cutoff = rowContext.tip.ranking?.cutoff;
+	const title =
+		cutoff === undefined
+			? i18n.t('upgrades_tab.results.below_cutoff_group', { ns: 'upgrades', count })
+			: i18n.t('upgrades_tab.results.below_cutoff_group_bar', { ns: 'upgrades', count, abs: String(cutoff.absDps) });
+
+	return (
+		<Accordion value={open ? [GROUP] : []} onValueChange={value => onOpenChange(value.includes(GROUP))}>
+			<AccordionItem value={GROUP} testId="upgrades-below-cutoff" title={title}>
+				<ResultsTable>
+					{head}
+					<ResultRows table={table} rowContext={rowContext} />
+				</ResultsTable>
+			</AccordionItem>
+		</Accordion>
+	);
+};

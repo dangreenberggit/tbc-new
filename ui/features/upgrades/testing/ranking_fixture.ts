@@ -24,7 +24,7 @@ const tokenSource = (source: Extract<ItemSource, { kind: 'token' }> & { tokenId:
  */
 export const RANKING_FIXTURE: Ranking = {
 	contentHash: 'fixture:ret-p3-p2-trimmed',
-	cutoff: { absDps: 3.4, pct: 0.15 },
+	cutoff: { absDps: 3 },
 	fight: { reportCode: 'current-page', fightId: 0, encounterName: 'Current page settings', route: 'report-events', confidence: 1 },
 	baseline: { dps: 2084.163576929428, stdev: 120.06955354097485, metaAdjusted: false },
 	assumptions: {
@@ -158,7 +158,7 @@ export const RANKING_FIXTURE: Ranking = {
 			hitDriven: true,
 		},
 		{
-			// Recorded figures: admitted by the percentage arm alone (3.32 DPS < 3.4, 0.159% ≥ 0.15%).
+			// Recorded figures. The old percentage rule admitted it (3.32 DPS < 3.4, 0.159% ≥ 0.15%); it clears the flat 3 DPS bar (ADR-0037).
 			rank: 6,
 			itemId: 30905,
 			name: 'Midnight Chestguard',

@@ -342,38 +342,6 @@ export function bisTagPhaseFor(
 }
 
 /**
- * Specs whose cutoff is ret's borrowed number rather than their own.
- *
- * The cutoff is a noise floor: it decides which rows are called
- * distinguishable from zero. Only ret and feral have had a five-seed spread
- * run, and they differ — feral's is 3.6 against ret's 3.4, because feral's
- * rotation is measurably noisier at the same iteration count. Every spec
- * below therefore ships ret's floor with no measurement behind it, which
- * under-filters a noisier spec and over-filters a quieter one. Neither
- * failure announces itself, so the run says so (review A6; the measurement
- * itself is carry-forward ticket 291).
- *
- * Kept here rather than read off the engine's CUTOFF_BY_SPEC because that
- * table holds values, not provenance — every entry is the same `CUTOFF`
- * object, so "is this borrowed" is not a question the values can answer.
- */
-const CUTOFF_UNMEASURED_SPECS: ReadonlySet<SpecId> = new Set<SpecId>([
-	'balance',
-	'hunter',
-	'mage',
-	'shadow',
-	'rogue',
-	'ele',
-	'enh',
-	'warlock',
-	'warrior',
-]);
-
-export function cutoffIsUnmeasuredFor(spec: SpecId): boolean {
-	return CUTOFF_UNMEASURED_SPECS.has(spec);
-}
-
-/**
  * How many of the chosen universe's entries were admitted by database phase
  * alone, and so carry no source detail.
  *

@@ -52,8 +52,8 @@ import {
 import { compose } from "./compose";
 import { canonicalJson, ENGINE_VERSION, type HashedGearItem } from "./content-hash";
 import {
+  CUTOFF,
   type Cutoff,
-  cutoffForSpec,
   meetsCutoff,
   setBonusNoiseFloorDps,
 } from "./cutoff";
@@ -769,7 +769,7 @@ export async function rankUpgrades(
   onProgress?: (p: Progress) => void
 ): Promise<Ranking | PartialRanking> {
   onProgress?.({ stage: "resolving" });
-  const cutoff = cutoffForSpec(input.spec);
+  const cutoff = CUTOFF;
   const fights = await deps.gear.findFights(input.character, input.spec);
   const maybeResolved = resolveFight(fights, input.fight);
   if (!maybeResolved) {
@@ -1374,7 +1374,7 @@ export async function rankUpgrades(
 
       const deltaPct =
         baselineDps === 0 ? 0 : (best.deltaDps / baselineDps) * 100;
-      const belowCutoff = !meetsCutoff(best.deltaDps, deltaPct, cutoff);
+      const belowCutoff = !meetsCutoff(best.deltaDps, cutoff);
       const item: RankedItem = {
         rank: null,
         itemId: entry.itemId,
@@ -1646,7 +1646,7 @@ export async function rankUpgrades(
         item.deltaDps = deltas.reduce((sum, d) => sum + d, 0) / deltas.length;
         item.deltaPct =
           baselineDps === 0 ? 0 : (item.deltaDps / baselineDps) * 100;
-        item.belowCutoff = !meetsCutoff(item.deltaDps, item.deltaPct, cutoff);
+        item.belowCutoff = !meetsCutoff(item.deltaDps, cutoff);
       }
     }
     ranked.sort(bySimmedThenDelta);

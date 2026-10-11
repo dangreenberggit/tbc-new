@@ -4,8 +4,16 @@ import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import { assumptionsLine, substitutionConsoleLines, substitutionFirstLine } from './assumptions';
 
 describe('assumptionsLine', () => {
-	it('names the seeds, iterations and phase of a ranking with nothing else known, as for a loaded fixture', () => {
-		expect(assumptionsLine(RANKING_FIXTURE)).toBe('[upgrades] assumptions — seeds: 11, 22, 33, 44, 55 · iterations: 3000 · max phase: 3');
+	it('names the seeds, iterations, phase and cutoff of a ranking with nothing else known, as for a loaded fixture', () => {
+		expect(assumptionsLine(RANKING_FIXTURE)).toBe('[upgrades] assumptions — seeds: 11, 22, 33, 44, 55 · iterations: 3000 · max phase: 3 · cutoff: 3 DPS');
+	});
+
+	it('gives every spec the same flat cutoff, borrowed from no other spec (ADR-0037)', () => {
+		for (const specId of ['ret', 'feral', 'warlock'] as const) {
+			const line = assumptionsLine(RANKING_FIXTURE, { specId });
+			expect(line).toContain(' · cutoff: 3 DPS');
+			expect(line).not.toContain('borrowed');
+		}
 	});
 
 	it('names the run’s pool settings when the run is known', () => {

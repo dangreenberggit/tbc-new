@@ -122,17 +122,9 @@ describe('ResultRow', () => {
 		expect(testIdText(renderRow(fixtureRow(0)), 'upgrades-removed-items')).toEqual([]);
 	});
 
-	it('marks a row only the percentage rule admits, and no row the absolute rule admits', () => {
-		const pct = within(renderRow(fixtureRow(6))).getByTestId('upgrades-cutoff-arm');
-		expect(pct.textContent).toBe('by % rule');
-		expect(pct.title).toBe('Above the cutoff via the percentage arm (0.15%): its absolute DPS is below the 3.4 DPS threshold.');
-
-		expect(testIdText(renderRow({ ...fixtureRow(0), deltaPct: 0.1 }), 'upgrades-cutoff-arm')).toEqual([]);
-		expect(testIdText(renderRow(fixtureRow(0)), 'upgrades-cutoff-arm')).toEqual([]);
-	});
-
-	it('has no cutoff note before a run settles', () => {
-		expect(testIdText(renderRow(fixtureRow(6), { ...CONTEXT, tip: {} }), 'upgrades-cutoff-arm')).toEqual([]);
+	it('notes no cutoff rule beside a figure, now that the cutoff is one flat DPS bar (ADR-0037)', () => {
+		// Midnight Chestguard, +3.32: the old "by % rule" row, above the 3 DPS bar.
+		expect(testIdText(renderRow(fixtureRow(6)), 'upgrades-cutoff-arm')).toEqual([]);
 	});
 
 	it('hints at set detail on a row whose swap breaks a measured bonus, and on no other', () => {

@@ -231,7 +231,6 @@ function assignTieGroups(
 function belowCutoffUnderView(
   item: RankedItem,
   withSetPotential: boolean,
-  baselineDps: number,
   cutoff: Cutoff,
   setCredit: SetCreditView
 ): boolean {
@@ -242,10 +241,7 @@ function belowCutoffUnderView(
     setCredit
   );
   if (prospective === 0) return item.belowCutoff;
-  const effectiveDps = item.deltaDps + prospective;
-  const effectivePct =
-    baselineDps === 0 ? item.deltaPct : (effectiveDps / baselineDps) * 100;
-  return !meetsCutoff(effectiveDps, effectivePct, cutoff);
+  return !meetsCutoff(item.deltaDps + prospective, cutoff);
 }
 
 /**
@@ -717,8 +713,8 @@ export function setPotentialCredit(
  * The ON-view set-potential credit for a row (`setPotentialCredit`), in the
  * full view or the split view (each future divided by its FULL piece count).
  *
- * Each bonus is floored at the per-spec noise floor (`setBonusNoiseFloorDps`
- * of the ranking's own `Cutoff`, ≈4.81 ret / ≈5.09 feral): a figure at or below
+ * Each bonus is floored at the noise floor (`setBonusNoiseFloorDps` of the
+ * ranking's own `Cutoff`, ≈4.24 for every spec): a figure at or below
  * it is noise around a true zero and contributes nothing, so no row sorts on a
  * bonus the display hides (tickets 331, 332). The floor arrives as a parameter,
  * so this stays ignorant of the `Cutoff` type; the comparison is strict (`>`),
@@ -795,7 +791,6 @@ export function applyView(r: Ranking, v: ViewOptions = {}): ViewResult {
       belowCutoffInView: belowCutoffUnderView(
         item,
         v.withSetPotential ?? false,
-        r.baseline.dps,
         r.cutoff,
         setCredit
       ),

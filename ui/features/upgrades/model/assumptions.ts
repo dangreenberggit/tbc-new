@@ -6,7 +6,7 @@
  * on purpose: a console line is a diagnostic, not localised UI.
  */
 
-import { bisTagPhaseFor, cutoffIsUnmeasuredFor, epWeightsDisclosureFor, poolSourceFor, unsourcedCountFor } from './data/data';
+import { bisTagPhaseFor, epWeightsDisclosureFor, poolSourceFor, unsourcedCountFor } from './data/data';
 import type { Substitution } from './engine/disclosure';
 import type { Ranking } from './engine/rank';
 import type { SpecId } from './engine/types';
@@ -19,9 +19,9 @@ export type AssumptionsContext = {
 	settings?: RunSettings;
 };
 
-export function assumptionsLine(ranking: Pick<Ranking, 'assumptions'>, { specId, settings }: AssumptionsContext = {}): string {
+export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>, { specId, settings }: AssumptionsContext = {}): string {
 	const a = ranking.assumptions;
-	const lines = [`seeds: ${a.seeds.join(', ')}`, `iterations: ${a.iterations}`, `max phase: ${a.maxPhase}`];
+	const lines = [`seeds: ${a.seeds.join(', ')}`, `iterations: ${a.iterations}`, `max phase: ${a.maxPhase}`, `cutoff: ${ranking.cutoff.absDps} DPS`];
 	if (settings) lines.push(`candidate pool: ${settings.prune ? `selected set items for phase ${a.maxPhase}` : 'every eligible item'}`);
 	if (specId) {
 		// The chosen file is not always the selected phase's: the data falls back to the highest phase at or below it.
@@ -31,7 +31,6 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions'>, { specId,
 		if (ep) lines.push(`EP weights: written for ${ep.from}, ranking ${ep.requested}`);
 		const tags = bisTagPhaseFor(specId, a.maxPhase);
 		if (tags && tags.tagsFromPhase < tags.requestedPhase) lines.push(`BiS tags: from P${tags.tagsFromPhase} sets, ranking P${tags.requestedPhase}`);
-		if (cutoffIsUnmeasuredFor(specId)) lines.push('cutoff: borrowed from Retribution Paladin, unmeasured for this spec');
 		const unsourced = unsourcedCountFor(specId, a.maxPhase);
 		if (unsourced > 0) lines.push(`source attribution: partial, ${unsourced} items admitted by database phase only`);
 	}

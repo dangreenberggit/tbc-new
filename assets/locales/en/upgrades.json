@@ -91,10 +91,6 @@
 			"tip_figure_marker": "this row's figure",
 			"tip_total": "Total"
 		},
-		"cutoff": {
-			"pct_arm": "by % rule",
-			"pct_arm_title": "Above the cutoff via the percentage arm ({{pct}}%): its absolute DPS is below the {{abs}} DPS threshold."
-		},
 		"prune": {
 			"only_bis": "Sim only selected set items"
 		},
@@ -129,6 +125,7 @@
 			"empty_no_upgrades": "No upgrades found",
 			"empty_no_upgrades_body": "Every candidate simmed at or below your current gear. Widen the phase or content filter to consider more items.",
 			"below_cutoff_group": "{{count}} item(s) below the cutoff",
+			"below_cutoff_group_bar": "{{count}} item(s) below the {{abs}} DPS cutoff",
 			"removes_worn": "removes worn {{name}} ({{slot}})",
 			"sort_ascending": "sorted ascending",
 			"sort_descending": "sorted descending"

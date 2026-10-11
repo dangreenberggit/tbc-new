@@ -22,8 +22,8 @@ export type CharacterRef = {
  * Every per-spec engine table is a **total** `Record<SpecId, …>`, so adding a
  * member here without filling each of them is a compile error rather than a
  * silent inheritance of ret's numbers. That is the point of the totality: the
- * tables that matter (`CAP_PROFILE_BY_SPEC`, `CUTOFF_BY_SPEC`,
- * `SPEC_PREFERRED_METAS`, `PRESET_ID_BY_SPEC`) each encode a per-spec game fact
+ * tables that matter (`CAP_PROFILE_BY_SPEC`, `SPEC_PREFERRED_METAS`,
+ * `PRESET_ID_BY_SPEC`) each encode a per-spec game fact
  * that has no safe default.
  */
 export type SpecId =

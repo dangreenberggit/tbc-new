@@ -6,7 +6,7 @@ import { type ComponentProps, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { fakeTabHost } from '../../testing/fake_tab_host';
-import { fixtureRow } from '../../testing/ranking_fixture';
+import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
 
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
 vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favorite-stub" />, BatchToggle: () => <span data-testid="batch-stub" /> }));
@@ -50,6 +50,13 @@ describe('ResultsPane', () => {
 		expect(within(getByTestId('upgrades-results-table')).getAllByTestId('upgrades-result-row')).toHaveLength(2);
 		expect(getByTestId('upgrades-sort-item')).not.toBeNull();
 		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 item(s) below the cutoff');
+	});
+
+	it('names the bar in DPS on the group once a ranking is shown', () => {
+		const rowContext = { ...CONTEXT, tip: { ranking: RANKING_FIXTURE } };
+		const { getByTestId } = onPage({ shortlist: [fixtureRow(0)], belowCutoff: [fixtureRow(5)], rowContext });
+
+		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 item(s) below the 3 DPS cutoff');
 	});
 
 	it('names the group columns for screen readers only, with the shared sort, under the shortlist head', () => {
