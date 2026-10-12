@@ -240,6 +240,84 @@ describe('viewSourceOptions', () => {
 	});
 });
 
+// Made-up source lists on recorded rows, for the cases the fixture lacks. Cataclysm's Edge as an item that drops in two
+// raids, Hyjal Summit first, as Choker of Serrated Blades (32591) does in ret-p3-p2.json; Vengeful Gladiator's Greatsword
+// as a badge-vendor item, and once more as one sold for badges that also drops in Black Temple.
+const twoRaidEdge: RankedItem = {
+	...fixtureRow(1),
+	sources: [
+		{ kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde', origin: 'db' },
+		{ kind: 'raid', zone: 'Black Temple', boss: 'Illidan Stormrage', origin: 'db' },
+	],
+};
+const badgeSword: RankedItem = { ...fixtureRow(3), source: { kind: 'badge', cost: 150 } };
+const badgeOrRaidSword: RankedItem = {
+	...badgeSword,
+	itemId: 900002,
+	sources: [{ kind: 'badge', cost: 150 }, { kind: 'raid', zone: 'Black Temple', origin: 'db' }],
+};
+const withRows = (rows: readonly RankedItem[]): Ranking => ({ ...RANKING_FIXTURE, items: [...rows] });
+const replacing = (row: RankedItem): Ranking => withRows(RANKING_FIXTURE.items.map(item => (item.itemId === row.itemId ? row : item)));
+
+describe('resultsViewFor with sources hidden', () => {
+	const hidingBlackTemple = resultsViewFor(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, ['Black Temple'])!;
+
+	it('drops every row whose only source is a hidden raid and recounts the shortlist', () => {
+		expect(ids(hidingBlackTemple.rows)).toEqual([30902, 33688, 28830, 30989, 29993, 30905]);
+		expect(ids(hidingBlackTemple.shortlist)).toEqual([30902, 33688, 28830, 30989, 29993, 30905]);
+		expect(hidingBlackTemple.belowCutoffCount).toBe(0);
+		expect(hidingBlackTemple.sourcesHidden).toBe(true);
+	});
+
+	// Ticket 614: a display filter changes which rows a pane shows, never which panes exist.
+	it('keeps every slot tab of the unfiltered view, at 0 where the filter emptied it', () => {
+		expect(slotTabs(hidingBlackTemple)).toEqual([
+			{ id: 'head', count: 1 },
+			{ id: 'chest', count: 1 },
+			{ id: 'legs', count: 0 },
+			{ id: 'trinket1', count: 1 },
+			{ id: 'mainhand', count: 3 },
+		]);
+	});
+
+	it('keeps a row from two raids while either is shown, as the pre-run Sources filter does', () => {
+		const ranking = replacing(twoRaidEdge);
+		expect(ids(resultsViewFor(done(ranking), NO_VIEW_TOGGLES, ['Black Temple'])!.rows)).toContain(30902);
+		expect(ids(resultsViewFor(done(ranking), NO_VIEW_TOGGLES, ['Hyjal Summit'])!.rows)).toContain(30902);
+		expect(ids(resultsViewFor(done(ranking), NO_VIEW_TOGGLES, ['Hyjal Summit', 'Black Temple'])!.rows)).not.toContain(30902);
+	});
+
+	it('hides with a zoneless bucket only the rows that have no zone', () => {
+		const ranking = withRows([...RANKING_FIXTURE.items.filter(row => row.itemId !== badgeSword.itemId), badgeSword, badgeOrRaidSword]);
+		const view = resultsViewFor(done(ranking), NO_VIEW_TOGGLES, ['Badge vendor'])!;
+		expect(ids(view.rows)).not.toContain(badgeSword.itemId);
+		expect(ids(view.rows)).toContain(badgeOrRaidSword.itemId);
+		expect(view.rows).toHaveLength(ranking.items.length - 1);
+	});
+
+	it('changes nothing when no hidden source is one the view offers', () => {
+		expect(resultsViewFor(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, [])).toEqual(VIEW);
+		expect(resultsViewFor(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, ['Molten Core'])).toEqual(VIEW);
+	});
+
+	it('with BiS only, keeps the rows both filters keep, and offers only the BiS-list rows’ sources', () => {
+		const bisOnly = resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!;
+		expect(viewSourceOptions(bisOnly.rows)).toEqual({
+			raids: [
+				{ key: 'Black Temple', count: 2 },
+				{ key: "Gruul's Lair", count: 1 },
+			],
+			other: [],
+		});
+		expect(ids(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple'])!.rows)).toEqual([28830]);
+	});
+
+	it('filters a stopped run’s table too', () => {
+		const view = resultsViewFor({ status: 'stopped', runId: 1, result: STOPPED_FIXTURE }, NO_VIEW_TOGGLES, ['Black Temple'])!;
+		expect(ids(view.rows)).toEqual([30902, 33688, 28830, 30989, 29993, 30905]);
+	});
+});
+
 describe('hasBisRows', () => {
 	it('is true when any row carries a BiS or Alt tag', () => {
 		expect(hasBisRows(RANKING_FIXTURE)).toBe(true);

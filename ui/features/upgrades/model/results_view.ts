@@ -34,9 +34,10 @@ export const rowKey = (row: Pick<RankedItem, 'itemId' | 'slot'>): string => `${r
  * display filter cut down: it names the slots of the view before the cut, so
  * each keeps its tab. The old tab's rule (cb561067 `upgrades_tab.tsx`): "a
  * display filter must change which rows a pane shows, never which panes
- * exist" (ticket 614). `bisOnly` is set on a view cut to its BiS-list rows.
+ * exist" (ticket 614). `bisOnly` is set on a view cut to its BiS-list rows;
+ * `sourcesHidden` on one that "Filter by source" cut by at least one row.
  */
-export type ResultsViewResult = ViewResult & { tabSlots?: readonly SimSlotName[]; bisOnly?: true };
+export type ResultsViewResult = ViewResult & { tabSlots?: readonly SimSlotName[]; bisOnly?: true; sourcesHidden?: true };
 
 /**
  * The slot tabs: every slot with a row, in sim order, counted by its
@@ -155,15 +156,36 @@ export type ViewSourceOptions = { raids: SourceOption[]; other: SourceOption[] }
  */
 export const viewSourceOptions = (rows: readonly ViewRow[]): ViewSourceOptions => sourceOptions(rows);
 
-/** The view a settled run renders under `applied` (from `appliedToggles`); nothing before a run settles. */
-export function resultsViewFor(run: RunState, { withSetPotential, onlyBis }: ViewToggles): ResultsViewResult | undefined {
+/**
+ * A view cut to the rows of the sources not in `hidden`. A row stays while
+ * some shown source matches it, which is the pre-run Sources rule
+ * (`effectivePool`), so an item from two raids stays while either is shown.
+ * A hidden key the view does not offer changes nothing. Like `bisOnlyView`,
+ * only the count below the cutoff changes, and every slot keeps its tab.
+ */
+export function sourcesView(view: ResultsViewResult, hidden: readonly string[]): ResultsViewResult {
+	const shown = validSourceKeysOf(view.rows).filter(key => !hidden.includes(key));
+	const kept = (row: ViewRow) => shown.some(key => sourceMatches(row, key));
+	const rows = view.rows.filter(kept);
+	if (rows.length === view.rows.length) return view;
+	const shortlist = view.shortlist.filter(kept);
+	const tabSlots = view.tabSlots ?? [...new Set(view.rows.map(effectiveSlot))];
+	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length, tabSlots, sourcesHidden: true };
+}
+
+/**
+ * The view a settled run renders under `applied` (from `appliedToggles`) and
+ * the sources "Filter by source" hides; nothing before a run settles.
+ */
+export function resultsViewFor(run: RunState, { withSetPotential, onlyBis }: ViewToggles, hiddenSources: readonly string[] = []): ResultsViewResult | undefined {
+	const bySource = (view: ResultsViewResult) => (hiddenSources.length > 0 ? sourcesView(view, hiddenSources) : view);
 	switch (run.status) {
 		case 'done': {
 			const view = applyView(run.result, { withSetPotential });
-			return onlyBis ? bisOnlyView(view) : view;
+			return bySource(onlyBis ? bisOnlyView(view) : view);
 		}
 		case 'stopped':
-			return stoppedView(run.result);
+			return bySource(stoppedView(run.result));
 		default:
 			return undefined;
 	}
