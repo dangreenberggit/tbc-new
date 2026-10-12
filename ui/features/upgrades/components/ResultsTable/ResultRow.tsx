@@ -28,6 +28,8 @@ export type RowContext = {
 	tagsOf: (itemId: number) => readonly RowTag[];
 	/** What the ΔDPS column sorts on; undefined is the bare ΔDPS. */
 	dpsKey?: DpsSortKey;
+	/** The offered sources "Filter by source" hides from a settled table, which the Source cell must not name; undefined hides none. */
+	hiddenSources?: readonly string[];
 };
 
 export interface ResultRowProps {
@@ -65,7 +67,7 @@ export const ResultRow = memo(({ row, position, context, notUpgrade = false, ref
 		<ItemNameCell row={row} quality={context.itemOf(row.itemId)?.quality} tags={context.tagsOf(row.itemId)} notUpgrade={notUpgrade} />
 		<td className="py-1 pr-3">{slotLabel(row)}</td>
 		<DeltaCell row={row} context={context} />
-		<SourceCell row={row} item={context.itemOf(row.itemId)} sim={context.sim} />
+		<SourceCell row={row} item={context.itemOf(row.itemId)} sim={context.sim} hiddenSources={context.hiddenSources} />
 		<td className="py-1">
 			<FavoriteToggle itemId={row.itemId} />
 		</td>

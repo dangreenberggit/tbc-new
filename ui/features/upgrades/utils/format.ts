@@ -70,6 +70,26 @@ export const sourceLabel = (source: ItemSource): string => ('zone' in source ? s
 /** A row with several sources names the first, as the engine orders them. */
 export const rowSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>): string => sourceLabel(row.sources?.[0] ?? row.source);
 
+/**
+ * The key "Filter by source" would hide one source by: a drop's zone, else its
+ * bucket. The filter keeps or drops a row by its zones alone when it has one
+ * (`sourceMatches`), but the Source cell keys each source by its own bucket,
+ * so a kept row's cell does not name a bucket the user hid.
+ */
+const ownSourceKey = (source: ItemSource): string => ('zone' in source ? source.zone : (SOURCE_LABELS[source.kind] ?? source.kind));
+
+const sourcesOf = (row: Pick<RankedItem, 'source' | 'sources'>): readonly ItemSource[] => row.sources ?? [row.source];
+
+/** Whether any source of the row, first or not, is one `hidden` hides. */
+export const rowNamesHiddenSource = (row: Pick<RankedItem, 'source' | 'sources'>, hidden: readonly string[]): boolean =>
+	hidden.length > 0 && sourcesOf(row).some(source => hidden.includes(ownSourceKey(source)));
+
+/** The cell label of a row while sources are hidden: its first source not hidden, else its first source. */
+export const rowShownSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>, hidden: readonly string[]): string => {
+	const shown = sourcesOf(row).find(source => !hidden.includes(ownSourceKey(source)));
+	return shown ? sourceLabel(shown) : rowSourceLabel(row);
+};
+
 /** The slot column sorts on its cell's text and the source column on the engine's label (a drop's zone, which its linked cell names first, else the source's kind), as the old tab's did; the export sorts with the same labels, so its order is the order on screen. */
 export const SORT_LABELS: SortLabels<Pick<RankedItem, 'slot' | 'slotChoice' | 'source' | 'sources'>> = { slot: slotLabel, source: rowSourceLabel };
 

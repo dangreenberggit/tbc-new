@@ -89,6 +89,43 @@ describe('ResultRow', () => {
 		expect(link.getAttribute('href')).toBe(ActionId.makeNpcUrl(ILLIDAN));
 	});
 
+	// Choker of Serrated Blades drops in Hyjal Summit and Black Temple. Upstream's linked block names only the item's first
+	// drop, which can be the hidden one, so while any of the row's sources is hidden the cell names a shown one instead.
+	it('names only a shown source of a row from two raids while Filter by source hides the other', () => {
+		const HYJAL = 3606;
+		const BLACK_TEMPLE = 3959;
+		const drop = (zoneId: number) => ({
+			source: { oneofKind: 'drop' as const, drop: { zoneId, npcId: 0, difficulty: DungeonDifficulty.DifficultyNormal, otherName: '', category: '' } },
+		});
+		const choker = UIItem.create({ id: 32591, sources: [drop(HYJAL), drop(BLACK_TEMPLE)] });
+		const hyjal = { kind: 'raid', zone: 'Hyjal Summit', origin: 'db' } as const;
+		const row: RankedItem = { ...fixtureRow(0), itemId: 32591, source: hyjal, sources: [hyjal, { kind: 'raid', zone: 'Black Temple', origin: 'db' }] };
+		const { sim } = fakeHost({
+			sim: {
+				db: {
+					getZone: (id: number) => ({ [HYJAL]: { id, name: 'Hyjal Summit' }, [BLACK_TEMPLE]: { id, name: 'Black Temple' } })[id] ?? null,
+					getNpc: () => null,
+				},
+			},
+		});
+		const sourceCell = (hiddenSources?: readonly string[]) => {
+			const tr = renderRow(row, { ...CONTEXT, itemOf: () => choker, sim, hiddenSources });
+			return within(tr).getAllByRole('cell')[4]!;
+		};
+
+		expect(within(sourceCell()).getByRole('link').textContent).toBe('Hyjal Summit');
+		for (const [hidden, shown] of [
+			[['Hyjal Summit'], 'Black Temple'],
+			[['Black Temple'], 'Hyjal Summit'],
+		] as const) {
+			const cell = sourceCell(hidden);
+			expect(cell.textContent).toBe(shown);
+			expect(cell.querySelector('small')?.textContent).toBe(shown);
+			expect(within(cell).queryByRole('link')).toBeNull();
+		}
+		expect(within(sourceCell(['Karazhan'])).getByRole('link').textContent).toBe('Hyjal Summit');
+	});
+
 	it('shows the engine’s label as plain text when the site has no source to link', () => {
 		const tr = renderRow(fixtureRow(0));
 		expect(within(tr).queryByRole('link', { name: /Black Temple/ })).toBeNull();
