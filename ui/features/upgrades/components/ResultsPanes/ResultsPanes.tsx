@@ -4,7 +4,7 @@ import { TabNav, type TabNavTab, TabPanel, TabPanels } from '@ui-kit/TabNav';
 import { useMemo, useState } from 'react';
 
 import { useResultsTable } from '../../hooks/useResultsTable';
-import { paneRows, type ResultsTabId, type ResultsViewResult, SHOPPING_LIST_TAB, slotTabs } from '../../model/results_view';
+import { type PaneRows, paneRows, type ResultsTabId, type ResultsViewResult, SHOPPING_LIST_TAB, slotTabs } from '../../model/results_view';
 import { simSlotLabel } from '../../utils/format';
 import { ExportPanel } from '../ExportPanel';
 import { ResultsPane } from '../ResultsPane';
@@ -20,7 +20,8 @@ const paneId = (tab: ResultsTabId) => `upgrades-pane-${tab}`;
 
 /**
  * A settled ranking as sub-tabs: the Upgrades list, then one pane per slot
- * with a row, then the export. The open tab lives here and is not stored; the
+ * that `slotTabs` names (under BiS only, also each slot the filter emptied,
+ * ticket 614), then the export. The open tab lives here and is not stored; the
  * one column sort shared by every pane and the export (ticket 280) lives in the
  * tab store (ticket 565), which every results table reads.
  *
@@ -31,7 +32,7 @@ const paneId = (tab: ResultsTabId) => `upgrades-pane-${tab}`;
  */
 type Pane = { id: ResultsTabId; label: string; badge?: string; className?: string };
 /** A pane's rows, and its slot for every pane but the Upgrades list. */
-type PaneContent = { id: ResultsTabId; rows: ReturnType<typeof paneRows>; slot?: ReturnType<typeof slotTabs>[number] };
+type PaneContent = { id: ResultsTabId; rows: PaneRows; slot?: ReturnType<typeof slotTabs>[number] };
 
 export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 	// A string, because the tab strip reports any tab's value; `shownTab` checks it against this view's panes.
@@ -88,10 +89,7 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 					{contents.map(({ id, rows }) => (
 						<TabPanel key={id} value={id} id={paneId(id)} keepMounted={false}>
 							<ResultsPane
-								main={rows.main}
-								notUpgrades={rows.notUpgrades}
-								belowCutoff={rows.belowCutoff}
-								noBisListRow={rows.noBisListRow}
+								rows={rows}
 								rowContext={rowContext}
 								groupOpen={openGroups.has(id)}
 								onGroupOpenChange={open => setGroupOpen(id, open)}

@@ -1,8 +1,9 @@
 /**
  * Which rows each results pane shows, as the old tab chose them (cb561067
  * `upgrades_tab.tsx`): an "Upgrades" pane plus one pane per slot with a row,
- * each split into its main table and its below-cutoff group. Pure; the panes
- * render what this returns.
+ * each split into its main table and its below-cutoff group. Under BiS only, a
+ * slot keeps its pane when the filter removes all its rows (`tabSlots`, ticket
+ * 614). Pure; the panes render what this returns.
  */
 
 import { setBonusNoiseFloorDps } from './engine/cutoff';
@@ -57,6 +58,8 @@ export function slotTabs(view: ResultsViewResult): Array<{ id: SimSlotName; coun
 /** On some phase's BiS list, as the old tab's `isBisTagged` tested it: a BiS or an Alt tag. */
 const onBisList = (row: Pick<RankedItem, 'bisTags'>): boolean => row.bisTags.length > 0;
 
+export type PaneRows = { main: ViewRow[]; notUpgrades: ReadonlySet<string>; belowCutoff: ViewRow[]; noBisListRow: boolean };
+
 /**
  * One pane's rows: its main table, the keys of the rows in that table that
  * miss the cutoff, and its below-cutoff group.
@@ -77,10 +80,7 @@ const onBisList = (row: Pick<RankedItem, 'bisTags'>): boolean => row.bisTags.len
  * every candidate simmed at or below the worn gear. A slot whose only BiS-list
  * row is owned and misses the cutoff does have one, so it stays false there.
  */
-export function paneRows(
-	view: ResultsViewResult,
-	tab: ResultsTabId,
-): { main: ViewRow[]; notUpgrades: ReadonlySet<string>; belowCutoff: ViewRow[]; noBisListRow: boolean } {
+export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 	const rows = tab === SHOPPING_LIST_TAB ? view.rows : view.rows.filter(row => effectiveSlot(row) === tab);
 	const missed = rows.filter(row => row.belowCutoffInView && !row.owned);
 	const shownAnyway = missed.filter(onBisList);

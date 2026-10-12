@@ -1,19 +1,17 @@
 import i18n from '@i18n/config';
 
 import { useResultsTable } from '../../hooks/useResultsTable';
-import type { RankedItem } from '../../model/engine/rank';
+import type { PaneRows } from '../../model/results_view';
 import { BelowCutoffGroup } from '../BelowCutoffGroup';
 import { EmptyState } from '../EmptyState';
 import { ResultRows, ResultsTable, type RowContext, ScreenReaderResultsHead, SortableResultsHead } from '../ResultsTable';
 
 export interface ResultsPaneProps {
-	/** The main table's rows (`paneRows`): the shortlist, plus the BiS-list rows that miss the cutoff. */
-	main: readonly RankedItem[];
-	/** The keys (`rowKey`) of the main table's rows that miss the cutoff, each marked as not an upgrade. */
-	notUpgrades?: ReadonlySet<string>;
-	belowCutoff: readonly RankedItem[];
-	/** A slot pane under BiS only with no BiS-list row (`paneRows`): its empty state says so instead of "No upgrades found". */
-	noBisListRow?: boolean;
+	/**
+	 * The pane's rows as `paneRows` splits them. A slot pane under BiS only with no BiS-list row
+	 * (`noBisListRow`) says so in its empty state instead of "No upgrades found".
+	 */
+	rows: PaneRows;
 	rowContext: RowContext;
 	/** Whether the below-cutoff group is open; `ResultsPanes` keeps it per pane, so it survives a switch to another pane. */
 	groupOpen: boolean;
@@ -27,7 +25,8 @@ export interface ResultsPaneProps {
  * table the group gets the sortable head. Both tables follow the tab store's
  * one sort, so a click on either head orders both.
  */
-export const ResultsPane = ({ main, notUpgrades, belowCutoff, noBisListRow, rowContext, groupOpen, onGroupOpenChange }: ResultsPaneProps) => {
+export const ResultsPane = ({ rows, rowContext, groupOpen, onGroupOpenChange }: ResultsPaneProps) => {
+	const { main, notUpgrades, belowCutoff, noBisListRow } = rows;
 	const mainTable = useResultsTable(main, rowContext);
 	const groupTable = useResultsTable(belowCutoff, rowContext);
 	return (

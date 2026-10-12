@@ -1,8 +1,10 @@
 /**
  * The results' JSON export for a loot-priority tool such as ThatsMyBis
  * (tickets 126, 314), as the old tab built it (cb561067 `upgrades_tab.tsx`).
- * The caller passes the Upgrades pane's shortlist in its displayed sort, so
- * the payload carries the cross-slot ranked order in the order on screen.
+ * The caller passes the rows that meet the cutoff (`view.shortlist`) in the
+ * sort on screen, so the payload carries the cross-slot ranked order. The
+ * BiS-list rows that miss the cutoff, which the Upgrades pane's main table
+ * also shows (ticket 528), are not upgrades, so they stay out of the export.
  */
 
 import type { RankedItem } from './engine/rank';

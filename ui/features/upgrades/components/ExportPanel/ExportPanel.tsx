@@ -11,7 +11,11 @@ import { exportPayload } from '../../model/export';
 import { selectExportFlavour } from '../../model/upgrades_store';
 
 export interface ExportPanelProps {
-	/** The Upgrades pane's shortlist in the order on screen, so the payload keeps the cross-slot ranked order. */
+	/**
+	 * The rows that meet the cutoff (`view.shortlist`) in the sort on screen, so the payload keeps the cross-slot
+	 * ranked order. The Upgrades pane's main table also shows BiS-list rows that miss the cutoff (ticket 528); those
+	 * are marked as not upgrades, so they stay out of the export.
+	 */
 	rows: readonly RankedItem[];
 }
 

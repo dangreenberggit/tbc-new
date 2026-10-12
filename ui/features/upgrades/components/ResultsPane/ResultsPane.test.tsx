@@ -5,6 +5,8 @@ import { fireEvent, render, within } from '@testing-library/react';
 import { type ComponentProps, useState } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { RankedItem } from '../../model/engine/rank';
+import type { PaneRows } from '../../model/results_view';
 import { fakeTabHost } from '../../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
 
@@ -35,6 +37,13 @@ const Pane = (props: PaneProps) => {
 	const [groupOpen, setGroupOpen] = useState(false);
 	return <ResultsPane {...props} groupOpen={groupOpen} onGroupOpenChange={setGroupOpen} />;
 };
+/** A pane's rows as `paneRows` returns them, with no row in the main table marked as not an upgrade. */
+const paneRowsOf = (main: readonly RankedItem[], belowCutoff: readonly RankedItem[]): PaneRows => ({
+	main: main.map(row => ({ ...row, belowCutoffInView: false })),
+	notUpgrades: new Set(),
+	belowCutoff: belowCutoff.map(row => ({ ...row, belowCutoffInView: true })),
+	noBisListRow: false,
+});
 const onPage = (props: PaneProps) =>
 	render(
 		<SimHostProvider host={host}>
@@ -44,7 +53,7 @@ const onPage = (props: PaneProps) =>
 
 describe('ResultsPane', () => {
 	it('shows the shortlist in a sortable table and the rest in a collapsed group', () => {
-		const { getAllByTestId, getByTestId } = onPage({ main: [fixtureRow(0), fixtureRow(1)], belowCutoff: [fixtureRow(5)], rowContext: CONTEXT });
+		const { getAllByTestId, getByTestId } = onPage({ rows: paneRowsOf([fixtureRow(0), fixtureRow(1)], [fixtureRow(5)]), rowContext: CONTEXT });
 
 		expect(getAllByTestId('upgrades-results-table')).toHaveLength(1);
 		expect(within(getByTestId('upgrades-results-table')).getAllByTestId('upgrades-result-row')).toHaveLength(2);
@@ -54,7 +63,7 @@ describe('ResultsPane', () => {
 
 	it('names the bar in DPS on the group once a ranking is shown', () => {
 		const rowContext = { ...CONTEXT, tip: { ranking: RANKING_FIXTURE } };
-		const { getByTestId } = onPage({ main: [fixtureRow(0)], belowCutoff: [fixtureRow(5)], rowContext });
+		const { getByTestId } = onPage({ rows: paneRowsOf([fixtureRow(0)], [fixtureRow(5)]), rowContext });
 
 		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 item(s) below the 3 DPS cutoff');
 	});
@@ -63,7 +72,7 @@ describe('ResultsPane', () => {
 		upgradesStoreFor(host)
 			.getState()
 			.setSort([{ id: 'delta_dps', desc: true }]);
-		const { getByTestId } = onPage({ main: [fixtureRow(0)], belowCutoff: [fixtureRow(5)], rowContext: CONTEXT });
+		const { getByTestId } = onPage({ rows: paneRowsOf([fixtureRow(0)], [fixtureRow(5)]), rowContext: CONTEXT });
 		const group = getByTestId('upgrades-below-cutoff');
 		fireEvent.click(within(group).getByTestId('upgrades-below-cutoff-trigger'));
 
@@ -74,7 +83,7 @@ describe('ResultsPane', () => {
 	});
 
 	it('gives the group its own sortable head when no shortlist sits above it', () => {
-		const { getByTestId } = onPage({ main: [], belowCutoff: [fixtureRow(5)], rowContext: CONTEXT });
+		const { getByTestId } = onPage({ rows: paneRowsOf([], [fixtureRow(5)]), rowContext: CONTEXT });
 		const group = getByTestId('upgrades-below-cutoff');
 		fireEvent.click(within(group).getByTestId('upgrades-below-cutoff-trigger'));
 
@@ -82,12 +91,12 @@ describe('ResultsPane', () => {
 	});
 
 	it('has no group when every row cleared the cutoff', () => {
-		const { queryByTestId } = onPage({ main: [fixtureRow(0)], belowCutoff: [], rowContext: CONTEXT });
+		const { queryByTestId } = onPage({ rows: paneRowsOf([fixtureRow(0)], []), rowContext: CONTEXT });
 		expect(queryByTestId('upgrades-below-cutoff')).toBeNull();
 	});
 
 	it('says no row cleared the cutoff in place of an empty table', () => {
-		const { getByTestId, queryByTestId } = onPage({ main: [], belowCutoff: [fixtureRow(5)], rowContext: CONTEXT });
+		const { getByTestId, queryByTestId } = onPage({ rows: paneRowsOf([], [fixtureRow(5)]), rowContext: CONTEXT });
 
 		expect(queryByTestId('upgrades-results-table')).toBeNull();
 		expect(getByTestId('upgrades-empty-state').textContent).toContain('No upgrades found');
