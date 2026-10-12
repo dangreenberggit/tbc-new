@@ -12,6 +12,8 @@ export interface ResultsPaneProps {
 	/** The keys (`rowKey`) of the main table's rows that miss the cutoff, each marked as not an upgrade. */
 	notUpgrades?: ReadonlySet<string>;
 	belowCutoff: readonly RankedItem[];
+	/** A slot pane under BiS only with no BiS-list row (`paneRows`): its empty state says so instead of "No upgrades found". */
+	noBisListRow?: boolean;
 	rowContext: RowContext;
 	/** Whether the below-cutoff group is open; `ResultsPanes` keeps it per pane, so it survives a switch to another pane. */
 	groupOpen: boolean;
@@ -25,7 +27,7 @@ export interface ResultsPaneProps {
  * table the group gets the sortable head. Both tables follow the tab store's
  * one sort, so a click on either head orders both.
  */
-export const ResultsPane = ({ main, notUpgrades, belowCutoff, rowContext, groupOpen, onGroupOpenChange }: ResultsPaneProps) => {
+export const ResultsPane = ({ main, notUpgrades, belowCutoff, noBisListRow, rowContext, groupOpen, onGroupOpenChange }: ResultsPaneProps) => {
 	const mainTable = useResultsTable(main, rowContext);
 	const groupTable = useResultsTable(belowCutoff, rowContext);
 	return (
@@ -35,6 +37,8 @@ export const ResultsPane = ({ main, notUpgrades, belowCutoff, rowContext, groupO
 					<SortableResultsHead table={mainTable} />
 					<ResultRows table={mainTable} rowContext={rowContext} notUpgrades={notUpgrades} />
 				</ResultsTable>
+			) : noBisListRow ? (
+				<EmptyState body={i18n.t('upgrades_tab.results.empty_no_bis_row', { ns: 'upgrades' })} />
 			) : (
 				<EmptyState
 					title={i18n.t('upgrades_tab.results.empty_no_upgrades', { ns: 'upgrades' })}

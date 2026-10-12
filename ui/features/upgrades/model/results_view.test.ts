@@ -208,7 +208,17 @@ describe('resultsViewFor', () => {
 			{ id: 'trinket1', count: 1 },
 			{ id: 'mainhand', count: 1 },
 		]);
-		expect(paneRows(view, 'chest')).toEqual({ main: [], notUpgrades: new Set(), belowCutoff: [] });
+		expect(paneRows(view, 'chest')).toEqual({ main: [], notUpgrades: new Set(), belowCutoff: [], noBisListRow: true });
+	});
+
+	it('says a slot has no BiS-list row only under BiS only, and not when its BiS-list row is owned and missed the cutoff', () => {
+		expect(paneRows(applyView(RANKING_FIXTURE), 'chest').noBisListRow).toBe(false);
+		expect(paneRows(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!, SHOPPING_LIST_TAB).noBisListRow).toBe(false);
+
+		const ownedBisHelm = resultsViewFor(done({ ...RANKING_FIXTURE, items: [{ ...bisHelm, owned: true }] }), ONLY_BIS)!;
+		const pane = paneRows(ownedBisHelm, 'head');
+		expect(pane.main).toEqual([]);
+		expect(pane.noBisListRow).toBe(false);
 	});
 });
 

@@ -190,6 +190,14 @@ describe('ResultsPanes', () => {
 		expect(namesIn(activePane(container))).toEqual([]);
 	});
 
+	it('under BiS only says a slot with no BiS-list row has no BiS-list item, not that nothing beat the worn gear', () => {
+		const bisOnly = resultsViewFor({ status: 'done', runId: 1, result: RANKING_FIXTURE }, { withSetPotential: false, onlyBis: true })!;
+		const { container } = render(panes(bisOnly));
+
+		clickTab(container, 'Chest');
+		expect(within(activePane(container)).getByTestId('upgrades-empty-state').textContent).toBe('No BiS-list item for this slot.');
+	});
+
 	it('falls back to the Upgrades list when the open slot has no rows in a new result', () => {
 		const { container, rerender } = render(panes(VIEW));
 		clickTab(container, 'Legs');

@@ -32,9 +32,9 @@ export const rowKey = (row: Pick<RankedItem, 'itemId' | 'slot'>): string => `${r
  * display filter cut down: it names the slots of the view before the cut, so
  * each keeps its tab. The old tab's rule (cb561067 `upgrades_tab.tsx`): "a
  * display filter must change which rows a pane shows, never which panes
- * exist" (ticket 614).
+ * exist" (ticket 614). `bisOnly` is set on a view cut to its BiS-list rows.
  */
-export type ResultsViewResult = ViewResult & { tabSlots?: readonly SimSlotName[] };
+export type ResultsViewResult = ViewResult & { tabSlots?: readonly SimSlotName[]; bisOnly?: true };
 
 /**
  * The slot tabs: every slot with a row, in sim order, counted by its
@@ -71,8 +71,16 @@ const onBisList = (row: Pick<RankedItem, 'bisTags'>): boolean => row.bisTags.len
  * when they miss the cutoff: an owned item is re-simmed into the slot it
  * already fills, so its delta is about 0 by construction and would only list
  * the gear the player wears.
+ *
+ * `noBisListRow` is true for a slot pane of a BiS-only view that has no row at
+ * all, so the pane can say the slot has no BiS-list item instead of saying
+ * every candidate simmed at or below the worn gear. A slot whose only BiS-list
+ * row is owned and misses the cutoff does have one, so it stays false there.
  */
-export function paneRows(view: ViewResult, tab: ResultsTabId): { main: ViewRow[]; notUpgrades: ReadonlySet<string>; belowCutoff: ViewRow[] } {
+export function paneRows(
+	view: ResultsViewResult,
+	tab: ResultsTabId,
+): { main: ViewRow[]; notUpgrades: ReadonlySet<string>; belowCutoff: ViewRow[]; noBisListRow: boolean } {
 	const rows = tab === SHOPPING_LIST_TAB ? view.rows : view.rows.filter(row => effectiveSlot(row) === tab);
 	const missed = rows.filter(row => row.belowCutoffInView && !row.owned);
 	const shownAnyway = missed.filter(onBisList);
@@ -80,6 +88,7 @@ export function paneRows(view: ViewResult, tab: ResultsTabId): { main: ViewRow[]
 		main: rows.filter(row => !row.belowCutoffInView || shownAnyway.includes(row)),
 		notUpgrades: new Set(shownAnyway.map(rowKey)),
 		belowCutoff: missed.filter(row => !onBisList(row)),
+		noBisListRow: view.bisOnly === true && tab !== SHOPPING_LIST_TAB && rows.length === 0,
 	};
 }
 
@@ -132,7 +141,7 @@ function bisOnlyView(view: ViewResult): ResultsViewResult {
 	const rows = view.rows.filter(onBisList);
 	const shortlist = view.shortlist.filter(onBisList);
 	const tabSlots = [...new Set(view.rows.map(effectiveSlot))];
-	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length, tabSlots };
+	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length, tabSlots, bisOnly: true };
 }
 
 /** The view a settled run renders under `applied` (from `appliedToggles`); nothing before a run settles. */

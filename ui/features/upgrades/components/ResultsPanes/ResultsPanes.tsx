@@ -91,6 +91,7 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 								main={rows.main}
 								notUpgrades={rows.notUpgrades}
 								belowCutoff={rows.belowCutoff}
+								noBisListRow={rows.noBisListRow}
 								rowContext={rowContext}
 								groupOpen={openGroups.has(id)}
 								onGroupOpenChange={open => setGroupOpen(id, open)}
