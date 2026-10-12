@@ -170,6 +170,17 @@ export type ViewSourceOptions = { raids: SourceOption[]; other: SourceOption[] }
  */
 export const viewSourceOptions = (rows: readonly ViewRow[]): ViewSourceOptions => sourceOptions(rows);
 
+/** The hidden sources with `key` hidden if it was shown, and shown if it was hidden. */
+export const withViewSourceToggled = (hidden: readonly string[], key: string): string[] =>
+	hidden.includes(key) ? hidden.filter(k => k !== key) : [...hidden, key];
+
+/**
+ * The hidden sources after Hide all: every source the view offers now. A
+ * hidden source the view does not offer stays hidden; one that only a later
+ * run offers is shown then until the user hides it.
+ */
+export const withOfferedSourcesHidden = (hidden: readonly string[], offered: readonly string[]): string[] => [...new Set([...hidden, ...offered])];
+
 /**
  * A view cut to the rows of the sources not in `hidden`. A row stays while
  * some shown source matches it, which is the pre-run Sources rule

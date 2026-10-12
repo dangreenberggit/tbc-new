@@ -18,6 +18,8 @@ import {
 	slotTabs,
 	stoppedView,
 	viewSourceOptions,
+	withOfferedSourcesHidden,
+	withViewSourceToggled,
 } from './results_view';
 
 const ids = (rows: ReadonlyArray<{ itemId: number }>) => rows.map(row => row.itemId);
@@ -338,6 +340,17 @@ describe('resultsViewFor with sources hidden', () => {
 	it('filters a stopped run’s table too', () => {
 		const view = resultsViewFor({ status: 'stopped', runId: 1, result: STOPPED_FIXTURE }, NO_VIEW_TOGGLES, ['Black Temple'])!;
 		expect(ids(view.rows)).toEqual([30902, 33688, 28830, 30989, 29993, 30905]);
+	});
+});
+
+describe('the source filter’s next states', () => {
+	it('toggles one source in or out of the hidden list', () => {
+		expect(withViewSourceToggled([], 'Black Temple')).toEqual(['Black Temple']);
+		expect(withViewSourceToggled(['Karazhan', 'Black Temple'], 'Black Temple')).toEqual(['Karazhan']);
+	});
+
+	it('hides every offered source and keeps a hidden one the view does not offer', () => {
+		expect(withOfferedSourcesHidden(['Molten Core', 'Karazhan'], ['Karazhan', 'Black Temple'])).toEqual(['Molten Core', 'Karazhan', 'Black Temple']);
 	});
 });
 
