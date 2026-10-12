@@ -15,7 +15,7 @@ export type SortLabels<T> = { slot: (row: T) => string; source: (row: T) => stri
 export type DpsSortKey = (row: RankedItem) => number;
 
 /** The sortable columns in head order; each id is also the `upgrades-sort-<id>` test id the gates click. */
-export const SORT_COLUMN_IDS = ['item', 'slot', 'delta_dps', 'source'] as const;
+export const SORT_COLUMN_IDS = ['item', 'delta_dps', 'slot', 'source'] as const;
 
 export type ResultsSortKey = (typeof SORT_COLUMN_IDS)[number];
 
