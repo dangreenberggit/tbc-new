@@ -6,6 +6,7 @@ import { render, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RankedItem } from '../../model/engine/rank';
+import type { ContentPhase, SpecId } from '../../model/engine/types';
 import type { RunState } from '../../model/run_state';
 import { fakeTabHost } from '../../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE, STOPPED_FIXTURE } from '../../testing/ranking_fixture';
@@ -43,10 +44,10 @@ beforeEach(() => {
 	const store = upgradesStoreFor(host);
 	store.setState(store.getInitialState(), true);
 });
-const show = (run: RunState) =>
+const show = (run: RunState, specId?: SpecId) =>
 	render(
 		<SimHostProvider host={host}>
-			<UpgradesResults run={run} selectedSets={[]} />
+			<UpgradesResults run={run} selectedSets={[]} specId={specId} />
 		</SimHostProvider>,
 	);
 
@@ -119,6 +120,31 @@ describe('UpgradesResults', () => {
 
 		const running = show({ status: 'running', runId: 1, startedAt: 0, landedRows: [fixtureRow(0)], stopping: false });
 		expect(within(running.container).queryByTestId('upgrades-substitutions')).toBeNull();
+	});
+
+	describe('a finished run with no rows (ticket 515)', () => {
+		const emptyAt = (maxPhase: ContentPhase): RunState => ({
+			status: 'done',
+			runId: 1,
+			result: { ...RANKING_FIXTURE, items: [], assumptions: { ...RANKING_FIXTURE.assumptions, maxPhase } },
+		});
+
+		it('says the phase has no candidate list when the spec has none at that phase', () => {
+			const { getByTestId } = show(emptyAt(1), 'ret');
+			const text = getByTestId('upgrades-empty-state').textContent;
+			expect(text).toContain('No candidate list for Phase 1');
+			expect(text).not.toContain('No upgrades found');
+		});
+
+		it('says no upgrades were found when the phase has a list', () => {
+			const { getByTestId } = show(emptyAt(3), 'ret');
+			expect(getByTestId('upgrades-empty-state').textContent).toContain('No upgrades found');
+		});
+
+		it('says no upgrades were found when the spec is not known', () => {
+			const { getByTestId } = show(emptyAt(1));
+			expect(getByTestId('upgrades-empty-state').textContent).toContain('No upgrades found');
+		});
 	});
 
 	it('says what to do before the first run, naming the Simulate button (ticket 604)', () => {
