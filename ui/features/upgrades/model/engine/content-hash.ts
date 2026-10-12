@@ -11,8 +11,8 @@
  * `canonicalJson(...)` directly where packages/core called `contentHashOf`,
  * and the result *is* the cache key rather than a hash of one.
  *
- * `HashedGearItem` and `ENGINE_VERSION` are ported unchanged — both are
- * plain data types and constants with nothing to adapt.
+ * `HashedGearItem` is ported unchanged: a plain data type with nothing to
+ * adapt. `ENGINE_VERSION` is the fork's own number; its comment says why.
  *
  * candidate-pool.md M2 once added racing fields to `rank.ts`'s inline
  * `canonicalJson(...)` call site rather than here, because this file has no
