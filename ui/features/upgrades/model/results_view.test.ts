@@ -116,19 +116,22 @@ describe('BiS-list rows below the cutoff', () => {
 		expect([...bisPane.notUpgrades]).toEqual(['32373:head', '30905:chest']);
 		expect(slotTabs(bisOnly).find(tab => tab.id === 'head')).toEqual({ id: 'head', count: 1 });
 
-		// Given Lightbringer Faceguard's set context with a measured 2-piece bonus, the -4 chest clears the bar on
-		// effective DPS: an upgrade, so not marked.
+		// A made-up Lightbringer Battlegear chest in place of Midnight Chestguard, which is in no set. Given Lightbringer
+		// Faceguard's set context with a measured 2-piece bonus, the -4 chest clears the bar on effective DPS: an
+		// upgrade, so not marked. The id is not a real item's.
 		const credited: RankedItem = {
 			...altChest,
+			itemId: 900001,
+			name: 'Lightbringer Battlechest',
 			setContext: { ...fixtureRow(10).setContext!, futureBonuses: [{ threshold: 2, piecesNeeded: 1, dps: 20.04, pieces: [], breaks: [] }] },
 		};
 		const withPotential = resultsViewFor(
-			done({ ...WITH_BIS_BELOW, items: WITH_BIS_BELOW.items.map(row => (row.itemId === credited.itemId ? credited : row)) }),
+			done({ ...WITH_BIS_BELOW, items: WITH_BIS_BELOW.items.map(row => (row.itemId === altChest.itemId ? credited : row)) }),
 			SET_POTENTIAL,
 		)!;
 		const pane = paneRows(withPotential, SHOPPING_LIST_TAB);
 		expect([...pane.notUpgrades]).toEqual(['32373:head']);
-		expect(ids(withPotential.shortlist)).toContain(30905);
+		expect(ids(withPotential.shortlist)).toContain(credited.itemId);
 	});
 });
 

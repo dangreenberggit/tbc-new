@@ -52,7 +52,7 @@ const onPage = (props: PaneProps) =>
 	);
 
 describe('ResultsPane', () => {
-	it('shows the shortlist in a sortable table and the rest in a collapsed group', () => {
+	it('shows the main table as a sortable table and the rest in a collapsed group', () => {
 		const { getAllByTestId, getByTestId } = onPage({ rows: paneRowsOf([fixtureRow(0), fixtureRow(1)], [fixtureRow(5)]), rowContext: CONTEXT });
 
 		expect(getAllByTestId('upgrades-results-table')).toHaveLength(1);
@@ -68,7 +68,7 @@ describe('ResultsPane', () => {
 		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 item(s) below the 3 DPS cutoff');
 	});
 
-	it('names the group columns for screen readers only, with the shared sort, under the shortlist head', () => {
+	it('names the group columns for screen readers only, with the shared sort, under the main table head', () => {
 		upgradesStoreFor(host)
 			.getState()
 			.setSort([{ id: 'delta_dps', desc: true }]);
@@ -82,7 +82,7 @@ describe('ResultsPane', () => {
 		expect(within(group).queryByRole('button', { name: /^Item/ })).toBeNull();
 	});
 
-	it('gives the group its own sortable head when no shortlist sits above it', () => {
+	it('gives the group its own sortable head when no main table sits above it', () => {
 		const { getByTestId } = onPage({ rows: paneRowsOf([], [fixtureRow(5)]), rowContext: CONTEXT });
 		const group = getByTestId('upgrades-below-cutoff');
 		fireEvent.click(within(group).getByTestId('upgrades-below-cutoff-trigger'));
