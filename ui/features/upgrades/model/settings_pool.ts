@@ -129,7 +129,7 @@ export function defaultSetKeys(options: readonly SetOption[], pool: readonly Poo
 		.map(o => o.key);
 }
 
-/** Current-phase, phaseless and selected chips are always shown; the rest sit behind "Other sets (n)". */
+/** Current-phase, phaseless and selected chips are always shown; the rest sit behind "Other phases (n)". */
 export function splitSetChips(options: readonly SetOption[], selectedKeys: readonly string[], maxPhase: number): { main: SetOption[]; other: SetOption[] } {
 	const shown = (o: SetOption) => o.phase === undefined || o.phase === maxPhase || selectedKeys.includes(o.key);
 	return { main: options.filter(shown), other: options.filter(o => !shown(o)) };

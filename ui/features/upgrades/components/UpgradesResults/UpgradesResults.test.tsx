@@ -121,8 +121,11 @@ describe('UpgradesResults', () => {
 		expect(within(running.container).queryByTestId('upgrades-substitutions')).toBeNull();
 	});
 
-	it('says what to do before the first run', () => {
+	it('says what to do before the first run, naming the Simulate button (ticket 604)', () => {
 		const { getByTestId } = show({ status: 'idle' });
-		expect(getByTestId('upgrades-empty-state').textContent).toContain('No ranking yet');
+		const text = getByTestId('upgrades-empty-state').textContent;
+		expect(text).toContain('No ranking yet');
+		expect(text).toContain('Simulate');
+		expect(text).not.toContain('Run');
 	});
 });

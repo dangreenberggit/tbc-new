@@ -46,7 +46,7 @@ describe('SetChips', () => {
 	it('keeps other-phase sets behind a closed disclosure that says how many it holds, and opens it on a click', () => {
 		mount();
 		const disclosure = screen.getByTestId('upgrades-sets-other');
-		expect(disclosure.textContent).toBe('Other sets (1)');
+		expect(disclosure.textContent).toBe('Other phases (1)');
 		expect(disclosure.getAttribute('aria-expanded')).toBe('false');
 		expect(disclosed(disclosure)?.hidden).toBe(true);
 
