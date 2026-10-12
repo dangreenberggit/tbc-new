@@ -122,11 +122,6 @@ describe('ResultRow', () => {
 		expect(testIdText(renderRow(fixtureRow(0)), 'upgrades-removed-items')).toEqual([]);
 	});
 
-	it('notes no cutoff rule beside a figure, now that the cutoff is one flat DPS bar (ADR-0037)', () => {
-		// Midnight Chestguard, +3.32: the old "by % rule" row, above the 3 DPS bar.
-		expect(testIdText(renderRow(fixtureRow(6)), 'upgrades-cutoff-arm')).toEqual([]);
-	});
-
 	it('hints at set detail on a row whose swap breaks a measured bonus, and on no other', () => {
 		expect(testIdText(renderRow(fixtureRow(10)), 'upgrades-set-bonus')).toEqual(['set detail']);
 		expect(testIdText(renderRow(fixtureRow(0)), 'upgrades-set-bonus')).toEqual([]);

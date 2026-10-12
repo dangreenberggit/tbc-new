@@ -1,6 +1,7 @@
 /**
- * PORTED verbatim from packages/core/src/cutoff.ts. Pure, no data-source
- * dependency — nothing to adapt.
+ * PORTED from packages/core/src/cutoff.ts, adapted in comments only: the
+ * `setBonusNoiseFloorDps` doc names `futureBonuses` where core names
+ * `prospectiveBonusDps` (ticket 467). The code is core's.
  */
 
 /**

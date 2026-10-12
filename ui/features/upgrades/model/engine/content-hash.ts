@@ -48,7 +48,10 @@ function canonicalize(value: unknown): unknown {
 
 /**
  * Bump when a ranking-logic change should invalidate every cached result.
- * PORTED unchanged from packages/core/src/content-hash.ts.
+ * The fork's own number, not core's (packages/core/src/content-hash.ts): the
+ * tab keeps its ranking cache only in memory for one mounted tab, so a core
+ * bump has no cached verdict to invalidate here and the two can differ
+ * (ADR-0037 records why this stayed 6 when core moved to 9).
  */
 export const ENGINE_VERSION = 6;
 
