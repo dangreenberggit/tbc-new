@@ -55,7 +55,12 @@
 			"set_potential": "Set potential",
 			"set_potential_tooltip": "When on, a set piece's DPS gain includes the gain of equipping the other set pieces its set bonus needs, if that adds to the total.",
 			"only_bis": "BiS only",
-			"only_bis_tooltip": "Show only items on the phase's curated BiS list. {{phase}} list"
+			"only_bis_tooltip": "Show only items on the phase's curated BiS list. {{phase}} list",
+			"filter_by_source": "Filter by source",
+			"sources_summary_none": "Showing all sources",
+			"sources_summary": "{{n}} of {{m}} sources hidden",
+			"sources_show_all": "Show all",
+			"sources_hide_all": "Hide all"
 		},
 		"export": {
 			"title": "JSON export",
@@ -126,6 +131,7 @@
 			"empty_no_upgrades": "No upgrades found",
 			"empty_no_upgrades_body": "Every candidate simmed at or below your current gear. Widen the phase or content filter to consider more items.",
 			"empty_no_bis_row": "No BiS-list item for this slot.",
+			"empty_no_source_row": "No rows from the shown sources.",
 			"below_cutoff_group": "{{count}} item(s) below the cutoff",
 			"below_cutoff_group_bar": "{{count}} item(s) below the {{abs}} DPS cutoff",
 			"removes_worn": "removes worn {{name}} ({{slot}})",
