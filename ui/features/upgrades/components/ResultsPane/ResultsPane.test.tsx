@@ -103,4 +103,9 @@ describe('ResultsPane', () => {
 		expect(getByTestId('upgrades-empty-state').textContent).toContain('No upgrades found');
 		expect(getByTestId('upgrades-below-cutoff')).not.toBeNull();
 	});
+
+	it('says no row comes from the shown sources when Filter by source emptied the pane', () => {
+		const { getByTestId } = onPage({ rows: { ...paneRowsOf([], []), noSourceRow: true }, rowContext: CONTEXT });
+		expect(getByTestId('upgrades-empty-state').textContent).toBe('No rows from the shown sources.');
+	});
 });

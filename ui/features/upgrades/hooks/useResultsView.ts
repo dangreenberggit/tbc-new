@@ -2,10 +2,20 @@ import { useSimHost } from '@sim/context/SimHostContext';
 import { useMemo } from 'react';
 
 import type { RowContext } from '../components/ResultsTable';
-import { appliedToggles, dpsSortKeyFor, offeredToggles, resultsViewFor, type ResultsViewResult, type ViewToggles } from '../model/results_view';
+import {
+	appliedToggles,
+	dpsSortKeyFor,
+	offeredToggles,
+	resultsViewFor,
+	type ResultsViewResult,
+	sourcesView,
+	type ViewSourceOptions,
+	viewSourceOptions,
+	type ViewToggles,
+} from '../model/results_view';
 import type { RunState } from '../model/run_state';
 import { rowTagIndex, type SetOption } from '../model/settings_pool';
-import { selectViewToggles } from '../model/upgrades_store';
+import { selectHiddenSources, selectViewToggles } from '../model/upgrades_store';
 import { useUpgradesStore } from './useUpgradesStore';
 
 export type ResultsView = {
@@ -13,6 +23,12 @@ export type ResultsView = {
 	toggles: ViewToggles;
 	offered: ViewToggles;
 	setToggle: (toggle: keyof ViewToggles, on: boolean) => void;
+	/** The sources "Filter by source" offers: those of the settled view's rows before the source cut; none before a run settles. */
+	sourceOptions: ViewSourceOptions;
+	/** The hidden sources as stored, which may name one this view does not offer. */
+	hiddenSources: readonly string[];
+	toggleViewSource: (key: string) => void;
+	setViewSources: (keys: readonly string[]) => void;
 	rowContext: RowContext;
 	/** Undefined before a run settles. */
 	view: ResultsViewResult | undefined;
@@ -28,12 +44,25 @@ export function useResultsView(run: RunState, selectedSets: readonly SetOption[]
 	const { sim } = useSimHost();
 	const toggles = useUpgradesStore(selectViewToggles);
 	const setToggle = useUpgradesStore(state => state.setViewToggle);
+	const hiddenSources = useUpgradesStore(selectHiddenSources);
+	const toggleViewSource = useUpgradesStore(state => state.toggleViewSource);
+	const setViewSources = useUpgradesStore(state => state.setViewSources);
 	const offered = offeredToggles(run);
 	const { withSetPotential, onlyBis } = appliedToggles(offered, toggles);
 	const ranking = run.status === 'done' || run.status === 'stopped' ? run.result : undefined;
 	const measuredOn = run.status === 'running' || run.status === 'done' || run.status === 'stopped' ? run.measuredOn : undefined;
 	// Memoised on the selection alone, so a row's tags keep their identity and its memoised name cell holds.
 	const tagsOf = useMemo(() => rowTagIndex(selectedSets), [selectedSets]);
+	// Memoised for the same rows: `applyView` builds new row objects on every call. The source cut runs on this view
+	// rather than through `resultsViewFor`'s own `hiddenSources`, so ticking a source does not run `applyView` again.
+	const preCutView = useMemo(() => resultsViewFor(run, { withSetPotential, onlyBis }), [run, withSetPotential, onlyBis]);
+	const sourceOptions = useMemo(() => viewSourceOptions(preCutView?.rows ?? []), [preCutView]);
+	const view = useMemo(() => (preCutView && hiddenSources.length > 0 ? sourcesView(preCutView, hiddenSources) : preCutView), [preCutView, hiddenSources]);
+	// Only the hidden sources this view offers act, so a source hidden in an earlier run hides nothing here, in a row or a cell.
+	const actingHidden = useMemo(
+		() => [...sourceOptions.raids, ...sourceOptions.other].map(option => option.key).filter(key => hiddenSources.includes(key)),
+		[sourceOptions, hiddenSources],
+	);
 	// Memoised because every `ResultRow` is: a new context on each landing row would render every row again.
 	const rowContext = useMemo<RowContext>(
 		() => ({
@@ -42,11 +71,10 @@ export function useResultsView(run: RunState, selectedSets: readonly SetOption[]
 			tip: { ranking, wornItemIds: measuredOn?.wornItemIds, specId: measuredOn?.specId, withSetPotential },
 			tagsOf,
 			dpsKey: dpsSortKeyFor(ranking, withSetPotential),
+			hiddenSources: actingHidden,
 		}),
-		[sim, ranking, measuredOn, withSetPotential, tagsOf],
+		[sim, ranking, measuredOn, withSetPotential, tagsOf, actingHidden],
 	);
-	// Memoised for the same rows: `applyView` builds new row objects on every call.
-	const view = useMemo(() => resultsViewFor(run, { withSetPotential, onlyBis }), [run, withSetPotential, onlyBis]);
 
-	return { toggles, offered, setToggle, rowContext, view };
+	return { toggles, offered, setToggle, sourceOptions, hiddenSources, toggleViewSource, setViewSources, rowContext, view };
 }

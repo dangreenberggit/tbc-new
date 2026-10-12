@@ -26,7 +26,7 @@ export interface UpgradesResultsProps {
  * the export would otherwise re-sort and re-serialise the shortlist each time.
  */
 export const UpgradesResults = memo(({ run, selectedSets }: UpgradesResultsProps) => {
-	const { toggles, offered, setToggle, rowContext, view } = useResultsView(run, selectedSets);
+	const { toggles, offered, setToggle, sourceOptions, hiddenSources, toggleViewSource, setViewSources, rowContext, view } = useResultsView(run, selectedSets);
 
 	switch (run.status) {
 		case 'idle':
@@ -48,12 +48,21 @@ export const UpgradesResults = memo(({ run, selectedSets }: UpgradesResultsProps
 		case 'done':
 		case 'stopped': {
 			const hasRows = view !== undefined && view.rows.length > 0;
+			// A table "Filter by source" emptied keeps its panes, so every slot keeps its tab (ticket 614) and each pane
+			// says no row comes from the shown sources; "No upgrades found" would be false there.
+			const filteredEmpty = !hasRows && view?.sourcesHidden === true;
 			// A stopped run with no finished row shows no empty state: the status line already says so.
-			const noUpgrades = !hasRows && run.status === 'done';
+			const noUpgrades = !hasRows && !filteredEmpty && run.status === 'done';
 			return (
 				<>
-					<ViewToggles offered={offered} toggles={toggles} maxPhase={run.result.assumptions.maxPhase} onChange={setToggle} />
-					{hasRows && <ResultsPanes view={view} rowContext={rowContext} />}
+					<ViewToggles
+						offered={offered}
+						toggles={toggles}
+						maxPhase={run.result.assumptions.maxPhase}
+						onChange={setToggle}
+						sources={{ options: sourceOptions, hidden: hiddenSources, onToggle: toggleViewSource, onSetAll: setViewSources }}
+					/>
+					{view !== undefined && (hasRows || filteredEmpty) && <ResultsPanes view={view} rowContext={rowContext} />}
 					{noUpgrades && (
 						<EmptyState
 							title={i18n.t('upgrades_tab.results.empty_no_upgrades', { ns: 'upgrades' })}

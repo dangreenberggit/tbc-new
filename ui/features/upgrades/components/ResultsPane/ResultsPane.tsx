@@ -9,7 +9,8 @@ import { ResultRows, ResultsTable, type RowContext, ScreenReaderResultsHead, Sor
 export interface ResultsPaneProps {
 	/**
 	 * The pane's rows as `paneRows` splits them. A slot pane under BiS only with no BiS-list row
-	 * (`noBisListRow`) says so in its empty state instead of "No upgrades found".
+	 * (`noBisListRow`), or a pane "Filter by source" emptied (`noSourceRow`), says so in its empty
+	 * state instead of "No upgrades found".
 	 */
 	rows: PaneRows;
 	rowContext: RowContext;
@@ -26,7 +27,7 @@ export interface ResultsPaneProps {
  * one sort, so a click on either head orders both.
  */
 export const ResultsPane = ({ rows, rowContext, groupOpen, onGroupOpenChange }: ResultsPaneProps) => {
-	const { main, notUpgrades, belowCutoff, noBisListRow } = rows;
+	const { main, notUpgrades, belowCutoff, noBisListRow, noSourceRow } = rows;
 	const mainTable = useResultsTable(main, rowContext);
 	const groupTable = useResultsTable(belowCutoff, rowContext);
 	return (
@@ -36,6 +37,8 @@ export const ResultsPane = ({ rows, rowContext, groupOpen, onGroupOpenChange }: 
 					<SortableResultsHead table={mainTable} />
 					<ResultRows table={mainTable} rowContext={rowContext} notUpgrades={notUpgrades} />
 				</ResultsTable>
+			) : noSourceRow ? (
+				<EmptyState body={i18n.t('upgrades_tab.results.empty_no_source_row', { ns: 'upgrades' })} />
 			) : noBisListRow ? (
 				<EmptyState body={i18n.t('upgrades_tab.results.empty_no_bis_row', { ns: 'upgrades' })} />
 			) : (
