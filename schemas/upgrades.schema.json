@@ -335,19 +335,6 @@
 						"tip_total"
 					]
 				},
-				"cutoff": {
-					"type": "object",
-					"properties": {
-						"pct_arm": {
-							"type": "string"
-						},
-						"pct_arm_title": {
-							"type": "string"
-						}
-					},
-					"additionalProperties": false,
-					"required": ["pct_arm", "pct_arm_title"]
-				},
 				"prune": {
 					"type": "object",
 					"properties": {
@@ -429,6 +416,9 @@
 						"owned": {
 							"type": "string"
 						},
+						"not_upgrade": {
+							"type": "string"
+						},
 						"bis_badge": {
 							"type": "string"
 						},
@@ -450,7 +440,13 @@
 						"empty_no_upgrades_body": {
 							"type": "string"
 						},
+						"empty_no_bis_row": {
+							"type": "string"
+						},
 						"below_cutoff_group": {
+							"type": "string"
+						},
+						"below_cutoff_group_bar": {
 							"type": "string"
 						},
 						"removes_worn": {
@@ -474,6 +470,7 @@
 						"favorite",
 						"batch",
 						"owned",
+						"not_upgrade",
 						"bis_badge",
 						"alt_badge",
 						"empty_no_ranking",
@@ -481,7 +478,9 @@
 						"rows_pending",
 						"empty_no_upgrades",
 						"empty_no_upgrades_body",
+						"empty_no_bis_row",
 						"below_cutoff_group",
+						"below_cutoff_group_bar",
 						"removes_worn",
 						"sort_ascending",
 						"sort_descending"
@@ -535,7 +534,6 @@
 				"view",
 				"export",
 				"set_bonus",
-				"cutoff",
 				"prune",
 				"progress",
 				"run_progress",
