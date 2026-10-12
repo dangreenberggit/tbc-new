@@ -34,7 +34,10 @@ export type PoolFilter = {
 	prune: boolean;
 };
 
-const poolSourcesOf = (entry: PoolEntry): readonly ItemSource[] => entry.sources ?? [entry.source];
+/** What the source rules read of an entry; a ranked row has the same two fields, so the results view's source filter shares them. */
+export type SourcedEntry = Pick<PoolEntry, 'source' | 'sources'>;
+
+const poolSourcesOf = (entry: SourcedEntry): readonly ItemSource[] => entry.sources ?? [entry.source];
 
 /**
  * The source key an entry files under: its first zone, else its source
@@ -42,7 +45,7 @@ const poolSourcesOf = (entry: PoolEntry): readonly ItemSource[] => entry.sources
  * pool entry; the engine does not export it, so this is a copy and must
  * change with it.
  */
-export function sourceKeyOf(entry: PoolEntry): string {
+export function sourceKeyOf(entry: SourcedEntry): string {
 	for (const s of poolSourcesOf(entry)) {
 		if ('zone' in s) return s.zone;
 	}
@@ -50,7 +53,7 @@ export function sourceKeyOf(entry: PoolEntry): string {
 }
 
 /** A zone matches any entry that drops there; a zoneless bucket matches only entries with no zone. */
-function sourceMatches(entry: PoolEntry, key: string): boolean {
+export function sourceMatches(entry: SourcedEntry, key: string): boolean {
 	const sources = poolSourcesOf(entry);
 	if (sources.some(s => 'zone' in s && s.zone === key)) return true;
 	return sourceKeyOf(entry) === key && !sources.some(s => 'zone' in s);
@@ -65,12 +68,12 @@ const ZONELESS_KEYS = new Set(Object.values(SOURCE_LABELS));
  * (`follow_phase.ts`) both read them, so a reset never keeps or drops a source
  * the dialog disagrees on.
  */
-export function validSourceKeysOf(pool: readonly PoolEntry[]): string[] {
+export function validSourceKeysOf(pool: readonly SourcedEntry[]): string[] {
 	const keys = [...new Set(pool.map(sourceKeyOf))];
 	return [...keys.filter(k => !ZONELESS_KEYS.has(k)), ...keys.filter(k => ZONELESS_KEYS.has(k))];
 }
 
-export function sourceOptions(pool: readonly PoolEntry[]): { raids: SourceOption[]; other: SourceOption[] } {
+export function sourceOptions(pool: readonly SourcedEntry[]): { raids: SourceOption[]; other: SourceOption[] } {
 	const options = validSourceKeysOf(pool).map(key => ({ key, count: pool.filter(e => sourceMatches(e, key)).length }));
 	return { raids: options.filter(o => !ZONELESS_KEYS.has(o.key)), other: options.filter(o => ZONELESS_KEYS.has(o.key)) };
 }

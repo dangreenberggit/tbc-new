@@ -13,6 +13,7 @@ import { SIM_ORDER } from './engine/slots';
 import { applyView, rankableSetPotential, type ViewResult, type ViewRow } from './engine/view';
 import type { DpsSortKey } from './results_columns';
 import type { RunState, StoppedRanking } from './run_state';
+import { type SourceOption, sourceMatches, sourceOptions, validSourceKeysOf } from './settings_pool';
 
 export const SHOPPING_LIST_TAB = 'shopping-list';
 
@@ -143,6 +144,16 @@ function bisOnlyView(view: ViewResult): ResultsViewResult {
 	const tabSlots = [...new Set(view.rows.map(effectiveSlot))];
 	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length, tabSlots, bisOnly: true };
 }
+
+/** The sources "Filter by source" lists, keyed and counted as the pre-run Sources dialog keys and counts them. */
+export type ViewSourceOptions = { raids: SourceOption[]; other: SourceOption[] };
+
+/**
+ * The sources of `rows`, which are the view's rows before the source cut, so
+ * the dialog never lists a source no row on screen carries. Raid zones first,
+ * then zoneless buckets, each in first-seen order (`sourceOptions`).
+ */
+export const viewSourceOptions = (rows: readonly ViewRow[]): ViewSourceOptions => sourceOptions(rows);
 
 /** The view a settled run renders under `applied` (from `appliedToggles`); nothing before a run settles. */
 export function resultsViewFor(run: RunState, { withSetPotential, onlyBis }: ViewToggles): ResultsViewResult | undefined {

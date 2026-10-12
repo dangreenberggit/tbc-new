@@ -17,6 +17,7 @@ import {
 	SHOPPING_LIST_TAB,
 	slotTabs,
 	stoppedView,
+	viewSourceOptions,
 } from './results_view';
 
 const ids = (rows: ReadonlyArray<{ itemId: number }>) => rows.map(row => row.itemId);
@@ -222,6 +223,20 @@ describe('resultsViewFor', () => {
 		const pane = paneRows(ownedBisHelm, 'head');
 		expect(pane.main).toEqual([]);
 		expect(pane.noBisListRow).toBe(false);
+	});
+});
+
+describe('viewSourceOptions', () => {
+	it('lists the raid zones, then the zoneless buckets, each in first-seen order with its row count', () => {
+		expect(viewSourceOptions(VIEW.rows)).toEqual({
+			raids: [
+				{ key: 'Black Temple', count: 5 },
+				{ key: 'Hyjal Summit', count: 3 },
+				{ key: "Gruul's Lair", count: 1 },
+				{ key: 'Tempest Keep', count: 1 },
+			],
+			other: [{ key: 'PvP vendor', count: 1 }],
+		});
 	});
 });
 
