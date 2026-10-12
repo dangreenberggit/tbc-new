@@ -43,6 +43,7 @@ const paneRowsOf = (main: readonly RankedItem[], belowCutoff: readonly RankedIte
 	notUpgrades: new Set(),
 	belowCutoff: belowCutoff.map(row => ({ ...row, belowCutoffInView: true })),
 	noBisListRow: false,
+	noSourceRow: false,
 });
 const onPage = (props: PaneProps) =>
 	render(

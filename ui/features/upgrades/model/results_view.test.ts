@@ -212,7 +212,7 @@ describe('resultsViewFor', () => {
 			{ id: 'trinket1', count: 1 },
 			{ id: 'mainhand', count: 1 },
 		]);
-		expect(paneRows(view, 'chest')).toEqual({ main: [], notUpgrades: new Set(), belowCutoff: [], noBisListRow: true });
+		expect(paneRows(view, 'chest')).toEqual({ main: [], notUpgrades: new Set(), belowCutoff: [], noBisListRow: true, noSourceRow: false });
 	});
 
 	it('says a slot has no BiS-list row only under BiS only, and not when its BiS-list row is owned and missed the cutoff', () => {
@@ -254,7 +254,10 @@ const badgeSword: RankedItem = { ...fixtureRow(3), source: { kind: 'badge', cost
 const badgeOrRaidSword: RankedItem = {
 	...badgeSword,
 	itemId: 900002,
-	sources: [{ kind: 'badge', cost: 150 }, { kind: 'raid', zone: 'Black Temple', origin: 'db' }],
+	sources: [
+		{ kind: 'badge', cost: 150 },
+		{ kind: 'raid', zone: 'Black Temple', origin: 'db' },
+	],
 };
 const withRows = (rows: readonly RankedItem[]): Ranking => ({ ...RANKING_FIXTURE, items: [...rows] });
 const replacing = (row: RankedItem): Ranking => withRows(RANKING_FIXTURE.items.map(item => (item.itemId === row.itemId ? row : item)));
@@ -310,6 +313,26 @@ describe('resultsViewFor with sources hidden', () => {
 			other: [],
 		});
 		expect(ids(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple'])!.rows)).toEqual([28830]);
+	});
+
+	it('says a pane has no row from the shown sources when the filter emptied it', () => {
+		expect(paneRows(hidingBlackTemple, 'legs')).toEqual({ main: [], notUpgrades: new Set(), belowCutoff: [], noBisListRow: false, noSourceRow: true });
+		expect(paneRows(hidingBlackTemple, 'head').noSourceRow).toBe(false);
+		expect(paneRows(VIEW, 'legs').noSourceRow).toBe(false);
+
+		const everySource = ['Black Temple', 'Hyjal Summit', "Gruul's Lair", 'Tempest Keep', 'PvP vendor'];
+		const allHidden = resultsViewFor(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, everySource)!;
+		expect(paneRows(allHidden, SHOPPING_LIST_TAB)).toEqual({ main: [], notUpgrades: new Set(), belowCutoff: [], noBisListRow: false, noSourceRow: true });
+		expect(slotTabs(allHidden).map(tab => tab.id)).toEqual(['head', 'chest', 'legs', 'trinket1', 'mainhand']);
+	});
+
+	it('under BiS only, says a slot has no BiS-list item only when it had none before the source cut', () => {
+		const view = resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple'])!;
+		// Chest has no BiS-list row at all.
+		expect(paneRows(view, 'chest')).toMatchObject({ noBisListRow: true, noSourceRow: false });
+		// Head's one BiS-list row, Cursed Vision of Sargeras, drops in Black Temple.
+		expect(paneRows(view, 'head')).toMatchObject({ main: [], noBisListRow: false, noSourceRow: true });
+		expect(paneRows(view, 'trinket1')).toMatchObject({ noBisListRow: false, noSourceRow: false });
 	});
 
 	it('filters a stopped run’s table too', () => {
