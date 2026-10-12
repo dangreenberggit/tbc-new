@@ -1294,6 +1294,26 @@
       "curationHint": 0.0
     },
     {
+      "itemId": 34573,
+      "name": "Thunderheart Treads",
+      "slot": "feet",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Boots of the Forgotten Vanquisher",
+          "boss": "Felmyst",
+          "tokenId": 34858,
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 88.3
+    },
+    {
       "itemId": 32366,
       "name": "Shadowmaster's Boots",
       "slot": "feet",
@@ -6571,6 +6591,26 @@
       "curationHint": 0.0
     },
     {
+      "itemId": 34556,
+      "name": "Thunderheart Waistguard",
+      "slot": "waist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Belt of the Forgotten Vanquisher",
+          "boss": "Brutallus",
+          "tokenId": 34855,
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 99.5
+    },
+    {
       "itemId": 30106,
       "name": "Belt of One-Hundred Deaths",
       "slot": "waist",
@@ -8761,6 +8801,26 @@
         }
       ],
       "curationHint": 0.0
+    },
+    {
+      "itemId": 34444,
+      "name": "Thunderheart Wristguards",
+      "slot": "wrist",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Bracers of the Forgotten Vanquisher",
+          "boss": "Kalecgos",
+          "tokenId": 34852,
+          "origin": "two-hop"
+        }
+      ],
+      "curationHint": 68.88
     },
     {
       "itemId": 32324,
