@@ -127,6 +127,7 @@
 			"empty_no_upgrades_body": "Every candidate simmed at or below your current gear. Widen the phase or content filter to consider more items.",
 			"empty_no_phase_list": "No candidate list for Phase {{phase}}",
 			"empty_no_phase_list_body": "The tab has no candidate list for Phase {{phase}}, so nothing was compared. Pick Phase 2 or later and simulate again.",
+			"set_bonus_tip_title": "Set-bonus breakdown",
 			"empty_no_bis_row": "No BiS-list item for this slot.",
 			"below_cutoff_group": "{{count}} item(s) below the cutoff",
 			"below_cutoff_group_bar": "{{count}} item(s) below the {{abs}} DPS cutoff",
