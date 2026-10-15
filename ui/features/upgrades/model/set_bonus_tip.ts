@@ -43,7 +43,8 @@ export type TipLabel =
 	| { kind: 'screened'; set: string; reason: ScreenedReason }
 	| { kind: 'total' };
 
-export type ScreenedReason = Extract<ScreenReason, 'outside-band' | 'exact-zero' | 'below-zero'>;
+const SCREENED_REASONS = ['outside-band', 'exact-zero', 'below-zero'] as const satisfies readonly ScreenReason[];
+export type ScreenedReason = (typeof SCREENED_REASONS)[number];
 
 /**
  * `dps` undefined is a figure that was not measured. In a receipt every line
@@ -199,13 +200,16 @@ function reachableLines(row: RankedItem, ctx: SetContext, noiseFloorDps: number)
 		}));
 }
 
-const SCREENED_REASONS: readonly ScreenedReason[] = ['outside-band', 'exact-zero', 'below-zero'];
+/** The toggle is never why a screened set is not counted, so a section with no reachable line names no reason. */
+function notCountedHeading(hasReachable: boolean, on: boolean): Extract<TipEntry, { type: 'heading' }>['heading'] {
+	if (!hasReachable) return 'not_counted';
+	return on ? 'not_counted_no_gain' : 'not_counted_off';
+}
 
 /**
  * The line for a row whose set the set screen dropped, or null. It carries no
  * figure: a `below-zero` measure is the pieces and the bonus together, so
- * printing it as the bonus would credit the pieces' loss to it (Gate B M1 of
- * stage tab-set-bonus).
+ * printing it as the bonus would credit the pieces' loss to it (ticket 336).
  */
 function screenedLine(ctx: SetContext, ranking: SetBonusTipContext['ranking']): TipEntry | null {
 	if (!ranking?.setBonuses?.some(b => b.setId === ctx.setId && b.unmeasured === 'screened-out')) return null;
@@ -288,11 +292,7 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 	if (ctx && noiseFloorDps !== undefined) {
 		const reachable = on && potential.kind !== 'none' ? [] : reachableLines(row, ctx, noiseFloorDps);
 		const section = [...reachable, ...(screened ? [screened] : [])];
-		if (section.length > 0) {
-			// The toggle is never why a screened set is not counted, so a section of only that line names no reason.
-			const heading = reachable.length === 0 ? 'not_counted' : on ? 'not_counted_no_gain' : 'not_counted_off';
-			notCounted.push({ type: 'heading', heading }, ...section);
-		}
+		if (section.length > 0) notCounted.push({ type: 'heading', heading: notCountedHeading(reachable.length > 0, on) }, ...section);
 	}
 	if (entries.length === 0 && notCounted.length === 0) return null;
 	entries.push(line({ kind: 'total' }, total), ...notCounted);

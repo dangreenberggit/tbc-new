@@ -209,7 +209,7 @@ describe('setBonusTipLines', () => {
 		] as const)('names a set the screen dropped (%s), toggle on: %s', (reason, withSetPotential) => {
 			const tip = setBonusTipLines(stepRow({ futureBonuses: [] }), { ranking: screenedRanking(reason), withSetPotential });
 			expect(tip?.subLine).toBe('hover_hint');
-			// Gate B M1: no figure, not even for below-zero, whose measure is the pieces and the bonus together.
+			// No figure, not even for below-zero, whose measure is the pieces and the bonus together.
 			expect(tip?.entries).toEqual([
 				totalLine(4.5),
 				{ type: 'heading', heading: 'not_counted' },
