@@ -2,7 +2,7 @@ import i18n from '@i18n/config';
 import { BooleanPicker } from '@ui-kit/BooleanPicker';
 import { useId } from 'react';
 
-import type { ViewToggles as Toggles } from '../../model/results_view';
+import { offeredSourceKeys, type ViewToggles as Toggles } from '../../model/results_view';
 import { ViewSourcesButton, type ViewSourcesButtonProps } from '../ViewSources';
 
 interface ViewToggleProps {
@@ -41,7 +41,7 @@ export interface ViewTogglesProps {
  * too; the toggles do not.
  */
 export const ViewToggles = ({ offered, toggles, maxPhase, onChange, sources }: ViewTogglesProps) => {
-	const offersSources = sources.options.raids.length + sources.options.other.length > 0;
+	const offersSources = offeredSourceKeys(sources.options).length > 0;
 	if (!offered.withSetPotential && !offered.onlyBis && !offersSources) return null;
 	return (
 		<fieldset className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-1" data-testid="upgrades-view-toggles">

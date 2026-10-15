@@ -13,7 +13,7 @@ import { SIM_ORDER } from './engine/slots';
 import { applyView, rankableSetPotential, type ViewResult, type ViewRow } from './engine/view';
 import type { DpsSortKey } from './results_columns';
 import type { RunState, StoppedRanking } from './run_state';
-import { sourceKeysMatching, type SourceOption, sourceOptions, validSourceKeysOf } from './settings_pool';
+import { sourceKeysMatching, type SourceOption, sourceOptions } from './settings_pool';
 
 export const SHOPPING_LIST_TAB = 'shopping-list';
 
@@ -169,15 +169,19 @@ function bisOnlyView(view: ViewResult): ResultsViewResult {
 	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length, tabSlots, bisOnly: true };
 }
 
-/** The sources "Filter by source" lists, keyed and counted as the pre-run Sources dialog keys and counts them. */
+/**
+ * The sources "Filter by source" lists: `sourceOptions` of the view's rows
+ * before the source cut, keyed and counted as the pre-run Sources dialog keys
+ * and counts them, so the dialog lists only sources that rows on screen have.
+ */
 export type ViewSourceOptions = { raids: SourceOption[]; other: SourceOption[] };
 
-/**
- * The sources of `rows`, which are the view's rows before the source cut, so
- * the dialog never lists a source no row on screen carries. Raid zones first,
- * then zoneless buckets, each in first-seen order (`sourceOptions`).
- */
-export const viewSourceOptions = (rows: readonly ViewRow[]): ViewSourceOptions => sourceOptions(rows);
+/** The keys of the sources a view offers, raids first. */
+export const offeredSourceKeys = (options: ViewSourceOptions): string[] => [...options.raids, ...options.other].map(option => option.key);
+
+/** The hidden sources that act on a view offering `options`: a hidden source the view does not offer hides nothing there. */
+export const offeredHidden = (options: ViewSourceOptions, hidden: readonly string[]): string[] =>
+	offeredSourceKeys(options).filter(key => hidden.includes(key));
 
 /** The hidden sources with `key` hidden if it was shown, and shown if it was hidden. */
 export const withViewSourceToggled = (hidden: readonly string[], key: string): string[] =>
@@ -199,8 +203,7 @@ export const withOfferedSourcesHidden = (hidden: readonly string[], offered: rea
  * below the cutoff changes, and every slot keeps its tab.
  */
 export function sourcesView(view: ResultsViewResult, hidden: readonly string[]): ResultsViewResult {
-	const offered = validSourceKeysOf(view.rows);
-	const acting = hidden.filter(key => offered.includes(key));
+	const acting = offeredHidden(sourceOptions(view.rows), hidden);
 	const kept = (row: ViewRow) => sourceKeysMatching(row).some(key => !acting.includes(key));
 	const rows = view.rows.filter(kept);
 	if (rows.length === view.rows.length) return view;
@@ -222,22 +225,18 @@ export function sourcesView(view: ResultsViewResult, hidden: readonly string[]):
 }
 
 /**
- * The view a settled run renders under `applied` (from `appliedToggles`) and
- * the sources "Filter by source" hides; nothing before a run settles.
+ * The view a settled run renders under `applied` (from `appliedToggles`),
+ * before "Filter by source" cuts it (`sourcesView`); nothing before a run
+ * settles.
  */
-export function resultsViewFor(
-	run: RunState,
-	{ withSetPotential, onlyBis }: ViewToggles,
-	hiddenSources: readonly string[] = [],
-): ResultsViewResult | undefined {
-	const bySource = (view: ResultsViewResult) => (hiddenSources.length > 0 ? sourcesView(view, hiddenSources) : view);
+export function resultsViewFor(run: RunState, { withSetPotential, onlyBis }: ViewToggles): ResultsViewResult | undefined {
 	switch (run.status) {
 		case 'done': {
 			const view = applyView(run.result, { withSetPotential });
-			return bySource(onlyBis ? bisOnlyView(view) : view);
+			return onlyBis ? bisOnlyView(view) : view;
 		}
 		case 'stopped':
-			return bySource(stoppedView(run.result));
+			return stoppedView(run.result);
 		default:
 			return undefined;
 	}

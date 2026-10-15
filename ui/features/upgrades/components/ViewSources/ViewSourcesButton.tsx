@@ -2,11 +2,11 @@ import i18n from '@i18n/config';
 import { Button } from '@ui-kit/Button';
 import { useId, useState } from 'react';
 
-import { type ViewSourceOptions, withOfferedSourcesHidden } from '../../model/results_view';
+import { offeredHidden, offeredSourceKeys, type ViewSourceOptions, withOfferedSourcesHidden } from '../../model/results_view';
 import { ViewSourcesDialog } from './ViewSourcesDialog';
 
 export interface ViewSourcesButtonProps {
-	/** The sources the settled table offers (`viewSourceOptions`). */
+	/** The sources the settled table offers (`ViewSourceOptions`). */
 	options: ViewSourceOptions;
 	/** The hidden sources as stored, which may name a source this table does not offer. */
 	hidden: readonly string[];
@@ -24,8 +24,8 @@ export interface ViewSourcesButtonProps {
 export const ViewSourcesButton = ({ options, hidden, onToggle, onSetAll }: ViewSourcesButtonProps) => {
 	const [open, setOpen] = useState(false);
 	const summaryId = useId();
-	const offered = [...options.raids, ...options.other].map(option => option.key);
-	const hiddenCount = offered.filter(key => hidden.includes(key)).length;
+	const offered = offeredSourceKeys(options);
+	const hiddenCount = offeredHidden(options, hidden).length;
 	return (
 		<div className="grid justify-items-start gap-1">
 			<Button variant="secondary" data-testid="upgrades-view-sources-button" aria-describedby={summaryId} onClick={() => setOpen(true)}>

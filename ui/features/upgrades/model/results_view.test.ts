@@ -10,17 +10,23 @@ import {
 	hasBisRows,
 	landedRows,
 	NO_VIEW_TOGGLES,
+	offeredHidden,
+	offeredSourceKeys,
 	offeredToggles,
 	paneRows,
 	resultsViewFor,
 	rowKey,
 	SHOPPING_LIST_TAB,
 	slotTabs,
+	sourcesView,
 	stoppedView,
-	viewSourceOptions,
+	type ViewSourceOptions,
+	type ViewToggles,
 	withOfferedSourcesHidden,
 	withViewSourceToggled,
 } from './results_view';
+import type { RunState } from './run_state';
+import { sourceOptions } from './settings_pool';
 
 const ids = (rows: ReadonlyArray<{ itemId: number }>) => rows.map(row => row.itemId);
 const VIEW = applyView(RANKING_FIXTURE);
@@ -173,6 +179,8 @@ const WITH_POTENTIAL: Ranking = { ...RANKING_FIXTURE, items: RANKING_FIXTURE.ite
 const done = (result: Ranking) => ({ status: 'done' as const, runId: 1, result });
 const SET_POTENTIAL = { ...NO_VIEW_TOGGLES, withSetPotential: true };
 const ONLY_BIS = { ...NO_VIEW_TOGGLES, onlyBis: true };
+/** A settled run's view with "Filter by source" applied, composed as `useResultsView` composes it. */
+const bySource = (run: RunState, toggles: ViewToggles, hidden: readonly string[]) => sourcesView(resultsViewFor(run, toggles)!, hidden);
 
 describe('resultsViewFor', () => {
 	it('views a finished run through applyView', () => {
@@ -228,9 +236,9 @@ describe('resultsViewFor', () => {
 	});
 });
 
-describe('viewSourceOptions', () => {
+describe('sourceOptions over a view’s rows', () => {
 	it('lists the raid zones, then the zoneless buckets, each in first-seen order with its row count', () => {
-		expect(viewSourceOptions(VIEW.rows)).toEqual({
+		expect(sourceOptions(VIEW.rows)).toEqual({
 			raids: [
 				{ key: 'Black Temple', count: 5 },
 				{ key: 'Hyjal Summit', count: 3 },
@@ -264,8 +272,8 @@ const badgeOrRaidSword: RankedItem = {
 const withRows = (rows: readonly RankedItem[]): Ranking => ({ ...RANKING_FIXTURE, items: [...rows] });
 const replacing = (row: RankedItem): Ranking => withRows(RANKING_FIXTURE.items.map(item => (item.itemId === row.itemId ? row : item)));
 
-describe('resultsViewFor with sources hidden', () => {
-	const hidingBlackTemple = resultsViewFor(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, ['Black Temple'])!;
+describe('sourcesView over resultsViewFor', () => {
+	const hidingBlackTemple = bySource(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, ['Black Temple']);
 
 	it('drops every row whose only source is a hidden raid and recounts the shortlist', () => {
 		expect(ids(hidingBlackTemple.rows)).toEqual([30902, 33688, 28830, 30989, 29993, 30905]);
@@ -287,9 +295,9 @@ describe('resultsViewFor with sources hidden', () => {
 
 	it('keeps a row from two raids while either is shown, as the pre-run Sources filter does', () => {
 		const ranking = replacing(twoRaidEdge);
-		expect(ids(resultsViewFor(done(ranking), NO_VIEW_TOGGLES, ['Black Temple'])!.rows)).toContain(30902);
-		expect(ids(resultsViewFor(done(ranking), NO_VIEW_TOGGLES, ['Hyjal Summit'])!.rows)).toContain(30902);
-		expect(ids(resultsViewFor(done(ranking), NO_VIEW_TOGGLES, ['Hyjal Summit', 'Black Temple'])!.rows)).not.toContain(30902);
+		expect(ids(bySource(done(ranking), NO_VIEW_TOGGLES, ['Black Temple']).rows)).toContain(30902);
+		expect(ids(bySource(done(ranking), NO_VIEW_TOGGLES, ['Hyjal Summit']).rows)).toContain(30902);
+		expect(ids(bySource(done(ranking), NO_VIEW_TOGGLES, ['Hyjal Summit', 'Black Temple']).rows)).not.toContain(30902);
 	});
 
 	// Review D4: the dialog lists a row under its first zone only, so no row offers Zul'Aman here, but it is not hidden.
@@ -299,33 +307,33 @@ describe('resultsViewFor with sources hidden', () => {
 			sources: [twoRaidEdge.sources![0]!, { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin", origin: 'db' }],
 		};
 		const ranking = replacing(hyjalOrZulAman);
-		expect(viewSourceOptions(applyView(ranking).rows).raids.map(option => option.key)).not.toContain("Zul'Aman");
-		expect(ids(resultsViewFor(done(ranking), NO_VIEW_TOGGLES, ['Hyjal Summit'])!.rows)).toContain(30902);
+		expect(sourceOptions(applyView(ranking).rows).raids.map(option => option.key)).not.toContain("Zul'Aman");
+		expect(ids(bySource(done(ranking), NO_VIEW_TOGGLES, ['Hyjal Summit']).rows)).toContain(30902);
 	});
 
 	it('hides with a zoneless bucket only the rows that have no zone', () => {
 		const ranking = withRows([...RANKING_FIXTURE.items.filter(row => row.itemId !== badgeSword.itemId), badgeSword, badgeOrRaidSword]);
-		const view = resultsViewFor(done(ranking), NO_VIEW_TOGGLES, ['Badge vendor'])!;
+		const view = bySource(done(ranking), NO_VIEW_TOGGLES, ['Badge vendor']);
 		expect(ids(view.rows)).not.toContain(badgeSword.itemId);
 		expect(ids(view.rows)).toContain(badgeOrRaidSword.itemId);
 		expect(view.rows).toHaveLength(ranking.items.length - 1);
 	});
 
 	it('changes nothing when no hidden source is one the view offers', () => {
-		expect(resultsViewFor(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, [])).toEqual(VIEW);
-		expect(resultsViewFor(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, ['Molten Core'])).toEqual(VIEW);
+		expect(bySource(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, [])).toEqual(VIEW);
+		expect(bySource(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, ['Molten Core'])).toEqual(VIEW);
 	});
 
 	it('with BiS only, keeps the rows both filters keep, and offers only the BiS-list rows’ sources', () => {
 		const bisOnly = resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!;
-		expect(viewSourceOptions(bisOnly.rows)).toEqual({
+		expect(sourceOptions(bisOnly.rows)).toEqual({
 			raids: [
 				{ key: 'Black Temple', count: 2 },
 				{ key: "Gruul's Lair", count: 1 },
 			],
 			other: [],
 		});
-		expect(ids(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple'])!.rows)).toEqual([28830]);
+		expect(ids(bySource(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple']).rows)).toEqual([28830]);
 	});
 
 	it('says a pane has no row from the shown sources when the filter emptied it', () => {
@@ -334,7 +342,7 @@ describe('resultsViewFor with sources hidden', () => {
 		expect(paneRows(VIEW, 'legs').noSourceRow).toBe(false);
 
 		const everySource = ['Black Temple', 'Hyjal Summit', "Gruul's Lair", 'Tempest Keep', 'PvP vendor'];
-		const allHidden = resultsViewFor(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, everySource)!;
+		const allHidden = bySource(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, everySource);
 		expect(paneRows(allHidden, SHOPPING_LIST_TAB)).toEqual({ main: [], notUpgrades: new Set(), belowCutoff: [], noBisListRow: false, noSourceRow: true });
 		expect(slotTabs(allHidden).map(tab => tab.id)).toEqual(['head', 'chest', 'legs', 'trinket1', 'mainhand']);
 	});
@@ -344,7 +352,7 @@ describe('resultsViewFor with sources hidden', () => {
 		// Helm of the Illidari Shatterer, below the cutoff, made a Zul'Aman drop so it is the one row a shown source keeps.
 		const zulAmanHelm: RankedItem = { ...helm, source: { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin", origin: 'db' } };
 		const everyOtherSource = ['Black Temple', 'Hyjal Summit', "Gruul's Lair", 'Tempest Keep', 'PvP vendor'];
-		const view = resultsViewFor(done(replacing(zulAmanHelm)), NO_VIEW_TOGGLES, everyOtherSource)!;
+		const view = bySource(done(replacing(zulAmanHelm)), NO_VIEW_TOGGLES, everyOtherSource);
 		for (const tab of ['head', SHOPPING_LIST_TAB] as const) {
 			expect(paneRows(view, tab)).toMatchObject({ main: [], noBisListRow: false, noSourceRow: true });
 			expect(ids(paneRows(view, tab).belowCutoff)).toEqual([zulAmanHelm.itemId]);
@@ -352,7 +360,7 @@ describe('resultsViewFor with sources hidden', () => {
 	});
 
 	it('under BiS only, says a slot has no BiS-list item only when it had none before the source cut', () => {
-		const view = resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple'])!;
+		const view = bySource(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple']);
 		// Chest has no BiS-list row at all.
 		expect(paneRows(view, 'chest')).toMatchObject({ noBisListRow: true, noSourceRow: false });
 		// Head's one BiS-list row, Cursed Vision of Sargeras, drops in Black Temple.
@@ -361,7 +369,7 @@ describe('resultsViewFor with sources hidden', () => {
 	});
 
 	it('filters a stopped run’s table too', () => {
-		const view = resultsViewFor({ status: 'stopped', runId: 1, result: STOPPED_FIXTURE }, NO_VIEW_TOGGLES, ['Black Temple'])!;
+		const view = bySource({ status: 'stopped', runId: 1, result: STOPPED_FIXTURE }, NO_VIEW_TOGGLES, ['Black Temple']);
 		expect(ids(view.rows)).toEqual([30902, 33688, 28830, 30989, 29993, 30905]);
 	});
 });
@@ -374,6 +382,27 @@ describe('the source filter’s next states', () => {
 
 	it('hides every offered source and keeps a hidden one the view does not offer', () => {
 		expect(withOfferedSourcesHidden(['Molten Core', 'Karazhan'], ['Karazhan', 'Black Temple'])).toEqual(['Molten Core', 'Karazhan', 'Black Temple']);
+	});
+});
+
+describe('offeredSourceKeys and offeredHidden', () => {
+	const offered: ViewSourceOptions = {
+		raids: [
+			{ key: 'Black Temple', count: 5 },
+			{ key: 'Hyjal Summit', count: 3 },
+		],
+		other: [{ key: 'PvP vendor', count: 1 }],
+	};
+
+	it('lists the offered keys, raids first', () => {
+		expect(offeredSourceKeys(offered)).toEqual(['Black Temple', 'Hyjal Summit', 'PvP vendor']);
+		expect(offeredSourceKeys({ raids: [], other: [] })).toEqual([]);
+	});
+
+	it('keeps only the hidden sources the view offers, in offered order', () => {
+		expect(offeredHidden(offered, ['PvP vendor', 'Molten Core', 'Black Temple'])).toEqual(['Black Temple', 'PvP vendor']);
+		expect(offeredHidden(offered, ['Molten Core'])).toEqual([]);
+		expect(offeredHidden(offered, [])).toEqual([]);
 	});
 });
 

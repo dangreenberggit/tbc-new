@@ -5,16 +5,16 @@ import type { RowContext } from '../components/ResultsTable';
 import {
 	appliedToggles,
 	dpsSortKeyFor,
+	offeredHidden,
 	offeredToggles,
 	resultsViewFor,
 	type ResultsViewResult,
 	sourcesView,
 	type ViewSourceOptions,
-	viewSourceOptions,
 	type ViewToggles,
 } from '../model/results_view';
 import type { RunState } from '../model/run_state';
-import { rowTagIndex, type SetOption } from '../model/settings_pool';
+import { rowTagIndex, type SetOption, sourceOptions } from '../model/settings_pool';
 import { selectHiddenSources, selectViewToggles } from '../model/upgrades_store';
 import { useUpgradesStore } from './useUpgradesStore';
 
@@ -54,15 +54,12 @@ export function useResultsView(run: RunState, selectedSets: readonly SetOption[]
 	// Memoised on the selection alone, so a row's tags keep their identity and its memoised name cell holds.
 	const tagsOf = useMemo(() => rowTagIndex(selectedSets), [selectedSets]);
 	// Memoised for the same rows: `applyView` builds new row objects on every call. The source cut runs on this view
-	// rather than through `resultsViewFor`'s own `hiddenSources`, so ticking a source does not run `applyView` again.
+	// in a memo of its own, so ticking a source does not run `applyView` again.
 	const preCutView = useMemo(() => resultsViewFor(run, { withSetPotential, onlyBis }), [run, withSetPotential, onlyBis]);
-	const sourceOptions = useMemo(() => viewSourceOptions(preCutView?.rows ?? []), [preCutView]);
+	const offeredSources = useMemo(() => sourceOptions(preCutView?.rows ?? []), [preCutView]);
 	const view = useMemo(() => (preCutView && hiddenSources.length > 0 ? sourcesView(preCutView, hiddenSources) : preCutView), [preCutView, hiddenSources]);
 	// Only the hidden sources this view offers act, so a source hidden in an earlier run hides nothing here, in a row or a cell.
-	const actingHidden = useMemo(
-		() => [...sourceOptions.raids, ...sourceOptions.other].map(option => option.key).filter(key => hiddenSources.includes(key)),
-		[sourceOptions, hiddenSources],
-	);
+	const actingHidden = useMemo(() => offeredHidden(offeredSources, hiddenSources), [offeredSources, hiddenSources]);
 	// Memoised because every `ResultRow` is: a new context on each landing row would render every row again.
 	const rowContext = useMemo<RowContext>(
 		() => ({
@@ -76,5 +73,5 @@ export function useResultsView(run: RunState, selectedSets: readonly SetOption[]
 		[sim, ranking, measuredOn, withSetPotential, tagsOf, actingHidden],
 	);
 
-	return { toggles, offered, setToggle, sourceOptions, hiddenSources, toggleViewSource, setViewSources, rowContext, view };
+	return { toggles, offered, setToggle, sourceOptions: offeredSources, hiddenSources, toggleViewSource, setViewSources, rowContext, view };
 }
