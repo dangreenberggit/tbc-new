@@ -226,4 +226,32 @@ describe('UpgradesResults Filter by source', () => {
 		closeSourcesDialog();
 		expect(rowIds(container)).toEqual([28830]);
 	});
+
+	// Review AD3: the Source cell reads only the hidden sources this view offers (`useResultsView` `actingHidden`).
+	it('leaves every Source cell alone for a stored hidden source the view does not offer', () => {
+		// Vengeful Gladiator's Greatsword sold for badges and dropped in Black Temple. The dialog lists it under Black
+		// Temple, and no row here comes from badges alone, so the view does not offer "Badge vendor".
+		const badgeOrRaidSword: RankedItem = {
+			...fixtureRow(3),
+			source: { kind: 'badge', cost: 150 },
+			sources: [
+				{ kind: 'badge', cost: 150 },
+				{ kind: 'raid', zone: 'Black Temple', boss: 'Illidan Stormrage', origin: 'db' },
+			],
+		};
+		const ranking = { ...RANKING_FIXTURE, items: RANKING_FIXTURE.items.map(row => (row.itemId === badgeOrRaidSword.itemId ? badgeOrRaidSword : row)) };
+		// The Source cell is the row's fifth (`ResultRow`).
+		const sourceCells = (container: HTMLElement) =>
+			within(activePane(container))
+				.getAllByTestId('upgrades-result-row')
+				.map(row => row.querySelectorAll('td')[4]?.textContent);
+		const unfiltered = show(done(ranking));
+		const before = sourceCells(unfiltered.container);
+		expect(sourceCells(unfiltered.container)[rowIds(unfiltered.container).indexOf(badgeOrRaidSword.itemId)]).toBe('Badge vendor');
+		unfiltered.unmount();
+
+		upgradesStoreFor(host).getState().setViewSources(['Badge vendor']);
+		const { container } = show(done(ranking));
+		expect(sourceCells(container)).toEqual(before);
+	});
 });
