@@ -66,7 +66,16 @@ describe('the not-counted section (ticket 336)', () => {
 		broken,
 	});
 
-	it('prints each heading, and every line under it as more or less than the item alone', () => {
+	it('names only the bonus, with no figure, when a reachable line has no partner pieces', () => {
+		const [row] = setBonusTipText({
+			subLine: 'hover_hint',
+			kind: 'receipt',
+			entries: [{ type: 'line', label: reachable('Lightbringer Battlegear', 2, []), dps: undefined, outcome: true }],
+		});
+		expect(row).toMatchObject({ label: `Lightbringer Battlegear${NBSP}2pc`, value: "couldn't measure" });
+	});
+
+	it('prints each heading, and every line under it muted, as more or less than the item alone', () => {
 		const rows = setBonusTipText({
 			subLine: 'hover_hint',
 			kind: 'receipt',
@@ -89,6 +98,7 @@ describe('the not-counted section (ticket 336)', () => {
 				label: `Thunderheart Harness${NBSP}2pc with Thunderheart Leggings`,
 				value: '55.1 DPS more',
 				total: false,
+				muted: true,
 			},
 			{ type: 'heading', id: 'not_counted_no_gain', text: 'Not counted (no gain over the item alone)' },
 			{
@@ -97,6 +107,7 @@ describe('the not-counted section (ticket 336)', () => {
 				label: `Malorne Harness${NBSP}4pc with Greaves of Malorne`,
 				value: '19.5 DPS less',
 				total: false,
+				muted: true,
 			},
 			{ type: 'heading', id: 'not_counted', text: 'Not counted' },
 			{
@@ -105,6 +116,7 @@ describe('the not-counted section (ticket 336)', () => {
 				label: `Malorne Harness${NBSP}2pc with Breastplate of Malorne`,
 				value: "couldn't measure",
 				total: false,
+				muted: true,
 			},
 		]);
 	});
@@ -135,7 +147,7 @@ describe('the not-counted section (ticket 336)', () => {
 			kind: 'receipt',
 			entries: [{ type: 'line', label: { kind: 'screened', set: 'Burning Rage', reason }, dps: undefined }],
 		});
-		expect(row).toEqual({ type: 'line', id: 'screened:Burning Rage', label: 'Burning Rage set bonuses (screened out)', value, total: false });
+		expect(row).toEqual({ type: 'line', id: 'screened:Burning Rage', label: 'Burning Rage set bonuses (screened out)', value, total: false, muted: true });
 	});
 });
 

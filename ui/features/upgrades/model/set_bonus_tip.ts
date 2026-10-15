@@ -171,17 +171,19 @@ function potentialLines(ctx: SetContext, noiseFloorDps: number, credit: number):
 /**
  * The bonuses a row can reach, each as a separate outcome: the row with its
  * partner pieces against the row alone, naming the worn bonuses that step
- * breaks beyond the row's own swap, which the receipt already prices. On a
- * step ranking only the futures the step rule can stop at (`stepEligible`,
- * ticket 511), so a bonus within the noise is never shown as a figure;
- * elsewhere every future not below the gate.
+ * breaks beyond the row's own swap, which the receipt already prices. Only the
+ * futures the step rule can stop at (`stepEligible`, ticket 511), so a bonus
+ * within the noise is never shown as a figure. Only a step ranking measures the
+ * row with its partner pieces; elsewhere a future's figure is the bonus's own
+ * value, which a label naming pieces and breaks would misstate.
  */
 function reachableLines(row: RankedItem, ctx: SetContext, noiseFloorDps: number): TipEntry[] {
+	if (!ctx.stepRanking) return [];
 	const own = new Set((ctx.singleBreaks ?? []).map(bonusKey));
 	const single = ctx.singleDeltaDps ?? row.deltaDps;
 	return [...(ctx.futureBonuses ?? [])]
 		.sort((a, b) => a.threshold - b.threshold)
-		.filter(f => (ctx.stepRanking ? stepEligible(f, noiseFloorDps) : !f.belowGate))
+		.filter(f => stepEligible(f, noiseFloorDps))
 		.map((f): TipEntry => ({
 			type: 'line',
 			label: {
@@ -192,7 +194,7 @@ function reachableLines(row: RankedItem, ctx: SetContext, noiseFloorDps: number)
 				pieces: (f.pieces ?? []).map(p => p.name),
 				broken: (f.breaks ?? []).filter(b => !own.has(bonusKey(b))).map(ref),
 			},
-			dps: ctx.stepRanking ? (f.stepGearDps === undefined ? undefined : f.stepGearDps - single) : f.dps,
+			dps: f.stepGearDps === undefined ? undefined : f.stepGearDps - single,
 			outcome: true,
 		}));
 }
@@ -287,7 +289,8 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 		const reachable = on && potential.kind !== 'none' ? [] : reachableLines(row, ctx, noiseFloorDps);
 		const section = [...reachable, ...(screened ? [screened] : [])];
 		if (section.length > 0) {
-			const heading = !on ? 'not_counted_off' : reachable.length > 0 ? 'not_counted_no_gain' : 'not_counted';
+			// The toggle is never why a screened set is not counted, so a section of only that line names no reason.
+			const heading = reachable.length === 0 ? 'not_counted' : on ? 'not_counted_no_gain' : 'not_counted_off';
 			notCounted.push({ type: 'heading', heading }, ...section);
 		}
 	}

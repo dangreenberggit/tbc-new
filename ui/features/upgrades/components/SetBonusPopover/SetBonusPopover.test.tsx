@@ -91,6 +91,9 @@ describe('SetBonusPopover', () => {
 		expect(within(screen.getByTestId('upgrades-set-bonus-tip')).getByText('Not counted (Set potential is off)')).toBeTruthy();
 		expect(popupLines()).toEqual(['Total +26.3', 'Thunderheart Harness 4pc with Thunderheart Pauldrons 74.1 DPS more']);
 		expect(screen.getAllByTestId('upgrades-set-bonus-tip-total').map(total => total.textContent)).toEqual(['Total+26.3']);
+		const [total, reachable] = within(screen.getByTestId('upgrades-set-bonus-tip')).getAllByRole('term');
+		expect([total, total?.nextElementSibling].map(cell => cell?.classList.contains('text-muted'))).toEqual([false, false]);
+		expect([reachable, reachable?.nextElementSibling].map(cell => cell?.classList.contains('text-muted'))).toEqual([true, true]);
 	});
 
 	it('marks the outcome a step ranking row’s figure uses, and adds no total', () => {

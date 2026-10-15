@@ -84,6 +84,7 @@
 			"tip_not_counted_no_gain": "Not counted (no gain over the item alone)",
 			"tip_not_counted": "Not counted",
 			"tip_reachable": "{{set}} {{threshold}}pc with {{pieces}}",
+			"tip_reachable_bonus": "{{set}} {{threshold}}pc",
 			"tip_reachable_breaks": "{{set}} {{threshold}}pc with {{pieces}}, breaks {{broken}}",
 			"tip_screened": "{{set}} set bonuses (screened out)",
 			"tip_screened_unmeasured": "not measured",

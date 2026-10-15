@@ -31,13 +31,15 @@ export const SetBonusPopover = ({ tip, children }: SetBonusPopoverProps) => (
 					<dl className="contents">
 						{section.lines.map(line => (
 							<div key={line.id} className="contents" data-testid={line.total ? 'upgrades-set-bonus-tip-total' : undefined}>
-								<dt className={line.total ? 'border-t border-t-border pt-0.5 font-semibold' : 'font-normal'}>
+								<dt className={line.total ? 'border-t border-t-border pt-0.5 font-semibold' : `font-normal${line.muted ? ' text-muted' : ''}`}>
 									{line.label}
 									{line.marker && <small className="block text-muted">{line.marker}</small>}
 								</dt>
 								<dd
 									className={
-										line.total ? 'm-0 border-t border-t-border pt-0.5 text-right font-semibold tabular-nums' : 'm-0 text-right tabular-nums'
+										line.total
+											? 'm-0 border-t border-t-border pt-0.5 text-right font-semibold tabular-nums'
+											: `m-0 text-right tabular-nums${line.muted ? ' text-muted' : ''}`
 									}>
 									{line.value}
 								</dd>

@@ -289,6 +289,9 @@
 						"tip_reachable": {
 							"type": "string"
 						},
+						"tip_reachable_bonus": {
+							"type": "string"
+						},
 						"tip_reachable_breaks": {
 							"type": "string"
 						},
@@ -354,6 +357,7 @@
 						"tip_not_counted_no_gain",
 						"tip_not_counted",
 						"tip_reachable",
+						"tip_reachable_bonus",
 						"tip_reachable_breaks",
 						"tip_screened",
 						"tip_screened_unmeasured",

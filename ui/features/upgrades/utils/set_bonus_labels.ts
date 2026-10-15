@@ -2,10 +2,14 @@ import i18n from '@i18n/config';
 
 import type { BonusRef, ScreenedReason, SetBonusTip, TipEntry, TipLabel } from '../model/set_bonus_tip';
 
-/** One printed popover row. `id` names what the row is about, for a list key; `total` marks the receipt's last line. */
+/**
+ * One printed popover row. `id` names what the row is about, for a list key;
+ * `total` marks the receipt's last line; `muted` marks a line the figure does
+ * not count.
+ */
 export type TipTextRow =
 	| { type: 'heading'; id: string; text: string }
-	| { type: 'line'; id: string; label: string; value: string; marker?: string; total: boolean };
+	| { type: 'line'; id: string; label: string; value: string; marker?: string; total: boolean; muted?: boolean };
 
 /**
  * Joins names as "A", "A and B", or "A, B and C". Literal English, as the old
@@ -69,6 +73,9 @@ export function tipLabelText(label: TipLabel): string {
 				? i18n.t('upgrades_tab.set_bonus.tip_item_alone', { ns: 'upgrades', name: label.name })
 				: i18n.t('upgrades_tab.set_bonus.tip_item_alone_breaks', { ns: 'upgrades', name: label.name, broken: brokenNames(label.broken) });
 		case 'reachable': {
+			// A step ranking drops a future's pieces when no partner choice was measured, leaving no pieces to name.
+			if (label.pieces.length === 0)
+				return i18n.t('upgrades_tab.set_bonus.tip_reachable_bonus', { ns: 'upgrades', set: label.set, threshold: label.threshold });
 			const args = { ns: 'upgrades', set: label.set, threshold: label.threshold, pieces: joinNames(label.pieces) };
 			return label.broken.length === 0
 				? i18n.t('upgrades_tab.set_bonus.tip_reachable', args)
@@ -165,6 +172,7 @@ export const setBonusTipText = (tip: SetBonusTip): TipTextRow[] => {
 			value: valueText(tip.kind, entry),
 			...(entry.marker ? { marker: i18n.t('upgrades_tab.set_bonus.tip_figure_marker', { ns: 'upgrades' }) } : {}),
 			total: entry.label.kind === 'total',
+			...(entry.outcome || entry.label.kind === 'screened' ? { muted: true } : {}),
 		};
 	});
 };

@@ -174,19 +174,45 @@ describe('setBonusTipLines', () => {
 			expect(on?.subLine).toBe('hover_hint');
 		});
 
+		it('values a reachable bonus against the row’s single swap, not against its figure after replication', () => {
+			const tip = setBonusTipLines(stepRow({ singleDeltaDps: 2, futureBonuses: [future()] }), context);
+			// 30.5 step gear DPS less the 2 DPS single swap; the row's 4.5 DPS figure would give 26.
+			expect(lines(tip).at(-1)).toEqual(reachable(28.5));
+		});
+
+		it('names only the bonus when the step ranking measured no partner choice for it', () => {
+			const row = stepRow({ futureBonuses: [future({ pieces: undefined, breaks: undefined, stepGearDps: undefined })] });
+			expect(setBonusTipLines(row, context)?.entries).toEqual([
+				totalLine(4.5),
+				{ type: 'heading', heading: 'not_counted_off' },
+				{ type: 'line', label: { kind: 'reachable', set: LIGHTBRINGER, threshold: 2, have: 0, pieces: [], broken: [] }, dps: undefined, outcome: true },
+			]);
+		});
+
+		it('lists no reachable bonus on a ranking that did not measure steps, whose figure is the bonus alone', () => {
+			const row: RankedItem = {
+				...fixtureRow(10),
+				deltaDps: 4.5,
+				setContext: { ...fixtureRow(10).setContext!, singleBreaks: [], singleDeltaDps: 4.5, futureBonuses: [future({ dps: 20 })] },
+			};
+			expect(row.setContext?.stepRanking).toBeUndefined();
+			expect(setBonusTipLines(row, context)).toBeNull();
+		});
+
+		// A screened set is not counted whatever the toggle says, so its heading gives no reason.
 		it.each([
-			['outside-band', false, 'not_counted_off'],
-			['exact-zero', false, 'not_counted_off'],
-			['below-zero', false, 'not_counted_off'],
-			['outside-band', true, 'not_counted'],
-			['below-zero', true, 'not_counted'],
-		] as const)('names a set the screen dropped (%s), toggle on: %s', (reason, withSetPotential, heading) => {
+			['outside-band', false],
+			['exact-zero', false],
+			['below-zero', false],
+			['outside-band', true],
+			['below-zero', true],
+		] as const)('names a set the screen dropped (%s), toggle on: %s', (reason, withSetPotential) => {
 			const tip = setBonusTipLines(stepRow({ futureBonuses: [] }), { ranking: screenedRanking(reason), withSetPotential });
 			expect(tip?.subLine).toBe('hover_hint');
 			// Gate B M1: no figure, not even for below-zero, whose measure is the pieces and the bonus together.
 			expect(tip?.entries).toEqual([
 				totalLine(4.5),
-				{ type: 'heading', heading },
+				{ type: 'heading', heading: 'not_counted' },
 				{ type: 'line', label: { kind: 'screened', set: LIGHTBRINGER, reason }, dps: undefined },
 			]);
 		});
