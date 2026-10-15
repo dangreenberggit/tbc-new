@@ -116,9 +116,9 @@ describe('eligibleCount', () => {
 		expect(eligibleCount(POOL, 4)).toBe(6);
 	});
 
-	it('matches the ret universes’ measured sizes (838 at phase 4, 1059 at phase 5)', () => {
-		expect(eligibleCount(effectivePool(poolFor('ret', 4), NO_FILTER), 4)).toBe(838);
-		expect(eligibleCount(effectivePool(poolFor('ret', 5), NO_FILTER), 5)).toBe(1059);
+	it('matches the ret universes’ measured sizes (860 at phase 4, 1081 at phase 5)', () => {
+		expect(eligibleCount(effectivePool(poolFor('ret', 4), NO_FILTER), 4)).toBe(860);
+		expect(eligibleCount(effectivePool(poolFor('ret', 5), NO_FILTER), 5)).toBe(1081);
 	});
 });
 
