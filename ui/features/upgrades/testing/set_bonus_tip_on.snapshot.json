@@ -1,0 +1,1939 @@
+{
+	"feral-p3-p2bis": {
+		"ranking": {
+			"cutoff": { "absDps": 3 },
+			"brokenSetValues": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813, "se": 1.9980939724922149 }],
+			"setBonuses": [
+				{
+					"setId": 584,
+					"setName": "Gladiator's Sanctuary",
+					"threshold": 2,
+					"piecesWorn": 0,
+					"packageItemIds": [],
+					"packageDeltaDps": 0,
+					"unmeasured": "screened-out"
+				},
+				{
+					"setId": 676,
+					"setName": "Thunderheart Harness",
+					"threshold": 2,
+					"piecesWorn": 0,
+					"packageItemIds": [31034, 31044],
+					"packageDeltaDps": 56.53021214104638,
+					"bonusDps": 68.43486409597108,
+					"se": 2.898424246845659,
+					"sameGearDps": 69.7542336706606,
+					"sameGearSe": 2.0095650265208094,
+					"bonusDpsNet": 68.43486409597108
+				},
+				{
+					"setId": 676,
+					"setName": "Thunderheart Harness",
+					"threshold": 3,
+					"piecesWorn": 0,
+					"packageItemIds": [31042, 31034, 31044],
+					"packageDeltaDps": 0,
+					"sameGearDps": 0,
+					"sameGearSe": 1.9164516861791208,
+					"belowGate": true
+				},
+				{
+					"setId": 676,
+					"setName": "Thunderheart Harness",
+					"threshold": 4,
+					"piecesWorn": 0,
+					"packageItemIds": [31048, 31042, 31034, 31044],
+					"packageDeltaDps": 107.66643865691367,
+					"bonusDps": 190.9177950921794,
+					"se": 3.477533726431677,
+					"sameGearDps": 75.12669984304421,
+					"sameGearSe": 1.9381271019837438,
+					"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "piecesBefore": 2, "piecesAfter": 0 }],
+					"bonusDpsNet": 102.54739121773127
+				},
+				{
+					"setId": 676,
+					"setName": "Thunderheart Harness",
+					"threshold": 5,
+					"piecesWorn": 0,
+					"packageItemIds": [31039, 31048, 31042, 31034, 31044],
+					"packageDeltaDps": 0,
+					"sameGearDps": 0,
+					"sameGearSe": 2.2004507200038064,
+					"belowGate": true
+				},
+				{
+					"setId": 641,
+					"setName": "Nordrassil Harness",
+					"threshold": 2,
+					"piecesWorn": 0,
+					"packageItemIds": [30223, 30229],
+					"packageDeltaDps": 0,
+					"sameGearDps": 0,
+					"sameGearSe": 2.0272436471821083,
+					"belowGate": true
+				},
+				{
+					"setId": 641,
+					"setName": "Nordrassil Harness",
+					"threshold": 3,
+					"piecesWorn": 0,
+					"packageItemIds": [30230, 30223, 30229],
+					"packageDeltaDps": 0,
+					"sameGearDps": 0,
+					"sameGearSe": 1.9186834027176658,
+					"belowGate": true
+				},
+				{
+					"setId": 641,
+					"setName": "Nordrassil Harness",
+					"threshold": 4,
+					"piecesWorn": 0,
+					"packageItemIds": [30230, 30222, 30223, 30229],
+					"packageDeltaDps": -54.137911085680116,
+					"bonusDps": 145.18751168158224,
+					"se": 3.4610189885517193,
+					"sameGearDps": 46.76092738739726,
+					"sameGearSe": 1.9357237950957042,
+					"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "piecesBefore": 2, "piecesAfter": 0 }],
+					"bonusDpsNet": 56.81710780713411
+				},
+				{
+					"setId": 641,
+					"setName": "Nordrassil Harness",
+					"threshold": 5,
+					"piecesWorn": 0,
+					"packageItemIds": [30228, 30230, 30222, 30223, 30229],
+					"packageDeltaDps": 0,
+					"sameGearDps": 0,
+					"sameGearSe": 2.0662743664075025,
+					"belowGate": true
+				},
+				{
+					"setId": 640,
+					"setName": "Malorne Harness",
+					"threshold": 3,
+					"piecesWorn": 2,
+					"packageItemIds": [29097],
+					"packageDeltaDps": 0,
+					"unmeasured": "unmeasurable-at-this-worn-count"
+				},
+				{
+					"setId": 640,
+					"setName": "Malorne Harness",
+					"threshold": 4,
+					"piecesWorn": 2,
+					"packageItemIds": [29097, 29099],
+					"packageDeltaDps": -44.47604913598707,
+					"bonusDps": 22.36369388613457,
+					"se": 2.891255214138199,
+					"sameGearDps": 22.972278464605097,
+					"sameGearSe": 2.0030169476884248,
+					"bonusDpsNet": 22.36369388613457
+				},
+				{
+					"setId": 640,
+					"setName": "Malorne Harness",
+					"threshold": 5,
+					"piecesWorn": 2,
+					"packageItemIds": [29098, 29097, 29099],
+					"packageDeltaDps": 0,
+					"sameGearDps": 0,
+					"sameGearSe": 2.231431378136164,
+					"belowGate": true
+				},
+				{
+					"setId": 619,
+					"setName": "Primal Intent",
+					"threshold": 2,
+					"piecesWorn": 0,
+					"packageItemIds": [],
+					"packageDeltaDps": 0,
+					"unmeasured": "insufficient-pieces"
+				},
+				{
+					"setId": 573,
+					"setName": "Fel Skin",
+					"threshold": 2,
+					"piecesWorn": 0,
+					"packageItemIds": [],
+					"packageDeltaDps": 0,
+					"unmeasured": "screened-out"
+				},
+				{
+					"setId": 719,
+					"setName": "The Fists of Fury",
+					"threshold": 2,
+					"piecesWorn": 0,
+					"packageItemIds": [],
+					"packageDeltaDps": 0,
+					"unmeasured": "insufficient-pieces"
+				}
+			],
+			"setScreen": {
+				"mode": "on",
+				"seed": 11,
+				"iterations": 300,
+				"rule": { "measure": "M2", "iterations": 300, "keep": 2, "bandC": 1, "dropExactZero": true, "sigmaBoundScale": 1 },
+				"sigma": 6.5199430432943615,
+				"sets": [
+					{
+						"setId": 573,
+						"worn": 0,
+						"reach": 2,
+						"packageItemIds": [25685, 25686],
+						"pair": { "dps": 0, "pairedSe": 0 },
+						"bestStats": -49.721387110839714,
+						"measure": -49.721387110839714,
+						"kept": false,
+						"reason": "exact-zero"
+					},
+					{
+						"setId": 584,
+						"worn": 0,
+						"reach": 4,
+						"packageItemIds": [33672, 33674, 33675, 33673],
+						"pair": { "dps": 0, "pairedSe": 0 },
+						"bestStats": -58.27665912950306,
+						"measure": -58.27665912950306,
+						"kept": false,
+						"reason": "exact-zero"
+					},
+					{
+						"setId": 640,
+						"worn": 2,
+						"reach": 5,
+						"packageItemIds": [29098, 29097, 29099],
+						"pair": { "dps": 21.155662413375012, "pairedSe": 0.04490342110307959 },
+						"bestStats": -24.960885064750983,
+						"measure": -3.8052226513759706,
+						"kept": true,
+						"reason": "top-k"
+					},
+					{
+						"setId": 641,
+						"worn": 0,
+						"reach": 5,
+						"packageItemIds": [30228, 30230, 30222, 30223, 30229],
+						"pair": { "dps": 35.75042159065515, "pairedSe": 0.14722378703293115 },
+						"bestStats": -40.79360695305968,
+						"measure": -5.043185362404529,
+						"kept": true,
+						"reason": "band"
+					},
+					{
+						"setId": 676,
+						"worn": 0,
+						"reach": 5,
+						"packageItemIds": [31039, 31048, 31042, 31034, 31044],
+						"pair": { "dps": 276.7494353899415, "pairedSe": 6.766376120527672 },
+						"bestStats": -11.904651954924702,
+						"measure": 264.8447834350168,
+						"kept": true,
+						"reason": "top-k"
+					}
+				],
+				"simmed": 10,
+				"fromStore": 0
+			}
+		},
+		"rows": [
+			{
+				"row": {
+					"rank": null,
+					"itemId": 31034,
+					"name": "Thunderheart Gauntlets",
+					"slot": "hands",
+					"source": {
+						"kind": "token",
+						"zone": "Hyjal Summit",
+						"token": "Gloves of the Forgotten Vanquisher",
+						"boss": "Azgalor",
+						"tokenId": 31093,
+						"origin": "two-hop"
+					},
+					"deltaDps": 1.4599801854910766,
+					"deltaPct": 0.05960735482514486,
+					"se": 1.4512032606060392,
+					"seMethod": "independent",
+					"bisTags": ["BiS"],
+					"curatedSets": ["p3_6p", "p3_9p"],
+					"bisSets": ["p3_6p", "p3_9p"],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Hyjal Summit",
+							"token": "Gloves of the Forgotten Vanquisher",
+							"boss": "Azgalor",
+							"tokenId": 31093,
+							"origin": "two-hop"
+						}
+					],
+					"setContext": {
+						"setId": 676,
+						"setName": "Thunderheart Harness",
+						"piecesWornBefore": 0,
+						"piecesAfterSwap": 1,
+						"nextThreshold": 2,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"futureBonuses": [
+							{
+								"threshold": 2,
+								"piecesNeeded": 2,
+								"dps": 68.43486409597108,
+								"sameGearDps": 69.7542336706606,
+								"sameGearSe": 2.0095650265208094,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 31044, "name": "Thunderheart Leggings" }],
+								"stepGearDps": 56.53021214104638,
+								"stepGearSe": 2.0330120899646245
+							},
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowGate": true },
+							{
+								"threshold": 4,
+								"piecesNeeded": 4,
+								"dps": 102.54739121773127,
+								"sameGearDps": 75.12669984304421,
+								"sameGearSe": 1.9381271019837438,
+								"partnerRule": "close-calls",
+								"pieces": [
+									{ "itemId": 31048, "name": "Thunderheart Pauldrons" },
+									{ "itemId": 31042, "name": "Thunderheart Chestguard" },
+									{ "itemId": 31044, "name": "Thunderheart Leggings" }
+								],
+								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+								"stepGearDps": 107.66643865691367,
+								"stepGearSe": 2.0209983760134684,
+								"bonusOffDps": -1.9437862010390745,
+								"bonusOffSe": 1.9875481864130171,
+								"bonusOff": [{ "setId": 640, "threshold": 2 }]
+							},
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowGate": true }
+						],
+						"commitBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+						"commitPackageDeltaDps": 107.66643865691367,
+						"packages": [
+							{ "threshold": 2, "deltaDps": 56.53021214104638, "itemIds": [31034, 31044], "piecesNeeded": 2 },
+							{ "threshold": 4, "deltaDps": 107.66643865691367, "itemIds": [31048, 31042, 31034, 31044], "piecesNeeded": 4 }
+						],
+						"singleDeltaDps": 1.4599801854910766
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": 1.5 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Leggings"], "threshold": 2, "broken": [] },
+							"dps": 55.1
+						},
+						{ "type": "line", "label": { "kind": "breaks", "broken": [{ "setName": "Malorne Harness", "threshold": 2 }] }, "dps": -58.5 },
+						{
+							"type": "line",
+							"label": {
+								"kind": "pieces",
+								"form": "step",
+								"pieces": ["Thunderheart Pauldrons", "Thunderheart Chestguard"],
+								"threshold": 4,
+								"broken": []
+							},
+							"dps": 109.6
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": 107.66643865691367 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": null,
+					"itemId": 31044,
+					"name": "Thunderheart Leggings",
+					"slot": "legs",
+					"source": {
+						"kind": "token",
+						"zone": "Black Temple",
+						"token": "Leggings of the Forgotten Vanquisher",
+						"boss": "The Illidari Council",
+						"tokenId": 31099,
+						"origin": "two-hop"
+					},
+					"deltaDps": -13.364632140415779,
+					"deltaPct": -0.5456446450561555,
+					"se": 1.4702836641841919,
+					"seMethod": "independent",
+					"bisTags": ["BiS"],
+					"curatedSets": ["p3_6p", "p3_9p"],
+					"bisSets": ["p3_6p", "p3_9p"],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Black Temple",
+							"token": "Leggings of the Forgotten Vanquisher",
+							"boss": "The Illidari Council",
+							"tokenId": 31099,
+							"origin": "two-hop"
+						}
+					],
+					"setContext": {
+						"setId": 676,
+						"setName": "Thunderheart Harness",
+						"piecesWornBefore": 0,
+						"piecesAfterSwap": 1,
+						"nextThreshold": 2,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"futureBonuses": [
+							{
+								"threshold": 2,
+								"piecesNeeded": 2,
+								"dps": 68.43486409597108,
+								"sameGearDps": 69.7542336706606,
+								"sameGearSe": 2.0095650265208094,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 31034, "name": "Thunderheart Gauntlets" }],
+								"stepGearDps": 56.53021214104638,
+								"stepGearSe": 2.0330120899646245
+							},
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowGate": true },
+							{
+								"threshold": 4,
+								"piecesNeeded": 4,
+								"dps": 102.54739121773127,
+								"sameGearDps": 75.12669984304421,
+								"sameGearSe": 1.9381271019837438,
+								"partnerRule": "close-calls",
+								"pieces": [
+									{ "itemId": 31048, "name": "Thunderheart Pauldrons" },
+									{ "itemId": 31042, "name": "Thunderheart Chestguard" },
+									{ "itemId": 31034, "name": "Thunderheart Gauntlets" }
+								],
+								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+								"stepGearDps": 107.66643865691367,
+								"stepGearSe": 2.0209983760134684,
+								"bonusOffDps": -1.9437862010390745,
+								"bonusOffSe": 1.9875481864130171,
+								"bonusOff": [{ "setId": 640, "threshold": 2 }]
+							},
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowGate": true }
+						],
+						"commitBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+						"commitPackageDeltaDps": 107.66643865691367,
+						"packages": [
+							{ "threshold": 2, "deltaDps": 56.53021214104638, "itemIds": [31034, 31044], "piecesNeeded": 2 },
+							{ "threshold": 4, "deltaDps": 107.66643865691367, "itemIds": [31048, 31042, 31034, 31044], "piecesNeeded": 4 }
+						],
+						"singleDeltaDps": -13.364632140415779
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": -13.4 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Gauntlets"], "threshold": 2, "broken": [] },
+							"dps": 69.9
+						},
+						{ "type": "line", "label": { "kind": "breaks", "broken": [{ "setName": "Malorne Harness", "threshold": 2 }] }, "dps": -58.4 },
+						{
+							"type": "line",
+							"label": {
+								"kind": "pieces",
+								"form": "step",
+								"pieces": ["Thunderheart Pauldrons", "Thunderheart Chestguard"],
+								"threshold": 4,
+								"broken": []
+							},
+							"dps": 109.6
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": 107.66643865691367 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": null,
+					"itemId": 31042,
+					"name": "Thunderheart Chestguard",
+					"slot": "chest",
+					"source": {
+						"kind": "token",
+						"zone": "Black Temple",
+						"token": "Chestguard of the Forgotten Vanquisher",
+						"boss": "Illidan Stormrage",
+						"tokenId": 31090,
+						"origin": "two-hop"
+					},
+					"deltaDps": -68.46066657435631,
+					"deltaPct": -2.7950785117614414,
+					"se": 1.371500264480756,
+					"seMethod": "independent",
+					"bisTags": ["BiS"],
+					"curatedSets": ["p3_6p", "p3_9p"],
+					"bisSets": ["p3_6p", "p3_9p"],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Black Temple",
+							"token": "Chestguard of the Forgotten Vanquisher",
+							"boss": "Illidan Stormrage",
+							"tokenId": 31090,
+							"origin": "two-hop"
+						}
+					],
+					"setBonusNote": "breaks 2-piece Malorne Harness (below 2)",
+					"setContext": {
+						"setId": 676,
+						"setName": "Thunderheart Harness",
+						"piecesWornBefore": 0,
+						"piecesAfterSwap": 1,
+						"nextThreshold": 2,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+						"futureBonuses": [
+							{
+								"threshold": 2,
+								"piecesNeeded": 2,
+								"dps": 68.43486409597108,
+								"sameGearDps": 69.7542336706606,
+								"sameGearSe": 2.0095650265208094,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 31048, "name": "Thunderheart Pauldrons" }],
+								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+								"stepGearDps": 42.3023871494147,
+								"stepGearSe": 1.9773341621342062
+							},
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowGate": true },
+							{
+								"threshold": 4,
+								"piecesNeeded": 4,
+								"dps": 102.54739121773127,
+								"sameGearDps": 75.12669984304421,
+								"sameGearSe": 1.9381271019837438,
+								"partnerRule": "close-calls",
+								"pieces": [
+									{ "itemId": 31048, "name": "Thunderheart Pauldrons" },
+									{ "itemId": 31034, "name": "Thunderheart Gauntlets" },
+									{ "itemId": 31044, "name": "Thunderheart Leggings" }
+								],
+								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+								"stepGearDps": 107.66643865691367,
+								"stepGearSe": 2.0209983760134684
+							},
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowGate": true }
+						],
+						"commitPackageDeltaDps": 107.66643865691367,
+						"packages": [
+							{ "threshold": 2, "deltaDps": 56.53021214104638, "itemIds": [31034, 31044], "piecesNeeded": 2 },
+							{ "threshold": 4, "deltaDps": 107.66643865691367, "itemIds": [31048, 31042, 31034, 31044], "piecesNeeded": 4 }
+						],
+						"singleDeltaDps": -68.46066657435631
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": 19.9 },
+						{ "type": "line", "label": { "kind": "breaks", "broken": [{ "setName": "Malorne Harness", "threshold": 2 }] }, "dps": -88.4 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Pauldrons"], "threshold": 2, "broken": [] },
+							"dps": 110.8
+						},
+						{
+							"type": "line",
+							"label": {
+								"kind": "pieces",
+								"form": "step",
+								"pieces": ["Thunderheart Gauntlets", "Thunderheart Leggings"],
+								"threshold": 4,
+								"broken": []
+							},
+							"dps": 65.4
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": 107.66643865691367 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": null,
+					"itemId": 31048,
+					"name": "Thunderheart Pauldrons",
+					"slot": "shoulder",
+					"source": {
+						"kind": "token",
+						"zone": "Black Temple",
+						"token": "Pauldrons of the Forgotten Vanquisher",
+						"boss": "Mother Shahraz",
+						"tokenId": 31102,
+						"origin": "two-hop"
+					},
+					"deltaDps": -71.3209020019558,
+					"deltaPct": -2.911854800721162,
+					"se": 1.3638432645980365,
+					"seMethod": "independent",
+					"bisTags": ["BiS"],
+					"curatedSets": ["p3_6p", "p3_9p"],
+					"bisSets": ["p3_6p", "p3_9p"],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Black Temple",
+							"token": "Pauldrons of the Forgotten Vanquisher",
+							"boss": "Mother Shahraz",
+							"tokenId": 31102,
+							"origin": "two-hop"
+						}
+					],
+					"setBonusNote": "breaks 2-piece Malorne Harness (below 2)",
+					"setContext": {
+						"setId": 676,
+						"setName": "Thunderheart Harness",
+						"piecesWornBefore": 0,
+						"piecesAfterSwap": 1,
+						"nextThreshold": 2,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+						"futureBonuses": [
+							{
+								"threshold": 2,
+								"piecesNeeded": 2,
+								"dps": 68.43486409597108,
+								"sameGearDps": 69.7542336706606,
+								"sameGearSe": 2.0095650265208094,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 31042, "name": "Thunderheart Chestguard" }],
+								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+								"stepGearDps": 42.3023871494147,
+								"stepGearSe": 1.9773341621342062
+							},
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowGate": true },
+							{
+								"threshold": 4,
+								"piecesNeeded": 4,
+								"dps": 102.54739121773127,
+								"sameGearDps": 75.12669984304421,
+								"sameGearSe": 1.9381271019837438,
+								"partnerRule": "close-calls",
+								"pieces": [
+									{ "itemId": 31042, "name": "Thunderheart Chestguard" },
+									{ "itemId": 31034, "name": "Thunderheart Gauntlets" },
+									{ "itemId": 31044, "name": "Thunderheart Leggings" }
+								],
+								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+								"stepGearDps": 107.66643865691367,
+								"stepGearSe": 2.0209983760134684
+							},
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowGate": true }
+						],
+						"commitPackageDeltaDps": 107.66643865691367,
+						"packages": [
+							{ "threshold": 2, "deltaDps": 56.53021214104638, "itemIds": [31034, 31044], "piecesNeeded": 2 },
+							{ "threshold": 4, "deltaDps": 107.66643865691367, "itemIds": [31048, 31042, 31034, 31044], "piecesNeeded": 4 }
+						],
+						"singleDeltaDps": -71.3209020019558
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": 17.1 },
+						{ "type": "line", "label": { "kind": "breaks", "broken": [{ "setName": "Malorne Harness", "threshold": 2 }] }, "dps": -88.4 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Chestguard"], "threshold": 2, "broken": [] },
+							"dps": 113.6
+						},
+						{
+							"type": "line",
+							"label": {
+								"kind": "pieces",
+								"form": "step",
+								"pieces": ["Thunderheart Gauntlets", "Thunderheart Leggings"],
+								"threshold": 4,
+								"broken": []
+							},
+							"dps": 65.4
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": 107.66643865691367 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": null,
+					"itemId": 30230,
+					"name": "Nordrassil Feral-Mantle",
+					"slot": "shoulder",
+					"source": {
+						"kind": "token",
+						"zone": "Tempest Keep",
+						"token": "Pauldrons of the Vanquished Defender",
+						"boss": "Void Reaver",
+						"tokenId": 30249,
+						"origin": "two-hop"
+					},
+					"deltaDps": -76.85915263808238,
+					"deltaPct": -3.1379677809237956,
+					"se": 1.3645357699460239,
+					"seMethod": "independent",
+					"bisTags": [],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Tempest Keep",
+							"token": "Pauldrons of the Vanquished Defender",
+							"boss": "Void Reaver",
+							"tokenId": 30249,
+							"origin": "two-hop"
+						}
+					],
+					"setBonusNote": "breaks 2-piece Malorne Harness (below 2)",
+					"setContext": {
+						"setId": 641,
+						"setName": "Nordrassil Harness",
+						"piecesWornBefore": 0,
+						"piecesAfterSwap": 1,
+						"nextThreshold": 4,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+						"futureBonuses": [
+							{ "threshold": 2, "piecesNeeded": 2, "sameGearDps": 0, "sameGearSe": 2.0272436471821083, "belowGate": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9186834027176658, "belowGate": true },
+							{
+								"threshold": 4,
+								"piecesNeeded": 4,
+								"dps": 56.81710780713411,
+								"sameGearDps": 46.76092738739726,
+								"sameGearSe": 1.9357237950957042,
+								"partnerRule": "close-calls",
+								"pieces": [
+									{ "itemId": 30222, "name": "Nordrassil Chestplate" },
+									{ "itemId": 30223, "name": "Nordrassil Handgrips" },
+									{ "itemId": 30229, "name": "Nordrassil Feral-Kilt" }
+								],
+								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+								"stepGearDps": -54.137911085680116,
+								"stepGearSe": 2.0116419279743196
+							},
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.0662743664075025, "belowGate": true }
+						],
+						"commitPackageDeltaDps": -54.137911085680116,
+						"packages": [{ "threshold": 4, "deltaDps": -54.137911085680116, "itemIds": [30230, 30222, 30223, 30229], "piecesNeeded": 4 }],
+						"singleDeltaDps": -76.85915263808238
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": 11.5 },
+						{ "type": "line", "label": { "kind": "breaks", "broken": [{ "setName": "Malorne Harness", "threshold": 2 }] }, "dps": -88.4 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": {
+								"kind": "pieces",
+								"form": "step",
+								"pieces": ["Nordrassil Chestplate", "Nordrassil Handgrips", "Nordrassil Feral-Kilt"],
+								"threshold": 4,
+								"broken": []
+							},
+							"dps": 22.8
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": -54.137911085680116 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": null,
+					"itemId": 30222,
+					"name": "Nordrassil Chestplate",
+					"slot": "chest",
+					"source": {
+						"kind": "token",
+						"zone": "Tempest Keep",
+						"token": "Chestguard of the Vanquished Defender",
+						"boss": "Kael'thas Sunstrider",
+						"tokenId": 30237,
+						"origin": "two-hop"
+					},
+					"deltaDps": -81.6726631761203,
+					"deltaPct": -3.3344914279203413,
+					"se": 1.3559126846442682,
+					"seMethod": "independent",
+					"bisTags": [],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Tempest Keep",
+							"token": "Chestguard of the Vanquished Defender",
+							"boss": "Kael'thas Sunstrider",
+							"tokenId": 30237,
+							"origin": "two-hop"
+						}
+					],
+					"setBonusNote": "breaks 2-piece Malorne Harness (below 2)",
+					"setContext": {
+						"setId": 641,
+						"setName": "Nordrassil Harness",
+						"piecesWornBefore": 0,
+						"piecesAfterSwap": 1,
+						"nextThreshold": 4,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+						"futureBonuses": [
+							{ "threshold": 2, "piecesNeeded": 2, "sameGearDps": 0, "sameGearSe": 2.0272436471821083, "belowGate": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9186834027176658, "belowGate": true },
+							{
+								"threshold": 4,
+								"piecesNeeded": 4,
+								"dps": 56.81710780713411,
+								"sameGearDps": 46.76092738739726,
+								"sameGearSe": 1.9357237950957042,
+								"partnerRule": "close-calls",
+								"pieces": [
+									{ "itemId": 30230, "name": "Nordrassil Feral-Mantle" },
+									{ "itemId": 30223, "name": "Nordrassil Handgrips" },
+									{ "itemId": 30229, "name": "Nordrassil Feral-Kilt" }
+								],
+								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+								"stepGearDps": -54.137911085680116,
+								"stepGearSe": 2.0116419279743196
+							},
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.0662743664075025, "belowGate": true }
+						],
+						"commitPackageDeltaDps": -54.137911085680116,
+						"packages": [{ "threshold": 4, "deltaDps": -54.137911085680116, "itemIds": [30230, 30222, 30223, 30229], "piecesNeeded": 4 }],
+						"singleDeltaDps": -81.6726631761203
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": 6.7 },
+						{ "type": "line", "label": { "kind": "breaks", "broken": [{ "setName": "Malorne Harness", "threshold": 2 }] }, "dps": -88.4 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": {
+								"kind": "pieces",
+								"form": "step",
+								"pieces": ["Nordrassil Feral-Mantle", "Nordrassil Handgrips", "Nordrassil Feral-Kilt"],
+								"threshold": 4,
+								"broken": []
+							},
+							"dps": 27.6
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": -54.137911085680116 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": null,
+					"itemId": 31039,
+					"name": "Thunderheart Cover",
+					"slot": "head",
+					"source": {
+						"kind": "token",
+						"zone": "Hyjal Summit",
+						"token": "Helm of the Forgotten Vanquisher",
+						"boss": "Archimonde",
+						"tokenId": 31096,
+						"origin": "two-hop"
+					},
+					"deltaDps": -174.39186543888445,
+					"deltaPct": -7.1199855348297385,
+					"se": 1.5524925459635435,
+					"seMethod": "independent",
+					"bisTags": [],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Hyjal Summit",
+							"token": "Helm of the Forgotten Vanquisher",
+							"boss": "Archimonde",
+							"tokenId": 31096,
+							"origin": "two-hop"
+						}
+					],
+					"gemSubstitutions": [{ "itemId": 28545, "socketIndex": 1, "from": 24028, "to": 24058 }],
+					"setContext": {
+						"setId": 676,
+						"setName": "Thunderheart Harness",
+						"piecesWornBefore": 0,
+						"piecesAfterSwap": 1,
+						"nextThreshold": 2,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"futureBonuses": [
+							{
+								"threshold": 2,
+								"piecesNeeded": 2,
+								"dps": 68.43486409597108,
+								"sameGearDps": 69.7542336706606,
+								"sameGearSe": 2.0095650265208094,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 31034, "name": "Thunderheart Gauntlets" }],
+								"stepGearDps": -12.672186871306167,
+								"stepGearSe": 2.076556306689719
+							},
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowGate": true },
+							{
+								"threshold": 4,
+								"piecesNeeded": 4,
+								"dps": 102.54739121773127,
+								"sameGearDps": 75.12669984304421,
+								"sameGearSe": 1.9381271019837438,
+								"partnerRule": "close-calls",
+								"pieces": [
+									{ "itemId": 31048, "name": "Thunderheart Pauldrons" },
+									{ "itemId": 31042, "name": "Thunderheart Chestguard" },
+									{ "itemId": 31034, "name": "Thunderheart Gauntlets" }
+								],
+								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+								"stepGearDps": 42.02828327370662,
+								"stepGearSe": 2.141856734929318,
+								"bonusOffDps": -67.51497837729039,
+								"bonusOffSe": 2.0735327361612605,
+								"bonusOff": [{ "setId": 640, "threshold": 2 }]
+							},
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowGate": true }
+						],
+						"commitBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
+						"commitPackageDeltaDps": 107.66643865691367,
+						"singleDeltaDps": -174.39186543888445
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": -174.4 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Gauntlets"], "threshold": 2, "broken": [] },
+							"dps": 161.7
+						},
+						{ "type": "line", "label": { "kind": "breaks", "broken": [{ "setName": "Malorne Harness", "threshold": 2 }] }, "dps": -54.8 },
+						{
+							"type": "line",
+							"label": {
+								"kind": "pieces",
+								"form": "step",
+								"pieces": ["Thunderheart Pauldrons", "Thunderheart Chestguard"],
+								"threshold": 4,
+								"broken": []
+							},
+							"dps": 109.5
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": 42.02828327370662 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": null,
+					"itemId": 29098,
+					"name": "Stag-Helm of Malorne",
+					"slot": "head",
+					"source": {
+						"kind": "token",
+						"zone": "Karazhan",
+						"token": "Helm of the Fallen Defender",
+						"boss": "Prince Malchezaar",
+						"tokenId": 29761,
+						"origin": "two-hop"
+					},
+					"deltaDps": -191.34549140617764,
+					"deltaPct": -7.812159859281493,
+					"se": 1.5660034334013535,
+					"seMethod": "independent",
+					"bisTags": [],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Karazhan",
+							"token": "Helm of the Fallen Defender",
+							"boss": "Prince Malchezaar",
+							"tokenId": 29761,
+							"origin": "two-hop"
+						}
+					],
+					"gemSubstitutions": [{ "itemId": 29966, "socketIndex": 0, "from": 24028, "to": 24067 }],
+					"setContext": {
+						"setId": 640,
+						"setName": "Malorne Harness",
+						"piecesWornBefore": 2,
+						"piecesAfterSwap": 3,
+						"nextThreshold": 4,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"futureBonuses": [
+							{
+								"threshold": 4,
+								"piecesNeeded": 2,
+								"dps": 22.36369388613457,
+								"sameGearDps": 22.972278464605097,
+								"sameGearSe": 2.0030169476884248,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 29097, "name": "Gauntlets of Malorne" }],
+								"stepGearDps": -184.160238547875,
+								"stepGearSe": 2.1529762990387282
+							},
+							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowGate": true }
+						],
+						"commitPackageDeltaDps": -44.47604913598707,
+						"singleDeltaDps": -191.34549140617764
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": -191.3 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Gauntlets of Malorne"], "threshold": 4, "broken": [] },
+							"dps": 7.1
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": -184.160238547875 }
+					]
+				}
+			}
+		]
+	},
+	"feral-p3-th-hands-legs": {
+		"ranking": {
+			"cutoff": { "absDps": 3 },
+			"brokenSetValues": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152, "se": 1.9039989523170104 }],
+			"setBonuses": [
+				{
+					"setId": 584,
+					"setName": "Gladiator's Sanctuary",
+					"threshold": 2,
+					"piecesWorn": 0,
+					"packageItemIds": [],
+					"packageDeltaDps": 0,
+					"unmeasured": "screened-out"
+				},
+				{
+					"setId": 676,
+					"setName": "Thunderheart Harness",
+					"threshold": 3,
+					"piecesWorn": 2,
+					"packageItemIds": [31042],
+					"packageDeltaDps": 0,
+					"unmeasured": "unmeasurable-at-this-worn-count"
+				},
+				{
+					"setId": 676,
+					"setName": "Thunderheart Harness",
+					"threshold": 4,
+					"piecesWorn": 2,
+					"packageItemIds": [31048, 31042],
+					"packageDeltaDps": 100.36788461793321,
+					"bonusDps": 73.52553762343632,
+					"se": 2.722391073314765,
+					"sameGearDps": 74.59079230471662,
+					"sameGearSe": 1.9466998661308272,
+					"bonusDpsNet": 73.52553762343632
+				},
+				{
+					"setId": 676,
+					"setName": "Thunderheart Harness",
+					"threshold": 5,
+					"piecesWorn": 2,
+					"packageItemIds": [31039, 31048, 31042],
+					"packageDeltaDps": 0,
+					"sameGearDps": 0,
+					"sameGearSe": 2.191645723187992,
+					"belowGate": true
+				},
+				{
+					"setId": 641,
+					"setName": "Nordrassil Harness",
+					"threshold": 2,
+					"piecesWorn": 0,
+					"packageItemIds": [],
+					"packageDeltaDps": 0,
+					"unmeasured": "screened-out"
+				},
+				{
+					"setId": 640,
+					"setName": "Malorne Harness",
+					"threshold": 2,
+					"piecesWorn": 0,
+					"packageItemIds": [29100, 29096],
+					"packageDeltaDps": 50.1827615253992,
+					"bonusDps": 56.603256366406185,
+					"se": 2.7252673750284444,
+					"sameGearDps": 58.18616244110399,
+					"sameGearSe": 1.9456539360666278,
+					"bonusDpsNet": 56.603256366406185
+				},
+				{
+					"setId": 640,
+					"setName": "Malorne Harness",
+					"threshold": 3,
+					"piecesWorn": 0,
+					"packageItemIds": [29098, 29100, 29096],
+					"packageDeltaDps": 0,
+					"sameGearDps": 0,
+					"sameGearSe": 2.0753931415199642,
+					"belowGate": true
+				},
+				{
+					"setId": 640,
+					"setName": "Malorne Harness",
+					"threshold": 4,
+					"piecesWorn": 0,
+					"packageItemIds": [29098, 29100, 29096, 29099],
+					"packageDeltaDps": -177.20656475370288,
+					"bonusDps": -35.27096327419622,
+					"se": 3.429910860499848,
+					"sameGearDps": 21.329399193100016,
+					"sameGearSe": 2.210445085194206,
+					"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "piecesBefore": 2, "piecesAfter": 1 }],
+					"gemSubstitutions": [
+						{ "itemId": 31034, "itemIndex": 6, "socketIndex": 0, "from": 0, "to": 24058 },
+						{ "itemId": 31034, "itemIndex": 6, "socketIndex": 0, "from": 24058, "to": 24067 }
+					],
+					"bonusDpsNet": -35.27096327419622
+				},
+				{
+					"setId": 640,
+					"setName": "Malorne Harness",
+					"threshold": 5,
+					"piecesWorn": 0,
+					"packageItemIds": [29098, 29100, 29096, 29097, 29099],
+					"packageDeltaDps": 0,
+					"sameGearDps": 0,
+					"sameGearSe": 2.231431378136164,
+					"belowGate": true
+				},
+				{
+					"setId": 619,
+					"setName": "Primal Intent",
+					"threshold": 2,
+					"piecesWorn": 0,
+					"packageItemIds": [],
+					"packageDeltaDps": 0,
+					"unmeasured": "insufficient-pieces"
+				},
+				{
+					"setId": 573,
+					"setName": "Fel Skin",
+					"threshold": 2,
+					"piecesWorn": 0,
+					"packageItemIds": [],
+					"packageDeltaDps": 0,
+					"unmeasured": "screened-out"
+				},
+				{
+					"setId": 719,
+					"setName": "The Fists of Fury",
+					"threshold": 2,
+					"piecesWorn": 0,
+					"packageItemIds": [],
+					"packageDeltaDps": 0,
+					"unmeasured": "insufficient-pieces"
+				}
+			],
+			"setScreen": {
+				"mode": "on",
+				"seed": 11,
+				"iterations": 300,
+				"rule": { "measure": "M2", "iterations": 300, "keep": 2, "bandC": 1, "dropExactZero": true, "sigmaBoundScale": 1 },
+				"sigma": 6.025018885707766,
+				"sets": [
+					{
+						"setId": 573,
+						"worn": 0,
+						"reach": 2,
+						"packageItemIds": [25685, 25686],
+						"pair": { "dps": 0, "pairedSe": 0 },
+						"bestStats": -143.1932580242128,
+						"measure": -143.1932580242128,
+						"kept": false,
+						"reason": "exact-zero"
+					},
+					{
+						"setId": 584,
+						"worn": 0,
+						"reach": 4,
+						"packageItemIds": [33672, 33674, 33675, 33673],
+						"pair": { "dps": 0, "pairedSe": 0 },
+						"bestStats": 27.526244718856105,
+						"measure": 27.526244718856105,
+						"kept": false,
+						"reason": "exact-zero"
+					},
+					{
+						"setId": 640,
+						"worn": 0,
+						"reach": 5,
+						"packageItemIds": [29098, 29100, 29096, 29097, 29099],
+						"pair": { "dps": 118.0282463290182, "pairedSe": 7.056381716455754 },
+						"bestStats": -6.420494841006985,
+						"measure": 111.60775148801122,
+						"kept": true,
+						"reason": "top-k"
+					},
+					{
+						"setId": 641,
+						"worn": 0,
+						"reach": 5,
+						"packageItemIds": [30228, 30230, 30222, 30223, 30229],
+						"pair": { "dps": 35.81887010893979, "pairedSe": 0.14814982952987785 },
+						"bestStats": 8.73033616287421,
+						"measure": 44.549206271814,
+						"kept": false,
+						"reason": "outside-band"
+					},
+					{
+						"setId": 676,
+						"worn": 2,
+						"reach": 5,
+						"packageItemIds": [31039, 31048, 31042],
+						"pair": { "dps": 74.08008138543164, "pairedSe": 0.26295470008123656 },
+						"bestStats": 26.842346994496893,
+						"measure": 100.92242837992853,
+						"kept": true,
+						"reason": "top-k"
+					}
+				],
+				"simmed": 10,
+				"fromStore": 0
+			}
+		},
+		"rows": [
+			{
+				"row": {
+					"rank": 4,
+					"itemId": 31042,
+					"name": "Thunderheart Chestguard",
+					"slot": "chest",
+					"source": {
+						"kind": "token",
+						"zone": "Black Temple",
+						"token": "Chestguard of the Forgotten Vanquisher",
+						"boss": "Illidan Stormrage",
+						"tokenId": 31090,
+						"origin": "two-hop"
+					},
+					"deltaDps": 26.30345601313802,
+					"deltaPct": 1.0790422307995378,
+					"se": 0.1471347185337086,
+					"seMethod": "paired-replicate",
+					"bisTags": ["BiS"],
+					"curatedSets": ["p3_6p", "p3_9p"],
+					"bisSets": ["p3_6p", "p3_9p"],
+					"belowCutoff": false,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Black Temple",
+							"token": "Chestguard of the Forgotten Vanquisher",
+							"boss": "Illidan Stormrage",
+							"tokenId": 31090,
+							"origin": "two-hop"
+						}
+					],
+					"hitRegression": { "lost": 27, "gapAfter": 36.923096999999984 },
+					"setContext": {
+						"setId": 676,
+						"setName": "Thunderheart Harness",
+						"piecesWornBefore": 2,
+						"piecesAfterSwap": 3,
+						"nextThreshold": 4,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"futureBonuses": [
+							{
+								"threshold": 4,
+								"piecesNeeded": 2,
+								"dps": 73.52553762343632,
+								"sameGearDps": 74.59079230471662,
+								"sameGearSe": 1.9466998661308272,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 31048, "name": "Thunderheart Pauldrons" }],
+								"stepGearDps": 100.36788461793321,
+								"stepGearSe": 1.9477160217590683
+							},
+							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.191645723187992, "belowGate": true }
+						],
+						"commitPackageDeltaDps": 100.36788461793321,
+						"packages": [{ "threshold": 4, "deltaDps": 100.36788461793321, "itemIds": [31048, 31042], "piecesNeeded": 2 }],
+						"singleDeltaDps": 26.299313111646825
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": 26.3 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Pauldrons"], "threshold": 4, "broken": [] },
+							"dps": 74.1
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": 100.3720275194244 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": 17,
+					"itemId": 29096,
+					"name": "Breastplate of Malorne",
+					"slot": "chest",
+					"source": {
+						"kind": "token",
+						"zone": "Magtheridon's Lair",
+						"token": "Chestguard of the Fallen Defender",
+						"boss": "Magtheridon",
+						"tokenId": 29753,
+						"origin": "two-hop"
+					},
+					"deltaDps": 7.617173385704518,
+					"deltaPct": 0.31247801651585744,
+					"se": 1.345979566362958,
+					"seMethod": "independent",
+					"bisTags": [],
+					"curatedSets": ["p2_6p", "p2_9p"],
+					"belowCutoff": false,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Magtheridon's Lair",
+							"token": "Chestguard of the Fallen Defender",
+							"boss": "Magtheridon",
+							"tokenId": 29753,
+							"origin": "two-hop"
+						}
+					],
+					"hitRegression": { "lost": 27, "gapAfter": 36.923096999999984 },
+					"setContext": {
+						"setId": 640,
+						"setName": "Malorne Harness",
+						"piecesWornBefore": 0,
+						"piecesAfterSwap": 1,
+						"nextThreshold": 2,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"futureBonuses": [
+							{
+								"threshold": 2,
+								"piecesNeeded": 2,
+								"dps": 56.603256366406185,
+								"sameGearDps": 58.18616244110399,
+								"sameGearSe": 1.9456539360666278,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 29100, "name": "Mantle of Malorne" }],
+								"stepGearDps": 50.1827615253992,
+								"stepGearSe": 1.9601647644814157
+							},
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowGate": true },
+							{
+								"threshold": 4,
+								"piecesNeeded": 4,
+								"dps": -35.27096327419622,
+								"sameGearDps": 21.329399193100016,
+								"sameGearSe": 2.210445085194206,
+								"partnerRule": "close-calls",
+								"pieces": [
+									{ "itemId": 29100, "name": "Mantle of Malorne" },
+									{ "itemId": 29097, "name": "Gauntlets of Malorne" },
+									{ "itemId": 29099, "name": "Greaves of Malorne" }
+								],
+								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
+								"stepGearDps": -32.8140865720552,
+								"stepGearSe": 1.9593184508791375
+							},
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowGate": true }
+						],
+						"commitBreaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
+						"commitPackageDeltaDps": -177.20656475370288,
+						"packages": [
+							{ "threshold": 2, "deltaDps": 50.1827615253992, "itemIds": [29100, 29096], "piecesNeeded": 2 },
+							{ "threshold": 4, "deltaDps": -177.20656475370288, "itemIds": [29098, 29100, 29096, 29099], "piecesNeeded": 4 }
+						],
+						"singleDeltaDps": 7.617173385704518
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": 7.6 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Mantle of Malorne"], "threshold": 2, "broken": [] },
+							"dps": 42.6
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": 50.1827615253992 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": null,
+					"itemId": 31048,
+					"name": "Thunderheart Pauldrons",
+					"slot": "shoulder",
+					"source": {
+						"kind": "token",
+						"zone": "Black Temple",
+						"token": "Pauldrons of the Forgotten Vanquisher",
+						"boss": "Mother Shahraz",
+						"tokenId": 31102,
+						"origin": "two-hop"
+					},
+					"deltaDps": 0.543033882850068,
+					"deltaPct": 0.022276787204601533,
+					"se": 1.3336726367748193,
+					"seMethod": "independent",
+					"bisTags": ["BiS"],
+					"curatedSets": ["p3_6p", "p3_9p"],
+					"bisSets": ["p3_6p", "p3_9p"],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Black Temple",
+							"token": "Pauldrons of the Forgotten Vanquisher",
+							"boss": "Mother Shahraz",
+							"tokenId": 31102,
+							"origin": "two-hop"
+						}
+					],
+					"setContext": {
+						"setId": 676,
+						"setName": "Thunderheart Harness",
+						"piecesWornBefore": 2,
+						"piecesAfterSwap": 3,
+						"nextThreshold": 4,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"futureBonuses": [
+							{
+								"threshold": 4,
+								"piecesNeeded": 2,
+								"dps": 73.52553762343632,
+								"sameGearDps": 74.59079230471662,
+								"sameGearSe": 1.9466998661308272,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 31042, "name": "Thunderheart Chestguard" }],
+								"stepGearDps": 100.36788461793321,
+								"stepGearSe": 1.9477160217590683
+							},
+							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.191645723187992, "belowGate": true }
+						],
+						"commitPackageDeltaDps": 100.36788461793321,
+						"packages": [{ "threshold": 4, "deltaDps": 100.36788461793321, "itemIds": [31048, 31042], "piecesNeeded": 2 }],
+						"singleDeltaDps": 0.543033882850068
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": 0.5 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Chestguard"], "threshold": 4, "broken": [] },
+							"dps": 99.9
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": 100.36788461793321 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": null,
+					"itemId": 29100,
+					"name": "Mantle of Malorne",
+					"slot": "shoulder",
+					"source": {
+						"kind": "token",
+						"zone": "Gruul's Lair",
+						"token": "Pauldrons of the Fallen Defender",
+						"boss": "High King Maulgar",
+						"tokenId": 29764,
+						"origin": "two-hop"
+					},
+					"deltaDps": -14.037668226711503,
+					"deltaPct": -0.575864891328685,
+					"se": 1.3316063113448091,
+					"seMethod": "independent",
+					"bisTags": [],
+					"curatedSets": ["p2_6p", "p2_9p"],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Gruul's Lair",
+							"token": "Pauldrons of the Fallen Defender",
+							"boss": "High King Maulgar",
+							"tokenId": 29764,
+							"origin": "two-hop"
+						}
+					],
+					"setContext": {
+						"setId": 640,
+						"setName": "Malorne Harness",
+						"piecesWornBefore": 0,
+						"piecesAfterSwap": 1,
+						"nextThreshold": 2,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"futureBonuses": [
+							{
+								"threshold": 2,
+								"piecesNeeded": 2,
+								"dps": 56.603256366406185,
+								"sameGearDps": 58.18616244110399,
+								"sameGearSe": 1.9456539360666278,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 29096, "name": "Breastplate of Malorne" }],
+								"stepGearDps": 50.1827615253992,
+								"stepGearSe": 1.9601647644814157
+							},
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowGate": true },
+							{
+								"threshold": 4,
+								"piecesNeeded": 4,
+								"dps": -35.27096327419622,
+								"sameGearDps": 21.329399193100016,
+								"sameGearSe": 2.210445085194206,
+								"partnerRule": "close-calls",
+								"pieces": [
+									{ "itemId": 29096, "name": "Breastplate of Malorne" },
+									{ "itemId": 29097, "name": "Gauntlets of Malorne" },
+									{ "itemId": 29099, "name": "Greaves of Malorne" }
+								],
+								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
+								"stepGearDps": -32.8140865720552,
+								"stepGearSe": 1.9593184508791375
+							},
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowGate": true }
+						],
+						"commitBreaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
+						"commitPackageDeltaDps": -177.20656475370288,
+						"packages": [
+							{ "threshold": 2, "deltaDps": 50.1827615253992, "itemIds": [29100, 29096], "piecesNeeded": 2 },
+							{ "threshold": 4, "deltaDps": -177.20656475370288, "itemIds": [29098, 29100, 29096, 29099], "piecesNeeded": 4 }
+						],
+						"singleDeltaDps": -14.037668226711503
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": -14 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Breastplate of Malorne"], "threshold": 2, "broken": [] },
+							"dps": 64.2
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": 50.1827615253992 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": null,
+					"itemId": 31039,
+					"name": "Thunderheart Cover",
+					"slot": "head",
+					"source": {
+						"kind": "token",
+						"zone": "Hyjal Summit",
+						"token": "Helm of the Forgotten Vanquisher",
+						"boss": "Archimonde",
+						"tokenId": 31096,
+						"origin": "two-hop"
+					},
+					"deltaDps": -69.850955606345,
+					"deltaPct": -2.8654839471780136,
+					"se": 1.4468426219598765,
+					"seMethod": "independent",
+					"bisTags": [],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Hyjal Summit",
+							"token": "Helm of the Forgotten Vanquisher",
+							"boss": "Archimonde",
+							"tokenId": 31096,
+							"origin": "two-hop"
+						}
+					],
+					"gemSubstitutions": [
+						{ "itemId": 31034, "socketIndex": 0, "from": 0, "to": 24058 },
+						{ "itemId": 31044, "socketIndex": 0, "from": 0, "to": 24058 }
+					],
+					"setContext": {
+						"setId": 676,
+						"setName": "Thunderheart Harness",
+						"piecesWornBefore": 2,
+						"piecesAfterSwap": 3,
+						"nextThreshold": 4,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"futureBonuses": [
+							{
+								"threshold": 4,
+								"piecesNeeded": 2,
+								"dps": 73.52553762343632,
+								"sameGearDps": 74.59079230471662,
+								"sameGearSe": 1.9466998661308272,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 31042, "name": "Thunderheart Chestguard" }],
+								"stepGearDps": 38.20534530414989,
+								"stepGearSe": 2.04742586342232
+							},
+							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.191645723187992, "belowGate": true }
+						],
+						"commitPackageDeltaDps": 100.36788461793321,
+						"singleDeltaDps": -69.850955606345
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": -69.9 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Chestguard"], "threshold": 4, "broken": [] },
+							"dps": 108.1
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": 38.20534530414989 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": null,
+					"itemId": 29098,
+					"name": "Stag-Helm of Malorne",
+					"slot": "head",
+					"source": {
+						"kind": "token",
+						"zone": "Karazhan",
+						"token": "Helm of the Fallen Defender",
+						"boss": "Prince Malchezaar",
+						"tokenId": 29761,
+						"origin": "two-hop"
+					},
+					"deltaDps": -82.20968461934217,
+					"deltaPct": -3.372473998879607,
+					"se": 1.4395309113811618,
+					"seMethod": "independent",
+					"bisTags": [],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Karazhan",
+							"token": "Helm of the Fallen Defender",
+							"boss": "Prince Malchezaar",
+							"tokenId": 29761,
+							"origin": "two-hop"
+						}
+					],
+					"gemSubstitutions": [
+						{ "itemId": 31034, "socketIndex": 0, "from": 0, "to": 24058 },
+						{ "itemId": 31044, "socketIndex": 0, "from": 0, "to": 24055 }
+					],
+					"setContext": {
+						"setId": 640,
+						"setName": "Malorne Harness",
+						"piecesWornBefore": 0,
+						"piecesAfterSwap": 1,
+						"nextThreshold": 2,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"futureBonuses": [
+							{
+								"threshold": 2,
+								"piecesNeeded": 2,
+								"dps": 56.603256366406185,
+								"sameGearDps": 58.18616244110399,
+								"sameGearSe": 1.9456539360666278,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 29096, "name": "Breastplate of Malorne" }],
+								"stepGearDps": -14.990957059491393,
+								"stepGearSe": 1.9886066507101476
+							},
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowGate": true },
+							{
+								"threshold": 4,
+								"piecesNeeded": 4,
+								"dps": -35.27096327419622,
+								"sameGearDps": 21.329399193100016,
+								"sameGearSe": 2.210445085194206,
+								"partnerRule": "close-calls",
+								"pieces": [
+									{ "itemId": 29100, "name": "Mantle of Malorne" },
+									{ "itemId": 29096, "name": "Breastplate of Malorne" },
+									{ "itemId": 29099, "name": "Greaves of Malorne" }
+								],
+								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
+								"stepGearDps": -177.20656475370288,
+								"stepGearSe": 2.0686890231629573
+							},
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowGate": true }
+						],
+						"commitBreaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
+						"commitPackageDeltaDps": -177.20656475370288,
+						"packages": [
+							{ "threshold": 2, "deltaDps": 50.1827615253992, "itemIds": [29100, 29096], "piecesNeeded": 2 },
+							{ "threshold": 4, "deltaDps": -177.20656475370288, "itemIds": [29098, 29100, 29096, 29099], "piecesNeeded": 4 }
+						],
+						"singleDeltaDps": -82.20968461934217
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": -82.2 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Breastplate of Malorne"], "threshold": 2, "broken": [] },
+							"dps": 67.2
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": -14.990957059491393 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": null,
+					"itemId": 29099,
+					"name": "Greaves of Malorne",
+					"slot": "legs",
+					"source": {
+						"kind": "token",
+						"zone": "Gruul's Lair",
+						"token": "Leggings of the Fallen Defender",
+						"boss": "Gruul the Dragonkiller",
+						"tokenId": 29767,
+						"origin": "two-hop"
+					},
+					"deltaDps": -109.90867838556369,
+					"deltaPct": -4.508765139081014,
+					"se": 1.3519351427187887,
+					"seMethod": "independent",
+					"bisTags": [],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Gruul's Lair",
+							"token": "Leggings of the Fallen Defender",
+							"boss": "Gruul the Dragonkiller",
+							"tokenId": 29767,
+							"origin": "two-hop"
+						}
+					],
+					"setBonusNote": "breaks 2-piece Thunderheart Harness (below 2)",
+					"setContext": {
+						"setId": 640,
+						"setName": "Malorne Harness",
+						"piecesWornBefore": 0,
+						"piecesAfterSwap": 1,
+						"nextThreshold": 2,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"singleBreaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
+						"futureBonuses": [
+							{
+								"threshold": 2,
+								"piecesNeeded": 2,
+								"dps": 56.603256366406185,
+								"sameGearDps": 58.18616244110399,
+								"sameGearSe": 1.9456539360666278,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 29096, "name": "Breastplate of Malorne" }],
+								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
+								"stepGearDps": -24.325749199125312,
+								"stepGearSe": 1.9617915354895448
+							},
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowGate": true },
+							{
+								"threshold": 4,
+								"piecesNeeded": 4,
+								"dps": -35.27096327419622,
+								"sameGearDps": 21.329399193100016,
+								"sameGearSe": 2.210445085194206,
+								"partnerRule": "close-calls",
+								"pieces": [
+									{ "itemId": 29100, "name": "Mantle of Malorne" },
+									{ "itemId": 29096, "name": "Breastplate of Malorne" },
+									{ "itemId": 29097, "name": "Gauntlets of Malorne" }
+								],
+								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
+								"stepGearDps": -32.8140865720552,
+								"stepGearSe": 1.9593184508791375
+							},
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowGate": true }
+						],
+						"commitPackageDeltaDps": -177.20656475370288,
+						"packages": [
+							{ "threshold": 2, "deltaDps": 50.1827615253992, "itemIds": [29100, 29096], "piecesNeeded": 2 },
+							{ "threshold": 4, "deltaDps": -177.20656475370288, "itemIds": [29098, 29100, 29096, 29099], "piecesNeeded": 4 }
+						],
+						"singleDeltaDps": -109.90867838556369
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": -15.4 },
+						{ "type": "line", "label": { "kind": "breaks", "broken": [{ "setName": "Thunderheart Harness", "threshold": 2 }] }, "dps": -94.5 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Breastplate of Malorne"], "threshold": 2, "broken": [] },
+							"dps": 85.6
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": -24.325749199125312 }
+					]
+				}
+			},
+			{
+				"row": {
+					"rank": null,
+					"itemId": 29097,
+					"name": "Gauntlets of Malorne",
+					"slot": "hands",
+					"source": {
+						"kind": "token",
+						"zone": "Karazhan",
+						"token": "Gloves of the Fallen Defender",
+						"boss": "The Curator",
+						"tokenId": 29758,
+						"origin": "two-hop"
+					},
+					"deltaDps": -111.39438168644483,
+					"deltaPct": -4.569712894512403,
+					"se": 1.3722563915337258,
+					"seMethod": "independent",
+					"bisTags": [],
+					"belowCutoff": true,
+					"sources": [
+						{
+							"kind": "token",
+							"zone": "Karazhan",
+							"token": "Gloves of the Fallen Defender",
+							"boss": "The Curator",
+							"tokenId": 29758,
+							"origin": "two-hop"
+						}
+					],
+					"setBonusNote": "breaks 2-piece Thunderheart Harness (below 2)",
+					"setContext": {
+						"setId": 640,
+						"setName": "Malorne Harness",
+						"piecesWornBefore": 0,
+						"piecesAfterSwap": 1,
+						"nextThreshold": 2,
+						"crossesThreshold": false,
+						"stepRanking": true,
+						"singleBreaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
+						"futureBonuses": [
+							{
+								"threshold": 2,
+								"piecesNeeded": 2,
+								"dps": 56.603256366406185,
+								"sameGearDps": 58.18616244110399,
+								"sameGearSe": 1.9456539360666278,
+								"partnerRule": "close-calls",
+								"pieces": [{ "itemId": 29096, "name": "Breastplate of Malorne" }],
+								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
+								"stepGearDps": -21.193620341134647,
+								"stepGearSe": 1.9617481906341554
+							},
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowGate": true },
+							{
+								"threshold": 4,
+								"piecesNeeded": 4,
+								"dps": -35.27096327419622,
+								"sameGearDps": 21.329399193100016,
+								"sameGearSe": 2.210445085194206,
+								"partnerRule": "close-calls",
+								"pieces": [
+									{ "itemId": 29100, "name": "Mantle of Malorne" },
+									{ "itemId": 29096, "name": "Breastplate of Malorne" },
+									{ "itemId": 29099, "name": "Greaves of Malorne" }
+								],
+								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
+								"stepGearDps": -32.8140865720552,
+								"stepGearSe": 1.9593184508791375
+							},
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowGate": true }
+						],
+						"commitPackageDeltaDps": -177.20656475370288,
+						"singleDeltaDps": -111.39438168644483
+					}
+				},
+				"tip": {
+					"subLine": "hover_hint",
+					"kind": "receipt",
+					"entries": [
+						{ "type": "line", "label": { "kind": "item_stats", "unmeasuredBreaks": [] }, "dps": -16.9 },
+						{ "type": "line", "label": { "kind": "breaks", "broken": [{ "setName": "Thunderheart Harness", "threshold": 2 }] }, "dps": -94.5 },
+						{ "type": "heading", "heading": "set_potential" },
+						{
+							"type": "line",
+							"label": { "kind": "pieces", "form": "step", "pieces": ["Breastplate of Malorne"], "threshold": 2, "broken": [] },
+							"dps": 90.2
+						},
+						{ "type": "line", "label": { "kind": "total" }, "dps": -21.193620341134647 }
+					]
+				}
+			}
+		]
+	}
+}

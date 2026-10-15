@@ -71,6 +71,28 @@ describe('SetBonusPopover', () => {
 		expect(screen.getByTestId('upgrades-set-bonus-tip-total').textContent).toBe('Total+4.4');
 	});
 
+	it('keeps the total marked when not-counted lines follow it (ticket 336)', () => {
+		const tip: SetBonusTip = {
+			subLine: 'hover_hint',
+			kind: 'receipt',
+			entries: [
+				{ type: 'line', label: { kind: 'total' }, dps: 26.3 },
+				{ type: 'heading', heading: 'not_counted_off' },
+				{
+					type: 'line',
+					label: { kind: 'reachable', set: 'Thunderheart Harness', threshold: 4, have: 2, pieces: ['Thunderheart Pauldrons'], broken: [] },
+					dps: 74.1,
+					outcome: true,
+				},
+			],
+		};
+		hover(show(tip, '+26.3'));
+
+		expect(within(screen.getByTestId('upgrades-set-bonus-tip')).getByText('Not counted (Set potential is off)')).toBeTruthy();
+		expect(popupLines()).toEqual(['Total +26.3', 'Thunderheart Harness 4pc with Thunderheart Pauldrons 74.1 DPS more']);
+		expect(screen.getAllByTestId('upgrades-set-bonus-tip-total').map(total => total.textContent)).toEqual(['Total+26.3']);
+	});
+
 	it('marks the outcome a step ranking row’s figure uses, and adds no total', () => {
 		const tip: SetBonusTip = {
 			subLine: 'hover_hint',

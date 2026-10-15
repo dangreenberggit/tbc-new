@@ -277,6 +277,33 @@
 						"tip_set_potential_totals": {
 							"type": "string"
 						},
+						"tip_not_counted_off": {
+							"type": "string"
+						},
+						"tip_not_counted_no_gain": {
+							"type": "string"
+						},
+						"tip_not_counted": {
+							"type": "string"
+						},
+						"tip_reachable": {
+							"type": "string"
+						},
+						"tip_reachable_breaks": {
+							"type": "string"
+						},
+						"tip_screened": {
+							"type": "string"
+						},
+						"tip_screened_unmeasured": {
+							"type": "string"
+						},
+						"tip_screened_no_effect": {
+							"type": "string"
+						},
+						"tip_screened_loss": {
+							"type": "string"
+						},
 						"tip_stop": {
 							"type": "string"
 						},
@@ -323,6 +350,15 @@
 						"tip_piece_stats",
 						"tip_set_potential",
 						"tip_set_potential_totals",
+						"tip_not_counted_off",
+						"tip_not_counted_no_gain",
+						"tip_not_counted",
+						"tip_reachable",
+						"tip_reachable_breaks",
+						"tip_screened",
+						"tip_screened_unmeasured",
+						"tip_screened_no_effect",
+						"tip_screened_loss",
 						"tip_stop",
 						"tip_stop_breaks",
 						"tip_step",

@@ -55,6 +55,90 @@ describe('setBonusTipText', () => {
 	});
 });
 
+describe('the not-counted section (ticket 336)', () => {
+	const malorne2 = { setName: 'Malorne Harness', threshold: 2 };
+	const reachable = (set: string, threshold: number, pieces: string[], broken: Array<{ setName: string; threshold: number }> = []): TipLabel => ({
+		kind: 'reachable',
+		set,
+		threshold,
+		have: 0,
+		pieces,
+		broken,
+	});
+
+	it('prints each heading, and every line under it as more or less than the item alone', () => {
+		const rows = setBonusTipText({
+			subLine: 'hover_hint',
+			kind: 'receipt',
+			entries: [
+				{ type: 'line', label: { kind: 'total' }, dps: 1.5 },
+				{ type: 'heading', heading: 'not_counted_off' },
+				{ type: 'line', label: reachable('Thunderheart Harness', 2, ['Thunderheart Leggings']), dps: 55.07, outcome: true },
+				{ type: 'heading', heading: 'not_counted_no_gain' },
+				{ type: 'line', label: reachable('Malorne Harness', 4, ['Greaves of Malorne']), dps: -19.5, outcome: true },
+				{ type: 'heading', heading: 'not_counted' },
+				{ type: 'line', label: reachable('Malorne Harness', 2, ['Breastplate of Malorne']), dps: undefined, outcome: true },
+			],
+		});
+		expect(rows).toEqual([
+			{ type: 'line', id: 'total', label: 'Total', value: '+1.5', total: true },
+			{ type: 'heading', id: 'not_counted_off', text: 'Not counted (Set potential is off)' },
+			{
+				type: 'line',
+				id: 'reachable:Thunderheart Harness:2',
+				label: `Thunderheart Harness${NBSP}2pc with Thunderheart Leggings`,
+				value: '55.1 DPS more',
+				total: false,
+			},
+			{ type: 'heading', id: 'not_counted_no_gain', text: 'Not counted (no gain over the item alone)' },
+			{
+				type: 'line',
+				id: 'reachable:Malorne Harness:4',
+				label: `Malorne Harness${NBSP}4pc with Greaves of Malorne`,
+				value: '19.5 DPS less',
+				total: false,
+			},
+			{ type: 'heading', id: 'not_counted', text: 'Not counted' },
+			{
+				type: 'line',
+				id: 'reachable:Malorne Harness:2',
+				label: `Malorne Harness${NBSP}2pc with Breastplate of Malorne`,
+				value: "couldn't measure",
+				total: false,
+			},
+		]);
+	});
+
+	it.each([
+		// Mock-up row 1, toggle off: the 4pc breaks the worn Malorne 2pc.
+		[
+			reachable('Thunderheart Harness', 4, ['Thunderheart Pauldrons', 'Thunderheart Chestguard', 'Thunderheart Leggings'], [malorne2]),
+			`Thunderheart Harness${NBSP}4pc with Thunderheart Pauldrons, Thunderheart Chestguard and Thunderheart Leggings, breaks Malorne Harness${NBSP}2pc`,
+		],
+		// Mock-up row 5, toggle off.
+		[
+			reachable('Malorne Harness', 4, ['Mantle of Malorne', 'Breastplate of Malorne', 'Greaves of Malorne']),
+			`Malorne Harness${NBSP}4pc with Mantle of Malorne, Breastplate of Malorne and Greaves of Malorne`,
+		],
+		[{ kind: 'screened', set: 'Nordrassil Harness', reason: 'outside-band' } as TipLabel, 'Nordrassil Harness set bonuses (screened out)'],
+	])('prints %j', (label, text) => {
+		expect(tipLabelText(label)).toBe(text);
+	});
+
+	it.each([
+		['outside-band', 'not measured'],
+		['exact-zero', 'no effect in the sim'],
+		['below-zero', 'a loss with its pieces'],
+	] as const)('says what the screen found for a dropped set (%s), with no figure', (reason, value) => {
+		const [row] = setBonusTipText({
+			subLine: 'hover_hint',
+			kind: 'receipt',
+			entries: [{ type: 'line', label: { kind: 'screened', set: 'Burning Rage', reason }, dps: undefined }],
+		});
+		expect(row).toEqual({ type: 'line', id: 'screened:Burning Rage', label: 'Burning Rage set bonuses (screened out)', value, total: false });
+	});
+});
+
 describe('tipLabelText', () => {
 	const cases: Array<[TipLabel, string]> = [
 		[{ kind: 'item_stats', bonus: lightbringer, unmeasuredBreaks: [] }, `Item stats + Lightbringer Battlegear${NBSP}4pc`],
