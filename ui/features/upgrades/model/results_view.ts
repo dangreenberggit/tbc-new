@@ -197,9 +197,9 @@ export const withOfferedSourcesHidden = (hidden: readonly string[], offered: rea
 /**
  * A view cut to the rows of the sources not in `hidden`. A row stays while
  * some source key it matches is not hidden, so an item from two raids stays
- * while either is shown. That includes a raid the dialog lists on no row,
- * because it lists a row under its first zone only (review D4). A hidden key
- * the view does not offer changes nothing. Like `bisOnlyView`, only the count
+ * while either is shown (review D4). The dialog offers every key a row
+ * matches, so Hide all leaves no row (ticket 647). A hidden key the view
+ * does not offer changes nothing. Like `bisOnlyView`, only the count
  * below the cutoff changes, and every slot keeps its tab.
  */
 export function sourcesView(view: ResultsViewResult, hidden: readonly string[]): ResultsViewResult {

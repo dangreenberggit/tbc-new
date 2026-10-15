@@ -300,15 +300,22 @@ describe('sourcesView over resultsViewFor', () => {
 		expect(ids(bySource(done(ranking), NO_VIEW_TOGGLES, ['Hyjal Summit', 'Black Temple']).rows)).not.toContain(30902);
 	});
 
-	// Review D4: the dialog lists a row under its first zone only, so no row offers Zul'Aman here, but it is not hidden.
-	it('keeps a row from two raids while its second is not hidden, though the view offers that raid on no row', () => {
-		const hyjalOrZulAman: RankedItem = {
-			...twoRaidEdge,
-			sources: [twoRaidEdge.sources![0]!, { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin", origin: 'db' }],
-		};
+	// Review D4 and ticket 647: no row has Zul'Aman first, so only this row's second zone puts it in the dialog.
+	const hyjalOrZulAman: RankedItem = {
+		...twoRaidEdge,
+		sources: [twoRaidEdge.sources![0]!, { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin", origin: 'db' }],
+	};
+
+	it('keeps a row from two raids while its second is not hidden, though no row has that raid first', () => {
+		expect(ids(bySource(done(replacing(hyjalOrZulAman)), NO_VIEW_TOGGLES, ['Hyjal Summit']).rows)).toContain(30902);
+	});
+
+	it('offers every zone a row matches, so Hide all leaves no row', () => {
 		const ranking = replacing(hyjalOrZulAman);
-		expect(sourceOptions(applyView(ranking).rows).raids.map(option => option.key)).not.toContain("Zul'Aman");
-		expect(ids(bySource(done(ranking), NO_VIEW_TOGGLES, ['Hyjal Summit']).rows)).toContain(30902);
+		const options = sourceOptions(applyView(ranking).rows);
+		expect(options.raids).toContainEqual({ key: "Zul'Aman", count: 1 });
+		const view = bySource(done(ranking), NO_VIEW_TOGGLES, withOfferedSourcesHidden([], offeredSourceKeys(options)));
+		expect(view.rows).toEqual([]);
 	});
 
 	it('hides with a zoneless bucket only the rows that have no zone', () => {

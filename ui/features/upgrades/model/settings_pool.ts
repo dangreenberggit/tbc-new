@@ -77,9 +77,13 @@ const ZONELESS_KEYS = new Set(Object.values(SOURCE_LABELS));
  * only ones a scope's exclusions may name; the offer and the phase reset
  * (`follow_phase.ts`) both read them, so a reset never keeps or drops a source
  * the dialog disagrees on.
+ *
+ * Every key an entry matches is offered, so each one can be unticked and a
+ * Hide all hides every row (tickets 647, 649). A zone that is no entry's first
+ * comes after every first zone, so the first zones keep their order.
  */
 export function validSourceKeysOf(pool: readonly SourcedEntry[]): string[] {
-	const keys = [...new Set(pool.map(sourceKeyOf))];
+	const keys = [...new Set([...pool.map(sourceKeyOf), ...pool.flatMap(sourceKeysMatching)])];
 	return [...keys.filter(k => !ZONELESS_KEYS.has(k)), ...keys.filter(k => ZONELESS_KEYS.has(k))];
 }
 
