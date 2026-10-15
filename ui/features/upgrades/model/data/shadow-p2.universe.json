@@ -294,38 +294,6 @@
       "curationHint": 17.42
     },
     {
-      "itemId": 18208,
-      "name": "Drape of Benediction",
-      "slot": "back",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 12.74
-    },
-    {
-      "itemId": 21412,
-      "name": "Shroud of Infinite Wisdom",
-      "slot": "back",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 10.16
-    },
-    {
       "itemId": 28653,
       "name": "Shadowvine Cloak of Infusion",
       "slot": "back",
@@ -365,102 +333,6 @@
         }
       ],
       "curationHint": 1.13
-    },
-    {
-      "itemId": 20691,
-      "name": "Windshear Cape",
-      "slot": "back",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.42
-    },
-    {
-      "itemId": 18204,
-      "name": "Eskhandar's Pelt",
-      "slot": "back",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 18541,
-      "name": "Puissant Cape",
-      "slot": "back",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 20068,
-      "name": "Deathguard's Cloak",
-      "slot": "back",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 20073,
-      "name": "Cloak of the Honor Guard",
-      "slot": "back",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21710,
-      "name": "Cloak of the Fallen God",
-      "slot": "back",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
     },
     {
       "itemId": 28377,
@@ -878,38 +750,6 @@
       "curationHint": 56.66
     },
     {
-      "itemId": 20635,
-      "name": "Jade Inlaid Vestments",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 46.04
-    },
-    {
-      "itemId": 21351,
-      "name": "Vestments of the Oracle",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 41.88
-    },
-    {
       "itemId": 30150,
       "name": "Vestments of the Avatar",
       "slot": "chest",
@@ -942,38 +782,6 @@
         }
       ],
       "curationHint": 40.94
-    },
-    {
-      "itemId": 17605,
-      "name": "Field Marshal's Satin Vestments",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 34.88
-    },
-    {
-      "itemId": 17624,
-      "name": "Warlord's Satin Robes",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 34.88
     },
     {
       "itemId": 29050,
@@ -1026,22 +834,6 @@
       "curationHint": 27.9
     },
     {
-      "itemId": 22512,
-      "name": "Robe of Faith",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 26.39
-    },
-    {
       "itemId": 32102,
       "name": "Chancellor's Mooncloth Vestments",
       "slot": "chest",
@@ -1058,8 +850,8 @@
       "curationHint": 20.5
     },
     {
-      "itemId": 22083,
-      "name": "Virtuous Robe",
+      "itemId": 21865,
+      "name": "Soulcloth Vest",
       "slot": "chest",
       "armorType": 1,
       "handType": null,
@@ -1067,27 +859,14 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
+          "kind": "crafted",
+          "profession": "Tailoring",
+          "recipeZone": "Karazhan",
+          "recipeBoss": "Trash",
           "origin": "db"
         }
       ],
-      "curationHint": 17.06
-    },
-    {
-      "itemId": 21527,
-      "name": "Darkwater Robes",
-      "slot": "chest",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1.02
+      "curationHint": 3.12
     },
     {
       "itemId": 30762,
@@ -1122,6 +901,25 @@
         }
       ],
       "curationHint": 81.56
+    },
+    {
+      "itemId": 30037,
+      "name": "Boots of Blasting",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Tailoring",
+          "recipeZone": "Serpentshrine Cavern",
+          "recipeBoss": "Trash",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 66.24
     },
     {
       "itemId": 21870,
@@ -1302,22 +1100,6 @@
       "curationHint": 33.62
     },
     {
-      "itemId": 19131,
-      "name": "Snowblind Shoes",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 32.85
-    },
-    {
       "itemId": 28517,
       "name": "Boots of Foretelling",
       "slot": "feet",
@@ -1334,6 +1116,25 @@
         }
       ],
       "curationHint": 30.8
+    },
+    {
+      "itemId": 30035,
+      "name": "Boots of the Long Road",
+      "slot": "feet",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Tailoring",
+          "recipeZone": "Serpentshrine Cavern",
+          "recipeBoss": "Trash",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 29.65
     },
     {
       "itemId": 30100,
@@ -1368,54 +1169,6 @@
         }
       ],
       "curationHint": 24.8
-    },
-    {
-      "itemId": 17607,
-      "name": "Marshal's Satin Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 24.08
-    },
-    {
-      "itemId": 17618,
-      "name": "General's Satin Boots",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 24.08
-    },
-    {
-      "itemId": 21349,
-      "name": "Footwraps of the Oracle",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 23.61
     },
     {
       "itemId": 28663,
@@ -1466,54 +1219,6 @@
         }
       ],
       "curationHint": 21.62
-    },
-    {
-      "itemId": 22516,
-      "name": "Sandals of Faith",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 18.18
-    },
-    {
-      "itemId": 22084,
-      "name": "Virtuous Sandals",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 14.57
-    },
-    {
-      "itemId": 20631,
-      "name": "Mendicant's Slippers",
-      "slot": "feet",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1.88
     },
     {
       "itemId": 30680,
@@ -1567,22 +1272,6 @@
       "curatedSets": [
         "p1"
       ]
-    },
-    {
-      "itemId": 21709,
-      "name": "Ring of the Fallen God",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 46.8
     },
     {
       "itemId": 28555,
@@ -1815,22 +1504,6 @@
       "curationHint": 29.08
     },
     {
-      "itemId": 21210,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.79
-    },
-    {
       "itemId": 29367,
       "name": "Ring of Cryptic Dreams",
       "slot": "finger",
@@ -1845,38 +1518,6 @@
         }
       ],
       "curationHint": 27.62
-    },
-    {
-      "itemId": 21209,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 26.68
-    },
-    {
-      "itemId": 21208,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 25.68
     },
     {
       "itemId": 33054,
@@ -1897,22 +1538,6 @@
       "curationHint": 25.0
     },
     {
-      "itemId": 20632,
-      "name": "Mindtear Band",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 24.88
-    },
-    {
       "itemId": 28763,
       "name": "Jade Ring of the Everliving",
       "slot": "finger",
@@ -1929,54 +1554,6 @@
         }
       ],
       "curationHint": 23.6
-    },
-    {
-      "itemId": 20682,
-      "name": "Elemental Focus Band",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 22.66
-    },
-    {
-      "itemId": 21207,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 22.63
-    },
-    {
-      "itemId": 21206,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 21.57
     },
     {
       "itemId": 29920,
@@ -2136,38 +1713,6 @@
       "curationHint": 4.32
     },
     {
-      "itemId": 18543,
-      "name": "Ring of Entropy",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 4.26
-    },
-    {
-      "itemId": 18403,
-      "name": "Dragonslayer's Signet",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 3.96
-    },
-    {
       "itemId": 34837,
       "name": "The 2 Ring",
       "slot": "finger",
@@ -2182,38 +1727,6 @@
         }
       ],
       "curationHint": 3.96
-    },
-    {
-      "itemId": 21563,
-      "name": "Don Rodrigo's Band",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 2.52
-    },
-    {
-      "itemId": 21411,
-      "name": "Ring of Infinite Wisdom",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1.03
     },
     {
       "itemId": 31326,
@@ -2232,296 +1745,8 @@
       "curationHint": 0.35
     },
     {
-      "itemId": 17108,
-      "name": "Mark of Deflection",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 19325,
-      "name": "Don Julio's Band",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 19384,
-      "name": "Master Dragonslayer's Ring",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 20600,
-      "name": "Malfurion's Signet Ring",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 20624,
-      "name": "Ring of the Unliving",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21189,
-      "name": "Might of Cenarius",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 21190,
       "name": "Wrath of Cenarius",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21196,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21197,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21198,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21199,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21200,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21201,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21202,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21203,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21204,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21205,
-      "name": "Signet Ring of the Bronze Dragonflight",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22707,
-      "name": "Ramaladni's Icy Grasp",
-      "slot": "finger",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 28553,
-      "name": "Band of the Exorcist",
       "slot": "finger",
       "armorType": null,
       "handType": null,
@@ -3039,22 +2264,6 @@
       "curationHint": 31.4
     },
     {
-      "itemId": 20618,
-      "name": "Gloves of Delusional Power",
-      "slot": "hands",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.21
-    },
-    {
       "itemId": 30668,
       "name": "Grasp of the Dead",
       "slot": "hands",
@@ -3110,22 +2319,6 @@
         }
       ],
       "curationHint": 18.5
-    },
-    {
-      "itemId": 22517,
-      "name": "Gloves of Faith",
-      "slot": "hands",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 18.1
     },
     {
       "itemId": 30764,
@@ -3323,22 +2516,6 @@
       "curationHint": 44.16
     },
     {
-      "itemId": 21348,
-      "name": "Tiara of the Oracle",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 41.03
-    },
-    {
       "itemId": 30152,
       "name": "Cowl of the Avatar",
       "slot": "head",
@@ -3369,54 +2546,6 @@
         }
       ],
       "curationHint": 38.44
-    },
-    {
-      "itemId": 17602,
-      "name": "Field Marshal's Headdress",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 34.88
-    },
-    {
-      "itemId": 17623,
-      "name": "Warlord's Satin Cowl",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 34.88
-    },
-    {
-      "itemId": 19132,
-      "name": "Crystal Adorned Crown",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 33.4
     },
     {
       "itemId": 28756,
@@ -3458,22 +2587,6 @@
       "curationHint": 30.34
     },
     {
-      "itemId": 22514,
-      "name": "Circlet of Faith",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 29.21
-    },
-    {
       "itemId": 32090,
       "name": "Cowl of Naaru Blessings",
       "slot": "head",
@@ -3506,22 +2619,6 @@
       "curationHint": 19.14
     },
     {
-      "itemId": 22080,
-      "name": "Virtuous Crown",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 16.76
-    },
-    {
       "itemId": 32098,
       "name": "Chancellor's Mooncloth Cowl",
       "slot": "head",
@@ -3536,22 +2633,6 @@
         }
       ],
       "curationHint": 15.8
-    },
-    {
-      "itemId": 12752,
-      "name": "Cap of the Scarlet Savant",
-      "slot": "head",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 6.24
     },
     {
       "itemId": 30162,
@@ -3611,22 +2692,6 @@
         }
       ],
       "curationHint": 77.06
-    },
-    {
-      "itemId": 19133,
-      "name": "Fel Infused Leggings",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 64.0
     },
     {
       "itemId": 29972,
@@ -3806,86 +2871,6 @@
       "curationHint": 36.54
     },
     {
-      "itemId": 21352,
-      "name": "Trousers of the Oracle",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 36.42
-    },
-    {
-      "itemId": 17603,
-      "name": "Marshal's Satin Pants",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 33.46
-    },
-    {
-      "itemId": 17625,
-      "name": "General's Satin Leggings",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 33.46
-    },
-    {
-      "itemId": 22747,
-      "name": "Outrider's Silk Leggings",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 30.34
-    },
-    {
-      "itemId": 22752,
-      "name": "Sentinel's Silk Leggings",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 30.34
-    },
-    {
       "itemId": 28742,
       "name": "Pantaloons of Repentance",
       "slot": "legs",
@@ -3904,22 +2889,6 @@
       "curationHint": 28.16
     },
     {
-      "itemId": 22513,
-      "name": "Leggings of Faith",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 26.92
-    },
-    {
       "itemId": 32099,
       "name": "Chancellor's Mooncloth Legguards",
       "slot": "legs",
@@ -3934,38 +2903,6 @@
         }
       ],
       "curationHint": 23.8
-    },
-    {
-      "itemId": 22700,
-      "name": "Glacial Leggings",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 18.0
-    },
-    {
-      "itemId": 18545,
-      "name": "Leggings of Arcane Supremacy",
-      "slot": "legs",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 3.12
     },
     {
       "itemId": 30761,
@@ -4186,22 +3123,6 @@
       "curationHint": 25.82
     },
     {
-      "itemId": 21504,
-      "name": "Charm of the Shifting Sands",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 25.72
-    },
-    {
       "itemId": 33067,
       "name": "Veteran's Pendant of Conquest",
       "slot": "neck",
@@ -4216,38 +3137,6 @@
         }
       ],
       "curationHint": 24.96
-    },
-    {
-      "itemId": 23058,
-      "name": "Life Channeling Necklace",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 24.3
-    },
-    {
-      "itemId": 19426,
-      "name": "Orb of the Darkmoon",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 22.96
     },
     {
       "itemId": 31321,
@@ -4336,22 +3225,6 @@
       "curationHint": 19.54
     },
     {
-      "itemId": 21712,
-      "name": "Amulet of the Fallen God",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 19.3
-    },
-    {
       "itemId": 29374,
       "name": "Necklace of Eternal Hope",
       "slot": "neck",
@@ -4366,22 +3239,6 @@
         }
       ],
       "curationHint": 17.46
-    },
-    {
-      "itemId": 21507,
-      "name": "Amulet of the Shifting Sands",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 16.3
     },
     {
       "itemId": 33068,
@@ -4400,216 +3257,8 @@
       "curationHint": 16.03
     },
     {
-      "itemId": 22657,
-      "name": "Amulet of the Dawn",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 15.78
-    },
-    {
-      "itemId": 21531,
-      "name": "Drake Tooth Necklace",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 9.72
-    },
-    {
-      "itemId": 20685,
-      "name": "Wavefront Necklace",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 8.76
-    },
-    {
-      "itemId": 14558,
-      "name": "Lady Maye's Pendant",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 2.34
-    },
-    {
-      "itemId": 1443,
-      "name": "Jeweled Amulet of Cainwyn",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 2.28
-    },
-    {
-      "itemId": 20622,
-      "name": "Dragonheart Necklace",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1.08
-    },
-    {
-      "itemId": 21529,
-      "name": "Amulet of Shadow Shielding",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.84
-    },
-    {
       "itemId": 17111,
       "name": "Blazefury Medallion",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 18404,
-      "name": "Onyxia Tooth Pendant",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 19383,
-      "name": "Master Dragonslayer's Medallion",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 19491,
-      "name": "Amulet of the Darkmoon",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21505,
-      "name": "Choker of the Shifting Sands",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21506,
-      "name": "Pendant of the Shifting Sands",
-      "slot": "neck",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22659,
-      "name": "Medallion of the Dawn",
       "slot": "neck",
       "armorType": null,
       "handType": null,
@@ -4987,22 +3636,6 @@
       "curationHint": 12.1
     },
     {
-      "itemId": 19130,
-      "name": "Cold Snap",
-      "slot": "ranged",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.42
-    },
-    {
       "itemId": 30024,
       "name": "Mantle of the Elven Kings",
       "slot": "shoulder",
@@ -5148,38 +3781,6 @@
       "curationHint": 29.96
     },
     {
-      "itemId": 17604,
-      "name": "Field Marshal's Satin Mantle",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 26.2
-    },
-    {
-      "itemId": 17622,
-      "name": "Warlord's Satin Mantle",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 26.2
-    },
-    {
       "itemId": 28612,
       "name": "Pauldrons of the Solace-Giver",
       "slot": "shoulder",
@@ -5214,38 +3815,6 @@
       "curationHint": 22.44
     },
     {
-      "itemId": 21350,
-      "name": "Mantle of the Oracle",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 22.31
-    },
-    {
-      "itemId": 22515,
-      "name": "Shoulderpads of Faith",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 20.27
-    },
-    {
       "itemId": 32106,
       "name": "Chancellor's Satin Mantle",
       "slot": "shoulder",
@@ -5260,38 +3829,6 @@
         }
       ],
       "curationHint": 16.02
-    },
-    {
-      "itemId": 20061,
-      "name": "Highlander's Epaulets",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 13.22
-    },
-    {
-      "itemId": 20176,
-      "name": "Defiler's Epaulets",
-      "slot": "shoulder",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 13.22
     },
     {
       "itemId": 32101,
@@ -5310,8 +3847,8 @@
       "curationHint": 12.38
     },
     {
-      "itemId": 19841,
-      "name": "Zandalar Confessor's Mantle",
+      "itemId": 21864,
+      "name": "Soulcloth Shoulders",
       "slot": "shoulder",
       "armorType": 1,
       "handType": null,
@@ -5319,11 +3856,14 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
+          "kind": "crafted",
+          "profession": "Tailoring",
+          "recipeZone": "Karazhan",
+          "recipeBoss": "Trash",
           "origin": "db"
         }
       ],
-      "curationHint": 11.24
+      "curationHint": 2.22
     },
     {
       "itemId": 28789,
@@ -5458,38 +3998,6 @@
       "curationHint": 0.0
     },
     {
-      "itemId": 18665,
-      "name": "The Eye of Shadow",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 19948,
-      "name": "Zandalarian Hero Badge",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
       "itemId": 19958,
       "name": "Hazza'rah's Charm of Healing",
       "slot": "trinket",
@@ -5524,38 +4032,6 @@
     {
       "itemId": 21180,
       "name": "Earthstrike",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21326,
-      "name": "Defender of the Timbermaw",
-      "slot": "trinket",
-      "armorType": null,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 22678,
-      "name": "Talisman of Ascendance",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
@@ -6030,6 +4506,25 @@
       "curationHint": 33.62
     },
     {
+      "itemId": 30036,
+      "name": "Belt of the Long Road",
+      "slot": "waist",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "crafted",
+          "profession": "Tailoring",
+          "recipeZone": "Serpentshrine Cavern",
+          "recipeBoss": "Trash",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 30.04
+    },
+    {
       "itemId": 32979,
       "name": "Veteran's Mooncloth Belt",
       "slot": "waist",
@@ -6094,54 +4589,6 @@
         }
       ],
       "curationHint": 21.62
-    },
-    {
-      "itemId": 22518,
-      "name": "Belt of Faith",
-      "slot": "waist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 19.42
-    },
-    {
-      "itemId": 20625,
-      "name": "Belt of the Dark Bog",
-      "slot": "waist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 14.48
-    },
-    {
-      "itemId": 19842,
-      "name": "Zandalar Confessor's Bindings",
-      "slot": "waist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 11.64
     },
     {
       "itemId": 30020,
@@ -6521,118 +4968,6 @@
       "curationHint": 101.3
     },
     {
-      "itemId": 21273,
-      "name": "Blessed Qiraji Acolyte Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 99.38
-    },
-    {
-      "itemId": 23451,
-      "name": "Grand Marshal's Mageblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 75.0
-    },
-    {
-      "itemId": 23458,
-      "name": "High Warlord's Spellblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 75.0
-    },
-    {
-      "itemId": 23466,
-      "name": "High Warlord's Spellblade",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 75.0
-    },
-    {
-      "itemId": 18873,
-      "name": "Grand Marshal's Stave",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 74.42
-    },
-    {
-      "itemId": 18874,
-      "name": "High Warlord's War Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 74.42
-    },
-    {
-      "itemId": 18609,
-      "name": "Anathema",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 71.21
-    },
-    {
       "itemId": 29272,
       "name": "Orb of the Soul-Eater",
       "slot": "weapon",
@@ -6658,22 +4993,6 @@
       "bisSets": [
         "p2"
       ]
-    },
-    {
-      "itemId": 21275,
-      "name": "Blessed Qiraji Augur Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 50.19
     },
     {
       "itemId": 29273,
@@ -6708,150 +5027,6 @@
         }
       ],
       "curationHint": 48.86
-    },
-    {
-      "itemId": 20069,
-      "name": "Ironbark Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 46.64
-    },
-    {
-      "itemId": 20220,
-      "name": "Ironbark Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 46.64
-    },
-    {
-      "itemId": 17113,
-      "name": "Amberseal Keeper",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 45.8
-    },
-    {
-      "itemId": 23454,
-      "name": "Grand Marshal's Warhammer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 45.78
-    },
-    {
-      "itemId": 23459,
-      "name": "High Warlord's Battle Mace",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 45.78
-    },
-    {
-      "itemId": 23464,
-      "name": "High Warlord's Battle Mace",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 45.78
-    },
-    {
-      "itemId": 18608,
-      "name": "Benediction",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 44.34
-    },
-    {
-      "itemId": 21523,
-      "name": "Fang of Korialstrasz",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 43.4
-    },
-    {
-      "itemId": 17070,
-      "name": "Fang of the Mystics",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 43.32
     },
     {
       "itemId": 30049,
@@ -6890,70 +5065,6 @@
       "curationHint": 36.38
     },
     {
-      "itemId": 19309,
-      "name": "Tome of Shadow Force",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 34.0
-    },
-    {
-      "itemId": 19315,
-      "name": "Therazane's Touch",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 33.0
-    },
-    {
-      "itemId": 20070,
-      "name": "Sageclaw",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 32.52
-    },
-    {
-      "itemId": 20214,
-      "name": "Mindfang",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 32.52
-    },
-    {
       "itemId": 28603,
       "name": "Talisman of Nightbane",
       "slot": "weapon",
@@ -6970,70 +5081,6 @@
         }
       ],
       "curationHint": 32.2
-    },
-    {
-      "itemId": 21410,
-      "name": "Gavel of Infinite Wisdom",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 30.86
-    },
-    {
-      "itemId": 20581,
-      "name": "Staff of Rampant Growth",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 29.51
-    },
-    {
-      "itemId": 19366,
-      "name": "Master Dragonslayer's Orb",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 28.84
-    },
-    {
-      "itemId": 20582,
-      "name": "Trance Stone",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 26.44
     },
     {
       "itemId": 29274,
@@ -7070,54 +5117,6 @@
       "curationHint": 21.74
     },
     {
-      "itemId": 23452,
-      "name": "Grand Marshal's Tome of Power",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 20.96
-    },
-    {
-      "itemId": 23462,
-      "name": "High Warlord's Tome of Destruction",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 20.96
-    },
-    {
-      "itemId": 23468,
-      "name": "High Warlord's Tome of Destruction",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 20.96
-    },
-    {
       "itemId": 28728,
       "name": "Aran's Soothing Sapphire",
       "slot": "weapon",
@@ -7134,22 +5133,6 @@
         }
       ],
       "curationHint": 18.72
-    },
-    {
-      "itemId": 19312,
-      "name": "Lei of the Lifegiver",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 18.15
     },
     {
       "itemId": 28525,
@@ -7202,70 +5185,6 @@
       "curationHint": 14.16
     },
     {
-      "itemId": 23453,
-      "name": "Grand Marshal's Tome of Restoration",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 13.52
-    },
-    {
-      "itemId": 23463,
-      "name": "High Warlord's Tome of Mending",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 13.52
-    },
-    {
-      "itemId": 23469,
-      "name": "High Warlord's Tome of Mending",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 13.52
-    },
-    {
-      "itemId": 21185,
-      "name": "Earthcalm Orb",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 7.0
-    },
-    {
       "itemId": 29270,
       "name": "Flametongue Seal",
       "slot": "weapon",
@@ -7282,22 +5201,6 @@
       "curationHint": 3.06
     },
     {
-      "itemId": 2243,
-      "name": "Hand of Edward the Odd",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 1.98
-    },
-    {
       "itemId": 29271,
       "name": "Talisman of Kalecgos",
       "slot": "weapon",
@@ -7312,310 +5215,6 @@
         }
       ],
       "curationHint": 0.84
-    },
-    {
-      "itemId": 19310,
-      "name": "Tome of the Ice Lord",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.54
-    },
-    {
-      "itemId": 19308,
-      "name": "Tome of Arcane Domination",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.15
-    },
-    {
-      "itemId": 944,
-      "name": "Elemental Mage Staff",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 14555,
-      "name": "Alcor's Sunrazor",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 17112,
-      "name": "Empyrean Demolisher",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 17142,
-      "name": "Shard of the Defiler",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 5,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 18838,
-      "name": "Grand Marshal's Dirk",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 18840,
-      "name": "High Warlord's Razor",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 18865,
-      "name": "Grand Marshal's Punisher",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 18866,
-      "name": "High Warlord's Bludgeon",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 19311,
-      "name": "Tome of Fiery Arcana",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 3,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 19324,
-      "name": "The Lobotomizer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 20578,
-      "name": "Emerald Dragonfang",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 20580,
-      "name": "Hammer of Bestial Fury",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21244,
-      "name": "Blessed Qiraji Pugio",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21268,
-      "name": "Blessed Qiraji War Hammer",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21276,
-      "name": "Blessed Qiraji Naturalist Staff UNUSED",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 4,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 21522,
-      "name": "Shadowsong's Sorrow",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 2,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
-    },
-    {
-      "itemId": 23362,
-      "name": "Hammer of the Sun",
-      "slot": "weapon",
-      "armorType": null,
-      "handType": 1,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 0.0
     },
     {
       "itemId": 28524,
@@ -7933,22 +5532,6 @@
       "curationHint": 40.92
     },
     {
-      "itemId": 21186,
-      "name": "Rockfury Bracers",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 36.44
-    },
-    {
       "itemId": 28515,
       "name": "Bands of Nefarious Deeds",
       "slot": "wrist",
@@ -8037,22 +5620,6 @@
       "curationHint": 25.96
     },
     {
-      "itemId": 20626,
-      "name": "Black Bark Wristbands",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 25.72
-    },
-    {
       "itemId": 32820,
       "name": "Veteran's Silk Cuffs",
       "slot": "wrist",
@@ -8067,22 +5634,6 @@
         }
       ],
       "curationHint": 25.6
-    },
-    {
-      "itemId": 19595,
-      "name": "Dryad's Wrist Bindings",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 23.32
     },
     {
       "itemId": 28411,
@@ -8201,22 +5752,6 @@
       "curationHint": 16.96
     },
     {
-      "itemId": 22519,
-      "name": "Bindings of Faith",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 16.94
-    },
-    {
       "itemId": 32973,
       "name": "General's Mooncloth Cuffs",
       "slot": "wrist",
@@ -8247,54 +5782,6 @@
         }
       ],
       "curationHint": 14.84
-    },
-    {
-      "itemId": 19843,
-      "name": "Zandalar Confessor's Wraps",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 10.1
-    },
-    {
-      "itemId": 22667,
-      "name": "Bracers of Hope",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 8.1
-    },
-    {
-      "itemId": 19135,
-      "name": "Blacklight Bracer",
-      "slot": "wrist",
-      "armorType": 1,
-      "handType": null,
-      "quality": 4,
-      "phase": 1,
-      "sources": [
-        {
-          "kind": "unknown",
-          "origin": "db"
-        }
-      ],
-      "curationHint": 4.26
     },
     {
       "itemId": 30684,
