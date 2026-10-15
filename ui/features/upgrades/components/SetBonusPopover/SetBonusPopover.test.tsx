@@ -99,6 +99,22 @@ describe('SetBonusPopover', () => {
 			expect(side()).toBe('top');
 		});
 
+		// The widest popup needs 30rem (480 px) + the 10 px gap + the 6 px margin Base UI's flip keeps from the window's
+		// edge (its default 5 px collisionPadding plus 1 px): 496 px. With less, Base UI would flip it to the left.
+		it('right, at exactly the room the widest popup needs past Base UI’s collision margin', () => {
+			const trigger = show(FACEGUARD_TIP);
+			withRoom(trigger, 496);
+			hover(trigger);
+			expect(side()).toBe('right');
+		});
+
+		it('above, one pixel short of that room, where Base UI would flip a right-side popup to the left', () => {
+			const trigger = show(FACEGUARD_TIP);
+			withRoom(trigger, 495);
+			hover(trigger);
+			expect(side()).toBe('top');
+		});
+
 		it('measures from the keyboard too: right when opened with Enter and there is room', () => {
 			const trigger = show(FACEGUARD_TIP);
 			withRoom(trigger, 600);

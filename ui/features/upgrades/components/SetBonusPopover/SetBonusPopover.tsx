@@ -15,6 +15,11 @@ export interface SetBonusPopoverProps {
 /** The popup's `max-w` cap in rem (the literal 30rem below; Tailwind reads class names only as literals), plus the ui-kit Popover's 10 px gap to its anchor. */
 const WIDEST_REM = 30;
 const ANCHOR_GAP_PX = 10;
+/**
+ * How far from the window's edge Base UI's `flip()` wants the popup: its default `collisionPadding` of 5 px
+ * (`useAnchorPositioning.js`, which the ui-kit Popover does not override) plus the 1 px it adds to flip's padding.
+ */
+const FLIP_MARGIN_PX = 5 + 1;
 
 /**
  * Right when the widest popup fits between the figure and the window's edge, above otherwise. Measured here because
@@ -24,7 +29,7 @@ const sideFor = (figure: Element): PopoverSide => {
 	const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
 	const windowRight = document.documentElement.clientWidth || window.innerWidth;
 	const room = windowRight - figure.getBoundingClientRect().right;
-	return room >= WIDEST_REM * rootPx + ANCHOR_GAP_PX ? 'right' : 'top';
+	return room >= WIDEST_REM * rootPx + ANCHOR_GAP_PX + FLIP_MARGIN_PX ? 'right' : 'top';
 };
 
 /**
