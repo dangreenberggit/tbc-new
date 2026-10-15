@@ -202,10 +202,36 @@
 						},
 						"only_bis_tooltip": {
 							"type": "string"
+						},
+						"filter_by_source": {
+							"type": "string"
+						},
+						"sources_summary_none": {
+							"type": "string"
+						},
+						"sources_summary": {
+							"type": "string"
+						},
+						"sources_show_all": {
+							"type": "string"
+						},
+						"sources_hide_all": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "set_potential", "set_potential_tooltip", "only_bis", "only_bis_tooltip"]
+					"required": [
+						"title",
+						"set_potential",
+						"set_potential_tooltip",
+						"only_bis",
+						"only_bis_tooltip",
+						"filter_by_source",
+						"sources_summary_none",
+						"sources_summary",
+						"sources_show_all",
+						"sources_hide_all"
+					]
 				},
 				"export": {
 					"type": "object",
@@ -443,6 +469,9 @@
 						"empty_no_bis_row": {
 							"type": "string"
 						},
+						"empty_no_source_row": {
+							"type": "string"
+						},
 						"below_cutoff_group": {
 							"type": "string"
 						},
@@ -479,6 +508,7 @@
 						"empty_no_upgrades",
 						"empty_no_upgrades_body",
 						"empty_no_bis_row",
+						"empty_no_source_row",
 						"below_cutoff_group",
 						"below_cutoff_group_bar",
 						"removes_worn",
