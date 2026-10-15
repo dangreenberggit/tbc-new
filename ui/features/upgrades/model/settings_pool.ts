@@ -59,6 +59,12 @@ export function sourceMatches(entry: SourcedEntry, key: string): boolean {
 	return sourceKeyOf(entry) === key && !sources.some(s => 'zone' in s);
 }
 
+/** Every key `sourceMatches` matches an entry by: each of its zones, else its source bucket. */
+export function sourceKeysMatching(entry: SourcedEntry): string[] {
+	const zones = poolSourcesOf(entry).flatMap(s => ('zone' in s ? [s.zone] : []));
+	return zones.length > 0 ? [...new Set(zones)] : [sourceKeyOf(entry)];
+}
+
 const ZONELESS_KEYS = new Set(Object.values(SOURCE_LABELS));
 
 /**

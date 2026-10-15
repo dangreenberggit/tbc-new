@@ -13,7 +13,7 @@ import { SIM_ORDER } from './engine/slots';
 import { applyView, rankableSetPotential, type ViewResult, type ViewRow } from './engine/view';
 import type { DpsSortKey } from './results_columns';
 import type { RunState, StoppedRanking } from './run_state';
-import { sourceMatches, type SourceOption, sourceOptions, validSourceKeysOf } from './settings_pool';
+import { sourceKeysMatching, type SourceOption, sourceOptions, validSourceKeysOf } from './settings_pool';
 
 export const SHOPPING_LIST_TAB = 'shopping-list';
 
@@ -192,14 +192,16 @@ export const withOfferedSourcesHidden = (hidden: readonly string[], offered: rea
 
 /**
  * A view cut to the rows of the sources not in `hidden`. A row stays while
- * some shown source matches it, which is the pre-run Sources rule
- * (`effectivePool`), so an item from two raids stays while either is shown.
- * A hidden key the view does not offer changes nothing. Like `bisOnlyView`,
- * only the count below the cutoff changes, and every slot keeps its tab.
+ * some source key it matches is not hidden, so an item from two raids stays
+ * while either is shown. That includes a raid the dialog lists on no row,
+ * because it lists a row under its first zone only (review D4). A hidden key
+ * the view does not offer changes nothing. Like `bisOnlyView`, only the count
+ * below the cutoff changes, and every slot keeps its tab.
  */
 export function sourcesView(view: ResultsViewResult, hidden: readonly string[]): ResultsViewResult {
-	const shown = validSourceKeysOf(view.rows).filter(key => !hidden.includes(key));
-	const kept = (row: ViewRow) => shown.some(key => sourceMatches(row, key));
+	const offered = validSourceKeysOf(view.rows);
+	const acting = hidden.filter(key => offered.includes(key));
+	const kept = (row: ViewRow) => sourceKeysMatching(row).some(key => !acting.includes(key));
 	const rows = view.rows.filter(kept);
 	if (rows.length === view.rows.length) return view;
 	const shortlist = view.shortlist.filter(kept);

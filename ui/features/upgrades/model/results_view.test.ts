@@ -292,6 +292,17 @@ describe('resultsViewFor with sources hidden', () => {
 		expect(ids(resultsViewFor(done(ranking), NO_VIEW_TOGGLES, ['Hyjal Summit', 'Black Temple'])!.rows)).not.toContain(30902);
 	});
 
+	// Review D4: the dialog lists a row under its first zone only, so no row offers Zul'Aman here, but it is not hidden.
+	it('keeps a row from two raids while its second is not hidden, though the view offers that raid on no row', () => {
+		const hyjalOrZulAman: RankedItem = {
+			...twoRaidEdge,
+			sources: [twoRaidEdge.sources![0]!, { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin", origin: 'db' }],
+		};
+		const ranking = replacing(hyjalOrZulAman);
+		expect(viewSourceOptions(applyView(ranking).rows).raids.map(option => option.key)).not.toContain("Zul'Aman");
+		expect(ids(resultsViewFor(done(ranking), NO_VIEW_TOGGLES, ['Hyjal Summit'])!.rows)).toContain(30902);
+	});
+
 	it('hides with a zoneless bucket only the rows that have no zone', () => {
 		const ranking = withRows([...RANKING_FIXTURE.items.filter(row => row.itemId !== badgeSword.itemId), badgeSword, badgeOrRaidSword]);
 		const view = resultsViewFor(done(ranking), NO_VIEW_TOGGLES, ['Badge vendor'])!;
