@@ -328,6 +328,18 @@ describe('resultsViewFor with sources hidden', () => {
 		expect(slotTabs(allHidden).map(tab => tab.id)).toEqual(['head', 'chest', 'legs', 'trinket1', 'mainhand']);
 	});
 
+	// Review AD1: a pane whose upgrades all come from hidden sources once said every candidate simmed at or below the worn gear.
+	it('says a pane whose upgrades the filter hid has no row from the shown sources, and keeps its below-cutoff rows', () => {
+		// Helm of the Illidari Shatterer, below the cutoff, made a Zul'Aman drop so it is the one row a shown source keeps.
+		const zulAmanHelm: RankedItem = { ...helm, source: { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin", origin: 'db' } };
+		const everyOtherSource = ['Black Temple', 'Hyjal Summit', "Gruul's Lair", 'Tempest Keep', 'PvP vendor'];
+		const view = resultsViewFor(done(replacing(zulAmanHelm)), NO_VIEW_TOGGLES, everyOtherSource)!;
+		for (const tab of ['head', SHOPPING_LIST_TAB] as const) {
+			expect(paneRows(view, tab)).toMatchObject({ main: [], noBisListRow: false, noSourceRow: true });
+			expect(ids(paneRows(view, tab).belowCutoff)).toEqual([zulAmanHelm.itemId]);
+		}
+	});
+
 	it('under BiS only, says a slot has no BiS-list item only when it had none before the source cut', () => {
 		const view = resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple'])!;
 		// Chest has no BiS-list row at all.

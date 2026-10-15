@@ -36,13 +36,15 @@ export const rowKey = (row: Pick<RankedItem, 'itemId' | 'slot'>): string => `${r
  * display filter must change which rows a pane shows, never which panes
  * exist" (ticket 614). `bisOnly` is set on a view cut to its BiS-list rows;
  * `sourcesHidden` on one that "Filter by source" cut by at least one row,
- * with `slotsBeforeSourceCut` naming the slots that had a row before that cut.
+ * with `slotsBeforeSourceCut` naming the slots that had a row before that cut
+ * and `panesWithMainBeforeSourceCut` the panes whose main table had a row.
  */
 export type ResultsViewResult = ViewResult & {
 	tabSlots?: readonly SimSlotName[];
 	bisOnly?: true;
 	sourcesHidden?: true;
 	slotsBeforeSourceCut?: readonly SimSlotName[];
+	panesWithMainBeforeSourceCut?: readonly ResultsTabId[];
 };
 
 /**
@@ -65,6 +67,9 @@ export function slotTabs(view: ResultsViewResult): Array<{ id: SimSlotName; coun
 
 /** On some phase's BiS list, as the old tab's `isBisTagged` tested it: a BiS or an Alt tag. */
 const onBisList = (row: Pick<RankedItem, 'bisTags'>): boolean => row.bisTags.length > 0;
+
+/** A row a pane's main table shows: one that meets the cutoff, or a BiS-list row that misses it and is not owned (`paneRows`). */
+const inMainTable = (row: ViewRow): boolean => !row.belowCutoffInView || (!row.owned && onBisList(row));
 
 export type PaneRows = { main: ViewRow[]; notUpgrades: ReadonlySet<string>; belowCutoff: ViewRow[]; noBisListRow: boolean; noSourceRow: boolean };
 
@@ -90,21 +95,25 @@ export type PaneRows = { main: ViewRow[]; notUpgrades: ReadonlySet<string>; belo
  * It reads the slot's rows before the source cut, so a slot whose BiS-list
  * rows all come from hidden sources is not said to have none.
  *
- * `noSourceRow` is true for a pane that "Filter by source" emptied, so the
- * pane can say no row comes from the shown sources. A slot with no BiS-list
- * row says that instead.
+ * `noSourceRow` is true for a pane whose main table "Filter by source"
+ * emptied, so the pane can say no row comes from the shown sources rather
+ * than that every candidate simmed at or below the worn gear; its rows below
+ * the cutoff still show under that. A slot with no BiS-list row says that
+ * instead.
  */
 export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 	const rows = tab === SHOPPING_LIST_TAB ? view.rows : view.rows.filter(row => effectiveSlot(row) === tab);
 	const missed = rows.filter(row => row.belowCutoffInView && !row.owned);
 	const shownAnyway = missed.filter(onBisList);
+	const main = rows.filter(inMainTable);
 	const noBisListRow = view.bisOnly === true && tab !== SHOPPING_LIST_TAB && !(view.slotsBeforeSourceCut?.includes(tab) ?? rows.length > 0);
+	const sourceCutEmptied = rows.length === 0 || (main.length === 0 && view.panesWithMainBeforeSourceCut?.includes(tab) === true);
 	return {
-		main: rows.filter(row => !row.belowCutoffInView || shownAnyway.includes(row)),
+		main,
 		notUpgrades: new Set(shownAnyway.map(rowKey)),
 		belowCutoff: missed.filter(row => !onBisList(row)),
 		noBisListRow,
-		noSourceRow: view.sourcesHidden === true && rows.length === 0 && !noBisListRow,
+		noSourceRow: view.sourcesHidden === true && sourceCutEmptied && !noBisListRow,
 	};
 }
 
@@ -196,7 +205,18 @@ export function sourcesView(view: ResultsViewResult, hidden: readonly string[]):
 	const shortlist = view.shortlist.filter(kept);
 	const tabSlots = view.tabSlots ?? [...new Set(view.rows.map(effectiveSlot))];
 	const slotsBeforeSourceCut = [...new Set(view.rows.map(effectiveSlot))];
-	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length, tabSlots, sourcesHidden: true, slotsBeforeSourceCut };
+	const mainBefore = view.rows.filter(inMainTable);
+	const panesWithMainBeforeSourceCut: ResultsTabId[] = mainBefore.length > 0 ? [SHOPPING_LIST_TAB, ...new Set(mainBefore.map(effectiveSlot))] : [];
+	return {
+		...view,
+		rows,
+		shortlist,
+		belowCutoffCount: rows.length - shortlist.length,
+		tabSlots,
+		sourcesHidden: true,
+		slotsBeforeSourceCut,
+		panesWithMainBeforeSourceCut,
+	};
 }
 
 /**
