@@ -16,7 +16,7 @@ import type { RankedItem } from '../model/engine/rank';
 import { compareSortValues, type DpsSortKey, SORT_COLUMN_IDS, type SortLabels, sortValue } from '../model/results_columns';
 import { rowKey } from '../model/results_view';
 import { selectSort, type UpgradesState } from '../model/upgrades_store';
-import { SORT_LABELS } from '../utils/format';
+import { sortLabelsFor } from '../utils/format';
 import { useUpgradesStore, useUpgradesStoreApi } from './useUpgradesStore';
 
 export const resultsTableFeatures = tableFeatures({ rowSortingFeature, sortedRowModel: createSortedRowModel() });
@@ -46,6 +46,7 @@ const RESULTS_TABLE_OPTIONS = {
 } as const;
 
 const ENGINE_ORDER: SortingState = [];
+const NO_HIDDEN_SOURCES: readonly string[] = [];
 const selectEngineOrder = (_state: UpgradesState): SortingState => ENGINE_ORDER;
 
 export interface UseResultsTableOptions {
@@ -62,10 +63,10 @@ export function useResultsTable(rows: readonly RankedItem[], rowContext: RowCont
 	// A table that ignores the sort selects a constant, so a sort click does not re-render it.
 	const sorting = useUpgradesStore(sortable ? selectSort : selectEngineOrder);
 	const setSort = useUpgradesStore(state => state.setSort);
-	const { dpsKey } = rowContext;
+	const { dpsKey, hiddenSources } = rowContext;
 	// Memoised because `useTable` hands back a new table object whenever its options object is new, and a new
 	// columns array rebuilds every column. Both hold only while the caller keeps `rows` the same array.
-	const columns = useMemo(() => resultsColumns(SORT_LABELS, dpsKey), [dpsKey]);
+	const columns = useMemo(() => resultsColumns(sortLabelsFor(hiddenSources ?? NO_HIDDEN_SOURCES), dpsKey), [dpsKey, hiddenSources]);
 	// Controlled `state.sorting` rather than a TanStack atom: the sort lives in the tab's one zustand store (ticket 565, plan Q-sort), and an atom would be a second store.
 	const options = useMemo(
 		() => ({

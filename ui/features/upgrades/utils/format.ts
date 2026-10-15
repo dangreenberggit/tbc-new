@@ -90,8 +90,15 @@ export const rowShownSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>,
 	return shown ? sourceLabel(shown) : rowSourceLabel(row);
 };
 
-/** The slot column sorts on its cell's text and the source column on the engine's label (a drop's zone, which its linked cell names first, else the source's kind), as the old tab's did; the export sorts with the same labels, so its order is the order on screen. */
-export const SORT_LABELS: SortLabels<Pick<RankedItem, 'slot' | 'slotChoice' | 'source' | 'sources'>> = { slot: slotLabel, source: rowSourceLabel };
+/**
+ * The slot column sorts on its cell's text and the source column on the label its cell names under the acting hidden
+ * sources (a drop's zone, else the source's kind; the first shown source of a row whose first is hidden), so the sort
+ * matches the cell (review AD2). The export sorts with the same labels, so its order is the order on screen.
+ */
+export const sortLabelsFor = (hiddenSources: readonly string[]): SortLabels<Pick<RankedItem, 'slot' | 'slotChoice' | 'source' | 'sources'>> => ({
+	slot: slotLabel,
+	source: row => rowShownSourceLabel(row, hiddenSources),
+});
 
 /** What loading a fixture file did, in the page's words. */
 export const fixtureOutcomeText = (outcome: FixtureLoadResult): string => {

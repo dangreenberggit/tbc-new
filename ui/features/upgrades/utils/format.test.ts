@@ -18,7 +18,7 @@ import {
 	rowSourceLabel,
 	simSlotLabel,
 	slotLabel,
-	SORT_LABELS,
+	sortLabelsFor,
 	sourceKeyLabel,
 	sourceLabel,
 	substitutionText,
@@ -115,11 +115,11 @@ describe('the Source cell under Filter by source', () => {
 	});
 });
 
-describe('SORT_LABELS', () => {
+describe('sortLabelsFor', () => {
 	it('sorts the slot and source columns on the text their cells show', () => {
 		const row = { slot: 'finger', slotChoice: 'finger2', source: { kind: 'badge', cost: 75 } } as const;
-		expect(SORT_LABELS.slot(row)).toBe('Ring 2');
-		expect(SORT_LABELS.source(row)).toBe('Badge vendor');
+		expect(sortLabelsFor([]).slot(row)).toBe('Ring 2');
+		expect(sortLabelsFor([]).source(row)).toBe('Badge vendor');
 	});
 });
 
