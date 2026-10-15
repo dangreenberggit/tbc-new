@@ -1166,8 +1166,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Harness of Carnal Instinct",
+          "boss": "M'uru",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 339.19
@@ -1681,8 +1684,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Sunglow Vest",
+          "boss": "M'uru",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 0.48
@@ -1733,8 +1739,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Robes of Faltered Light",
+          "boss": "M'uru",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 0.39
@@ -5737,8 +5746,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Shadowed Gauntlets of Paroxysm",
+          "boss": "M'uru",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 153.63
@@ -5960,8 +5972,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Handguards of the Dawn",
+          "boss": "Kil'jaeden",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 0.33
@@ -6033,8 +6048,10 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Tranquil Majesty Wraps",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 0.3
@@ -6710,8 +6727,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Cowl of Light's Purity",
+          "boss": "Kil'jaeden",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 0.51
@@ -7258,8 +7278,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Leggings of the Immortal Night",
+          "boss": "Felmyst",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 205.58
@@ -7622,8 +7645,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Breeches of Natural Aggression",
+          "boss": "Kalecgos",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 0.42
@@ -7845,8 +7871,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Pantaloons of Calming Strife",
+          "boss": "Kalecgos",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 0.29
@@ -10335,8 +10364,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Shoulderpads of Vehemence",
+          "boss": "Eredar Twins",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 190.14
@@ -10719,8 +10751,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Shawl of Wonderment",
+          "boss": "Eredar Twins",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 0.33
@@ -10835,8 +10870,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Spaulders of Reclamation",
+          "boss": "Eredar Twins",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 0.27

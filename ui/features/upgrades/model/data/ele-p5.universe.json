@@ -1172,8 +1172,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "curated"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Garments of Serene Shores",
+          "boss": "M'uru",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 149.7,
@@ -1233,8 +1236,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Robes of Faltered Light",
+          "boss": "M'uru",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 134.96
@@ -1350,8 +1356,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Sunglow Vest",
+          "boss": "M'uru",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 120.19
@@ -2519,8 +2528,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Harness of Carnal Instinct",
+          "boss": "M'uru",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 0.0
@@ -6511,8 +6523,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Handguards of the Dawn",
+          "boss": "Kil'jaeden",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 97.48
@@ -6561,8 +6576,10 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Tranquil Majesty Wraps",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 82.5
@@ -6719,8 +6736,10 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Gauntlets of the Ancient Shadowmoon",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 68.04
@@ -7227,8 +7246,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Shadowed Gauntlets of Paroxysm",
+          "boss": "M'uru",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 5.0
@@ -7671,8 +7693,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Cowl of Light's Purity",
+          "boss": "Kil'jaeden",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 111.0
@@ -8809,8 +8834,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Pantaloons of Calming Strife",
+          "boss": "Kalecgos",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 129.56
@@ -9022,8 +9050,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Chain Links of the Tumultuous Storm",
+          "boss": "Felmyst",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 90.65
@@ -9161,8 +9192,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Breeches of Natural Aggression",
+          "boss": "Kalecgos",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 55.25
@@ -9840,8 +9874,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Leggings of the Immortal Night",
+          "boss": "Felmyst",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 6.25
@@ -11902,8 +11939,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Equilibrium Epaulets",
+          "boss": "Eredar Twins",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 114.32
@@ -12006,8 +12046,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Spaulders of Reclamation",
+          "boss": "Eredar Twins",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 95.9
@@ -12061,8 +12104,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Shawl of Wonderment",
+          "boss": "Eredar Twins",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 83.35
@@ -12649,8 +12695,11 @@
       "phase": 5,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Shoulderpads of Vehemence",
+          "boss": "Eredar Twins",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 4.75

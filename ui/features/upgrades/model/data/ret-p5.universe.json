@@ -1256,6 +1256,25 @@
       "curationHint": 52.8
     },
     {
+      "itemId": 34394,
+      "name": "Breastplate of Agony's Aversion",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Warharness of Reckless Fury",
+          "boss": "M'uru",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 48.8
+    },
+    {
       "itemId": 30913,
       "name": "Robes of Rhonin",
       "slot": "chest",
@@ -1334,6 +1353,63 @@
           "zone": "Sunwell Plateau",
           "boss": "M'uru",
           "origin": "db"
+        }
+      ],
+      "curationHint": 11.36
+    },
+    {
+      "itemId": 34396,
+      "name": "Garments of Crashing Shores",
+      "slot": "chest",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Garments of Serene Shores",
+          "boss": "M'uru",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 11.36
+    },
+    {
+      "itemId": 34398,
+      "name": "Utopian Tunic of Elune",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Sunglow Vest",
+          "boss": "M'uru",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 11.36
+    },
+    {
+      "itemId": 34399,
+      "name": "Robes of Ghostly Hatred",
+      "slot": "chest",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Robes of Faltered Light",
+          "boss": "M'uru",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 11.36
@@ -1480,6 +1556,25 @@
         }
       ],
       "curationHint": 7.2
+    },
+    {
+      "itemId": 34395,
+      "name": "Noble Judicator's Chestguard",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Heroic Judicator's Chestguard",
+          "boss": "M'uru",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 6.08
     },
     {
       "itemId": 30075,
@@ -4444,6 +4539,25 @@
       ]
     },
     {
+      "itemId": 34408,
+      "name": "Gloves of the Forest Drifter",
+      "slot": "hands",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Shadowed Gauntlets of Paroxysm",
+          "boss": "M'uru",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 72.82
+    },
+    {
       "itemId": 30982,
       "name": "Lightbringer Gauntlets",
       "slot": "hands",
@@ -4612,6 +4726,24 @@
       "curationHint": 35.44
     },
     {
+      "itemId": 34407,
+      "name": "Tranquil Moonlight Wraps",
+      "slot": "hands",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Tranquil Majesty Wraps",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 8.0
+    },
+    {
       "itemId": 34344,
       "name": "Handguards of Defiled Worlds",
       "slot": "hands",
@@ -4625,6 +4757,25 @@
           "zone": "Sunwell Plateau",
           "boss": "Kil'jaeden",
           "origin": "db"
+        }
+      ],
+      "curationHint": 7.52
+    },
+    {
+      "itemId": 34406,
+      "name": "Gloves of Tyri's Power",
+      "slot": "hands",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Handguards of the Dawn",
+          "boss": "Kil'jaeden",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 7.52
@@ -4833,6 +4984,24 @@
           "zone": "Serpentshrine Cavern",
           "boss": "Lady Vashj",
           "origin": "db"
+        }
+      ],
+      "curationHint": 4.32
+    },
+    {
+      "itemId": 34409,
+      "name": "Gauntlets of the Ancient Frostwolf",
+      "slot": "hands",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Gauntlets of the Ancient Shadowmoon",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 4.32
@@ -5507,6 +5676,25 @@
           "zone": "Sunwell Plateau",
           "boss": "Kil'jaeden",
           "origin": "db"
+        }
+      ],
+      "curationHint": 12.0
+    },
+    {
+      "itemId": 34405,
+      "name": "Helm of Arcane Purity",
+      "slot": "head",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Cowl of Light's Purity",
+          "boss": "Kil'jaeden",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 12.0
@@ -6228,6 +6416,25 @@
       "curationHint": 96.84
     },
     {
+      "itemId": 34385,
+      "name": "Leggings of the Immortal Beast",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Leggings of the Immortal Night",
+          "boss": "Felmyst",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 96.48
+    },
+    {
       "itemId": 30739,
       "name": "Scaled Greaves of the Marksman",
       "slot": "legs",
@@ -6271,6 +6478,25 @@
       "bisSets": [
         "p3"
       ]
+    },
+    {
+      "itemId": 34381,
+      "name": "Felstrength Legplates",
+      "slot": "legs",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Felfury Legplates",
+          "boss": "Brutallus",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 86.0
     },
     {
       "itemId": 29950,
@@ -6417,6 +6643,25 @@
       "curationHint": 11.36
     },
     {
+      "itemId": 34386,
+      "name": "Pantaloons of Growing Strife",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Pantaloons of Calming Strife",
+          "boss": "Kalecgos",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 11.36
+    },
+    {
       "itemId": 32367,
       "name": "Leggings of Devastation",
       "slot": "legs",
@@ -6519,6 +6764,25 @@
       "curationHint": 7.84
     },
     {
+      "itemId": 34382,
+      "name": "Judicator's Legguards",
+      "slot": "legs",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Legplates of the Holy Juggernaut",
+          "boss": "Kalecgos",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 7.52
+    },
+    {
       "itemId": 33533,
       "name": "Avalanche Leggings",
       "slot": "legs",
@@ -6573,6 +6837,44 @@
           "zone": "Sunwell Plateau",
           "boss": "Kalecgos",
           "origin": "db"
+        }
+      ],
+      "curationHint": 7.2
+    },
+    {
+      "itemId": 34383,
+      "name": "Kilt of Spiritual Reconstruction",
+      "slot": "legs",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Chain Links of the Tumultuous Storm",
+          "boss": "Felmyst",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 7.2
+    },
+    {
+      "itemId": 34384,
+      "name": "Breeches of Natural Splendor",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Breeches of Natural Aggression",
+          "boss": "Kalecgos",
+          "origin": "sunmote"
         }
       ],
       "curationHint": 7.2
@@ -8213,6 +8515,63 @@
       "curationHint": 8.48
     },
     {
+      "itemId": 34390,
+      "name": "Erupting Epaulets",
+      "slot": "shoulder",
+      "armorType": 3,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Equilibrium Epaulets",
+          "boss": "Eredar Twins",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 8.48
+    },
+    {
+      "itemId": 34391,
+      "name": "Spaulders of Devastation",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Spaulders of Reclamation",
+          "boss": "Eredar Twins",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 8.48
+    },
+    {
+      "itemId": 34393,
+      "name": "Shoulderpads of Knowledge's Pursuit",
+      "slot": "shoulder",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Shawl of Wonderment",
+          "boss": "Eredar Twins",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 8.48
+    },
+    {
       "itemId": 33489,
       "name": "Mantle of Ill Intent",
       "slot": "shoulder",
@@ -8275,6 +8634,25 @@
         }
       ],
       "curationHint": 6.24
+    },
+    {
+      "itemId": 34389,
+      "name": "Spaulders of the Thalassian Defender",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "token",
+          "zone": "Sunwell Plateau",
+          "token": "Sunmote + Spaulders of the Thalassian Savior",
+          "boss": "Eredar Twins",
+          "origin": "sunmote"
+        }
+      ],
+      "curationHint": 5.92
     },
     {
       "itemId": 28726,
