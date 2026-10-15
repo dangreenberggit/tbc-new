@@ -47,6 +47,20 @@ describe('the run actions', () => {
 		expect(selectSort(store.getState())).toEqual([{ id: 'item', desc: false }]);
 	});
 
+	it('keeps the hidden sources the user chose when the next run starts and lands', () => {
+		const store = createUpgradesStore(SEED);
+		store.getState().startRun(1, 1000);
+		store.getState().settleRun(1, RANKING_FIXTURE);
+		store.getState().setViewSources(['Black Temple', 'PvP vendor']);
+
+		store.getState().startRun(2, 2000);
+		expect(selectHiddenSources(store.getState())).toEqual(['Black Temple', 'PvP vendor']);
+
+		store.getState().landRow(2, rowA!);
+		store.getState().settleRun(2, RANKING_FIXTURE);
+		expect(selectHiddenSources(store.getState())).toEqual(['Black Temple', 'PvP vendor']);
+	});
+
 	it('keeps the sort when a recorded ranking loads', () => {
 		const store = createUpgradesStore(SEED);
 		store.getState().setSort([{ id: 'item', desc: false }]);
