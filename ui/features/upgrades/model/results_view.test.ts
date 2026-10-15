@@ -359,6 +359,15 @@ describe('sourcesView over resultsViewFor', () => {
 		}
 	});
 
+	// Ticket 648: the filter did not empty a main table that was already empty, so the pane keeps "No upgrades found".
+	it('does not blame the shown sources for a pane whose rows were all below the cutoff before the cut', () => {
+		// Helm of the Illidari Shatterer (Black Temple) misses the cutoff; the Hyjal Summit weapon is the row the cut hides.
+		const view = bySource(done(withRows([helm, fixtureRow(1)])), NO_VIEW_TOGGLES, ['Hyjal Summit']);
+		expect(view.sourcesHidden).toBe(true);
+		expect(paneRows(view, 'head')).toMatchObject({ main: [], noBisListRow: false, noSourceRow: false });
+		expect(ids(paneRows(view, 'head').belowCutoff)).toEqual([helm.itemId]);
+	});
+
 	it('under BiS only, says a slot has no BiS-list item only when it had none before the source cut', () => {
 		const view = bySource(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple']);
 		// Chest has no BiS-list row at all.
