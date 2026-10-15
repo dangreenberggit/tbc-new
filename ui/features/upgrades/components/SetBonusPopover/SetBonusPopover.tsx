@@ -12,8 +12,13 @@ export interface SetBonusPopoverProps {
 	children: ReactNode;
 }
 
-/** The popup's `max-w` cap in rem (the literal 30rem below; Tailwind reads class names only as literals), plus the ui-kit Popover's 10 px gap to its anchor. */
-const WIDEST_REM = 30;
+/**
+ * The popup's width cap. Tailwind generates a class only from a literal it finds in the source, so the cap is written
+ * out once here and `WIDEST_REM` is read back from it.
+ */
+const POPUP_MAX_WIDTH = 'max-w-[min(30rem,calc(100vw-1rem))]';
+const WIDEST_REM = Number(/min\((\d+(?:\.\d+)?)rem/.exec(POPUP_MAX_WIDTH)?.[1]);
+/** The popup's gap to the figure, passed to the Popover as `sideOffset` so this is the one place it is set. */
 const ANCHOR_GAP_PX = 10;
 /**
  * How far from the window's edge Base UI's `flip()` wants the popup: its default `collisionPadding` of 5 px
@@ -51,7 +56,8 @@ export const SetBonusPopover = ({ tip, children }: SetBonusPopoverProps) => {
 			triggerProps={{ onPointerEnter: measure, onFocus: measure }}
 			openOnHover
 			side={side}
-			maxWidth="max-w-[min(30rem,calc(100vw-1rem))]"
+			sideOffset={ANCHOR_GAP_PX}
+			maxWidth={POPUP_MAX_WIDTH}
 			testId="upgrades-set-bonus-tip">
 			<BasePopover.Title className="sr-only">{i18n.t('upgrades_tab.results.set_bonus_tip_title', { ns: 'upgrades' })}</BasePopover.Title>
 			<div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 text-left">

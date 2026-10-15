@@ -100,8 +100,9 @@ describe('rankForPlayer', () => {
 	});
 
 	// Phase 1 has no candidate list (ticket 515): the run must still finish, so the tab can say why it has no rows.
-	// That the engine itself returns no rows on an empty pool is `packages/core/test/rank.test.ts` (the slamaltman baseline case).
-	it('ranks an empty pool on a phase with no candidate list and resolves, rather than failing', async () => {
+	// The engine is mocked here; that it returns no rows on an empty pool is tested by `packages/core/test/rank.test.ts`
+	// (the slamaltman baseline case) in the main repo, tbc-gear-prio, not in this fork.
+	it('passes maxPhase 1 and an empty pool to the engine on a phase with no candidate list, and resolves', async () => {
 		expect(poolFor('ret', 1)).toEqual([]);
 		rankBehaviour = async () => ({ ...RANKING_FIXTURE, items: [] });
 

@@ -53,12 +53,14 @@ export const UpgradesResults = memo(({ run, selectedSets, specId }: UpgradesResu
 		case 'stopped': {
 			const hasRows = view !== undefined && view.rows.length > 0;
 			const { maxPhase } = run.result.assumptions;
-			// Checked before any other empty state: Phase 1 has no list by design (`packages/core/test/pool-file.test.ts`), so "No upgrades found" would be wrong.
+			const viewToggles = <ViewToggles offered={offered} toggles={toggles} maxPhase={maxPhase} onChange={setToggle} />;
+			// Checked before any other empty state: Phase 1 has no list by design (`packages/core/test/pool-file.test.ts` in the
+			// main repo, tbc-gear-prio, not in this fork), so "No upgrades found" would be wrong.
 			const poolMissing = run.status === 'done' && !hasRows && specId !== undefined && poolSourceFor(specId, maxPhase) === undefined;
 			if (poolMissing) {
 				return (
 					<>
-						<ViewToggles offered={offered} toggles={toggles} maxPhase={maxPhase} onChange={setToggle} />
+						{viewToggles}
 						<EmptyState
 							title={i18n.t('upgrades_tab.results.empty_no_phase_list', { ns: 'upgrades', phase: maxPhase })}
 							body={i18n.t('upgrades_tab.results.empty_no_phase_list_body', { ns: 'upgrades', phase: maxPhase })}
@@ -70,7 +72,7 @@ export const UpgradesResults = memo(({ run, selectedSets, specId }: UpgradesResu
 			const noUpgrades = !hasRows && run.status === 'done';
 			return (
 				<>
-					<ViewToggles offered={offered} toggles={toggles} maxPhase={maxPhase} onChange={setToggle} />
+					{viewToggles}
 					{hasRows && <ResultsPanes view={view} rowContext={rowContext} />}
 					{noUpgrades && (
 						<EmptyState
