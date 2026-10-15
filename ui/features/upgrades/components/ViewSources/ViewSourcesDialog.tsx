@@ -1,12 +1,9 @@
 import i18n from '@i18n/config';
-import { BooleanPicker } from '@ui-kit/BooleanPicker';
 import { Button } from '@ui-kit/Button';
 import { Dialog } from '@ui-kit/Dialog';
-import { useId } from 'react';
 
 import type { ViewSourceOptions } from '../../model/results_view';
-import type { SourceOption } from '../../model/settings_pool';
-import { sourceKeyLabel } from '../../utils/format';
+import { SourceSection } from '../SourceSection';
 
 export interface ViewSourcesDialogProps {
 	open: boolean;
@@ -17,40 +14,6 @@ export interface ViewSourcesDialogProps {
 	onShowAll: () => void;
 	onHideAll: () => void;
 }
-
-interface SourceSectionProps {
-	title: string;
-	options: readonly SourceOption[];
-	hidden: readonly string[];
-	onToggle: (key: string) => void;
-}
-
-/** One group of sources in two columns, laid out as the pre-run Sources dialog lays out its groups; a ticked box is a source shown. */
-const SourceSection = ({ title, options, hidden, onToggle }: SourceSectionProps) => {
-	const idPrefix = useId();
-	if (options.length === 0) return null;
-	return (
-		<fieldset>
-			<legend className="mb-2 text-base font-bold">{title}</legend>
-			<div className="grid grid-cols-2 gap-x-(--modal-padding) gap-y-1">
-				{options.map((option, index) => (
-					<div key={option.key} data-testid="upgrades-view-source-row" data-source={option.key}>
-						<BooleanPicker
-							modObject={null}
-							config={{
-								id: `${idPrefix}-${index}`,
-								label: sourceKeyLabel(option.key),
-								layout: 'inline',
-								value: !hidden.includes(option.key),
-								onChange: () => onToggle(option.key),
-							}}
-						/>
-					</div>
-				))}
-			</div>
-		</fieldset>
-	);
-};
 
 /** Which sources a settled table shows: raids first, then the other sources, with Show all and Hide all. */
 export const ViewSourcesDialog = ({ open, onOpenChange, options, hidden, onToggle, onShowAll, onHideAll }: ViewSourcesDialogProps) => (
@@ -74,14 +37,16 @@ export const ViewSourcesDialog = ({ open, onOpenChange, options, hidden, onToggl
 		<SourceSection
 			title={i18n.t('upgrades_tab.settings.sources_section_raids', { ns: 'upgrades' })}
 			options={options.raids}
-			hidden={hidden}
+			unticked={hidden}
 			onToggle={onToggle}
+			rowTestId="upgrades-view-source-row"
 		/>
 		<SourceSection
 			title={i18n.t('upgrades_tab.settings.sources_section_other', { ns: 'upgrades' })}
 			options={options.other}
-			hidden={hidden}
+			unticked={hidden}
 			onToggle={onToggle}
+			rowTestId="upgrades-view-source-row"
 		/>
 	</Dialog>
 );
