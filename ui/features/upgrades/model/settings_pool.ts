@@ -37,7 +37,11 @@ export type PoolFilter = {
 /** What the source rules read of an entry; a ranked row has the same two fields, so the results view's source filter shares them. */
 export type SourcedEntry = Pick<PoolEntry, 'source' | 'sources'>;
 
-const poolSourcesOf = (entry: SourcedEntry): readonly ItemSource[] => entry.sources ?? [entry.source];
+/** Every source of an entry: its `sources` list when it has one, else its one `source`. */
+export const sourcesOf = (entry: SourcedEntry): readonly ItemSource[] => entry.sources ?? [entry.source];
+
+/** The key of a zoneless source bucket: the engine's label for the kind, else the raw kind, as the engine's label falls back. */
+export const bucketKeyOf = (kind: string): string => SOURCE_LABELS[kind] ?? kind;
 
 /**
  * The source key an entry files under: its first zone, else its source
@@ -46,22 +50,22 @@ const poolSourcesOf = (entry: SourcedEntry): readonly ItemSource[] => entry.sour
  * change with it.
  */
 export function sourceKeyOf(entry: SourcedEntry): string {
-	for (const s of poolSourcesOf(entry)) {
+	for (const s of sourcesOf(entry)) {
 		if ('zone' in s) return s.zone;
 	}
-	return SOURCE_LABELS[entry.source.kind] ?? entry.source.kind;
+	return bucketKeyOf(entry.source.kind);
 }
 
 /** A zone matches any entry that drops there; a zoneless bucket matches only entries with no zone. */
 export function sourceMatches(entry: SourcedEntry, key: string): boolean {
-	const sources = poolSourcesOf(entry);
+	const sources = sourcesOf(entry);
 	if (sources.some(s => 'zone' in s && s.zone === key)) return true;
 	return sourceKeyOf(entry) === key && !sources.some(s => 'zone' in s);
 }
 
 /** Every key `sourceMatches` matches an entry by: each of its zones, else its source bucket. */
 export function sourceKeysMatching(entry: SourcedEntry): string[] {
-	const zones = poolSourcesOf(entry).flatMap(s => ('zone' in s ? [s.zone] : []));
+	const zones = sourcesOf(entry).flatMap(s => ('zone' in s ? [s.zone] : []));
 	return zones.length > 0 ? [...new Set(zones)] : [sourceKeyOf(entry)];
 }
 

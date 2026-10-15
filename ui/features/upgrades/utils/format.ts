@@ -12,6 +12,7 @@ import type { SimOrderName } from '../model/engine/slots';
 import { SOURCE_LABELS } from '../model/engine/view';
 import type { SortLabels } from '../model/results_columns';
 import type { RunPhase, RunProgressView } from '../model/run_progress';
+import { bucketKeyOf, type SourcedEntry, sourcesOf } from '../model/settings_pool';
 import { FIXTURE_NOT_JSON, type FixtureLoadResult } from './fixture';
 
 const ONE_DECIMAL = { minimumFractionDigits: 1, maximumFractionDigits: 1 };
@@ -68,7 +69,7 @@ export const sourceKeyLabel = (key: string): string => {
 export const sourceLabel = (source: ItemSource): string => ('zone' in source ? source.zone : kindLabel(source.kind));
 
 /** A row with several sources names the first, as the engine orders them. */
-export const rowSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>): string => sourceLabel(row.sources?.[0] ?? row.source);
+export const rowSourceLabel = (row: SourcedEntry): string => sourceLabel(row.sources?.[0] ?? row.source);
 
 /**
  * The key "Filter by source" would hide one source by: a drop's zone, else its
@@ -76,16 +77,14 @@ export const rowSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>): str
  * (`sourceMatches`), but the Source cell keys each source by its own bucket,
  * so a kept row's cell does not name a bucket the user hid.
  */
-const ownSourceKey = (source: ItemSource): string => ('zone' in source ? source.zone : (SOURCE_LABELS[source.kind] ?? source.kind));
-
-const sourcesOf = (row: Pick<RankedItem, 'source' | 'sources'>): readonly ItemSource[] => row.sources ?? [row.source];
+const ownSourceKey = (source: ItemSource): string => ('zone' in source ? source.zone : bucketKeyOf(source.kind));
 
 /** Whether any source of the row, first or not, is one `hidden` hides. */
-export const rowNamesHiddenSource = (row: Pick<RankedItem, 'source' | 'sources'>, hidden: readonly string[]): boolean =>
+export const rowNamesHiddenSource = (row: SourcedEntry, hidden: readonly string[]): boolean =>
 	hidden.length > 0 && sourcesOf(row).some(source => hidden.includes(ownSourceKey(source)));
 
 /** The cell label of a row while sources are hidden: its first source not hidden, else its first source. */
-export const rowShownSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>, hidden: readonly string[]): string => {
+export const rowShownSourceLabel = (row: SourcedEntry, hidden: readonly string[]): string => {
 	const shown = sourcesOf(row).find(source => !hidden.includes(ownSourceKey(source)));
 	return shown ? sourceLabel(shown) : rowSourceLabel(row);
 };
@@ -95,7 +94,7 @@ export const rowShownSourceLabel = (row: Pick<RankedItem, 'source' | 'sources'>,
  * sources (a drop's zone, else the source's kind; the first shown source of a row whose first is hidden), so the sort
  * matches the cell (review AD2). The export sorts with the same labels, so its order is the order on screen.
  */
-export const sortLabelsFor = (hiddenSources: readonly string[]): SortLabels<Pick<RankedItem, 'slot' | 'slotChoice' | 'source' | 'sources'>> => ({
+export const sortLabelsFor = (hiddenSources: readonly string[]): SortLabels<Pick<RankedItem, 'slot' | 'slotChoice'> & SourcedEntry> => ({
 	slot: slotLabel,
 	source: row => rowShownSourceLabel(row, hiddenSources),
 });
