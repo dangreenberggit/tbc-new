@@ -78,8 +78,8 @@ describe('ResultsPane', () => {
 		fireEvent.click(within(group).getByTestId('upgrades-below-cutoff-trigger'));
 
 		const headers = within(within(group).getByTestId('upgrades-results-table')).getAllByRole('columnheader');
-		expect(headers.map(header => header.textContent)).toEqual(['Rank', 'Item', 'Slot', 'DPS', 'Source', 'Favorite', 'Batch sim']);
-		expect(headers.map(header => header.getAttribute('aria-sort'))).toEqual([null, 'none', 'none', 'descending', 'none', null, null]);
+		expect(headers.map(header => header.textContent)).toEqual(['Rank', 'Item', 'DPS', 'Slot', 'Source', 'Favorite', 'Batch sim']);
+		expect(headers.map(header => header.getAttribute('aria-sort'))).toEqual([null, 'none', 'descending', 'none', 'none', null, null]);
 		expect(within(group).queryByRole('button', { name: /^Item/ })).toBeNull();
 	});
 

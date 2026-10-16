@@ -44,7 +44,9 @@ export interface ResultRowProps {
 }
 
 /**
- * One ranked item. The cell order is read by position by the desktop gate (`scripts/tab-harness/run-tab-cdp.mjs` in the main repo).
+ * One ranked item. DPS comes before Slot so a phone shows the figure without scrolling sideways (ticket 606). The
+ * main repo's gates (`scripts/tab-harness/run-tab-cdp.mjs`, `test-layout.mjs`) find the DPS cell by its test id and
+ * the slot cell as the one after it, and read Rank, Item and Source by position.
  *
  * `memo`, because a run lands rows one at a time and each landing renders the table: without it every
  * row already shown renders again, which a 467-row replay measured at over 20 s. A landing row or a sort
@@ -65,8 +67,8 @@ export const ResultRow = memo(({ row, position, context, notUpgrade = false, ref
 		data-not-upgrade={notUpgrade ? 'true' : undefined}>
 		<td className="py-1 pr-3 tabular-nums">{position}</td>
 		<ItemNameCell row={row} quality={context.itemOf(row.itemId)?.quality} tags={context.tagsOf(row.itemId)} notUpgrade={notUpgrade} />
-		<td className="py-1 pr-3">{slotLabel(row)}</td>
 		<DeltaCell row={row} context={context} />
+		<td className="py-1 pr-3">{slotLabel(row)}</td>
 		<SourceCell row={row} item={context.itemOf(row.itemId)} sim={context.sim} hiddenSources={context.hiddenSources} />
 		<td className="py-1">
 			<FavoriteToggle itemId={row.itemId} />

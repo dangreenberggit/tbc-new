@@ -466,6 +466,15 @@
 						"empty_no_upgrades_body": {
 							"type": "string"
 						},
+						"empty_no_phase_list": {
+							"type": "string"
+						},
+						"empty_no_phase_list_body": {
+							"type": "string"
+						},
+						"set_bonus_tip_title": {
+							"type": "string"
+						},
 						"empty_no_bis_row": {
 							"type": "string"
 						},
@@ -507,6 +516,9 @@
 						"rows_pending",
 						"empty_no_upgrades",
 						"empty_no_upgrades_body",
+						"empty_no_phase_list",
+						"empty_no_phase_list_body",
+						"set_bonus_tip_title",
 						"empty_no_bis_row",
 						"empty_no_source_row",
 						"below_cutoff_group",

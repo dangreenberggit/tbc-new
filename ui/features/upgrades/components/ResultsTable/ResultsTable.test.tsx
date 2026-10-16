@@ -98,12 +98,12 @@ const bare = (rows: readonly RankedItem[], sorting?: SortingState) => {
 };
 
 describe('ResultsTable', () => {
-	it('shows rank, item, slot, DPS change and source for every row, in order', () => {
+	it('shows rank, item, DPS change, slot and source for every row, in order', () => {
 		const { getByTestId } = render(bare(RANKING_FIXTURE.items));
 		const rows = rowsOf(getByTestId('upgrades-results-table'));
 
 		expect(rows).toHaveLength(RANKING_FIXTURE.items.length);
-		expect(cellsOf(rows[0]).slice(0, 5)).toEqual(['1', 'Torch of the DamnedBiS', 'Main Hand', '+45.7', 'Black Temple']);
+		expect(cellsOf(rows[0]).slice(0, 5)).toEqual(['1', 'Torch of the DamnedBiS', '+45.7', 'Main Hand', 'Black Temple']);
 	});
 
 	it('keeps each row’s element when rows arrive ahead of it, because rows are keyed by item', () => {
@@ -135,7 +135,7 @@ describe('ResultsTable', () => {
 		const { getByTestId, getAllByRole } = render(onPage(<Sortable rows={FOUR} />));
 
 		const ariaSorts = getAllByRole('columnheader').map(th => th.getAttribute('aria-sort'));
-		expect(ariaSorts).toEqual([null, 'none', 'none', 'descending', 'none', null, null]);
+		expect(ariaSorts).toEqual([null, 'none', 'descending', 'none', 'none', null, null]);
 		expect(getByTestId('upgrades-sort-delta_dps').textContent).toBe('DPS▼sorted descending');
 
 		fireEvent.click(getByTestId('upgrades-sort-source'));

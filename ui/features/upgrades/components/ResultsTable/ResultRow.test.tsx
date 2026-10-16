@@ -51,10 +51,12 @@ const testIdText = (tr: HTMLElement, testId: string) =>
 		.map(el => el.textContent);
 
 describe('ResultRow', () => {
-	it('shows its place, the item, slot, DPS change and source, then two cells for the row toggles', () => {
+	it('shows its place, the item, DPS change, slot and source, then two cells for the row toggles', () => {
 		const tr = renderRow(fixtureRow(0));
 		const cells = within(tr).getAllByRole('cell');
-		expect(cells.map(cell => cell.textContent)).toEqual(['3', 'Torch of the DamnedBiS', 'Main Hand', '+45.7', 'Black Temple', '', '']);
+		expect(cells.map(cell => cell.textContent)).toEqual(['3', 'Torch of the DamnedBiS', '+45.7', 'Main Hand', 'Black Temple', '', '']);
+		// The gates find the DPS cell by this id, not by its position (ticket 606).
+		expect(within(tr).getByTestId('upgrades-delta-cell')).toBe(cells[2]);
 		expect(cells[5]?.querySelector('[data-testid="favorite-stub"]')).not.toBeNull();
 		expect(cells[6]?.querySelector('[data-testid="batch-stub"]')).not.toBeNull();
 		expect(tr.dataset.itemId).toBe('32332');

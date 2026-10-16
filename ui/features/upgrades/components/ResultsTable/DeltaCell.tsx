@@ -26,7 +26,7 @@ export const DeltaCell = memo(({ row, context }: DeltaCellProps) => {
 	const figure = formatDelta(context.dpsKey?.(row) ?? row.deltaDps);
 
 	return (
-		<td className="py-1 pr-3 text-right whitespace-nowrap tabular-nums">
+		<td className="py-1 pr-3 text-right whitespace-nowrap tabular-nums" data-testid="upgrades-delta-cell">
 			<span className="grid justify-items-end">
 				{tip ? <SetBonusPopover tip={tip}>{figure}</SetBonusPopover> : figure}
 				{tip && (
