@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { PartialRanking } from './engine/rank';
 import { appliedSettings } from './settings_state';
-import { createUpgradesStore, selectRunStatus, selectSettledSignature, selectSort } from './upgrades_store';
+import { createUpgradesStore, selectHiddenSources, selectRunStatus, selectSettledSignature, selectSort } from './upgrades_store';
 
 const [rowA] = RANKING_FIXTURE.items;
 const SEED = { iterations: 1000 };
@@ -45,6 +45,20 @@ describe('the run actions', () => {
 		store.getState().landRow(2, rowA!);
 		store.getState().settleRun(2, RANKING_FIXTURE);
 		expect(selectSort(store.getState())).toEqual([{ id: 'item', desc: false }]);
+	});
+
+	it('keeps the hidden sources the user chose when the next run starts and lands', () => {
+		const store = createUpgradesStore(SEED);
+		store.getState().startRun(1, 1000);
+		store.getState().settleRun(1, RANKING_FIXTURE);
+		store.getState().setViewSources(['Black Temple', 'PvP vendor']);
+
+		store.getState().startRun(2, 2000);
+		expect(selectHiddenSources(store.getState())).toEqual(['Black Temple', 'PvP vendor']);
+
+		store.getState().landRow(2, rowA!);
+		store.getState().settleRun(2, RANKING_FIXTURE);
+		expect(selectHiddenSources(store.getState())).toEqual(['Black Temple', 'PvP vendor']);
 	});
 
 	it('keeps the sort when a recorded ranking loads', () => {
@@ -194,5 +208,43 @@ describe('setSort', () => {
 		store.subscribe(listener);
 		store.getState().setSort(selectSort(store.getState()));
 		expect(listener).not.toHaveBeenCalled();
+	});
+});
+
+describe('the source filter actions', () => {
+	it('start with every source shown, or the hidden sources restored', () => {
+		expect(selectHiddenSources(createUpgradesStore(SEED).getState())).toEqual([]);
+		expect(selectHiddenSources(createUpgradesStore(SEED, { hiddenSources: ['Karazhan'] }).getState())).toEqual(['Karazhan']);
+	});
+
+	it('hide and show one source at a time, and set the whole list at once', () => {
+		const store = createUpgradesStore(SEED);
+		store.getState().toggleViewSource('Black Temple');
+		store.getState().toggleViewSource('Karazhan');
+		store.getState().toggleViewSource('Black Temple');
+		expect(selectHiddenSources(store.getState())).toEqual(['Karazhan']);
+
+		store.getState().setViewSources(['Crafted', 'PvP vendor']);
+		expect(selectHiddenSources(store.getState())).toEqual(['Crafted', 'PvP vendor']);
+		store.getState().setViewSources([]);
+		expect(selectHiddenSources(store.getState())).toEqual([]);
+	});
+
+	it('notify nobody when the list is set to the sources it already hides', () => {
+		const store = createUpgradesStore(SEED, { hiddenSources: ['Karazhan'] });
+		const listener = vi.fn();
+		store.subscribe(listener);
+		store.getState().setViewSources(['Karazhan']);
+		expect(listener).not.toHaveBeenCalled();
+	});
+
+	it('leave the run alone, so hiding a source never marks a result stale', () => {
+		const store = createUpgradesStore(SEED);
+		store.getState().startRun(1, 1000, MEASURED);
+		store.getState().settleRun(1, RANKING_FIXTURE);
+		const run = store.getState().run;
+		store.getState().toggleViewSource('Black Temple');
+		expect(store.getState().run).toBe(run);
+		expect(selectSettledSignature(store.getState())).toBe('sig-at-click');
 	});
 });

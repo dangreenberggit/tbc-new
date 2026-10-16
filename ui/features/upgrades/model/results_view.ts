@@ -13,6 +13,7 @@ import { SIM_ORDER } from './engine/slots';
 import { applyView, rankableSetPotential, type ViewResult, type ViewRow } from './engine/view';
 import type { DpsSortKey } from './results_columns';
 import type { RunState, StoppedRanking } from './run_state';
+import { sourceKeysMatching, type SourceOption, sourceOptions } from './settings_pool';
 
 export const SHOPPING_LIST_TAB = 'shopping-list';
 
@@ -33,9 +34,18 @@ export const rowKey = (row: Pick<RankedItem, 'itemId' | 'slot'>): string => `${r
  * display filter cut down: it names the slots of the view before the cut, so
  * each keeps its tab. The old tab's rule (cb561067 `upgrades_tab.tsx`): "a
  * display filter must change which rows a pane shows, never which panes
- * exist" (ticket 614). `bisOnly` is set on a view cut to its BiS-list rows.
+ * exist" (ticket 614). `bisOnly` is set on a view cut to its BiS-list rows;
+ * `sourcesHidden` on one that "Filter by source" cut by at least one row,
+ * with `slotsBeforeSourceCut` naming the slots that had a row before that cut
+ * and `panesWithMainBeforeSourceCut` the panes whose main table had a row.
  */
-export type ResultsViewResult = ViewResult & { tabSlots?: readonly SimSlotName[]; bisOnly?: true };
+export type ResultsViewResult = ViewResult & {
+	tabSlots?: readonly SimSlotName[];
+	bisOnly?: true;
+	sourcesHidden?: true;
+	slotsBeforeSourceCut?: readonly SimSlotName[];
+	panesWithMainBeforeSourceCut?: readonly ResultsTabId[];
+};
 
 /**
  * The slot tabs: every slot with a row, in sim order, counted by its
@@ -58,7 +68,10 @@ export function slotTabs(view: ResultsViewResult): Array<{ id: SimSlotName; coun
 /** On some phase's BiS list, as the old tab's `isBisTagged` tested it: a BiS or an Alt tag. */
 const onBisList = (row: Pick<RankedItem, 'bisTags'>): boolean => row.bisTags.length > 0;
 
-export type PaneRows = { main: ViewRow[]; notUpgrades: ReadonlySet<string>; belowCutoff: ViewRow[]; noBisListRow: boolean };
+/** A row a pane's main table shows: one that meets the cutoff, or a BiS-list row that misses it and is not owned (`paneRows`). */
+const inMainTable = (row: ViewRow): boolean => !row.belowCutoffInView || (!row.owned && onBisList(row));
+
+export type PaneRows = { main: ViewRow[]; notUpgrades: ReadonlySet<string>; belowCutoff: ViewRow[]; noBisListRow: boolean; noSourceRow: boolean };
 
 /**
  * One pane's rows: its main table, the keys of the rows in that table that
@@ -79,16 +92,28 @@ export type PaneRows = { main: ViewRow[]; notUpgrades: ReadonlySet<string>; belo
  * all, so the pane can say the slot has no BiS-list item instead of saying
  * every candidate simmed at or below the worn gear. A slot whose only BiS-list
  * row is owned and misses the cutoff does have one, so it stays false there.
+ * It reads the slot's rows before the source cut, so a slot whose BiS-list
+ * rows all come from hidden sources is not said to have none.
+ *
+ * `noSourceRow` is true for a pane whose main table "Filter by source"
+ * emptied, so the pane can say no row comes from the shown sources rather
+ * than that every candidate simmed at or below the worn gear; its rows below
+ * the cutoff still show under that. A slot with no BiS-list row says that
+ * instead.
  */
 export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 	const rows = tab === SHOPPING_LIST_TAB ? view.rows : view.rows.filter(row => effectiveSlot(row) === tab);
 	const missed = rows.filter(row => row.belowCutoffInView && !row.owned);
 	const shownAnyway = missed.filter(onBisList);
+	const main = rows.filter(inMainTable);
+	const noBisListRow = view.bisOnly === true && tab !== SHOPPING_LIST_TAB && !(view.slotsBeforeSourceCut?.includes(tab) ?? rows.length > 0);
+	const sourceCutEmptied = rows.length === 0 || (main.length === 0 && view.panesWithMainBeforeSourceCut?.includes(tab) === true);
 	return {
-		main: rows.filter(row => !row.belowCutoffInView || shownAnyway.includes(row)),
+		main,
 		notUpgrades: new Set(shownAnyway.map(rowKey)),
 		belowCutoff: missed.filter(row => !onBisList(row)),
-		noBisListRow: view.bisOnly === true && tab !== SHOPPING_LIST_TAB && rows.length === 0,
+		noBisListRow,
+		noSourceRow: view.sourcesHidden === true && sourceCutEmptied && !noBisListRow,
 	};
 }
 
@@ -144,7 +169,66 @@ function bisOnlyView(view: ViewResult): ResultsViewResult {
 	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length, tabSlots, bisOnly: true };
 }
 
-/** The view a settled run renders under `applied` (from `appliedToggles`); nothing before a run settles. */
+/**
+ * The sources "Filter by source" lists: `sourceOptions` of the view's rows
+ * before the source cut, keyed and counted as the pre-run Sources dialog keys
+ * and counts them, so the dialog lists only sources that rows on screen have.
+ */
+export type ViewSourceOptions = { raids: SourceOption[]; other: SourceOption[] };
+
+/** The keys of the sources a view offers, raids first. */
+export const offeredSourceKeys = (options: ViewSourceOptions): string[] => [...options.raids, ...options.other].map(option => option.key);
+
+/** The hidden sources that act on a view offering `options`: a hidden source the view does not offer hides nothing there. */
+export const offeredHidden = (options: ViewSourceOptions, hidden: readonly string[]): string[] =>
+	offeredSourceKeys(options).filter(key => hidden.includes(key));
+
+/** The hidden sources with `key` hidden if it was shown, and shown if it was hidden. */
+export const withViewSourceToggled = (hidden: readonly string[], key: string): string[] =>
+	hidden.includes(key) ? hidden.filter(k => k !== key) : [...hidden, key];
+
+/**
+ * The hidden sources after Hide all: every source the view offers now. A
+ * hidden source the view does not offer stays hidden; one that only a later
+ * run offers is shown then until the user hides it.
+ */
+export const withOfferedSourcesHidden = (hidden: readonly string[], offered: readonly string[]): string[] => [...new Set([...hidden, ...offered])];
+
+/**
+ * A view cut to the rows of the sources not in `hidden`. A row stays while
+ * some source key it matches is not hidden, so an item from two raids stays
+ * while either is shown (review D4). The dialog offers every key a row
+ * matches, so Hide all leaves no row (ticket 647). A hidden key the view
+ * does not offer changes nothing. Like `bisOnlyView`, only the count
+ * below the cutoff changes, and every slot keeps its tab.
+ */
+export function sourcesView(view: ResultsViewResult, hidden: readonly string[]): ResultsViewResult {
+	const acting = offeredHidden(sourceOptions(view.rows), hidden);
+	const kept = (row: ViewRow) => sourceKeysMatching(row).some(key => !acting.includes(key));
+	const rows = view.rows.filter(kept);
+	if (rows.length === view.rows.length) return view;
+	const shortlist = view.shortlist.filter(kept);
+	const tabSlots = view.tabSlots ?? [...new Set(view.rows.map(effectiveSlot))];
+	const slotsBeforeSourceCut = [...new Set(view.rows.map(effectiveSlot))];
+	const mainBefore = view.rows.filter(inMainTable);
+	const panesWithMainBeforeSourceCut: ResultsTabId[] = mainBefore.length > 0 ? [SHOPPING_LIST_TAB, ...new Set(mainBefore.map(effectiveSlot))] : [];
+	return {
+		...view,
+		rows,
+		shortlist,
+		belowCutoffCount: rows.length - shortlist.length,
+		tabSlots,
+		sourcesHidden: true,
+		slotsBeforeSourceCut,
+		panesWithMainBeforeSourceCut,
+	};
+}
+
+/**
+ * The view a settled run renders under `applied` (from `appliedToggles`),
+ * before "Filter by source" cuts it (`sourcesView`); nothing before a run
+ * settles.
+ */
 export function resultsViewFor(run: RunState, { withSetPotential, onlyBis }: ViewToggles): ResultsViewResult | undefined {
 	switch (run.status) {
 		case 'done': {

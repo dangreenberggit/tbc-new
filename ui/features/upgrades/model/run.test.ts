@@ -33,9 +33,9 @@ vi.mock('./engine/rank', async importOriginal => ({
 	},
 }));
 
-const fakeHost = (spec = Spec.SpecRetributionPaladin) =>
+const fakeHost = (spec = Spec.SpecRetributionPaladin, phase = 3) =>
 	({
-		sim: { waitForInit: () => Promise.resolve(), getPhase: () => 3 },
+		sim: { waitForInit: () => Promise.resolve(), getPhase: () => phase },
 		player: { getSpec: () => spec, getName: () => 'Tester' },
 	}) as unknown as IndividualSimHost<Spec>;
 
@@ -97,6 +97,21 @@ describe('rankForPlayer', () => {
 		expect(deps.epWeights).toBe(epWeightsFor('ret'));
 		expect(deps.measureBrokenSetValue).toBe(true);
 		expect(deps.setScreen).toBe('on');
+	});
+
+	// Phase 1 has no candidate list (ticket 515): the run must still finish, so the tab can say why it has no rows.
+	// The engine is mocked here; that it returns no rows on an empty pool is tested by `packages/core/test/rank.test.ts`
+	// (the slamaltman baseline case) in the main repo, tbc-gear-prio, not in this fork.
+	it('passes maxPhase 1 and an empty pool to the engine on a phase with no candidate list, and resolves', async () => {
+		expect(poolFor('ret', 1)).toEqual([]);
+		rankBehaviour = async () => ({ ...RANKING_FIXTURE, items: [] });
+
+		const result = await rankForPlayer(fakeHost(Spec.SpecRetributionPaladin, 1), SETTINGS, depsFor());
+
+		const [{ input, deps }] = rankCalls as [RankCall];
+		expect(input.maxPhase).toBe(1);
+		expect(deps.pool).toEqual([]);
+		expect(result.items).toEqual([]);
 	});
 
 	it('hands every landed row to onLanded, in order', async () => {

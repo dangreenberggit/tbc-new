@@ -34,7 +34,14 @@ export type PoolFilter = {
 	prune: boolean;
 };
 
-const poolSourcesOf = (entry: PoolEntry): readonly ItemSource[] => entry.sources ?? [entry.source];
+/** What the source rules read of an entry; a ranked row has the same two fields, so the results view's source filter shares them. */
+export type SourcedEntry = Pick<PoolEntry, 'source' | 'sources'>;
+
+/** Every source of an entry: its `sources` list when it has one, else its one `source`. */
+export const sourcesOf = (entry: SourcedEntry): readonly ItemSource[] => entry.sources ?? [entry.source];
+
+/** The key of a zoneless source bucket: the engine's label for the kind, else the raw kind, as the engine's label falls back. */
+export const bucketKeyOf = (kind: string): string => SOURCE_LABELS[kind] ?? kind;
 
 /**
  * The source key an entry files under: its first zone, else its source
@@ -42,18 +49,24 @@ const poolSourcesOf = (entry: PoolEntry): readonly ItemSource[] => entry.sources
  * pool entry; the engine does not export it, so this is a copy and must
  * change with it.
  */
-export function sourceKeyOf(entry: PoolEntry): string {
-	for (const s of poolSourcesOf(entry)) {
+export function sourceKeyOf(entry: SourcedEntry): string {
+	for (const s of sourcesOf(entry)) {
 		if ('zone' in s) return s.zone;
 	}
-	return SOURCE_LABELS[entry.source.kind] ?? entry.source.kind;
+	return bucketKeyOf(entry.source.kind);
 }
 
 /** A zone matches any entry that drops there; a zoneless bucket matches only entries with no zone. */
-function sourceMatches(entry: PoolEntry, key: string): boolean {
-	const sources = poolSourcesOf(entry);
+export function sourceMatches(entry: SourcedEntry, key: string): boolean {
+	const sources = sourcesOf(entry);
 	if (sources.some(s => 'zone' in s && s.zone === key)) return true;
 	return sourceKeyOf(entry) === key && !sources.some(s => 'zone' in s);
+}
+
+/** Every key `sourceMatches` matches an entry by: each of its zones, else its source bucket. */
+export function sourceKeysMatching(entry: SourcedEntry): string[] {
+	const zones = sourcesOf(entry).flatMap(s => ('zone' in s ? [s.zone] : []));
+	return zones.length > 0 ? [...new Set(zones)] : [sourceKeyOf(entry)];
 }
 
 const ZONELESS_KEYS = new Set(Object.values(SOURCE_LABELS));
@@ -64,13 +77,17 @@ const ZONELESS_KEYS = new Set(Object.values(SOURCE_LABELS));
  * only ones a scope's exclusions may name; the offer and the phase reset
  * (`follow_phase.ts`) both read them, so a reset never keeps or drops a source
  * the dialog disagrees on.
+ *
+ * Every key an entry matches is offered, so each one can be unticked and a
+ * Hide all hides every row (tickets 647, 649). A zone that is no entry's first
+ * comes after every first zone, so the first zones keep their order.
  */
-export function validSourceKeysOf(pool: readonly PoolEntry[]): string[] {
-	const keys = [...new Set(pool.map(sourceKeyOf))];
+export function validSourceKeysOf(pool: readonly SourcedEntry[]): string[] {
+	const keys = [...new Set([...pool.map(sourceKeyOf), ...pool.flatMap(sourceKeysMatching)])];
 	return [...keys.filter(k => !ZONELESS_KEYS.has(k)), ...keys.filter(k => ZONELESS_KEYS.has(k))];
 }
 
-export function sourceOptions(pool: readonly PoolEntry[]): { raids: SourceOption[]; other: SourceOption[] } {
+export function sourceOptions(pool: readonly SourcedEntry[]): { raids: SourceOption[]; other: SourceOption[] } {
 	const options = validSourceKeysOf(pool).map(key => ({ key, count: pool.filter(e => sourceMatches(e, key)).length }));
 	return { raids: options.filter(o => !ZONELESS_KEYS.has(o.key)), other: options.filter(o => ZONELESS_KEYS.has(o.key)) };
 }
@@ -129,7 +146,7 @@ export function defaultSetKeys(options: readonly SetOption[], pool: readonly Poo
 		.map(o => o.key);
 }
 
-/** Current-phase, phaseless and selected chips are always shown; the rest sit behind "Other sets (n)". */
+/** Current-phase, phaseless and selected chips are always shown; the rest sit behind "Other phases (n)". */
 export function splitSetChips(options: readonly SetOption[], selectedKeys: readonly string[], maxPhase: number): { main: SetOption[]; other: SetOption[] } {
 	const shown = (o: SetOption) => o.phase === undefined || o.phase === maxPhase || selectedKeys.includes(o.key);
 	return { main: options.filter(shown), other: options.filter(o => !shown(o)) };

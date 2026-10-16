@@ -29,12 +29,13 @@ const storedSort = () => selectSort(upgradesStoreFor(host).getState());
 interface TableSetup {
 	dpsKey?: DpsSortKey;
 	sortable?: boolean;
+	hiddenSources?: readonly string[];
 }
 
 /** A results table on the test's page, with `stored` as the tab store's sort before it renders. */
-const renderTable = (rows: readonly RankedItem[], stored: ResultsSort, { dpsKey, sortable }: TableSetup = {}) => {
+const renderTable = (rows: readonly RankedItem[], stored: ResultsSort, { dpsKey, sortable, hiddenSources }: TableSetup = {}) => {
 	upgradesStoreFor(host).getState().setSort(stored);
-	const context: RowContext = { itemOf: () => undefined, sim: host.sim, tip: {}, tagsOf: () => [], dpsKey };
+	const context: RowContext = { itemOf: () => undefined, sim: host.sim, tip: {}, tagsOf: () => [], dpsKey, hiddenSources };
 	let renders = 0;
 	const hook = renderHook(
 		() => {
@@ -118,6 +119,18 @@ describe('the results table sort', () => {
 	it('keeps the engine order between rows with the same source, in both directions', () => {
 		expect(ids(ROWS, [{ id: 'source', desc: true }])).toEqual([33688, 30905, 32332, 32235]);
 		expect(ids(ROWS, [{ id: 'source', desc: false }])).toEqual([32332, 32235, 30905, 33688]);
+	});
+
+	// Review AD2: the column once sorted on the row's first source while its cell named the first shown one.
+	it('sorts a row whose first source is hidden on the source its cell names', () => {
+		// Cataclysm's Edge as a drop in Hyjal Summit and Black Temple, beside Dragonspine Trophy from Gruul's Lair.
+		const hyjalOrBlackTemple: RankedItem = {
+			...fixtureRow(1),
+			sources: [fixtureRow(1).source, { kind: 'raid', zone: 'Black Temple', boss: 'Illidan Stormrage', origin: 'db' }],
+		};
+		const rows = [fixtureRow(7), hyjalOrBlackTemple];
+		expect(renderTable(rows, [{ id: 'source', desc: false }]).ids()).toEqual([28830, 30902]);
+		expect(renderTable(rows, [{ id: 'source', desc: false }], { hiddenSources: ['Hyjal Summit'] }).ids()).toEqual([30902, 28830]);
 	});
 });
 

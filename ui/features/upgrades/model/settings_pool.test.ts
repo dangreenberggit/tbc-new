@@ -46,6 +46,14 @@ const POOL: PoolEntry[] = [
 	entry(6, BT, { phase: 4 }),
 ];
 
+// An item from Hyjal Summit and Zul'Aman where no item has Zul'Aman first, as no real pool has (tickets 647, 649).
+const ZUL_AMAN = { kind: 'raid', zone: "Zul'Aman" } as const;
+const TWO_ZONE_POOL: PoolEntry[] = [
+	entry(7, HYJAL, { sources: [HYJAL, ZUL_AMAN] }),
+	entry(8, { kind: 'raid', zone: 'Tempest Keep' }),
+	entry(9, { kind: 'badge', cost: 75 }),
+];
+
 const gear = (...ids: number[]) => ({ items: ids.map(id => ({ id })) });
 
 describe('sourceKeyOf', () => {
@@ -80,6 +88,16 @@ describe('validSourceKeysOf', () => {
 		const { raids, other } = sourceOptions(POOL);
 		expect([...raids, ...other].map(o => o.key)).toEqual(validSourceKeysOf(POOL));
 	});
+
+	// Tickets 647 and 649: an entry's second zone is offered though no entry has it first, after the first zones.
+	it('offers every zone an entry matches, each zone that is some entry’s first in its old place', () => {
+		expect(validSourceKeysOf(TWO_ZONE_POOL)).toEqual(['Hyjal Summit', 'Tempest Keep', "Zul'Aman", 'Badge vendor']);
+		expect(sourceOptions(TWO_ZONE_POOL).raids).toEqual([
+			{ key: 'Hyjal Summit', count: 1 },
+			{ key: 'Tempest Keep', count: 1 },
+			{ key: "Zul'Aman", count: 1 },
+		]);
+	});
 });
 
 const ids = (pool: readonly PoolEntry[]) => pool.map(e => e.itemId);
@@ -93,6 +111,11 @@ describe('effectivePool', () => {
 	it('keeps an item from two raids while one of them is still ticked, and drops it when both are excluded', () => {
 		expect(ids(effectivePool(POOL, { ...NO_FILTER, excludedSources: ['Black Temple'] }))).toEqual([2, 3, 4, 5, 30318]);
 		expect(ids(effectivePool(POOL, { ...NO_FILTER, excludedSources: ['Black Temple', 'Hyjal Summit'] }))).toEqual([4, 5, 30318]);
+	});
+
+	it('keeps an item from two raids while its second is ticked, though no item has that raid first', () => {
+		expect(ids(effectivePool(TWO_ZONE_POOL, { ...NO_FILTER, excludedSources: ['Hyjal Summit'] }))).toEqual([7, 8, 9]);
+		expect(ids(effectivePool(TWO_ZONE_POOL, { ...NO_FILTER, excludedSources: ['Hyjal Summit', "Zul'Aman"] }))).toEqual([8, 9]);
 	});
 
 	it('files a crafted item under Crafted, whatever zone its recipe drops in', () => {

@@ -43,6 +43,7 @@ const paneRowsOf = (main: readonly RankedItem[], belowCutoff: readonly RankedIte
 	notUpgrades: new Set(),
 	belowCutoff: belowCutoff.map(row => ({ ...row, belowCutoffInView: true })),
 	noBisListRow: false,
+	noSourceRow: false,
 });
 const onPage = (props: PaneProps) =>
 	render(
@@ -77,8 +78,8 @@ describe('ResultsPane', () => {
 		fireEvent.click(within(group).getByTestId('upgrades-below-cutoff-trigger'));
 
 		const headers = within(within(group).getByTestId('upgrades-results-table')).getAllByRole('columnheader');
-		expect(headers.map(header => header.textContent)).toEqual(['Rank', 'Item', 'Slot', 'DPS', 'Source', 'Favorite', 'Batch sim']);
-		expect(headers.map(header => header.getAttribute('aria-sort'))).toEqual([null, 'none', 'none', 'descending', 'none', null, null]);
+		expect(headers.map(header => header.textContent)).toEqual(['Rank', 'Item', 'DPS', 'Slot', 'Source', 'Favorite', 'Batch sim']);
+		expect(headers.map(header => header.getAttribute('aria-sort'))).toEqual([null, 'none', 'descending', 'none', 'none', null, null]);
 		expect(within(group).queryByRole('button', { name: /^Item/ })).toBeNull();
 	});
 
@@ -101,5 +102,10 @@ describe('ResultsPane', () => {
 		expect(queryByTestId('upgrades-results-table')).toBeNull();
 		expect(getByTestId('upgrades-empty-state').textContent).toContain('No upgrades found');
 		expect(getByTestId('upgrades-below-cutoff')).not.toBeNull();
+	});
+
+	it('says no row comes from the shown sources when Filter by source emptied the pane', () => {
+		const { getByTestId } = onPage({ rows: { ...paneRowsOf([], []), noSourceRow: true }, rowContext: CONTEXT });
+		expect(getByTestId('upgrades-empty-state').textContent).toBe('No rows from the shown sources.');
 	});
 });
