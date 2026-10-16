@@ -749,6 +749,24 @@
       "curationHint": 67.68
     },
     {
+      "itemId": 32060,
+      "name": "Merciless Gladiator's Wyrmhide Tunic",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 62.68
+    },
+    {
       "itemId": 30075,
       "name": "Gnarled Chestpiece of the Ancients",
       "slot": "chest",
@@ -765,6 +783,24 @@
         }
       ],
       "curationHint": 59.0
+    },
+    {
+      "itemId": 28140,
+      "name": "Gladiator's Wyrmhide Tunic",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 58.56
     },
     {
       "itemId": 30216,
@@ -835,6 +871,42 @@
       "curationHint": 47.92
     },
     {
+      "itemId": 31991,
+      "name": "Merciless Gladiator's Kodohide Tunic",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 44.64
+    },
+    {
+      "itemId": 31379,
+      "name": "Gladiator's Kodohide Tunic",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 42.04
+    },
+    {
       "itemId": 32132,
       "name": "Chancellor's Wyrmhide Tunic",
       "slot": "chest",
@@ -867,6 +939,24 @@
       "curationHint": 23.72
     },
     {
+      "itemId": 31972,
+      "name": "Merciless Gladiator's Dragonhide Tunic",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 21.64
+    },
+    {
       "itemId": 32117,
       "name": "Chancellor's Dragonhide Tunic",
       "slot": "chest",
@@ -881,6 +971,24 @@
         }
       ],
       "curationHint": 21.08
+    },
+    {
+      "itemId": 28130,
+      "name": "Gladiator's Dragonhide Tunic",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 20.08
     },
     {
       "itemId": 21865,
@@ -3348,6 +3456,24 @@
       ]
     },
     {
+      "itemId": 32057,
+      "name": "Merciless Gladiator's Wyrmhide Helm",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 63.88
+    },
+    {
       "itemId": 29990,
       "name": "Crown of the Sun",
       "slot": "head",
@@ -3400,6 +3526,24 @@
       "curationHint": 58.6
     },
     {
+      "itemId": 28137,
+      "name": "Gladiator's Wyrmhide Helm",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 57.28
+    },
+    {
       "itemId": 30219,
       "name": "Nordrassil Headguard",
       "slot": "head",
@@ -3439,6 +3583,24 @@
       "curationHint": 52.12
     },
     {
+      "itemId": 31988,
+      "name": "Merciless Gladiator's Kodohide Helm",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 46.88
+    },
+    {
       "itemId": 32129,
       "name": "Chancellor's Wyrmhide Helm",
       "slot": "head",
@@ -3453,6 +3615,24 @@
         }
       ],
       "curationHint": 44.32
+    },
+    {
+      "itemId": 31376,
+      "name": "Gladiator's Kodohide Helm",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 43.72
     },
     {
       "itemId": 29086,
@@ -3485,6 +3665,42 @@
         }
       ],
       "curationHint": 41.0
+    },
+    {
+      "itemId": 31968,
+      "name": "Merciless Gladiator's Dragonhide Helm",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 28.2
+    },
+    {
+      "itemId": 28127,
+      "name": "Gladiator's Dragonhide Helm",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 26.64
     },
     {
       "itemId": 32119,
@@ -3758,6 +3974,24 @@
       "curationHint": 76.8
     },
     {
+      "itemId": 32058,
+      "name": "Merciless Gladiator's Wyrmhide Legguards",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 73.84
+    },
+    {
       "itemId": 28594,
       "name": "Trial-Fire Trousers",
       "slot": "legs",
@@ -3786,6 +4020,24 @@
         }
       ],
       "curationHint": 71.4
+    },
+    {
+      "itemId": 28138,
+      "name": "Gladiator's Wyrmhide Legguards",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 66.64
     },
     {
       "itemId": 30220,
@@ -3820,6 +4072,24 @@
         }
       ],
       "curationHint": 55.36
+    },
+    {
+      "itemId": 31989,
+      "name": "Merciless Gladiator's Kodohide Legguards",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 53.88
     },
     {
       "itemId": 31343,
@@ -3868,6 +4138,24 @@
         }
       ],
       "curationHint": 51.64
+    },
+    {
+      "itemId": 31377,
+      "name": "Gladiator's Kodohide Legguards",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 49.12
     },
     {
       "itemId": 28591,
@@ -3982,6 +4270,42 @@
         }
       ],
       "curationHint": 28.32
+    },
+    {
+      "itemId": 31969,
+      "name": "Merciless Gladiator's Dragonhide Legguards",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 22.56
+    },
+    {
+      "itemId": 28128,
+      "name": "Gladiator's Dragonhide Legguards",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 22.0
     },
     {
       "itemId": 29099,
@@ -4927,6 +5251,24 @@
       "curationHint": 43.28
     },
     {
+      "itemId": 32059,
+      "name": "Merciless Gladiator's Wyrmhide Spaulders",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 42.68
+    },
+    {
       "itemId": 28647,
       "name": "Forest Wind Shoulderpads",
       "slot": "shoulder",
@@ -4979,6 +5321,60 @@
       "curationHint": 37.72
     },
     {
+      "itemId": 28139,
+      "name": "Gladiator's Wyrmhide Spaulders",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 36.0
+    },
+    {
+      "itemId": 31990,
+      "name": "Merciless Gladiator's Kodohide Spaulders",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 28.92
+    },
+    {
+      "itemId": 31378,
+      "name": "Gladiator's Kodohide Spaulders",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 27.92
+    },
+    {
       "itemId": 32131,
       "name": "Chancellor's Wyrmhide Spaulders",
       "slot": "shoulder",
@@ -4995,6 +5391,24 @@
       "curationHint": 23.04
     },
     {
+      "itemId": 31971,
+      "name": "Merciless Gladiator's Dragonhide Spaulders",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 18.84
+    },
+    {
       "itemId": 32121,
       "name": "Chancellor's Kodohide Spaulders",
       "slot": "shoulder",
@@ -5009,6 +5423,24 @@
         }
       ],
       "curationHint": 18.04
+    },
+    {
+      "itemId": 28129,
+      "name": "Gladiator's Dragonhide Spaulders",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 16.72
     },
     {
       "itemId": 32116,
@@ -6143,6 +6575,24 @@
       "curationHint": 0.0
     },
     {
+      "itemId": 32055,
+      "name": "Merciless Gladiator's War Staff",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 322.14
+    },
+    {
       "itemId": 29988,
       "name": "The Nexus Key",
       "slot": "weapon",
@@ -6168,6 +6618,60 @@
       "bisSets": [
         "p2"
       ]
+    },
+    {
+      "itemId": 24557,
+      "name": "Gladiator's War Staff",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 282.5
+    },
+    {
+      "itemId": 32053,
+      "name": "Merciless Gladiator's Spellblade",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 262.98
+    },
+    {
+      "itemId": 32963,
+      "name": "Merciless Gladiator's Gavel",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 262.98
     },
     {
       "itemId": 28633,
@@ -6257,6 +6761,42 @@
       "curatedSets": [
         "p1"
       ]
+    },
+    {
+      "itemId": 28297,
+      "name": "Gladiator's Spellblade",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 209.08
+    },
+    {
+      "itemId": 32450,
+      "name": "Gladiator's Gavel",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 209.08
     },
     {
       "itemId": 32190,
@@ -6368,6 +6908,24 @@
       "curationHint": 156.64
     },
     {
+      "itemId": 32964,
+      "name": "Merciless Gladiator's Salvation",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 152.76
+    },
+    {
       "itemId": 28771,
       "name": "Light's Justice",
       "slot": "weapon",
@@ -6420,6 +6978,24 @@
         }
       ],
       "curationHint": 141.64
+    },
+    {
+      "itemId": 32451,
+      "name": "Gladiator's Salvation",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 135.08
     },
     {
       "itemId": 28522,
@@ -6583,6 +7159,24 @@
       "curationHint": 47.88
     },
     {
+      "itemId": 31978,
+      "name": "Merciless Gladiator's Endgame",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 43.64
+    },
+    {
       "itemId": 32651,
       "name": "Crystal Orb of Enlightenment",
       "slot": "weapon",
@@ -6639,6 +7233,24 @@
       "curationHint": 32.4
     },
     {
+      "itemId": 32961,
+      "name": "Merciless Gladiator's Reprieve",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 31.64
+    },
+    {
       "itemId": 28728,
       "name": "Aran's Soothing Sapphire",
       "slot": "weapon",
@@ -6673,6 +7285,24 @@
         }
       ],
       "curationHint": 27.4
+    },
+    {
+      "itemId": 28346,
+      "name": "Gladiator's Endgame",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 26.84
     },
     {
       "itemId": 29274,
@@ -6741,6 +7371,24 @@
       "curationHint": 20.72
     },
     {
+      "itemId": 32452,
+      "name": "Gladiator's Reprieve",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 19.84
+    },
+    {
       "itemId": 31322,
       "name": "The Hammer of Destiny",
       "slot": "weapon",
@@ -6771,6 +7419,114 @@
         }
       ],
       "curationHint": 11.73
+    },
+    {
+      "itemId": 28299,
+      "name": "Gladiator's Bonegrinder",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 28300,
+      "name": "Gladiator's Painsaw",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 28305,
+      "name": "Gladiator's Pummeler",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 28312,
+      "name": "Gladiator's Shanker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 28313,
+      "name": "Gladiator's Right Ripper",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 28476,
+      "name": "Gladiator's Maul",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
     },
     {
       "itemId": 28524,
@@ -7131,6 +7887,114 @@
       "sources": [
         {
           "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 31959,
+      "name": "Merciless Gladiator's Bonegrinder",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 32014,
+      "name": "Merciless Gladiator's Maul",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 32025,
+      "name": "Merciless Gladiator's Painsaw",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 32026,
+      "name": "Merciless Gladiator's Pummeler",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 32028,
+      "name": "Merciless Gladiator's Right Ripper",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 32044,
+      "name": "Merciless Gladiator's Shanker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
           "origin": "db"
         }
       ],

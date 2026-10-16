@@ -784,6 +784,24 @@
       "curationHint": 40.94
     },
     {
+      "itemId": 32038,
+      "name": "Merciless Gladiator's Satin Robe",
+      "slot": "chest",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 36.44
+    },
+    {
       "itemId": 29050,
       "name": "Robes of the Incarnate",
       "slot": "chest",
@@ -798,6 +816,24 @@
         }
       ],
       "curationHint": 34.32
+    },
+    {
+      "itemId": 27711,
+      "name": "Gladiator's Satin Robe",
+      "slot": "chest",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 33.56
     },
     {
       "itemId": 28578,
@@ -848,6 +884,42 @@
         }
       ],
       "curationHint": 20.5
+    },
+    {
+      "itemId": 32019,
+      "name": "Merciless Gladiator's Mooncloth Robe",
+      "slot": "chest",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 19.84
+    },
+    {
+      "itemId": 31413,
+      "name": "Gladiator's Mooncloth Robe",
+      "slot": "chest",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 17.98
     },
     {
       "itemId": 21865,
@@ -2852,6 +2924,42 @@
       "curationHint": 38.44
     },
     {
+      "itemId": 32035,
+      "name": "Merciless Gladiator's Satin Hood",
+      "slot": "head",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 36.96
+    },
+    {
+      "itemId": 27708,
+      "name": "Gladiator's Satin Hood",
+      "slot": "head",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 33.2
+    },
+    {
       "itemId": 28756,
       "name": "Headdress of the High Potentate",
       "slot": "head",
@@ -2905,6 +3013,42 @@
         }
       ],
       "curationHint": 26.5
+    },
+    {
+      "itemId": 32016,
+      "name": "Merciless Gladiator's Mooncloth Hood",
+      "slot": "head",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 21.08
+    },
+    {
+      "itemId": 31410,
+      "name": "Gladiator's Mooncloth Hood",
+      "slot": "head",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 20.32
     },
     {
       "itemId": 32104,
@@ -3064,6 +3208,24 @@
       "curationHint": 53.02
     },
     {
+      "itemId": 32036,
+      "name": "Merciless Gladiator's Satin Leggings",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 52.62
+    },
+    {
       "itemId": 28594,
       "name": "Trial-Fire Trousers",
       "slot": "legs",
@@ -3092,6 +3254,24 @@
         }
       ],
       "curationHint": 51.4
+    },
+    {
+      "itemId": 27709,
+      "name": "Gladiator's Satin Leggings",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 50.8
     },
     {
       "itemId": 29977,
@@ -3212,6 +3392,24 @@
       "curationHint": 28.16
     },
     {
+      "itemId": 32017,
+      "name": "Merciless Gladiator's Mooncloth Leggings",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 26.8
+    },
+    {
       "itemId": 32099,
       "name": "Chancellor's Mooncloth Legguards",
       "slot": "legs",
@@ -3226,6 +3424,24 @@
         }
       ],
       "curationHint": 23.8
+    },
+    {
+      "itemId": 31411,
+      "name": "Gladiator's Mooncloth Leggings",
+      "slot": "legs",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 23.35
     },
     {
       "itemId": 30761,
@@ -3961,6 +4177,42 @@
       "curationHint": 19.18
     },
     {
+      "itemId": 32962,
+      "name": "Merciless Gladiator's Touch of Defeat",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 16.78
+    },
+    {
+      "itemId": 28320,
+      "name": "Gladiator's Touch of Defeat",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 14.66
+    },
+    {
       "itemId": 30080,
       "name": "Luminescent Rod of the Naaru",
       "slot": "ranged",
@@ -4142,6 +4394,24 @@
       "curationHint": 29.96
     },
     {
+      "itemId": 32037,
+      "name": "Merciless Gladiator's Satin Mantle",
+      "slot": "shoulder",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 28.14
+    },
+    {
       "itemId": 28612,
       "name": "Pauldrons of the Solace-Giver",
       "slot": "shoulder",
@@ -4160,6 +4430,24 @@
       "curationHint": 23.82
     },
     {
+      "itemId": 27710,
+      "name": "Gladiator's Satin Mantle",
+      "slot": "shoulder",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 23.32
+    },
+    {
       "itemId": 29054,
       "name": "Light-Mantle of the Incarnate",
       "slot": "shoulder",
@@ -4176,6 +4464,24 @@
       "curationHint": 22.44
     },
     {
+      "itemId": 32018,
+      "name": "Merciless Gladiator's Mooncloth Mantle",
+      "slot": "shoulder",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 17.08
+    },
+    {
       "itemId": 32106,
       "name": "Chancellor's Satin Mantle",
       "slot": "shoulder",
@@ -4190,6 +4496,24 @@
         }
       ],
       "curationHint": 16.02
+    },
+    {
+      "itemId": 31412,
+      "name": "Gladiator's Mooncloth Mantle",
+      "slot": "shoulder",
+      "armorType": 1,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 15.32
     },
     {
       "itemId": 32101,
@@ -5054,6 +5378,24 @@
       ]
     },
     {
+      "itemId": 32055,
+      "name": "Merciless Gladiator's War Staff",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 263.4
+    },
+    {
       "itemId": 29988,
       "name": "The Nexus Key",
       "slot": "weapon",
@@ -5070,6 +5412,60 @@
         }
       ],
       "curationHint": 248.3
+    },
+    {
+      "itemId": 32053,
+      "name": "Merciless Gladiator's Spellblade",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 243.78
+    },
+    {
+      "itemId": 32963,
+      "name": "Merciless Gladiator's Gavel",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 243.78
+    },
+    {
+      "itemId": 24557,
+      "name": "Gladiator's War Staff",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 232.36
     },
     {
       "itemId": 28633,
@@ -5168,6 +5564,42 @@
       "curationHint": 200.22
     },
     {
+      "itemId": 28297,
+      "name": "Gladiator's Spellblade",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 200.08
+    },
+    {
+      "itemId": 32450,
+      "name": "Gladiator's Gavel",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 200.08
+    },
+    {
       "itemId": 32190,
       "name": "Chancellor's Spellblade",
       "slot": "weapon",
@@ -5242,6 +5674,24 @@
       "curationHint": 148.08
     },
     {
+      "itemId": 32964,
+      "name": "Merciless Gladiator's Salvation",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 142.26
+    },
+    {
       "itemId": 28782,
       "name": "Crystalheart Pulse-Staff",
       "slot": "weapon",
@@ -5276,6 +5726,24 @@
         }
       ],
       "curationHint": 131.66
+    },
+    {
+      "itemId": 32451,
+      "name": "Gladiator's Salvation",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 126.08
     },
     {
       "itemId": 30732,
@@ -5464,6 +5932,24 @@
       "curationHint": 36.38
     },
     {
+      "itemId": 31978,
+      "name": "Merciless Gladiator's Endgame",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 34.14
+    },
+    {
       "itemId": 32651,
       "name": "Crystal Orb of Enlightenment",
       "slot": "weapon",
@@ -5536,6 +6022,24 @@
       "curationHint": 24.4
     },
     {
+      "itemId": 32961,
+      "name": "Merciless Gladiator's Reprieve",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 22.14
+    },
+    {
       "itemId": 29923,
       "name": "Talisman of the Sun King",
       "slot": "weapon",
@@ -5552,6 +6056,24 @@
         }
       ],
       "curationHint": 21.74
+    },
+    {
+      "itemId": 28346,
+      "name": "Gladiator's Endgame",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 19.84
     },
     {
       "itemId": 28728,
@@ -5622,6 +6144,24 @@
       "curationHint": 14.16
     },
     {
+      "itemId": 32452,
+      "name": "Gladiator's Reprieve",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 12.84
+    },
+    {
       "itemId": 29270,
       "name": "Flametongue Seal",
       "slot": "weapon",
@@ -5652,6 +6192,42 @@
         }
       ],
       "curationHint": 0.84
+    },
+    {
+      "itemId": 28305,
+      "name": "Gladiator's Pummeler",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 28312,
+      "name": "Gladiator's Shanker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
     },
     {
       "itemId": 28524,
@@ -5922,6 +6498,42 @@
       "sources": [
         {
           "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 32026,
+      "name": "Merciless Gladiator's Pummeler",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 32044,
+      "name": "Merciless Gladiator's Shanker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
           "origin": "db"
         }
       ],

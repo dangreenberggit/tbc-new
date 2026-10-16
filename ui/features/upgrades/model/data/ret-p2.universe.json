@@ -822,6 +822,24 @@
       "curationHint": 71.72
     },
     {
+      "itemId": 32039,
+      "name": "Merciless Gladiator's Scaled Chestpiece",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 63.48
+    },
+    {
       "itemId": 29071,
       "name": "Justicar Breastplate",
       "slot": "chest",
@@ -861,6 +879,24 @@
         }
       ],
       "curationHint": 51.28
+    },
+    {
+      "itemId": 27879,
+      "name": "Gladiator's Scaled Chestpiece",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 51.02
     },
     {
       "itemId": 32168,
@@ -1121,6 +1157,42 @@
       "curationHint": 4.42
     },
     {
+      "itemId": 31992,
+      "name": "Merciless Gladiator's Lamellar Chestpiece",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.42
+    },
+    {
+      "itemId": 27702,
+      "name": "Gladiator's Lamellar Chestpiece",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.4
+    },
+    {
       "itemId": 30065,
       "name": "Glowing Breastplate of Truth",
       "slot": "chest",
@@ -1137,6 +1209,42 @@
         }
       ],
       "curationHint": 3.06
+    },
+    {
+      "itemId": 32020,
+      "name": "Merciless Gladiator's Ornamented Chestguard",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.72
+    },
+    {
+      "itemId": 31613,
+      "name": "Gladiator's Ornamented Chestguard",
+      "slot": "chest",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.38
     },
     {
       "itemId": 32153,
@@ -4258,6 +4366,24 @@
       "curationHint": 67.6
     },
     {
+      "itemId": 32041,
+      "name": "Merciless Gladiator's Scaled Helm",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 64.86
+    },
+    {
       "itemId": 31333,
       "name": "The Night Watchman",
       "slot": "head",
@@ -4295,6 +4421,24 @@
       "curatedSets": [
         "p1"
       ]
+    },
+    {
+      "itemId": 27881,
+      "name": "Gladiator's Scaled Helm",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 57.32
     },
     {
       "itemId": 28671,
@@ -4483,6 +4627,24 @@
       "curationHint": 7.31
     },
     {
+      "itemId": 31997,
+      "name": "Merciless Gladiator's Lamellar Helm",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.63
+    },
+    {
       "itemId": 32086,
       "name": "Storm Master's Helmet",
       "slot": "head",
@@ -4601,6 +4763,24 @@
       "curationHint": 5.78
     },
     {
+      "itemId": 27704,
+      "name": "Gladiator's Lamellar Helm",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 5.61
+    },
+    {
       "itemId": 28803,
       "name": "Cowl of Nature's Breath",
       "slot": "head",
@@ -4690,6 +4870,24 @@
       "curationHint": 4.08
     },
     {
+      "itemId": 32022,
+      "name": "Merciless Gladiator's Ornamented Headcover",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.74
+    },
+    {
       "itemId": 32090,
       "name": "Cowl of Naaru Blessings",
       "slot": "head",
@@ -4704,6 +4902,24 @@
         }
       ],
       "curationHint": 3.74
+    },
+    {
+      "itemId": 31616,
+      "name": "Gladiator's Ornamented Headcover",
+      "slot": "head",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.23
     },
     {
       "itemId": 32155,
@@ -4946,6 +5162,42 @@
       "curationHint": 72.87
     },
     {
+      "itemId": 32042,
+      "name": "Merciless Gladiator's Scaled Legguards",
+      "slot": "legs",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 70.71
+    },
+    {
+      "itemId": 27882,
+      "name": "Gladiator's Scaled Legguards",
+      "slot": "legs",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 64.94
+    },
+    {
       "itemId": 29985,
       "name": "Void Reaver Greaves",
       "slot": "legs",
@@ -5098,6 +5350,24 @@
       "curationHint": 8.33
     },
     {
+      "itemId": 31995,
+      "name": "Merciless Gladiator's Lamellar Legguards",
+      "slot": "legs",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 7.14
+    },
+    {
       "itemId": 30126,
       "name": "Crystalforge Legguards",
       "slot": "legs",
@@ -5112,6 +5382,24 @@
         }
       ],
       "curationHint": 6.97
+    },
+    {
+      "itemId": 27705,
+      "name": "Gladiator's Lamellar Legguards",
+      "slot": "legs",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 6.29
     },
     {
       "itemId": 30727,
@@ -5301,6 +5589,24 @@
       "curationHint": 4.59
     },
     {
+      "itemId": 32023,
+      "name": "Merciless Gladiator's Ornamented Legplates",
+      "slot": "legs",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.59
+    },
+    {
       "itemId": 31335,
       "name": "Pants of Living Growth",
       "slot": "legs",
@@ -5315,6 +5621,24 @@
         }
       ],
       "curationHint": 4.42
+    },
+    {
+      "itemId": 31618,
+      "name": "Gladiator's Ornamented Legplates",
+      "slot": "legs",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.08
     },
     {
       "itemId": 28742,
@@ -6190,6 +6514,78 @@
       "curationHint": 0.0
     },
     {
+      "itemId": 33936,
+      "name": "Gladiator's Libram of Fortitude",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 33937,
+      "name": "Merciless Gladiator's Libram of Fortitude",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 33948,
+      "name": "Gladiator's Libram of Vengeance",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 33949,
+      "name": "Merciless Gladiator's Libram of Vengeance",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
       "itemId": 30740,
       "name": "Ripfiend Shoulderplates",
       "slot": "shoulder",
@@ -6356,6 +6752,42 @@
         }
       ],
       "curationHint": 57.32
+    },
+    {
+      "itemId": 32043,
+      "name": "Merciless Gladiator's Scaled Shoulders",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 49.86
+    },
+    {
+      "itemId": 27883,
+      "name": "Gladiator's Scaled Shoulders",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 44.32
     },
     {
       "itemId": 28589,
@@ -6567,6 +6999,24 @@
       "curationHint": 4.25
     },
     {
+      "itemId": 31996,
+      "name": "Merciless Gladiator's Lamellar Shoulders",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 4.25
+    },
+    {
       "itemId": 29064,
       "name": "Justicar Pauldrons",
       "slot": "shoulder",
@@ -6635,6 +7085,24 @@
       "curationHint": 3.74
     },
     {
+      "itemId": 27706,
+      "name": "Gladiator's Lamellar Shoulders",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 3.23
+    },
+    {
       "itemId": 28612,
       "name": "Pauldrons of the Solace-Giver",
       "slot": "shoulder",
@@ -6669,6 +7137,42 @@
         }
       ],
       "curationHint": 3.23
+    },
+    {
+      "itemId": 32024,
+      "name": "Merciless Gladiator's Ornamented Spaulders",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.55
+    },
+    {
+      "itemId": 31619,
+      "name": "Gladiator's Ornamented Spaulders",
+      "slot": "shoulder",
+      "armorType": 4,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 2.04
     },
     {
       "itemId": 32157,
@@ -6951,6 +7455,22 @@
     {
       "itemId": 21180,
       "name": "Earthstrike",
+      "slot": "trinket",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.0
+    },
+    {
+      "itemId": 23206,
+      "name": "Mark of the Champion",
       "slot": "trinket",
       "armorType": null,
       "handType": null,
@@ -8081,6 +8601,60 @@
       "curationHint": 0.0
     },
     {
+      "itemId": 31959,
+      "name": "Merciless Gladiator's Bonegrinder",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 790.923
+    },
+    {
+      "itemId": 31984,
+      "name": "Merciless Gladiator's Greatsword",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 790.923
+    },
+    {
+      "itemId": 31966,
+      "name": "Merciless Gladiator's Decapitator",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 783.363
+    },
+    {
       "itemId": 29993,
       "name": "Twinblade of the Phoenix",
       "slot": "weapon",
@@ -8123,6 +8697,78 @@
       "bisSets": [
         "p2"
       ]
+    },
+    {
+      "itemId": 32025,
+      "name": "Merciless Gladiator's Painsaw",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 743.169
+    },
+    {
+      "itemId": 24550,
+      "name": "Gladiator's Greatsword",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 735.333
+    },
+    {
+      "itemId": 28299,
+      "name": "Gladiator's Bonegrinder",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 735.333
+    },
+    {
+      "itemId": 28298,
+      "name": "Gladiator's Decapitator",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 729.573
     },
     {
       "itemId": 28773,
@@ -8216,6 +8862,24 @@
         }
       ],
       "curationHint": 690.898
+    },
+    {
+      "itemId": 28300,
+      "name": "Gladiator's Painsaw",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 687.955
     },
     {
       "itemId": 28800,
@@ -8385,6 +9049,42 @@
         }
       ],
       "curationHint": 563.751
+    },
+    {
+      "itemId": 32014,
+      "name": "Merciless Gladiator's Maul",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 489.51
+    },
+    {
+      "itemId": 28476,
+      "name": "Gladiator's Maul",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 4,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 469.075
     },
     {
       "itemId": 32183,

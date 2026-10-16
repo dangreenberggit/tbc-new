@@ -1166,6 +1166,24 @@
       "curationHint": 253.11
     },
     {
+      "itemId": 35036,
+      "name": "Brutal Gladiator's Leather Tunic",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 251.45
+    },
+    {
       "itemId": 28601,
       "name": "Chestguard of the Conniver",
       "slot": "chest",
@@ -1221,6 +1239,24 @@
         }
       ],
       "curationHint": 212.12
+    },
+    {
+      "itemId": 33704,
+      "name": "Vengeful Gladiator's Leather Tunic",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 206.73
     },
     {
       "itemId": 30730,
@@ -1314,6 +1350,42 @@
       "curatedSets": [
         "p1"
       ]
+    },
+    {
+      "itemId": 32002,
+      "name": "Merciless Gladiator's Leather Tunic",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 142.96
+    },
+    {
+      "itemId": 25831,
+      "name": "Gladiator's Leather Tunic",
+      "slot": "chest",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 122.51
     },
     {
       "itemId": 32127,
@@ -6022,6 +6094,24 @@
       "curationHint": 283.7
     },
     {
+      "itemId": 35033,
+      "name": "Brutal Gladiator's Leather Helm",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 262.26
+    },
+    {
       "itemId": 28796,
       "name": "Malefic Mask of the Shadows",
       "slot": "head",
@@ -6074,6 +6164,24 @@
         }
       ],
       "curationHint": 242.72
+    },
+    {
+      "itemId": 33701,
+      "name": "Vengeful Gladiator's Leather Helm",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 217.54
     },
     {
       "itemId": 34404,
@@ -6168,6 +6276,42 @@
         }
       ],
       "curationHint": 165.92
+    },
+    {
+      "itemId": 31999,
+      "name": "Merciless Gladiator's Leather Helm",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 153.77
+    },
+    {
+      "itemId": 25830,
+      "name": "Gladiator's Leather Helm",
+      "slot": "head",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 132.41
     },
     {
       "itemId": 32088,
@@ -6707,6 +6851,24 @@
       "curationHint": 289.56
     },
     {
+      "itemId": 35034,
+      "name": "Brutal Gladiator's Leather Legguards",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 275.76
+    },
+    {
       "itemId": 31029,
       "name": "Slayer's Legguards",
       "slot": "legs",
@@ -6831,6 +6993,24 @@
       ]
     },
     {
+      "itemId": 33702,
+      "name": "Vengeful Gladiator's Leather Legguards",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 231.04
+    },
+    {
       "itemId": 28741,
       "name": "Skulker's Greaves",
       "slot": "legs",
@@ -6885,6 +7065,42 @@
         }
       ],
       "curationHint": 178.3
+    },
+    {
+      "itemId": 32000,
+      "name": "Merciless Gladiator's Leather Legguards",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 167.27
+    },
+    {
+      "itemId": 25833,
+      "name": "Gladiator's Leather Legguards",
+      "slot": "legs",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 152.96
     },
     {
       "itemId": 32120,
@@ -9087,6 +9303,24 @@
       "curationHint": 65.37
     },
     {
+      "itemId": 35108,
+      "name": "Brutal Gladiator's War Edge",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 64.87
+    },
+    {
       "itemId": 28581,
       "name": "Wolfslayer Sniper Rifle",
       "slot": "ranged",
@@ -9124,6 +9358,42 @@
       "curationHint": 59.86
     },
     {
+      "itemId": 33765,
+      "name": "Vengeful Gladiator's War Edge",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 59.14
+    },
+    {
+      "itemId": 32054,
+      "name": "Merciless Gladiator's War Edge",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 55.41
+    },
+    {
       "itemId": 32253,
       "name": "Legionkiller",
       "slot": "ranged",
@@ -9140,6 +9410,24 @@
         }
       ],
       "curationHint": 45.87
+    },
+    {
+      "itemId": 28319,
+      "name": "Gladiator's War Edge",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 42.85
     },
     {
       "itemId": 30906,
@@ -9215,6 +9503,114 @@
       "curationHint": 34.72
     },
     {
+      "itemId": 35018,
+      "name": "Brutal Gladiator's Heavy Crossbow",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 29.17
+    },
+    {
+      "itemId": 35047,
+      "name": "Brutal Gladiator's Longbow",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 29.17
+    },
+    {
+      "itemId": 35075,
+      "name": "Brutal Gladiator's Rifle",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 29.17
+    },
+    {
+      "itemId": 33006,
+      "name": "Vengeful Gladiator's Heavy Crossbow",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 27.44
+    },
+    {
+      "itemId": 34529,
+      "name": "Vengeful Gladiator's Longbow",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 27.44
+    },
+    {
+      "itemId": 34530,
+      "name": "Vengeful Gladiator's Rifle",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 27.44
+    },
+    {
       "itemId": 32336,
       "name": "Black Bow of the Betrayer",
       "slot": "ranged",
@@ -9231,6 +9627,42 @@
         }
       ],
       "curationHint": 26.0
+    },
+    {
+      "itemId": 31986,
+      "name": "Merciless Gladiator's Crossbow of the Phoenix",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 25.71
+    },
+    {
+      "itemId": 28294,
+      "name": "Gladiator's Heavy Crossbow",
+      "slot": "ranged",
+      "armorType": null,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 20.55
     },
     {
       "itemId": 32187,
@@ -9457,6 +9889,24 @@
       "curationHint": 176.41
     },
     {
+      "itemId": 35035,
+      "name": "Brutal Gladiator's Leather Spaulders",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 175.88
+    },
+    {
       "itemId": 30149,
       "name": "Deathmantle Shoulderpads",
       "slot": "shoulder",
@@ -9480,6 +9930,24 @@
       ]
     },
     {
+      "itemId": 33703,
+      "name": "Vengeful Gladiator's Leather Spaulders",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 150.17
+    },
+    {
       "itemId": 29047,
       "name": "Netherblade Shoulderpads",
       "slot": "shoulder",
@@ -9498,6 +9966,24 @@
         }
       ],
       "curationHint": 135.56
+    },
+    {
+      "itemId": 32001,
+      "name": "Merciless Gladiator's Leather Spaulders",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 134.69
     },
     {
       "itemId": 28755,
@@ -9521,6 +10007,24 @@
         }
       ],
       "curationHint": 133.78
+    },
+    {
+      "itemId": 25832,
+      "name": "Gladiator's Leather Spaulders",
+      "slot": "shoulder",
+      "armorType": 2,
+      "handType": null,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 117.02
     },
     {
       "itemId": 32126,
@@ -12215,6 +12719,240 @@
       "curationHint": 1136.582
     },
     {
+      "itemId": 35058,
+      "name": "Brutal Gladiator's Mutilator",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1127.189
+    },
+    {
+      "itemId": 34988,
+      "name": "Brutal Gladiator's Bonecracker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1126.67
+    },
+    {
+      "itemId": 35017,
+      "name": "Brutal Gladiator's Hacker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1126.67
+    },
+    {
+      "itemId": 35038,
+      "name": "Brutal Gladiator's Left Ripper",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1126.67
+    },
+    {
+      "itemId": 35072,
+      "name": "Brutal Gladiator's Quickblade",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1126.67
+    },
+    {
+      "itemId": 34995,
+      "name": "Brutal Gladiator's Chopper",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1125.592
+    },
+    {
+      "itemId": 34996,
+      "name": "Brutal Gladiator's Cleaver",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1125.592
+    },
+    {
+      "itemId": 35037,
+      "name": "Brutal Gladiator's Left Render",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1125.592
+    },
+    {
+      "itemId": 35071,
+      "name": "Brutal Gladiator's Pummeler",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1125.592
+    },
+    {
+      "itemId": 35076,
+      "name": "Brutal Gladiator's Right Ripper",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1125.592
+    },
+    {
+      "itemId": 35101,
+      "name": "Brutal Gladiator's Slicer",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1125.592
+    },
+    {
+      "itemId": 35095,
+      "name": "Brutal Gladiator's Shiv",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1125.336
+    },
+    {
+      "itemId": 35093,
+      "name": "Brutal Gladiator's Shanker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1124.594
+    },
+    {
       "itemId": 34950,
       "name": "Vanir's Left Fist of Savagery",
       "slot": "weapon",
@@ -12357,6 +13095,240 @@
         }
       ],
       "curationHint": 1079.76
+    },
+    {
+      "itemId": 33756,
+      "name": "Vengeful Gladiator's Shiv",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1073.201
+    },
+    {
+      "itemId": 33669,
+      "name": "Vengeful Gladiator's Cleaver",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1071.918
+    },
+    {
+      "itemId": 33733,
+      "name": "Vengeful Gladiator's Pummeler",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1071.918
+    },
+    {
+      "itemId": 33737,
+      "name": "Vengeful Gladiator's Right Ripper",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1071.918
+    },
+    {
+      "itemId": 33762,
+      "name": "Vengeful Gladiator's Slicer",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1071.918
+    },
+    {
+      "itemId": 34015,
+      "name": "Vengeful Gladiator's Chopper",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1071.918
+    },
+    {
+      "itemId": 34016,
+      "name": "Vengeful Gladiator's Left Render",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1071.918
+    },
+    {
+      "itemId": 33754,
+      "name": "Vengeful Gladiator's Shanker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1071.719
+    },
+    {
+      "itemId": 33801,
+      "name": "Vengeful Gladiator's Mutilator",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1071.719
+    },
+    {
+      "itemId": 33662,
+      "name": "Vengeful Gladiator's Bonecracker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1071.2
+    },
+    {
+      "itemId": 33689,
+      "name": "Vengeful Gladiator's Hacker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1071.2
+    },
+    {
+      "itemId": 33705,
+      "name": "Vengeful Gladiator's Left Ripper",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1071.2
+    },
+    {
+      "itemId": 33734,
+      "name": "Vengeful Gladiator's Quickblade",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1071.2
     },
     {
       "itemId": 30103,
@@ -12636,6 +13608,189 @@
         }
       ],
       "curationHint": 1010.119
+    },
+    {
+      "itemId": 32052,
+      "name": "Merciless Gladiator's Slicer",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1005.616
+    },
+    {
+      "itemId": 31958,
+      "name": "Merciless Gladiator's Bonecracker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1005.377
+    },
+    {
+      "itemId": 31985,
+      "name": "Merciless Gladiator's Hacker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1005.377
+    },
+    {
+      "itemId": 32003,
+      "name": "Merciless Gladiator's Left Ripper",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1005.377
+    },
+    {
+      "itemId": 32027,
+      "name": "Merciless Gladiator's Quickblade",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1005.377,
+      "curatedSets": [
+        "p2"
+      ]
+    },
+    {
+      "itemId": 31965,
+      "name": "Merciless Gladiator's Cleaver",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1003.82
+    },
+    {
+      "itemId": 32026,
+      "name": "Merciless Gladiator's Pummeler",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1003.82
+    },
+    {
+      "itemId": 32028,
+      "name": "Merciless Gladiator's Right Ripper",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1003.82
+    },
+    {
+      "itemId": 32044,
+      "name": "Merciless Gladiator's Shanker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1003.82
+    },
+    {
+      "itemId": 32046,
+      "name": "Merciless Gladiator's Shiv",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 1003.82
     },
     {
       "itemId": 29924,
@@ -12950,6 +14105,189 @@
         }
       ],
       "curationHint": 935.35
+    },
+    {
+      "itemId": 28313,
+      "name": "Gladiator's Right Ripper",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 934.423
+    },
+    {
+      "itemId": 28295,
+      "name": "Gladiator's Slicer",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 932.627,
+      "curatedSets": [
+        "p1"
+      ]
+    },
+    {
+      "itemId": 28305,
+      "name": "Gladiator's Pummeler",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 932.627
+    },
+    {
+      "itemId": 28308,
+      "name": "Gladiator's Cleaver",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 932.627
+    },
+    {
+      "itemId": 28312,
+      "name": "Gladiator's Shanker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 2,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 932.228
+    },
+    {
+      "itemId": 28310,
+      "name": "Gladiator's Shiv",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 931.857
+    },
+    {
+      "itemId": 28302,
+      "name": "Gladiator's Bonecracker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 931.19
+    },
+    {
+      "itemId": 28307,
+      "name": "Gladiator's Quickblade",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 931.19
+    },
+    {
+      "itemId": 28309,
+      "name": "Gladiator's Hacker",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 931.19
+    },
+    {
+      "itemId": 28314,
+      "name": "Gladiator's Left Ripper",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 931.19
     },
     {
       "itemId": 30733,
@@ -13988,6 +15326,42 @@
       "curationHint": 385.695
     },
     {
+      "itemId": 33743,
+      "name": "Vengeful Gladiator's Salvation",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 385.625
+    },
+    {
+      "itemId": 32964,
+      "name": "Merciless Gladiator's Salvation",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 385.585
+    },
+    {
       "itemId": 33283,
       "name": "Amani Punisher",
       "slot": "weapon",
@@ -14004,6 +15378,132 @@
         }
       ],
       "curationHint": 385.575
+    },
+    {
+      "itemId": 33687,
+      "name": "Vengeful Gladiator's Gavel",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 385.575
+    },
+    {
+      "itemId": 33763,
+      "name": "Vengeful Gladiator's Spellblade",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 385.575
+    },
+    {
+      "itemId": 28297,
+      "name": "Gladiator's Spellblade",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 385.555
+    },
+    {
+      "itemId": 32450,
+      "name": "Gladiator's Gavel",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 385.555
+    },
+    {
+      "itemId": 32451,
+      "name": "Gladiator's Salvation",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 385.555
+    },
+    {
+      "itemId": 32053,
+      "name": "Merciless Gladiator's Spellblade",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 385.545
+    },
+    {
+      "itemId": 32963,
+      "name": "Merciless Gladiator's Gavel",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 385.545
     },
     {
       "itemId": 34176,
@@ -14130,6 +15630,132 @@
       "curationHint": 383.978
     },
     {
+      "itemId": 35082,
+      "name": "Brutal Gladiator's Salvation",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 365.224
+    },
+    {
+      "itemId": 35014,
+      "name": "Brutal Gladiator's Gavel",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 365.174
+    },
+    {
+      "itemId": 35102,
+      "name": "Brutal Gladiator's Spellblade",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 1,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 365.174
+    },
+    {
+      "itemId": 35016,
+      "name": "Brutal Gladiator's Grimoire",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.4
+    },
+    {
+      "itemId": 35008,
+      "name": "Brutal Gladiator's Endgame",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.37
+    },
+    {
+      "itemId": 35074,
+      "name": "Brutal Gladiator's Reprieve",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 5,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 4,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.37
+    },
+    {
+      "itemId": 34033,
+      "name": "Vengeful Gladiator's Grimoire",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.34
+    },
+    {
       "itemId": 34179,
       "name": "Heart of the Pit",
       "slot": "weapon",
@@ -14166,6 +15792,42 @@
       "curationHint": 0.33
     },
     {
+      "itemId": 33681,
+      "name": "Vengeful Gladiator's Endgame",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.31
+    },
+    {
+      "itemId": 33736,
+      "name": "Vengeful Gladiator's Reprieve",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 3,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 3,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.31
+    },
+    {
       "itemId": 29923,
       "name": "Talisman of the Sun King",
       "slot": "weapon",
@@ -14178,6 +15840,42 @@
           "kind": "raid",
           "zone": "Tempest Keep",
           "boss": "Al'ar",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.27
+    },
+    {
+      "itemId": 31978,
+      "name": "Merciless Gladiator's Endgame",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.27
+    },
+    {
+      "itemId": 32961,
+      "name": "Merciless Gladiator's Reprieve",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 2,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 2,
           "origin": "db"
         }
       ],
@@ -14272,6 +15970,24 @@
       "curationHint": 0.23
     },
     {
+      "itemId": 28346,
+      "name": "Gladiator's Endgame",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.21
+    },
+    {
       "itemId": 32191,
       "name": "Chancellor's Battletome",
       "slot": "weapon",
@@ -14282,6 +15998,24 @@
       "sources": [
         {
           "kind": "unknown",
+          "origin": "db"
+        }
+      ],
+      "curationHint": 0.21
+    },
+    {
+      "itemId": 32452,
+      "name": "Gladiator's Reprieve",
+      "slot": "weapon",
+      "armorType": null,
+      "handType": 3,
+      "quality": 4,
+      "phase": 1,
+      "sources": [
+        {
+          "kind": "pvp",
+          "via": "arena",
+          "season": 1,
           "origin": "db"
         }
       ],
