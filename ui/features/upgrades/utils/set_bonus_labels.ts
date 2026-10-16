@@ -76,10 +76,10 @@ export function tipLabelText(label: TipLabel): string {
 			// A step ranking drops a future's pieces when no partner choice was measured, leaving no pieces to name.
 			if (label.pieces.length === 0)
 				return i18n.t('upgrades_tab.set_bonus.tip_reachable_bonus', { ns: 'upgrades', set: label.set, threshold: label.threshold });
-			const args = { ns: 'upgrades', set: label.set, threshold: label.threshold, pieces: joinNames(label.pieces) };
+			const args = { set: label.set, threshold: label.threshold, pieces: joinNames(label.pieces) };
 			return label.broken.length === 0
-				? i18n.t('upgrades_tab.set_bonus.tip_reachable', args)
-				: i18n.t('upgrades_tab.set_bonus.tip_reachable_breaks', { ...args, broken: brokenNames(label.broken) });
+				? i18n.t('upgrades_tab.set_bonus.tip_reachable', { ns: 'upgrades', ...args })
+				: i18n.t('upgrades_tab.set_bonus.tip_reachable_breaks', { ns: 'upgrades', ...args, broken: brokenNames(label.broken) });
 		}
 		case 'screened':
 			return i18n.t('upgrades_tab.set_bonus.tip_screened', { ns: 'upgrades', set: label.set });
