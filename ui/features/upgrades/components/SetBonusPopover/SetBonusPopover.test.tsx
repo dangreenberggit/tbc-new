@@ -34,9 +34,10 @@ const show = (tip: SetBonusTip | null, figure = '+4.4') => {
 	return screen.getByRole('button', { name: figure });
 };
 
-/** The popover opens once the pointer rests on the figure, as upstream's hover popovers do. */
+/** The popover opens once the pointer rests on the figure, as upstream's hover popovers do. A browser fires `pointerenter` before the mouse events. */
 const hover = (trigger: HTMLElement) => {
 	vi.useFakeTimers();
+	fireEvent.pointerEnter(trigger);
 	fireEvent.mouseEnter(trigger);
 	fireEvent.mouseMove(trigger);
 	act(() => vi.advanceTimersByTime(1000));
@@ -69,6 +70,83 @@ describe('SetBonusPopover', () => {
 
 		expect(popupLines()).toEqual(['Item stats +22.8', 'Breaks Crystalforge Battlegear 2pc -18.4', 'Total +4.4']);
 		expect(screen.getByTestId('upgrades-set-bonus-tip-total').textContent).toBe('Total+4.4');
+	});
+
+	it('keeps the total marked when not-counted lines follow it (ticket 336)', () => {
+		const tip: SetBonusTip = {
+			subLine: 'hover_hint',
+			kind: 'receipt',
+			entries: [
+				{ type: 'line', label: { kind: 'total' }, dps: 26.3 },
+				{ type: 'heading', heading: 'not_counted_off' },
+				{
+					type: 'line',
+					label: { kind: 'reachable', set: 'Thunderheart Harness', threshold: 4, have: 2, pieces: ['Thunderheart Pauldrons'], broken: [] },
+					dps: 74.1,
+					outcome: true,
+				},
+			],
+		};
+		hover(show(tip, '+26.3'));
+
+		expect(within(screen.getByTestId('upgrades-set-bonus-tip')).getByText('Not counted (Set potential is off)')).toBeTruthy();
+		expect(popupLines()).toEqual(['Total +26.3', 'Thunderheart Harness 4pc with Thunderheart Pauldrons 74.1 DPS more']);
+		expect(screen.getAllByTestId('upgrades-set-bonus-tip-total').map(total => total.textContent)).toEqual(['Total+26.3']);
+		const [total, reachable] = within(screen.getByTestId('upgrades-set-bonus-tip')).getAllByRole('term');
+		expect([total, total?.nextElementSibling].map(cell => cell?.classList.contains('text-muted'))).toEqual([false, false]);
+		expect([reachable, reachable?.nextElementSibling].map(cell => cell?.classList.contains('text-muted'))).toEqual([true, true]);
+	});
+
+	it('names its dialog, so a screen reader says what opened', () => {
+		hover(show(FACEGUARD_TIP));
+		expect(screen.getByRole('dialog', { name: 'Set-bonus breakdown' })).toBe(screen.getByTestId('upgrades-set-bonus-tip'));
+	});
+
+	describe('opens right of the figure when the popup fits there, above it otherwise (ticket 495)', () => {
+		/** Puts the figure's right edge `room` px short of the window's right edge. */
+		const withRoom = (trigger: HTMLElement, room: number) => {
+			const right = window.innerWidth - room;
+			trigger.getBoundingClientRect = () => DOMRect.fromRect({ x: right - 40, y: 100, width: 40, height: 20 });
+		};
+		const side = () => screen.getByTestId('sim-popover-positioner').getAttribute('data-side');
+
+		it('right, with room for the widest popup', () => {
+			const trigger = show(FACEGUARD_TIP);
+			withRoom(trigger, 600);
+			hover(trigger);
+			expect(side()).toBe('right');
+		});
+
+		it('above, when the widest popup would not fit to the right', () => {
+			const trigger = show(FACEGUARD_TIP);
+			withRoom(trigger, 300);
+			hover(trigger);
+			expect(side()).toBe('top');
+		});
+
+		// The widest popup needs 30rem (480 px) + the 10 px gap + the 6 px margin Base UI's flip keeps from the window's
+		// edge (its default 5 px collisionPadding plus 1 px): 496 px. With less, Base UI would flip it to the left.
+		it('right, at exactly the room the widest popup needs past Base UI’s collision margin', () => {
+			const trigger = show(FACEGUARD_TIP);
+			withRoom(trigger, 496);
+			hover(trigger);
+			expect(side()).toBe('right');
+		});
+
+		it('above, one pixel short of that room, where Base UI would flip a right-side popup to the left', () => {
+			const trigger = show(FACEGUARD_TIP);
+			withRoom(trigger, 495);
+			hover(trigger);
+			expect(side()).toBe('top');
+		});
+
+		it('measures from the keyboard too: right when opened with Enter and there is room', () => {
+			const trigger = show(FACEGUARD_TIP);
+			withRoom(trigger, 600);
+			trigger.focus();
+			fireEvent.click(trigger);
+			expect(side()).toBe('right');
+		});
 	});
 
 	it('marks the outcome a step ranking row’s figure uses, and adds no total', () => {

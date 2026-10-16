@@ -1,11 +1,15 @@
 import i18n from '@i18n/config';
 
-import type { BonusRef, SetBonusTip, TipLabel } from '../model/set_bonus_tip';
+import type { BonusRef, ScreenedReason, SetBonusTip, TipEntry, TipLabel } from '../model/set_bonus_tip';
 
-/** One printed popover row. `id` names what the row is about, for a list key; `total` marks the receipt's last line. */
+/**
+ * One printed popover row. `id` names what the row is about, for a list key;
+ * `total` marks the receipt's last line; `muted` marks a line the figure does
+ * not count.
+ */
 export type TipTextRow =
 	| { type: 'heading'; id: string; text: string }
-	| { type: 'line'; id: string; label: string; value: string; marker?: string; total: boolean };
+	| { type: 'line'; id: string; label: string; value: string; marker?: string; total: boolean; muted?: boolean };
 
 /**
  * Joins names as "A", "A and B", or "A, B and C". Literal English, as the old
@@ -68,19 +72,44 @@ export function tipLabelText(label: TipLabel): string {
 			return label.broken.length === 0
 				? i18n.t('upgrades_tab.set_bonus.tip_item_alone', { ns: 'upgrades', name: label.name })
 				: i18n.t('upgrades_tab.set_bonus.tip_item_alone_breaks', { ns: 'upgrades', name: label.name, broken: brokenNames(label.broken) });
+		case 'reachable': {
+			// A step ranking drops a future's pieces when no partner choice was measured, leaving no pieces to name.
+			if (label.pieces.length === 0)
+				return i18n.t('upgrades_tab.set_bonus.tip_reachable_bonus', { ns: 'upgrades', set: label.set, threshold: label.threshold });
+			const args = { set: label.set, threshold: label.threshold, pieces: joinNames(label.pieces) };
+			return label.broken.length === 0
+				? i18n.t('upgrades_tab.set_bonus.tip_reachable', { ns: 'upgrades', ...args })
+				: i18n.t('upgrades_tab.set_bonus.tip_reachable_breaks', { ns: 'upgrades', ...args, broken: brokenNames(label.broken) });
+		}
+		case 'screened':
+			return i18n.t('upgrades_tab.set_bonus.tip_screened', { ns: 'upgrades', set: label.set });
 		case 'total':
 			return i18n.t('upgrades_tab.set_bonus.tip_total', { ns: 'upgrades' });
 	}
 }
+
+/** What the set screen found, in place of a figure (ticket 336). */
+const screenedValueText = (reason: ScreenedReason): string => {
+	switch (reason) {
+		case 'outside-band':
+			return i18n.t('upgrades_tab.set_bonus.tip_screened_unmeasured', { ns: 'upgrades' });
+		case 'exact-zero':
+			return i18n.t('upgrades_tab.set_bonus.tip_screened_no_effect', { ns: 'upgrades' });
+		case 'below-zero':
+			return i18n.t('upgrades_tab.set_bonus.tip_screened_loss', { ns: 'upgrades' });
+	}
+};
 
 /**
  * A receipt figure is signed, with no unit (the column says DPS). An outcome
  * is "N DPS more" or "N DPS less" with no sign, because outcomes are not
  * added to anything.
  */
-const valueText = (kind: SetBonusTip['kind'], dps: number | undefined): string => {
+const valueText = (kind: SetBonusTip['kind'], entry: Extract<TipEntry, { type: 'line' }>): string => {
+	const { dps } = entry;
+	if (entry.label.kind === 'screened') return screenedValueText(entry.label.reason);
 	if (dps === undefined) return i18n.t('upgrades_tab.set_bonus.tip_couldnt_measure', { ns: 'upgrades' });
-	if (kind === 'receipt') return `${dps > 0 ? '+' : ''}${dps.toFixed(1)}`;
+	if (kind === 'receipt' && !entry.outcome) return `${dps > 0 ? '+' : ''}${dps.toFixed(1)}`;
 	const shown = Number(dps.toFixed(1));
 	const amount = Math.abs(shown).toFixed(1);
 	return shown < 0
@@ -105,8 +134,20 @@ export function tipLabelId(label: TipLabel): string {
 			return `piece:${label.name}`;
 		case 'pieces':
 			return `pieces:${label.form}:${label.threshold}:${label.pieces.join('+')}`;
+		case 'reachable':
+			return `reachable:${label.set}:${label.threshold}`;
+		case 'screened':
+			return `screened:${label.set}`;
 	}
 }
+
+const HEADING_KEYS = {
+	set_potential: 'tip_set_potential',
+	set_potential_totals: 'tip_set_potential_totals',
+	not_counted_off: 'tip_not_counted_off',
+	not_counted_no_gain: 'tip_not_counted_no_gain',
+	not_counted: 'tip_not_counted',
+} as const satisfies Record<Extract<TipEntry, { type: 'heading' }>['heading'], string>;
 
 export const setBonusTipText = (tip: SetBonusTip): TipTextRow[] => {
 	// Nothing in the model forbids two lines about the same thing, so a repeat gets its occurrence number.
@@ -121,19 +162,17 @@ export const setBonusTipText = (tip: SetBonusTip): TipTextRow[] => {
 			return {
 				type: 'heading',
 				id: unique(entry.heading),
-				text:
-					entry.heading === 'set_potential'
-						? i18n.t('upgrades_tab.set_bonus.tip_set_potential', { ns: 'upgrades' })
-						: i18n.t('upgrades_tab.set_bonus.tip_set_potential_totals', { ns: 'upgrades' }),
+				text: i18n.t(`upgrades_tab.set_bonus.${HEADING_KEYS[entry.heading]}`, { ns: 'upgrades' }),
 			};
 		}
 		return {
 			type: 'line',
 			id: unique(tipLabelId(entry.label)),
 			label: tipLabelText(entry.label),
-			value: valueText(tip.kind, entry.dps),
+			value: valueText(tip.kind, entry),
 			...(entry.marker ? { marker: i18n.t('upgrades_tab.set_bonus.tip_figure_marker', { ns: 'upgrades' }) } : {}),
 			total: entry.label.kind === 'total',
+			...(entry.outcome || entry.label.kind === 'screened' ? { muted: true } : {}),
 		};
 	});
 };

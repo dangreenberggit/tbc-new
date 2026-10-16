@@ -40,6 +40,22 @@ describe('openSavedUpgradesStore', () => {
 		expect(openSavedUpgradesStore(SEED, storage, KEY).getState().view).toEqual({ withSetPotential: false, onlyBis: true });
 	});
 
+	it('restores the sources "Filter by source" hides in a fresh store', () => {
+		const storage = memoryStorage();
+		const first = openSavedUpgradesStore(SEED, storage, KEY);
+		first.getState().toggleViewSource('Black Temple');
+		first.getState().toggleViewSource('Crafted');
+
+		expect(openSavedUpgradesStore(SEED, storage, KEY).getState().hiddenSources).toEqual(['Black Temple', 'Crafted']);
+	});
+
+	it('restores a version-1 entry saved before the source filter was, with every source shown', () => {
+		const raw = JSON.stringify({ version: 1, settings: { iterations: 5000 }, view: { onlyBis: true }, exportFlavour: 'gear' });
+		const state = openSavedUpgradesStore(SEED, memoryStorage({ [KEY]: raw }), KEY).getState();
+		expect(state.hiddenSources).toEqual([]);
+		expect(state.view.onlyBis).toBe(true);
+	});
+
 	it('restores the export panel’s token or gear choice in a fresh store (ticket 588)', () => {
 		const storage = memoryStorage();
 		openSavedUpgradesStore(SEED, storage, KEY).getState().setExportFlavour('gear');
@@ -91,7 +107,7 @@ describe('openSavedUpgradesStore', () => {
 
 		store.getState().setIterations(2000, undefined);
 		const stored = JSON.parse(storage.entries.get(KEY)!);
-		expect(Object.keys(stored).sort()).toEqual(['exportFlavour', 'settings', 'sort', 'version', 'view']);
+		expect(Object.keys(stored).sort()).toEqual(['exportFlavour', 'hiddenSources', 'settings', 'sort', 'version', 'view']);
 		expect(JSON.stringify(stored)).not.toContain('sig');
 	});
 
@@ -115,11 +131,12 @@ describe('openSavedUpgradesStore', () => {
 			sort: [],
 			view: { withSetPotential: false, onlyBis: false },
 			exportFlavour: 'token',
+			hiddenSources: [],
 		};
 		const restoredFrom = (raw: string | undefined) => {
 			const store = openSavedUpgradesStore(SEED, memoryStorage(raw === undefined ? {} : { [KEY]: raw }), KEY);
-			const { settings, sort, view, exportFlavour } = store.getState();
-			return { settings, sort, view, exportFlavour };
+			const { settings, sort, view, exportFlavour, hiddenSources } = store.getState();
+			return { settings, sort, view, exportFlavour, hiddenSources };
 		};
 		const saved = (body: object) => JSON.stringify({ version: 1, ...body });
 
@@ -149,12 +166,14 @@ describe('openSavedUpgradesStore', () => {
 				sort: [{ id: 'slot', desc: true }],
 				view: { withSetPotential: 'yes', onlyBis: true },
 				exportFlavour: 'pdf',
+				hiddenSources: ['Karazhan', 3],
 			});
 			expect(restoredFrom(raw)).toEqual({
 				settings: { ...DEFAULT_STATE.settings, selectedSetKeys: ['preset:P3'], defaultsFor: 'feral:3' },
 				sort: [{ id: 'slot', desc: true }],
 				view: { withSetPotential: false, onlyBis: true },
 				exportFlavour: 'token',
+				hiddenSources: [],
 			});
 		});
 

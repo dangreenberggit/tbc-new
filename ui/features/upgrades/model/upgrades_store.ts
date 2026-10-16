@@ -12,7 +12,7 @@ import { createStore } from 'zustand/vanilla';
 
 import type { RankedItem, Ranking } from './engine/rank';
 import type { ExportFlavour } from './export';
-import { NO_VIEW_TOGGLES, type ViewToggles } from './results_view';
+import { NO_VIEW_TOGGLES, type ViewToggles, withViewSourceToggled } from './results_view';
 import {
 	fixtureLoaded,
 	IDLE_RUN,
@@ -49,11 +49,20 @@ export type ResultsSort = Array<{ id: string; desc: boolean }>;
 /**
  * `sort` is the one column sort every results table and the export follow
  * (ticket 280). `view` is the view toggles as the user set them; a run that
- * does not offer one shows it off (`appliedToggles`). `exportFlavour` is the
- * export panel's token or gear choice. All three hold across runs, and the
- * page saves them with the settings (`saved_settings.ts`).
+ * does not offer one shows it off (`appliedToggles`). `hiddenSources` is the
+ * source keys "Filter by source" hides from a settled table; a key the table
+ * does not offer hides nothing. `exportFlavour` is the export panel's token or
+ * gear choice. All four hold across runs, and the page saves them with the
+ * settings (`saved_settings.ts`).
  */
-export type UpgradesData = { run: RunState; settings: SettingsState; sort: ResultsSort; view: ViewToggles; exportFlavour: ExportFlavour };
+export type UpgradesData = {
+	run: RunState;
+	settings: SettingsState;
+	sort: ResultsSort;
+	view: ViewToggles;
+	hiddenSources: readonly string[];
+	exportFlavour: ExportFlavour;
+};
 
 /**
  * An action whose pure function returns the state it was given writes nothing and notifies nobody: a superseded run's
@@ -83,6 +92,9 @@ export type UpgradesActions = {
 	dropUnofferedSources: (validSourceKeys: readonly string[]) => void;
 	setSort: (sort: ResultsSort) => void;
 	setViewToggle: (toggle: keyof ViewToggles, on: boolean) => void;
+	toggleViewSource: (key: string) => void;
+	/** Show all sets `[]`; Hide all sets `withOfferedSourcesHidden` of the list. */
+	setViewSources: (keys: readonly string[]) => void;
 	setExportFlavour: (flavour: ExportFlavour) => void;
 };
 
@@ -92,7 +104,13 @@ export type UpgradesState = UpgradesData & UpgradesActions;
 export type SettingsSeed = { iterations: number };
 
 /** What a store restores from storage over its seed: only the fields that read back valid. */
-export type RestoredTab = { settings?: Partial<SettingsState>; sort?: ResultsSort; view?: Partial<ViewToggles>; exportFlavour?: ExportFlavour };
+export type RestoredTab = {
+	settings?: Partial<SettingsState>;
+	sort?: ResultsSort;
+	view?: Partial<ViewToggles>;
+	hiddenSources?: readonly string[];
+	exportFlavour?: ExportFlavour;
+};
 
 export type UpgradesStore = ReturnType<typeof createUpgradesStore>;
 
@@ -118,6 +136,7 @@ export function createUpgradesStore(seed: SettingsSeed, restored: RestoredTab = 
 				settings: { ...initialSettings(seed), ...restored.settings },
 				sort: restored.sort ?? [],
 				view: { ...NO_VIEW_TOGGLES, ...restored.view },
+				hiddenSources: restored.hiddenSources ?? [],
 				// The token is the default: the raid awards the token, not the tier piece.
 				exportFlavour: restored.exportFlavour ?? 'token',
 
@@ -139,6 +158,13 @@ export function createUpgradesStore(seed: SettingsSeed, restored: RestoredTab = 
 
 				setSort: sort => set(state => (sort === state.sort ? state : { sort })),
 				setViewToggle: (toggle, on) => set(state => (state.view[toggle] === on ? state : { view: { ...state.view, [toggle]: on } })),
+				toggleViewSource: key => set(state => ({ hiddenSources: withViewSourceToggled(state.hiddenSources, key) })),
+				setViewSources: keys =>
+					set(state =>
+						keys.length === state.hiddenSources.length && keys.every((key, i) => key === state.hiddenSources[i])
+							? state
+							: { hiddenSources: [...keys] },
+					),
 				setExportFlavour: flavour => set(state => (flavour === state.exportFlavour ? state : { exportFlavour: flavour })),
 			};
 		}),
@@ -148,6 +174,7 @@ export function createUpgradesStore(seed: SettingsSeed, restored: RestoredTab = 
 export const selectRun = (state: UpgradesState): RunState => state.run;
 export const selectSort = (state: UpgradesState): ResultsSort => state.sort;
 export const selectViewToggles = (state: UpgradesState): ViewToggles => state.view;
+export const selectHiddenSources = (state: UpgradesState): readonly string[] => state.hiddenSources;
 export const selectExportFlavour = (state: UpgradesState): ExportFlavour => state.exportFlavour;
 export const selectRunStatus = (state: UpgradesState): RunState['status'] => state.run.status;
 

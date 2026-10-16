@@ -9,6 +9,7 @@
 
 import { setBonusNoiseFloorDps } from './engine/cutoff';
 import type { RankedItem, Ranking, SetContext } from './engine/rank';
+import type { ScreenReason } from './engine/set-screen';
 import { bonusKey } from './engine/set-value';
 import type { SpecId } from './engine/types';
 import {
@@ -20,6 +21,7 @@ import {
 	type SetPotentialTerm,
 	setPotentialTerms,
 	singleSwapBreaks,
+	stepEligible,
 	stepFutureUnmeasured,
 } from './engine/view';
 
@@ -35,22 +37,31 @@ export type TipLabel =
 	/** A step ranking line: the partner pieces, the bonus they reach and the worn bonuses lost. */
 	| { kind: 'pieces'; form: 'stop' | 'step'; pieces: string[]; threshold: number; broken: BonusRef[] }
 	| { kind: 'item_alone'; name: string; broken: BonusRef[] }
+	/** A bonus the row can reach that its figure does not count: the partner pieces and the worn bonuses the step breaks beyond the row's own (ticket 336). */
+	| { kind: 'reachable'; set: string; threshold: number; have: number; pieces: string[]; broken: BonusRef[] }
+	/** A set the set screen dropped (ADR-0035), so no bonus of it was measured for the row. */
+	| { kind: 'screened'; set: string; reason: ScreenedReason }
 	| { kind: 'total' };
+
+const SCREENED_REASONS = ['outside-band', 'exact-zero', 'below-zero'] as const satisfies readonly ScreenReason[];
+export type ScreenedReason = (typeof SCREENED_REASONS)[number];
 
 /**
  * `dps` undefined is a figure that was not measured. In a receipt every line
- * but the total is already rounded to tenths so the lines add up to the total
- * as shown; `marker` names the outcome the row's figure uses.
+ * above the total is already rounded to tenths so the lines add up to the
+ * total as shown; `marker` names the outcome the row's figure uses; `outcome`
+ * marks a line after the total that is compared with the item alone and added
+ * to nothing.
  */
 export type TipEntry =
-	| { type: 'heading'; heading: 'set_potential' | 'set_potential_totals' }
-	| { type: 'line'; label: TipLabel; dps: number | undefined; marker?: true };
+	| { type: 'heading'; heading: 'set_potential' | 'set_potential_totals' | 'not_counted_off' | 'not_counted_no_gain' | 'not_counted' }
+	| { type: 'line'; label: TipLabel; dps: number | undefined; marker?: true; outcome?: true };
 
 export type SetBonusTip = { subLine: 'hover_hint' | 'not_counted'; kind: 'receipt' | 'outcomes'; entries: TipEntry[] };
 
 export type SetBonusTipContext = {
 	/** Absent while a run is in flight: no cutoff yet, so no set potential and no own-swap breaks. */
-	ranking?: Pick<Ranking, 'cutoff' | 'brokenSetValues'>;
+	ranking?: Pick<Ranking, 'cutoff' | 'brokenSetValues' | 'setBonuses' | 'setScreen'>;
 	/** The gear the ranking was measured on, in sim slot order. */
 	wornItemIds?: readonly number[];
 	specId?: SpecId;
@@ -159,6 +170,56 @@ function potentialLines(ctx: SetContext, noiseFloorDps: number, credit: number):
 }
 
 /**
+ * The bonuses a row can reach, each as a separate outcome: the row with its
+ * partner pieces against the row alone, naming the worn bonuses that step
+ * breaks beyond the row's own swap, which the receipt already prices. Only the
+ * futures the step rule can stop at (`stepEligible`, ticket 511), so a bonus
+ * within the noise is never shown as a figure. Only a step ranking measures the
+ * row with its partner pieces; elsewhere a future's figure is the bonus's own
+ * value, which a label naming pieces and breaks would misstate.
+ */
+function reachableLines(row: RankedItem, ctx: SetContext, noiseFloorDps: number): TipEntry[] {
+	if (!ctx.stepRanking) return [];
+	const own = new Set((ctx.singleBreaks ?? []).map(bonusKey));
+	const single = ctx.singleDeltaDps ?? row.deltaDps;
+	return [...(ctx.futureBonuses ?? [])]
+		.sort((a, b) => a.threshold - b.threshold)
+		.filter(f => stepEligible(f, noiseFloorDps))
+		.map((f): TipEntry => ({
+			type: 'line',
+			label: {
+				kind: 'reachable',
+				set: ctx.setName,
+				threshold: f.threshold,
+				have: ctx.piecesWornBefore,
+				pieces: (f.pieces ?? []).map(p => p.name),
+				broken: (f.breaks ?? []).filter(b => !own.has(bonusKey(b))).map(ref),
+			},
+			dps: f.stepGearDps === undefined ? undefined : f.stepGearDps - single,
+			outcome: true,
+		}));
+}
+
+/** The toggle is never why a screened set is not counted, so a section with no reachable line names no reason. */
+function notCountedHeading(hasReachable: boolean, on: boolean): Extract<TipEntry, { type: 'heading' }>['heading'] {
+	if (!hasReachable) return 'not_counted';
+	return on ? 'not_counted_no_gain' : 'not_counted_off';
+}
+
+/**
+ * The line for a row whose set the set screen dropped, or null. It carries no
+ * figure: a `below-zero` measure is the pieces and the bonus together, so
+ * printing it as the bonus would credit the pieces' loss to it (ticket 336).
+ */
+function screenedLine(ctx: SetContext, ranking: SetBonusTipContext['ranking']): TipEntry | null {
+	if (!ranking?.setBonuses?.some(b => b.setId === ctx.setId && b.unmeasured === 'screened-out')) return null;
+	const screen = ranking.setScreen?.mode === 'on' ? ranking.setScreen.sets.find(s => s.setId === ctx.setId) : undefined;
+	// With no screen entry to read, "not measured" is the one value that is still true.
+	const reason = SCREENED_REASONS.find(r => r === screen?.reason) ?? 'outside-band';
+	return line({ kind: 'screened', set: ctx.setName, reason }, undefined);
+}
+
+/**
  * Each line is a separate outcome compared with the current gear (the owner's
  * ruling of 2026-10-01), so there is no Item stats addend and no total. On a
  * row paired replication rewrote, every bonus's total moves by the same amount
@@ -191,7 +252,8 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 		ctx || !context.ranking || !context.specId ? [] : singleSwapBreaks(row, context.ranking.brokenSetValues, context.wornItemIds, context.specId);
 	if (!ctx && ownBreaks.length === 0) return null;
 
-	const subLine = setBonusSubLine(ctx ?? { singleBreaks: ownBreaks }, on);
+	const screened = ctx ? screenedLine(ctx, context.ranking) : null;
+	const subLine = setBonusSubLine(ctx ?? { singleBreaks: ownBreaks }, on) ?? (screened ? 'hover_hint' : null);
 	if (subLine === null) return null;
 
 	const potential = ctx && on && (ctx.futureBonuses ?? []).length > 0 ? potentialLines(ctx, noiseFloorDps, credit) : NO_POTENTIAL;
@@ -224,7 +286,15 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 		);
 		potential.lines.forEach((l, i) => entries.push(line(l.label, shown[i]! / 10)));
 	}
-	if (entries.length === 0) return null;
-	entries.push(line({ kind: 'total' }, total));
+
+	// What the figure does not count, after the total, so the toggle never decides whether the popover exists (ticket 336).
+	const notCounted: TipEntry[] = [];
+	if (ctx && noiseFloorDps !== undefined) {
+		const reachable = on && potential.kind !== 'none' ? [] : reachableLines(row, ctx, noiseFloorDps);
+		const section = [...reachable, ...(screened ? [screened] : [])];
+		if (section.length > 0) notCounted.push({ type: 'heading', heading: notCountedHeading(reachable.length > 0, on) }, ...section);
+	}
+	if (entries.length === 0 && notCounted.length === 0) return null;
+	entries.push(line({ kind: 'total' }, total), ...notCounted);
 	return { subLine, kind: 'receipt', entries };
 }

@@ -51,10 +51,12 @@ const testIdText = (tr: HTMLElement, testId: string) =>
 		.map(el => el.textContent);
 
 describe('ResultRow', () => {
-	it('shows its place, the item, slot, DPS change and source, then two cells for the row toggles', () => {
+	it('shows its place, the item, DPS change, slot and source, then two cells for the row toggles', () => {
 		const tr = renderRow(fixtureRow(0));
 		const cells = within(tr).getAllByRole('cell');
-		expect(cells.map(cell => cell.textContent)).toEqual(['3', 'Torch of the DamnedBiS', 'Main Hand', '+45.7', 'Black Temple', '', '']);
+		expect(cells.map(cell => cell.textContent)).toEqual(['3', 'Torch of the DamnedBiS', '+45.7', 'Main Hand', 'Black Temple', '', '']);
+		// The gates find the DPS cell by this id, not by its position (ticket 606).
+		expect(within(tr).getByTestId('upgrades-delta-cell')).toBe(cells[2]);
 		expect(cells[5]?.querySelector('[data-testid="favorite-stub"]')).not.toBeNull();
 		expect(cells[6]?.querySelector('[data-testid="batch-stub"]')).not.toBeNull();
 		expect(tr.dataset.itemId).toBe('32332');
@@ -87,6 +89,43 @@ describe('ResultRow', () => {
 		const link = within(renderRow(fixtureRow(0), context)).getByRole('link', { name: /Illidan Stormrage/ });
 		expect(link.textContent).toBe('Black Temple (N)Illidan Stormrage');
 		expect(link.getAttribute('href')).toBe(ActionId.makeNpcUrl(ILLIDAN));
+	});
+
+	// Choker of Serrated Blades drops in Hyjal Summit and Black Temple. Upstream's linked block names only the item's first
+	// drop, which can be the hidden one, so while any of the row's sources is hidden the cell names a shown one instead.
+	it('names only a shown source of a row from two raids while Filter by source hides the other', () => {
+		const HYJAL = 3606;
+		const BLACK_TEMPLE = 3959;
+		const drop = (zoneId: number) => ({
+			source: { oneofKind: 'drop' as const, drop: { zoneId, npcId: 0, difficulty: DungeonDifficulty.DifficultyNormal, otherName: '', category: '' } },
+		});
+		const choker = UIItem.create({ id: 32591, sources: [drop(HYJAL), drop(BLACK_TEMPLE)] });
+		const hyjal = { kind: 'raid', zone: 'Hyjal Summit', origin: 'db' } as const;
+		const row: RankedItem = { ...fixtureRow(0), itemId: 32591, source: hyjal, sources: [hyjal, { kind: 'raid', zone: 'Black Temple', origin: 'db' }] };
+		const { sim } = fakeHost({
+			sim: {
+				db: {
+					getZone: (id: number) => ({ [HYJAL]: { id, name: 'Hyjal Summit' }, [BLACK_TEMPLE]: { id, name: 'Black Temple' } })[id] ?? null,
+					getNpc: () => null,
+				},
+			},
+		});
+		const sourceCell = (hiddenSources?: readonly string[]) => {
+			const tr = renderRow(row, { ...CONTEXT, itemOf: () => choker, sim, hiddenSources });
+			return within(tr).getAllByRole('cell')[4]!;
+		};
+
+		expect(within(sourceCell()).getByRole('link').textContent).toBe('Hyjal Summit');
+		for (const [hidden, shown] of [
+			[['Hyjal Summit'], 'Black Temple'],
+			[['Black Temple'], 'Hyjal Summit'],
+		] as const) {
+			const cell = sourceCell(hidden);
+			expect(cell.textContent).toBe(shown);
+			expect(cell.querySelector('small')?.textContent).toBe(shown);
+			expect(within(cell).queryByRole('link')).toBeNull();
+		}
+		expect(within(sourceCell(['Karazhan'])).getByRole('link').textContent).toBe('Hyjal Summit');
 	});
 
 	it('shows the engine’s label as plain text when the site has no source to link', () => {

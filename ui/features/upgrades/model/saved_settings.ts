@@ -1,5 +1,5 @@
 /**
- * The Upgrades tab's settings, column sort, view toggles and export choice, kept across page reloads the
+ * The Upgrades tab's settings, column sort, view toggles, hidden sources and export choice, kept across page reloads the
  * way upstream keeps the sim's own settings (`ui/sim/state/persistence.ts`):
  * through the sim's `Env` storage, under a per-spec key, read once when the
  * store is made and written on every change after.
@@ -78,18 +78,21 @@ function readSavedTab(storage: Storage, key: string): RestoredTab {
 		settings: restoredSettings(saved.settings),
 		sort: restoredSort(saved.sort),
 		view: restoredView(saved.view),
+		// Added to version 1 without a bump: an entry saved before it has no key and restores every source shown.
+		hiddenSources: isStringList(saved.hiddenSources) ? saved.hiddenSources : undefined,
 		exportFlavour: EXPORT_FLAVOURS.find(flavour => flavour === saved.exportFlavour),
 	};
 }
 
 /** The parts of the tab's state the entry holds; the run is not saved. */
-const SAVED_PARTS = ['settings', 'sort', 'view', 'exportFlavour'] as const satisfies readonly (keyof UpgradesState)[];
+const SAVED_PARTS = ['settings', 'sort', 'view', 'hiddenSources', 'exportFlavour'] as const satisfies readonly (keyof UpgradesState)[];
 
-const savedTabOf = ({ settings: { candidateCap: _notSaved, ...settings }, sort, view, exportFlavour }: UpgradesState) => ({
+const savedTabOf = ({ settings: { candidateCap: _notSaved, ...settings }, sort, view, hiddenSources, exportFlavour }: UpgradesState) => ({
 	version: SAVED_VERSION,
 	settings,
 	sort,
 	view,
+	hiddenSources,
 	exportFlavour,
 });
 
@@ -97,8 +100,8 @@ const savedTabOf = ({ settings: { candidateCap: _notSaved, ...settings }, sort, 
 export type LinkedSettings = Partial<Pick<Settings, 'iterations' | 'candidateCap'>>;
 
 /**
- * A new store over the page's saved settings, sort, view toggles and export
- * choice, saving each later change to any of them. A run changes none of
+ * A new store over the page's saved settings, sort, view toggles, hidden
+ * sources and export choice, saving each later change to any of them. A run changes none of
  * them, so a run writes nothing. The load order is upstream's (`persistence.ts`): defaults,
  * then saved, then the link.
  */
