@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { RankError } from '../model/engine/rank';
 import type { RunProgressView } from '../model/run_progress';
+import { sourceKeysMatching } from '../model/settings_pool';
 import {
 	describeRunError,
 	fixtureOutcomeText,
@@ -163,11 +164,18 @@ describe('rowSourceDetail', () => {
 		expect(rowSourceDetail({ source: { kind: 'pvp', via: 'arena', season: 3 } })).toBe('PvP vendor · Arena, season 3');
 	});
 
-	// The detail is the shown source's only, so a kept row's cell never names a hidden zone.
-	it('names the first shown source while the first is hidden, else the first', () => {
-		expect(rowSourceDetail(tokenOrHyjal, ['Black Temple'])).toBe('Hyjal Summit · Archimonde');
-		expect(rowSourceDetail(tokenOrHyjal, ['Hyjal Summit'])).toBe('Black Temple (N) · The Illidari Council');
-		expect(rowSourceDetail(tokenOrHyjal, ['Black Temple', 'Hyjal Summit'])).toBe('Black Temple (N) · The Illidari Council');
+	// The detail is the shown source's only, so a kept row's cell never names a hidden zone. Each case is a row
+	// "Filter by source" keeps (`sourcesView`): a row with no shown key is not on screen, so its cell proves nothing.
+	it('names the first source the filter does not hide, on a row the filter keeps', () => {
+		const badge = { kind: 'badge', cost: 75 } as const;
+		const badgeOrToken = { source: badge, sources: [badge, token] };
+		const detailOfKeptRow = (row: typeof tokenOrHyjal | typeof badgeOrToken, hidden: string[]) => {
+			expect(sourceKeysMatching(row).some(key => !hidden.includes(key))).toBe(true);
+			return rowSourceDetail(row, hidden);
+		};
+		expect(detailOfKeptRow(tokenOrHyjal, ['Black Temple'])).toBe('Hyjal Summit · Archimonde');
+		expect(detailOfKeptRow(tokenOrHyjal, ['Hyjal Summit'])).toBe('Black Temple (N) · The Illidari Council');
+		expect(detailOfKeptRow(badgeOrToken, ['Badge vendor'])).toBe('Black Temple (N) · The Illidari Council');
 	});
 });
 

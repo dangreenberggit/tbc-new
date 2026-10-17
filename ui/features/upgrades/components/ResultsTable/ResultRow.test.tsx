@@ -162,11 +162,13 @@ describe('ResultRow', () => {
 		expect(sourceText({ kind: 'pvp', via: 'arena', season: 3, origin: 'wowhead' })).toBe('PvP vendor · Arena, season 3');
 	});
 
-	it('names only the shown source of a token row while Filter by source hides its zone', () => {
-		const badge = { kind: 'badge', cost: 75, origin: 'db' } as const;
-		const row: RankedItem = { ...fixtureRow(0), source: token, sources: [token, badge] };
+	// The row has a second zone, so "Filter by source" keeps it while Black Temple is hidden; a token row with no other
+	// zone would be cut from the table, and its cell never seen.
+	it('names only the shown zone of a two-zone token row while Filter by source hides the other', () => {
+		const hyjal = { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde', origin: 'db' } as const;
+		const row: RankedItem = { ...fixtureRow(0), source: token, sources: [token, hyjal] };
 		const cell = within(renderRow(row, { ...CONTEXT, itemOf: () => undefined, hiddenSources: ['Black Temple'] })).getAllByRole('cell')[4]!;
-		expect(cell.textContent).toBe('Badge vendor');
+		expect(cell.textContent).toBe('Hyjal Summit · Archimonde');
 	});
 
 	it('colours the item name by its quality', () => {
