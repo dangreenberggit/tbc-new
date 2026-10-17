@@ -121,6 +121,22 @@
 					"additionalProperties": false,
 					"required": ["badge", "crafted", "rep", "pvp", "world", "heroic", "unknown"]
 				},
+				"source_detail": {
+					"type": "object",
+					"properties": {
+						"arena": {
+							"type": "string"
+						},
+						"honor": {
+							"type": "string"
+						},
+						"season": {
+							"type": "string"
+						}
+					},
+					"additionalProperties": false,
+					"required": ["arena", "honor", "season"]
+				},
 				"iterations_label": {
 					"type": "string"
 				},
@@ -608,6 +624,7 @@
 				"settings_title",
 				"settings",
 				"sources",
+				"source_detail",
 				"iterations_label",
 				"candidates_label",
 				"eligible_count",

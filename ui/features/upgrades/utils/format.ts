@@ -94,6 +94,11 @@ export const sourceDetail = (source: ItemSource): string => {
 			return joinDetail(kindLabel(source.kind), source.dungeon);
 		case 'rep':
 			return joinDetail(source.faction, source.standing);
+		case 'pvp': {
+			const via = i18n.t(`upgrades_tab.source_detail.${source.via}`, { ns: 'upgrades' });
+			const season = typeof source.season === 'number' ? i18n.t('upgrades_tab.source_detail.season', { ns: 'upgrades', n: source.season }) : undefined;
+			return joinDetail(kindLabel(source.kind), season === undefined ? via : `${via}, ${season}`);
+		}
 		default:
 			return sourceLabel(source);
 	}

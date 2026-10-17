@@ -136,6 +136,20 @@ describe('sourceDetail', () => {
 	it('names a reputation item’s faction and standing', () => {
 		expect(sourceDetail({ kind: 'rep', faction: 'The Scale of the Sands', standing: 'Revered' })).toBe('The Scale of the Sands · Revered');
 	});
+
+	it('names a PvP item’s currency, and its season when one is recorded', () => {
+		expect(sourceDetail({ kind: 'pvp', via: 'arena', season: 3 })).toBe('PvP vendor · Arena, season 3');
+		expect(sourceDetail({ kind: 'pvp', via: 'arena' })).toBe('PvP vendor · Arena');
+		expect(sourceDetail({ kind: 'pvp', via: 'honor' })).toBe('PvP vendor · Honor');
+		withTranslation('upgrades_tab.source_detail.honor', 'Ehre', () => expect(sourceDetail({ kind: 'pvp', via: 'honor' })).toBe('PvP vendor · Ehre'));
+	});
+
+	it('names a badge, crafted, world or unrecorded source by its kind alone, as before', () => {
+		expect(sourceDetail({ kind: 'badge', cost: 75 })).toBe('Badge vendor');
+		expect(sourceDetail({ kind: 'crafted', profession: 'Blacksmithing' })).toBe('Crafted');
+		expect(sourceDetail({ kind: 'world' })).toBe('World drop');
+		expect(sourceDetail({ kind: 'unknown' })).toBe('Source not recorded');
+	});
 });
 
 describe('sortLabelsFor', () => {

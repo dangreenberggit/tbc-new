@@ -33,6 +33,11 @@
 			"heroic": "Heroic dungeon",
 			"unknown": "Source not recorded"
 		},
+		"source_detail": {
+			"arena": "Arena",
+			"honor": "Honor",
+			"season": "season {{n}}"
+		},
 		"iterations_label": "Iterations",
 		"candidates_label": "Candidates",
 		"eligible_count": "{{count}} eligible items",
