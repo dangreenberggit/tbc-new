@@ -1,24 +1,44 @@
 import { ItemSource } from '@features/gear/components/SelectorModal/ItemSource';
 import type { UIItem } from '@generated/proto/ui';
+import { ActionId } from '@sim/proto/action_id';
+import { difficultyNames } from '@sim/proto/names';
 import type { Sim } from '@sim/sim';
-import { memo } from 'react';
+import { externalRel } from '@sim/utils/links';
+import { memo, type ReactNode } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
 import { rowNamesHiddenSource, rowSourceDetail } from '../../utils/format';
 import { itemSourceShows, overrunNpcKey } from '../../utils/item_source';
 
-const withOverrunNpcKeys = (item: UIItem, sim: Sim): UIItem => {
-	let changed = false;
-	const sources = item.sources.map(entry => {
-		if (entry.source.oneofKind !== 'drop') return entry;
-		const { drop } = entry.source;
-		const name = sim.db.getNpc(drop.npcId)?.name;
-		const key = name === undefined ? undefined : overrunNpcKey(name);
-		if (key === undefined) return entry;
-		changed = true;
-		return { ...entry, source: { oneofKind: 'drop' as const, drop: { ...drop, npcId: 0, otherName: key } } };
-	});
-	return changed ? { ...item, sources } : item;
+/**
+ * Upstream's drop-with-npc link (`ItemSource`), drawn here with the boss
+ * `overrunNpcKey` recovers, when the item's first source is a drop whose npc
+ * name overran its AtlasLoot key (ticket 680); else undefined. `ItemSource`
+ * prints the npc's database name, which is the Lua text, and upstream files
+ * stay unedited, so the cell draws the same link itself: zone and difficulty
+ * over the boss, linking the npc (review finding P2 of feat/tab-follow-ups).
+ */
+const overrunDropSource = (item: UIItem, sim: Sim): ReactNode | undefined => {
+	const [first] = item.sources;
+	if (first?.source.oneofKind !== 'drop') return undefined;
+	const { drop } = first.source;
+	const zone = sim.db.getZone(drop.zoneId);
+	const npc = sim.db.getNpc(drop.npcId);
+	const boss = npc ? overrunNpcKey(npc.name) : undefined;
+	if (!zone || !npc || boss === undefined) return undefined;
+	const href = ActionId.makeNpcUrl(npc.id);
+	const category = drop.category ? ` - ${drop.category}` : '';
+	return (
+		<a href={href} target="_blank" rel={externalRel(href, undefined)} data-whtticon="false" className="relative z-1">
+			<small>
+				<span>
+					{zone.name} ({difficultyNames.get(drop.difficulty) ?? 'Unknown'})
+					<br />
+					{boss + category}
+				</span>
+			</small>
+		</a>
+	);
 };
 
 export interface SourceCellProps {
@@ -46,15 +66,15 @@ export interface SourceCellProps {
  * reputation's standing, a PvP item's currency.
  *
  * A drop whose npc name overran its AtlasLoot key (`overrunNpcKey`, ticket
- * 680) reaches `ItemSource` with no npc and the key as `otherName`, which it
- * prints under the zone, so the cell names the boss and not the Lua text.
+ * 680) is drawn by `overrunDropSource`, so the cell names the boss and not
+ * the Lua text.
  */
 export const SourceCell = memo(({ row, item, sim, hiddenSources = [] }: SourceCellProps) => {
 	const namesHidden = rowNamesHiddenSource(row, hiddenSources);
 	return (
 		<td className="py-1 pr-3">
 			{!namesHidden && item && itemSourceShows(item, sim) ? (
-				<ItemSource item={withOverrunNpcKeys(item, sim)} sim={sim} />
+				(overrunDropSource(item, sim) ?? <ItemSource item={item} sim={sim} />)
 			) : (
 				<small className="text-muted">{rowSourceDetail(row, hiddenSources)}</small>
 			)}

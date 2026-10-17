@@ -168,8 +168,8 @@ describe('ResultRow', () => {
 
 		const overrun = sourceCell(ISALIEN);
 		const overrunLink = within(overrun).getByRole('link');
-		expect(overrunLink.textContent).toBe('Dire MaulIsalien');
-		expect(overrunLink.getAttribute('href')).toBe(ActionId.makeZoneUrl(DIRE_MAUL));
+		expect(overrunLink.textContent).toBe('Dire Maul (N)Isalien');
+		expect(overrunLink.getAttribute('href')).toBe(ActionId.makeNpcUrl(ISALIEN));
 		expect(overrun.textContent).not.toMatch(/["[\]]/);
 
 		const real = within(sourceCell(ERIC)).getByRole('link');
