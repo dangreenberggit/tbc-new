@@ -15,6 +15,7 @@ import {
 	progressStageOf,
 	rowNamesHiddenSource,
 	rowShownSourceLabel,
+	rowSourceDetail,
 	rowSourceLabel,
 	simSlotLabel,
 	slotLabel,
@@ -152,11 +153,36 @@ describe('sourceDetail', () => {
 	});
 });
 
+describe('rowSourceDetail', () => {
+	const token = { kind: 'token', zone: 'Black Temple', boss: 'The Illidari Council', token: 'Leggings of the Forgotten Protector' } as const;
+	const hyjal = { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde' } as const;
+	const tokenOrHyjal = { source: token, sources: [token, hyjal] };
+
+	it('names the first source of a row with its detail', () => {
+		expect(rowSourceDetail(tokenOrHyjal)).toBe('Black Temple (N) · The Illidari Council');
+		expect(rowSourceDetail({ source: { kind: 'pvp', via: 'arena', season: 3 } })).toBe('PvP vendor · Arena, season 3');
+	});
+
+	// The detail is the shown source's only, so a kept row's cell never names a hidden zone.
+	it('names the first shown source while the first is hidden, else the first', () => {
+		expect(rowSourceDetail(tokenOrHyjal, ['Black Temple'])).toBe('Hyjal Summit · Archimonde');
+		expect(rowSourceDetail(tokenOrHyjal, ['Hyjal Summit'])).toBe('Black Temple (N) · The Illidari Council');
+		expect(rowSourceDetail(tokenOrHyjal, ['Black Temple', 'Hyjal Summit'])).toBe('Black Temple (N) · The Illidari Council');
+	});
+});
+
 describe('sortLabelsFor', () => {
 	it('sorts the slot and source columns on the text their cells show', () => {
 		const row = { slot: 'finger', slotChoice: 'finger2', source: { kind: 'badge', cost: 75 } } as const;
 		expect(sortLabelsFor([]).slot(row)).toBe('Ring 2');
 		expect(sortLabelsFor([]).source(row)).toBe('Badge vendor');
+	});
+
+	it('sorts a reputation or token row on the detail its cell shows, not on its bucket', () => {
+		const rep = { slot: 'finger', source: { kind: 'rep', faction: 'The Scale of the Sands', standing: 'Revered' } } as const;
+		const token = { slot: 'legs', source: { kind: 'token', zone: 'Black Temple', boss: 'The Illidari Council', token: 'Leggings of the Forgotten Protector' } } as const;
+		expect(sortLabelsFor([]).source(rep)).toBe('The Scale of the Sands · Revered');
+		expect(sortLabelsFor([]).source(token)).toBe('Black Temple (N) · The Illidari Council');
 	});
 });
 

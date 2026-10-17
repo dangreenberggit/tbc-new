@@ -116,9 +116,15 @@ describe('the results table sort', () => {
 		expect(ids(ROWS, [{ id: 'slot', desc: true }])).toEqual([32332, 33688, 32235, 30905]);
 	});
 
-	it('keeps the engine order between rows with the same source, in both directions', () => {
+	it('sorts by the source its cell names, boss included', () => {
 		expect(ids(ROWS, [{ id: 'source', desc: true }])).toEqual([33688, 30905, 32332, 32235]);
-		expect(ids(ROWS, [{ id: 'source', desc: false }])).toEqual([32332, 32235, 30905, 33688]);
+		expect(ids(ROWS, [{ id: 'source', desc: false }])).toEqual([32235, 32332, 30905, 33688]);
+	});
+
+	it('keeps the engine order between rows with the same source, in both directions', () => {
+		const sameBoss = [fixtureRow(0), { ...fixtureRow(2), source: fixtureRow(0).source }];
+		expect(ids(sameBoss, [{ id: 'source', desc: true }])).toEqual([32332, 32235]);
+		expect(ids(sameBoss, [{ id: 'source', desc: false }])).toEqual([32332, 32235]);
 	});
 
 	// Review AD2: the column once sorted on the row's first source while its cell named the first shown one.

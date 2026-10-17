@@ -105,7 +105,7 @@ export const sourceDetail = (source: ItemSource): string => {
 };
 
 /** A row with several sources names the first, as the engine orders them. */
-export const rowSourceLabel =(row: SourcedEntry): string => sourceLabel(row.sources?.[0] ?? row.source);
+export const rowSourceLabel = (row: SourcedEntry): string => sourceLabel(row.sources?.[0] ?? row.source);
 
 /**
  * The key "Filter by source" would hide one source by: a drop's zone, else its
@@ -119,20 +119,27 @@ const ownSourceKey = (source: ItemSource): string => ('zone' in source ? source.
 export const rowNamesHiddenSource = (row: SourcedEntry, hidden: readonly string[]): boolean =>
 	hidden.length > 0 && sourcesOf(row).some(source => hidden.includes(ownSourceKey(source)));
 
+/** The source a row's cell names while sources are hidden: its first source not hidden, else its first source. */
+const shownSourceOf = (row: SourcedEntry, hidden: readonly string[]): ItemSource =>
+	sourcesOf(row).find(source => !hidden.includes(ownSourceKey(source))) ?? row.sources?.[0] ?? row.source;
+
 /** The cell label of a row while sources are hidden: its first source not hidden, else its first source. */
-export const rowShownSourceLabel = (row: SourcedEntry, hidden: readonly string[]): string => {
-	const shown = sourcesOf(row).find(source => !hidden.includes(ownSourceKey(source)));
-	return shown ? sourceLabel(shown) : rowSourceLabel(row);
-};
+export const rowShownSourceLabel = (row: SourcedEntry, hidden: readonly string[]): string => sourceLabel(shownSourceOf(row, hidden));
 
 /**
- * The slot column sorts on its cell's text and the source column on the label its cell names under the acting hidden
- * sources (a drop's zone, else the source's kind; the first shown source of a row whose first is hidden), so the sort
- * matches the cell (review AD2). The export sorts with the same labels, so its order is the order on screen.
+ * The Source cell's plain text for a row: the detail of its first shown source only, so a kept row never names a
+ * source "Filter by source" hides. A row from two zones names one of them, as upstream's block names its first drop.
+ */
+export const rowSourceDetail = (row: SourcedEntry, hidden: readonly string[] = []): string => sourceDetail(shownSourceOf(row, hidden));
+
+/**
+ * The slot column sorts on its cell's text and the source column on the detail its cell's plain text shows under the
+ * acting hidden sources (`rowSourceDetail`), so the sort matches the cell (review AD2): a reputation row sorts on its
+ * faction, not under "Reputation". The export sorts with the same labels, so its order is the order on screen.
  */
 export const sortLabelsFor = (hiddenSources: readonly string[]): SortLabels<Pick<RankedItem, 'slot' | 'slotChoice'> & SourcedEntry> => ({
 	slot: slotLabel,
-	source: row => rowShownSourceLabel(row, hiddenSources),
+	source: row => rowSourceDetail(row, hiddenSources),
 });
 
 /** What loading a fixture file did, in the page's words. */
