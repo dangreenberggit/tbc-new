@@ -54,7 +54,7 @@ describe('ResultRow', () => {
 	it('shows its place, the item, DPS change, slot and source, then two cells for the row toggles', () => {
 		const tr = renderRow(fixtureRow(0));
 		const cells = within(tr).getAllByRole('cell');
-		expect(cells.map(cell => cell.textContent)).toEqual(['3', 'Torch of the DamnedBiS', '+45.7', 'Main Hand', 'Black Temple', '', '']);
+		expect(cells.map(cell => cell.textContent)).toEqual(['3', 'Torch of the DamnedBiS', '+45.7', 'Main Hand', 'Black Temple · Reliquary of the Lost', '', '']);
 		// The gates find the DPS cell by this id, not by its position (ticket 606).
 		expect(within(tr).getByTestId('upgrades-delta-cell')).toBe(cells[2]);
 		expect(cells[5]?.querySelector('[data-testid="favorite-stub"]')).not.toBeNull();
@@ -131,7 +131,28 @@ describe('ResultRow', () => {
 	it('shows the engine’s label as plain text when the site has no source to link', () => {
 		const tr = renderRow(fixtureRow(0));
 		expect(within(tr).queryByRole('link', { name: /Black Temple/ })).toBeNull();
-		expect(within(tr).getByText('Black Temple').tagName).toBe('SMALL');
+		expect(within(tr).getByText('Black Temple · Reliquary of the Lost').tagName).toBe('SMALL');
+	});
+
+	// Upstream's db.json has no source for these items, so the plain text is all the cell can show (ticket 619).
+	it('names a tier token’s boss, a reputation’s standing and a PvP item’s currency in the plain text', () => {
+		const sourceText = (source: RankedItem['source']) => {
+			const { sources: _, ...row } = { ...fixtureRow(0), source };
+			const tr = renderRow(row, { ...CONTEXT, itemOf: () => undefined });
+			return within(tr).getAllByRole('cell')[4]!.querySelector('small')?.textContent;
+		};
+		const token = { kind: 'token', zone: 'Black Temple', boss: 'The Illidari Council', token: 'Leggings of the Forgotten Protector', origin: 'db' } as const;
+		expect(sourceText(token)).toBe('Black Temple (N) · The Illidari Council');
+		expect(sourceText({ kind: 'rep', faction: 'The Scale of the Sands', standing: 'Revered', origin: 'db' })).toBe('The Scale of the Sands · Revered');
+		expect(sourceText({ kind: 'pvp', via: 'arena', season: 3, origin: 'wowhead' })).toBe('PvP vendor · Arena, season 3');
+	});
+
+	it('names only the shown source of a token row while Filter by source hides its zone', () => {
+		const token = { kind: 'token', zone: 'Black Temple', boss: 'The Illidari Council', token: 'Leggings of the Forgotten Protector', origin: 'db' } as const;
+		const badge = { kind: 'badge', cost: 75, origin: 'db' } as const;
+		const row: RankedItem = { ...fixtureRow(0), source: token, sources: [token, badge] };
+		const cell = within(renderRow(row, { ...CONTEXT, itemOf: () => undefined, hiddenSources: ['Black Temple'] })).getAllByRole('cell')[4]!;
+		expect(cell.textContent).toBe('Badge vendor');
 	});
 
 	it('colours the item name by its quality', () => {

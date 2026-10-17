@@ -4,7 +4,7 @@ import type { Sim } from '@sim/sim';
 import { memo } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
-import { rowNamesHiddenSource, rowShownSourceLabel, rowSourceLabel } from '../../utils/format';
+import { rowNamesHiddenSource, rowSourceDetail } from '../../utils/format';
 import { itemSourceShows } from '../../utils/item_source';
 
 export interface SourceCellProps {
@@ -27,7 +27,9 @@ export interface SourceCellProps {
  * item from two raids stays while either is shown). Upstream's block names
  * the item's first source only, which may be the hidden one, so while any
  * of the row's sources is hidden the cell names its first shown source in
- * plain text instead.
+ * plain text instead. The plain text names that one source with what the
+ * row holds beyond its zone or bucket: a drop's or token's boss, a
+ * reputation's standing, a PvP item's currency.
  */
 export const SourceCell = memo(({ row, item, sim, hiddenSources = [] }: SourceCellProps) => {
 	const namesHidden = rowNamesHiddenSource(row, hiddenSources);
@@ -36,7 +38,7 @@ export const SourceCell = memo(({ row, item, sim, hiddenSources = [] }: SourceCe
 			{!namesHidden && item && itemSourceShows(item, sim) ? (
 				<ItemSource item={item} sim={sim} />
 			) : (
-				<small className="text-muted">{namesHidden ? rowShownSourceLabel(row, hiddenSources) : rowSourceLabel(row)}</small>
+				<small className="text-muted">{rowSourceDetail(row, hiddenSources)}</small>
 			)}
 		</td>
 	);

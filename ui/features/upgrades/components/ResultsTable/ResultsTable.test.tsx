@@ -103,7 +103,7 @@ describe('ResultsTable', () => {
 		const rows = rowsOf(getByTestId('upgrades-results-table'));
 
 		expect(rows).toHaveLength(RANKING_FIXTURE.items.length);
-		expect(cellsOf(rows[0]).slice(0, 5)).toEqual(['1', 'Torch of the DamnedBiS', '+45.7', 'Main Hand', 'Black Temple']);
+		expect(cellsOf(rows[0]).slice(0, 5)).toEqual(['1', 'Torch of the DamnedBiS', '+45.7', 'Main Hand', 'Black Temple · Reliquary of the Lost']);
 	});
 
 	it('keeps each row’s element when rows arrive ahead of it, because rows are keyed by item', () => {
