@@ -19,6 +19,7 @@ import {
 	simSlotLabel,
 	slotLabel,
 	sortLabelsFor,
+	sourceDetail,
 	sourceKeyLabel,
 	sourceLabel,
 	substitutionText,
@@ -112,6 +113,28 @@ describe('the Source cell under Filter by source', () => {
 
 	it('falls back to the first source when every source is hidden', () => {
 		expect(rowShownSourceLabel(twoRaids, ['Hyjal Summit', 'Black Temple'])).toBe('Hyjal Summit');
+	});
+});
+
+describe('sourceDetail', () => {
+	it('names a tier token’s zone, difficulty and boss, as a drop row does, and not the token', () => {
+		const token = { kind: 'token', zone: 'Black Temple', boss: 'The Illidari Council', token: 'Leggings of the Forgotten Protector' } as const;
+		expect(sourceDetail(token)).toBe('Black Temple (N) · The Illidari Council');
+		expect(sourceDetail({ kind: 'token', zone: 'Black Temple', token: 'Leggings of the Forgotten Protector' })).toBe('Black Temple (N)');
+	});
+
+	// Five-man drops mix Normal and Heroic in upstream's db.json, so a raid-kind row prints no difficulty.
+	it('names a drop’s zone and boss, and the zone alone when no boss is recorded', () => {
+		expect(sourceDetail({ kind: 'raid', zone: 'The Mechanar', boss: 'Pathaleon the Calculator' })).toBe('The Mechanar · Pathaleon the Calculator');
+		expect(sourceDetail({ kind: 'raid', zone: 'Hyjal Summit' })).toBe('Hyjal Summit');
+	});
+
+	it('names a heroic dungeon after its kind', () => {
+		expect(sourceDetail({ kind: 'heroic', dungeon: 'The Mechanar' })).toBe('Heroic dungeon · The Mechanar');
+	});
+
+	it('names a reputation item’s faction and standing', () => {
+		expect(sourceDetail({ kind: 'rep', faction: 'The Scale of the Sands', standing: 'Revered' })).toBe('The Scale of the Sands · Revered');
 	});
 });
 

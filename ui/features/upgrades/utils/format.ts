@@ -1,6 +1,8 @@
 import { ItemSlot } from '@generated/proto/common';
+import { DungeonDifficulty } from '@generated/proto/ui';
 import i18n from '@i18n/config';
 import { translateSlotName } from '@i18n/localization';
+import { difficultyNames } from '@sim/proto/names';
 import { formatToNumber } from '@sim/utils/format';
 import type { ProgressTrackerProgress } from '@ui-kit/ProgressTrackerDialog';
 
@@ -68,8 +70,37 @@ export const sourceKeyLabel = (key: string): string => {
 /** A source as its cell shows it: the zone of a drop, else its kind. */
 export const sourceLabel = (source: ItemSource): string => ('zone' in source ? source.zone : kindLabel(source.kind));
 
+const DETAIL_SEPARATOR = ' · ';
+
+const joinDetail = (...parts: (string | undefined)[]): string => parts.filter(part => part !== undefined).join(DETAIL_SEPARATOR);
+
+/**
+ * Every drop upstream's `db.json` records in a phase raid is Normal, and the universe builder keeps a token's zone to
+ * the phase raids, so a token row prints upstream's Normal mark as a drop row does (plan tab-source-labels C30).
+ */
+const TOKEN_DIFFICULTY = difficultyNames.get(DungeonDifficulty.DifficultyNormal);
+
+/**
+ * A source as the Source cell's plain text shows it: what the row holds beyond its zone or bucket — a drop's boss, a
+ * token's difficulty and boss, a reputation's faction and standing, a PvP item's currency and season.
+ */
+export const sourceDetail = (source: ItemSource): string => {
+	switch (source.kind) {
+		case 'token':
+			return joinDetail(`${source.zone} (${TOKEN_DIFFICULTY})`, source.boss);
+		case 'raid':
+			return joinDetail(source.zone, source.boss);
+		case 'heroic':
+			return joinDetail(kindLabel(source.kind), source.dungeon);
+		case 'rep':
+			return joinDetail(source.faction, source.standing);
+		default:
+			return sourceLabel(source);
+	}
+};
+
 /** A row with several sources names the first, as the engine orders them. */
-export const rowSourceLabel = (row: SourcedEntry): string => sourceLabel(row.sources?.[0] ?? row.source);
+export const rowSourceLabel =(row: SourcedEntry): string => sourceLabel(row.sources?.[0] ?? row.source);
 
 /**
  * The key "Filter by source" would hide one source by: a drop's zone, else its
