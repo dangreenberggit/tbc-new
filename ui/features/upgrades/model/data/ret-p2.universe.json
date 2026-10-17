@@ -6431,8 +6431,9 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "curated"
+          "kind": "raid",
+          "zone": "Dire Maul",
+          "origin": "db"
         }
       ],
       "curationHint": 0.0
@@ -6463,8 +6464,9 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "curated"
+          "kind": "heroic",
+          "dungeon": "The Blood Furnace",
+          "origin": "db"
         }
       ],
       "curationHint": 0.0,
@@ -7300,8 +7302,15 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "curated"
+          "kind": "raid",
+          "zone": "The Mechanar",
+          "boss": "Pathaleon the Calculator",
+          "origin": "db"
+        },
+        {
+          "dungeon": "The Mechanar",
+          "kind": "heroic",
+          "origin": "atlasloot"
         }
       ],
       "curationHint": 26.24,
@@ -7319,8 +7328,15 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "curated"
+          "kind": "raid",
+          "zone": "The Black Morass",
+          "boss": "Temporus",
+          "origin": "db"
+        },
+        {
+          "dungeon": "The Black Morass",
+          "kind": "heroic",
+          "origin": "atlasloot"
         }
       ],
       "curationHint": 24.64

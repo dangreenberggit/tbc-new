@@ -11421,8 +11421,15 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "curated"
+          "kind": "raid",
+          "zone": "The Black Morass",
+          "boss": "Temporus",
+          "origin": "db"
+        },
+        {
+          "dungeon": "The Black Morass",
+          "kind": "heroic",
+          "origin": "atlasloot"
         }
       ],
       "curationHint": 24.64,

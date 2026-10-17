@@ -7438,8 +7438,15 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "curated"
+          "kind": "raid",
+          "zone": "The Mechanar",
+          "boss": "Pathaleon the Calculator",
+          "origin": "db"
+        },
+        {
+          "dungeon": "The Mechanar",
+          "kind": "heroic",
+          "origin": "atlasloot"
         }
       ],
       "curationHint": 64.0,
