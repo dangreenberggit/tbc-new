@@ -76,7 +76,8 @@ const joinDetail = (...parts: (string | undefined)[]): string => parts.filter(pa
 
 /**
  * Every drop upstream's `db.json` records in a phase raid is Normal, and the universe builder keeps a token's zone to
- * the phase raids, so a token row prints upstream's Normal mark as a drop row does (plan tab-source-labels C30).
+ * the phase raids, so a token row prints upstream's Normal mark as a drop row does. The builder guard is "Token zones
+ * stay phase raids only" in the main repo's `scripts/assemble_universe.py`; ticket 619 records the db.json check.
  */
 const TOKEN_DIFFICULTY = difficultyNames.get(DungeonDifficulty.DifficultyNormal);
 
@@ -104,9 +105,6 @@ export const sourceDetail = (source: ItemSource): string => {
 	}
 };
 
-/** A row with several sources names the first, as the engine orders them. */
-export const rowSourceLabel = (row: SourcedEntry): string => sourceLabel(row.sources?.[0] ?? row.source);
-
 /**
  * The key "Filter by source" would hide one source by: a drop's zone, else its
  * bucket. The filter keeps or drops a row by its zones alone when it has one
@@ -119,12 +117,12 @@ const ownSourceKey = (source: ItemSource): string => ('zone' in source ? source.
 export const rowNamesHiddenSource = (row: SourcedEntry, hidden: readonly string[]): boolean =>
 	hidden.length > 0 && sourcesOf(row).some(source => hidden.includes(ownSourceKey(source)));
 
-/** The source a row's cell names while sources are hidden: its first source not hidden, else its first source. */
+/**
+ * The source a row's cell names while sources are hidden: its first source not hidden. A row "Filter by source" keeps
+ * always has one; the first-source default is for a caller that passes a row the filter would drop.
+ */
 const shownSourceOf = (row: SourcedEntry, hidden: readonly string[]): ItemSource =>
 	sourcesOf(row).find(source => !hidden.includes(ownSourceKey(source))) ?? row.sources?.[0] ?? row.source;
-
-/** The cell label of a row while sources are hidden: its first source not hidden, else its first source. */
-export const rowShownSourceLabel = (row: SourcedEntry, hidden: readonly string[]): string => sourceLabel(shownSourceOf(row, hidden));
 
 /**
  * The Source cell's plain text for a row: the detail of its first shown source only, so a kept row never names a

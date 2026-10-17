@@ -15,9 +15,7 @@ import {
 	progressLabel,
 	progressStageOf,
 	rowNamesHiddenSource,
-	rowShownSourceLabel,
 	rowSourceDetail,
-	rowSourceLabel,
 	simSlotLabel,
 	slotLabel,
 	sortLabelsFor,
@@ -74,15 +72,6 @@ describe('simSlotLabel', () => {
 	});
 });
 
-describe('rowSourceLabel', () => {
-	it('names the first source of a row that has several, as the engine orders them', () => {
-		const raid = { kind: 'raid', zone: 'Black Temple', boss: 'Illidan' } as const;
-		const badge = { kind: 'badge', cost: 75 } as const;
-		expect(rowSourceLabel({ source: badge, sources: [raid, badge] })).toBe('Black Temple');
-		expect(rowSourceLabel({ source: badge })).toBe('Badge vendor');
-	});
-});
-
 describe('the Source cell under Filter by source', () => {
 	const hyjal = { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde' } as const;
 	const blackTemple = { kind: 'raid', zone: 'Black Temple', boss: 'Illidan' } as const;
@@ -90,31 +79,20 @@ describe('the Source cell under Filter by source', () => {
 	const twoRaids = { source: hyjal, sources: [hyjal, blackTemple] };
 	const badgeOrRaid = { source: badge, sources: [badge, blackTemple] };
 
-	it('names the first shown source of a row whose first source is hidden', () => {
-		expect(rowNamesHiddenSource(twoRaids, ['Hyjal Summit'])).toBe(true);
-		expect(rowShownSourceLabel(twoRaids, ['Hyjal Summit'])).toBe('Black Temple');
-	});
-
 	it('says a row names a hidden source when any of its sources is hidden, not only the first', () => {
+		expect(rowNamesHiddenSource(twoRaids, ['Hyjal Summit'])).toBe(true);
 		expect(rowNamesHiddenSource(twoRaids, ['Black Temple'])).toBe(true);
-		expect(rowShownSourceLabel(twoRaids, ['Black Temple'])).toBe('Hyjal Summit');
 	});
 
 	// The filter files such a row under its zone only, but the cell must not name a bucket the user hid either.
 	it('keys a zoneless source inside a row with a zone by its own bucket', () => {
 		expect(rowNamesHiddenSource(badgeOrRaid, ['Badge vendor'])).toBe(true);
-		expect(rowShownSourceLabel(badgeOrRaid, ['Badge vendor'])).toBe('Black Temple');
 		expect(rowNamesHiddenSource(badgeOrRaid, ['Hyjal Summit'])).toBe(false);
 	});
 
 	it('names no hidden source when nothing the row comes from is hidden', () => {
 		expect(rowNamesHiddenSource(twoRaids, [])).toBe(false);
 		expect(rowNamesHiddenSource({ source: badge }, ['Crafted'])).toBe(false);
-		expect(rowShownSourceLabel(twoRaids, [])).toBe('Hyjal Summit');
-	});
-
-	it('falls back to the first source when every source is hidden', () => {
-		expect(rowShownSourceLabel(twoRaids, ['Hyjal Summit', 'Black Temple'])).toBe('Hyjal Summit');
 	});
 });
 
@@ -230,7 +208,7 @@ describe('sourceKeyLabel', () => {
 		withTranslation('upgrades_tab.sources.badge', 'Marken', () => expect(sourceKeyLabel('Badge vendor')).toBe('Marken'));
 	});
 
-	// Ticket 645: some of these rings are quest rewards, so the bucket no longer claims a vendor; the saved key keeps its text.
+	// Ticket 645: some of these rings may be quest rewards (untested), so the bucket no longer claims a vendor; the saved key keeps its text.
 	it('names the reputation bucket "Reputation" while its key stays "Reputation vendor"', () => {
 		expect(sourceKeyLabel('Reputation vendor')).toBe('Reputation');
 	});
