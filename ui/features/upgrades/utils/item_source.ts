@@ -21,3 +21,20 @@ export function itemSourceShows(item: UIItem, sim: Sim): boolean {
 	if (isPVPItem(item)) return pvpShows();
 	return source.oneofKind === 'soldBy';
 }
+
+/**
+ * The boss an npc name holds when upstream's generator overran its AtlasLoot
+ * key, else undefined. `tools/database/atlasloot.go:84` (a lazy
+ * `AL(?:IL)?\["(.*?)"\]`) ran past the `AL["…"]` key on five Tier 0.5 boss
+ * lines, so the site's database names npc 16097
+ * `Isalien"].." - "..format(AL["Tier %s Sets` (ticket 680). The key's closing
+ * `"]` inside a name marks the overrun, and the boss is the text before it;
+ * `Eric "The Swift"` has quotes in a real name and no `"]`. The universe
+ * builder's `GARBLED_NPC_NAME_RE` (`scripts/assemble_universe.py` in
+ * tbc-gear-prio) applies the same test and recovery, so the tab and the
+ * universe name the same boss.
+ */
+export function overrunNpcKey(name: string): string | undefined {
+	const end = name.indexOf('"]');
+	return end === -1 ? undefined : name.slice(0, end);
+}

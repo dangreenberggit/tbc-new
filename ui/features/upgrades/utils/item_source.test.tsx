@@ -5,7 +5,7 @@ import { fakeHost } from '@sim/testing';
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { itemSourceShows } from './item_source';
+import { itemSourceShows, overrunNpcKey } from './item_source';
 
 const ZONE_ID = 10;
 const { sim } = fakeHost({
@@ -56,5 +56,17 @@ describe('itemSourceShows', () => {
 	it('shows a linked source for a raid drop, and none for an item with no source', () => {
 		expect(itemSourceShows(UIItem.create({ sources: [drop(ZONE_ID)] }), sim)).toBe(true);
 		expect(itemSourceShows(UIItem.create({ name: 'Plain Sword' }), sim)).toBe(false);
+	});
+});
+
+describe('overrunNpcKey', () => {
+	it('recovers the boss from a name the generator ran past its AtlasLoot key on (ticket 680)', () => {
+		expect(overrunNpcKey('Isalien"].." - "..format(AL["Tier %s Sets')).toBe('Isalien');
+		expect(overrunNpcKey('Lord Valthalak"].." - "..format(AL["Tier %s Sets')).toBe('Lord Valthalak');
+	});
+
+	it('leaves a real name alone, quotes included', () => {
+		expect(overrunNpcKey('Eric "The Swift"')).toBeUndefined();
+		expect(overrunNpcKey('Gruul the Dragonkiller')).toBeUndefined();
 	});
 });

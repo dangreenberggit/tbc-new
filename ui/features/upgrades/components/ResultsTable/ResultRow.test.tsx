@@ -136,6 +136,47 @@ describe('ResultRow', () => {
 		expect(within(sourceCell(['Karazhan'])).getByRole('link').textContent).toBe('Hyjal Summit');
 	});
 
+	// Libram of Hope: upstream's npc 16097 is named 'Isalien"].." - "..format(AL["Tier %s Sets' because its generator
+	// overran the AtlasLoot key (ticket 680). The cell names the boss the key holds, as the universe does.
+	it('names the boss of an npc whose name overran its AtlasLoot key, and keeps a real name with quotes', () => {
+		const DIRE_MAUL = 2557;
+		const ISALIEN = 16097;
+		const ERIC = 6907;
+		const names: Record<number, string> = { [ISALIEN]: 'Isalien"].." - "..format(AL["Tier %s Sets', [ERIC]: 'Eric "The Swift"' };
+		const { sim } = fakeHost({
+			sim: {
+				db: {
+					getZone: (id: number) => (id === DIRE_MAUL ? { id, name: 'Dire Maul' } : null),
+					getNpc: (id: number) => (names[id] ? { id, name: names[id] } : null),
+				},
+			},
+		});
+		const sourceCell = (npcId: number) => {
+			const libram = UIItem.create({
+				id: 22401,
+				sources: [
+					{
+						source: {
+							oneofKind: 'drop',
+							drop: { zoneId: DIRE_MAUL, npcId, difficulty: DungeonDifficulty.DifficultyNormal, otherName: '', category: '' },
+						},
+					},
+				],
+			});
+			return within(renderRow(fixtureRow(0), { ...CONTEXT, itemOf: () => libram, sim })).getAllByRole('cell')[4]!;
+		};
+
+		const overrun = sourceCell(ISALIEN);
+		const overrunLink = within(overrun).getByRole('link');
+		expect(overrunLink.textContent).toBe('Dire MaulIsalien');
+		expect(overrunLink.getAttribute('href')).toBe(ActionId.makeZoneUrl(DIRE_MAUL));
+		expect(overrun.textContent).not.toMatch(/["[\]]/);
+
+		const real = within(sourceCell(ERIC)).getByRole('link');
+		expect(real.textContent).toBe('Dire Maul (N)Eric "The Swift"');
+		expect(real.getAttribute('href')).toBe(ActionId.makeNpcUrl(ERIC));
+	});
+
 	it('shows the engine’s label as plain text when the site has no source to link', () => {
 		const tr = renderRow(fixtureRow(0));
 		expect(within(tr).queryByRole('link', { name: /Black Temple/ })).toBeNull();
