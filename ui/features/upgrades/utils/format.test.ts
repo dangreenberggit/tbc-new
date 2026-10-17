@@ -155,6 +155,13 @@ describe('rowSourceDetail', () => {
 		expect(detailOfKeptRow(tokenOrHyjal, ['Hyjal Summit'])).toBe('Black Temple (N) · The Illidari Council');
 		expect(detailOfKeptRow(badgeOrToken, ['Badge vendor'])).toBe('Black Temple (N) · The Illidari Council');
 	});
+
+	// `sortLabelsFor` passes any row it is given, so a row whose every source is hidden still needs a label.
+	it('names the first source when every source of the row is hidden', () => {
+		const pvpOnly = { source: { kind: 'pvp', via: 'arena', season: 3 } } as const;
+		expect(rowSourceDetail(tokenOrHyjal, sourceKeysMatching(tokenOrHyjal))).toBe('Black Temple (N) · The Illidari Council');
+		expect(rowSourceDetail(pvpOnly, sourceKeysMatching(pvpOnly))).toBe('PvP vendor · Arena, season 3');
+	});
 });
 
 describe('sortLabelsFor', () => {
