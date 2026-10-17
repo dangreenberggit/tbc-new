@@ -212,8 +212,9 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "curated"
+          "kind": "badge",
+          "cost": 25,
+          "origin": "wowhead"
         }
       ],
       "curationHint": 45.08,
@@ -14737,8 +14738,8 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "world",
+          "origin": "wowhead"
         }
       ],
       "curationHint": 0.0

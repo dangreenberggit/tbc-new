@@ -237,8 +237,9 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "badge",
+          "cost": 25,
+          "origin": "wowhead"
         }
       ],
       "curationHint": 36.95
@@ -2310,8 +2311,9 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "pvp",
+          "via": "honor",
+          "origin": "wowhead"
         }
       ],
       "curationHint": 48.8
@@ -13109,8 +13111,8 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "world",
+          "origin": "wowhead"
         }
       ],
       "curationHint": 605.921
@@ -13125,8 +13127,8 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "world",
+          "origin": "wowhead"
         }
       ],
       "curationHint": 573.253
@@ -13624,8 +13626,9 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "pvp",
+          "via": "honor",
+          "origin": "wowhead"
         }
       ],
       "curationHint": 31.6
