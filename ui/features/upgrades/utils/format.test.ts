@@ -180,7 +180,10 @@ describe('sortLabelsFor', () => {
 
 	it('sorts a reputation or token row on the detail its cell shows, not on its bucket', () => {
 		const rep = { slot: 'finger', source: { kind: 'rep', faction: 'The Scale of the Sands', standing: 'Revered' } } as const;
-		const token = { slot: 'legs', source: { kind: 'token', zone: 'Black Temple', boss: 'The Illidari Council', token: 'Leggings of the Forgotten Protector' } } as const;
+		const token = {
+			slot: 'legs',
+			source: { kind: 'token', zone: 'Black Temple', boss: 'The Illidari Council', token: 'Leggings of the Forgotten Protector' },
+		} as const;
 		expect(sortLabelsFor([]).source(rep)).toBe('The Scale of the Sands · Revered');
 		expect(sortLabelsFor([]).source(token)).toBe('Black Temple (N) · The Illidari Council');
 	});
@@ -217,6 +220,11 @@ describe('sourceKeyLabel', () => {
 		expect(sourceKeyLabel('Black Temple')).toBe('Black Temple');
 		expect(sourceKeyLabel('Badge vendor')).toBe('Badge vendor');
 		withTranslation('upgrades_tab.sources.badge', 'Marken', () => expect(sourceKeyLabel('Badge vendor')).toBe('Marken'));
+	});
+
+	// Ticket 645: some of these rings are quest rewards, so the bucket no longer claims a vendor; the saved key keeps its text.
+	it('names the reputation bucket "Reputation" while its key stays "Reputation vendor"', () => {
+		expect(sourceKeyLabel('Reputation vendor')).toBe('Reputation');
 	});
 });
 

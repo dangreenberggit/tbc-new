@@ -36,7 +36,7 @@ describe('SourcesButton', () => {
 		fireEvent.click(screen.getByTestId('upgrades-sources-button'));
 
 		const dialog = screen.getByTestId('upgrades-sources-dialog');
-		expect([...dialog.querySelectorAll('legend')].map(legend => legend.textContent)).toEqual(['Raids', 'Other sources']);
+		expect([...dialog.querySelectorAll('legend')].map(legend => legend.textContent)).toEqual(['Raids and dungeons', 'Other sources']);
 		expect(screen.getAllByTestId('upgrades-source-row').map(element => element.dataset.source)).toEqual(['Black Temple', 'Hyjal Summit', 'Badge vendor']);
 		expect(
 			within(dialog)

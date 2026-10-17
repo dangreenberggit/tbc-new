@@ -14,7 +14,7 @@
 			"sources_button": "Select item sources",
 			"sources_summary": "{{n}} of {{m}} sources excluded",
 			"sources_summary_none": "All {{m}} sources included",
-			"sources_section_raids": "Raids",
+			"sources_section_raids": "Raids and dungeons",
 			"sources_section_other": "Other sources",
 			"sets_title": "Sim sets",
 			"sets_in_pool": "{{n}}/{{m}} in pool",
@@ -27,7 +27,7 @@
 		"sources": {
 			"badge": "Badge vendor",
 			"crafted": "Crafted",
-			"rep": "Reputation vendor",
+			"rep": "Reputation",
 			"pvp": "PvP vendor",
 			"world": "World drop",
 			"heroic": "Heroic dungeon",

@@ -47,7 +47,7 @@ describe('ViewSourcesButton', () => {
 
 		const dialog = screen.getByTestId('upgrades-view-sources-dialog');
 		expect(within(dialog).getByTestId('sim-dialog-title').textContent).toBe('Filter by source');
-		expect([...dialog.querySelectorAll('legend')].map(legend => legend.textContent)).toEqual(['Raids', 'Other sources']);
+		expect([...dialog.querySelectorAll('legend')].map(legend => legend.textContent)).toEqual(['Raids and dungeons', 'Other sources']);
 		expect(screen.getAllByTestId('upgrades-view-source-row').map(element => element.dataset.source)).toEqual([
 			'Black Temple',
 			'Hyjal Summit',
