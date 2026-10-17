@@ -13562,6 +13562,7 @@
         {
           "kind": "raid",
           "zone": "Dire Maul",
+          "boss": "Isalien",
           "origin": "db"
         }
       ],
@@ -19569,6 +19570,7 @@
         {
           "kind": "pvp",
           "via": "honor",
+          "season": 3,
           "origin": "wowhead"
         }
       ],

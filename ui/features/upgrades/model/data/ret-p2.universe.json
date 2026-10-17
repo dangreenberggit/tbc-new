@@ -6433,6 +6433,7 @@
         {
           "kind": "raid",
           "zone": "Dire Maul",
+          "boss": "Isalien",
           "origin": "db"
         }
       ],

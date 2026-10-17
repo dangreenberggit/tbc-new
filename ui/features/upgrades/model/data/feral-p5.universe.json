@@ -2409,6 +2409,7 @@
         {
           "kind": "pvp",
           "via": "honor",
+          "season": 3,
           "origin": "wowhead"
         }
       ],
@@ -6721,8 +6722,9 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "badge",
+          "cost": 50,
+          "origin": "wowhead"
         }
       ],
       "curationHint": 75.84
@@ -8998,8 +9000,9 @@
       "phase": 4,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "badge",
+          "cost": 25,
+          "origin": "wowhead"
         }
       ],
       "curationHint": 43.86
@@ -12465,6 +12468,7 @@
         {
           "kind": "pvp",
           "via": "honor",
+          "season": 3,
           "origin": "wowhead"
         }
       ],
@@ -16440,6 +16444,7 @@
         {
           "kind": "pvp",
           "via": "honor",
+          "season": 3,
           "origin": "wowhead"
         }
       ],
@@ -16537,6 +16542,7 @@
         {
           "kind": "pvp",
           "via": "honor",
+          "season": 3,
           "origin": "wowhead"
         }
       ],
@@ -16592,6 +16598,7 @@
         {
           "kind": "pvp",
           "via": "honor",
+          "season": 2,
           "origin": "wowhead"
         }
       ],

@@ -3846,8 +3846,9 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "badge",
+          "cost": 50,
+          "origin": "wowhead"
         }
       ],
       "curationHint": 146.24
@@ -5137,8 +5138,9 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "curated"
+          "kind": "badge",
+          "cost": 25,
+          "origin": "wowhead"
         }
       ],
       "curationHint": 108.6,
@@ -6274,8 +6276,9 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "curated"
+          "kind": "badge",
+          "cost": 41,
+          "origin": "wowhead"
         }
       ],
       "curationHint": 72.0,
@@ -8728,8 +8731,8 @@
       "phase": 1,
       "sources": [
         {
-          "kind": "unknown",
-          "origin": "db"
+          "kind": "world",
+          "origin": "wowhead"
         }
       ],
       "curationHint": 616.175
