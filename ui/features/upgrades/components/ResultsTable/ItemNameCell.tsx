@@ -19,12 +19,9 @@ export interface ItemNameCellProps {
 	notUpgrade?: boolean;
 }
 
-/** A row in no selected set shows the universe's own BiS or Alt tag instead. */
-const listBadge = (bisTags: RankedItem['bisTags']): RowTag[] => {
-	if (bisTags.includes('BiS')) return [{ key: 'BiS', label: i18n.t('upgrades_tab.results.bis_badge', { ns: 'upgrades' }) }];
-	if (bisTags.includes('Alt')) return [{ key: 'Alt', label: i18n.t('upgrades_tab.results.alt_badge', { ns: 'upgrades' }) }];
-	return [];
-};
+/** A row in no selected set shows the pool's BiS tag instead (`pool_source.ts` gives only 'BiS'). */
+const listBadge = (bisTags: RankedItem['bisTags']): RowTag[] =>
+	bisTags.includes('BiS') ? [{ key: 'BiS', label: i18n.t('upgrades_tab.results.bis_badge', { ns: 'upgrades' }) }] : [];
 
 /** The item: its icon, its name as a wowhead link in its quality colour, and its tags beneath. `memo`: see `ResultRow`. */
 export const ItemNameCell = memo(({ row, quality, tags, notUpgrade = false }: ItemNameCellProps) => {

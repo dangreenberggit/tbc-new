@@ -52,9 +52,8 @@ describe('ItemNameCell badges', () => {
 		expect(badgesOf(torch, tagsOf(torch.itemId))).toEqual(['P2 BiS', 'P3 BiS']);
 	});
 
-	it('keeps the list’s own BiS or Alt badge on a row in no selected set', () => {
+	it('keeps the pool’s own BiS badge on a row in no selected set', () => {
 		expect(badgesOf(torch, [])).toEqual(['BiS']);
-		expect(badgesOf(fixtureRow(7), [])).toEqual(['Alt']);
 		expect(badgesOf(fixtureRow(1), [])).toEqual([]);
 	});
 });

@@ -46,7 +46,8 @@ describe('sourcesOf over the fork db.json and tier-exchange.json', () => {
 describe('the Source cell text from wowsims facts', () => {
 	loadEnglishBundles();
 
-	// Today's text: the rows of the main repo's data/tab-fixtures/ret-p3-p2.json, recorded from the bundled universes.
+	// The text these rows had before the run-time pool: the main repo's data/tab-fixtures/ret-p3-p2.json at 199b3289,
+	// recorded from the bundled universes.
 	it('equals the bundled universes’ text for a db raid row and a token row', () => {
 		const row = (id: number) => {
 			const sources = sourcesOfId(id);

@@ -137,7 +137,7 @@ describe('ResultRow', () => {
 	});
 
 	// Libram of Hope: upstream's npc 16097 is named 'Isalien"].." - "..format(AL["Tier %s Sets' because its generator
-	// overran the AtlasLoot key (ticket 680). The cell names the boss the key holds, as the universe does.
+	// overran the AtlasLoot key (ticket 680). The cell names the boss the key holds.
 	it('names the boss of an npc whose name overran its AtlasLoot key, and keeps a real name with quotes', () => {
 		const DIRE_MAUL = 2557;
 		const ISALIEN = 16097;
@@ -216,9 +216,8 @@ describe('ResultRow', () => {
 		expect(name.className).toBe('text-quality-epic');
 	});
 
-	it('tags a BiS row and an Alt row', () => {
+	it('tags a BiS row', () => {
 		expect(testIdText(renderRow(fixtureRow(0)), 'upgrades-bis-badge')).toEqual(['BiS']);
-		expect(testIdText(renderRow(fixtureRow(7)), 'upgrades-bis-badge')).toEqual(['Alt']);
 		expect(testIdText(renderRow(fixtureRow(1)), 'upgrades-bis-badge')).toEqual([]);
 	});
 
