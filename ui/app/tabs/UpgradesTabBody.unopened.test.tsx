@@ -121,13 +121,12 @@ describe('UpgradesTabBody while its tab has not been opened (ticket 589)', () =>
 	it(
 		'keeps, through a phase round trip, an exclusion the middle phase does not offer',
 		async () => {
-			const { poolFor } = await import('@features/upgrades/model/data/data');
+			await import('@features/upgrades/model/data/data');
 			// The positive control: without it a mock that no longer matches the data module would pass every "downloads none" case.
 			expect(loaded.data).toBe(true);
-			const { validSourceKeysOf } = await import('@features/upgrades/model/settings_pool');
-			const offeredAt3 = validSourceKeysOf(poolFor('ret', 3));
-			const onlyAt4 = validSourceKeysOf(poolFor('ret', 4)).find(key => !offeredAt3.includes(key));
-			expect(onlyAt4).toBeDefined();
+			// Zul'Aman opens in phase 4, so the phase-3 pool does not offer it. The pool is built from the page's item
+			// database, which this page has not loaded, so the key is named rather than read from a pool.
+			const onlyAt4 = "Zul'Aman";
 			const storage = memoryStorage({ [KEY]: savedEntry({ selectedSetKeys: ['preset:4:P4'], excludedSources: [onlyAt4], defaultsFor: 'ret:4' }) });
 			const page = await closedPage(Spec.SpecRetributionPaladin, storage, { startPhase: 4 });
 			await page.finishInit();

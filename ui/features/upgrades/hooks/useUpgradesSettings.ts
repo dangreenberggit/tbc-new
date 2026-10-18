@@ -1,14 +1,23 @@
 import { useSavedGear } from '@features/gear/hooks/useSavedGear';
 import { useSimHost, useSpecPresets } from '@sim/context/SimHostContext';
+import { useSimReady } from '@sim/hooks/useSimReady';
 import { useSimStore } from '@sim/hooks/useSimStore';
 import { useMemo } from 'react';
 import { useStore } from 'zustand';
 
-import { bisTagPhaseFor, poolFor } from '../model/data/data';
+import { bisTagPhaseFor, poolFor, presetsWithPhase } from '../model/data/data';
 import type { ContentPhase } from '../model/engine/types';
 import { specIdFor } from '../model/run';
 import type { RunSettings } from '../model/run_state';
-import { eligibleCountOf, runSettingsOf, type SetSelection, setSelection, type SettingsOffer, settingsOffer } from '../model/settings_pool';
+import {
+	effectiveExcludedSources,
+	eligibleCountOf,
+	runSettingsOf,
+	type SetSelection,
+	setSelection,
+	type SettingsOffer,
+	settingsOffer,
+} from '../model/settings_pool';
 import { appliedSettings, type SettingsScope } from '../model/settings_state';
 import type { UpgradesStore } from '../model/upgrades_store';
 import { useUpgradesStoreApi } from './useUpgradesStore';
@@ -41,6 +50,8 @@ export function useUpgradesSettings(): UpgradesSettings {
 	const specId = specIdFor(host.player.getSpec());
 	const phase = useSimStore('phase') as ContentPhase;
 	const presets = useSpecPresets().gear;
+	// The pool is built from the sim's item database, which loads after the page first renders.
+	const ready = useSimReady();
 	const saved = useSavedGear().entries;
 	const store = useUpgradesStoreApi();
 	const stored = useStore(store, state => state.settings);
@@ -54,12 +65,12 @@ export function useUpgradesSettings(): UpgradesSettings {
 	const offer = useMemo(
 		() =>
 			settingsOffer({
-				pool: specId ? poolFor(specId, phase) : [],
-				presets,
+				pool: specId && ready ? poolFor(host, phase) : [],
+				presets: ready ? presetsWithPhase(host, presets) : presets,
 				savedSets: saved.map(entry => ({ name: entry.name, gear: entry.data.gear })),
-				bisTagPhase: specId ? bisTagPhaseFor(specId, phase)?.tagsFromPhase : undefined,
+				bisTagPhase: specId && ready ? bisTagPhaseFor(host, presets, phase)?.tagsFromPhase : undefined,
 			}),
-		[specId, phase, presets, saved],
+		[specId, ready, host, phase, presets, saved],
 	);
 	const scope = useMemo(
 		(): SettingsScope | undefined =>
@@ -68,7 +79,12 @@ export function useUpgradesSettings(): UpgradesSettings {
 	);
 	// Memoised for the same renders: until a write stores the defaults, the derivation builds a new state on each
 	// call, and the selection and eligible count below key on its fields.
-	const state = useMemo(() => appliedSettings(stored, scope), [stored, scope]);
+	const applied = useMemo(() => appliedSettings(stored, scope), [stored, scope]);
+	// The exclusions as shown and run: the stored toggles read against the sources that start unticked.
+	const state = useMemo(
+		() => ({ ...applied, excludedSources: effectiveExcludedSources(applied.excludedSources, offer.sourceKeys) }),
+		[applied, offer.sourceKeys],
+	);
 	// Memoised on the picked sets alone, so it keeps its identity while other settings change: the results
 	// area builds its row badges from it, and a new selection renders every row again.
 	const selection = useMemo(() => setSelection(offer, state.selectedSetKeys, phase), [offer, state.selectedSetKeys, phase]);

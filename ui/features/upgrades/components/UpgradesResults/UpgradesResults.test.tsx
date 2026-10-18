@@ -26,6 +26,13 @@ vi.mock('../../model/engine/items', async importOriginal => ({
 		itemId === 31034 || itemId === 31044 ? { setId: 676, setName: 'Thunderheart Harness' } : itemId === 0 ? undefined : { setId: null, setName: null },
 }));
 
+// The pool is built from the page's item database, which a unit test does not load: Phase 1 here has no candidates, every other phase one.
+vi.mock('../../model/data/data', async importOriginal => ({
+	...(await importOriginal<typeof import('../../model/data/data')>()),
+	poolFor: (_host: unknown, phase: number) =>
+		phase === 1 ? [] : [{ itemId: 32332, name: 'Torch of the Damned', slot: 'weapon', phase: 2, source: { kind: 'unknown' } }],
+}));
+
 const { UpgradesResults } = await import('./UpgradesResults');
 const { upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
 

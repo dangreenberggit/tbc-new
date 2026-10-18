@@ -10,6 +10,12 @@ import { createUpgradesStore } from '../model/upgrades_store';
 import { fakeTabHost, memoryStorage, settled } from '../testing/fake_tab_host';
 import { numberSettingSource, upgradesStoreFor } from './useUpgradesStore';
 
+// The pool is built from the page's item database, which a unit test does not load (`pool_source.test.ts` covers the real one).
+vi.mock('../model/data/data', async importOriginal => ({
+	...(await importOriginal<typeof import('../model/data/data')>()),
+	poolFor: () => [{ itemId: 1, name: 'item 1', slot: 'head', phase: 3, source: { kind: 'raid', zone: 'Black Temple' } }],
+}));
+
 describe('upgradesStoreFor', () => {
 	const storage = memoryStorage();
 	// A new `Sim` is a page load; the spec prefix is upstream's `specStorageKey`. SpecUnknown has no ranking data, so no phase subscription is made.
@@ -85,7 +91,7 @@ describe('upgradesStoreFor and the page’s phase (ticket 587)', () => {
 	});
 
 	it('drops a saved exclusion the page’s pool no longer offers once the page has loaded (D2)', async () => {
-		const offered = validSourceKeysOf(poolFor('ret', 3))[0]!;
+		const offered = validSourceKeysOf(poolFor(retPage(memoryStorage(), 3).host, 3))[0]!;
 		const storage = memoryStorage(savedSettings({ excludedSources: [offered, 'A zone a data update removed'], defaultsFor: 'ret:3' }));
 		const page = retPage(storage, 3);
 		const store = upgradesStoreFor(page.host);

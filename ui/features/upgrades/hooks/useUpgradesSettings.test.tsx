@@ -25,9 +25,12 @@ const POOLS: Record<number, PoolEntry[]> = {
 };
 vi.mock('../model/data/data', async importOriginal => ({
 	...(await importOriginal<typeof import('../model/data/data')>()),
-	poolFor: (_spec: string, phase: number) => POOLS[phase] ?? [],
-	bisTagPhaseFor: (_spec: string, phase: number) => ({ tagsFromPhase: phase, requestedPhase: phase }),
+	poolFor: (_host: unknown, phase: number) => POOLS[phase] ?? [],
+	presetsWithPhase: (_host: unknown, presets: unknown) => presets,
+	bisTagPhaseFor: (_host: unknown, _presets: unknown, phase: number) => ({ tagsFromPhase: phase, requestedPhase: phase }),
 }));
+// The pool waits for the sim's item database; these pools stand in for it.
+vi.mock('@sim/hooks/useSimReady', () => ({ useSimReady: () => true }));
 
 const { useUpgradesSettings } = await import('./useUpgradesSettings');
 const { upgradesStoreFor } = await import('./useUpgradesStore');

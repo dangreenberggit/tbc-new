@@ -1,57 +1,20 @@
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-import { Spec } from '@generated/proto/common';
-import { UIDatabase, type UIItem } from '@generated/proto/ui';
-import { MISSING_ITEM_EFFECTS } from '@sim/constants/missing_effects_auto_gen';
-import { PlayerSpecs } from '@sim/player/specs';
-import { canEquipItem } from '@sim/proto/items';
 import { describe, expect, it } from 'vitest';
 
+import { dbPoolFor, PROTO_SPEC, TEST_MISSING_IDS, TEST_PRESETS, testItem, testItemPhase } from '../testing/db_pool';
 import type { SpecId } from './engine/types';
+import { bisSetsFor, hasEffectRecord, type HeroicFiveManPolicy, isHeroicFiveManOnly, presetPhase, type PresetSet } from './pool_source';
 import cellsFixture from './pool_source.cells.fixture.json';
-import presetsFixture from './pool_source.presets.fixture.json';
-import { bisSetsFor, type HeroicFiveManPolicy, hasEffectRecord, isHeroicFiveManOnly, type PresetSet, presetPhase, selectPool } from './pool_source';
-
-const FORK_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
-const db = UIDatabase.fromJson(JSON.parse(readFileSync(path.join(FORK_ROOT, 'assets/database/db.json'), 'utf8')), { ignoreUnknownFields: true });
-const byId = new Map(db.items.map(item => [item.id, item]));
-const itemPhaseOf = (id: number) => byId.get(id)?.phase;
-const missingIds = new Set(MISSING_ITEM_EFFECTS.keys());
-
-const PROTO_SPEC: Record<SpecId, Spec> = {
-	balance: Spec.SpecBalanceDruid,
-	feral: Spec.SpecFeralCatDruid,
-	hunter: Spec.SpecHunter,
-	mage: Spec.SpecMage,
-	ret: Spec.SpecRetributionPaladin,
-	shadow: Spec.SpecDpsPriest,
-	rogue: Spec.SpecRogue,
-	ele: Spec.SpecElementalShaman,
-	enh: Spec.SpecEnhancementShaman,
-	warlock: Spec.SpecWarlock,
-	warrior: Spec.SpecDpsWarrior,
-};
 
 // JSON values only: the fixture's shape is asserted here, never derived from the import (AGENTS.md, Types from JSON).
-const PRESETS = (presetsFixture as { specs: Record<string, PresetSet[]> }).specs;
 const CELLS = (cellsFixture as { cells: Record<string, { exclude: number; include: number; bisRows: number }> }).cells;
-
-const canEquipFor = (spec: SpecId) => {
-	const playerSpec = PlayerSpecs.fromProto(PROTO_SPEC[spec]);
-	return (item: UIItem) => canEquipItem(item, playerSpec, undefined);
-};
-
-const poolOf = (spec: SpecId, phase: number, policy: HeroicFiveManPolicy) =>
-	selectPool(db.items, canEquipFor(spec), PRESETS[spec]!, missingIds, phase, policy);
+const poolOf = (spec: SpecId, phase: number, policy: HeroicFiveManPolicy) => dbPoolFor(spec, phase, policy);
 
 const CELL_NAMES = Object.keys(CELLS);
 
 describe('selectPool over the fork db.json and the wowsims presets', () => {
 	it('covers 11 specs at phases 2-5', () => {
 		expect(CELL_NAMES).toHaveLength(44);
-		expect(Object.keys(PRESETS).sort()).toEqual(Object.keys(PROTO_SPEC).sort());
+		expect(Object.keys(TEST_PRESETS).sort()).toEqual(Object.keys(PROTO_SPEC).sort());
 	});
 
 	it.each(CELL_NAMES)('%s has the measured pool sizes and BiS rows', name => {
@@ -78,7 +41,7 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 		const include = ids('include');
 		expect([...exclude].filter(id => !include.has(id))).toEqual([]);
 		expect(ids('include-unticked')).toEqual(include);
-		const heroicOnly = [...include].filter(id => isHeroicFiveManOnly(byId.get(id)!));
+		const heroicOnly = [...include].filter(id => isHeroicFiveManOnly(testItem(id)!));
 		expect(heroicOnly.sort()).toEqual([...include].filter(id => !exclude.has(id)).sort());
 		expect(heroicOnly.length).toBeGreaterThan(0);
 	});
@@ -88,7 +51,7 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 	});
 
 	it('drops 19019 Thunderfury: below item level 100 and no effect record in db.json', () => {
-		expect(hasEffectRecord(byId.get(19019)!, missingIds)).toBe(false);
+		expect(hasEffectRecord(testItem(19019)!, TEST_MISSING_IDS)).toBe(false);
 		expect(poolOf('ret', 5, 'include').some(e => e.itemId === 19019)).toBe(false);
 	});
 
@@ -100,13 +63,13 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 
 describe('presetPhase', () => {
 	it('takes the declared phase, else the newest item phase, else none', () => {
-		expect(presetPhase({ phase: 2, itemIds: [34472] }, itemPhaseOf)).toBe(2);
-		expect(presetPhase({ itemIds: [28963, 34472] }, itemPhaseOf)).toBe(Math.max(itemPhaseOf(28963)!, itemPhaseOf(34472)!));
-		expect(presetPhase({ itemIds: [] }, itemPhaseOf)).toBeUndefined();
+		expect(presetPhase({ phase: 2, itemIds: [34472] }, testItemPhase)).toBe(2);
+		expect(presetPhase({ itemIds: [28963, 34472] }, testItemPhase)).toBe(Math.max(testItemPhase(28963)!, testItemPhase(34472)!));
+		expect(presetPhase({ itemIds: [] }, testItemPhase)).toBeUndefined();
 	});
 
 	it('reads warlock’s tier-named sets as phases 1-5', () => {
-		const phases = Object.fromEntries(PRESETS.warlock!.map(p => [p.name, presetPhase(p, itemPhaseOf)]));
+		const phases = Object.fromEntries(TEST_PRESETS.warlock!.map(p => [p.name, presetPhase(p, testItemPhase)]));
 		expect(phases).toMatchObject({ T4: 1, T5: 2, T6: 3, "Zul'Aman": 4, 'Sunwell Plateau': 5 });
 	});
 });
@@ -128,7 +91,7 @@ describe('bisSetsFor', () => {
 	it('tags ret p3 from its P3 preset and gives no badge to the Bulwark shield 28485', () => {
 		const pool = poolOf('ret', 3, 'include');
 		const tagged = pool.filter(e => e.bisTags?.includes('BiS'));
-		expect(new Set(tagged.flatMap(e => e.bisSets ?? []))).toEqual(new Set(bisSetsFor(PRESETS.ret!, 3, itemPhaseOf)!.sets.map(s => s.name)));
+		expect(new Set(tagged.flatMap(e => e.bisSets ?? []))).toEqual(new Set(bisSetsFor(TEST_PRESETS.ret!, 3, testItemPhase)!.sets.map(s => s.name)));
 		expect(tagged.some(e => e.itemId === 28485)).toBe(false);
 	});
 });

@@ -8,8 +8,8 @@
  * per-cell sizes.
  */
 
-import { DungeonDifficulty, type UIItem } from '@generated/proto/ui';
 import { ItemQuality, ItemType, type Spec } from '@generated/proto/common';
+import { DungeonDifficulty, type UIItem } from '@generated/proto/ui';
 import { MISSING_ITEM_EFFECTS } from '@sim/constants/missing_effects_auto_gen';
 import { canEquipItem } from '@sim/proto/items';
 import type { IndividualSimHost } from '@sim/sim_host';
@@ -149,9 +149,7 @@ export function selectPool(
 		const item = byId.get(id);
 		return item === undefined ? undefined : item.phase;
 	};
-	const presetIds = new Set(
-		presets.filter(p => (presetPhase(p, itemPhaseOf) ?? Infinity) <= maxPhase).flatMap(p => p.itemIds),
-	);
+	const presetIds = new Set(presets.filter(p => (presetPhase(p, itemPhaseOf) ?? Infinity) <= maxPhase).flatMap(p => p.itemIds));
 	const meetsFloor = (item: UIItem) =>
 		phaseOf(item) <= maxPhase && item.quality >= MIN_QUALITY && (ilvlOf(item) >= MIN_ILVL || hasEffectRecord(item, missingIds));
 

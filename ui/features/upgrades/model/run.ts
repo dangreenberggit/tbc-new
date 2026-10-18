@@ -37,7 +37,7 @@ export type RunFn = (host: IndividualSimHost<Spec>, settings: RunSettings, deps:
 
 /**
  * Which page spec the engine can rank, and under what name. `Partial` on
- * purpose: tanks and healers have no universe, and a spec missing here is a
+ * purpose: tanks and healers are not ranked, and a spec missing here is a
  * state the tab shows, not a gap to fill.
  */
 const SPEC_ID_BY_PROTO_SPEC: Partial<Record<Spec, SpecId>> = {
@@ -112,7 +112,7 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 			clock: () => new Date(),
 			raidSimSkeleton: skeleton,
 			epWeights: epWeightsFor(specId),
-			pool: effectivePool(poolFor(specId, maxPhase), {
+			pool: effectivePool(poolFor(host, maxPhase), {
 				excludedSources: settings.excludedSources ?? [],
 				selectedSetItemIds: settings.guaranteedSetItemIds ?? [],
 				prune: settings.prune ?? false,

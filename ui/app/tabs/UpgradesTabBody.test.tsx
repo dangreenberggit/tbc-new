@@ -42,8 +42,9 @@ const POOLS: Record<number, PoolEntry[]> = {
 };
 vi.mock('@features/upgrades/model/data/data', async importOriginal => ({
 	...(await importOriginal<typeof import('@features/upgrades/model/data/data')>()),
-	poolFor: (_spec: string, phase: number) => POOLS[phase] ?? [],
-	bisTagPhaseFor: (_spec: string, phase: number) => ({ tagsFromPhase: phase, requestedPhase: phase }),
+	poolFor: (_host: unknown, phase: number) => POOLS[phase] ?? [],
+	presetsWithPhase: (_host: unknown, presets: unknown) => presets,
+	bisTagPhaseFor: (_host: unknown, _presets: unknown, phase: number) => ({ tagsFromPhase: phase, requestedPhase: phase }),
 }));
 
 /**

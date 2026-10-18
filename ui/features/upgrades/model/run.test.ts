@@ -20,6 +20,24 @@ vi.mock('./adapters/skeleton', () => ({ currentPageSkeleton: () => PAGE_SKELETON
 vi.mock('./adapters/sim_database', () => ({ simDatabaseResolverFor: vi.fn(() => pageDatabase) }));
 vi.mock('./adapters/player_gear_source', () => ({ PlayerGearSource: class {} }));
 
+// The pool is built from the page's item database, which a unit test does not load (`pool_source.test.ts` covers the
+// real one). Phase 1 stands in for a page with no candidates.
+const { STUB_POOL } = vi.hoisted(() => {
+	const raid = (itemId: number, ...zones: string[]) => ({
+		itemId,
+		name: `item ${itemId}`,
+		slot: 'head' as const,
+		phase: 3,
+		source: { kind: 'raid' as const, zone: zones[0]! },
+		sources: zones.map(zone => ({ kind: 'raid' as const, zone })),
+	});
+	return { STUB_POOL: [raid(1, 'Black Temple'), raid(2, 'Black Temple', 'Hyjal Summit'), raid(3, 'Hyjal Summit'), raid(4, 'Karazhan')] };
+});
+vi.mock('./data/data', async importOriginal => ({
+	...(await importOriginal<typeof import('./data/data')>()),
+	poolFor: (_host: unknown, phase: number) => (phase === 1 ? [] : STUB_POOL),
+}));
+
 type RankCall = { input: RankInput; deps: Deps; onProgress?: (p: Progress) => void };
 const rankCalls: RankCall[] = [];
 let rankBehaviour: (call: RankCall) => Promise<typeof RANKING_FIXTURE | PartialRanking>;
@@ -99,11 +117,11 @@ describe('rankForPlayer', () => {
 		expect(deps.setScreen).toBe('on');
 	});
 
-	// Phase 1 has no candidate list (ticket 515): the run must still finish, so the tab can say why it has no rows.
+	// A phase with no candidates (ticket 515): the run must still finish, so the tab can say why it has no rows.
 	// The engine is mocked here; that it returns no rows on an empty pool is tested by `packages/core/test/rank.test.ts`
 	// (the slamaltman baseline case) in the main repo, tbc-gear-prio, not in this fork.
-	it('passes maxPhase 1 and an empty pool to the engine on a phase with no candidate list, and resolves', async () => {
-		expect(poolFor('ret', 1)).toEqual([]);
+	it('passes the phase and an empty pool to the engine on a phase with no candidates, and resolves', async () => {
+		expect(poolFor(fakeHost(Spec.SpecRetributionPaladin, 1), 1)).toEqual([]);
 		rankBehaviour = async () => ({ ...RANKING_FIXTURE, items: [] });
 
 		const result = await rankForPlayer(fakeHost(Spec.SpecRetributionPaladin, 1), SETTINGS, depsFor());
@@ -162,12 +180,12 @@ describe('rankForPlayer', () => {
 
 	it('sims the whole pool when no setting narrows it', async () => {
 		await rankForPlayer(fakeHost(), SETTINGS, depsFor());
-		expect(rankCalls[0]!.deps.pool).toHaveLength(poolFor('ret', 3).length);
+		expect(rankCalls[0]!.deps.pool).toHaveLength(poolFor(fakeHost(), 3).length);
 	});
 
 	it('leaves an excluded raid’s items out of the pool it ranks', async () => {
 		const dropsIn = (zone: string) => (e: { source: object; sources?: object[] }) => (e.sources ?? [e.source]).some(s => 'zone' in s && s.zone === zone);
-		const full = poolFor('ret', 3);
+		const full = poolFor(fakeHost(), 3);
 		expect(full.some(dropsIn('Black Temple'))).toBe(true);
 
 		await rankForPlayer(fakeHost(), { ...SETTINGS, excludedSources: ['Black Temple'] }, depsFor());
@@ -178,7 +196,7 @@ describe('rankForPlayer', () => {
 	});
 
 	it('with prune, ranks only the selected sets’ items', async () => {
-		const [a, b] = poolFor('ret', 3);
+		const [a, b] = poolFor(fakeHost(), 3);
 		await rankForPlayer(fakeHost(), { ...SETTINGS, guaranteedSetItemIds: [a!.itemId, b!.itemId], prune: true }, depsFor());
 		expect((rankCalls[0]!.deps.pool ?? []).map(e => e.itemId)).toEqual([a!.itemId, b!.itemId]);
 	});

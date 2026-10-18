@@ -1,8 +1,9 @@
 import i18n from '@i18n/config';
+import { useOptionalSimHost } from '@sim/context/SimHostContext';
 import { memo } from 'react';
 
 import { useResultsView } from '../../hooks/useResultsView';
-import { poolSourceFor } from '../../model/data/data';
+import { poolFor, poolSourceFor } from '../../model/data/data';
 import type { SpecId } from '../../model/engine/types';
 import type { RunState } from '../../model/run_state';
 import type { SetOption } from '../../model/settings_pool';
@@ -31,6 +32,7 @@ export interface UpgradesResultsProps {
  */
 export const UpgradesResults = memo(({ run, selectedSets, specId }: UpgradesResultsProps) => {
 	const { toggles, offered, setToggle, sourceOptions, hiddenSources, toggleViewSource, setViewSources, rowContext, view } = useResultsView(run, selectedSets);
+	const host = useOptionalSimHost();
 
 	switch (run.status) {
 		case 'idle':
@@ -62,9 +64,9 @@ export const UpgradesResults = memo(({ run, selectedSets, specId }: UpgradesResu
 					sources={{ options: sourceOptions, hidden: hiddenSources, onToggle: toggleViewSource, onSetAll: setViewSources }}
 				/>
 			);
-			// Checked before any other empty state: Phase 1 has no list by design (`packages/core/test/pool-file.test.ts` in the
-			// main repo, tbc-gear-prio, not in this fork), so "No upgrades found" would be wrong.
-			const poolMissing = run.status === 'done' && !hasRows && specId !== undefined && poolSourceFor(specId, maxPhase) === undefined;
+			// Checked before any other empty state: with no candidates at this phase, "No upgrades found" would be wrong.
+			const poolMissing =
+				run.status === 'done' && !hasRows && specId !== undefined && host !== null && poolSourceFor(poolFor(host, maxPhase)) === undefined;
 			if (poolMissing) {
 				return (
 					<>

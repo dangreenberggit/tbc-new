@@ -6,7 +6,7 @@
  * on purpose: a console line is a diagnostic, not localised UI.
  */
 
-import { bisTagPhaseFor, epWeightsDisclosureFor, poolSourceFor, unsourcedCountFor } from './data/data';
+import { bisTagPhaseFor, epWeightsDisclosureFor, type PagePoolHost, poolFor, poolSourceFor, unsourcedCountFor } from './data/data';
 import type { Substitution } from './engine/disclosure';
 import type { Ranking } from './engine/rank';
 import type { SpecId } from './engine/types';
@@ -17,22 +17,25 @@ export type AssumptionsContext = {
 	specId?: SpecId;
 	/** The settings the run used; absent for a loaded fixture, whose run settings are not recorded. */
 	settings?: RunSettings;
+	/** The page the run drew its pool from; absent, the lines about the pool are left out. */
+	host?: PagePoolHost;
 };
 
-export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>, { specId, settings }: AssumptionsContext = {}): string {
+export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>, { specId, settings, host }: AssumptionsContext = {}): string {
 	const a = ranking.assumptions;
 	const lines = [`seeds: ${a.seeds.join(', ')}`, `iterations: ${a.iterations}`, `max phase: ${a.maxPhase}`, `cutoff: ${ranking.cutoff.absDps} DPS`];
 	if (settings) lines.push(`candidate pool: ${settings.prune ? `selected set items for phase ${a.maxPhase}` : 'every eligible item'}`);
 	if (specId) {
-		// The chosen file is not always the selected phase's: the data falls back to the highest phase at or below it.
-		const poolSource = poolSourceFor(specId, a.maxPhase);
+		const maxPhase = a.maxPhase;
+		const pool = host ? poolFor(host, maxPhase) : undefined;
+		const poolSource = pool && poolSourceFor(pool);
 		if (poolSource) lines.push(`pool source: ${poolSource.file} (${poolSource.entries} entries)`);
-		const ep = epWeightsDisclosureFor(specId, a.maxPhase);
+		const ep = epWeightsDisclosureFor(specId, maxPhase);
 		if (ep) lines.push(`EP weights: written for ${ep.from}, ranking ${ep.requested}`);
-		const tags = bisTagPhaseFor(specId, a.maxPhase);
+		const tags = host && bisTagPhaseFor(host, host.individualConfig.presets.gear, maxPhase);
 		if (tags && tags.tagsFromPhase < tags.requestedPhase) lines.push(`BiS tags: from P${tags.tagsFromPhase} sets, ranking P${tags.requestedPhase}`);
-		const unsourced = unsourcedCountFor(specId, a.maxPhase);
-		if (unsourced > 0) lines.push(`source attribution: partial, ${unsourced} items admitted by database phase only`);
+		const unsourced = pool ? unsourcedCountFor(pool) : 0;
+		if (unsourced > 0) lines.push(`source attribution: partial, ${unsourced} items with no recorded source`);
 	}
 	if (settings) {
 		if (settings.candidateCap !== undefined) lines.push(`candidate cap: top ${settings.candidateCap} simmed in full, plus anything you already own`);

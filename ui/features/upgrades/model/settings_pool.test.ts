@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { poolFor } from './data/data';
+import { dbPoolFor } from '../testing/db_pool';
 import type { PoolEntry } from './engine/pool';
 import {
+	DEFAULT_OFF_SOURCE_KEYS,
 	defaultSetKeys,
+	effectiveExcludedSources,
 	effectivePool,
 	eligibleCount,
 	eligibleCountOf,
@@ -20,7 +22,7 @@ import {
 	splitSetChips,
 	validSourceKeysOf,
 } from './settings_pool';
-import { initialSettings, withPrune, withSetToggled, withSourceToggled } from './settings_state';
+import { afterScopeChange, initialSettings, withPrune, withSetToggled, withSourceToggled } from './settings_state';
 
 const entry = (itemId: number, source: PoolEntry['source'], extra: Partial<PoolEntry> = {}): PoolEntry => ({
 	itemId,
@@ -139,9 +141,10 @@ describe('eligibleCount', () => {
 		expect(eligibleCount(POOL, 4)).toBe(6);
 	});
 
-	it('matches the ret universes’ measured sizes (917 at phase 4, 1156 at phase 5)', () => {
-		expect(eligibleCount(effectivePool(poolFor('ret', 4), NO_FILTER), 4)).toBe(917);
-		expect(eligibleCount(effectivePool(poolFor('ret', 5), NO_FILTER), 5)).toBe(1156);
+	// measure_pool_rule.py in the outer repo's stage folder: ret-p4 1178 and ret-p5 1444 under include-unticked.
+	it('matches the measured ret pool sizes (1178 at phase 4, 1444 at phase 5)', () => {
+		expect(eligibleCount(effectivePool(dbPoolFor('ret', 4), NO_FILTER), 4)).toBe(1178);
+		expect(eligibleCount(effectivePool(dbPoolFor('ret', 5), NO_FILTER), 5)).toBe(1444);
 	});
 });
 
@@ -285,5 +288,30 @@ describe('setSelection, runSettingsOf and eligibleCountOf', () => {
 	it('drops a picked set the offer no longer has, such as a deleted saved set', () => {
 		const picked = withSetToggled(fresh, 'saved:Gone');
 		expect(viewOf(picked).runSettings.guaranteedSetKeys).toEqual([]);
+	});
+});
+
+describe('sources that start unticked (Q-heroic, include-unticked)', () => {
+	const HEROIC = 'Heroic dungeon';
+
+	it('is the "Heroic dungeon" bucket under the include-unticked policy', () => {
+		expect(DEFAULT_OFF_SOURCE_KEYS).toEqual([HEROIC]);
+	});
+
+	it('excludes a default-off key the pool offers until the user ticks it, and leaves other keys to the stored toggles', () => {
+		const offered = ['Black Temple', HEROIC];
+		expect(effectiveExcludedSources([], offered)).toEqual([HEROIC]);
+		expect(effectiveExcludedSources(['Black Temple'], offered)).toEqual(['Black Temple', HEROIC]);
+		// A stored default-off key is the user's tick.
+		expect(effectiveExcludedSources([HEROIC], offered)).toEqual([]);
+		expect(effectiveExcludedSources([], ['Black Temple'])).toEqual([]);
+	});
+
+	it('keeps a tick through a phase change whose pool still offers the key, and starts the key unticked after a phase without it', () => {
+		const ticked = withSourceToggled(initialSettings({ iterations: 500 }), HEROIC);
+		const kept = afterScopeChange(ticked, ['Zul’Aman', HEROIC]);
+		expect(effectiveExcludedSources(kept.excludedSources, ['Zul’Aman', HEROIC])).toEqual([]);
+		const gone = afterScopeChange(ticked, ['Zul’Aman']);
+		expect(effectiveExcludedSources(gone.excludedSources, ['Zul’Aman', HEROIC])).toEqual([HEROIC]);
 	});
 });

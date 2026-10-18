@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { dbPoolHost } from '../testing/db_pool';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import { assumptionsLine, substitutionConsoleLines, substitutionFirstLine } from './assumptions';
 
@@ -33,8 +34,13 @@ describe('assumptionsLine', () => {
 		expect(line).not.toContain('candidate cap');
 	});
 
-	it('names the bundled pool file the spec’s run drew from', () => {
-		expect(assumptionsLine(RANKING_FIXTURE, { specId: 'ret' })).toMatch(/ · pool source: ret-p3\.universe\.json \(\d+ entries\)/);
+	// 1047: ret-p3 under include-unticked, measure_pool_rule.py in the outer repo's stage folder.
+	it('names the page’s database and the size of the pool the run drew from', () => {
+		expect(assumptionsLine(RANKING_FIXTURE, { specId: 'ret', host: dbPoolHost('ret') })).toContain(' · pool source: wowsims db (1047 entries)');
+	});
+
+	it('leaves the pool lines out when the page is not known', () => {
+		expect(assumptionsLine(RANKING_FIXTURE, { specId: 'ret' })).not.toContain('pool source');
 	});
 });
 

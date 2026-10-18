@@ -8,6 +8,7 @@
 import { isKaelTempLegendary } from './engine/kael-temp';
 import { filterPoolByPhase, type ItemSource, type PoolEntry } from './engine/pool';
 import { SOURCE_LABELS } from './engine/view';
+import { HEROIC_FIVE_MAN } from './pool_source';
 import type { RunSettings } from './run_state';
 import { type SettingsState, toRunSettings } from './settings_state';
 
@@ -70,6 +71,27 @@ export function sourceKeysMatching(entry: SourcedEntry): string[] {
 }
 
 const ZONELESS_KEYS = new Set(Object.values(SOURCE_LABELS));
+
+/**
+ * Source keys that start unticked wherever a pool offers them: the "Heroic dungeon" bucket under the
+ * `include-unticked` policy (`pool_source.ts`; the owner's answer of 2026-10-18, "Add it, but leave it switched off").
+ */
+export const DEFAULT_OFF_SOURCE_KEYS: readonly string[] = HEROIC_FIVE_MAN === 'include-unticked' ? [bucketKeyOf('heroic')] : [];
+
+/**
+ * The sources a run excludes, from the stored toggles and the keys the pool offers. For a key that starts unticked,
+ * a stored entry is the user's tick, so the key is excluded unless it is stored. The stored list keeps a key only
+ * while the pool offers it (`settings_state.ts`), so a tick stays through a phase change that still offers the key,
+ * and a key that comes back after a phase without it starts unticked again.
+ */
+export function effectiveExcludedSources(
+	stored: readonly string[],
+	offered: readonly string[],
+	defaultOff: readonly string[] = DEFAULT_OFF_SOURCE_KEYS,
+): string[] {
+	const off = defaultOff.filter(key => offered.includes(key));
+	return [...stored.filter(key => !off.includes(key)), ...off.filter(key => !stored.includes(key))];
+}
 
 /**
  * Every source key the pool offers, raid zones first, then zoneless buckets,
