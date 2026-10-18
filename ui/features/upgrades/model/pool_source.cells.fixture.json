@@ -1,0 +1,225 @@
+{
+	"_comment": "Per spec-phase pool sizes under the heroic five-man policies and BiS-tagged rows (include pool), from the outer repo's python -I .scratch/stage-gate/tab-wowsims-items/poolrule/measure_pool_rule.py --picker --default-run (measure_pool_rule.json), then make_pool_source_fixtures.py in the same folder.",
+	"cells": {
+		"balance-p2": {
+			"exclude": 559,
+			"include": 599,
+			"bisRows": 16
+		},
+		"balance-p3": {
+			"exclude": 763,
+			"include": 803,
+			"bisRows": 16
+		},
+		"balance-p4": {
+			"exclude": 844,
+			"include": 884,
+			"bisRows": 16
+		},
+		"balance-p5": {
+			"exclude": 1042,
+			"include": 1082,
+			"bisRows": 17
+		},
+		"ele-p2": {
+			"exclude": 659,
+			"include": 711,
+			"bisRows": 16
+		},
+		"ele-p3": {
+			"exclude": 908,
+			"include": 960,
+			"bisRows": 16
+		},
+		"ele-p4": {
+			"exclude": 1017,
+			"include": 1069,
+			"bisRows": 15
+		},
+		"ele-p5": {
+			"exclude": 1257,
+			"include": 1309,
+			"bisRows": 17
+		},
+		"enh-p2": {
+			"exclude": 674,
+			"include": 727,
+			"bisRows": 17
+		},
+		"enh-p3": {
+			"exclude": 931,
+			"include": 984,
+			"bisRows": 16
+		},
+		"enh-p4": {
+			"exclude": 1041,
+			"include": 1094,
+			"bisRows": 15
+		},
+		"enh-p5": {
+			"exclude": 1294,
+			"include": 1347,
+			"bisRows": 16
+		},
+		"feral-p2": {
+			"exclude": 558,
+			"include": 599,
+			"bisRows": 18
+		},
+		"feral-p3": {
+			"exclude": 762,
+			"include": 803,
+			"bisRows": 18
+		},
+		"feral-p4": {
+			"exclude": 843,
+			"include": 884,
+			"bisRows": 18
+		},
+		"feral-p5": {
+			"exclude": 1041,
+			"include": 1082,
+			"bisRows": 16
+		},
+		"hunter-p2": {
+			"exclude": 611,
+			"include": 662,
+			"bisRows": 25
+		},
+		"hunter-p3": {
+			"exclude": 842,
+			"include": 893,
+			"bisRows": 26
+		},
+		"hunter-p4": {
+			"exclude": 951,
+			"include": 1002,
+			"bisRows": 27
+		},
+		"hunter-p5": {
+			"exclude": 1184,
+			"include": 1235,
+			"bisRows": 27
+		},
+		"mage-p2": {
+			"exclude": 412,
+			"include": 442,
+			"bisRows": 16
+		},
+		"mage-p3": {
+			"exclude": 558,
+			"include": 588,
+			"bisRows": 21
+		},
+		"mage-p4": {
+			"exclude": 613,
+			"include": 643,
+			"bisRows": 21
+		},
+		"mage-p5": {
+			"exclude": 746,
+			"include": 776,
+			"bisRows": 21
+		},
+		"ret-p2": {
+			"exclude": 719,
+			"include": 776,
+			"bisRows": 16
+		},
+		"ret-p3": {
+			"exclude": 990,
+			"include": 1047,
+			"bisRows": 16
+		},
+		"ret-p4": {
+			"exclude": 1121,
+			"include": 1178,
+			"bisRows": 16
+		},
+		"ret-p5": {
+			"exclude": 1387,
+			"include": 1444,
+			"bisRows": 16
+		},
+		"rogue-p2": {
+			"exclude": 543,
+			"include": 584,
+			"bisRows": 17
+		},
+		"rogue-p3": {
+			"exclude": 745,
+			"include": 786,
+			"bisRows": 17
+		},
+		"rogue-p4": {
+			"exclude": 829,
+			"include": 870,
+			"bisRows": 17
+		},
+		"rogue-p5": {
+			"exclude": 1029,
+			"include": 1070,
+			"bisRows": 17
+		},
+		"shadow-p2": {
+			"exclude": 440,
+			"include": 469,
+			"bisRows": 17
+		},
+		"shadow-p3": {
+			"exclude": 598,
+			"include": 627,
+			"bisRows": 31
+		},
+		"shadow-p4": {
+			"exclude": 652,
+			"include": 681,
+			"bisRows": 31
+		},
+		"shadow-p5": {
+			"exclude": 797,
+			"include": 826,
+			"bisRows": 31
+		},
+		"warlock-p2": {
+			"exclude": 422,
+			"include": 454,
+			"bisRows": 17
+		},
+		"warlock-p3": {
+			"exclude": 572,
+			"include": 604,
+			"bisRows": 15
+		},
+		"warlock-p4": {
+			"exclude": 627,
+			"include": 659,
+			"bisRows": 15
+		},
+		"warlock-p5": {
+			"exclude": 764,
+			"include": 796,
+			"bisRows": 17
+		},
+		"warrior-p2": {
+			"exclude": 777,
+			"include": 839,
+			"bisRows": 23
+		},
+		"warrior-p3": {
+			"exclude": 1079,
+			"include": 1141,
+			"bisRows": 23
+		},
+		"warrior-p4": {
+			"exclude": 1221,
+			"include": 1283,
+			"bisRows": 24
+		},
+		"warrior-p5": {
+			"exclude": 1523,
+			"include": 1585,
+			"bisRows": 19
+		}
+	}
+}
