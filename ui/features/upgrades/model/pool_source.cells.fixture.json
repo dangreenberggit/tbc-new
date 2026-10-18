@@ -1,5 +1,5 @@
 {
-	"_comment": "Per spec-phase pool sizes under the heroic five-man policies and BiS-tagged rows (include pool), from the outer repo's python -I .scratch/stage-gate/tab-wowsims-items/poolrule/measure_pool_rule.py --picker --default-run (measure_pool_rule.json), then make_pool_source_fixtures.py in the same folder.",
+	"_comment": "Per spec-phase pool sizes under the heroic five-man policies and BiS-tagged rows (include pool). Measured once by an independent Python script that applied the pool rule to db.json; it lived in the outer repo's gitignored stage folder, and no checkout holds it. To re-pin after db.json, the presets or the pool rule change: run pool_source.test.ts, and before copying the sizes the TypeScript pool gives, list the item ids each changed cell gained or lost (testing/db_pool.ts dbPoolFor) and check each one against db.json and the rule in pool_source.ts. A size copied without that check pins whatever the code does.",
 	"cells": {
 		"balance-p2": {
 			"exclude": 559,

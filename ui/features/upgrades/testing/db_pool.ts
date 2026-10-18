@@ -2,7 +2,7 @@
  * The run-time pool over the fork's own db.json and each spec's wowsims
  * presets, for tests: what `buildPool` gives a live page, without a `Sim` or a
  * `Player`. The presets come from `model/pool_source.presets.fixture.json`,
- * whose `_comment` names the command that wrote it.
+ * whose `_comment` says how to re-pin it.
  */
 
 import { readFileSync } from 'node:fs';

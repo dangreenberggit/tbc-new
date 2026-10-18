@@ -1,5 +1,5 @@
 {
-	"_comment": "Each DPS spec's wowsims preset gear sets (name, declared phase, item ids) as the spec's config lists them. From the outer repo: python -I .scratch/stage-gate/tab-wowsims-items/poolrule/presets_phase_signal.py --json <out>, then make_pool_source_fixtures.py in the same folder.",
+	"_comment": "Each DPS spec's wowsims preset gear sets (name, declared phase, item ids) as the spec's config lists them. Copied once by a script in the outer repo's gitignored stage folder, which no checkout holds. To re-pin after an upstream preset change, copy each changed set's name, declared phase and item ids from the spec's ui/specs/<class>/<spec>/presets.ts and the gear_sets/ file it imports, then re-pin pool_source.cells.fixture.json as its _comment says.",
 	"specs": {
 		"balance": [
 			{
