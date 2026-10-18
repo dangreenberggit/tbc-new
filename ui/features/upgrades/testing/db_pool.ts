@@ -21,6 +21,7 @@ import type { PoolEntry } from '../model/engine/pool';
 import type { SpecId } from '../model/engine/types';
 import { HEROIC_FIVE_MAN, type HeroicFiveManPolicy, type PresetSet, selectPool } from '../model/pool_source';
 import presetsFixture from '../model/pool_source.presets.fixture.json';
+import { specIdFor } from '../model/run';
 import { indexExchange, type SourceDb, sourcesOf, type TierExchange } from '../utils/item_sources';
 
 const FORK_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -47,19 +48,15 @@ export const testSourcesOf = (item: UIItem) => sourcesOf(item, TEST_SOURCE_DB, T
 // JSON values only: the fixture's shape is asserted here, never derived from the import (AGENTS.md, Types from JSON).
 export const TEST_PRESETS = (presetsFixture as { specs: Record<string, PresetSet[]> }).specs;
 
-export const PROTO_SPEC: Record<SpecId, Spec> = {
-	balance: Spec.SpecBalanceDruid,
-	feral: Spec.SpecFeralCatDruid,
-	hunter: Spec.SpecHunter,
-	mage: Spec.SpecMage,
-	ret: Spec.SpecRetributionPaladin,
-	shadow: Spec.SpecDpsPriest,
-	rogue: Spec.SpecRogue,
-	ele: Spec.SpecElementalShaman,
-	enh: Spec.SpecEnhancementShaman,
-	warlock: Spec.SpecWarlock,
-	warrior: Spec.SpecDpsWarrior,
-};
+/** `run.ts`'s spec map read backwards through `specIdFor`, so the two cannot drift; `pool_source.test.ts` checks it covers every preset spec. */
+export const PROTO_SPEC = Object.fromEntries(
+	Object.values(Spec)
+		.filter((spec): spec is Spec => typeof spec === 'number')
+		.flatMap(spec => {
+			const specId = specIdFor(spec);
+			return specId ? [[specId, spec] as const] : [];
+		}),
+) as Record<SpecId, Spec>;
 
 const canEquipFor = (spec: SpecId) => {
 	const playerSpec = PlayerSpecs.fromProto(PROTO_SPEC[spec]);
