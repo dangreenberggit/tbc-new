@@ -3,7 +3,9 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { memoryStorage } from '../testing/fake_tab_host';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
+import { SAVED_VERSION } from './saved_entry';
 import { openSavedUpgradesStore } from './saved_settings';
+import { bucketKeyOf, effectiveExcludedSources } from './settings_pool';
 
 const KEY = '__tbc_new_feral_druid__upgradesSettings__';
 const SEED = { iterations: 1000 };
@@ -49,11 +51,19 @@ describe('openSavedUpgradesStore', () => {
 		expect(openSavedUpgradesStore(SEED, storage, KEY).getState().hiddenSources).toEqual(['Black Temple', 'Crafted']);
 	});
 
-	it('restores a version-1 entry saved before the source filter was, with every source shown', () => {
-		const raw = JSON.stringify({ version: 1, settings: { iterations: 5000 }, view: { onlyBis: true }, exportFlavour: 'gear' });
+	it('restores an entry saved before the source filter was, with every source shown', () => {
+		const raw = JSON.stringify({ version: SAVED_VERSION, settings: { iterations: 5000 }, view: { onlyBis: true }, exportFlavour: 'gear' });
 		const state = openSavedUpgradesStore(SEED, memoryStorage({ [KEY]: raw }), KEY).getState();
 		expect(state.hiddenSources).toEqual([]);
 		expect(state.view.onlyBis).toBe(true);
+	});
+
+	// In version 1 a stored source key meant "excluded"; a stored default-off key now means "ticked" (ticket 505).
+	it('reads a version-1 entry that unticked "Heroic dungeon" as nothing saved, so the run still excludes it', () => {
+		const heroic = bucketKeyOf('heroic');
+		const raw = JSON.stringify({ version: 1, settings: { excludedSources: [heroic] } });
+		const { excludedSources } = openSavedUpgradesStore(SEED, memoryStorage({ [KEY]: raw }), KEY).getState().settings;
+		expect(effectiveExcludedSources(excludedSources, ['Black Temple', heroic])).toContain(heroic);
 	});
 
 	it('restores the export panel’s token or gear choice in a fresh store (ticket 588)', () => {
@@ -63,14 +73,14 @@ describe('openSavedUpgradesStore', () => {
 	});
 
 	it('restores token for an entry saved before the export choice was', () => {
-		const raw = JSON.stringify({ version: 1, settings: { iterations: 5000 }, view: { onlyBis: true } });
+		const raw = JSON.stringify({ version: SAVED_VERSION, settings: { iterations: 5000 }, view: { onlyBis: true } });
 		const state = openSavedUpgradesStore(SEED, memoryStorage({ [KEY]: raw }), KEY).getState();
 		expect(state.exportFlavour).toBe('token');
 		expect(state.view.onlyBis).toBe(true);
 	});
 
-	it('restores a version-1 entry saved before the view toggles were, with the toggles off', () => {
-		const raw = JSON.stringify({ version: 1, settings: { iterations: 5000 }, sort: [{ id: 'slot', desc: true }] });
+	it('restores an entry saved before the view toggles were, with the toggles off', () => {
+		const raw = JSON.stringify({ version: SAVED_VERSION, settings: { iterations: 5000 }, sort: [{ id: 'slot', desc: true }] });
 		const state = openSavedUpgradesStore(SEED, memoryStorage({ [KEY]: raw }), KEY).getState();
 		expect(state.settings.iterations).toBe(5000);
 		expect(state.sort).toEqual([{ id: 'slot', desc: true }]);
@@ -87,7 +97,7 @@ describe('openSavedUpgradesStore', () => {
 
 	// The cap picker shows only on a page with `?upgrades-dev` (ticket 466), so a cap that came back on another page would cut the run unseen (ticket 586).
 	it('restores no cap: a page without the dev link runs uncapped whatever a dev page set', () => {
-		const storage = memoryStorage({ [KEY]: JSON.stringify({ version: 1, settings: { candidateCap: 25 } }) });
+		const storage = memoryStorage({ [KEY]: JSON.stringify({ version: SAVED_VERSION, settings: { candidateCap: 25 } }) });
 		const devPage = openSavedUpgradesStore(SEED, storage, KEY, { candidateCap: 3 });
 		expect(devPage.getState().settings.candidateCap).toBe(3);
 		devPage.getState().setCandidateCap(7, undefined);
@@ -138,7 +148,7 @@ describe('openSavedUpgradesStore', () => {
 			const { settings, sort, view, exportFlavour, hiddenSources } = store.getState();
 			return { settings, sort, view, exportFlavour, hiddenSources };
 		};
-		const saved = (body: object) => JSON.stringify({ version: 1, ...body });
+		const saved = (body: object) => JSON.stringify({ version: SAVED_VERSION, ...body });
 
 		it.each([
 			['nothing stored', undefined],
@@ -146,7 +156,7 @@ describe('openSavedUpgradesStore', () => {
 			['JSON null', 'null'],
 			['a bare number', '42'],
 			['an array', '[]'],
-			['another version', JSON.stringify({ version: 2, settings: { iterations: 5000 }, sort: [{ id: 'slot', desc: true }] })],
+			['another version', JSON.stringify({ version: SAVED_VERSION + 1, settings: { iterations: 5000 }, sort: [{ id: 'slot', desc: true }] })],
 			['no version', JSON.stringify({ settings: { iterations: 5000 }, sort: [{ id: 'slot', desc: true }] })],
 			['settings that are not an object', saved({ settings: 'x', sort: 'y' })],
 		])('for %s', (_case, raw) => {

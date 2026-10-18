@@ -1,3 +1,4 @@
+import { SAVED_VERSION } from '@features/upgrades/model/saved_entry';
 import { memoryStorage, settled } from '@features/upgrades/testing/fake_tab_host';
 import { Spec } from '@generated/proto/common';
 import { act, render } from '@testing-library/react';
@@ -40,7 +41,7 @@ const pageModules = async () => {
 };
 
 const KEY = '__upgrades_test__upgradesSettings__';
-const savedEntry = (settings: object) => JSON.stringify({ version: 1, settings, sort: [{ id: 'source', desc: true }], view: {}, exportFlavour: 'gear' });
+const savedEntry = (settings: object) => JSON.stringify({ version: SAVED_VERSION, settings, sort: [{ id: 'source', desc: true }], view: {}, exportFlavour: 'gear' });
 
 /**
  * A page at `startPhase` (3 unless given) whose Upgrades tab is closed, on real page subscriptions. `load` is the
@@ -108,7 +109,7 @@ describe('UpgradesTabBody while its tab has not been opened (ticket 589)', () =>
 		act(() => page.setPhase(4));
 
 		expect(JSON.parse(storage.entries.get(KEY)!)).toEqual({
-			version: 1,
+			version: SAVED_VERSION,
 			settings: { selectedSetKeys: [], excludedSources: ['Hyjal Summit'], iterations: 4321 },
 			sort: [{ id: 'source', desc: true }],
 			view: {},

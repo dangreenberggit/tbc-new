@@ -16,8 +16,10 @@ export const UPGRADES_SETTINGS_STORAGE_KEY = '__upgradesSettings__';
  * saved before it reads back without it and the field takes its default, as
  * `view` did. Upstream migrates an old saved proto (`updateProtoVersion`);
  * this tab has no migration yet, so another version reads back as nothing saved.
+ * Version 2 (ticket 505): a stored default-off source key, such as "Heroic
+ * dungeon", means ticked, where in version 1 every stored key meant excluded.
  */
-export const SAVED_VERSION = 1;
+export const SAVED_VERSION = 2;
 
 /**
  * A phase change made while no tab store follows the phase: the saved entry forgets its sets and the scope they were

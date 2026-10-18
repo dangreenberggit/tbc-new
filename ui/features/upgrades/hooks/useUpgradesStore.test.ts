@@ -4,7 +4,7 @@ import { createSimStore, patchSlice } from '@sim/state/sim_store';
 import { describe, expect, it, vi } from 'vitest';
 
 import { poolFor } from '../model/data/data';
-import { UPGRADES_SETTINGS_STORAGE_KEY } from '../model/saved_entry';
+import { SAVED_VERSION, UPGRADES_SETTINGS_STORAGE_KEY } from '../model/saved_entry';
 import { validSourceKeysOf } from '../model/settings_pool';
 import { createUpgradesStore } from '../model/upgrades_store';
 import { fakeTabHost, memoryStorage, settled } from '../testing/fake_tab_host';
@@ -42,7 +42,7 @@ describe('upgradesStoreFor', () => {
 
 describe('upgradesStoreFor and the page’s phase (ticket 587)', () => {
 	const KEY = `__upgrades_test${UPGRADES_SETTINGS_STORAGE_KEY}`;
-	const savedSettings = (settings: object) => ({ [KEY]: JSON.stringify({ version: 1, settings }) });
+	const savedSettings = (settings: object) => ({ [KEY]: JSON.stringify({ version: SAVED_VERSION, settings }) });
 
 	/**
 	 * A ret page over `storage` at `phase`, whose sim finishes its start-up when the test calls `finishInit`. `load`

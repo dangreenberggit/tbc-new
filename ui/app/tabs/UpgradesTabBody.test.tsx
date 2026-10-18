@@ -3,6 +3,7 @@ import type { FixtureAutoloadOptions } from '@features/upgrades/hooks/useFixture
 import type { PoolEntry } from '@features/upgrades/model/engine/pool';
 import type { RunDeps } from '@features/upgrades/model/run';
 import type { RunOutcome, RunSettings } from '@features/upgrades/model/run_state';
+import { SAVED_VERSION } from '@features/upgrades/model/saved_entry';
 import { fakeTabHost, memoryStorage, settled } from '@features/upgrades/testing/fake_tab_host';
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { fixtureRow, RANKING_FIXTURE } from '@features/upgrades/testing/ranking_fixture';
@@ -340,7 +341,7 @@ describe('UpgradesTabBody before its tab is first opened', () => {
 
 	const SAVED_KEY = '__upgrades_test__upgradesSettings__';
 	/** The user cleared phase 3's default sets on an earlier visit, so the saved entry holds no sets for `ret:3`. */
-	const clearedAt3 = () => memoryStorage({ [SAVED_KEY]: JSON.stringify({ version: 1, settings: { selectedSetKeys: [], defaultsFor: 'ret:3' } }) });
+	const clearedAt3 = () => memoryStorage({ [SAVED_KEY]: JSON.stringify({ version: SAVED_VERSION, settings: { selectedSetKeys: [], defaultsFor: 'ret:3' } }) });
 	const renderClosed = () =>
 		render(
 			<SimHostProvider host={current.host}>
