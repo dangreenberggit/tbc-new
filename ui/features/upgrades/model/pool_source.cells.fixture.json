@@ -1,5 +1,5 @@
 {
-	"_comment": "Per spec-phase pool sizes under the heroic five-man policies and BiS-tagged rows (include pool). Measured once by an independent Python script that applied the pool rule to db.json; it lived in the outer repo's gitignored stage folder, and no checkout holds it. To re-pin after db.json, the presets or the pool rule change: run pool_source.test.ts, and before copying the sizes the TypeScript pool gives, list the item ids each changed cell gained or lost (testing/db_pool.ts dbPoolFor) and check each one against db.json and the rule in pool_source.ts. A size copied without that check pins whatever the code does.",
+	"_comment": "Per spec-phase pool sizes under the heroic five-man policies and BiS-tagged rows (include pool). Measured once by an independent Python script that applied the pool rule to db.json; it lived in the outer repo's gitignored stage folder, and no checkout holds it. To re-pin after db.json, the presets or the pool rule change: run pool_source.test.ts, and before copying the sizes the TypeScript pool gives, list the item ids each changed cell gained or lost (testing/db_pool.ts dbPoolFor) and check each one against db.json and the rule in pool_source.ts. A size copied without that check pins whatever the code does. 2026-10-18, ticket 686 (every preset of the tag phase counts as a BiS set): bisRows re-pinned for ret-p3, ret-p4 and ret-p5 (+1, 28485), feral-p2 (+5, the Alt 6% and Alt 9% sets: 30222, 30223, 30229, 30230, 30834) and shadow-p2 (+8, its pre-raid set: 25295, 28245, 28555, 30832, 31166, 31199, 31201, 31225); no other cell changed and no item lost its tag.",
 	"cells": {
 		"balance-p2": {
 			"exclude": 559,
@@ -64,7 +64,7 @@
 		"feral-p2": {
 			"exclude": 558,
 			"include": 599,
-			"bisRows": 18
+			"bisRows": 23
 		},
 		"feral-p3": {
 			"exclude": 762,
@@ -129,17 +129,17 @@
 		"ret-p3": {
 			"exclude": 990,
 			"include": 1047,
-			"bisRows": 16
+			"bisRows": 17
 		},
 		"ret-p4": {
 			"exclude": 1121,
 			"include": 1178,
-			"bisRows": 16
+			"bisRows": 17
 		},
 		"ret-p5": {
 			"exclude": 1387,
 			"include": 1444,
-			"bisRows": 16
+			"bisRows": 17
 		},
 		"rogue-p2": {
 			"exclude": 543,
@@ -164,7 +164,7 @@
 		"shadow-p2": {
 			"exclude": 440,
 			"include": 469,
-			"bisRows": 17
+			"bisRows": 25
 		},
 		"shadow-p3": {
 			"exclude": 598,

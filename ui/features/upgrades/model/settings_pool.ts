@@ -151,9 +151,11 @@ export function setOptions({
 /**
  * The sets selected by default: the presets of the phase the pool's BiS tags
  * come from (`bisTagPhaseFor().tagsFromPhase`) whose in-pool items are all
- * BiS-tagged, with at least one in the pool. Both tests are needed: the ids
- * alone over-select (feral P3's ids also satisfy the P4 BiS pair), and the
- * phase alone admits same-phase alternatives (ret's "Bulwark").
+ * BiS-tagged, with at least one in the pool. The phase test is needed: the ids
+ * alone over-select (feral P3's ids also satisfy the P4 BiS pair). Since
+ * every preset of the tag phase is a BiS set (ticket 686), the ids test
+ * passes for each of them that has an item in the pool, ret's "Bulwark"
+ * included.
  */
 export function defaultSetKeys(options: readonly SetOption[], pool: readonly PoolEntry[], bisTagPhase: number | undefined): string[] {
 	if (bisTagPhase === undefined) return [];

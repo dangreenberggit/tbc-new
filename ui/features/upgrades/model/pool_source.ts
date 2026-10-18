@@ -42,14 +42,6 @@ export type PresetSet = { name: string; phase?: number; itemIds: readonly number
 const MIN_QUALITY = ItemQuality.ItemQualityEpic;
 const MIN_ILVL = 100;
 
-/**
- * The name rule for which presets are BiS sets. wowsims' `PresetGear` has no
- * BiS field, so pre-raid, alternative and "realistic" sets are told apart by
- * name; ret's "Bulwark" is a same-phase alternative the tab never selected by
- * default (`settings_pool.ts` `defaultSetKeys`).
- */
-const NOT_BIS_NAME = /pre[- ]?raid|prebis|realistic|\balt\b|bulwark/i;
-
 const SLOT_BY_ITEM_TYPE: Partial<Record<ItemType, ItemSlot>> = {
 	[ItemType.ItemTypeHead]: 'head',
 	[ItemType.ItemTypeNeck]: 'neck',
@@ -111,21 +103,23 @@ export function presetPhase(preset: Pick<PresetSet, 'phase' | 'itemIds'>, itemPh
 }
 
 /**
- * The BiS sets at `maxPhase`: the presets not excluded by name whose phase is
- * the newest preset phase at or below `maxPhase`, with that phase.
+ * The BiS sets at `maxPhase`: every preset whose phase is the newest preset
+ * phase at or below `maxPhase`, with that phase. wowsims' `PresetGear` has no
+ * BiS field, and the owner ruled on 2026-10-18 that a pre-raid or alternative
+ * set ("Bulwark", "Alt 6%") counts like any other preset (ticket 686), so no
+ * preset is told apart by its name.
  */
 export function bisSetsFor(
 	presets: readonly PresetSet[],
 	maxPhase: number,
 	itemPhaseOf: (id: number) => number | undefined,
 ): { phase: number; sets: PresetSet[] } | undefined {
-	const named = presets
-		.filter(p => !NOT_BIS_NAME.test(p.name))
+	const phased = presets
 		.map(p => ({ preset: p, phase: presetPhase(p, itemPhaseOf) }))
 		.filter((p): p is { preset: PresetSet; phase: number } => p.phase !== undefined && p.phase <= maxPhase);
-	if (named.length === 0) return undefined;
-	const phase = Math.max(...named.map(p => p.phase));
-	return { phase, sets: named.filter(p => p.phase === phase).map(p => p.preset) };
+	if (phased.length === 0) return undefined;
+	const phase = Math.max(...phased.map(p => p.phase));
+	return { phase, sets: phased.filter(p => p.phase === phase).map(p => p.preset) };
 }
 
 /**

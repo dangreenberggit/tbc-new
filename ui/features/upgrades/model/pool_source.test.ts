@@ -30,9 +30,9 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 		}).toEqual(expected);
 	});
 
-	it('totals the measured 36,945 / 38,897 rows and 842 BiS rows', () => {
+	it('totals the measured 36,945 / 38,897 rows and 858 BiS rows', () => {
 		const sum = (key: 'exclude' | 'include' | 'bisRows') => CELL_NAMES.reduce((n, name) => n + CELLS[name]![key], 0);
-		expect([sum('exclude'), sum('include'), sum('bisRows')]).toEqual([36945, 38897, 842]);
+		expect([sum('exclude'), sum('include'), sum('bisRows')]).toEqual([36945, 38897, 858]);
 	});
 
 	it.each(['ret-p5', 'feral-p5'])('%s: exclude is inside include, include-unticked is include, and the difference is the heroic-only items', name => {
@@ -87,7 +87,7 @@ describe('presetPhase', () => {
 });
 
 describe('bisSetsFor', () => {
-	it('takes the newest named sets at or below the phase and skips pre-raid, alt, realistic and Bulwark sets', () => {
+	it('takes every set of the newest preset phase at or below the phase, whatever its name', () => {
 		const sets: PresetSet[] = [
 			{ name: 'Pre-Raid', phase: 1, itemIds: [1] },
 			{ name: 'P2', phase: 2, itemIds: [2] },
@@ -96,14 +96,28 @@ describe('bisSetsFor', () => {
 			{ name: 'P3 Alt', phase: 3, itemIds: [5] },
 			{ name: 'P4', phase: 4, itemIds: [6] },
 		];
-		expect(bisSetsFor(sets, 3, () => undefined)).toEqual({ phase: 3, sets: [sets[2]] });
-		expect(bisSetsFor(sets, 1, () => undefined)).toBeUndefined();
+		expect(bisSetsFor(sets, 3, () => undefined)).toEqual({ phase: 3, sets: [sets[2], sets[3], sets[4]] });
+		expect(bisSetsFor(sets, 1, () => undefined)).toEqual({ phase: 1, sets: [sets[0]] });
+		expect(bisSetsFor(sets.slice(1), 1, () => undefined)).toBeUndefined();
 	});
 
-	it('tags ret p3 from its P3 preset and gives no badge to the Bulwark shield 28485', () => {
+	// The items each cell gained when the name rule went (ticket 686); the cells fixture's _comment lists them too.
+	it.each([
+		['ret', 3, [28485]],
+		['feral', 2, [30222, 30223, 30229, 30230, 30834]],
+		['shadow', 2, [25295, 28245, 28555, 30832, 31166, 31199, 31201, 31225]],
+	] as const)('%s p%i tags the items of its pre-raid and alternative sets', (spec, phase, ids) => {
+		const tagged = new Set(
+			poolOf(spec, phase, 'include')
+				.filter(e => e.bisTags?.includes('BiS'))
+				.map(e => e.itemId),
+		);
+		expect(ids.filter(id => !tagged.has(id))).toEqual([]);
+	});
+
+	it('tags ret p3 from its P3 and Bulwark presets', () => {
 		const pool = poolOf('ret', 3, 'include');
 		const tagged = pool.filter(e => e.bisTags?.includes('BiS'));
-		expect(new Set(tagged.flatMap(e => e.bisSets ?? []))).toEqual(new Set(bisSetsFor(TEST_PRESETS.ret!, 3, testItemPhase)!.sets.map(s => s.name)));
-		expect(tagged.some(e => e.itemId === 28485)).toBe(false);
+		expect(new Set(tagged.flatMap(e => e.bisSets ?? []))).toEqual(new Set(['P3', 'Bulwark']));
 	});
 });
