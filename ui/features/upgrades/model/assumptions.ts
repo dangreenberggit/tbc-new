@@ -17,7 +17,7 @@ export type AssumptionsContext = {
 	specId?: SpecId;
 	/** The settings the run used; absent for a loaded fixture, whose run settings are not recorded. */
 	settings?: RunSettings;
-	/** The page the run drew its pool from; absent, the lines about the pool are left out. */
+	/** The page the run drew its pool from; absent, or before its database has loaded, the lines about the pool are left out. */
 	host?: PagePoolHost;
 };
 
@@ -27,12 +27,13 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
 	if (settings) lines.push(`candidate pool: ${settings.prune ? `selected set items for phase ${a.maxPhase}` : 'every eligible item'}`);
 	if (specId) {
 		const maxPhase = a.maxPhase;
-		const pool = host ? poolFor(host, maxPhase) : undefined;
+		const page = host?.sim.db ? host : undefined;
+		const pool = page ? poolFor(page, maxPhase) : undefined;
 		const poolSource = pool && poolSourceFor(pool);
 		if (poolSource) lines.push(`pool source: ${poolSource.file} (${poolSource.entries} entries)`);
 		const ep = epWeightsDisclosureFor(specId, maxPhase);
 		if (ep) lines.push(`EP weights: written for ${ep.from}, ranking ${ep.requested}`);
-		const tags = host && bisTagPhaseFor(host, host.individualConfig.presets.gear, maxPhase);
+		const tags = page && bisTagPhaseFor(page, page.individualConfig.presets.gear, maxPhase);
 		if (tags && tags.tagsFromPhase < tags.requestedPhase) lines.push(`BiS tags: from P${tags.tagsFromPhase} sets, ranking P${tags.requestedPhase}`);
 		const unsourced = pool ? unsourcedCountFor(pool) : 0;
 		if (unsourced > 0) lines.push(`source attribution: partial, ${unsourced} items with no recorded source`);

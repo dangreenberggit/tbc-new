@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { dbPoolFor } from '../testing/db_pool';
 import { fixtureRow } from '../testing/ranking_fixture';
 import { exportIdForRow, exportPayload } from './export';
 
@@ -22,6 +23,11 @@ describe('exportIdForRow', () => {
 
 	it('gives the gear id for a row with no token source', () => {
 		expect(exportIdForRow(fixtureRow(0), 'token')).toBe(32332);
+	});
+
+	it('gives the token id tier-exchange.json names for a tier piece in the run-time pool', () => {
+		const justicarCrown = dbPoolFor('ret', 3).find(e => e.itemId === 29073);
+		expect(justicarCrown && exportIdForRow(justicarCrown, 'token')).toBe(29760);
 	});
 });
 

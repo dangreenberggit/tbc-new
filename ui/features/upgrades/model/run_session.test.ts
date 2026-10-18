@@ -2,6 +2,7 @@ import { Spec } from '@generated/proto/common';
 import { fakeHost } from '@sim/testing';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { dbPoolHost } from '../testing/db_pool';
 import { settled } from '../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
@@ -138,6 +139,23 @@ describe('createRunSession', () => {
 			measuredOn: { wornItemIds: [28830, ...Array.from({ length: 16 }, () => 0)], specId: 'ret', inputsSignature: 'sig-at-load' },
 		});
 		expect(console.info).toHaveBeenCalledOnce();
+	});
+
+	it('logs the pool lines of the page the run drew from, for a run and for a loaded fixture', async () => {
+		const page = dbPoolHost('ret');
+		const player = { ...page.player, getGear: () => ({ getEquippedItems: () => equipped }), getSpec: () => Spec.SpecRetributionPaladin };
+		const host = fakeHost({ sim: page.sim, individualConfig: page.individualConfig, player } as Parameters<typeof fakeHost>[0]);
+		const { runFn, call } = controllableRun();
+		const session = createRunSession(createUpgradesStore({ iterations: 3000 }), host, runFn, ENV);
+
+		session.start(SETTINGS, SIGNATURE);
+		call(0).settle({ ...RANKING_FIXTURE, durationMs: 1200, runner: 'WorkerPoolSimRunner' });
+		await vi.waitFor(() => expect(console.info).toHaveBeenCalledOnce());
+		session.loadFixture(RANKING_FIXTURE, SIGNATURE);
+
+		const lines = vi.mocked(console.info).mock.calls.map(([line]) => String(line));
+		expect(lines).toHaveLength(2);
+		for (const line of lines) expect(line).toMatch(/pool source: wowsims db \(\d+ entries\)/);
 	});
 
 	it('builds the run context once, on first use, and reuses it across runs', () => {

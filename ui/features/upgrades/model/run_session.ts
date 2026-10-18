@@ -89,7 +89,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 			result => {
 				store.getState().settleRun(id, result);
 				// The store drops a superseded run's result, so it is not logged either.
-				if (id === runId) logAssumptions(result, { specId: measuredOn.specId, settings });
+				if (id === runId) logAssumptions(result, { specId: measuredOn.specId, settings, host });
 			},
 			(error: unknown) => store.getState().failRun(id, env.describeError(error)),
 		);
@@ -106,7 +106,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		controller?.abort();
 		const measuredOn = measuredOnPage(host, inputsSignature);
 		store.getState().loadFixture(++runId, ranking, measuredOn);
-		logAssumptions(ranking, { specId: measuredOn.specId });
+		logAssumptions(ranking, { specId: measuredOn.specId, host });
 	};
 
 	/**

@@ -4,6 +4,7 @@ import { dbPoolFor, PROTO_SPEC, TEST_MISSING_IDS, TEST_PRESETS, testItem, testIt
 import type { SpecId } from './engine/types';
 import { bisSetsFor, hasEffectRecord, type HeroicFiveManPolicy, isHeroicFiveManOnly, presetPhase, type PresetSet } from './pool_source';
 import cellsFixture from './pool_source.cells.fixture.json';
+import { effectiveExcludedSources, effectivePool, validSourceKeysOf } from './settings_pool';
 
 // JSON values only: the fixture's shape is asserted here, never derived from the import (AGENTS.md, Types from JSON).
 const CELLS = (cellsFixture as { cells: Record<string, { exclude: number; include: number; bisRows: number }> }).cells;
@@ -44,6 +45,17 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 		const heroicOnly = [...include].filter(id => isHeroicFiveManOnly(testItem(id)!));
 		expect(heroicOnly.sort()).toEqual([...include].filter(id => !exclude.has(id)).sort());
 		expect(heroicOnly.length).toBeGreaterThan(0);
+	});
+
+	// What a default run ranks under `include-unticked`: the Sources dialog starts "Heroic dungeon" unticked, and the
+	// pool's sources (`utils/item_sources.ts`) must then leave exactly the `exclude` pool.
+	it.each(CELL_NAMES)('%s: the default source ticks rank exactly the exclude pool', name => {
+		const [spec, phase] = name.split('-p') as [SpecId, string];
+		const pool = poolOf(spec, Number(phase), 'include-unticked');
+		const excluded = effectiveExcludedSources([], validSourceKeysOf(pool));
+		const ranked = effectivePool(pool, { excludedSources: excluded, selectedSetItemIds: [], prune: false }).map(e => e.itemId);
+		const exclude = poolOf(spec, Number(phase), 'exclude').map(e => e.itemId);
+		expect(ranked.sort()).toEqual(exclude.sort());
 	});
 
 	it('keeps Magisters’ Terrace heroic epics such as 34472 Shard of Contempt under exclude', () => {
