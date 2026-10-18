@@ -1,9 +1,5 @@
-import type { ItemSource } from '../model/engine/pool';
 import type { RankedItem, Ranking } from '../model/engine/rank';
 import type { StoppedRanking } from '../model/run_state';
-
-/** A token source with the token's id, as `utils/item_sources.ts` gives a tier piece from `tier-exchange.json`. */
-const tokenSource = (source: Extract<ItemSource, { kind: 'token' }> & { tokenId: number }): ItemSource => source;
 
 /**
  * A small finished ranking for the tab's unit tests. Rows 0-5 are trimmed
@@ -201,22 +197,22 @@ export const RANKING_FIXTURE: Ranking = {
 			itemId: 30993,
 			name: 'Lightbringer Greaves',
 			slot: 'legs',
-			source: tokenSource({
+			source: {
 				kind: 'token',
 				zone: 'Black Temple',
 				token: 'Leggings of the Forgotten Conqueror',
 				boss: 'The Illidari Council',
 				tokenId: 31098,
-			}),
+			},
 			sources: [
 				{ kind: 'raid', zone: 'Black Temple', boss: 'The Illidari Council' },
-				tokenSource({
+				{
 					kind: 'token',
 					zone: 'Black Temple',
 					token: 'Leggings of the Forgotten Conqueror',
 					boss: 'The Illidari Council',
 					tokenId: 31098,
-				}),
+				},
 			],
 			deltaDps: 3.62,
 			deltaPct: 0.1737,
