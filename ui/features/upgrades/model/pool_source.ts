@@ -14,8 +14,10 @@ import { MISSING_ITEM_EFFECTS } from '@sim/constants/missing_effects_auto_gen';
 import { canEquipItem } from '@sim/proto/items';
 import type { IndividualSimHost } from '@sim/sim_host';
 
+import { type ExchangeIndex, indexExchange, MAGISTERS_TERRACE_ZONE_ID, sourcesOf, type TierExchange } from '../utils/item_sources';
+import tierExchange from './data/tier-exchange.json';
 import { isKaelTempLegendary } from './engine/kael-temp';
-import type { ItemSlot, PoolEntry } from './engine/pool';
+import type { ItemSlot, ItemSource, PoolEntry } from './engine/pool';
 
 /**
  * Heroic five-man drops outside Magisters' Terrace. `exclude` drops an item
@@ -39,9 +41,6 @@ export type PresetSet = { name: string; phase?: number; itemIds: readonly number
  */
 const MIN_QUALITY = ItemQuality.ItemQualityEpic;
 const MIN_ILVL = 100;
-
-/** Magisters' Terrace drops of either difficulty file under its ticked zone row, so its heroic epics stay in a default run. */
-const MAGISTERS_TERRACE_ZONE_ID = 4131;
 
 /**
  * The name rule for which presets are BiS sets. wowsims' `PresetGear` has no
@@ -134,7 +133,8 @@ export function bisSetsFor(
  * slot, minus Kael's temporary legendaries and the items wowsims lists as
  * missing an effect, kept when it meets the floor at or below `maxPhase` or is
  * in one of the spec's presets of that phase or earlier; then the heroic
- * five-man policy. Sources are unknown here (`[{kind: 'unknown'}]`).
+ * five-man policy. Each entry's sources come from `sourcesFor`; without it
+ * they are unknown (`[{kind: 'unknown'}]`).
  */
 export function selectPool(
 	items: readonly UIItem[],
@@ -143,6 +143,7 @@ export function selectPool(
 	missingIds: ReadonlySet<number>,
 	maxPhase: number,
 	policy: HeroicFiveManPolicy,
+	sourcesFor: (item: UIItem) => ItemSource[] = () => [{ kind: 'unknown' }],
 ): PoolEntry[] {
 	const byId = new Map(items.map(item => [item.id, item]));
 	const itemPhaseOf = (id: number): number | undefined => {
@@ -164,13 +165,14 @@ export function selectPool(
 		if (policy === 'exclude' && isHeroicFiveManOnly(item)) continue;
 		const bisSets = bis ? setNamesHolding(bis.sets, item.id) : [];
 		const curatedSets = setNamesHolding(presets, item.id);
+		const sources = sourcesFor(item);
 		pool.push({
 			itemId: item.id,
 			name: item.name,
 			slot,
 			phase: item.phase,
-			source: { kind: 'unknown' },
-			sources: [{ kind: 'unknown' }],
+			source: sources[0] ?? { kind: 'unknown' },
+			sources,
 			...(bisSets.length > 0 ? { bisTags: ['BiS' as const], bisSets } : {}),
 			...(curatedSets.length > 0 ? { curatedSets } : {}),
 		});
@@ -180,6 +182,10 @@ export function selectPool(
 
 let missingIdsCache: ReadonlySet<number> | undefined;
 const missingIds = (): ReadonlySet<number> => (missingIdsCache ??= new Set(MISSING_ITEM_EFFECTS.keys()));
+
+// JSON values only: the file's shape is stated by `TierExchange`, never derived from the import (AGENTS.md, Types from JSON).
+let exchangeCache: ExchangeIndex | undefined;
+const exchange = () => (exchangeCache ??= indexExchange(tierExchange as TierExchange));
 
 /** A wowsims preset as the page holds it, read down to what the pool needs. */
 export const presetSetOf = ({ name, phase, gear }: { name: string; phase?: number; gear: { items: readonly { id: number }[] } }): PresetSet => ({
@@ -201,5 +207,13 @@ export function buildPool(host: PoolHost, presets: readonly PresetSet[], maxPhas
 	const db = host.sim.db;
 	if (!db) return [];
 	const playerSpec = host.player.getPlayerSpec();
-	return selectPool(db.getAllItems(), item => canEquipItem(item, playerSpec, undefined), presets, missingIds(), maxPhase, HEROIC_FIVE_MAN);
+	return selectPool(
+		db.getAllItems(),
+		item => canEquipItem(item, playerSpec, undefined),
+		presets,
+		missingIds(),
+		maxPhase,
+		HEROIC_FIVE_MAN,
+		item => sourcesOf(item, db, exchange()),
+	);
 }

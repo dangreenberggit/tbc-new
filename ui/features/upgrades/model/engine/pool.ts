@@ -45,33 +45,29 @@ export const ITEM_SOURCE_KINDS = [
 
 export type ItemSourceKindName = (typeof ITEM_SOURCE_KINDS)[number];
 
-export type ItemSourceOrigin =
-  | "db"
-  | "atlasloot"
-  | "two-hop"
-  | "wowhead"
-  | "curated"
-  | "sunmote";
-
-export type ItemSource = { origin?: ItemSourceOrigin } & (
-  | { kind: "raid"; zone: string; boss?: string }
-  | { kind: "token"; zone: string; boss?: string; token: string }
-  | { kind: "badge"; cost: number }
+/**
+ * Fork-only narrowing (ticket 505): the tab reads its sources from wowsims'
+ * item facts (`utils/item_sources.ts`), which state no origin, recipe, cost,
+ * faction id or arena season. The `badge` and `world` variants stay only
+ * because `ITEM_SOURCE_KINDS` must list packages/core's kinds (the drift
+ * gate's union compare); the tab builds neither.
+ */
+export type ItemSource =
+  | { kind: "raid"; zone: string; boss?: string; heroic?: boolean }
   | {
-      kind: "crafted";
-      profession: string;
-      recipeZone?: string;
-      recipeBoss?: string;
-      recipeFaction?: string;
-      recipeStanding?: string;
-      recipeFactionId?: number;
+      kind: "token";
+      zone: string;
+      boss?: string;
+      token: string;
+      tokenId?: number;
     }
-  | { kind: "rep"; faction: string; standing: string; factionId?: number }
+  | { kind: "badge"; cost: number }
+  | { kind: "crafted"; profession: string }
+  | { kind: "rep"; faction: string; standing: string }
   | { kind: "heroic"; dungeon: string }
-  | { kind: "pvp"; via: "arena" | "honor"; season?: number }
+  | { kind: "pvp"; via: "arena" }
   | { kind: "world" }
-  | { kind: "unknown" }
-);
+  | { kind: "unknown" };
 
 export type ItemSourceKind = ItemSource["kind"];
 

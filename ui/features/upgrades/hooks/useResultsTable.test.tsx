@@ -132,7 +132,7 @@ describe('the results table sort', () => {
 		// Cataclysm's Edge as a drop in Hyjal Summit and Black Temple, beside Dragonspine Trophy from Gruul's Lair.
 		const hyjalOrBlackTemple: RankedItem = {
 			...fixtureRow(1),
-			sources: [fixtureRow(1).source, { kind: 'raid', zone: 'Black Temple', boss: 'Illidan Stormrage', origin: 'db' }],
+			sources: [fixtureRow(1).source, { kind: 'raid', zone: 'Black Temple', boss: 'Illidan Stormrage' }],
 		};
 		const rows = [fixtureRow(7), hyjalOrBlackTemple];
 		expect(renderTable(rows, [{ id: 'source', desc: false }]).ids()).toEqual([28830, 30902]);

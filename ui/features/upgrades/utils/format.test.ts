@@ -117,11 +117,18 @@ describe('sourceDetail', () => {
 		expect(sourceDetail({ kind: 'rep', faction: 'The Scale of the Sands', standing: 'Revered' })).toBe('The Scale of the Sands · Revered');
 	});
 
-	it('names a PvP item’s currency, and its season when one is recorded', () => {
-		expect(sourceDetail({ kind: 'pvp', via: 'arena', season: 3 })).toBe('PvP vendor · Arena, season 3');
+	it('names a PvP item’s currency', () => {
 		expect(sourceDetail({ kind: 'pvp', via: 'arena' })).toBe('PvP vendor · Arena');
-		expect(sourceDetail({ kind: 'pvp', via: 'honor' })).toBe('PvP vendor · Honor');
-		withTranslation('upgrades_tab.source_detail.honor', 'Ehre', () => expect(sourceDetail({ kind: 'pvp', via: 'honor' })).toBe('PvP vendor · Ehre'));
+		withTranslation('upgrades_tab.source_detail.arena', 'Arena (de)', () =>
+			expect(sourceDetail({ kind: 'pvp', via: 'arena' })).toBe('PvP vendor · Arena (de)'),
+		);
+	});
+
+	it('marks a Magisters’ Terrace heroic drop with upstream’s Heroic mark after the zone', () => {
+		expect(sourceDetail({ kind: 'raid', zone: 'Magisters’ Terrace', boss: 'Kael’thas Sunstrider', heroic: true })).toBe(
+			'Magisters’ Terrace (H) · Kael’thas Sunstrider',
+		);
+		expect(sourceDetail({ kind: 'raid', zone: 'Magisters’ Terrace', boss: 'Kael’thas Sunstrider' })).toBe('Magisters’ Terrace · Kael’thas Sunstrider');
 	});
 
 	it('names a badge, crafted, world or unrecorded source by its kind alone, as before', () => {
@@ -139,7 +146,7 @@ describe('rowSourceDetail', () => {
 
 	it('names the first source of a row with its detail', () => {
 		expect(rowSourceDetail(tokenOrHyjal)).toBe('Black Temple (N) · The Illidari Council');
-		expect(rowSourceDetail({ source: { kind: 'pvp', via: 'arena', season: 3 } })).toBe('PvP vendor · Arena, season 3');
+		expect(rowSourceDetail({ source: { kind: 'pvp', via: 'arena' } })).toBe('PvP vendor · Arena');
 	});
 
 	// The detail is the shown source's only, so a kept row's cell never names a hidden zone. Each case is a row
@@ -158,9 +165,9 @@ describe('rowSourceDetail', () => {
 
 	// `sortLabelsFor` passes any row it is given, so a row whose every source is hidden still needs a label.
 	it('names the first source when every source of the row is hidden', () => {
-		const pvpOnly = { source: { kind: 'pvp', via: 'arena', season: 3 } } as const;
+		const pvpOnly = { source: { kind: 'pvp', via: 'arena' } } as const;
 		expect(rowSourceDetail(tokenOrHyjal, sourceKeysMatching(tokenOrHyjal))).toBe('Black Temple (N) · The Illidari Council');
-		expect(rowSourceDetail(pvpOnly, sourceKeysMatching(pvpOnly))).toBe('PvP vendor · Arena, season 3');
+		expect(rowSourceDetail(pvpOnly, sourceKeysMatching(pvpOnly))).toBe('PvP vendor · Arena');
 	});
 });
 

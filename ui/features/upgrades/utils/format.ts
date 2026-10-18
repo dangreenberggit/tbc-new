@@ -81,25 +81,25 @@ const joinDetail = (...parts: (string | undefined)[]): string => parts.filter(pa
  */
 const TOKEN_DIFFICULTY = difficultyNames.get(DungeonDifficulty.DifficultyNormal);
 
+/** A Magisters' Terrace heroic drop keys under the zone's row, so its text carries upstream's Heroic mark as upstream's block does. */
+const HEROIC_DIFFICULTY = difficultyNames.get(DungeonDifficulty.DifficultyHeroic);
+
 /**
  * A source as the Source cell's plain text shows it: what the row holds beyond its zone or bucket — a drop's boss, a
- * token's difficulty and boss, a reputation's faction and standing, a PvP item's currency and season.
+ * token's difficulty and boss, a reputation's faction and standing, a PvP item's currency.
  */
 export const sourceDetail = (source: ItemSource): string => {
 	switch (source.kind) {
 		case 'token':
 			return joinDetail(`${source.zone} (${TOKEN_DIFFICULTY})`, source.boss);
 		case 'raid':
-			return joinDetail(source.zone, source.boss);
+			return joinDetail(source.heroic ? `${source.zone} (${HEROIC_DIFFICULTY})` : source.zone, source.boss);
 		case 'heroic':
 			return joinDetail(kindLabel(source.kind), source.dungeon);
 		case 'rep':
 			return joinDetail(source.faction, source.standing);
-		case 'pvp': {
-			const via = i18n.t(`upgrades_tab.source_detail.${source.via}`, { ns: 'upgrades' });
-			const season = typeof source.season === 'number' ? i18n.t('upgrades_tab.source_detail.season', { ns: 'upgrades', n: source.season }) : undefined;
-			return joinDetail(kindLabel(source.kind), season === undefined ? via : `${via}, ${season}`);
-		}
+		case 'pvp':
+			return joinDetail(kindLabel(source.kind), i18n.t(`upgrades_tab.source_detail.${source.via}`, { ns: 'upgrades' }));
 		default:
 			return sourceLabel(source);
 	}

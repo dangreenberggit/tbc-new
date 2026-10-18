@@ -236,7 +236,7 @@ describe('UpgradesResults Filter by source', () => {
 			source: { kind: 'badge', cost: 150 },
 			sources: [
 				{ kind: 'badge', cost: 150 },
-				{ kind: 'raid', zone: 'Black Temple', boss: 'Illidan Stormrage', origin: 'db' },
+				{ kind: 'raid', zone: 'Black Temple', boss: 'Illidan Stormrage' },
 			],
 		};
 		const ranking = { ...RANKING_FIXTURE, items: RANKING_FIXTURE.items.map(row => (row.itemId === badgeOrRaidSword.itemId ? badgeOrRaidSword : row)) };

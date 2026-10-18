@@ -256,8 +256,8 @@ describe('sourceOptions over a view’s rows', () => {
 const twoRaidEdge: RankedItem = {
 	...fixtureRow(1),
 	sources: [
-		{ kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde', origin: 'db' },
-		{ kind: 'raid', zone: 'Black Temple', boss: 'Illidan Stormrage', origin: 'db' },
+		{ kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde' },
+		{ kind: 'raid', zone: 'Black Temple', boss: 'Illidan Stormrage' },
 	],
 };
 const badgeSword: RankedItem = { ...fixtureRow(3), source: { kind: 'badge', cost: 150 } };
@@ -266,7 +266,7 @@ const badgeOrRaidSword: RankedItem = {
 	itemId: 900002,
 	sources: [
 		{ kind: 'badge', cost: 150 },
-		{ kind: 'raid', zone: 'Black Temple', origin: 'db' },
+		{ kind: 'raid', zone: 'Black Temple' },
 	],
 };
 const withRows = (rows: readonly RankedItem[]): Ranking => ({ ...RANKING_FIXTURE, items: [...rows] });
@@ -303,7 +303,7 @@ describe('sourcesView over resultsViewFor', () => {
 	// Review D4 and ticket 647: no row has Zul'Aman first, so only this row's second zone puts it in the dialog.
 	const hyjalOrZulAman: RankedItem = {
 		...twoRaidEdge,
-		sources: [twoRaidEdge.sources![0]!, { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin", origin: 'db' }],
+		sources: [twoRaidEdge.sources![0]!, { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin" }],
 	};
 
 	it('keeps a row from two raids while its second is not hidden, though no row has that raid first', () => {
@@ -357,7 +357,7 @@ describe('sourcesView over resultsViewFor', () => {
 	// Review AD1: a pane whose upgrades all come from hidden sources once said every candidate simmed at or below the worn gear.
 	it('says a pane whose upgrades the filter hid has no row from the shown sources, and keeps its below-cutoff rows', () => {
 		// Helm of the Illidari Shatterer, below the cutoff, made a Zul'Aman drop so it is the one row a shown source keeps.
-		const zulAmanHelm: RankedItem = { ...helm, source: { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin", origin: 'db' } };
+		const zulAmanHelm: RankedItem = { ...helm, source: { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin" } };
 		const everyOtherSource = ['Black Temple', 'Hyjal Summit', "Gruul's Lair", 'Tempest Keep', 'PvP vendor'];
 		const view = bySource(done(replacing(zulAmanHelm)), NO_VIEW_TOGGLES, everyOtherSource);
 		for (const tab of ['head', SHOPPING_LIST_TAB] as const) {

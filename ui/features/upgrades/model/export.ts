@@ -22,10 +22,7 @@ export type ExportPayload = { items: Array<{ id: number }> };
 export function exportIdForRow(row: Pick<RankedItem, 'itemId' | 'source' | 'sources'>, flavour: ExportFlavour): number {
 	if (flavour === 'gear') return row.itemId;
 	for (const source of row.sources ?? [row.source]) {
-		if (source.kind !== 'token') continue;
-		// `ItemSource` has no `tokenId` (`engine/pool.ts`), but the bundled universes carry it on token sources.
-		const tokenId = (source as { tokenId?: number }).tokenId;
-		if (typeof tokenId === 'number') return tokenId;
+		if (source.kind === 'token' && source.tokenId !== undefined) return source.tokenId;
 	}
 	return row.itemId;
 }

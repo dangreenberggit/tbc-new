@@ -108,8 +108,8 @@ describe('ResultRow', () => {
 			source: { oneofKind: 'drop' as const, drop: { zoneId, npcId: 0, difficulty: DungeonDifficulty.DifficultyNormal, otherName: '', category: '' } },
 		});
 		const choker = UIItem.create({ id: 32591, sources: [drop(HYJAL), drop(BLACK_TEMPLE)] });
-		const hyjal = { kind: 'raid', zone: 'Hyjal Summit', origin: 'db' } as const;
-		const row: RankedItem = { ...fixtureRow(0), itemId: 32591, source: hyjal, sources: [hyjal, { kind: 'raid', zone: 'Black Temple', origin: 'db' }] };
+		const hyjal = { kind: 'raid', zone: 'Hyjal Summit' } as const;
+		const row: RankedItem = { ...fixtureRow(0), itemId: 32591, source: hyjal, sources: [hyjal, { kind: 'raid', zone: 'Black Temple' }] };
 		const { sim } = fakeHost({
 			sim: {
 				db: {
@@ -189,7 +189,6 @@ describe('ResultRow', () => {
 		zone: 'Black Temple',
 		boss: 'The Illidari Council',
 		token: 'Leggings of the Forgotten Protector',
-		origin: 'db',
 	} as const;
 
 	it('names a tier token’s boss, a reputation’s standing and a PvP item’s currency in the plain text (ticket 619)', () => {
@@ -199,14 +198,14 @@ describe('ResultRow', () => {
 			return within(tr).getAllByRole('cell')[4]!.querySelector('small')?.textContent;
 		};
 		expect(sourceText(token)).toBe('Black Temple (N) · The Illidari Council');
-		expect(sourceText({ kind: 'rep', faction: 'The Scale of the Sands', standing: 'Revered', origin: 'db' })).toBe('The Scale of the Sands · Revered');
-		expect(sourceText({ kind: 'pvp', via: 'arena', season: 3, origin: 'wowhead' })).toBe('PvP vendor · Arena, season 3');
+		expect(sourceText({ kind: 'rep', faction: 'The Scale of the Sands', standing: 'Revered' })).toBe('The Scale of the Sands · Revered');
+		expect(sourceText({ kind: 'pvp', via: 'arena' })).toBe('PvP vendor · Arena');
 	});
 
 	// The row has a second zone, so "Filter by source" keeps it while Black Temple is hidden; a token row with no other
 	// zone would be cut from the table, and its cell never seen.
 	it('names only the shown zone of a two-zone token row while Filter by source hides the other', () => {
-		const hyjal = { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde', origin: 'db' } as const;
+		const hyjal = { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde' } as const;
 		const row: RankedItem = { ...fixtureRow(0), source: token, sources: [token, hyjal] };
 		const cell = within(renderRow(row, { ...CONTEXT, itemOf: () => undefined, hiddenSources: ['Black Temple'] })).getAllByRole('cell')[4]!;
 		expect(cell.textContent).toBe('Hyjal Summit · Archimonde');

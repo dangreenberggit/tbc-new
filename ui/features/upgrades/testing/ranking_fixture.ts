@@ -2,11 +2,7 @@ import type { ItemSource } from '../model/engine/pool';
 import type { RankedItem, Ranking } from '../model/engine/rank';
 import type { StoppedRanking } from '../model/run_state';
 
-/**
- * A token source as the bundled universes carry it. `ItemSource` has no
- * `tokenId` (`pool.ts`), but the data does, and the export reads it through
- * the same narrowing.
- */
+/** A token source with the token's id, as `utils/item_sources.ts` gives a tier piece from `tier-exchange.json`. */
 const tokenSource = (source: Extract<ItemSource, { kind: 'token' }> & { tokenId: number }): ItemSource => source;
 
 /**
@@ -58,7 +54,7 @@ export const RANKING_FIXTURE: Ranking = {
 			itemId: 32332,
 			name: 'Torch of the Damned',
 			slot: 'weapon',
-			source: { kind: 'raid', zone: 'Black Temple', boss: 'Reliquary of the Lost', origin: 'db' },
+			source: { kind: 'raid', zone: 'Black Temple', boss: 'Reliquary of the Lost' },
 			deltaDps: 45.74542784209225,
 			deltaPct: 2.194905829296202,
 			se: 0.12220576391649256,
@@ -73,7 +69,7 @@ export const RANKING_FIXTURE: Ranking = {
 			itemId: 30902,
 			name: "Cataclysm's Edge",
 			slot: 'weapon',
-			source: { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde', origin: 'db' },
+			source: { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde' },
 			deltaDps: 28.561145667030452,
 			deltaPct: 1.370388868857848,
 			se: 0.1780748095609935,
@@ -86,7 +82,7 @@ export const RANKING_FIXTURE: Ranking = {
 			itemId: 32235,
 			name: 'Cursed Vision of Sargeras',
 			slot: 'head',
-			source: { kind: 'raid', zone: 'Black Temple', boss: 'Illidan Stormrage', origin: 'db' },
+			source: { kind: 'raid', zone: 'Black Temple', boss: 'Illidan Stormrage' },
 			deltaDps: 20.581885779610822,
 			deltaPct: 0.9875369672247059,
 			se: 0.004228411629352429,
@@ -101,7 +97,7 @@ export const RANKING_FIXTURE: Ranking = {
 			itemId: 33688,
 			name: "Vengeful Gladiator's Greatsword",
 			slot: 'weapon',
-			source: { kind: 'pvp', via: 'arena', origin: 'wowhead' },
+			source: { kind: 'pvp', via: 'arena' },
 			deltaDps: 17.052767765586303,
 			deltaPct: 0.8182067834958487,
 			se: 0.16571415224645464,
@@ -119,7 +115,6 @@ export const RANKING_FIXTURE: Ranking = {
 				zone: 'Black Temple',
 				token: 'Chestguard of the Forgotten Conqueror',
 				boss: 'Illidan Stormrage',
-				origin: 'two-hop',
 			},
 			deltaDps: 3.947966739203366,
 			deltaPct: 0.18942691365040817,
@@ -148,7 +143,7 @@ export const RANKING_FIXTURE: Ranking = {
 			itemId: 32373,
 			name: 'Helm of the Illidari Shatterer',
 			slot: 'head',
-			source: { kind: 'raid', zone: 'Black Temple', boss: 'The Illidari Council', origin: 'db' },
+			source: { kind: 'raid', zone: 'Black Temple', boss: 'The Illidari Council' },
 			deltaDps: 2.9135247582489683,
 			deltaPct: 0.13979347832867456,
 			se: 2.1951905927084745,
@@ -163,7 +158,7 @@ export const RANKING_FIXTURE: Ranking = {
 			itemId: 30905,
 			name: 'Midnight Chestguard',
 			slot: 'chest',
-			source: { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde', origin: 'db' },
+			source: { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde' },
 			deltaDps: 3.3196,
 			deltaPct: 0.1593,
 			se: 2.19,
@@ -178,7 +173,7 @@ export const RANKING_FIXTURE: Ranking = {
 			name: 'Dragonspine Trophy',
 			slot: 'trinket',
 			slotChoice: 'trinket1',
-			source: { kind: 'raid', zone: "Gruul's Lair", boss: 'Gruul the Dragonkiller', origin: 'db' },
+			source: { kind: 'raid', zone: "Gruul's Lair", boss: 'Gruul the Dragonkiller' },
 			deltaDps: 5.2,
 			deltaPct: 0.2495,
 			se: 2.2,
@@ -192,7 +187,7 @@ export const RANKING_FIXTURE: Ranking = {
 			itemId: 29993,
 			name: 'Twinblade of the Phoenix',
 			slot: 'weapon',
-			source: { kind: 'raid', zone: 'Tempest Keep', boss: "Kael'thas Sunstrider", origin: 'db' },
+			source: { kind: 'raid', zone: 'Tempest Keep', boss: "Kael'thas Sunstrider" },
 			deltaDps: 4.1671,
 			deltaPct: 0.2,
 			se: 2.2,
@@ -212,17 +207,15 @@ export const RANKING_FIXTURE: Ranking = {
 				token: 'Leggings of the Forgotten Conqueror',
 				boss: 'The Illidari Council',
 				tokenId: 31098,
-				origin: 'two-hop',
 			}),
 			sources: [
-				{ kind: 'raid', zone: 'Black Temple', boss: 'The Illidari Council', origin: 'db' },
+				{ kind: 'raid', zone: 'Black Temple', boss: 'The Illidari Council' },
 				tokenSource({
 					kind: 'token',
 					zone: 'Black Temple',
 					token: 'Leggings of the Forgotten Conqueror',
 					boss: 'The Illidari Council',
 					tokenId: 31098,
-					origin: 'two-hop',
 				}),
 			],
 			deltaDps: 3.62,
@@ -237,7 +230,7 @@ export const RANKING_FIXTURE: Ranking = {
 			itemId: 30989,
 			name: 'Lightbringer Faceguard',
 			slot: 'head',
-			source: { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde', origin: 'db' },
+			source: { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde' },
 			deltaDps: 4.42,
 			deltaPct: 0.2121,
 			se: 2.2,
@@ -265,7 +258,7 @@ const unsimmed = (itemId: number, name: string, slot: RankedItem['slot']): Ranke
 	itemId,
 	name,
 	slot,
-	source: { kind: 'raid', zone: 'Black Temple', origin: 'db' },
+	source: { kind: 'raid', zone: 'Black Temple' },
 	deltaDps: 0,
 	deltaPct: 0,
 	se: 0,

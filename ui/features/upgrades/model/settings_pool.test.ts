@@ -37,13 +37,13 @@ const BT = { kind: 'raid', zone: 'Black Temple' } as const;
 const HYJAL = { kind: 'raid', zone: 'Hyjal Summit' } as const;
 
 // Two raids, an item that drops in both, a zoneless badge item, a crafted item
-// whose recipe has a zone (still filed under Crafted), and a Kael legendary.
+// (filed under Crafted), and a Kael legendary.
 const POOL: PoolEntry[] = [
 	entry(1, BT, { bisTags: ['BiS'] }),
 	entry(2, BT, { sources: [BT, HYJAL] }),
 	entry(3, HYJAL, { bisTags: ['BiS'] }),
 	entry(4, { kind: 'badge', cost: 75 }),
-	entry(5, { kind: 'crafted', profession: 'Blacksmithing', recipeZone: 'Black Temple' }, { bisTags: ['Alt'] }),
+	entry(5, { kind: 'crafted', profession: 'Blacksmithing' }, { bisTags: ['Alt'] }),
 	entry(30318, { kind: 'raid', zone: 'Tempest Keep' }, { phase: 2 }),
 	entry(6, BT, { phase: 4 }),
 ];
