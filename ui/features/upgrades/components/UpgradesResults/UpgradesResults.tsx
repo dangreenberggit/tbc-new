@@ -3,7 +3,7 @@ import { useOptionalSimHost } from '@sim/context/SimHostContext';
 import { memo } from 'react';
 
 import { useResultsView } from '../../hooks/useResultsView';
-import { poolFor, poolSourceFor } from '../../model/data/data';
+import { poolFor } from '../../model/data/data';
 import type { SpecId } from '../../model/engine/types';
 import type { RunState } from '../../model/run_state';
 import type { SetOption } from '../../model/settings_pool';
@@ -65,8 +65,7 @@ export const UpgradesResults = memo(({ run, selectedSets, specId }: UpgradesResu
 				/>
 			);
 			// Checked before any other empty state: with no candidates at this phase, "No upgrades found" would be wrong.
-			const poolMissing =
-				run.status === 'done' && !hasRows && specId !== undefined && host !== null && poolSourceFor(poolFor(host, maxPhase)) === undefined;
+			const poolMissing = run.status === 'done' && !hasRows && specId !== undefined && host !== null && poolFor(host, maxPhase).length === 0;
 			if (poolMissing) {
 				return (
 					<>

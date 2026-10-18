@@ -2,19 +2,17 @@
  * The candidate pool, built at run time from wowsims' own item database and the
  * spec's wowsims preset gear sets (ticket 505, ADR-0038 in the outer repo). No
  * item list is bundled: membership, phase and BiS tags all come from data the
- * page already has. The outer repo's
- * `.scratch/stage-gate/tab-wowsims-items/poolrule/measure_pool_rule.py` applies
- * the same rule over the same db.json, and `pool_source.test.ts` pins its
- * per-cell sizes.
+ * page already has. `pool_source.test.ts` pins the per-cell sizes in
+ * `pool_source.cells.fixture.json`, whose `_comment` says how to re-pin them.
  */
 
 import { ItemQuality, ItemType, type Spec } from '@generated/proto/common';
-import { DungeonDifficulty, type UIItem } from '@generated/proto/ui';
+import type { UIItem } from '@generated/proto/ui';
 import { MISSING_ITEM_EFFECTS } from '@sim/constants/missing_effects_auto_gen';
 import { canEquipItem } from '@sim/proto/items';
 import type { IndividualSimHost } from '@sim/sim_host';
 
-import { type ExchangeIndex, indexExchange, MAGISTERS_TERRACE_ZONE_ID, sourcesOf, type TierExchange } from '../utils/item_sources';
+import { type ExchangeIndex, indexExchange, isHeroicFiveManDrop, sourcesOf, type TierExchange } from '../utils/item_sources';
 import tierExchange from './data/tier-exchange.json';
 import { isKaelTempLegendary } from './engine/kael-temp';
 import type { ItemSlot, ItemSource, PoolEntry } from './engine/pool';
@@ -27,7 +25,7 @@ import type { ItemSlot, ItemSource, PoolEntry } from './engine/pool';
  */
 export type HeroicFiveManPolicy = 'exclude' | 'include' | 'include-unticked';
 
-/** The owner's answer to Q-heroic, 2026-10-18: "Add it, but leave it switched off." */
+/** The owner chose this policy on 2026-10-18 (answer "1" to Q-heroic; ADR-0038 in the outer repo, "Heroic five-man drops"). */
 export const HEROIC_FIVE_MAN: HeroicFiveManPolicy = 'include-unticked';
 
 /** A preset gear set as the pool reads it: its name, its declared phase if any, and its item ids. */
@@ -37,7 +35,8 @@ export type PresetSet = { name: string; phase?: number; itemIds: readonly number
  * The floor every non-preset candidate meets: epic or better, and item level
  * 100 or more unless wowsims records an effect for it. An engineering decision
  * on run cost, not an owner ruling: the tab sims every candidate in a loop, and
- * wowsims' gear picker as is gives about 5.4x today's rows.
+ * wowsims' gear picker as is gives about 5.4 times the rows of the old bundled
+ * lists (ADR-0038, "The pool rule").
  */
 const MIN_QUALITY = ItemQuality.ItemQualityEpic;
 const MIN_ILVL = 100;
@@ -61,8 +60,11 @@ const SLOT_BY_ITEM_TYPE: Partial<Record<ItemType, ItemSlot>> = {
 
 export const poolSlotOf = (item: Pick<UIItem, 'type'>): ItemSlot | undefined => SLOT_BY_ITEM_TYPE[item.type];
 
-/** db.json leaves `phase` out for some items; such an item is in no phase. */
-const phaseOf = (item: Pick<UIItem, 'phase'>): number => item.phase || Infinity;
+/** An item's phase, or undefined where db.json leaves `phase` out (the proto then reads 0). */
+const knownPhase = (item: Pick<UIItem, 'phase'>): number | undefined => item.phase || undefined;
+
+/** For the floor: an item with no phase is in no phase, so it never meets one. */
+const phaseOf = (item: Pick<UIItem, 'phase'>): number => knownPhase(item) ?? Infinity;
 
 /** The base item level, as the gear picker and db.json's `scalingOptions` key 0 give it. */
 const ilvlOf = (item: Pick<UIItem, 'scalingOptions' | 'ilvl'>): number => item.scalingOptions[0]?.ilvl ?? item.ilvl;
@@ -71,7 +73,7 @@ const ilvlOf = (item: Pick<UIItem, 'scalingOptions' | 'ilvl'>): number => item.s
  * "Effect record present": db.json gives the item an `itemEffects` record and
  * wowsims' own missing-effects list does not name it. This is not "simulated":
  * the page cannot see Go's id-keyed registrations, and a few old epics have a
- * record but no registration (plan-review M1). Their records have the same
+ * record but no registration (ADR-0038 lists them). Their records have the same
  * fields as Mark of the Champion's, which is simulated, so no db.json rule
  * tells them apart.
  */
@@ -80,15 +82,7 @@ export const hasEffectRecord = (item: Pick<UIItem, 'id' | 'itemEffects'>, missin
 
 /** Every source is a heroic five-man drop outside Magisters' Terrace. An item with no sources is not. */
 export function isHeroicFiveManOnly(item: Pick<UIItem, 'sources'>): boolean {
-	return (
-		item.sources.length > 0 &&
-		item.sources.every(
-			s =>
-				s.source.oneofKind === 'drop' &&
-				s.source.drop.difficulty === DungeonDifficulty.DifficultyHeroic &&
-				s.source.drop.zoneId !== MAGISTERS_TERRACE_ZONE_ID,
-		)
-	);
+	return item.sources.length > 0 && item.sources.every(s => s.source.oneofKind === 'drop' && isHeroicFiveManDrop(s.source.drop));
 }
 
 /**
@@ -142,7 +136,7 @@ export function selectPool(
 	const byId = new Map(items.map(item => [item.id, item]));
 	const itemPhaseOf = (id: number): number | undefined => {
 		const item = byId.get(id);
-		return item === undefined ? undefined : item.phase;
+		return item === undefined ? undefined : knownPhase(item);
 	};
 	const presetIds = new Set(presets.filter(p => (presetPhase(p, itemPhaseOf) ?? Infinity) <= maxPhase).flatMap(p => p.itemIds));
 	const meetsFloor = (item: UIItem) =>
@@ -193,8 +187,10 @@ export type PoolHost = Pick<IndividualSimHost<Spec>, 'player' | 'sim'>;
 /** The phase of an item as the page's database gives it, for `presetPhase`; undefined before the database has loaded. */
 export const itemPhaseLookup =
 	(host: PoolHost) =>
-	(id: number): number | undefined =>
-		host.sim.db?.getItemById(id)?.phase;
+	(id: number): number | undefined => {
+		const item = host.sim.db?.getItemById(id);
+		return item === undefined ? undefined : knownPhase(item);
+	};
 
 /** The page's pool: its database, its spec's equip rule and its presets. Empty until the sim's database has loaded. */
 export function buildPool(host: PoolHost, presets: readonly PresetSet[], maxPhase: number): PoolEntry[] {

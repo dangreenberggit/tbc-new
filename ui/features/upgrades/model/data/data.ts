@@ -111,8 +111,8 @@ export function poolFor(host: PagePoolHost, maxPhase: ContentPhase): readonly Po
  * assumptions line; `undefined` for an empty pool, which is a phase with
  * nothing to rank rather than a ranking with no upgrades.
  */
-export function poolSourceFor(pool: readonly PoolEntry[]): { file: string; entries: number } | undefined {
-	return pool.length > 0 ? { file: 'wowsims db', entries: pool.length } : undefined;
+export function poolSourceFor(pool: readonly PoolEntry[]): { name: string; entries: number } | undefined {
+	return pool.length > 0 ? { name: 'wowsims db', entries: pool.length } : undefined;
 }
 
 /** Each preset with its phase as the pool reads it: declared, else its newest item's (`presetPhase`). */

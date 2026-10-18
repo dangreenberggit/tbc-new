@@ -74,7 +74,7 @@ const ZONELESS_KEYS = new Set(Object.values(SOURCE_LABELS));
 
 /**
  * Source keys that start unticked wherever a pool offers them: the "Heroic dungeon" bucket under the
- * `include-unticked` policy (`pool_source.ts`; the owner's answer of 2026-10-18, "Add it, but leave it switched off").
+ * `include-unticked` policy (`pool_source.ts` `HEROIC_FIVE_MAN`, which the owner chose on 2026-10-18).
  */
 export const DEFAULT_OFF_SOURCE_KEYS: readonly string[] = HEROIC_FIVE_MAN === 'include-unticked' ? [bucketKeyOf('heroic')] : [];
 

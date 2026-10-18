@@ -139,7 +139,6 @@
 			"owned": "Owned",
 			"not_upgrade": "Not an upgrade",
 			"bis_badge": "BiS",
-			"alt_badge": "Alt",
 			"empty_no_ranking": "No ranking yet",
 			"empty_no_ranking_body": "Click Simulate to start.",
 			"rows_pending": "Rows appear here as their sims finish.",

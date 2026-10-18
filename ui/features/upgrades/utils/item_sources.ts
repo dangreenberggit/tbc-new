@@ -42,6 +42,10 @@ export const indexExchange = (exchange: TierExchange): ExchangeIndex => ({
 /** Magisters' Terrace drops of either difficulty file under its zone row, which starts ticked, so its heroic epics stay in a default run. */
 export const MAGISTERS_TERRACE_ZONE_ID = 4131;
 
+/** A heroic five-man drop: heroic, and not Magisters' Terrace. The pool's heroic policy and the "Heroic dungeon" bucket both read it. */
+export const isHeroicFiveManDrop = (drop: { zoneId: number; difficulty: DungeonDifficulty }): boolean =>
+	drop.difficulty === DungeonDifficulty.DifficultyHeroic && drop.zoneId !== MAGISTERS_TERRACE_ZONE_ID;
+
 /** A drop's boss: the npc's name, cut where upstream's generator overran its AtlasLoot key (ticket 680). */
 const bossOf = (db: SourceDb, npcId: number): string | undefined => {
 	const name = db.getNpc(npcId)?.name;
@@ -58,10 +62,10 @@ function sourceOfEntry(entry: UIItem['sources'][number], db: SourceDb): ItemSour
 			const { zoneId, npcId, difficulty } = source.drop;
 			const zone = db.getZone(zoneId)?.name;
 			if (zone === undefined) return undefined;
+			if (isHeroicFiveManDrop(source.drop)) return { kind: 'heroic', dungeon: zone };
+			// Only a Magisters' Terrace drop is heroic here: it keeps its zone row and is marked heroic.
 			const heroic = difficulty === DungeonDifficulty.DifficultyHeroic;
-			if (zoneId === MAGISTERS_TERRACE_ZONE_ID) return withBoss({ kind: 'raid' as const, zone, ...(heroic ? { heroic: true } : {}) }, bossOf(db, npcId));
-			if (heroic) return { kind: 'heroic', dungeon: zone };
-			return withBoss({ kind: 'raid' as const, zone }, bossOf(db, npcId));
+			return withBoss({ kind: 'raid' as const, zone, ...(heroic ? { heroic: true } : {}) }, bossOf(db, npcId));
 		}
 		case 'crafted': {
 			const profession = professionNames.get(source.crafted.profession);

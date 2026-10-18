@@ -504,9 +504,6 @@
 						"bis_badge": {
 							"type": "string"
 						},
-						"alt_badge": {
-							"type": "string"
-						},
 						"empty_no_ranking": {
 							"type": "string"
 						},
@@ -566,7 +563,6 @@
 						"owned",
 						"not_upgrade",
 						"bis_badge",
-						"alt_badge",
 						"empty_no_ranking",
 						"empty_no_ranking_body",
 						"rows_pending",

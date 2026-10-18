@@ -30,7 +30,7 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
 		const page = host?.sim.db ? host : undefined;
 		const pool = page ? poolFor(page, maxPhase) : undefined;
 		const poolSource = pool && poolSourceFor(pool);
-		if (poolSource) lines.push(`pool source: ${poolSource.file} (${poolSource.entries} entries)`);
+		if (poolSource) lines.push(`pool source: ${poolSource.name} (${poolSource.entries} entries)`);
 		const ep = epWeightsDisclosureFor(specId, maxPhase);
 		if (ep) lines.push(`EP weights: written for ${ep.from}, ranking ${ep.requested}`);
 		const tags = page && bisTagPhaseFor(page, page.individualConfig.presets.gear, maxPhase);
