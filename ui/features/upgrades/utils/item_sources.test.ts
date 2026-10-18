@@ -17,6 +17,12 @@ describe('sourcesOf over the fork db.json and tier-exchange.json', () => {
 		]);
 	});
 
+	it('gives a tank or healer tier piece its token too (ticket 688)', () => {
+		expect(sourcesOfId(29066)).toEqual([
+			{ kind: 'token', zone: "Magtheridon's Lair", boss: 'Magtheridon', token: 'Chestguard of the Fallen Champion', tokenId: 29754 },
+		]);
+	});
+
 	it('gives a Sunmote upgrade its base item as the token, at the base item’s drop', () => {
 		expect(sourcesOfId(34386)).toEqual([{ kind: 'token', zone: 'Sunwell Plateau', boss: 'Kalecgos', token: 'Sunmote + Pantaloons of Calming Strife' }]);
 	});

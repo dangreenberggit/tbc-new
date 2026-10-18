@@ -38,6 +38,41 @@
       "boss": "The Curator"
     },
     {
+      "pieceId": 29011,
+      "tokenId": 29761,
+      "tokenName": "Helm of the Fallen Defender",
+      "zone": "Karazhan",
+      "boss": "Prince Malchezaar"
+    },
+    {
+      "pieceId": 29012,
+      "tokenId": 29753,
+      "tokenName": "Chestguard of the Fallen Defender",
+      "zone": "Magtheridon's Lair",
+      "boss": "Magtheridon"
+    },
+    {
+      "pieceId": 29015,
+      "tokenId": 29767,
+      "tokenName": "Leggings of the Fallen Defender",
+      "zone": "Gruul's Lair",
+      "boss": "Gruul the Dragonkiller"
+    },
+    {
+      "pieceId": 29016,
+      "tokenId": 29764,
+      "tokenName": "Pauldrons of the Fallen Defender",
+      "zone": "Gruul's Lair",
+      "boss": "High King Maulgar"
+    },
+    {
+      "pieceId": 29017,
+      "tokenId": 29758,
+      "tokenName": "Gloves of the Fallen Defender",
+      "zone": "Karazhan",
+      "boss": "The Curator"
+    },
+    {
       "pieceId": 29019,
       "tokenId": 29753,
       "tokenName": "Chestguard of the Fallen Defender",
@@ -71,6 +106,41 @@
       "tokenName": "Pauldrons of the Fallen Defender",
       "zone": "Gruul's Lair",
       "boss": "High King Maulgar"
+    },
+    {
+      "pieceId": 29028,
+      "tokenId": 29760,
+      "tokenName": "Helm of the Fallen Champion",
+      "zone": "Karazhan",
+      "boss": "Prince Malchezaar"
+    },
+    {
+      "pieceId": 29029,
+      "tokenId": 29754,
+      "tokenName": "Chestguard of the Fallen Champion",
+      "zone": "Magtheridon's Lair",
+      "boss": "Magtheridon"
+    },
+    {
+      "pieceId": 29030,
+      "tokenId": 29766,
+      "tokenName": "Leggings of the Fallen Champion",
+      "zone": "Gruul's Lair",
+      "boss": "Gruul the Dragonkiller"
+    },
+    {
+      "pieceId": 29031,
+      "tokenId": 29763,
+      "tokenName": "Pauldrons of the Fallen Champion",
+      "zone": "Gruul's Lair",
+      "boss": "High King Maulgar"
+    },
+    {
+      "pieceId": 29032,
+      "tokenId": 29757,
+      "tokenName": "Gloves of the Fallen Champion",
+      "zone": "Karazhan",
+      "boss": "The Curator"
     },
     {
       "pieceId": 29033,
@@ -178,6 +248,41 @@
       "boss": "The Curator"
     },
     {
+      "pieceId": 29049,
+      "tokenId": 29761,
+      "tokenName": "Helm of the Fallen Defender",
+      "zone": "Karazhan",
+      "boss": "Prince Malchezaar"
+    },
+    {
+      "pieceId": 29050,
+      "tokenId": 29753,
+      "tokenName": "Chestguard of the Fallen Defender",
+      "zone": "Magtheridon's Lair",
+      "boss": "Magtheridon"
+    },
+    {
+      "pieceId": 29053,
+      "tokenId": 29767,
+      "tokenName": "Leggings of the Fallen Defender",
+      "zone": "Gruul's Lair",
+      "boss": "Gruul the Dragonkiller"
+    },
+    {
+      "pieceId": 29054,
+      "tokenId": 29764,
+      "tokenName": "Pauldrons of the Fallen Defender",
+      "zone": "Gruul's Lair",
+      "boss": "High King Maulgar"
+    },
+    {
+      "pieceId": 29055,
+      "tokenId": 29758,
+      "tokenName": "Gloves of the Fallen Defender",
+      "zone": "Karazhan",
+      "boss": "The Curator"
+    },
+    {
       "pieceId": 29056,
       "tokenId": 29753,
       "tokenName": "Chestguard of the Fallen Defender",
@@ -209,6 +314,76 @@
       "pieceId": 29060,
       "tokenId": 29764,
       "tokenName": "Pauldrons of the Fallen Defender",
+      "zone": "Gruul's Lair",
+      "boss": "High King Maulgar"
+    },
+    {
+      "pieceId": 29061,
+      "tokenId": 29760,
+      "tokenName": "Helm of the Fallen Champion",
+      "zone": "Karazhan",
+      "boss": "Prince Malchezaar"
+    },
+    {
+      "pieceId": 29062,
+      "tokenId": 29754,
+      "tokenName": "Chestguard of the Fallen Champion",
+      "zone": "Magtheridon's Lair",
+      "boss": "Magtheridon"
+    },
+    {
+      "pieceId": 29063,
+      "tokenId": 29766,
+      "tokenName": "Leggings of the Fallen Champion",
+      "zone": "Gruul's Lair",
+      "boss": "Gruul the Dragonkiller"
+    },
+    {
+      "pieceId": 29064,
+      "tokenId": 29763,
+      "tokenName": "Pauldrons of the Fallen Champion",
+      "zone": "Gruul's Lair",
+      "boss": "High King Maulgar"
+    },
+    {
+      "pieceId": 29065,
+      "tokenId": 29757,
+      "tokenName": "Gloves of the Fallen Champion",
+      "zone": "Karazhan",
+      "boss": "The Curator"
+    },
+    {
+      "pieceId": 29066,
+      "tokenId": 29754,
+      "tokenName": "Chestguard of the Fallen Champion",
+      "zone": "Magtheridon's Lair",
+      "boss": "Magtheridon"
+    },
+    {
+      "pieceId": 29067,
+      "tokenId": 29757,
+      "tokenName": "Gloves of the Fallen Champion",
+      "zone": "Karazhan",
+      "boss": "The Curator"
+    },
+    {
+      "pieceId": 29068,
+      "tokenId": 29760,
+      "tokenName": "Helm of the Fallen Champion",
+      "zone": "Karazhan",
+      "boss": "Prince Malchezaar"
+    },
+    {
+      "pieceId": 29069,
+      "tokenId": 29766,
+      "tokenName": "Leggings of the Fallen Champion",
+      "zone": "Gruul's Lair",
+      "boss": "Gruul the Dragonkiller"
+    },
+    {
+      "pieceId": 29070,
+      "tokenId": 29763,
+      "tokenName": "Pauldrons of the Fallen Champion",
       "zone": "Gruul's Lair",
       "boss": "High King Maulgar"
     },
@@ -318,6 +493,41 @@
       "boss": "The Curator"
     },
     {
+      "pieceId": 29086,
+      "tokenId": 29761,
+      "tokenName": "Helm of the Fallen Defender",
+      "zone": "Karazhan",
+      "boss": "Prince Malchezaar"
+    },
+    {
+      "pieceId": 29087,
+      "tokenId": 29753,
+      "tokenName": "Chestguard of the Fallen Defender",
+      "zone": "Magtheridon's Lair",
+      "boss": "Magtheridon"
+    },
+    {
+      "pieceId": 29088,
+      "tokenId": 29767,
+      "tokenName": "Leggings of the Fallen Defender",
+      "zone": "Gruul's Lair",
+      "boss": "Gruul the Dragonkiller"
+    },
+    {
+      "pieceId": 29089,
+      "tokenId": 29764,
+      "tokenName": "Pauldrons of the Fallen Defender",
+      "zone": "Gruul's Lair",
+      "boss": "High King Maulgar"
+    },
+    {
+      "pieceId": 29090,
+      "tokenId": 29758,
+      "tokenName": "Gloves of the Fallen Defender",
+      "zone": "Karazhan",
+      "boss": "The Curator"
+    },
+    {
       "pieceId": 29091,
       "tokenId": 29753,
       "tokenName": "Chestguard of the Fallen Defender",
@@ -388,6 +598,41 @@
       "boss": "High King Maulgar"
     },
     {
+      "pieceId": 30113,
+      "tokenId": 30237,
+      "tokenName": "Chestguard of the Vanquished Defender",
+      "zone": "Tempest Keep",
+      "boss": "Kael'thas Sunstrider"
+    },
+    {
+      "pieceId": 30114,
+      "tokenId": 30240,
+      "tokenName": "Gloves of the Vanquished Defender",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Leotheras the Blind"
+    },
+    {
+      "pieceId": 30115,
+      "tokenId": 30243,
+      "tokenName": "Helm of the Vanquished Defender",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Lady Vashj"
+    },
+    {
+      "pieceId": 30116,
+      "tokenId": 30246,
+      "tokenName": "Leggings of the Vanquished Defender",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Fathom-Lord Karathress"
+    },
+    {
+      "pieceId": 30117,
+      "tokenId": 30249,
+      "tokenName": "Pauldrons of the Vanquished Defender",
+      "zone": "Tempest Keep",
+      "boss": "Void Reaver"
+    },
+    {
       "pieceId": 30118,
       "tokenId": 30237,
       "tokenName": "Chestguard of the Vanquished Defender",
@@ -423,6 +668,41 @@
       "boss": "Void Reaver"
     },
     {
+      "pieceId": 30123,
+      "tokenId": 30236,
+      "tokenName": "Chestguard of the Vanquished Champion",
+      "zone": "Tempest Keep",
+      "boss": "Kael'thas Sunstrider"
+    },
+    {
+      "pieceId": 30124,
+      "tokenId": 30239,
+      "tokenName": "Gloves of the Vanquished Champion",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Leotheras the Blind"
+    },
+    {
+      "pieceId": 30125,
+      "tokenId": 30242,
+      "tokenName": "Helm of the Vanquished Champion",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Lady Vashj"
+    },
+    {
+      "pieceId": 30126,
+      "tokenId": 30245,
+      "tokenName": "Leggings of the Vanquished Champion",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Fathom-Lord Karathress"
+    },
+    {
+      "pieceId": 30127,
+      "tokenId": 30248,
+      "tokenName": "Pauldrons of the Vanquished Champion",
+      "zone": "Tempest Keep",
+      "boss": "Void Reaver"
+    },
+    {
       "pieceId": 30129,
       "tokenId": 30236,
       "tokenName": "Chestguard of the Vanquished Champion",
@@ -452,6 +732,41 @@
     },
     {
       "pieceId": 30133,
+      "tokenId": 30248,
+      "tokenName": "Pauldrons of the Vanquished Champion",
+      "zone": "Tempest Keep",
+      "boss": "Void Reaver"
+    },
+    {
+      "pieceId": 30134,
+      "tokenId": 30236,
+      "tokenName": "Chestguard of the Vanquished Champion",
+      "zone": "Tempest Keep",
+      "boss": "Kael'thas Sunstrider"
+    },
+    {
+      "pieceId": 30135,
+      "tokenId": 30239,
+      "tokenName": "Gloves of the Vanquished Champion",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Leotheras the Blind"
+    },
+    {
+      "pieceId": 30136,
+      "tokenId": 30242,
+      "tokenName": "Helm of the Vanquished Champion",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Lady Vashj"
+    },
+    {
+      "pieceId": 30137,
+      "tokenId": 30245,
+      "tokenName": "Leggings of the Vanquished Champion",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Fathom-Lord Karathress"
+    },
+    {
+      "pieceId": 30138,
       "tokenId": 30248,
       "tokenName": "Pauldrons of the Vanquished Champion",
       "zone": "Tempest Keep",
@@ -528,6 +843,41 @@
       "boss": "Void Reaver"
     },
     {
+      "pieceId": 30150,
+      "tokenId": 30237,
+      "tokenName": "Chestguard of the Vanquished Defender",
+      "zone": "Tempest Keep",
+      "boss": "Kael'thas Sunstrider"
+    },
+    {
+      "pieceId": 30151,
+      "tokenId": 30240,
+      "tokenName": "Gloves of the Vanquished Defender",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Leotheras the Blind"
+    },
+    {
+      "pieceId": 30152,
+      "tokenId": 30243,
+      "tokenName": "Helm of the Vanquished Defender",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Lady Vashj"
+    },
+    {
+      "pieceId": 30153,
+      "tokenId": 30246,
+      "tokenName": "Leggings of the Vanquished Defender",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Fathom-Lord Karathress"
+    },
+    {
+      "pieceId": 30154,
+      "tokenId": 30249,
+      "tokenName": "Pauldrons of the Vanquished Defender",
+      "zone": "Tempest Keep",
+      "boss": "Void Reaver"
+    },
+    {
       "pieceId": 30159,
       "tokenId": 30237,
       "tokenName": "Chestguard of the Vanquished Defender",
@@ -559,6 +909,41 @@
       "pieceId": 30163,
       "tokenId": 30249,
       "tokenName": "Pauldrons of the Vanquished Defender",
+      "zone": "Tempest Keep",
+      "boss": "Void Reaver"
+    },
+    {
+      "pieceId": 30164,
+      "tokenId": 30236,
+      "tokenName": "Chestguard of the Vanquished Champion",
+      "zone": "Tempest Keep",
+      "boss": "Kael'thas Sunstrider"
+    },
+    {
+      "pieceId": 30165,
+      "tokenId": 30239,
+      "tokenName": "Gloves of the Vanquished Champion",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Leotheras the Blind"
+    },
+    {
+      "pieceId": 30166,
+      "tokenId": 30242,
+      "tokenName": "Helm of the Vanquished Champion",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Lady Vashj"
+    },
+    {
+      "pieceId": 30167,
+      "tokenId": 30245,
+      "tokenName": "Leggings of the Vanquished Champion",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Fathom-Lord Karathress"
+    },
+    {
+      "pieceId": 30168,
+      "tokenId": 30248,
+      "tokenName": "Pauldrons of the Vanquished Champion",
       "zone": "Tempest Keep",
       "boss": "Void Reaver"
     },
@@ -703,6 +1088,41 @@
       "boss": "Void Reaver"
     },
     {
+      "pieceId": 30216,
+      "tokenId": 30237,
+      "tokenName": "Chestguard of the Vanquished Defender",
+      "zone": "Tempest Keep",
+      "boss": "Kael'thas Sunstrider"
+    },
+    {
+      "pieceId": 30217,
+      "tokenId": 30240,
+      "tokenName": "Gloves of the Vanquished Defender",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Leotheras the Blind"
+    },
+    {
+      "pieceId": 30219,
+      "tokenId": 30243,
+      "tokenName": "Helm of the Vanquished Defender",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Lady Vashj"
+    },
+    {
+      "pieceId": 30220,
+      "tokenId": 30246,
+      "tokenName": "Leggings of the Vanquished Defender",
+      "zone": "Serpentshrine Cavern",
+      "boss": "Fathom-Lord Karathress"
+    },
+    {
+      "pieceId": 30221,
+      "tokenId": 30249,
+      "tokenName": "Pauldrons of the Vanquished Defender",
+      "zone": "Tempest Keep",
+      "boss": "Void Reaver"
+    },
+    {
       "pieceId": 30222,
       "tokenId": 30237,
       "tokenName": "Chestguard of the Vanquished Defender",
@@ -780,7 +1200,21 @@
       "boss": "Azgalor"
     },
     {
+      "pieceId": 30970,
+      "tokenId": 31094,
+      "tokenName": "Gloves of the Forgotten Protector",
+      "zone": "Hyjal Summit",
+      "boss": "Azgalor"
+    },
+    {
       "pieceId": 30972,
+      "tokenId": 31095,
+      "tokenName": "Helm of the Forgotten Protector",
+      "zone": "Hyjal Summit",
+      "boss": "Archimonde"
+    },
+    {
+      "pieceId": 30974,
       "tokenId": 31095,
       "tokenName": "Helm of the Forgotten Protector",
       "zone": "Hyjal Summit",
@@ -794,7 +1228,21 @@
       "boss": "Illidan Stormrage"
     },
     {
+      "pieceId": 30976,
+      "tokenId": 31091,
+      "tokenName": "Chestguard of the Forgotten Protector",
+      "zone": "Black Temple",
+      "boss": "Illidan Stormrage"
+    },
+    {
       "pieceId": 30977,
+      "tokenId": 31100,
+      "tokenName": "Leggings of the Forgotten Protector",
+      "zone": "Black Temple",
+      "boss": "The Illidari Council"
+    },
+    {
+      "pieceId": 30978,
       "tokenId": 31100,
       "tokenName": "Leggings of the Forgotten Protector",
       "zone": "Black Temple",
@@ -808,11 +1256,46 @@
       "boss": "Mother Shahraz"
     },
     {
+      "pieceId": 30980,
+      "tokenId": 31103,
+      "tokenName": "Pauldrons of the Forgotten Protector",
+      "zone": "Black Temple",
+      "boss": "Mother Shahraz"
+    },
+    {
       "pieceId": 30982,
       "tokenId": 31092,
       "tokenName": "Gloves of the Forgotten Conqueror",
       "zone": "Hyjal Summit",
       "boss": "Azgalor"
+    },
+    {
+      "pieceId": 30983,
+      "tokenId": 31092,
+      "tokenName": "Gloves of the Forgotten Conqueror",
+      "zone": "Hyjal Summit",
+      "boss": "Azgalor"
+    },
+    {
+      "pieceId": 30985,
+      "tokenId": 31092,
+      "tokenName": "Gloves of the Forgotten Conqueror",
+      "zone": "Hyjal Summit",
+      "boss": "Azgalor"
+    },
+    {
+      "pieceId": 30987,
+      "tokenId": 31097,
+      "tokenName": "Helm of the Forgotten Conqueror",
+      "zone": "Hyjal Summit",
+      "boss": "Archimonde"
+    },
+    {
+      "pieceId": 30988,
+      "tokenId": 31097,
+      "tokenName": "Helm of the Forgotten Conqueror",
+      "zone": "Hyjal Summit",
+      "boss": "Archimonde"
     },
     {
       "pieceId": 30989,
@@ -829,6 +1312,20 @@
       "boss": "Illidan Stormrage"
     },
     {
+      "pieceId": 30991,
+      "tokenId": 31089,
+      "tokenName": "Chestguard of the Forgotten Conqueror",
+      "zone": "Black Temple",
+      "boss": "Illidan Stormrage"
+    },
+    {
+      "pieceId": 30992,
+      "tokenId": 31089,
+      "tokenName": "Chestguard of the Forgotten Conqueror",
+      "zone": "Black Temple",
+      "boss": "Illidan Stormrage"
+    },
+    {
       "pieceId": 30993,
       "tokenId": 31098,
       "tokenName": "Leggings of the Forgotten Conqueror",
@@ -836,7 +1333,35 @@
       "boss": "The Illidari Council"
     },
     {
+      "pieceId": 30994,
+      "tokenId": 31098,
+      "tokenName": "Leggings of the Forgotten Conqueror",
+      "zone": "Black Temple",
+      "boss": "The Illidari Council"
+    },
+    {
+      "pieceId": 30995,
+      "tokenId": 31098,
+      "tokenName": "Leggings of the Forgotten Conqueror",
+      "zone": "Black Temple",
+      "boss": "The Illidari Council"
+    },
+    {
+      "pieceId": 30996,
+      "tokenId": 31101,
+      "tokenName": "Pauldrons of the Forgotten Conqueror",
+      "zone": "Black Temple",
+      "boss": "Mother Shahraz"
+    },
+    {
       "pieceId": 30997,
+      "tokenId": 31101,
+      "tokenName": "Pauldrons of the Forgotten Conqueror",
+      "zone": "Black Temple",
+      "boss": "Mother Shahraz"
+    },
+    {
+      "pieceId": 30998,
       "tokenId": 31101,
       "tokenName": "Pauldrons of the Forgotten Conqueror",
       "zone": "Black Temple",
@@ -878,6 +1403,13 @@
       "boss": "Mother Shahraz"
     },
     {
+      "pieceId": 31007,
+      "tokenId": 31094,
+      "tokenName": "Gloves of the Forgotten Protector",
+      "zone": "Hyjal Summit",
+      "boss": "Azgalor"
+    },
+    {
       "pieceId": 31008,
       "tokenId": 31094,
       "tokenName": "Gloves of the Forgotten Protector",
@@ -890,6 +1422,13 @@
       "tokenName": "Gloves of the Forgotten Protector",
       "zone": "Hyjal Summit",
       "boss": "Azgalor"
+    },
+    {
+      "pieceId": 31012,
+      "tokenId": 31095,
+      "tokenName": "Helm of the Forgotten Protector",
+      "zone": "Hyjal Summit",
+      "boss": "Archimonde"
     },
     {
       "pieceId": 31014,
@@ -906,6 +1445,13 @@
       "boss": "Archimonde"
     },
     {
+      "pieceId": 31016,
+      "tokenId": 31091,
+      "tokenName": "Chestguard of the Forgotten Protector",
+      "zone": "Black Temple",
+      "boss": "Illidan Stormrage"
+    },
+    {
       "pieceId": 31017,
       "tokenId": 31091,
       "tokenName": "Chestguard of the Forgotten Protector",
@@ -920,6 +1466,13 @@
       "boss": "Illidan Stormrage"
     },
     {
+      "pieceId": 31019,
+      "tokenId": 31100,
+      "tokenName": "Leggings of the Forgotten Protector",
+      "zone": "Black Temple",
+      "boss": "The Illidari Council"
+    },
+    {
       "pieceId": 31020,
       "tokenId": 31100,
       "tokenName": "Leggings of the Forgotten Protector",
@@ -932,6 +1485,13 @@
       "tokenName": "Leggings of the Forgotten Protector",
       "zone": "Black Temple",
       "boss": "The Illidari Council"
+    },
+    {
+      "pieceId": 31022,
+      "tokenId": 31103,
+      "tokenName": "Pauldrons of the Forgotten Protector",
+      "zone": "Black Temple",
+      "boss": "Mother Shahraz"
     },
     {
       "pieceId": 31023,
@@ -983,6 +1543,13 @@
       "boss": "Mother Shahraz"
     },
     {
+      "pieceId": 31032,
+      "tokenId": 31093,
+      "tokenName": "Gloves of the Forgotten Vanquisher",
+      "zone": "Hyjal Summit",
+      "boss": "Azgalor"
+    },
+    {
       "pieceId": 31034,
       "tokenId": 31093,
       "tokenName": "Gloves of the Forgotten Vanquisher",
@@ -997,6 +1564,13 @@
       "boss": "Azgalor"
     },
     {
+      "pieceId": 31037,
+      "tokenId": 31096,
+      "tokenName": "Helm of the Forgotten Vanquisher",
+      "zone": "Hyjal Summit",
+      "boss": "Archimonde"
+    },
+    {
       "pieceId": 31039,
       "tokenId": 31096,
       "tokenName": "Helm of the Forgotten Vanquisher",
@@ -1009,6 +1583,13 @@
       "tokenName": "Helm of the Forgotten Vanquisher",
       "zone": "Hyjal Summit",
       "boss": "Archimonde"
+    },
+    {
+      "pieceId": 31041,
+      "tokenId": 31090,
+      "tokenName": "Chestguard of the Forgotten Vanquisher",
+      "zone": "Black Temple",
+      "boss": "Illidan Stormrage"
     },
     {
       "pieceId": 31042,
@@ -1032,11 +1613,25 @@
       "boss": "The Illidari Council"
     },
     {
+      "pieceId": 31045,
+      "tokenId": 31099,
+      "tokenName": "Leggings of the Forgotten Vanquisher",
+      "zone": "Black Temple",
+      "boss": "The Illidari Council"
+    },
+    {
       "pieceId": 31046,
       "tokenId": 31099,
       "tokenName": "Leggings of the Forgotten Vanquisher",
       "zone": "Black Temple",
       "boss": "The Illidari Council"
+    },
+    {
+      "pieceId": 31047,
+      "tokenId": 31102,
+      "tokenName": "Pauldrons of the Forgotten Vanquisher",
+      "zone": "Black Temple",
+      "boss": "Mother Shahraz"
     },
     {
       "pieceId": 31048,
@@ -1123,11 +1718,25 @@
       "boss": "Mother Shahraz"
     },
     {
+      "pieceId": 31060,
+      "tokenId": 31092,
+      "tokenName": "Gloves of the Forgotten Conqueror",
+      "zone": "Hyjal Summit",
+      "boss": "Azgalor"
+    },
+    {
       "pieceId": 31061,
       "tokenId": 31092,
       "tokenName": "Gloves of the Forgotten Conqueror",
       "zone": "Hyjal Summit",
       "boss": "Azgalor"
+    },
+    {
+      "pieceId": 31063,
+      "tokenId": 31097,
+      "tokenName": "Helm of the Forgotten Conqueror",
+      "zone": "Hyjal Summit",
+      "boss": "Archimonde"
     },
     {
       "pieceId": 31064,
@@ -1144,11 +1753,32 @@
       "boss": "Illidan Stormrage"
     },
     {
+      "pieceId": 31066,
+      "tokenId": 31089,
+      "tokenName": "Chestguard of the Forgotten Conqueror",
+      "zone": "Black Temple",
+      "boss": "Illidan Stormrage"
+    },
+    {
       "pieceId": 31067,
       "tokenId": 31098,
       "tokenName": "Leggings of the Forgotten Conqueror",
       "zone": "Black Temple",
       "boss": "The Illidari Council"
+    },
+    {
+      "pieceId": 31068,
+      "tokenId": 31098,
+      "tokenName": "Leggings of the Forgotten Conqueror",
+      "zone": "Black Temple",
+      "boss": "The Illidari Council"
+    },
+    {
+      "pieceId": 31069,
+      "tokenId": 31101,
+      "tokenName": "Pauldrons of the Forgotten Conqueror",
+      "zone": "Black Temple",
+      "boss": "Mother Shahraz"
     },
     {
       "pieceId": 31070,
@@ -1165,7 +1795,28 @@
       "boss": "Kalecgos"
     },
     {
+      "pieceId": 34432,
+      "tokenId": 34848,
+      "tokenName": "Bracers of the Forgotten Conqueror",
+      "zone": "Sunwell Plateau",
+      "boss": "Kalecgos"
+    },
+    {
+      "pieceId": 34433,
+      "tokenId": 34848,
+      "tokenName": "Bracers of the Forgotten Conqueror",
+      "zone": "Sunwell Plateau",
+      "boss": "Kalecgos"
+    },
+    {
       "pieceId": 34434,
+      "tokenId": 34848,
+      "tokenName": "Bracers of the Forgotten Conqueror",
+      "zone": "Sunwell Plateau",
+      "boss": "Kalecgos"
+    },
+    {
+      "pieceId": 34435,
       "tokenId": 34848,
       "tokenName": "Bracers of the Forgotten Conqueror",
       "zone": "Sunwell Plateau",
@@ -1186,6 +1837,13 @@
       "boss": "Kalecgos"
     },
     {
+      "pieceId": 34438,
+      "tokenId": 34851,
+      "tokenName": "Bracers of the Forgotten Protector",
+      "zone": "Sunwell Plateau",
+      "boss": "Kalecgos"
+    },
+    {
       "pieceId": 34439,
       "tokenId": 34851,
       "tokenName": "Bracers of the Forgotten Protector",
@@ -1200,6 +1858,13 @@
       "boss": "Kalecgos"
     },
     {
+      "pieceId": 34442,
+      "tokenId": 34851,
+      "tokenName": "Bracers of the Forgotten Protector",
+      "zone": "Sunwell Plateau",
+      "boss": "Kalecgos"
+    },
+    {
       "pieceId": 34443,
       "tokenId": 34851,
       "tokenName": "Bracers of the Forgotten Protector",
@@ -1208,6 +1873,13 @@
     },
     {
       "pieceId": 34444,
+      "tokenId": 34852,
+      "tokenName": "Bracers of the Forgotten Vanquisher",
+      "zone": "Sunwell Plateau",
+      "boss": "Kalecgos"
+    },
+    {
+      "pieceId": 34445,
       "tokenId": 34852,
       "tokenName": "Bracers of the Forgotten Vanquisher",
       "zone": "Sunwell Plateau",
@@ -1242,6 +1914,27 @@
       "boss": "Brutallus"
     },
     {
+      "pieceId": 34487,
+      "tokenId": 34853,
+      "tokenName": "Belt of the Forgotten Conqueror",
+      "zone": "Sunwell Plateau",
+      "boss": "Brutallus"
+    },
+    {
+      "pieceId": 34488,
+      "tokenId": 34853,
+      "tokenName": "Belt of the Forgotten Conqueror",
+      "zone": "Sunwell Plateau",
+      "boss": "Brutallus"
+    },
+    {
+      "pieceId": 34527,
+      "tokenId": 34853,
+      "tokenName": "Belt of the Forgotten Conqueror",
+      "zone": "Sunwell Plateau",
+      "boss": "Brutallus"
+    },
+    {
       "pieceId": 34528,
       "tokenId": 34853,
       "tokenName": "Belt of the Forgotten Conqueror",
@@ -1263,6 +1956,13 @@
       "boss": "Brutallus"
     },
     {
+      "pieceId": 34543,
+      "tokenId": 34854,
+      "tokenName": "Belt of the Forgotten Protector",
+      "zone": "Sunwell Plateau",
+      "boss": "Brutallus"
+    },
+    {
       "pieceId": 34545,
       "tokenId": 34854,
       "tokenName": "Belt of the Forgotten Protector",
@@ -1277,9 +1977,23 @@
       "boss": "Brutallus"
     },
     {
+      "pieceId": 34547,
+      "tokenId": 34854,
+      "tokenName": "Belt of the Forgotten Protector",
+      "zone": "Sunwell Plateau",
+      "boss": "Brutallus"
+    },
+    {
       "pieceId": 34549,
       "tokenId": 34854,
       "tokenName": "Belt of the Forgotten Protector",
+      "zone": "Sunwell Plateau",
+      "boss": "Brutallus"
+    },
+    {
+      "pieceId": 34554,
+      "tokenId": 34855,
+      "tokenName": "Belt of the Forgotten Vanquisher",
       "zone": "Sunwell Plateau",
       "boss": "Brutallus"
     },
@@ -1312,7 +2026,28 @@
       "boss": "Brutallus"
     },
     {
+      "pieceId": 34559,
+      "tokenId": 34856,
+      "tokenName": "Boots of the Forgotten Conqueror",
+      "zone": "Sunwell Plateau",
+      "boss": "Felmyst"
+    },
+    {
+      "pieceId": 34560,
+      "tokenId": 34856,
+      "tokenName": "Boots of the Forgotten Conqueror",
+      "zone": "Sunwell Plateau",
+      "boss": "Felmyst"
+    },
+    {
       "pieceId": 34561,
+      "tokenId": 34856,
+      "tokenName": "Boots of the Forgotten Conqueror",
+      "zone": "Sunwell Plateau",
+      "boss": "Felmyst"
+    },
+    {
+      "pieceId": 34562,
       "tokenId": 34856,
       "tokenName": "Boots of the Forgotten Conqueror",
       "zone": "Sunwell Plateau",
@@ -1333,6 +2068,13 @@
       "boss": "Felmyst"
     },
     {
+      "pieceId": 34565,
+      "tokenId": 34857,
+      "tokenName": "Boots of the Forgotten Protector",
+      "zone": "Sunwell Plateau",
+      "boss": "Felmyst"
+    },
+    {
       "pieceId": 34566,
       "tokenId": 34857,
       "tokenName": "Boots of the Forgotten Protector",
@@ -1341,6 +2083,13 @@
     },
     {
       "pieceId": 34567,
+      "tokenId": 34857,
+      "tokenName": "Boots of the Forgotten Protector",
+      "zone": "Sunwell Plateau",
+      "boss": "Felmyst"
+    },
+    {
+      "pieceId": 34568,
       "tokenId": 34857,
       "tokenName": "Boots of the Forgotten Protector",
       "zone": "Sunwell Plateau",
@@ -1357,6 +2106,13 @@
       "pieceId": 34570,
       "tokenId": 34857,
       "tokenName": "Boots of the Forgotten Protector",
+      "zone": "Sunwell Plateau",
+      "boss": "Felmyst"
+    },
+    {
+      "pieceId": 34571,
+      "tokenId": 34858,
+      "tokenName": "Boots of the Forgotten Vanquisher",
       "zone": "Sunwell Plateau",
       "boss": "Felmyst"
     },
