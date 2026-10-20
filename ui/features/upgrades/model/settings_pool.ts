@@ -5,6 +5,7 @@
  * tab (cb561067 `upgrades_tab.tsx`), where they were private methods.
  */
 
+import type { PagePreset } from './data/data';
 import { isKaelTempLegendary } from './engine/kael-temp';
 import { filterPoolByPhase, type ItemSource, offHandBlockedEntries, type PoolEntry } from './engine/pool';
 import type { SpecId } from './engine/types';
@@ -138,7 +139,7 @@ export function setOptions({
 	savedSets,
 	pool,
 }: {
-	presets: readonly PresetSet[];
+	presets: readonly PagePreset[];
 	savedSets: readonly { name: string; gear?: GearItems }[];
 	pool: readonly PoolEntry[];
 }): SetOption[] {
@@ -254,7 +255,6 @@ export function rowTagIndex(selectedOptions: readonly SetOption[]): (itemId: num
 	return itemId => byItem.get(itemId) ?? NO_TAGS;
 }
 
-type PresetSet = { name: string; phase?: number; group?: string; gear: GearItems };
 type SavedSet = { name: string; gear?: GearItems };
 
 /** What a spec and phase offer the settings: everything that does not depend on what the user picked. */
@@ -273,7 +273,7 @@ export function settingsOffer({
 	bisTagPhase,
 }: {
 	pool: readonly PoolEntry[];
-	presets: readonly PresetSet[];
+	presets: readonly PagePreset[];
 	savedSets: readonly SavedSet[];
 	bisTagPhase: number | undefined;
 }): SettingsOffer {
