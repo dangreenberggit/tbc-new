@@ -63,6 +63,10 @@ describe('slotLabel', () => {
 		expect(slotLabel({ slot: 'weapon' })).toBe('Main Hand');
 		expect(slotLabel({ slot: 'finger', slotChoice: 'finger2' })).toBe('Ring 2');
 	});
+
+	it('names a weapon row the engine placed in the off hand "Off Hand", not the weapon slot’s first mapping', () => {
+		expect(slotLabel({ slot: 'weapon', slotChoice: 'offhand' })).toBe('Off Hand');
+	});
 });
 
 describe('simSlotLabel', () => {

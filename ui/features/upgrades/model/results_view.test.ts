@@ -43,6 +43,24 @@ describe('effectiveSlot and rowKey', () => {
 	});
 });
 
+// A held-in-off-hand item the engine placed in the off hand (Fathomstone, a P3 caster off hand). Since engine version 7
+// every weapon row carries its `slotChoice`; a row without one would fall back to "mainhand".
+const offHandRow: RankedItem = { ...fixtureRow(1), itemId: 30049, name: 'Fathomstone', slotChoice: 'offhand' };
+
+describe('a weapon row placed in the off hand', () => {
+	const view = applyView({ ...RANKING_FIXTURE, items: [...RANKING_FIXTURE.items, offHandRow] });
+
+	it('has the off hand as its slot', () => {
+		expect(effectiveSlot(offHandRow)).toBe('offhand');
+	});
+
+	it('gets an Off Hand tab and shows in that pane, not the Main Hand pane', () => {
+		expect(slotTabs(view)).toContainEqual({ id: 'offhand', count: 1 });
+		expect(ids(paneRows(view, 'offhand').main)).toEqual([30049]);
+		expect(ids(paneRows(view, 'mainhand').main)).not.toContain(30049);
+	});
+});
+
 describe('slotTabs', () => {
 	it('lists the slots with a row in sim order, each with its above-cutoff count', () => {
 		expect(slotTabs(VIEW)).toEqual([
