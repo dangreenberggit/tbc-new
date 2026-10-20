@@ -91,7 +91,7 @@ describe('upgradesStoreFor and the page’s phase (ticket 587)', () => {
 	});
 
 	it('drops a saved exclusion the page’s pool no longer offers once the page has loaded (D2)', async () => {
-		const offered = validSourceKeysOf(poolFor(retPage(memoryStorage(), 3).host, 3))[0]!;
+		const offered = validSourceKeysOf(poolFor(retPage(memoryStorage(), 3).host, [], 3))[0]!;
 		const storage = memoryStorage(savedSettings({ excludedSources: [offered, 'A zone a data update removed'], defaultsFor: 'ret:3' }));
 		const page = retPage(storage, 3);
 		const store = upgradesStoreFor(page.host);

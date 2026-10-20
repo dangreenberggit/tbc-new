@@ -67,7 +67,12 @@ export const UpgradesResults = memo(({ run, selectedSets, specId }: UpgradesResu
 				/>
 			);
 			// Checked before any other empty state: with no candidates at this phase, "No upgrades found" would be wrong.
-			const poolMissing = run.status === 'done' && !hasRows && specId !== undefined && host !== null && poolFor(host, maxPhase).length === 0;
+			const poolMissing =
+				run.status === 'done' &&
+				!hasRows &&
+				specId !== undefined &&
+				host !== null &&
+				poolFor(host, host.individualConfig.presets.gear, maxPhase).length === 0;
 			if (poolMissing) {
 				return (
 					<>

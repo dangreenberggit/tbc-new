@@ -35,7 +35,7 @@ const { STUB_POOL } = vi.hoisted(() => {
 });
 vi.mock('./data/data', async importOriginal => ({
 	...(await importOriginal<typeof import('./data/data')>()),
-	poolFor: (_host: unknown, phase: number) => (phase === 1 ? [] : STUB_POOL),
+	poolFor: (_host: unknown, _presets: unknown, phase: number) => (phase === 1 ? [] : STUB_POOL),
 }));
 
 type RankCall = { input: RankInput; deps: Deps; onProgress?: (p: Progress) => void };
@@ -55,6 +55,7 @@ const fakeHost = (spec = Spec.SpecRetributionPaladin, phase = 3) =>
 	({
 		sim: { waitForInit: () => Promise.resolve(), getPhase: () => phase },
 		player: { getSpec: () => spec, getName: () => 'Tester' },
+		individualConfig: { presets: { gear: [] } },
 	}) as unknown as IndividualSimHost<Spec>;
 
 const fakeContext = (): RunContext => ({
@@ -121,7 +122,7 @@ describe('rankForPlayer', () => {
 	// The engine is mocked here; that it returns no rows on an empty pool is tested by `packages/core/test/rank.test.ts`
 	// (the slamaltman baseline case) in the main repo, tbc-gear-prio, not in this fork.
 	it('passes the phase and an empty pool to the engine on a phase with no candidates, and resolves', async () => {
-		expect(poolFor(fakeHost(Spec.SpecRetributionPaladin, 1), 1)).toEqual([]);
+		expect(poolFor(fakeHost(Spec.SpecRetributionPaladin, 1), [], 1)).toEqual([]);
 		rankBehaviour = async () => ({ ...RANKING_FIXTURE, items: [] });
 
 		const result = await rankForPlayer(fakeHost(Spec.SpecRetributionPaladin, 1), SETTINGS, depsFor());
@@ -180,12 +181,12 @@ describe('rankForPlayer', () => {
 
 	it('sims the whole pool when no setting narrows it', async () => {
 		await rankForPlayer(fakeHost(), SETTINGS, depsFor());
-		expect(rankCalls[0]!.deps.pool).toHaveLength(poolFor(fakeHost(), 3).length);
+		expect(rankCalls[0]!.deps.pool).toHaveLength(poolFor(fakeHost(), [], 3).length);
 	});
 
 	it('leaves an excluded raid’s items out of the pool it ranks', async () => {
 		const dropsIn = (zone: string) => (e: { source: object; sources?: object[] }) => (e.sources ?? [e.source]).some(s => 'zone' in s && s.zone === zone);
-		const full = poolFor(fakeHost(), 3);
+		const full = poolFor(fakeHost(), [], 3);
 		expect(full.some(dropsIn('Black Temple'))).toBe(true);
 
 		await rankForPlayer(fakeHost(), { ...SETTINGS, excludedSources: ['Black Temple'] }, depsFor());
@@ -196,7 +197,7 @@ describe('rankForPlayer', () => {
 	});
 
 	it('with prune, ranks only the selected sets’ items', async () => {
-		const [a, b] = poolFor(fakeHost(), 3);
+		const [a, b] = poolFor(fakeHost(), [], 3);
 		await rankForPlayer(fakeHost(), { ...SETTINGS, guaranteedSetItemIds: [a!.itemId, b!.itemId], prune: true }, depsFor());
 		expect((rankCalls[0]!.deps.pool ?? []).map(e => e.itemId)).toEqual([a!.itemId, b!.itemId]);
 	});

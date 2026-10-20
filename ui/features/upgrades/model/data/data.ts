@@ -100,10 +100,10 @@ export type PagePreset = { name: string; phase?: number; group?: string; gear: {
 /** The page parts the pool reads: its database and spec, and its spec's preset gear sets. */
 export type PagePoolHost = PoolHost & { individualConfig: { presets: { gear: readonly PagePreset[] } } };
 
-/** The page's candidate pool at `maxPhase`; empty until the sim's database has loaded. */
-export function poolFor(host: PagePoolHost, maxPhase: ContentPhase): readonly PoolEntry[] {
+/** The page's candidate pool at `maxPhase` over `presets` (the page's `individualConfig.presets.gear`); empty until the sim's database has loaded. */
+export function poolFor(host: PoolHost, presets: readonly PagePreset[], maxPhase: ContentPhase): readonly PoolEntry[] {
 	if (!host.sim.db) return [];
-	return buildPool(host, host.individualConfig.presets.gear.map(presetSetOf), maxPhase);
+	return buildPool(host, presets.map(presetSetOf), maxPhase);
 }
 
 /**

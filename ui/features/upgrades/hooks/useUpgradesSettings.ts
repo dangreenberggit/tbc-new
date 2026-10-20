@@ -62,16 +62,15 @@ export function useUpgradesSettings(): UpgradesSettings {
 	const setCandidateCap = useStore(store, state => state.setCandidateCap);
 
 	// Memoised: `poolFor` builds a new pool on each call, and the tab renders again on every row a run lands.
-	const offer = useMemo(
-		() =>
-			settingsOffer({
-				pool: specId && ready ? poolFor(host, phase) : [],
-				presets: ready ? presetsWithPhase(host, presets) : presets,
-				savedSets: saved.map(entry => ({ name: entry.name, gear: entry.data.gear })),
-				bisTagPhase: specId && ready ? bisTagPhaseFor(host, presets, phase)?.tagsFromPhase : undefined,
-			}),
-		[specId, ready, host, phase, presets, saved],
-	);
+	const offer = useMemo(() => {
+		const phasedPresets = ready ? presetsWithPhase(host, presets) : presets;
+		return settingsOffer({
+			pool: specId && ready ? poolFor(host, phasedPresets, phase) : [],
+			presets: phasedPresets,
+			savedSets: saved.map(entry => ({ name: entry.name, gear: entry.data.gear })),
+			bisTagPhase: specId && ready ? bisTagPhaseFor(host, phasedPresets, phase)?.tagsFromPhase : undefined,
+		});
+	}, [specId, ready, host, phase, presets, saved]);
 	const scope = useMemo(
 		(): SettingsScope | undefined =>
 			specId ? { key: `${specId}:${phase}`, selectedSetKeys: offer.defaultKeys, validSourceKeys: offer.sourceKeys } : undefined,

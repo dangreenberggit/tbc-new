@@ -28,7 +28,7 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
 	if (specId) {
 		const maxPhase = a.maxPhase;
 		const page = host?.sim.db ? host : undefined;
-		const pool = page ? poolFor(page, maxPhase) : undefined;
+		const pool = page ? poolFor(page, page.individualConfig.presets.gear, maxPhase) : undefined;
 		const poolSource = pool && poolSourceFor(pool);
 		if (poolSource) lines.push(`pool source: ${poolSource.name} (${poolSource.entries} entries)`);
 		const ep = epWeightsDisclosureFor(specId, maxPhase);

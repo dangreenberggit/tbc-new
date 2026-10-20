@@ -26,8 +26,8 @@ const pageAt3 = async (spec: Spec) => {
 	const store = createUpgradesStore({ iterations: 1000 });
 	followPhase(store, host);
 	await settled();
-	const offeredAt3 = validSourceKeysOf(poolFor(host, 3));
-	const offeredAt4 = validSourceKeysOf(poolFor(host, 4));
+	const offeredAt3 = validSourceKeysOf(poolFor(host, host.individualConfig.presets.gear, 3));
+	const offeredAt4 = validSourceKeysOf(poolFor(host, host.individualConfig.presets.gear, 4));
 	const onlyAt4 = offeredAt4.find(key => !offeredAt3.includes(key));
 	expect(onlyAt4).toBeDefined();
 	store.setState({

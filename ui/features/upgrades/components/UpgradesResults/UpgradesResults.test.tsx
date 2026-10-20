@@ -30,7 +30,7 @@ vi.mock('../../model/engine/items', async importOriginal => ({
 // candidates, every other phase one; the newest BiS set is Phase 3's.
 vi.mock('../../model/data/data', async importOriginal => ({
 	...(await importOriginal<typeof import('../../model/data/data')>()),
-	poolFor: (_host: unknown, phase: number) =>
+	poolFor: (_host: unknown, _presets: unknown, phase: number) =>
 		phase === 1 ? [] : [{ itemId: 32332, name: 'Torch of the Damned', slot: 'weapon', phase: 2, source: { kind: 'unknown' } }],
 	bisTagPhaseFor: (_host: unknown, _presets: unknown, phase: number) => (phase < 3 ? undefined : { tagsFromPhase: 3, requestedPhase: phase }),
 }));

@@ -26,7 +26,7 @@ export function followPhase(store: UpgradesStore, host: IndividualSimHost<Spec>)
 	const { sim, player } = host;
 	const specId = specIdFor(player.getSpec());
 	if (!specId) return;
-	const sourcesAt = (phase: number) => validSourceKeysOf(poolFor(host, phase as ContentPhase));
+	const sourcesAt = (phase: number) => validSourceKeysOf(poolFor(host, host.individualConfig.presets.gear, phase as ContentPhase));
 	followPhaseChanges(host, phase => store.getState().changeScope(sourcesAt(phase)));
 	void sim.waitForInit().then(() => store.getState().dropUnofferedSources(sourcesAt(sim.getPhase())));
 }
