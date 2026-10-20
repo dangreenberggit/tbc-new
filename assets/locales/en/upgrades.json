@@ -61,6 +61,7 @@
 			"set_potential_tooltip": "When on, a set piece's DPS gain includes the gain of equipping the other set pieces its set bonus needs, if that adds to the total.",
 			"only_bis": "BiS only",
 			"only_bis_tooltip": "Show only items on the phase's curated BiS list. {{phase}} list",
+			"bis_phase_notice": "BiS list and default sets are from {{tagsPhase}}: wowsims has no {{rankedPhase}} set for this spec.",
 			"filter_by_source": "Filter by source",
 			"sources_summary_none": "Showing all sources",
 			"sources_summary": "{{n}} of {{m}} sources hidden",

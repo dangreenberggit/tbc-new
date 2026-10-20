@@ -26,11 +26,13 @@ vi.mock('../../model/engine/items', async importOriginal => ({
 		itemId === 31034 || itemId === 31044 ? { setId: 676, setName: 'Thunderheart Harness' } : itemId === 0 ? undefined : { setId: null, setName: null },
 }));
 
-// The pool is built from the page's item database, which a unit test does not load: Phase 1 here has no candidates, every other phase one.
+// The pool and the BiS tags are built from the page's item database, which a unit test does not load: Phase 1 here has no
+// candidates, every other phase one; the newest BiS set is Phase 3's.
 vi.mock('../../model/data/data', async importOriginal => ({
 	...(await importOriginal<typeof import('../../model/data/data')>()),
 	poolFor: (_host: unknown, phase: number) =>
 		phase === 1 ? [] : [{ itemId: 32332, name: 'Torch of the Damned', slot: 'weapon', phase: 2, source: { kind: 'unknown' } }],
+	bisTagPhaseFor: (_host: unknown, _presets: unknown, phase: number) => (phase < 3 ? undefined : { tagsFromPhase: 3, requestedPhase: phase }),
 }));
 
 const { UpgradesResults } = await import('./UpgradesResults');
@@ -40,6 +42,7 @@ loadEnglishBundles({ character: true });
 
 const host = fakeTabHost({
 	player: { getSpec: () => undefined },
+	individualConfig: { presets: { gear: [] } },
 	sim: {
 		db: {
 			getItemById: (id: number) => (id === 32332 ? UIItem.create({ id, name: 'Torch of the Damned', quality: ItemQuality.ItemQualityEpic }) : undefined),
@@ -152,6 +155,19 @@ describe('UpgradesResults', () => {
 			const { getByTestId } = show(emptyAt(1));
 			expect(getByTestId('upgrades-empty-state').textContent).toContain('No upgrades found');
 		});
+	});
+
+	it('says the BiS tags are from an older phase when wowsims has no set for the ranked one (ticket 699)', () => {
+		const at = (maxPhase: ContentPhase): RunState => ({
+			status: 'done',
+			runId: 1,
+			result: { ...RANKING_FIXTURE, assumptions: { ...RANKING_FIXTURE.assumptions, maxPhase } },
+		});
+		const older = show(at(5));
+		expect(older.getByTestId('upgrades-bis-phase-notice').textContent).toContain('from Phase 3');
+		older.unmount();
+
+		expect(show(at(3)).queryByTestId('upgrades-bis-phase-notice')).toBeNull();
 	});
 
 	it('says what to do before the first run, naming the Simulate button (ticket 604)', () => {

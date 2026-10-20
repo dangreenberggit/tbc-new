@@ -27,8 +27,13 @@ export interface ViewTogglesProps {
 	/** The toggles the run offers; nothing renders when it offers none. */
 	offered: Toggles;
 	toggles: Toggles;
-	/** The phase whose BiS list BiS only keeps. */
+	/** The phase the run ranked. */
 	maxPhase: number;
+	/**
+	 * The phase the BiS tags come from, earlier than `maxPhase` when wowsims
+	 * has no set for the ranked phase; `undefined` when no set is a BiS set.
+	 */
+	bisTagPhase?: number;
 	onChange: (toggle: keyof Toggles, on: boolean) => void;
 	/** "Filter by source", shown when the settled table has a source to filter. */
 	sources: ViewSourcesButtonProps;
@@ -40,31 +45,49 @@ export interface ViewTogglesProps {
  * "Filter by source" also shows over a stopped run's table, which is settled
  * too; the toggles do not.
  */
-export const ViewToggles = ({ offered, toggles, maxPhase, onChange, sources }: ViewTogglesProps) => {
+export const ViewToggles = ({ offered, toggles, maxPhase, bisTagPhase, onChange, sources }: ViewTogglesProps) => {
 	const offersSources = offeredSourceKeys(sources.options).length > 0;
-	if (!offered.withSetPotential && !offered.onlyBis && !offersSources) return null;
+	const tagsFromOlderPhase = bisTagPhase !== undefined && bisTagPhase < maxPhase;
+	const offersControls = offered.withSetPotential || offered.onlyBis || offersSources;
+	if (!offersControls && !tagsFromOlderPhase) return null;
 	return (
-		<fieldset className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-1" data-testid="upgrades-view-toggles">
-			<legend className="float-left mr-6 mb-0 text-sm font-bold">{i18n.t('upgrades_tab.view.title', { ns: 'upgrades' })}</legend>
-			{offered.withSetPotential && (
-				<ViewToggle
-					testId="upgrades-view-set-potential"
-					label={i18n.t('upgrades_tab.view.set_potential', { ns: 'upgrades' })}
-					tooltip={i18n.t('upgrades_tab.view.set_potential_tooltip', { ns: 'upgrades' })}
-					checked={toggles.withSetPotential}
-					onChange={on => onChange('withSetPotential', on)}
-				/>
+		<>
+			{offersControls && (
+				<fieldset className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-1" data-testid="upgrades-view-toggles">
+					<legend className="float-left mr-6 mb-0 text-sm font-bold">{i18n.t('upgrades_tab.view.title', { ns: 'upgrades' })}</legend>
+					{offered.withSetPotential && (
+						<ViewToggle
+							testId="upgrades-view-set-potential"
+							label={i18n.t('upgrades_tab.view.set_potential', { ns: 'upgrades' })}
+							tooltip={i18n.t('upgrades_tab.view.set_potential_tooltip', { ns: 'upgrades' })}
+							checked={toggles.withSetPotential}
+							onChange={on => onChange('withSetPotential', on)}
+						/>
+					)}
+					{offered.onlyBis && (
+						<ViewToggle
+							testId="upgrades-view-only-bis"
+							label={i18n.t('upgrades_tab.view.only_bis', { ns: 'upgrades' })}
+							tooltip={i18n.t('upgrades_tab.view.only_bis_tooltip', {
+								ns: 'upgrades',
+								phase: i18n.t(`common.phases.${bisTagPhase ?? maxPhase}`),
+							})}
+							checked={toggles.onlyBis}
+							onChange={on => onChange('onlyBis', on)}
+						/>
+					)}
+					{offersSources && <ViewSourcesButton {...sources} />}
+				</fieldset>
 			)}
-			{offered.onlyBis && (
-				<ViewToggle
-					testId="upgrades-view-only-bis"
-					label={i18n.t('upgrades_tab.view.only_bis', { ns: 'upgrades' })}
-					tooltip={i18n.t('upgrades_tab.view.only_bis_tooltip', { ns: 'upgrades', phase: i18n.t(`common.phases.${maxPhase}`) })}
-					checked={toggles.onlyBis}
-					onChange={on => onChange('onlyBis', on)}
-				/>
+			{tagsFromOlderPhase && (
+				<p className="mb-3 text-sm" data-testid="upgrades-bis-phase-notice">
+					{i18n.t('upgrades_tab.view.bis_phase_notice', {
+						ns: 'upgrades',
+						tagsPhase: i18n.t(`common.phases.${bisTagPhase}`),
+						rankedPhase: i18n.t(`common.phases.${maxPhase}`),
+					})}
+				</p>
 			)}
-			{offersSources && <ViewSourcesButton {...sources} />}
-		</fieldset>
+		</>
 	);
 };

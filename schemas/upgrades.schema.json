@@ -219,6 +219,9 @@
 						"only_bis_tooltip": {
 							"type": "string"
 						},
+						"bis_phase_notice": {
+							"type": "string"
+						},
 						"filter_by_source": {
 							"type": "string"
 						},
@@ -242,6 +245,7 @@
 						"set_potential_tooltip",
 						"only_bis",
 						"only_bis_tooltip",
+						"bis_phase_notice",
 						"filter_by_source",
 						"sources_summary_none",
 						"sources_summary",

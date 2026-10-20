@@ -27,6 +27,7 @@ loadEnglishBundles({ character: true });
 
 const host = fakeTabHost({
 	player: { getSpec: () => undefined },
+	individualConfig: { presets: { gear: [] } },
 	sim: { db: { getItemById: (id: number) => UIItem.create({ id, name: 'Item', quality: ItemQuality.ItemQualityEpic }) } },
 });
 // Every test here shares the page's store, so each starts from its initial state (zustand's reset guide).

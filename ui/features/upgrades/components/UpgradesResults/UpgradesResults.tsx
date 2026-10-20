@@ -3,7 +3,7 @@ import { useOptionalSimHost } from '@sim/context/SimHostContext';
 import { memo } from 'react';
 
 import { useResultsView } from '../../hooks/useResultsView';
-import { poolFor } from '../../model/data/data';
+import { bisTagPhaseFor, poolFor } from '../../model/data/data';
 import type { SpecId } from '../../model/engine/types';
 import type { RunState } from '../../model/run_state';
 import type { SetOption } from '../../model/settings_pool';
@@ -55,11 +55,13 @@ export const UpgradesResults = memo(({ run, selectedSets, specId }: UpgradesResu
 		case 'stopped': {
 			const hasRows = view !== undefined && view.rows.length > 0;
 			const { maxPhase } = run.result.assumptions;
+			const bisTagPhase = host?.sim.db ? bisTagPhaseFor(host, host.individualConfig.presets.gear, maxPhase)?.tagsFromPhase : undefined;
 			const viewToggles = (
 				<ViewToggles
 					offered={offered}
 					toggles={toggles}
 					maxPhase={maxPhase}
+					bisTagPhase={bisTagPhase}
 					onChange={setToggle}
 					sources={{ options: sourceOptions, hidden: hiddenSources, onToggle: toggleViewSource, onSetAll: setViewSources }}
 				/>

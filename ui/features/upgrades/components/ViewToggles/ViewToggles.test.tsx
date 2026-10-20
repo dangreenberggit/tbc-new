@@ -1,5 +1,5 @@
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
-import { fireEvent, render, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { NO_VIEW_TOGGLES, type ViewSourceOptions } from '../../model/results_view';
@@ -66,5 +66,37 @@ describe('ViewToggles', () => {
 	it('leaves Filter by source out when the table has no source to filter', () => {
 		const { queryByTestId } = render(<ViewToggles offered={BOTH} toggles={NO_VIEW_TOGGLES} maxPhase={3} onChange={vi.fn()} sources={NO_SOURCES} />);
 		expect(queryByTestId('upgrades-view-sources-button')).toBeNull();
+	});
+
+	describe('the phase the BiS tags come from (ticket 699)', () => {
+		const showAt = (maxPhase: number, bisTagPhase: number | undefined) =>
+			render(
+				<ViewToggles offered={BOTH} toggles={NO_VIEW_TOGGLES} maxPhase={maxPhase} bisTagPhase={bisTagPhase} onChange={vi.fn()} sources={NO_SOURCES} />,
+			);
+
+		it('names the tags’ phase in the BiS only tooltip, not the ranked phase', async () => {
+			showAt(5, 3);
+			fireEvent.mouseEnter(screen.getByText('BiS only'));
+			expect(await screen.findByText(/Phase 3 \(2\.2 - T6\) list/)).toBeTruthy();
+			expect(screen.queryByText(/Phase 5 \(2\.4 - SWP\) list/)).toBeNull();
+		});
+
+		it('says under the toggles that the BiS list and default sets are from an older phase', () => {
+			const { getByTestId } = showAt(5, 3);
+			expect(getByTestId('upgrades-bis-phase-notice').textContent).toBe(
+				'BiS list and default sets are from Phase 3 (2.2 - T6): wowsims has no Phase 5 (2.4 - SWP) set for this spec.',
+			);
+		});
+
+		it('says nothing when the tags speak for the ranked phase or no set is a BiS set', () => {
+			expect(showAt(3, 3).queryByTestId('upgrades-bis-phase-notice')).toBeNull();
+			expect(showAt(3, undefined).queryByTestId('upgrades-bis-phase-notice')).toBeNull();
+		});
+
+		it('names the ranked phase in the tooltip when no set is a BiS set', async () => {
+			showAt(4, undefined);
+			fireEvent.mouseEnter(screen.getByText('BiS only'));
+			expect(await screen.findByText(/Phase 4 \(2\.3 - ZA\) list/)).toBeTruthy();
+		});
 	});
 });
