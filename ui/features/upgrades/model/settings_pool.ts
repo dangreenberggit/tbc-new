@@ -23,6 +23,8 @@ export type SetOption = {
 	name: string;
 	label: string;
 	phase?: number;
+	/** wowsims' preset `group`, which tells apart two presets of one phase that share a name (ticket 690). */
+	group?: string;
 	kind: 'preset' | 'saved';
 	itemIds: readonly number[];
 	/** How many of `itemIds` are in this spec and phase's pool. */
@@ -126,21 +128,36 @@ function presetLabel(name: string, phase: number | undefined): string {
 	return `P${phase} - ${name}`;
 }
 
+/** A grouped option that another option of the same phase and name would read the same as, so its group is shown. */
+const sharesPhaseAndName = (o: SetOption, options: readonly SetOption[]): boolean =>
+	o.group !== undefined && options.some(other => other !== o && other.phase === o.phase && other.name === o.name);
+
 export function setOptions({
 	presets,
 	savedSets,
 	pool,
 }: {
-	presets: readonly { name: string; phase?: number; gear: GearItems }[];
+	presets: readonly PresetSet[];
 	savedSets: readonly { name: string; gear?: GearItems }[];
 	pool: readonly PoolEntry[];
 }): SetOption[] {
 	const poolIds = new Set(pool.map(e => e.itemId));
 	const inPool = (itemIds: readonly number[]) => itemIds.filter(id => poolIds.has(id)).length;
-	const fromPresets = presets.map(({ name, phase, gear }): SetOption => {
+	// The group enters the key only where wowsims gives one, so the saved picks of ungrouped presets still match.
+	const presetOptions = presets.map(({ name, phase, group, gear }): SetOption => {
 		const itemIds = itemIdsOf(gear);
-		return { key: `preset:${phase ?? ''}:${name}`, name, label: presetLabel(name, phase), phase, kind: 'preset', itemIds, inPool: inPool(itemIds) };
+		return {
+			key: `preset:${phase ?? ''}:${group ? `${group}/` : ''}${name}`,
+			name,
+			label: presetLabel(name, phase),
+			phase,
+			...(group ? { group } : {}),
+			kind: 'preset',
+			itemIds,
+			inPool: inPool(itemIds),
+		};
 	});
+	const fromPresets = presetOptions.map(o => (sharesPhaseAndName(o, presetOptions) ? { ...o, label: `${o.label} (${o.group})` } : o));
 	const fromSaved = savedSets.map(({ name, gear }): SetOption => {
 		const itemIds = itemIdsOf(gear);
 		return { key: `saved:${name}`, name, label: name, kind: 'saved', itemIds, inPool: inPool(itemIds) };
@@ -203,13 +220,15 @@ export type RowTag = { key: string; label: string };
 /**
  * One badge per selected set that holds the item (ticket 430). Two selected
  * sets with the same name get their phase in front so the badges do not read
- * the same.
+ * the same; two that also share the phase get their wowsims group after it
+ * (ticket 690).
  */
 export function rowTags(itemId: number, selectedOptions: readonly SetOption[]): RowTag[] {
 	const holding = selectedOptions.filter(o => o.itemIds.includes(itemId));
 	return holding.map(o => {
 		const shared = holding.some(other => other !== o && other.name === o.name);
-		return { key: o.key, label: shared && o.phase !== undefined ? `P${o.phase} ${o.name}` : o.name };
+		const label = shared && o.phase !== undefined ? `P${o.phase} ${o.name}` : o.name;
+		return { key: o.key, label: sharesPhaseAndName(o, holding) ? `${label} (${o.group})` : label };
 	});
 }
 
@@ -226,7 +245,7 @@ export function rowTagIndex(selectedOptions: readonly SetOption[]): (itemId: num
 	return itemId => byItem.get(itemId) ?? NO_TAGS;
 }
 
-type PresetSet = { name: string; phase?: number; gear: GearItems };
+type PresetSet = { name: string; phase?: number; group?: string; gear: GearItems };
 type SavedSet = { name: string; gear?: GearItems };
 
 /** What a spec and phase offer the settings: everything that does not depend on what the user picked. */

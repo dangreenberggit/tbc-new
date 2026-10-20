@@ -76,6 +76,7 @@ export const dbPoolHost = (spec: SpecId) =>
 				gear: TEST_PRESETS[spec]!.map(p => ({
 					name: p.name,
 					...(p.phase !== undefined ? { phase: p.phase } : {}),
+					...(p.group !== undefined ? { group: p.group } : {}),
 					gear: { items: p.itemIds.map(id => ({ id })) },
 				})),
 			},

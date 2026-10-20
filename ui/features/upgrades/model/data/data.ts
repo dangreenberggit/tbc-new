@@ -95,7 +95,7 @@ export function epWeightsDisclosureFor(spec: SpecId, maxPhase: ContentPhase): { 
 }
 
 /** A wowsims preset gear set as the page holds it (`individualConfig.presets.gear`). */
-export type PagePreset = { name: string; phase?: number; gear: { items: readonly { id: number }[] } };
+export type PagePreset = { name: string; phase?: number; group?: string; gear: { items: readonly { id: number }[] } };
 
 /** The page parts the pool reads: its database and spec, and its spec's preset gear sets. */
 export type PagePoolHost = PoolHost & { individualConfig: { presets: { gear: readonly PagePreset[] } } };

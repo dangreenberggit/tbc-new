@@ -28,8 +28,11 @@ export type HeroicFiveManPolicy = 'exclude' | 'include' | 'include-unticked';
 /** The owner chose this policy on 2026-10-18 (answer "1" to Q-heroic; ADR-0038 in the outer repo, "Heroic five-man drops"). */
 export const HEROIC_FIVE_MAN: HeroicFiveManPolicy = 'include-unticked';
 
-/** A preset gear set as the pool reads it: its name, its declared phase if any, and its item ids. */
-export type PresetSet = { name: string; phase?: number; itemIds: readonly number[] };
+/**
+ * A preset gear set as the pool reads it: its name, its declared phase if any, its wowsims `group` if any (hunter's
+ * Beast Mastery/Survival, warrior's Fury/Arms, which reuse a name within a phase), and its item ids.
+ */
+export type PresetSet = { name: string; phase?: number; group?: string; itemIds: readonly number[] };
 
 /**
  * The floor every non-preset candidate meets: epic or better, and item level
@@ -176,9 +179,20 @@ let exchangeCache: ExchangeIndex | undefined;
 const exchange = () => (exchangeCache ??= indexExchange(tierExchange as TierExchange));
 
 /** A wowsims preset as the page holds it, read down to what the pool needs. */
-export const presetSetOf = ({ name, phase, gear }: { name: string; phase?: number; gear: { items: readonly { id: number }[] } }): PresetSet => ({
+export const presetSetOf = ({
+	name,
+	phase,
+	group,
+	gear,
+}: {
+	name: string;
+	phase?: number;
+	group?: string;
+	gear: { items: readonly { id: number }[] };
+}): PresetSet => ({
 	name,
 	...(phase !== undefined ? { phase } : {}),
+	...(group !== undefined ? { group } : {}),
 	itemIds: [...new Set(gear.items.map(i => i.id).filter(id => id > 0))],
 });
 

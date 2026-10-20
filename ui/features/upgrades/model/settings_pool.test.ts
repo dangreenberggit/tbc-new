@@ -190,6 +190,38 @@ describe('setOptions', () => {
 	});
 });
 
+// Ticket 690: hunter's "DW - 6% hit" exists once per wowsims group in a phase.
+describe('setOptions over presets that share a phase and a name', () => {
+	const options = setOptions({
+		presets: [
+			{ name: 'DW - 6% hit', phase: 2, group: 'Beast Mastery', gear: gear(1) },
+			{ name: 'DW - 6% hit', phase: 2, group: 'Survival', gear: gear(3) },
+			{ name: 'DW - 6% hit', phase: 3, group: 'Beast Mastery', gear: gear(4) },
+		],
+		savedSets: [],
+		pool: POOL,
+	});
+
+	it('keys each by its group and names the group only on the twins', () => {
+		expect(options.map(o => [o.key, o.label])).toEqual([
+			['preset:2:Beast Mastery/DW - 6% hit', 'P2 - DW - 6% hit (Beast Mastery)'],
+			['preset:2:Survival/DW - 6% hit', 'P2 - DW - 6% hit (Survival)'],
+			['preset:3:Beast Mastery/DW - 6% hit', 'P3 - DW - 6% hit'],
+		]);
+	});
+
+	it('selects only the twin that was ticked', () => {
+		const offer = settingsOffer({ pool: POOL, presets: [], savedSets: [], bisTagPhase: undefined });
+		const selection = setSelection({ ...offer, options }, ['preset:2:Survival/DW - 6% hit'], 2);
+		expect(selection.selectedOptions.map(o => o.itemIds)).toEqual([[3]]);
+	});
+
+	it('restores a saved pick of an ungrouped preset by its old key', () => {
+		const offer = settingsOffer({ pool: POOL, presets: [{ name: 'P3', phase: 3, gear: gear(1, 3) }], savedSets: [], bisTagPhase: 3 });
+		expect(setSelection(offer, ['preset:3:P3'], 3).selectedKeys).toEqual(['preset:3:P3']);
+	});
+});
+
 describe('rowTags', () => {
 	const option = (key: string, name: string, phase: number | undefined, itemIds: number[]): SetOption => ({
 		key,
@@ -214,6 +246,14 @@ describe('rowTags', () => {
 	it('prefixes the phase when two selected sets share a name', () => {
 		const selected = [option('preset:2:BiS 9%', 'BiS 9%', 2, [1]), option('preset:3:BiS 9%', 'BiS 9%', 3, [1])];
 		expect(rowTags(1, selected).map(tag => tag.label)).toEqual(['P2 BiS 9%', 'P3 BiS 9%']);
+	});
+
+	it('adds the group when two selected sets also share the phase', () => {
+		const selected = [
+			{ ...option('preset:2:Beast Mastery/DW - 6% hit', 'DW - 6% hit', 2, [1]), group: 'Beast Mastery' },
+			{ ...option('preset:2:Survival/DW - 6% hit', 'DW - 6% hit', 2, [1]), group: 'Survival' },
+		];
+		expect(rowTags(1, selected).map(tag => tag.label)).toEqual(['P2 DW - 6% hit (Beast Mastery)', 'P2 DW - 6% hit (Survival)']);
 	});
 });
 
