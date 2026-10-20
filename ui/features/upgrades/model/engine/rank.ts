@@ -1272,6 +1272,27 @@ export async function rankUpgrades(
     };
 
     /**
+     * The hand a Stop placeholder for a weapon names. A simmed weapon row
+     * names the hand its best swap went into; when only one placement
+     * passes `attemptEligibility`, that hand is known without a sim, so the
+     * placeholder names it too and files in the same pane. With two legal
+     * placements only the sim could choose, so the row leaves it unset.
+     */
+    const placeholderSlotChoice = (
+      entry: PoolEntry
+    ): SimSlotName | undefined => {
+      if (entry.slot !== "weapon") return undefined;
+      const legal = simSlotsForPoolSlot(
+        entry.slot,
+        input.spec,
+        entry.itemId
+      ).filter(
+        (slotName) => attemptEligibility(entry, slotName).kind === "ok"
+      );
+      return legal.length === 1 ? legal[0] : undefined;
+    };
+
+    /**
      * One candidate's full slot-attempt loop, unchanged from the old serial
      * body except that it is now a `promisePool` task rather than one turn
      * of a `for` loop (candidate-pool.md §5.1.2) — every mutation below
@@ -1510,6 +1531,7 @@ export async function rankUpgrades(
         )
       : [];
     for (const entry of unsimmedCandidates) {
+      const slotChoice = placeholderSlotChoice(entry);
       // A row Stop never reached — placeholder numbers so the row stays a
       // RankedItem, but `simmed: false` pulls it out of cutoff
       // classification and tie groups below rather than letting a zeroed
@@ -1519,6 +1541,7 @@ export async function rankUpgrades(
         itemId: entry.itemId,
         name: entry.name,
         slot: entry.slot,
+        ...(slotChoice ? { slotChoice } : {}),
         source: entry.source,
         deltaDps: 0,
         deltaPct: 0,
