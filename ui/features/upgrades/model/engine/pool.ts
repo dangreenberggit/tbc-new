@@ -230,22 +230,21 @@ export type SimSlotName =
   | "offhand";
 
 /**
- * Specs that put a weapon in the off hand.
+ * Specs that can put a one-handed *weapon* in the off hand.
  *
- * Membership is about what the spec *can* equip, not what its BiS set happens
- * to use: a fury warrior and a combat rogue always dual-wield, while a hunter
- * or an enhancement shaman may be playing a two-hander build this week. Listing
- * the latter two anyway is correct, because the per-item hand-type filter below
- * is what actually decides whether any given item can go there — a spec that
- * could dual-wield but currently holds a two-hander simply produces no offhand
- * candidates. Excluding them instead would hide real offhand upgrades from
- * every dual-wielding hunter.
+ * This mirrors wowsims' per-spec `canDualWield` flag, and the fork pins the two
+ * together with a test (`dual_wield_specs.test.ts`). Membership is about what
+ * the spec *can* equip, not what its BiS set happens to use: a hunter or an
+ * enhancement shaman may be playing a two-hander build this week, and the
+ * per-item hand-type filter below decides whether any given item fits.
  *
- * Ret and feral are absent deliberately: neither can put anything in the off
- * hand, so `"weapon"` keeps mapping to mainhand alone and their rankings are
- * bit-for-bit what they were.
+ * It governs one-handers only. A dedicated off-hand item (a shield, a held
+ * item, an off-hand-only weapon) goes to the off hand for every spec, so a spec
+ * missing here — ret, feral, the casters — cannot dual-wield, which is not the
+ * same as having no off hand. Which off-hand items a spec may wear at all is
+ * decided upstream, where the pool admits only what wowsims lets it equip.
  */
-const DUAL_WIELD_SPECS: ReadonlySet<SpecId> = new Set<SpecId>([
+export const DUAL_WIELD_SPECS: ReadonlySet<SpecId> = new Set<SpecId>([
   "rogue",
   "enh",
   "warrior",
@@ -284,7 +283,8 @@ function itemFitsSimSlot(itemId: number, slotName: SimSlotName): boolean {
 
 /**
  * Map pool slot → sim equipment slot name(s). Rings/trinkets try both; a
- * dual-wield spec's weapons try both hands.
+ * dual-wield spec's one-handers try both hands; a dedicated off-hand item goes
+ * to the off hand for every spec.
  *
  * Resolving the off hand here rather than adding an `offhand` member to
  * `ItemSlot` is deliberate: a new pool slot would duplicate every one-hander
@@ -309,6 +309,12 @@ export function simSlotsForPoolSlot(
       case "trinket":
         return ["trinket1", "trinket2"];
       case "weapon":
+        if (
+          itemId !== undefined &&
+          getItem(itemId)?.handType === HandType.HandTypeOffHand
+        ) {
+          return ["offhand"];
+        }
         return spec !== undefined && DUAL_WIELD_SPECS.has(spec)
           ? ["mainhand", "offhand"]
           : ["mainhand"];

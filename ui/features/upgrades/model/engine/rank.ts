@@ -870,9 +870,28 @@ export async function rankUpgrades(
     if (!wornMainHandId) return true;
     return getItem(wornMainHandId)?.handType !== HandType.HandTypeTwoHand;
   })();
-  const eligible = filterPoolByPhase(deps.pool ?? [], input.maxPhase).filter(
-    (e) => !isKaelTempLegendary(e.itemId)
-  );
+  const phaseEligible = filterPoolByPhase(
+    deps.pool ?? [],
+    input.maxPhase
+  ).filter((e) => !isKaelTempLegendary(e.itemId));
+  /**
+   * Off-hand-only items that cannot be placed beside the worn two-hander
+   * without a two-item swap (the trade the off-hand guard in `runCandidate`
+   * rejects). They leave here, before ordering, rather than at that guard:
+   * by then the EP order has priced them against an empty off hand, so they
+   * would take candidate-cap places, and a Stop would bring them back as
+   * unsimmed placeholders. One substitution line counts them instead.
+   */
+  const blockedOffHand = mainHandIsOneHanded
+    ? []
+    : phaseEligible.filter((e) => {
+        const placements = simSlotsForPoolSlot(e.slot, input.spec, e.itemId);
+        return placements.length === 1 && placements[0] === "offhand";
+      });
+  const eligible =
+    blockedOffHand.length === 0
+      ? phaseEligible
+      : phaseEligible.filter((e) => !blockedOffHand.includes(e));
   // Ordering runs before any sim, from raw stats only, so it cannot fail on
   // a candidate the sim itself would later reject. This order also decides
   // which N the cap keeps (§5.1.1).
@@ -1352,7 +1371,11 @@ export async function rankUpgrades(
             removed,
             candidateGems: swapped[slotIndex]?.gems ?? [],
           };
-          if (slotNames.length > 1) {
+          // Every weapon row names its hand: `"weapon"` alone cannot say
+          // whether a non-dual-wield spec's row is a main-hand or an off-hand
+          // item, and readers that fall back to the slot's first placement
+          // would label a shield "Main Hand".
+          if (slotNames.length > 1 || entry.slot === "weapon") {
             next.slotChoice = slotName;
           }
           if (note) next.setBonusNote = note;
@@ -1704,6 +1727,7 @@ export async function rankUpgrades(
         ...substitutionsFromMetaRepair(metaSwaps),
         ...hitCapNotes,
         ...metaPreferenceDisclosure(gems.spec),
+        ...offHandBlockedDisclosure(blockedOffHand.length),
         ...candidateSkips.map((s) => ({
           field: `candidate ${s.itemId} (${s.slot})`,
           detail:
@@ -4041,6 +4065,20 @@ function metaPreferenceDisclosure(
 ): Substitution[] {
   const note = missingMetaPreferenceNote(spec);
   return note ? [{ field: "gems.meta-preference", detail: note }] : [];
+}
+
+/** One line for every off-hand item the worn two-hander kept out of the run. */
+function offHandBlockedDisclosure(count: number): Substitution[] {
+  if (count === 0) return [];
+  return [
+    {
+      field: "off-hand candidates",
+      detail:
+        `${count} off-hand items were not ranked: the worn main hand is a ` +
+        `two-hander, and placing one means a two-item swap. Rank with a ` +
+        `one-hander worn to price them.`,
+    },
+  ];
 }
 
 function fillOptsForSwap(

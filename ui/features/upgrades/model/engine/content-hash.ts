@@ -53,7 +53,9 @@ function canonicalize(value: unknown): unknown {
  * bump has no cached verdict to invalidate here and the two can differ
  * (ADR-0037 records why this stayed 6 when core moved to 9).
  */
-export const ENGINE_VERSION = 6;
+// 7: off-hand placement for every spec; slotChoice on weapon rows; two-hander
+// off-hand disclosure. Bumped with core's 10 so both copies name the change.
+export const ENGINE_VERSION = 7;
 
 export type HashedGearItem = {
   id: number;
