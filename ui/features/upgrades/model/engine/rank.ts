@@ -1262,21 +1262,24 @@ export async function rankUpgrades(
     };
 
     /**
-     * The hand a Stop placeholder for a weapon names. A simmed weapon row
-     * names the hand its best swap went into; when only one placement
-     * passes `attemptEligibility`, that hand is known without a sim, so the
-     * placeholder names it too and files in the same pane. With two legal
-     * placements only the sim could choose, so the row leaves it unset.
+     * The slot a Stop placeholder names. A simmed weapon, ring or trinket
+     * row names the slot its best swap went into; when only one placement
+     * passes `attemptEligibility` (a weapon one hand rules out, a ring or
+     * trinket already worn in its second slot), that slot is known without
+     * a sim, so the placeholder names it too and files in the same pane.
+     * With two legal placements only the sim could choose, so the row
+     * leaves it unset.
      */
     const placeholderSlotChoice = (
       entry: PoolEntry
     ): SimSlotName | undefined => {
-      if (entry.slot !== "weapon") return undefined;
-      const legal = simSlotsForPoolSlot(
+      const slotNames = simSlotsForPoolSlot(
         entry.slot,
         input.spec,
         entry.itemId
-      ).filter(
+      );
+      if (slotNames.length < 2 && entry.slot !== "weapon") return undefined;
+      const legal = slotNames.filter(
         (slotName) => attemptEligibility(entry, slotName).kind === "ok"
       );
       return legal.length === 1 ? legal[0] : undefined;
