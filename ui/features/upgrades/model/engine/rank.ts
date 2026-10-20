@@ -95,6 +95,8 @@ import {
 import {
   filterPoolByPhase,
   type ItemSource,
+  mainHandLeavesOffHandFree,
+  offHandBlockedEntries,
   type PoolEntry,
   type SimSlotName,
   simSlotsForPoolSlot,
@@ -857,19 +859,8 @@ export async function rankUpgrades(
   const equippedIds = new Set(
     equipment.map((s) => s.id).filter((id): id is number => !!id)
   );
-  /**
-   * Whether the worn main hand leaves the off hand usable at all.
-   *
-   * A two-hander occupies both hands, so no off-hand candidate is legal
-   * beside it. An *empty* main hand counts as usable: nothing blocks the off
-   * hand, and a character with no weapon at all should still see off-hand
-   * rows rather than silently losing the slot.
-   */
-  const mainHandIsOneHanded = ((): boolean => {
-    const wornMainHandId = equipment[SIM_ORDER.indexOf("mainhand")]?.id;
-    if (!wornMainHandId) return true;
-    return getItem(wornMainHandId)?.handType !== HandType.HandTypeTwoHand;
-  })();
+  const wornMainHandId = equipment[SIM_ORDER.indexOf("mainhand")]?.id;
+  const mainHandIsOneHanded = mainHandLeavesOffHandFree(wornMainHandId);
   const phaseEligible = filterPoolByPhase(
     deps.pool ?? [],
     input.maxPhase
@@ -882,12 +873,11 @@ export async function rankUpgrades(
    * would take candidate-cap places, and a Stop would bring them back as
    * unsimmed placeholders. One substitution line counts them instead.
    */
-  const blockedOffHand = mainHandIsOneHanded
-    ? []
-    : phaseEligible.filter((e) => {
-        const placements = simSlotsForPoolSlot(e.slot, input.spec, e.itemId);
-        return placements.length === 1 && placements[0] === "offhand";
-      });
+  const blockedOffHand = offHandBlockedEntries(
+    phaseEligible,
+    input.spec,
+    wornMainHandId
+  );
   const eligible =
     blockedOffHand.length === 0
       ? phaseEligible

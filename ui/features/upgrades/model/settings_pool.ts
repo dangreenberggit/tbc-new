@@ -6,7 +6,8 @@
  */
 
 import { isKaelTempLegendary } from './engine/kael-temp';
-import { filterPoolByPhase, type ItemSource, type PoolEntry } from './engine/pool';
+import { filterPoolByPhase, type ItemSource, offHandBlockedEntries, type PoolEntry } from './engine/pool';
+import type { SpecId } from './engine/types';
 import { SOURCE_LABELS } from './engine/view';
 import { HEROIC_FIVE_MAN } from './pool_source';
 import type { RunSettings } from './run_state';
@@ -210,9 +211,17 @@ export function effectivePool(pool: readonly PoolEntry[], { excludedSources, sel
 	return pool.filter(e => ticked.some(key => sourceMatches(e, key)) && (!prune || inSets.has(e.itemId)));
 }
 
-/** The candidates an uncapped run sims: the engine's own phase filter and Kael exclusion, applied to the effective pool. */
-export const eligibleCount = (pool: readonly PoolEntry[], maxPhase: number): number =>
-	filterPoolByPhase(pool, maxPhase).filter(e => !isKaelTempLegendary(e.itemId)).length;
+/** What the engine's off-hand rule reads of the page: the spec, and the id of the worn main hand (undefined when empty). */
+export type MainHandContext = { spec: SpecId | undefined; wornMainHandId: number | undefined };
+
+/**
+ * The candidates an uncapped run sims: the engine's own phase filter and Kael exclusion, applied to the effective
+ * pool, less the off-hand-only items a worn two-hander holds out.
+ */
+export const eligibleCount = (pool: readonly PoolEntry[], maxPhase: number, { spec, wornMainHandId }: MainHandContext): number => {
+	const phaseEligible = filterPoolByPhase(pool, maxPhase).filter(e => !isKaelTempLegendary(e.itemId));
+	return phaseEligible.length - offHandBlockedEntries(phaseEligible, spec, wornMainHandId).length;
+};
 
 /** A row's badge for a selected set: the set's key, and its name as the gear tab names it. */
 export type RowTag = { key: string; label: string };
@@ -298,5 +307,5 @@ export const runSettingsOf = (selection: SetSelection, state: SettingsState): Ru
 	toRunSettings({ ...state, selectedSetKeys: selection.selectedKeys }, selection.selectedItemIds);
 
 /** The candidates an uncapped run would sim under the pool filters; apart from `runSettingsOf`, so an iterations edit does not refilter the pool. */
-export const eligibleCountOf = (offer: SettingsOffer, filter: PoolFilter, maxPhase: number): number =>
-	eligibleCount(effectivePool(offer.pool, filter), maxPhase);
+export const eligibleCountOf = (offer: SettingsOffer, filter: PoolFilter, maxPhase: number, mainHand: MainHandContext): number =>
+	eligibleCount(effectivePool(offer.pool, filter), maxPhase, mainHand);

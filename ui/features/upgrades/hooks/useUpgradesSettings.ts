@@ -1,5 +1,7 @@
 import { useSavedGear } from '@features/gear/hooks/useSavedGear';
+import { ItemSlot } from '@generated/proto/common';
 import { useSimHost, useSpecPresets } from '@sim/context/SimHostContext';
+import { usePlayerStore } from '@sim/hooks/usePlayerStore';
 import { useSimReady } from '@sim/hooks/useSimReady';
 import { useSimStore } from '@sim/hooks/useSimStore';
 import { useMemo } from 'react';
@@ -49,6 +51,8 @@ export function useUpgradesSettings(): UpgradesSettings {
 	const host = useSimHost();
 	const specId = specIdFor(host.player.getSpec());
 	const phase = useSimStore('phase') as ContentPhase;
+	// `?.` on the gear: the player's slice is missing between Player.dispose() and its deferred delete (usePlayerStore).
+	const wornMainHandId = usePlayerStore('gear')?.getEquippedItem(ItemSlot.ItemSlotMainHand)?.id;
 	const presets = useSpecPresets().gear;
 	// The pool is built from the sim's item database, which loads after the page first renders.
 	const ready = useSimReady();
@@ -95,8 +99,12 @@ export function useUpgradesSettings(): UpgradesSettings {
 	// Memoised for the same renders, on the pool filters alone: the effective pool is a filter over the whole pool,
 	// which an iterations or cap keystroke must not run again.
 	const eligibleCount = useMemo(
-		() => eligibleCountOf(offer, { excludedSources, selectedSetItemIds: selection.selectedItemIds, prune: effectivePrune }, phase),
-		[offer, excludedSources, selection, effectivePrune, phase],
+		() =>
+			eligibleCountOf(offer, { excludedSources, selectedSetItemIds: selection.selectedItemIds, prune: effectivePrune }, phase, {
+				spec: specId,
+				wornMainHandId,
+			}),
+		[offer, excludedSources, selection, effectivePrune, phase, specId, wornMainHandId],
 	);
 
 	return useMemo(

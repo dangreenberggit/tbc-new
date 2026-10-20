@@ -26,5 +26,7 @@ export const fakeTabHost = (parts: FakeHostParts = {}) => {
 	const sim = (parts.sim ?? {}) as { env?: Partial<Env>; waitForInit?: () => Promise<void> };
 	sim.env ??= { storage: memoryStorage() };
 	sim.waitForInit ??= () => Promise.resolve();
-	return fakeHost({ getStorageKey: (part: string) => `__upgrades_test${part}`, individualConfig: { presets: { gear: [] } }, ...parts, sim });
+	// The settings read the worn gear through the player's sim store (`usePlayerStore`).
+	const player = { sim, ...(parts.player as object | undefined) };
+	return fakeHost({ getStorageKey: (part: string) => `__upgrades_test${part}`, individualConfig: { presets: { gear: [] } }, ...parts, player, sim });
 };

@@ -326,3 +326,36 @@ export function simSlotsForPoolSlot(
   if (itemId === undefined) return placements;
   return placements.filter((slotName) => itemFitsSimSlot(itemId, slotName));
 }
+
+/**
+ * Whether a worn main hand leaves the off hand usable at all.
+ *
+ * A two-hander occupies both hands, so no off-hand candidate is legal
+ * beside it. An *empty* main hand counts as usable: nothing blocks the off
+ * hand, and a character with no weapon at all should still see off-hand
+ * rows rather than silently losing the slot.
+ */
+export function mainHandLeavesOffHandFree(
+  wornMainHandId: number | undefined
+): boolean {
+  if (!wornMainHandId) return true;
+  return getItem(wornMainHandId)?.handType !== HandType.HandTypeTwoHand;
+}
+
+/**
+ * The entries of `pool` that can only go in the off hand while the worn main
+ * hand is a two-hander, so placing one would be a two-item swap. A run holds
+ * them out before ordering (rank.ts), and the tab's candidate count leaves
+ * them out with the same rule.
+ */
+export function offHandBlockedEntries(
+  pool: readonly PoolEntry[],
+  spec: SpecId | undefined,
+  wornMainHandId: number | undefined
+): PoolEntry[] {
+  if (mainHandLeavesOffHandFree(wornMainHandId)) return [];
+  return pool.filter((e) => {
+    const placements = simSlotsForPoolSlot(e.slot, spec, e.itemId);
+    return placements.length === 1 && placements[0] === "offhand";
+  });
+}

@@ -58,6 +58,9 @@ const TWO_ZONE_POOL: PoolEntry[] = [
 
 const gear = (...ids: number[]) => ({ items: ids.map(id => ({ id })) });
 
+/** No main hand worn, so the off-hand rule holds nothing out; `settings_pool.offhand.test.ts` covers the rule. */
+const NO_WEAPON = { spec: undefined, wornMainHandId: undefined };
+
 describe('sourceKeyOf', () => {
 	it('files an entry under its first zone, else under its source bucket', () => {
 		expect(POOL.map(sourceKeyOf)).toEqual(['Black Temple', 'Black Temple', 'Hyjal Summit', 'Badge vendor', 'Crafted', 'Tempest Keep', 'Black Temple']);
@@ -137,15 +140,15 @@ describe('effectivePool', () => {
 
 describe('eligibleCount', () => {
 	it('counts what the run would sim: the phase filter applied and the Kael legendaries left out', () => {
-		expect(eligibleCount(POOL, 3)).toBe(5);
-		expect(eligibleCount(POOL, 4)).toBe(6);
+		expect(eligibleCount(POOL, 3, NO_WEAPON)).toBe(5);
+		expect(eligibleCount(POOL, 4, NO_WEAPON)).toBe(6);
 	});
 
 	// Measured once under include-unticked by the independent script `pool_source.cells.fixture.json`'s _comment
 	// describes, which no checkout holds; re-pin as that _comment says.
 	it('matches the measured ret pool sizes (1178 at phase 4, 1444 at phase 5)', () => {
-		expect(eligibleCount(effectivePool(dbPoolFor('ret', 4), NO_FILTER), 4)).toBe(1178);
-		expect(eligibleCount(effectivePool(dbPoolFor('ret', 5), NO_FILTER), 5)).toBe(1444);
+		expect(eligibleCount(effectivePool(dbPoolFor('ret', 4), NO_FILTER), 4, NO_WEAPON)).toBe(1178);
+		expect(eligibleCount(effectivePool(dbPoolFor('ret', 5), NO_FILTER), 5, NO_WEAPON)).toBe(1444);
 	});
 });
 
@@ -292,7 +295,7 @@ describe('setSelection, runSettingsOf and eligibleCountOf', () => {
 		const selection = setSelection(offer, state.selectedSetKeys, 3);
 		const runSettings = runSettingsOf(selection, state);
 		const filter = { excludedSources: state.excludedSources, selectedSetItemIds: selection.selectedItemIds, prune: runSettings.prune ?? false };
-		return { ...selection, runSettings, eligibleCount: eligibleCountOf(offer, filter, 3) };
+		return { ...selection, runSettings, eligibleCount: eligibleCountOf(offer, filter, 3, NO_WEAPON) };
 	};
 
 	it('offers the pool’s sources and sets, and the BiS-tag phase’s preset as the default', () => {
