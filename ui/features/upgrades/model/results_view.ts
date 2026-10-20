@@ -20,9 +20,9 @@ export const SHOPPING_LIST_TAB = 'shopping-list';
 export type ResultsTabId = typeof SHOPPING_LIST_TAB | SimSlotName;
 
 /**
- * `slotChoice` is set only where a pool slot maps to two sim slots. Casting
- * `row.slot` instead is unsound: `weapon`, `finger` and `trinket` are pool
- * slots, not sim slots.
+ * `slotChoice` is set on every weapon row and wherever a pool slot maps to
+ * two sim slots. Casting `row.slot` instead is unsound: `weapon`, `finger`
+ * and `trinket` are pool slots, not sim slots.
  */
 export const effectiveSlot = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): SimSlotName => row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0]!;
 

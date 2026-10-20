@@ -50,7 +50,7 @@ const ITEM_SLOT_BY_SIM_SLOT: Record<SimOrderName, ItemSlot> = {
 /** A sim slot in the page's own words. */
 export const simSlotLabel = (slot: SimOrderName): string => translateSlotName(ITEM_SLOT_BY_SIM_SLOT[slot]);
 
-/** `slotChoice` is set only where a pool slot maps to two sim slots; otherwise the first mapping is the slot. */
+/** `slotChoice` is set on every weapon row and wherever a pool slot maps to two sim slots; otherwise the first mapping is the slot. */
 export const slotLabel = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): string => simSlotLabel(row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0]);
 
 /**
