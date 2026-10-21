@@ -4119,9 +4119,9 @@ function offHandBlockedDisclosure(count: number): Substitution[] {
     {
       field: "off-hand candidates",
       detail:
-        `${count} off-hand items were not ranked: the worn main hand is a ` +
-        `two-hander, and placing one means a two-item swap. Rank with a ` +
-        `one-hander worn to price them.`,
+        count === 1
+          ? "1 off-hand item was not ranked, because you wear a two-handed weapon."
+          : `${count} off-hand items were not ranked, because you wear a two-handed weapon.`,
     },
   ];
 }
