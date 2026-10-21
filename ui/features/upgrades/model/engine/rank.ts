@@ -1721,6 +1721,18 @@ export async function rankUpgrades(
       ...(counts ? { counts } : {}),
     });
 
+    // Simmed rows only: a one-hander the cap dropped or a Stop left
+    // unsimmed was not priced. Beside a worn two-hander every simmed
+    // one-hander went into the main hand, and only a two-hander candidate
+    // clears the off hand, so each was priced with the off hand empty.
+    const oneHandersPricedAlone = mainHandIsOneHanded
+      ? 0
+      : ranked.filter(
+          (r) =>
+            r.simmed !== false &&
+            r.slotChoice === "mainhand" &&
+            getItem(r.itemId)?.handType !== HandType.HandTypeTwoHand
+        ).length;
     const rankingBase = {
       contentHash,
       cutoff,
@@ -1744,6 +1756,7 @@ export async function rankUpgrades(
         ...hitCapNotes,
         ...metaPreferenceDisclosure(gems.spec),
         ...offHandBlockedDisclosure(blockedOffHand.length),
+        ...oneHandAloneDisclosure(oneHandersPricedAlone),
         ...candidateSkips.map((s) => ({
           field: `candidate ${s.itemId} (${s.slot})`,
           detail:
@@ -4081,6 +4094,23 @@ function metaPreferenceDisclosure(
 ): Substitution[] {
   const note = missingMetaPreferenceNote(spec);
   return note ? [{ field: "gems.meta-preference", detail: note }] : [];
+}
+
+/**
+ * One line for the one-hand weapons a run priced beside a worn two-hander:
+ * each row's delta is the one-hander alone, with the off hand empty.
+ */
+function oneHandAloneDisclosure(count: number): Substitution[] {
+  if (count === 0) return [];
+  return [
+    {
+      field: "one-hand candidates",
+      detail:
+        `${count} one-hand weapons were priced in the main hand with the ` +
+        `off hand empty: the worn main hand is a two-hander, and this run ` +
+        `prices one item at a time.`,
+    },
+  ];
 }
 
 /** One line for every off-hand item the worn two-hander kept out of the run. */

@@ -55,7 +55,9 @@ function canonicalize(value: unknown): unknown {
  */
 // 7: off-hand placement for every spec; slotChoice on weapon rows; two-hander
 // off-hand disclosure. Bumped with core's 10 so both copies name the change.
-export const ENGINE_VERSION = 7;
+// 8: one-hand disclosure beside a worn two-hander (ticket 700). Bumped with
+// core's 11.
+export const ENGINE_VERSION = 8;
 
 export type HashedGearItem = {
   id: number;
