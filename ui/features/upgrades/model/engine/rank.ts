@@ -97,6 +97,7 @@ import {
   type ItemSource,
   mainHandLeavesOffHandFree,
   offHandBlockedEntries,
+  oneHandBlockedEntries,
   type PoolEntry,
   type SimSlotName,
   simSlotsForPoolSlot,
@@ -878,10 +879,20 @@ export async function rankUpgrades(
     input.spec,
     wornMainHandId
   );
+  // One-handed weapons beside the worn two-hander: priced alone, each would
+  // leave the off hand empty (`oneHandBlockedEntries`). They leave here for
+  // the same reasons as the off-hand items, with their own line.
+  const blockedOneHand = oneHandBlockedEntries(
+    phaseEligible,
+    input.spec,
+    wornMainHandId
+  );
   const eligible =
-    blockedOffHand.length === 0
+    blockedOffHand.length + blockedOneHand.length === 0
       ? phaseEligible
-      : phaseEligible.filter((e) => !blockedOffHand.includes(e));
+      : phaseEligible.filter(
+          (e) => !blockedOffHand.includes(e) && !blockedOneHand.includes(e)
+        );
   // Ordering runs before any sim, from raw stats only, so it cannot fail on
   // a candidate the sim itself would later reject. This order also decides
   // which N the cap keeps (§5.1.1).
@@ -1232,9 +1243,9 @@ export async function rankUpgrades(
       // Skipping is the minimal correct semantics. The alternative, letting the
       // off-hand pick displace the worn two-hander, prices a two-item swap under
       // a one-item row: the delta would silently include losing the two-hander,
-      // which is not what the row claims. A player holding a two-hander who
-      // wants to dual-wield gets that answer from the main-hand rows, which are
-      // ranked normally.
+      // which is not what the row claims. With a two-hander worn, no one-hander reaches
+      // this guard (`oneHandBlockedEntries` holds them out before ordering);
+      // it stays as a backstop.
       if (slotName === "offhand" && !mainHandIsOneHanded) return { kind: "skip" };
       const slotIndex = SIM_ORDER.indexOf(slotName);
       if (slotIndex < 0) return { kind: "unmapped" };
@@ -1721,18 +1732,6 @@ export async function rankUpgrades(
       ...(counts ? { counts } : {}),
     });
 
-    // Simmed rows only: a one-hander the cap dropped or a Stop left
-    // unsimmed was not priced. Beside a worn two-hander every simmed
-    // one-hander went into the main hand, and only a two-hander candidate
-    // clears the off hand, so each was priced with the off hand empty.
-    const oneHandersPricedAlone = mainHandIsOneHanded
-      ? 0
-      : ranked.filter(
-          (r) =>
-            r.simmed !== false &&
-            r.slotChoice === "mainhand" &&
-            getItem(r.itemId)?.handType !== HandType.HandTypeTwoHand
-        ).length;
     const rankingBase = {
       contentHash,
       cutoff,
@@ -1756,7 +1755,7 @@ export async function rankUpgrades(
         ...hitCapNotes,
         ...metaPreferenceDisclosure(gems.spec),
         ...offHandBlockedDisclosure(blockedOffHand.length),
-        ...oneHandAloneDisclosure(oneHandersPricedAlone),
+        ...oneHandBlockedDisclosure(blockedOneHand.length),
         ...candidateSkips.map((s) => ({
           field: `candidate ${s.itemId} (${s.slot})`,
           detail:
@@ -4097,18 +4096,18 @@ function metaPreferenceDisclosure(
 }
 
 /**
- * One line for the one-hand weapons a run priced beside a worn two-hander:
- * each row's delta is the one-hander alone, with the off hand empty.
+ * One line for every one-handed weapon the worn two-hander kept out of the
+ * run (`oneHandBlockedEntries`).
  */
-function oneHandAloneDisclosure(count: number): Substitution[] {
+function oneHandBlockedDisclosure(count: number): Substitution[] {
   if (count === 0) return [];
   return [
     {
       field: "one-hand candidates",
       detail:
-        `${count} one-hand weapons were priced in the main hand with the ` +
-        `off hand empty: the worn main hand is a two-hander, and this run ` +
-        `prices one item at a time.`,
+        count === 1
+          ? "1 one-handed weapon was not ranked, because you wear a two-handed weapon."
+          : `${count} one-handed weapons were not ranked, because you wear a two-handed weapon.`,
     },
   ];
 }

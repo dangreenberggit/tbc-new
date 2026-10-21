@@ -15,8 +15,8 @@ const TWO_HANDER = 29988; // The Nexus Key
 const POOL = [...HELD, ONE_HANDER, TWO_HANDER].map(weapon);
 
 describe('eligibleCount and the worn main hand', () => {
-	it('leaves out the off-hand-only items while a two-hander is worn, as a run does', () => {
-		expect(eligibleCount(POOL, 3, { spec: 'mage', wornMainHandId: TWO_HANDER })).toBe(POOL.length - HELD.length);
+	it('leaves out the off-hand-only items and the one-hander while a two-hander is worn, as a run does', () => {
+		expect(eligibleCount(POOL, 3, { spec: 'mage', wornMainHandId: TWO_HANDER })).toBe(POOL.length - HELD.length - 1);
 	});
 
 	it('counts them beside a one-hander or an empty main hand', () => {

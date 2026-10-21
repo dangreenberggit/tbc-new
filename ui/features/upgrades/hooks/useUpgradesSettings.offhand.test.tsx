@@ -18,6 +18,8 @@ const HELD = [32361, 28734, 30911]; // Blind-Seers Icon, Jewel of Infinite Possi
 const ONE_HANDER = 28524; // Emerald Ripper
 const TWO_HANDER = 29988; // The Nexus Key
 const POOL = [...HELD, ONE_HANDER, TWO_HANDER].map(weapon);
+/** What a worn two-hander holds out: the off-hand-only items and the one-hander (tickets 365, 700). */
+const HELD_OUT = HELD.length + 1;
 
 vi.mock('../model/data/data', async importOriginal => ({
 	...(await importOriginal<typeof import('../model/data/data')>()),
@@ -54,14 +56,14 @@ const mount = (mainHandId: number) => {
 };
 
 describe('useUpgradesSettings and the worn main hand', () => {
-	it('counts the off-hand-only items again when a two-hander is swapped for a one-hander', () => {
+	it('counts the off-hand-only items and one-handers again when a two-hander is swapped for a one-hander', () => {
 		const { view, wear } = mount(TWO_HANDER);
-		expect(view.result.current.eligibleCount).toBe(POOL.length - HELD.length);
+		expect(view.result.current.eligibleCount).toBe(POOL.length - HELD_OUT);
 
 		wear(ONE_HANDER);
 		expect(view.result.current.eligibleCount).toBe(POOL.length);
 
 		wear(TWO_HANDER);
-		expect(view.result.current.eligibleCount).toBe(POOL.length - HELD.length);
+		expect(view.result.current.eligibleCount).toBe(POOL.length - HELD_OUT);
 	});
 });

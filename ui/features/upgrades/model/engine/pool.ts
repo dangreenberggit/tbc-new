@@ -359,3 +359,29 @@ export function offHandBlockedEntries(
     return placements.length === 1 && placements[0] === "offhand";
   });
 }
+
+/**
+ * The one-handed weapons in `pool` while the worn main hand is a
+ * two-hander. A one-hander priced alone would leave the off hand empty: a
+ * dual-wielder sims with one weapon and a caster loses its off-hand item's
+ * stats, so the row would price a build nobody wears. A run holds them out
+ * before ordering, as it does the off-hand items above, and the tab's
+ * candidate count leaves them out with the same rule. Two-handers stay, and
+ * an item whose hand type the database does not give stays too.
+ */
+export function oneHandBlockedEntries(
+  pool: readonly PoolEntry[],
+  spec: SpecId | undefined,
+  wornMainHandId: number | undefined
+): PoolEntry[] {
+  if (mainHandLeavesOffHandFree(wornMainHandId)) return [];
+  return pool.filter((e) => {
+    if (e.slot !== "weapon") return false;
+    const handType = getItem(e.itemId)?.handType;
+    if (handType === undefined || handType === HandType.HandTypeTwoHand) {
+      return false;
+    }
+    const placements = simSlotsForPoolSlot(e.slot, spec, e.itemId);
+    return !(placements.length === 1 && placements[0] === "offhand");
+  });
+}

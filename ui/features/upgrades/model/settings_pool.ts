@@ -7,7 +7,7 @@
 
 import type { PagePreset } from './data/data';
 import { isKaelTempLegendary } from './engine/kael-temp';
-import { filterPoolByPhase, type ItemSource, offHandBlockedEntries, type PoolEntry } from './engine/pool';
+import { filterPoolByPhase, type ItemSource, offHandBlockedEntries, oneHandBlockedEntries, type PoolEntry } from './engine/pool';
 import type { SpecId } from './engine/types';
 import { SOURCE_LABELS } from './engine/view';
 import { HEROIC_FIVE_MAN } from './pool_source';
@@ -217,11 +217,15 @@ export type MainHandContext = { spec: SpecId | undefined; wornMainHandId: number
 
 /**
  * The candidates an uncapped run sims: the engine's own phase filter and Kael exclusion, applied to the effective
- * pool, less the off-hand-only items a worn two-hander holds out.
+ * pool, less the off-hand-only items and one-handed weapons a worn two-hander holds out.
  */
 export const eligibleCount = (pool: readonly PoolEntry[], maxPhase: number, { spec, wornMainHandId }: MainHandContext): number => {
 	const phaseEligible = filterPoolByPhase(pool, maxPhase).filter(e => !isKaelTempLegendary(e.itemId));
-	return phaseEligible.length - offHandBlockedEntries(phaseEligible, spec, wornMainHandId).length;
+	return (
+		phaseEligible.length -
+		offHandBlockedEntries(phaseEligible, spec, wornMainHandId).length -
+		oneHandBlockedEntries(phaseEligible, spec, wornMainHandId).length
+	);
 };
 
 /** A row's badge for a selected set: the set's key, and its name as the gear tab names it. */
