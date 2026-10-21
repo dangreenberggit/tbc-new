@@ -378,7 +378,7 @@ export function oneHandBlockedEntries(
   return pool.filter((e) => {
     if (e.slot !== "weapon") return false;
     const handType = getItem(e.itemId)?.handType;
-    if (handType === undefined || handType === HandType.HandTypeTwoHand) {
+    if (handType == null || handType === HandType.HandTypeTwoHand) {
       return false;
     }
     const placements = simSlotsForPoolSlot(e.slot, spec, e.itemId);
