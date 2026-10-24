@@ -4172,10 +4172,9 @@ export function setBonusHitUnreadNote(err: unknown): Substitution {
   return {
     field: "Set bonuses and the hit cap",
     detail:
-      "The gems swapped to turn your meta gem on were kept the same at " +
-      "every set piece count, so hit rating from set bonuses was not " +
-      "counted against the hit cap, because your hit rating at one " +
-      `piece count could not be read.\n${errorText(err)}`,
+      "Your hit rating could not be read at one set piece count, so the " +
+      "gem swaps for your meta gem did not count hit rating from set " +
+      `bonuses against the hit cap.\n${errorText(err)}`,
   };
 }
 
