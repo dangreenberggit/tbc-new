@@ -1068,13 +1068,7 @@ export async function rankUpgrades(
           };
           baselineSimHit = hitPercent * capProfile.ratingPerPercent;
         } else {
-          hitCapNotes.push({
-            field: "Meta gem and hit rating",
-            detail:
-              "If gems were swapped to turn your meta gem on, hit rating was " +
-              "treated as always useful, because the hit cap is only known " +
-              "for a fight where every target is level 73.",
-          });
+          hitCapNotes.push(hitCapUnknownNote());
         }
       } catch (err) {
         // After Stop the candidate loop returns the partial ranking; a read
@@ -1085,13 +1079,7 @@ export async function rankUpgrades(
             err
           );
           hitCapFailed = true;
-          hitCapNotes.push({
-            field: "Meta gem and hit rating",
-            detail:
-              "If gems were swapped to turn your meta gem on, hit rating was " +
-              "treated as always useful, because your hit rating could not " +
-              `be read.\n${err instanceof Error ? err.message : String(err)}`,
-          });
+          hitCapNotes.push(hitRatingUnreadNote(err));
         }
       }
     }
@@ -1190,13 +1178,7 @@ export async function rankUpgrades(
             "[upgrades] meta repair: set version hit not read, shared layout used",
             err
           );
-          hitCapNotes.push({
-            field: "Meta gem and hit rating",
-            detail:
-              "The set-bonus sims used the same gems at every piece count, " +
-              "because the hit rating of one of them could not be read.\n" +
-              `${err instanceof Error ? err.message : String(err)}`,
-          });
+          hitCapNotes.push(setBonusHitUnreadNote(err));
         }
         return shared();
       }
@@ -1205,13 +1187,7 @@ export async function rankUpgrades(
     const baselineDps = observation.dps;
     const ranked: RankedItem[] = [];
     const winningRequests = new Map<number, RaidSimRequest>();
-    const candidateSkips: {
-      kind: "sim" | "repair";
-      itemId: number;
-      name: string;
-      slot: string;
-      reason: string;
-    }[] = [];
+    const candidateSkips: CandidateSkip[] = [];
     const individualDeltasByItemId = new Map<number, IndividualDelta>();
 
     const talentsString = talentsStringFromRequest(request);
@@ -1758,18 +1734,8 @@ export async function rankUpgrades(
         ...metaPreferenceDisclosure(gems.spec),
         ...offHandBlockedDisclosure(blockedOffHand.length),
         ...oneHandBlockedDisclosure(blockedOneHand.length),
-        ...candidateSkips.map((s) => ({
-          field: s.name,
-          detail:
-            (s.kind === "sim"
-              ? "A sim of this item failed, so that try was left out of the ranking."
-              : "No gem swap could turn your meta gem on with this item equipped, so that try was left out of the ranking.") +
-            `\nitem ${s.itemId}, slot ${s.slot}: ${s.reason}`,
-        })),
-        ...packageSimSkips.map((s) => ({
-          field: `${s.setName} ${s.threshold}-piece set bonus`,
-          detail: `The ${s.setName} ${s.threshold}-piece set bonus was not measured, because ${s.reason}`,
-        })),
+        ...candidateSkips.map(candidateSkipSubstitution),
+        ...packageSimSkips.map(setBonusSkipSubstitution),
       ],
       items: ranked,
       ...(setBonuses.length > 0 ? { setBonuses } : {}),
@@ -2251,7 +2217,7 @@ async function buildSetBonuses(
           setId,
           setName: label,
           threshold,
-          reason: `no gem swap could turn your meta gem on.\n${err.message}`,
+          reason: SET_BONUS_SKIP_REASONS.metaOff(err.message),
         });
         results.push({
           setId,
@@ -2303,7 +2269,7 @@ async function buildSetBonuses(
             setId,
             setName: label,
             threshold,
-            reason: "the sims that measure it failed.",
+            reason: SET_BONUS_SKIP_REASONS.measuringSimsFailed,
           });
           results.push({
             setId,
@@ -2368,9 +2334,9 @@ async function buildSetBonuses(
             setId,
             setName: label,
             threshold,
-            reason: `its sim failed.\n${
+            reason: SET_BONUS_SKIP_REASONS.simFailed(
               err instanceof Error ? err.message : String(err)
-            }`,
+            ),
           });
           results.push({
             setId,
@@ -4088,22 +4054,22 @@ function swapItemAt(
   });
 }
 
-function metaPreferenceDisclosure(
+export function metaPreferenceDisclosure(
   spec: DetectedSpecId | undefined
 ): Substitution[] {
   const note = missingMetaPreferenceNote(spec);
-  return note ? [{ field: "Meta gem", detail: note }] : [];
+  return note ? [{ field: "Meta gem for your spec", detail: note }] : [];
 }
 
 /**
  * One line for every one-handed weapon the worn two-hander kept out of the
  * run (`oneHandBlockedEntries`).
  */
-function oneHandBlockedDisclosure(count: number): Substitution[] {
+export function oneHandBlockedDisclosure(count: number): Substitution[] {
   if (count === 0) return [];
   return [
     {
-      field: "one-hand candidates",
+      field: "One-handed weapons",
       detail:
         count === 1
           ? "1 one-handed weapon was not ranked, because you wear a two-handed weapon."
@@ -4113,17 +4079,104 @@ function oneHandBlockedDisclosure(count: number): Substitution[] {
 }
 
 /** One line for every off-hand item the worn two-hander kept out of the run. */
-function offHandBlockedDisclosure(count: number): Substitution[] {
+export function offHandBlockedDisclosure(count: number): Substitution[] {
   if (count === 0) return [];
   return [
     {
-      field: "off-hand candidates",
+      field: "Off-hand items",
       detail:
         count === 1
           ? "1 off-hand item was not ranked, because you wear a two-handed weapon."
           : `${count} off-hand items were not ranked, because you wear a two-handed weapon.`,
     },
   ];
+}
+
+/** One item in one slot that the run could not price. */
+export type CandidateSkip = {
+  kind: "sim" | "repair";
+  itemId: number;
+  name: string;
+  slot: SimSlotName;
+  reason: string;
+};
+
+/**
+ * A ring, trinket or one-hander is tried once per slot, so a failed try says
+ * only "this slot" and carries the slot as data for the page to name: the
+ * same item can still rank from its other slot.
+ */
+export function candidateSkipSubstitution(skip: CandidateSkip): Substitution {
+  return {
+    field: skip.name,
+    slot: skip.slot,
+    detail:
+      (skip.kind === "sim"
+        ? "This item was not ranked in this slot, because its sim failed."
+        : "This item was not ranked in this slot, because no gem swap could turn your meta gem on with it equipped.") +
+      `\nitem ${skip.itemId}, slot ${skip.slot}: ${skip.reason}`,
+  };
+}
+
+/** Why one set bonus was not measured; each ends its sentence before any error text. */
+export const SET_BONUS_SKIP_REASONS = {
+  simFailed: (error: string) => `its sim failed.\n${error}`,
+  metaOff: (error: string) =>
+    `no gem swap could turn your meta gem on.\n${error}`,
+  measuringSimsFailed: "the sims that measure it failed.",
+} as const;
+
+export function setBonusSkipSubstitution(skip: {
+  setName: string;
+  threshold: SetThreshold;
+  reason: string;
+}): Substitution {
+  return {
+    field: `${skip.setName} ${skip.threshold}-piece set bonus`,
+    detail: `The ${skip.setName} ${skip.threshold}-piece set bonus was not measured, because ${skip.reason}`,
+  };
+}
+
+const errorText = (err: unknown): string =>
+  err instanceof Error ? err.message : String(err);
+
+/**
+ * The hit-cap notes are written before any candidate is priced, so they say
+ * "If gems were swapped": a run whose meta gem stays on swaps nothing.
+ */
+export function hitCapUnknownNote(): Substitution {
+  return {
+    field: "Meta gem swaps and the hit cap",
+    detail:
+      "If gems were swapped to turn your meta gem on, hit rating was " +
+      "treated as always useful, because the hit cap is only known " +
+      "for a fight where every target is level 73.",
+  };
+}
+
+export function hitRatingUnreadNote(err: unknown): Substitution {
+  return {
+    field: "Meta gem swaps and your hit rating",
+    detail:
+      "If gems were swapped to turn your meta gem on, hit rating was " +
+      "treated as always useful, because your hit rating could not " +
+      `be read.\n${errorText(err)}`,
+  };
+}
+
+/**
+ * States the swaps as fact, unlike the notes above: `versionGears` reads a
+ * version's hit only when its build swapped gems.
+ */
+export function setBonusHitUnreadNote(err: unknown): Substitution {
+  return {
+    field: "Set bonuses and the hit cap",
+    detail:
+      "The gems swapped to turn your meta gem on were kept the same at " +
+      "every set piece count, so hit rating from set bonuses was not " +
+      "counted against the hit cap, because your hit rating at one " +
+      `piece count could not be read.\n${errorText(err)}`,
+  };
 }
 
 function fillOptsForSwap(

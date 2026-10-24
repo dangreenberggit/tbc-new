@@ -163,7 +163,8 @@
 			"batch_remove": "Remove from Batch Sim"
 		},
 		"assumptions": {
-			"substitutions_title": "Dropped candidates and substitutions ({{count}})",
+			"substitutions_title": "Items left out and other notes ({{count}})",
+			"substitution_in_slot": "{{field}} ({{slot}})",
 			"substitution_truncated_suffix": "… (full text in the browser console)"
 		}
 	}

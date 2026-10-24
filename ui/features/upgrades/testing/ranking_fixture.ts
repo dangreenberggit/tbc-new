@@ -1,4 +1,4 @@
-import type { RankedItem, Ranking } from '../model/engine/rank';
+import { candidateSkipSubstitution, type RankedItem, type Ranking } from '../model/engine/rank';
 import type { StoppedRanking } from '../model/run_state';
 
 /**
@@ -28,10 +28,13 @@ export const RANKING_FIXTURE: Ranking = {
 		standing: [{ id: 'race', detail: 'Race assumed RaceBloodElf from the pinned preset.' }],
 	},
 	substitutions: [
-		{
-			field: 'Warglaive of Azzinoth',
-			detail: 'A sim of this item failed, so that try was left out of the ranking.\nitem 32837, slot mainhand: panic: runtime error\ngoroutine 1 [running]:\nmain.main()',
-		},
+		candidateSkipSubstitution({
+			kind: 'sim',
+			itemId: 32837,
+			name: 'Warglaive of Azzinoth',
+			slot: 'mainhand',
+			reason: 'panic: runtime error\ngoroutine 1 [running]:\nmain.main()',
+		}),
 	],
 	caps: {
 		hit: {

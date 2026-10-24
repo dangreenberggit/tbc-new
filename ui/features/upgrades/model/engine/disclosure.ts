@@ -8,6 +8,7 @@
 
 import type { TalentHitAssumption } from "./caps";
 import type { MetaRepairSwap } from "./meta-repair";
+import type { SimOrderName } from "./slots";
 import type { ContentPhase, Race } from "./types";
 
 export type StandingAssumptionId =
@@ -33,6 +34,11 @@ export type Assumptions = {
 export type Substitution = {
   field: string;
   detail: string;
+  /**
+   * The slot a failed item try was for. Set only on item lines, because the
+   * same ring, trinket or one-hander is tried once per slot.
+   */
+  slot?: SimOrderName;
 };
 
 export function buildStandingAssumptions(race: Race): StandingAssumption[] {

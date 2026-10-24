@@ -7,6 +7,7 @@ import { formatToNumber } from '@sim/utils/format';
 import type { ProgressTrackerProgress } from '@ui-kit/ProgressTrackerDialog';
 
 import { substitutionFirstLine } from '../model/assumptions';
+import type { Substitution } from '../model/engine/disclosure';
 import type { ItemSource } from '../model/engine/pool';
 import { simSlotsForPoolSlot } from '../model/engine/pool';
 import { type RankedItem, RankError } from '../model/engine/rank';
@@ -147,7 +148,13 @@ export const fixtureOutcomeText = (outcome: FixtureLoadResult): string => {
 	return i18n.t('upgrades_tab.settings.fixture_rejected', { ns: 'upgrades', reason: outcome.detail ?? outcome.reason });
 };
 
-/** A dropped candidate's reason as the page shows it: the first line, and where the rest went when it was cut. */
+/** A left-out list label. An item line adds the slot it was tried in, because its text says only "this slot". */
+export const substitutionLabel = (substitution: Substitution): string =>
+	substitution.slot
+		? i18n.t('upgrades_tab.assumptions.substitution_in_slot', { ns: 'upgrades', field: substitution.field, slot: simSlotLabel(substitution.slot) })
+		: substitution.field;
+
+/** A dropped-list reason as the page shows it: the first line, and where the rest went when it was cut. */
 export const substitutionText = (detail: string): string => {
 	const { line, truncated } = substitutionFirstLine(detail);
 	return truncated ? `${line}${i18n.t('upgrades_tab.assumptions.substitution_truncated_suffix', { ns: 'upgrades' })}` : line;
