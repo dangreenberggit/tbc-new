@@ -157,10 +157,14 @@ export function substitutionsFromMetaRepair(
   if (swaps.length === 0) return [];
   return [
     {
-      field: "gems.meta-repair",
-      detail: `Meta inactive — repaired with ${swaps.length} min-EP gem swap(s): ${swaps
-        .map((s) => `${s.from}→${s.to}@item ${s.itemId}`)
-        .join(", ")}.`,
+      field: "Meta gem",
+      detail:
+        `Your meta gem was not active, so the ranking swapped ${
+          swaps.length === 1 ? "1 gem" : `${swaps.length} gems`
+        } in its own copy of your gear to turn it on; your gear itself was not changed.\n` +
+        `swaps: ${swaps
+          .map((s) => `gem ${s.from} -> gem ${s.to} on item ${s.itemId}`)
+          .join(", ")}`,
     },
   ];
 }

@@ -29,8 +29,8 @@ export const RANKING_FIXTURE: Ranking = {
 	},
 	substitutions: [
 		{
-			field: 'candidate 32837 (mainhand)',
-			detail: 'Warglaive of Azzinoth was dropped from the ranking: the sim failed on this swap — panic: runtime error\ngoroutine 1 [running]:\nmain.main()',
+			field: 'Warglaive of Azzinoth',
+			detail: 'A sim of this item failed, so that try was left out of the ranking.\nitem 32837, slot mainhand: panic: runtime error\ngoroutine 1 [running]:\nmain.main()',
 		},
 	],
 	caps: {

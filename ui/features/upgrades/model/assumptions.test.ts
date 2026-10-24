@@ -56,7 +56,7 @@ describe('substitutionFirstLine', () => {
 describe('substitutionConsoleLines', () => {
 	it('gives the full text of each reason the page shortened, for the console the page points to', () => {
 		expect(substitutionConsoleLines(RANKING_FIXTURE.substitutions)).toEqual([
-			'[upgrades] candidate 32837 (mainhand): Warglaive of Azzinoth was dropped from the ranking: the sim failed on this swap — panic: runtime error\ngoroutine 1 [running]:\nmain.main()',
+			'[upgrades] Warglaive of Azzinoth: A sim of this item failed, so that try was left out of the ranking.\nitem 32837, slot mainhand: panic: runtime error\ngoroutine 1 [running]:\nmain.main()',
 		]);
 		expect(substitutionConsoleLines([{ field: 'hit cap', detail: 'Kept the worn hit gems.' }])).toEqual([]);
 	});

@@ -263,7 +263,7 @@ export function missingMetaPreferenceNote(
   spec: DetectedSpecId | undefined
 ): string | undefined {
   if (spec === undefined || SPEC_PREFERRED_METAS[spec]) return undefined;
-  return `no meta preference recorded for ${spec} — meta sockets on candidate items were left empty, so those items are priced without any meta gem's stats or effect and without their socket bonus`;
+  return `No meta gem is known for your spec, so meta sockets on candidate items were left empty and those items are priced without a meta gem and without their socket bonus.\nspec: ${spec}`;
 }
 
 /**

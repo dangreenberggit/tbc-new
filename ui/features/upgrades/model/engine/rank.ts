@@ -1069,10 +1069,11 @@ export async function rankUpgrades(
           baselineSimHit = hitPercent * capProfile.ratingPerPercent;
         } else {
           hitCapNotes.push({
-            field: "gems.meta-repair-hit-cap",
+            field: "Meta gem and hit rating",
             detail:
-              "Meta repair valued hit at full weight: the hit cap is set " +
-              "only for a fight whose targets are all level 73.",
+              "If gems were swapped to turn your meta gem on, hit rating was " +
+              "treated as always useful, because the hit cap is only known " +
+              "for a fight where every target is level 73.",
           });
         }
       } catch (err) {
@@ -1085,10 +1086,11 @@ export async function rankUpgrades(
           );
           hitCapFailed = true;
           hitCapNotes.push({
-            field: "gems.meta-repair-hit-cap",
+            field: "Meta gem and hit rating",
             detail:
-              "Meta repair valued hit at full weight: the character's hit " +
-              `could not be read (${err instanceof Error ? err.message : String(err)}).`,
+              "If gems were swapped to turn your meta gem on, hit rating was " +
+              "treated as always useful, because your hit rating could not " +
+              `be read.\n${err instanceof Error ? err.message : String(err)}`,
           });
         }
       }
@@ -1189,11 +1191,11 @@ export async function rankUpgrades(
             err
           );
           hitCapNotes.push({
-            field: "gems.meta-repair-set-versions",
+            field: "Meta gem and hit rating",
             detail:
-              "Each version of the set gear used one shared gem layout, so " +
-              "meta repair did not count set-bonus hit against the hit cap: " +
-              `a version's hit could not be read (${err instanceof Error ? err.message : String(err)}).`,
+              "The set-bonus sims used the same gems at every piece count, " +
+              "because the hit rating of one of them could not be read.\n" +
+              `${err instanceof Error ? err.message : String(err)}`,
           });
         }
         return shared();
@@ -1757,18 +1759,16 @@ export async function rankUpgrades(
         ...offHandBlockedDisclosure(blockedOffHand.length),
         ...oneHandBlockedDisclosure(blockedOneHand.length),
         ...candidateSkips.map((s) => ({
-          field: `candidate ${s.itemId} (${s.slot})`,
+          field: s.name,
           detail:
-            `${s.name} was dropped from the ranking: ` +
             (s.kind === "sim"
-              ? `the sim failed on this swap — ${s.reason}`
-              : `gem repair could not activate its meta — ${s.reason}`),
+              ? "A sim of this item failed, so that try was left out of the ranking."
+              : "No gem swap could turn your meta gem on with this item equipped, so that try was left out of the ranking.") +
+            `\nitem ${s.itemId}, slot ${s.slot}: ${s.reason}`,
         })),
         ...packageSimSkips.map((s) => ({
-          field: `${s.setName} ${s.threshold}pc completion package`,
-          detail:
-            `the ${s.setName} ${s.threshold}pc completion package could not ` +
-            `be measured: ${s.reason}`,
+          field: `${s.setName} ${s.threshold}-piece set bonus`,
+          detail: `The ${s.setName} ${s.threshold}-piece set bonus was not measured, because ${s.reason}`,
         })),
       ],
       items: ranked,
@@ -2251,7 +2251,7 @@ async function buildSetBonuses(
           setId,
           setName: label,
           threshold,
-          reason: `gem repair could not activate its meta — ${err.message}`,
+          reason: `no gem swap could turn your meta gem on.\n${err.message}`,
         });
         results.push({
           setId,
@@ -2303,7 +2303,7 @@ async function buildSetBonuses(
             setId,
             setName: label,
             threshold,
-            reason: "the same-gear sims of its bonus failed",
+            reason: "the sims that measure it failed.",
           });
           results.push({
             setId,
@@ -2368,7 +2368,7 @@ async function buildSetBonuses(
             setId,
             setName: label,
             threshold,
-            reason: `the sim failed — ${
+            reason: `its sim failed.\n${
               err instanceof Error ? err.message : String(err)
             }`,
           });
@@ -4092,7 +4092,7 @@ function metaPreferenceDisclosure(
   spec: DetectedSpecId | undefined
 ): Substitution[] {
   const note = missingMetaPreferenceNote(spec);
-  return note ? [{ field: "gems.meta-preference", detail: note }] : [];
+  return note ? [{ field: "Meta gem", detail: note }] : [];
 }
 
 /**
