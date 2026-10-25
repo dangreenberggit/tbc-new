@@ -83,6 +83,12 @@ var ItemOverrides = []*proto.UIItem{
 	{Id: 281895, Phase: 3}, // Brightbrew Charm (ilvl 141)
 	{Id: 281903, Phase: 3}, // Direbrew's Shanker (ilvl 141)
 
+	{Id: 281907, Phase: 3}, // Ring of Ghoulish Delight (ilvl 141)
+	{Id: 281911, Phase: 3}, // The Horseman's Signet Ring (ilvl 141)
+	{Id: 281915, Phase: 3}, // Witches Band (ilvl 141)
+	{Id: 281919, Phase: 3}, // The Horseman's Helm (ilvl 141)
+	{Id: 281923, Phase: 3}, // The Horseman's Blade (ilvl 141)
+
 	// Battlemaster trinkets are phase 3
 	{Id: 33832, Phase: 3}, // Battlemaster's Determination
 	{Id: 34049, Phase: 3}, // Battlemaster's Audacity
@@ -215,27 +221,29 @@ var ItemDenyList = map[int32]struct{}{
 	281902: {}, // Direbrew's Shanker (ilvl 128)
 	281904: {}, // Direbrew's Shanker (ilvl 154)
 
-	// TBC - Hallows End - Old items
-	// NOTE: Enable the correct ilvl once the holiday comes around
+	// TBC - Hallows End - Items with the wrong ilvl; the holiday runs at ilvl 141
+	33808:  {}, // The Horseman's Helm (ilvl 110)
+	33957:  {}, // Witches Band (ilvl 110)
+	33958:  {}, // The Horseman's Signet Ring (ilvl 110)
+	33959:  {}, // Ring of Ghoulish Delight (ilvl 110)
+	34073:  {}, // The Horseman's Signet Ring (ilvl 110)
+	34074:  {}, // Witches Band (ilvl 110)
+	34075:  {}, // Ring of Ghoulish Delight (ilvl 110)
+	38175:  {}, // The Horseman's Blade (ilvl 115)
 	281905: {}, // Ring of Ghoulish Delight (ilvl 115)
 	281906: {}, // Ring of Ghoulish Delight (ilvl 128)
-	281907: {}, // Ring of Ghoulish Delight (ilvl 141)
 	281908: {}, // Ring of Ghoulish Delight (ilvl 154)
 	281909: {}, // The Horseman's Signet Ring (ilvl 115)
 	281910: {}, // The Horseman's Signet Ring (ilvl 128)
-	281911: {}, // The Horseman's Signet Ring (ilvl 141)
 	281912: {}, // The Horseman's Signet Ring (ilvl 154)
 	281913: {}, // Witches Band (ilvl 115)
 	281914: {}, // Witches Band (ilvl 128)
-	281915: {}, // Witches Band (ilvl 141)
 	281916: {}, // Witches Band (ilvl 154)
 	281917: {}, // The Horseman's Helm (ilvl 115)
 	281918: {}, // The Horseman's Helm (ilvl 128)
-	281919: {}, // The Horseman's Helm (ilvl 141)
 	281920: {}, // The Horseman's Helm (ilvl 154)
 	281921: {}, // The Horseman's Blade (ilvl 115)
 	281922: {}, // The Horseman's Blade (ilvl 128)
-	281923: {}, // The Horseman's Blade (ilvl 141)
 	281924: {}, // The Horseman's Blade (ilvl 154)
 }
 

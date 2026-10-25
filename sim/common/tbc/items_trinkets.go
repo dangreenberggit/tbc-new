@@ -487,8 +487,8 @@ func init() {
 		})
 
 		eligibleSlots := character.ItemSwap.EligibleSlotsForItem(31856)
-		character.AddStatProcBuff(39438, meleeAura, false, eligibleSlots)
-		character.AddStatProcBuff(39441, casterAura, false, eligibleSlots)
+		character.AddStatProcBuff(31856, meleeAura, false, eligibleSlots)
+		character.AddStatProcBuff(31856, casterAura, false, eligibleSlots)
 		character.ItemSwap.RegisterProc(31856, meleeProcAura)
 		character.ItemSwap.RegisterProc(31856, casterProcAura)
 	})
@@ -524,7 +524,7 @@ func init() {
 		})
 
 		eligibleSlots := character.ItemSwap.EligibleSlotsForItem(31857)
-		character.AddStatProcBuff(39442, aura, false, eligibleSlots)
+		character.AddStatProcBuff(31857, aura, false, eligibleSlots)
 		character.ItemSwap.RegisterProc(31857, procAura)
 	})
 

@@ -68,14 +68,14 @@ func RegisterAllOnUseCds() {
 	// shared.NewSimpleStatActive(30847) // X-52 Rocket Helmet - https://www.wowhead.com/tbc/spell=37896
 	// shared.NewSimpleStatActive(32538) // Skywitch's Drape - https://www.wowhead.com/tbc/spell=12438
 	// shared.NewSimpleStatActive(32539) // Skyguard's Drape - https://www.wowhead.com/tbc/spell=12438
-	// shared.NewSimpleStatActive(33808) // The Horseman's Helm - https://www.wowhead.com/tbc/spell=43873
 	// shared.NewSimpleStatActive(33820) // Weather-Beaten Fishing Hat - https://www.wowhead.com/tbc/spell=43699
 	// shared.NewSimpleStatActive(34430) // Glimmering Naaru Sliver - https://www.wowhead.com/tbc/spell=45052
 	// shared.NewSimpleStatActive(34471) // Vial of the Sunwell - https://www.wowhead.com/tbc/spell=45064
 	// shared.NewSimpleStatActive(35275) // Orb of the Sin'dorei - https://www.wowhead.com/tbc/spell=46354
 	// shared.NewSimpleStatActive(35581) // Rocket Boots Xtreme Lite - https://www.wowhead.com/tbc/spell=51582
 	// shared.NewSimpleStatActive(35703) // Figurine - Seaspray Albatross - https://www.wowhead.com/tbc/spell=46785
-	// shared.NewSimpleStatActive(38175) // The Horseman's Blade - https://www.wowhead.com/tbc/spell=50070
+	// shared.NewSimpleStatActive(281919) // The Horseman's Helm - https://www.wowhead.com/tbc/spell=43873
+	// shared.NewSimpleStatActive(281923) // The Horseman's Blade - https://www.wowhead.com/tbc/spell=50070
 
 	// Agility
 	shared.NewSimpleStatActive(32658) // Badge of Tenacity - https://www.wowhead.com/tbc/spell=40729
