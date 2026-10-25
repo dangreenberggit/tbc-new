@@ -30,9 +30,9 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 		}).toEqual(expected);
 	});
 
-	it('totals the measured 36,945 / 38,897 rows and 858 BiS rows', () => {
+	it('totals the measured 36,782 / 38,734 rows and 860 BiS rows', () => {
 		const sum = (key: 'exclude' | 'include' | 'bisRows') => CELL_NAMES.reduce((n, name) => n + CELLS[name]![key], 0);
-		expect([sum('exclude'), sum('include'), sum('bisRows')]).toEqual([36945, 38897, 858]);
+		expect([sum('exclude'), sum('include'), sum('bisRows')]).toEqual([36782, 38734, 860]);
 	});
 
 	it.each(['ret-p5', 'feral-p5'])('%s: exclude is inside include, include-unticked is include, and the difference is the heroic-only items', name => {

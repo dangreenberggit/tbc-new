@@ -34,10 +34,10 @@ describe('assumptionsLine', () => {
 		expect(line).not.toContain('candidate cap');
 	});
 
-	// 1047: ret-p3 under include-unticked, measured once by the independent script `pool_source.cells.fixture.json`'s
+	// 1044: ret-p3 under include-unticked, measured once by the independent script `pool_source.cells.fixture.json`'s
 	// _comment describes, which no checkout holds; re-pin as that _comment says.
 	it('names the page’s database and the size of the pool the run drew from', () => {
-		expect(assumptionsLine(RANKING_FIXTURE, { specId: 'ret', host: dbPoolHost('ret') })).toContain(' · pool source: wowsims db (1047 entries)');
+		expect(assumptionsLine(RANKING_FIXTURE, { specId: 'ret', host: dbPoolHost('ret') })).toContain(' · pool source: wowsims db (1044 entries)');
 	});
 
 	it('leaves the pool lines out when the page is not known', () => {

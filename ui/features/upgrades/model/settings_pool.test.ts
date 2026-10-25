@@ -146,9 +146,9 @@ describe('eligibleCount', () => {
 
 	// Measured once under include-unticked by the independent script `pool_source.cells.fixture.json`'s _comment
 	// describes, which no checkout holds; re-pin as that _comment says.
-	it('matches the measured ret pool sizes (1178 at phase 4, 1444 at phase 5)', () => {
-		expect(eligibleCount(effectivePool(dbPoolFor('ret', 4), NO_FILTER), 4, NO_WEAPON)).toBe(1178);
-		expect(eligibleCount(effectivePool(dbPoolFor('ret', 5), NO_FILTER), 5, NO_WEAPON)).toBe(1444);
+	it('matches the measured ret pool sizes (1175 at phase 4, 1441 at phase 5)', () => {
+		expect(eligibleCount(effectivePool(dbPoolFor('ret', 4), NO_FILTER), 4, NO_WEAPON)).toBe(1175);
+		expect(eligibleCount(effectivePool(dbPoolFor('ret', 5), NO_FILTER), 5, NO_WEAPON)).toBe(1441);
 	});
 });
 
