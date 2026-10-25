@@ -71,7 +71,15 @@ const onBisList = (row: Pick<RankedItem, 'bisTags'>): boolean => row.bisTags.len
 /** A row a pane's main table shows: one that meets the cutoff, or a BiS-list row that misses it and is not owned (`paneRows`). */
 const inMainTable = (row: ViewRow): boolean => !row.belowCutoffInView || (!row.owned && onBisList(row));
 
-export type PaneRows = { main: ViewRow[]; notUpgrades: ReadonlySet<string>; belowCutoff: ViewRow[]; noBisListRow: boolean; noSourceRow: boolean };
+export type PaneRows = {
+	main: ViewRow[];
+	notUpgrades: ReadonlySet<string>;
+	belowCutoff: ViewRow[];
+	noBisListRow: boolean;
+	noSourceRow: boolean;
+	ownedBisRow: boolean;
+	ownedBisList: boolean;
+};
 
 /**
  * One pane's rows: its main table, the keys of the rows in that table that
@@ -90,8 +98,10 @@ export type PaneRows = { main: ViewRow[]; notUpgrades: ReadonlySet<string>; belo
  *
  * `noBisListRow` is true for a slot pane of a BiS-only view that has no row at
  * all, so the pane can say the slot has no BiS-list item instead of saying
- * every candidate simmed at or below the worn gear. A slot whose only BiS-list
- * row is owned and misses the cutoff does have one, so it stays false there.
+ * every candidate simmed at or below the worn gear. A pane of a BiS-only view
+ * whose rows are all owned and so out of the main table sets `ownedBisRow` (a
+ * slot) or `ownedBisList` (the Shopping list) instead, so the pane can say the
+ * player already wears the item (ticket 625).
  * It reads the slot's rows before the source cut, so a slot whose BiS-list
  * rows all come from hidden sources is not said to have none.
  *
@@ -107,6 +117,7 @@ export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 	const shownAnyway = missed.filter(onBisList);
 	const main = rows.filter(inMainTable);
 	const noBisListRow = view.bisOnly === true && tab !== SHOPPING_LIST_TAB && !(view.slotsBeforeSourceCut?.includes(tab) ?? rows.length > 0);
+	const allOwned = view.bisOnly === true && rows.length > 0 && main.length === 0 && rows.every(row => row.owned === true);
 	const sourceCutEmptied = rows.length === 0 || (main.length === 0 && view.panesWithMainBeforeSourceCut?.includes(tab) === true);
 	return {
 		main,
@@ -114,6 +125,8 @@ export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 		belowCutoff: missed.filter(row => !onBisList(row)),
 		noBisListRow,
 		noSourceRow: view.sourcesHidden === true && sourceCutEmptied && !noBisListRow,
+		ownedBisRow: allOwned && tab !== SHOPPING_LIST_TAB,
+		ownedBisList: allOwned && tab === SHOPPING_LIST_TAB,
 	};
 }
 

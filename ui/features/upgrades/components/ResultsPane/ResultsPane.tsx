@@ -9,8 +9,9 @@ import { ResultRows, ResultsTable, type RowContext, ScreenReaderResultsHead, Sor
 export interface ResultsPaneProps {
 	/**
 	 * The pane's rows as `paneRows` splits them. A slot pane under BiS only with no BiS-list row
-	 * (`noBisListRow`), or a pane "Filter by source" emptied (`noSourceRow`), says so in its empty
-	 * state instead of "No upgrades found".
+	 * (`noBisListRow`), a pane "Filter by source" emptied (`noSourceRow`), or a pane under BiS only
+	 * whose rows are all worn (`ownedBisRow`, `ownedBisList`), says so in its empty state instead of
+	 * "No upgrades found".
 	 */
 	rows: PaneRows;
 	rowContext: RowContext;
@@ -27,7 +28,7 @@ export interface ResultsPaneProps {
  * one sort, so a click on either head orders both.
  */
 export const ResultsPane = ({ rows, rowContext, groupOpen, onGroupOpenChange }: ResultsPaneProps) => {
-	const { main, notUpgrades, belowCutoff, noBisListRow, noSourceRow } = rows;
+	const { main, notUpgrades, belowCutoff, noBisListRow, noSourceRow, ownedBisRow, ownedBisList } = rows;
 	const mainTable = useResultsTable(main, rowContext);
 	const groupTable = useResultsTable(belowCutoff, rowContext);
 	return (
@@ -41,6 +42,10 @@ export const ResultsPane = ({ rows, rowContext, groupOpen, onGroupOpenChange }: 
 				<EmptyState body={i18n.t('upgrades_tab.results.empty_no_source_row', { ns: 'upgrades' })} />
 			) : noBisListRow ? (
 				<EmptyState body={i18n.t('upgrades_tab.results.empty_no_bis_row', { ns: 'upgrades' })} />
+			) : ownedBisRow ? (
+				<EmptyState body={i18n.t('upgrades_tab.results.empty_owned_bis_row', { ns: 'upgrades' })} />
+			) : ownedBisList ? (
+				<EmptyState body={i18n.t('upgrades_tab.results.empty_owned_bis_list', { ns: 'upgrades' })} />
 			) : (
 				<EmptyState
 					title={i18n.t('upgrades_tab.results.empty_no_upgrades', { ns: 'upgrades' })}
