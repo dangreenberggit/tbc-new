@@ -150,7 +150,6 @@ import {
   netInflation,
   nextMeasurableThreshold,
   type PackagePiece,
-  type PackageSelectionResult,
   selectPackage,
   type SelfSetConfound,
   SET_THRESHOLDS,
@@ -1584,7 +1583,9 @@ export async function rankUpgrades(
     let setBonuses = setBonusResult.bonuses;
     // Ticket 511: with the flag, each set row is valued by the step rule.
     const stepPath = (deps.measureBrokenSetValue ?? false) && !aborted;
-    if (setBonuses.length > 0 || setBonusResult.markedSetIds.length > 0) {
+    const hasSetContext =
+      setBonuses.length > 0 || setBonusResult.markedSetIds.length > 0;
+    if (hasSetContext) {
       applySetContext(
         ranked,
         setBonuses,
@@ -1600,9 +1601,7 @@ export async function rankUpgrades(
     // After the futures are complete and before replication rewrites the top
     // rows' `deltaDps` (C89): the step gears' sims, one per distinct gear.
     let steps =
-      stepPath &&
-      (setBonuses.length > 0 || setBonusResult.markedSetIds.length > 0) &&
-      counts
+      stepPath && hasSetContext && counts
         ? await measureSetSteps({
             deps: guardedDeps,
             ranked,
@@ -2005,6 +2004,17 @@ async function buildSetBonuses(
       [...individualDeltasByItemId.values()],
       slotIndexForPoolEntry
     );
+  // Every count from one above the worn count up to the most pieces the pool
+  // can fill, each with the pieces its package adds.
+  const packagesInReach = (setId: number, piecesWorn: number) => {
+    const packages: Array<{ count: SetThreshold; pieces: PackagePiece[] }> = [];
+    for (let t = Math.max(2, piecesWorn + 1); ; t++) {
+      const selection = selectFor(setId, t);
+      if (!selection.ok) break;
+      packages.push({ count: t, pieces: selection.addedPieces });
+    }
+    return packages;
+  };
   // Ticket 644, flag only: the counts each set has a bonus at, as the sim
   // itself lists them. Without it the gain side tried, and the ranking
   // listed, counts the set has no bonus at (Thunderheart Harness at 5).
@@ -2012,23 +2022,22 @@ async function buildSetBonuses(
     ? await setBonusCountsInReach(
         deps.sim,
         setIdsWithCandidates,
-        wornCounts,
-        selectFor,
+        (setId) => {
+          const packages = packagesInReach(setId, wornCounts.get(setId) ?? 0);
+          return packages[packages.length - 1]?.pieces;
+        },
         equipment,
         gems,
         composeFor
       )
     : new Map<number, ReadonlySet<number>>();
-  // Ticket 511, flag only: every count from one above the worn count up to
-  // the count the pool can fill at which the set has a bonus. The same-gear
-  // gate below decides which bonuses are worth something here.
+  // Ticket 511, flag only: the counts in reach at which the set has a bonus.
+  // The same-gear gate below decides which bonuses are worth something here.
   const reachableCounts = (setId: number, piecesWorn: number): SetThreshold[] => {
     const known = bonusCounts.get(setId);
-    const counts: SetThreshold[] = [];
-    for (let t = Math.max(2, piecesWorn + 1); selectFor(setId, t).ok; t++) {
-      if (!known || known.has(t)) counts.push(t);
-    }
-    return counts;
+    return packagesInReach(setId, piecesWorn)
+      .map((entry) => entry.count)
+      .filter((t) => !known || known.has(t));
   };
 
   // Ticket 511: the screen runs after the worn-set ladder and before the
@@ -3796,22 +3805,24 @@ function stopGuardedDeps(deps: Deps): Deps {
 
 /**
  * Ticket 644: for each set, the piece counts above the worn count at which
- * the sim has a bonus, up to the most pieces the pool can fill. They are the
- * sim's active bonuses (`<set> (<n>pc)`) on the current gear plus the
- * largest package, less those already active on the current gear. Reading
- * the sim's own list means no set name has to match a name the tab keeps.
- * When that package fails gem repair or a read fails, the set gets no counts,
+ * the sim has a bonus, up to the most pieces the pool can fill.
+ * `largestPackage` gives the pieces that fill the set to that most. The
+ * counts are the bonuses the sim lists as active (`<set> (<n>pc)`) on the
+ * current gear with those pieces added, less those already active on the
+ * current gear. The sim's own list is read so that no set name has to match
+ * a name the tab keeps.
+ *
+ * When those pieces fail gem repair or a read fails, the set gets no counts,
  * so the gain side tries none for it and the ranking lists none; a console
- * warning names the set. A Stop refuses the reads the same way, with no
- * warning, and the caller drops the set phase. A runner that cannot read the
- * bonuses gets an empty map: the gain side then tries every count, as before
- * this ticket.
+ * warning names the set. When Stop refuses a read, the set also gets no
+ * counts, with no warning, and the caller drops the set phase. A runner that
+ * cannot read the bonuses gives an empty map: the gain side then tries every
+ * count, as before this ticket.
  */
 async function setBonusCountsInReach(
   sim: SimRunner,
   setIds: ReadonlySet<number>,
-  wornCounts: ReadonlyMap<number, number>,
-  selectFor: (setId: number, count: SetThreshold) => PackageSelectionResult,
+  largestPackage: (setId: number) => PackagePiece[] | undefined,
   equipment: readonly SimItemSpec[],
   gems: GemContext,
   composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest
@@ -3822,12 +3833,7 @@ async function setBonusCountsInReach(
     sim.activeSetBonuses!(composeFor(eq));
   let wornNames: ReadonlySet<string> | undefined;
   for (const setId of [...setIds].sort((a, b) => a - b)) {
-    let top: PackagePiece[] | undefined;
-    for (let t = Math.max(2, (wornCounts.get(setId) ?? 0) + 1); ; t++) {
-      const selection = selectFor(setId, t);
-      if (!selection.ok) break;
-      top = selection.addedPieces;
-    }
+    const top = largestPackage(setId);
     if (!top) continue;
     let build: ChainBuild;
     try {
