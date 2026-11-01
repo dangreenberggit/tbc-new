@@ -99,7 +99,8 @@ describe('UpgradesResults', () => {
 		const pane = activePane(container);
 
 		expect(within(pane).getAllByTestId('upgrades-item-name')[0]?.className).toBe('text-quality-epic');
-		expect(within(pane).getAllByTestId('upgrades-set-bonus')).toHaveLength(1);
+		// Faceguard's own break, and Lightbringer Breastplate's bonuses within the noise (ticket 655).
+		expect(within(pane).getAllByTestId('upgrades-set-bonus')).toHaveLength(2);
 	});
 
 	it('works out a row’s own set break from the gear the ranking was measured on (ticket 536)', () => {

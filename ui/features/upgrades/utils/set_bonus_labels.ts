@@ -83,6 +83,8 @@ export function tipLabelText(label: TipLabel): string {
 		}
 		case 'screened':
 			return i18n.t('upgrades_tab.set_bonus.tip_screened', { ns: 'upgrades', set: label.set });
+		case 'noise':
+			return i18n.t('upgrades_tab.set_bonus.tip_reachable_bonus', { ns: 'upgrades', set: label.set, threshold: label.threshold });
 		case 'total':
 			return i18n.t('upgrades_tab.set_bonus.tip_total', { ns: 'upgrades' });
 	}
@@ -108,6 +110,7 @@ const screenedValueText = (reason: ScreenedReason): string => {
 const valueText = (kind: SetBonusTip['kind'], entry: Extract<TipEntry, { type: 'line' }>): string => {
 	const { dps } = entry;
 	if (entry.label.kind === 'screened') return screenedValueText(entry.label.reason);
+	if (entry.label.kind === 'noise') return i18n.t('upgrades_tab.set_bonus.tip_too_small', { ns: 'upgrades' });
 	if (dps === undefined) return i18n.t('upgrades_tab.set_bonus.tip_couldnt_measure', { ns: 'upgrades' });
 	if (kind === 'receipt' && !entry.outcome) return `${dps > 0 ? '+' : ''}${dps.toFixed(1)}`;
 	const shown = Number(dps.toFixed(1));
@@ -138,6 +141,8 @@ export function tipLabelId(label: TipLabel): string {
 			return `reachable:${label.set}:${label.threshold}`;
 		case 'screened':
 			return `screened:${label.set}`;
+		case 'noise':
+			return `noise:${label.set}:${label.threshold}`;
 	}
 }
 
@@ -172,7 +177,7 @@ export const setBonusTipText = (tip: SetBonusTip): TipTextRow[] => {
 			value: valueText(tip.kind, entry),
 			...(entry.marker ? { marker: i18n.t('upgrades_tab.set_bonus.tip_figure_marker', { ns: 'upgrades' }) } : {}),
 			total: entry.label.kind === 'total',
-			...(entry.outcome || entry.label.kind === 'screened' ? { muted: true } : {}),
+			...(entry.outcome || entry.label.kind === 'screened' || entry.label.kind === 'noise' ? { muted: true } : {}),
 		};
 	});
 };

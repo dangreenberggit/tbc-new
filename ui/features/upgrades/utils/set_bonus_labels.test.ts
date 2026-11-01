@@ -75,6 +75,22 @@ describe('the not-counted section (ticket 336)', () => {
 		expect(row).toMatchObject({ label: `Lightbringer Battlegear${NBSP}2pc`, value: "couldn't measure" });
 	});
 
+	it('names a bonus within the noise, muted, with words in place of a figure (ticket 655)', () => {
+		const [row] = setBonusTipText({
+			subLine: 'hover_hint',
+			kind: 'receipt',
+			entries: [{ type: 'line', label: { kind: 'noise', set: 'Lightbringer Battlegear', threshold: 4 }, dps: undefined }],
+		});
+		expect(row).toEqual({
+			type: 'line',
+			id: 'noise:Lightbringer Battlegear:4',
+			label: `Lightbringer Battlegear${NBSP}4pc`,
+			value: 'too small to measure',
+			total: false,
+			muted: true,
+		});
+	});
+
 	it('prints each heading, and every line under it muted, as more or less than the item alone', () => {
 		const rows = setBonusTipText({
 			subLine: 'hover_hint',

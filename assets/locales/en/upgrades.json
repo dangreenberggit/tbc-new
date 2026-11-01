@@ -101,6 +101,7 @@
 			"tip_screened_unmeasured": "not measured",
 			"tip_screened_no_effect": "no effect in the sim",
 			"tip_screened_loss": "a loss with its pieces",
+			"tip_too_small": "too small to measure",
 			"tip_stop": "With {{pieces}} ({{threshold}}pc)",
 			"tip_stop_breaks": "With {{pieces}} ({{threshold}}pc, breaks {{broken}})",
 			"tip_step": "{{pieces}} ({{threshold}}pc)",

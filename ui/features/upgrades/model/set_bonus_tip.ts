@@ -41,6 +41,8 @@ export type TipLabel =
 	| { kind: 'reachable'; set: string; threshold: number; have: number; pieces: string[]; broken: BonusRef[] }
 	/** A set the set screen dropped (ADR-0035), so no bonus of it was measured for the row. */
 	| { kind: 'screened'; set: string; reason: ScreenedReason }
+	/** A bonus whose measured value is within the noise gate, so it has no figure (ticket 655). */
+	| { kind: 'noise'; set: string; threshold: number }
 	| { kind: 'total' };
 
 const SCREENED_REASONS = ['outside-band', 'exact-zero', 'below-zero'] as const satisfies readonly ScreenReason[];
@@ -206,6 +208,21 @@ function reachableLines(row: RankedItem, ctx: SetContext, noiseFloorDps: number,
 		}));
 }
 
+/**
+ * The bonuses of a step ranking row whose every bonus was measured within the
+ * noise gate (ticket 655, the owner's "Case 2 a sounds fine" of 2026-11-01):
+ * one line each, with no figure, so the row says its set was tried. A row with
+ * a bonus that clears the gate lists that one instead (`reachableLines`).
+ */
+function noiseLines(ctx: SetContext, noiseFloorDps: number): TipEntry[] {
+	const futures = ctx.futureBonuses ?? [];
+	if (!ctx.stepRanking || futures.some(f => stepEligible(f, noiseFloorDps))) return [];
+	return futures
+		.filter(f => f.belowGate)
+		.sort((a, b) => a.threshold - b.threshold)
+		.map(f => line({ kind: 'noise', set: ctx.setName, threshold: f.threshold }, undefined));
+}
+
 /** The toggle is never why a screened set is not counted, so a section with no reachable line names no reason. */
 function notCountedHeading(hasReachable: boolean, on: boolean): Extract<TipEntry, { type: 'heading' }>['heading'] {
 	if (!hasReachable) return 'not_counted';
@@ -300,7 +317,7 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 	if (ctx && noiseFloorDps !== undefined) {
 		const pastStop = on && potential.stopThreshold !== undefined;
 		const reachable = !on || potential.kind === 'none' || pastStop ? reachableLines(row, ctx, noiseFloorDps, potential.stopThreshold) : [];
-		const section = [...reachable, ...(screened ? [screened] : [])];
+		const section = [...reachable, ...(screened ? [screened] : []), ...noiseLines(ctx, noiseFloorDps)];
 		// "No gain over the item alone" would misstate a step past the stop, which is measured against the stop.
 		if (section.length > 0) notCounted.push({ type: 'heading', heading: notCountedHeading(reachable.length > 0 && !pastStop, on) }, ...section);
 	}

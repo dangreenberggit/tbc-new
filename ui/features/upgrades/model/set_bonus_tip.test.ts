@@ -85,8 +85,10 @@ describe('setBonusTipLines', () => {
 	});
 
 	it('gives nothing for a set row whose only line would repeat the figure', () => {
-		// Lightbringer Breastplate: its future bonuses are below the gate and it breaks nothing.
-		expect(setBonusTipLines(fixtureRow(4), context)).toBeNull();
+		// Lightbringer Breastplate as a ranking that did not measure steps: its future bonuses are below the gate and it breaks nothing.
+		const { stepRanking: _, ...notStepped } = fixtureRow(4).setContext!;
+		const row: RankedItem = { ...fixtureRow(4), setContext: notStepped };
+		expect(setBonusTipLines(row, context)).toBeNull();
 	});
 
 	it('itemises a measured break of the row’s own swap above its total', () => {
@@ -225,10 +227,26 @@ describe('setBonusTipLines', () => {
 			expect(tip?.entries).toContainEqual({ type: 'line', label: { kind: 'screened', set: LIGHTBRINGER, reason: 'exact-zero' }, dps: undefined });
 		});
 
-		it('gives nothing in either state for a future below the noise gate', () => {
-			const row = stepRow({ futureBonuses: [future({ belowGate: true, stepGearDps: undefined })] });
-			expect(setBonusTipLines(row, context)).toBeNull();
-			expect(setBonusTipLines(row, { ...context, withSetPotential: true })).toBeNull();
+		// Ticket 655 case 2: the owner chose candidate A on 2026-11-01 ("Case 2 a sounds fine").
+		it('names each bonus within the noise gate, with no figure, in both states', () => {
+			const row = stepRow({
+				futureBonuses: [
+					future({ belowGate: true, stepGearDps: undefined }),
+					future({ threshold: 4, piecesNeeded: 3, sameGearDps: 0, belowGate: true, stepGearDps: undefined }),
+				],
+			});
+			const noise = (threshold: number) => ({ type: 'line', label: { kind: 'noise', set: LIGHTBRINGER, threshold }, dps: undefined });
+			const expected = [totalLine(4.5), { type: 'heading', heading: 'not_counted' }, noise(2), noise(4)];
+			for (const withSetPotential of [false, true]) {
+				const tip = setBonusTipLines(row, { ...context, withSetPotential });
+				expect(tip).toMatchObject({ subLine: 'hover_hint', kind: 'receipt' });
+				expect(tip?.entries).toEqual(expected);
+			}
+		});
+
+		it('names no bonus within the noise when another bonus of the set clears the gate', () => {
+			const row = stepRow({ futureBonuses: [future(), future({ threshold: 4, piecesNeeded: 3, belowGate: true, stepGearDps: undefined })] });
+			expect(setBonusTipLines(row, context)?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_off' }, reachable(26)]);
 		});
 
 		// Ticket 655 case 1: each line says how much the figure would change if the tab counted that step in place of what it counts now.
