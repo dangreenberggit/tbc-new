@@ -3806,18 +3806,20 @@ function stopGuardedDeps(deps: Deps): Deps {
 /**
  * Ticket 644: for each set, the piece counts above the worn count at which
  * the sim has a bonus, up to the most pieces the pool can fill.
- * `largestPackage` gives the pieces that fill the set to that most. The
- * counts are the bonuses the sim lists as active (`<set> (<n>pc)`) on the
- * current gear with those pieces added, less those already active on the
- * current gear. The sim's own list is read so that no set name has to match
- * a name the tab keeps.
+ * `largestPackage` gives, for a set, the pieces that take it to the most
+ * pieces the pool can fill. The counts are the bonuses the sim lists as
+ * active (`<set> (<n>pc)`) on the current gear with those pieces added, less
+ * those already active on the current gear. The sim's own list is read so
+ * that no set name has to match a name the tab keeps.
  *
  * When those pieces fail gem repair or a read fails, the set gets no counts,
  * so the gain side tries none for it and the ranking lists none; a console
- * warning names the set. When Stop refuses a read, the set also gets no
- * counts, with no warning, and the caller drops the set phase. A runner that
- * cannot read the bonuses gives an empty map: the gain side then tries every
- * count, as before this ticket.
+ * warning names the set. The crossing gate also skips a set with no counts,
+ * which is intended: a failed check gives the set no entry. When Stop
+ * refuses a read, the set also gets no counts, with no warning, and
+ * `rankUpgrades` then drops the whole set phase. A runner that cannot read
+ * the bonuses gives an empty map: the gain side then tries every count, as
+ * before this ticket.
  */
 async function setBonusCountsInReach(
   sim: SimRunner,
