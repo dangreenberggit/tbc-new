@@ -137,6 +137,39 @@ describe('the not-counted section (ticket 336)', () => {
 		]);
 	});
 
+	// Ticket 655 case 1, the owner on 2026-11-01: "It could just show that the 4 piece is that amount (negative)".
+	it('prints a step past the stop as a signed figure like the receipt’s, and one within the noise in words', () => {
+		const malorne4 = reachable('Malorne Harness', 4, ['Mantle of Malorne', 'Breastplate of Malorne', 'Greaves of Malorne']);
+		const rows = setBonusTipText({
+			subLine: 'hover_hint',
+			kind: 'receipt',
+			entries: [
+				{ type: 'line', label: { kind: 'total' }, dps: 30.5 },
+				{ type: 'heading', heading: 'not_counted' },
+				{ type: 'line', label: malorne4, dps: -11.54, outcome: true, againstStop: true },
+				{ type: 'line', label: malorne4, dps: undefined, outcome: true, againstStop: true, belowNoise: true },
+			],
+		});
+		expect(rows.slice(2)).toEqual([
+			{
+				type: 'line',
+				id: 'reachable:Malorne Harness:4',
+				label: `Malorne Harness${NBSP}4pc with Mantle of Malorne, Breastplate of Malorne and Greaves of Malorne`,
+				value: '-11.5',
+				total: false,
+				muted: true,
+			},
+			{
+				type: 'line',
+				id: 'reachable:Malorne Harness:4#2',
+				label: `Malorne Harness${NBSP}4pc with Mantle of Malorne, Breastplate of Malorne and Greaves of Malorne`,
+				value: 'too small to measure',
+				total: false,
+				muted: true,
+			},
+		]);
+	});
+
 	it.each([
 		// Mock-up row 1, toggle off: the 4pc breaks the worn Malorne 2pc.
 		[

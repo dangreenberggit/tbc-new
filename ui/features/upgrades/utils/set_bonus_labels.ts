@@ -103,16 +103,18 @@ const screenedValueText = (reason: ScreenedReason): string => {
 };
 
 /**
- * A receipt figure is signed, with no unit (the column says DPS). An outcome
- * is "N DPS more" or "N DPS less" with no sign, because outcomes are not
- * added to anything.
+ * A receipt figure is signed, with no unit (the column says DPS). So is a
+ * step past the stop, the owner's "It could just show that the 4 piece is
+ * that amount (negative)" (ticket 655, 2026-11-01). Any other outcome is
+ * "N DPS more" or "N DPS less" with no sign, because outcomes are not added
+ * to anything.
  */
 const valueText = (kind: SetBonusTip['kind'], entry: Extract<TipEntry, { type: 'line' }>): string => {
 	const { dps } = entry;
 	if (entry.label.kind === 'screened') return screenedValueText(entry.label.reason);
-	if (entry.label.kind === 'noise') return i18n.t('upgrades_tab.set_bonus.tip_too_small', { ns: 'upgrades' });
+	if (entry.label.kind === 'noise' || entry.belowNoise) return i18n.t('upgrades_tab.set_bonus.tip_too_small', { ns: 'upgrades' });
 	if (dps === undefined) return i18n.t('upgrades_tab.set_bonus.tip_couldnt_measure', { ns: 'upgrades' });
-	if (kind === 'receipt' && !entry.outcome) return `${dps > 0 ? '+' : ''}${dps.toFixed(1)}`;
+	if ((kind === 'receipt' && !entry.outcome) || entry.againstStop) return `${dps > 0 ? '+' : ''}${dps.toFixed(1)}`;
 	const shown = Number(dps.toFixed(1));
 	const amount = Math.abs(shown).toFixed(1);
 	return shown < 0

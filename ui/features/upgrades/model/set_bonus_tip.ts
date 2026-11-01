@@ -9,6 +9,7 @@
 
 import { setBonusNoiseFloorDps } from './engine/cutoff';
 import type { RankedItem, Ranking, SetContext } from './engine/rank';
+import { clearsSameGearGate } from './engine/set-less-copies';
 import type { ScreenReason } from './engine/set-screen';
 import { bonusKey } from './engine/set-value';
 import type { SpecId } from './engine/types';
@@ -54,10 +55,12 @@ export type ScreenedReason = (typeof SCREENED_REASONS)[number];
  * total as shown; `marker` names the outcome the row's figure uses; `outcome`
  * marks a line after the total that is compared with the item alone, or with
  * the stop's gear for a step past the stop, and added to nothing.
+ * `againstStop` marks the step past the stop, and `belowNoise` a line with no
+ * figure because its difference is within the noise gate.
  */
 export type TipEntry =
 	| { type: 'heading'; heading: 'set_potential' | 'set_potential_totals' | 'not_counted_off' | 'not_counted_no_gain' | 'not_counted' }
-	| { type: 'line'; label: TipLabel; dps: number | undefined; marker?: true; outcome?: true };
+	| { type: 'line'; label: TipLabel; dps: number | undefined; marker?: true; outcome?: true; againstStop?: true; belowNoise?: true };
 
 export type SetBonusTip = { subLine: 'hover_hint' | 'not_counted'; kind: 'receipt' | 'outcomes'; entries: TipEntry[] };
 
@@ -176,36 +179,53 @@ function potentialLines(ctx: SetContext, noiseFloorDps: number, credit: number):
  * The bonuses a row can reach, each as a separate outcome: the row with its
  * partner pieces, naming the worn bonuses that step breaks beyond the row's own
  * swap, which the receipt already prices. Each figure is how much the row's
- * figure would change if it counted that step in place of what it counts now:
- * against the row alone, or with the toggle on against the stop's gear, for
- * the steps past the stop (ticket 655). Only the futures the step rule can stop
- * at (`stepEligible`, ticket 511), so a bonus within the noise is never shown
- * as a figure. Only a step ranking measures the row with its partner pieces;
- * elsewhere a future's figure is the bonus's own value, which a label naming
- * pieces and breaks would misstate.
+ * figure would change if it counted that step in place of what it counts now.
+ * With the toggle off it is measured against the row alone. With the toggle
+ * on it is measured against the stop's gear, for the steps past the stop
+ * (ticket 655). Only the futures the step rule can stop at are listed
+ * (`stepEligible`, ticket 511), so no bonus within the noise gate is listed
+ * here. A step past the stop also gets no figure when its difference from the
+ * stop's gear does not clear the same gate; its line says the difference is
+ * too small to measure.
+ *
+ * Only a step ranking measures the row with its partner pieces; elsewhere a
+ * future's figure is the bonus's own value, which a label naming pieces and
+ * breaks would misstate.
  */
 function reachableLines(row: RankedItem, ctx: SetContext, noiseFloorDps: number, stopThreshold?: number): TipEntry[] {
 	if (!ctx.stepRanking) return [];
 	const own = new Set((ctx.singleBreaks ?? []).map(bonusKey));
-	const stopGearDps = stopThreshold === undefined ? undefined : ctx.futureBonuses?.find(f => f.threshold === stopThreshold)?.stepGearDps;
-	if (stopThreshold !== undefined && stopGearDps === undefined) return [];
-	const reference = stopGearDps ?? ctx.singleDeltaDps ?? row.deltaDps;
+	const stop = stopThreshold === undefined ? undefined : ctx.futureBonuses?.find(f => f.threshold === stopThreshold);
+	if (stopThreshold !== undefined && stop?.stepGearDps === undefined) return [];
+	const reference = stop?.stepGearDps ?? ctx.singleDeltaDps ?? row.deltaDps;
 	return [...(ctx.futureBonuses ?? [])]
 		.sort((a, b) => a.threshold - b.threshold)
 		.filter(f => f.threshold > (stopThreshold ?? 0) && stepEligible(f, noiseFloorDps))
-		.map((f): TipEntry => ({
-			type: 'line',
-			label: {
-				kind: 'reachable',
-				set: ctx.setName,
-				threshold: f.threshold,
-				have: ctx.piecesWornBefore,
-				pieces: (f.pieces ?? []).map(p => p.name),
-				broken: (f.breaks ?? []).filter(b => !own.has(bonusKey(b))).map(ref),
-			},
-			dps: f.stepGearDps === undefined ? undefined : f.stepGearDps - reference,
-			outcome: true,
-		}));
+		.map((f): TipEntry => {
+			const dps = f.stepGearDps === undefined ? undefined : f.stepGearDps - reference;
+			// Both step gears are differences from the same baseline sim, so adding
+			// their errors in quadrature counts the baseline's error twice: the gate
+			// errs toward "too small to measure".
+			const belowNoise =
+				stop !== undefined &&
+				dps !== undefined &&
+				!clearsSameGearGate(Math.abs(dps), Math.hypot(f.stepGearSe ?? 0, stop.stepGearSe ?? 0), noiseFloorDps);
+			return {
+				type: 'line',
+				label: {
+					kind: 'reachable',
+					set: ctx.setName,
+					threshold: f.threshold,
+					have: ctx.piecesWornBefore,
+					pieces: (f.pieces ?? []).map(p => p.name),
+					broken: (f.breaks ?? []).filter(b => !own.has(bonusKey(b))).map(ref),
+				},
+				dps: belowNoise ? undefined : dps,
+				outcome: true,
+				...(stop ? { againstStop: true as const } : {}),
+				...(belowNoise ? { belowNoise: true as const } : {}),
+			};
+		});
 }
 
 /**

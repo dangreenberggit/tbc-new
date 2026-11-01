@@ -270,6 +270,12 @@ describe('setBonusTipLines', () => {
 				dps,
 				outcome: true,
 			});
+			/** The 4pc past the stop; `undefined` is a figure within the noise. */
+			const pastStop4 = (dps: number | undefined, broken: Array<{ setName: string; threshold: number }> = []) => ({
+				...reachable4(dps as number, broken),
+				againstStop: true,
+				...(dps === undefined ? { belowNoise: true } : {}),
+			});
 
 			it('lists the 4pc past a 2pc stop like the toggle-off line, valued against the stop’s gear', () => {
 				// 2pc gear 30.5 and 4pc gear 20 against current gear: the stop is the 2pc, and the 4pc would move the figure by 20 - 30.5.
@@ -280,10 +286,30 @@ describe('setBonusTipLines', () => {
 					{ type: 'line', label: { kind: 'pieces', form: 'step', pieces: ['Lightbringer Chestguard'], threshold: 2, broken: [] }, dps: 26 },
 					totalLine(30.5),
 					{ type: 'heading', heading: 'not_counted' },
-					reachable4(-10.5),
+					pastStop4(-10.5),
 				]);
 				// Toggle off is unchanged: both bonuses, each against the item alone.
 				expect(setBonusTipLines(row, context)?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_off' }, reachable(26), reachable4(15.5)]);
+			});
+
+			it('gives a step past the stop no figure when its difference from the stop’s gear is within the noise', () => {
+				// The noise floor is √2 × 3 = 4.24. A tie under the strict best-stop rule, then a 3.5 gap.
+				for (const stepGearDps of [30.5, 27]) {
+					const row = stepRow({ futureBonuses: [future(), fourPiece(stepGearDps)] });
+					const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
+					expect(tip?.entries.slice(-2)).toEqual([{ type: 'heading', heading: 'not_counted' }, pastStop4(undefined)]);
+				}
+			});
+
+			it('compares the gap with twice the two step gears’ standard errors added in quadrature', () => {
+				// A 10.5 gap: with both errors at 6, 2 × √72 = 16.97 hides it; at 3, the floor 4.24 and 2 × √18 = 8.49 do not.
+				for (const [se, expected] of [
+					[6, pastStop4(undefined)],
+					[3, pastStop4(-10.5)],
+				] as const) {
+					const row = stepRow({ futureBonuses: [future({ stepGearSe: se }), fourPiece(20, { stepGearSe: se })] });
+					expect(setBonusTipLines(row, { ...context, withSetPotential: true })?.entries.at(-1)).toEqual(expected);
+				}
 			});
 
 			it('lists nothing under "Not counted" when the stop is the last step', () => {
@@ -298,7 +324,7 @@ describe('setBonusTipLines', () => {
 				const justicar = { setId: 626, setName: 'Justicar Battlegear', threshold: 2 as const, dps: 30 };
 				const row = stepRow({ futureBonuses: [future(), fourPiece(20, { breaks: [justicar] })] });
 				const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
-				expect(tip?.entries.at(-1)).toEqual(reachable4(-10.5, [{ setName: 'Justicar Battlegear', threshold: 2 }]));
+				expect(tip?.entries.at(-1)).toEqual(pastStop4(-10.5, [{ setName: 'Justicar Battlegear', threshold: 2 }]));
 			});
 		});
 
