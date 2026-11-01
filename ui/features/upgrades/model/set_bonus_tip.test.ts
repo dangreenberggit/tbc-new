@@ -41,11 +41,11 @@ const future = (over: Partial<Future> = {}): Future => ({
 	sameGearDps: 20,
 	sameGearSe: 1,
 	stepGearDps: 30.5,
-	pieces: [{ itemId: 30987, name: 'Lightbringer Chestguard' }],
+	pieces: [{ itemId: 30990, name: 'Lightbringer Breastplate' }],
 	breaks: [],
 	...over,
 });
-/** Lightbringer Faceguard on a step ranking, at 4.5 DPS, breaking nothing unless `over` says so. */
+/** Fixture row 10, a Lightbringer Battlegear helm, on a step ranking, at 4.5 DPS, breaking nothing unless `over` says so. */
 const stepRow = (over: Partial<SetContext>): RankedItem => ({
 	...fixtureRow(10),
 	deltaDps: 4.5,
@@ -54,7 +54,7 @@ const stepRow = (over: Partial<SetContext>): RankedItem => ({
 const LIGHTBRINGER = 'Lightbringer Battlegear';
 const reachable = (dps: number, broken: Array<{ setName: string; threshold: number }> = []) => ({
 	type: 'line',
-	label: { kind: 'reachable', set: LIGHTBRINGER, threshold: 2, have: 0, pieces: ['Lightbringer Chestguard'], broken },
+	label: { kind: 'reachable', set: LIGHTBRINGER, threshold: 2, have: 0, pieces: ['Lightbringer Breastplate'], broken },
 	dps,
 	outcome: true,
 });
@@ -62,7 +62,7 @@ const totalLine = (dps: number) => ({ type: 'line', label: { kind: 'total' }, dp
 
 /**
  * A ranking whose set screen dropped Lightbringer for `reason`. Since ticket 644 the
- * dropped set has no `setBonuses` entry; `olderMarker` adds the one earlier rankings carry.
+ * dropped set has no `setBonuses` entry; `olderMarker` adds the one earlier rankings have.
  */
 const screenedRanking = (reason: 'outside-band' | 'exact-zero' | 'below-zero', olderMarker = false): Ranking => ({
 	...RANKING_FIXTURE,
@@ -105,7 +105,7 @@ describe('setBonusTipLines', () => {
 	it('folds an unmeasured break into the first line’s label and keeps that line', () => {
 		const row: RankedItem = {
 			...fixtureRow(10),
-			setContext: { ...fixtureRow(10).setContext!, singleBreaks: [{ setId: 627, setName: 'Crystalforge Battlegear', threshold: 2 }] },
+			setContext: { ...fixtureRow(10).setContext!, singleBreaks: [{ setId: 629, setName: 'Crystalforge Battlegear', threshold: 2 }] },
 		};
 		expect(lines(setBonusTipLines(row, context))).toEqual([
 			{ type: 'line', label: { kind: 'item_stats', unmeasuredBreaks: [{ setName: 'Crystalforge Battlegear', threshold: 2 }] }, dps: 4.4 },
@@ -165,7 +165,7 @@ describe('setBonusTipLines', () => {
 			expect(tip?.entries).toEqual([
 				{ type: 'line', label: { kind: 'item_stats', unmeasuredBreaks: [] }, dps: 4.5 },
 				{ type: 'heading', heading: 'set_potential' },
-				{ type: 'line', label: { kind: 'pieces', form: 'step', pieces: ['Lightbringer Chestguard'], threshold: 2, broken: [] }, dps: 26 },
+				{ type: 'line', label: { kind: 'pieces', form: 'step', pieces: ['Lightbringer Breastplate'], threshold: 2, broken: [] }, dps: 26 },
 				totalLine(30.5),
 			]);
 		});
@@ -251,16 +251,16 @@ describe('setBonusTipLines', () => {
 
 		// Ticket 655 case 1: each line says how much the figure would change if the tab counted that step in place of what it counts now.
 		describe('a bonus past the stop, with the toggle on (ticket 655)', () => {
-			const PIECES_4PC = ['Lightbringer Chestguard', 'Lightbringer Legplates', 'Lightbringer Shoulderplates'];
+			const PIECES_4PC = ['Lightbringer Breastplate', 'Lightbringer Greaves', 'Lightbringer Shoulderbraces'];
 			const fourPiece = (stepGearDps: number, over: Partial<Future> = {}): Future =>
 				future({
 					threshold: 4,
 					piecesNeeded: 3,
 					stepGearDps,
 					pieces: [
-						{ itemId: 30987, name: PIECES_4PC[0]! },
-						{ itemId: 30995, name: PIECES_4PC[1]! },
-						{ itemId: 30998, name: PIECES_4PC[2]! },
+						{ itemId: 30990, name: PIECES_4PC[0]! },
+						{ itemId: 30993, name: PIECES_4PC[1]! },
+						{ itemId: 30997, name: PIECES_4PC[2]! },
 					],
 					...over,
 				});
@@ -283,7 +283,7 @@ describe('setBonusTipLines', () => {
 				expect(setBonusTipLines(row, { ...context, withSetPotential: true })?.entries).toEqual([
 					{ type: 'line', label: { kind: 'item_stats', unmeasuredBreaks: [] }, dps: 4.5 },
 					{ type: 'heading', heading: 'set_potential' },
-					{ type: 'line', label: { kind: 'pieces', form: 'step', pieces: ['Lightbringer Chestguard'], threshold: 2, broken: [] }, dps: 26 },
+					{ type: 'line', label: { kind: 'pieces', form: 'step', pieces: ['Lightbringer Breastplate'], threshold: 2, broken: [] }, dps: 26 },
 					totalLine(30.5),
 					{ type: 'heading', heading: 'not_counted' },
 					pastStop4(-10.5),
@@ -329,7 +329,7 @@ describe('setBonusTipLines', () => {
 		});
 
 		it('keeps the receipt of the row’s own break and does not name that break again in a reachable line', () => {
-			const crystalforge = { setId: 627, setName: 'Crystalforge Battlegear', threshold: 2 as const };
+			const crystalforge = { setId: 629, setName: 'Crystalforge Battlegear', threshold: 2 as const };
 			const justicar = { setId: 626, setName: 'Justicar Battlegear', threshold: 2 as const };
 			const row = stepRow({ singleBreaks: [{ ...crystalforge, dps: 18.43 }], futureBonuses: [future({ breaks: [crystalforge, justicar] })] });
 			const tip = setBonusTipLines(row, context);
