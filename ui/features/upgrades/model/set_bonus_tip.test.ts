@@ -302,12 +302,15 @@ describe('setBonusTipLines', () => {
 			});
 
 			it('compares the gap with twice the two step gears’ standard errors added in quadrature', () => {
-				// A 10.5 gap: with both errors at 6, 2 × √72 = 16.97 hides it; at 3, the floor 4.24 and 2 × √18 = 8.49 do not.
-				for (const [se, expected] of [
-					[6, pastStop4(undefined)],
-					[3, pastStop4(-10.5)],
+				// A 10.5 gap. Either error alone at 6 hides it (2 × 6 = 12), so a gate that read only the other one would show it.
+				// Both at 4 hide it only together: 2 × √32 = 11.31, but 2 × 4 = 8. At 3, the floor 4.24 and 2 × √18 = 8.49 do not.
+				for (const [stopSe, stepSe, expected] of [
+					[6, 0, pastStop4(undefined)],
+					[0, 6, pastStop4(undefined)],
+					[4, 4, pastStop4(undefined)],
+					[3, 3, pastStop4(-10.5)],
 				] as const) {
-					const row = stepRow({ futureBonuses: [future({ stepGearSe: se }), fourPiece(20, { stepGearSe: se })] });
+					const row = stepRow({ futureBonuses: [future({ stepGearSe: stopSe }), fourPiece(20, { stepGearSe: stepSe })] });
 					expect(setBonusTipLines(row, { ...context, withSetPotential: true })?.entries.at(-1)).toEqual(expected);
 				}
 			});
