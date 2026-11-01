@@ -50,8 +50,8 @@ export type ScreenedReason = (typeof SCREENED_REASONS)[number];
  * `dps` undefined is a figure that was not measured. In a receipt every line
  * above the total is already rounded to tenths so the lines add up to the
  * total as shown; `marker` names the outcome the row's figure uses; `outcome`
- * marks a line after the total that is compared with the item alone and added
- * to nothing.
+ * marks a line after the total that is compared with the item alone, or with
+ * the stop's gear for a step past the stop, and added to nothing.
  */
 export type TipEntry =
 	| { type: 'heading'; heading: 'set_potential' | 'set_potential_totals' | 'not_counted_off' | 'not_counted_no_gain' | 'not_counted' }
@@ -104,7 +104,8 @@ const piecesLine = (form: 'stop' | 'step', term: { pieces: ReadonlyArray<{ name:
 	broken: term.broken.map(ref),
 });
 
-type Potential = { lines: Line[]; kind: 'unmeasured' | 'none' | 'itemised' | 'steps' | 'outcomes' };
+/** `stopThreshold` is the bonus a `steps` section stops at. */
+type Potential = { lines: Line[]; kind: 'unmeasured' | 'none' | 'itemised' | 'steps' | 'outcomes'; stopThreshold?: number };
 const NO_POTENTIAL: Potential = { lines: [], kind: 'none' };
 
 /**
@@ -147,7 +148,7 @@ function potentialLines(ctx: SetContext, noiseFloorDps: number, credit: number):
 							{ label: piecesLine('step', { ...s, broken: [] }), dps: s.piecesLineDps },
 						],
 			);
-			return { lines, kind: 'steps' };
+			return { lines, kind: 'steps', stopThreshold: steps.at(-1)!.threshold };
 		}
 		const lines = setPotentialTerms(ctx, noiseFloorDps)
 			.terms.filter((term): term is Extract<SetPotentialTerm, { kind: 'stop' }> => term.kind === 'stop')
@@ -171,20 +172,25 @@ function potentialLines(ctx: SetContext, noiseFloorDps: number, credit: number):
 
 /**
  * The bonuses a row can reach, each as a separate outcome: the row with its
- * partner pieces against the row alone, naming the worn bonuses that step
- * breaks beyond the row's own swap, which the receipt already prices. Only the
- * futures the step rule can stop at (`stepEligible`, ticket 511), so a bonus
- * within the noise is never shown as a figure. Only a step ranking measures the
- * row with its partner pieces; elsewhere a future's figure is the bonus's own
- * value, which a label naming pieces and breaks would misstate.
+ * partner pieces, naming the worn bonuses that step breaks beyond the row's own
+ * swap, which the receipt already prices. Each figure is how much the row's
+ * figure would change if it counted that step in place of what it counts now:
+ * against the row alone, or with the toggle on against the stop's gear, for
+ * the steps past the stop (ticket 655). Only the futures the step rule can stop
+ * at (`stepEligible`, ticket 511), so a bonus within the noise is never shown
+ * as a figure. Only a step ranking measures the row with its partner pieces;
+ * elsewhere a future's figure is the bonus's own value, which a label naming
+ * pieces and breaks would misstate.
  */
-function reachableLines(row: RankedItem, ctx: SetContext, noiseFloorDps: number): TipEntry[] {
+function reachableLines(row: RankedItem, ctx: SetContext, noiseFloorDps: number, stopThreshold?: number): TipEntry[] {
 	if (!ctx.stepRanking) return [];
 	const own = new Set((ctx.singleBreaks ?? []).map(bonusKey));
-	const single = ctx.singleDeltaDps ?? row.deltaDps;
+	const stopGearDps = stopThreshold === undefined ? undefined : ctx.futureBonuses?.find(f => f.threshold === stopThreshold)?.stepGearDps;
+	if (stopThreshold !== undefined && stopGearDps === undefined) return [];
+	const reference = stopGearDps ?? ctx.singleDeltaDps ?? row.deltaDps;
 	return [...(ctx.futureBonuses ?? [])]
 		.sort((a, b) => a.threshold - b.threshold)
-		.filter(f => stepEligible(f, noiseFloorDps))
+		.filter(f => f.threshold > (stopThreshold ?? 0) && stepEligible(f, noiseFloorDps))
 		.map((f): TipEntry => ({
 			type: 'line',
 			label: {
@@ -195,7 +201,7 @@ function reachableLines(row: RankedItem, ctx: SetContext, noiseFloorDps: number)
 				pieces: (f.pieces ?? []).map(p => p.name),
 				broken: (f.breaks ?? []).filter(b => !own.has(bonusKey(b))).map(ref),
 			},
-			dps: f.stepGearDps === undefined ? undefined : f.stepGearDps - single,
+			dps: f.stepGearDps === undefined ? undefined : f.stepGearDps - reference,
 			outcome: true,
 		}));
 }
@@ -292,9 +298,11 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 	// What the figure does not count, after the total, so the toggle never decides whether the popover exists (ticket 336).
 	const notCounted: TipEntry[] = [];
 	if (ctx && noiseFloorDps !== undefined) {
-		const reachable = on && potential.kind !== 'none' ? [] : reachableLines(row, ctx, noiseFloorDps);
+		const pastStop = on && potential.stopThreshold !== undefined;
+		const reachable = !on || potential.kind === 'none' || pastStop ? reachableLines(row, ctx, noiseFloorDps, potential.stopThreshold) : [];
 		const section = [...reachable, ...(screened ? [screened] : [])];
-		if (section.length > 0) notCounted.push({ type: 'heading', heading: notCountedHeading(reachable.length > 0, on) }, ...section);
+		// "No gain over the item alone" would misstate a step past the stop, which is measured against the stop.
+		if (section.length > 0) notCounted.push({ type: 'heading', heading: notCountedHeading(reachable.length > 0 && !pastStop, on) }, ...section);
 	}
 	if (entries.length === 0 && notCounted.length === 0) return null;
 	entries.push(line({ kind: 'total' }, total), ...notCounted);

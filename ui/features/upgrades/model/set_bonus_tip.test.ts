@@ -231,6 +231,59 @@ describe('setBonusTipLines', () => {
 			expect(setBonusTipLines(row, { ...context, withSetPotential: true })).toBeNull();
 		});
 
+		// Ticket 655 case 1: each line says how much the figure would change if the tab counted that step in place of what it counts now.
+		describe('a bonus past the stop, with the toggle on (ticket 655)', () => {
+			const PIECES_4PC = ['Lightbringer Chestguard', 'Lightbringer Legplates', 'Lightbringer Shoulderplates'];
+			const fourPiece = (stepGearDps: number, over: Partial<Future> = {}): Future =>
+				future({
+					threshold: 4,
+					piecesNeeded: 3,
+					stepGearDps,
+					pieces: [
+						{ itemId: 30987, name: PIECES_4PC[0]! },
+						{ itemId: 30995, name: PIECES_4PC[1]! },
+						{ itemId: 30998, name: PIECES_4PC[2]! },
+					],
+					...over,
+				});
+			const reachable4 = (dps: number, broken: Array<{ setName: string; threshold: number }> = []) => ({
+				type: 'line',
+				label: { kind: 'reachable', set: LIGHTBRINGER, threshold: 4, have: 0, pieces: PIECES_4PC, broken },
+				dps,
+				outcome: true,
+			});
+
+			it('lists the 4pc past a 2pc stop like the toggle-off line, valued against the stop’s gear', () => {
+				// 2pc gear 30.5 and 4pc gear 20 against current gear: the stop is the 2pc, and the 4pc would move the figure by 20 - 30.5.
+				const row = stepRow({ futureBonuses: [future(), fourPiece(20)] });
+				expect(setBonusTipLines(row, { ...context, withSetPotential: true })?.entries).toEqual([
+					{ type: 'line', label: { kind: 'item_stats', unmeasuredBreaks: [] }, dps: 4.5 },
+					{ type: 'heading', heading: 'set_potential' },
+					{ type: 'line', label: { kind: 'pieces', form: 'step', pieces: ['Lightbringer Chestguard'], threshold: 2, broken: [] }, dps: 26 },
+					totalLine(30.5),
+					{ type: 'heading', heading: 'not_counted' },
+					reachable4(-10.5),
+				]);
+				// Toggle off is unchanged: both bonuses, each against the item alone.
+				expect(setBonusTipLines(row, context)?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_off' }, reachable(26), reachable4(15.5)]);
+			});
+
+			it('lists nothing under "Not counted" when the stop is the last step', () => {
+				const row = stepRow({ futureBonuses: [future({ stepGearDps: 10 }), fourPiece(40)] });
+				const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
+				expect(tip?.entries.at(-1)).toEqual(totalLine(40));
+				expect(tip?.entries.filter(e => e.type === 'heading')).toEqual([{ type: 'heading', heading: 'set_potential' }]);
+				expect(addsUp(tip)).toBe(true);
+			});
+
+			it('names the worn bonuses the later step breaks beyond the row’s own swap, as the toggle-off line does', () => {
+				const justicar = { setId: 626, setName: 'Justicar Battlegear', threshold: 2 as const, dps: 30 };
+				const row = stepRow({ futureBonuses: [future(), fourPiece(20, { breaks: [justicar] })] });
+				const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
+				expect(tip?.entries.at(-1)).toEqual(reachable4(-10.5, [{ setName: 'Justicar Battlegear', threshold: 2 }]));
+			});
+		});
+
 		it('keeps the receipt of the row’s own break and does not name that break again in a reachable line', () => {
 			const crystalforge = { setId: 627, setName: 'Crystalforge Battlegear', threshold: 2 as const };
 			const justicar = { setId: 626, setName: 'Justicar Battlegear', threshold: 2 as const };
@@ -246,13 +299,24 @@ describe('setBonusTipLines', () => {
 			expect(addsUp(tip)).toBe(true);
 		});
 
-		it('leaves the toggle-on popover of every credited row of the feral fixtures as it was before ticket 336', () => {
-			// Captured from the fork at 176268e7c (before this change) over data/tab-fixtures/feral-p3-p2bis.json and feral-p3-th-hands-legs.json.
+		it('leaves the toggle-on popover of every credited row of the feral fixtures as it was before ticket 336, adding only the steps past the stop', () => {
+			// Captured from the fork at 176268e7c (before ticket 336) over data/tab-fixtures/feral-p3-p2bis.json and feral-p3-th-hands-legs.json.
 			// A value cast: the JSON import's own type widens every literal, so it is not used as a type.
 			const snapshot = onSnapshot as unknown as Record<string, { ranking: Ranking; rows: Array<{ row: RankedItem; tip: SetBonusTip }> }>;
 			const rows = Object.values(snapshot).flatMap(fixture => fixture.rows.map(({ row, tip }) => ({ ranking: fixture.ranking, row, tip })));
 			expect(rows).toHaveLength(16);
-			for (const { ranking, row, tip } of rows) expect(setBonusTipLines(row, { ranking, withSetPotential: true })).toEqual(tip);
+			let withPastStop = 0;
+			for (const { ranking, row, tip } of rows) {
+				const now = setBonusTipLines(row, { ranking, withSetPotential: true });
+				expect(now && { ...now, entries: now.entries.slice(0, tip.entries.length) }).toEqual(tip);
+				// Ticket 655: the Malorne rows of feral-p3-th-hands-legs stop at the 2pc, so their 4pc follows under "Not counted".
+				const added = now!.entries.slice(tip.entries.length);
+				if (added.length === 0) continue;
+				withPastStop++;
+				expect(added[0]).toEqual({ type: 'heading', heading: 'not_counted' });
+				for (const entry of added.slice(1)) expect(entry).toMatchObject({ type: 'line', label: { kind: 'reachable', threshold: 4 }, outcome: true });
+			}
+			expect(withPastStop).toBe(5);
 		});
 	});
 
