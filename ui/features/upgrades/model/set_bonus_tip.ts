@@ -176,9 +176,10 @@ function potentialLines(ctx: SetContext, noiseFloorDps: number, credit: number):
 }
 
 /**
- * The bonuses a row can reach, each as a separate outcome: the row with its
- * partner pieces, naming the worn bonuses that step breaks beyond the row's own
- * swap, which the receipt already prices. Each figure is how much the row's
+ * The bonuses a row can reach, one line each, as separate outcomes. A line
+ * names the partner pieces the row needs for that step. It also names the worn
+ * bonuses the step breaks, except the ones the row's own swap breaks: the
+ * receipt already prices those. Each figure is how much the row's
  * figure would change if it counted that step in place of what it counts now.
  * With the toggle off it is measured against the row alone. With the toggle
  * on it is measured against the stop's gear, for the steps past the stop

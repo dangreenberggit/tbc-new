@@ -47,7 +47,7 @@ export type UnmeasuredReason =
   | "unmeasurable-at-this-worn-count"
   /**
    * The set screen dropped the set (ticket 511 K5ON, `set-screen.ts`). Only
-   * rankings made before ticket 644 carry this marker entry; since then a
+   * rankings made before ticket 644 have this marker entry; since then a
    * dropped set has no entry and `ranking.setScreen` records it.
    */
   | "screened-out";
