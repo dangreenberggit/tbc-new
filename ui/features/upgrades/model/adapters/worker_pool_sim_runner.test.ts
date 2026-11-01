@@ -1,6 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { DEFAULT_WORKER_COUNT, memoryCapFromDeviceMemory, type RunnerEnv, workerCountFor } from './worker_pool_sim_runner';
+import type { RaidSimRequest } from '../engine/seams/sim-runner';
+
+// A unit test starts no sim workers, so the pool answers the stats call itself.
+const computeStats = vi.fn();
+vi.mock('@sim/workers/worker_pool', async importOriginal => ({
+	...(await importOriginal<typeof import('@sim/workers/worker_pool')>()),
+	WorkerPool: class {
+		computeStats = computeStats;
+		getNumWorkers = () => 1;
+		setNumWorkers = () => {};
+	},
+}));
+
+const { DEFAULT_WORKER_COUNT, memoryCapFromDeviceMemory, resetWorkerPoolForTests, workerCountFor, WorkerPoolSimRunner } =
+	await import('./worker_pool_sim_runner');
+type RunnerEnv = import('./worker_pool_sim_runner').RunnerEnv;
 
 const env = (stored: string | null, overrides: Partial<RunnerEnv> = {}): RunnerEnv => ({
 	storageRead: () => stored,
@@ -37,5 +52,33 @@ describe('workerCountFor', () => {
 		expect(workerCountFor(env('6', { deviceMemoryGiB: 1 }))).toBe(2);
 		// A browser with no memory figure gets the default as its memory cap.
 		expect(workerCountFor(env('6', { deviceMemoryGiB: undefined }))).toBe(memoryCapFromDeviceMemory(undefined));
+	});
+});
+
+describe('WorkerPoolSimRunner.activeSetBonuses', () => {
+	const request = { raid: { parties: [] }, encounter: { duration: 180 } } as unknown as RaidSimRequest;
+	const answer = (over: Record<string, unknown>) => ({ errorResult: '', ...over });
+
+	beforeEach(() => {
+		computeStats.mockReset();
+		resetWorkerPoolForTests();
+	});
+
+	it("gives the first player's active set bonuses from the stats call, sent with the request's raid and encounter", async () => {
+		computeStats.mockResolvedValue(
+			answer({ raidStats: { parties: [{ players: [{ sets: ['Thunderheart Harness (2pc)', 'Thunderheart Harness (4pc)'] }] }] } }),
+		);
+		const names = await new WorkerPoolSimRunner(1).activeSetBonuses(request);
+		expect(names).toEqual(['Thunderheart Harness (2pc)', 'Thunderheart Harness (4pc)']);
+		expect(computeStats).toHaveBeenCalledTimes(1);
+		expect(computeStats.mock.calls[0]![0]).toMatchObject({ raid: { parties: [] }, encounter: { duration: 180 } });
+	});
+
+	it('rejects when the stats call reports an error, or names no player', async () => {
+		const runner = new WorkerPoolSimRunner(1);
+		computeStats.mockResolvedValueOnce(answer({ errorResult: 'bad gear' }));
+		await expect(runner.activeSetBonuses(request)).rejects.toThrow('computeStats error: bad gear');
+		computeStats.mockResolvedValueOnce(answer({ raidStats: { parties: [] } }));
+		await expect(runner.activeSetBonuses(request)).rejects.toThrow('no first player');
 	});
 });
