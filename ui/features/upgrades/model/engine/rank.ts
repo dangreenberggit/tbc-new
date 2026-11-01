@@ -150,6 +150,7 @@ import {
   netInflation,
   nextMeasurableThreshold,
   type PackagePiece,
+  type PackageSelectionResult,
   selectPackage,
   type SelfSetConfound,
   SET_THRESHOLDS,
@@ -1583,7 +1584,7 @@ export async function rankUpgrades(
     let setBonuses = setBonusResult.bonuses;
     // Ticket 511: with the flag, each set row is valued by the step rule.
     const stepPath = (deps.measureBrokenSetValue ?? false) && !aborted;
-    if (setBonuses.length > 0) {
+    if (setBonuses.length > 0 || setBonusResult.markedSetIds.length > 0) {
       applySetContext(
         ranked,
         setBonuses,
@@ -1592,13 +1593,16 @@ export async function rankUpgrades(
         setBonusResult.candidateSlotIndex,
         individualDeltasByItemId,
         counts,
-        stepPath ? { crossingGates: setBonusResult.crossingGates } : undefined
+        stepPath ? { crossingGates: setBonusResult.crossingGates } : undefined,
+        setBonusResult.markedSetIds
       );
     }
     // After the futures are complete and before replication rewrites the top
     // rows' `deltaDps` (C89): the step gears' sims, one per distinct gear.
     let steps =
-      stepPath && setBonuses.length > 0 && counts
+      stepPath &&
+      (setBonuses.length > 0 || setBonusResult.markedSetIds.length > 0) &&
+      counts
         ? await measureSetSteps({
             deps: guardedDeps,
             ranked,
@@ -1915,6 +1919,11 @@ async function buildSetBonuses(
   crossingGates: CrossingGate[];
   /** itemId -> best pool slotIndex, so `applySetContext` can compute per-row breaks. */
   candidateSlotIndex: Map<number, number>;
+  /**
+   * Sets with candidates but no `bonuses` entry: no bonus in reach, or the
+   * set screen dropped them. Their rows still get a `setContext`.
+   */
+  markedSetIds: number[];
   setScreen?: SetScreen;
 }> {
   // The set sims' own store-cached run. A gate or ladder request sends
@@ -1996,13 +2005,28 @@ async function buildSetBonuses(
       [...individualDeltasByItemId.values()],
       slotIndexForPoolEntry
     );
+  // Ticket 644, flag only: the counts each set has a bonus at, as the sim
+  // itself lists them. Without it the gain side tried, and the ranking
+  // listed, counts the set has no bonus at (Thunderheart Harness at 5).
+  const bonusCounts = measureBrokenSetValue
+    ? await setBonusCountsInReach(
+        deps.sim,
+        setIdsWithCandidates,
+        wornCounts,
+        selectFor,
+        equipment,
+        gems,
+        composeFor
+      )
+    : new Map<number, ReadonlySet<number>>();
   // Ticket 511, flag only: every count from one above the worn count up to
-  // the count the pool can fill, with no list of which counts have a bonus.
-  // The same-gear gate below decides which are bonuses here.
+  // the count the pool can fill at which the set has a bonus. The same-gear
+  // gate below decides which bonuses are worth something here.
   const reachableCounts = (setId: number, piecesWorn: number): SetThreshold[] => {
+    const known = bonusCounts.get(setId);
     const counts: SetThreshold[] = [];
     for (let t = Math.max(2, piecesWorn + 1); selectFor(setId, t).ok; t++) {
-      counts.push(t);
+      if (!known || known.has(t)) counts.push(t);
     }
     return counts;
   };
@@ -2110,11 +2134,13 @@ async function buildSetBonuses(
       wornSetLadder,
       crossingGates: [],
       candidateSlotIndex: new Map(),
+      markedSetIds: [],
       ...(setScreen ? { setScreen } : {}),
     };
   }
 
   const results: SetBonusValue[] = [];
+  const markedSetIds: number[] = [];
   for (const setId of setIdsWithCandidates) {
     const piecesWorn = wornCounts.get(setId) ?? 0;
     const label = setLabel(
@@ -2131,34 +2157,16 @@ async function buildSetBonuses(
     const thresholds = measureBrokenSetValue
       ? reachableCounts(setId, piecesWorn)
       : SET_THRESHOLDS.filter((t) => t > piecesWorn);
-    if (measureBrokenSetValue && thresholds.length === 0) {
-      // No count is in reach. One entry still marks the set, so its rows keep
-      // their single breaks and crossing in `setContext`; it is never a future.
-      results.push({
-        setId,
-        setName: label,
-        threshold: Math.max(2, piecesWorn + 1),
-        piecesWorn,
-        packageItemIds: [],
-        packageDeltaDps: 0,
-        unmeasured: "insufficient-pieces",
-      });
-      continue;
-    }
-    if (screenedOut.has(setId)) {
-      // The set screen dropped this set: no gate, package or step sims. One
-      // marker keeps its rows' single breaks and crossing, because
-      // `applySetContext` skips a row whose set has no entry; it has no
-      // package, so it is never a future (ticket 511 K5ON).
-      results.push({
-        setId,
-        setName: label,
-        threshold: Math.max(2, piecesWorn + 1),
-        piecesWorn,
-        packageItemIds: [],
-        packageDeltaDps: 0,
-        unmeasured: "screened-out",
-      });
+    // No bonus is in reach, or the set screen dropped the set (ticket 511
+    // K5ON): no gate, package or step sims. The set is marked so its rows
+    // keep their single breaks and crossing in `setContext`. It gets no
+    // `setBonuses` entry: an entry names a piece count, and here none is a
+    // bonus the ranking measured (ticket 644 found one at Thunderheart 5).
+    if (
+      (measureBrokenSetValue && thresholds.length === 0) ||
+      screenedOut.has(setId)
+    ) {
+      markedSetIds.push(setId);
       continue;
     }
 
@@ -2469,6 +2477,8 @@ async function buildSetBonuses(
     for (const setId of [...setIdsWithCandidates].sort((a, b) => a - b)) {
       const worn = wornCounts.get(setId) ?? 0;
       if (worn < 1) continue;
+      // Ticket 644: one more piece reaches no bonus the sim lists.
+      if (bonusCounts.get(setId)?.has(worn + 1) === false) continue;
       const wornSlots = new Set(
         equipment.flatMap((spec, i) =>
           spec.id && getItem(spec.id)?.setId === setId ? [i] : []
@@ -2626,6 +2636,7 @@ async function buildSetBonuses(
     wornSetLadder,
     crossingGates,
     candidateSlotIndex,
+    markedSetIds,
     ...(setScreen ? { setScreen } : {}),
   };
 }
@@ -3364,7 +3375,9 @@ function applySetContext(
    * crossing and next-bonus counts read measurements instead of the six-set
    * table, and every entry above the swap's count becomes a future.
    */
-  stepPath?: { crossingGates: readonly CrossingGate[] }
+  stepPath?: { crossingGates: readonly CrossingGate[] },
+  /** Sets whose rows get a `setContext` though they have no entry (ticket 644). */
+  markedSetIds: readonly number[] = []
 ): void {
   const wornCounts = setCounts(equipment);
   const bonusesBySet = new Map<number, SetBonusValue[]>();
@@ -3372,6 +3385,9 @@ function applySetContext(
     const list = bonusesBySet.get(b.setId) ?? [];
     list.push(b);
     bonusesBySet.set(b.setId, list);
+  }
+  for (const setId of markedSetIds) {
+    if (!bonusesBySet.has(setId)) bonusesBySet.set(setId, []);
   }
   const bBy = new Map<string, number | undefined>();
   for (const v of brokenSetValues) bBy.set(bonusKey(v), v.dps);
@@ -3766,8 +3782,74 @@ function stopGuardedDeps(deps: Deps): Deps {
         if (signal.aborted) throw new StopRefusedSim();
         return sim.run(req, opts);
       },
+      ...(sim.activeSetBonuses
+        ? {
+            activeSetBonuses: async (req: RaidSimRequest) => {
+              if (signal.aborted) throw new StopRefusedSim();
+              return sim.activeSetBonuses!(req);
+            },
+          }
+        : {}),
     },
   };
+}
+
+/**
+ * Ticket 644: for each set, the piece counts above the worn count at which
+ * the sim has a bonus, up to the most pieces the pool can fill. They are the
+ * sim's active bonuses (`<set> (<n>pc)`) on the gear that adds that package,
+ * less those already active on the current gear, so no set name is matched.
+ * A set is left out when the runner cannot read the bonuses, its package
+ * fails gem repair, or the read fails; the gain side then tries every count
+ * for it, as before this ticket.
+ */
+async function setBonusCountsInReach(
+  sim: SimRunner,
+  setIds: ReadonlySet<number>,
+  wornCounts: ReadonlyMap<number, number>,
+  selectFor: (setId: number, count: SetThreshold) => PackageSelectionResult,
+  equipment: readonly SimItemSpec[],
+  gems: GemContext,
+  composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest
+): Promise<Map<number, ReadonlySet<number>>> {
+  const out = new Map<number, ReadonlySet<number>>();
+  if (!sim.activeSetBonuses) return out;
+  const read = (eq: readonly SimItemSpec[]) =>
+    sim.activeSetBonuses!(composeFor(eq));
+  let wornNames: ReadonlySet<string> | undefined;
+  for (const setId of [...setIds].sort((a, b) => a - b)) {
+    let top: PackagePiece[] | undefined;
+    for (let t = Math.max(2, (wornCounts.get(setId) ?? 0) + 1); ; t++) {
+      const selection = selectFor(setId, t);
+      if (!selection.ok) break;
+      top = selection.addedPieces;
+    }
+    if (!top) continue;
+    let build: ChainBuild;
+    try {
+      build = chainSwapsWithRepairs(equipment, top, gems);
+    } catch (err) {
+      if (!(err instanceof MetaRepairError)) throw err;
+      continue;
+    }
+    try {
+      wornNames ??= new Set(await read(equipment));
+      const counts = new Set<number>();
+      for (const name of await read(build.equipment)) {
+        if (wornNames.has(name)) continue;
+        const match = / \((\d+)pc\)$/.exec(name);
+        if (match) counts.add(Number(match[1]));
+      }
+      out.set(setId, counts);
+    } catch (err) {
+      if (err instanceof StopRefusedSim) throw err;
+      console.warn(
+        `[upgrades] set ${setId}: its bonus counts were not read`,
+        err
+      );
+    }
+  }
+  return out;
 }
 
 /** What the set phase gives when it does not run, or when Stop drops it. */
@@ -3778,6 +3860,7 @@ function emptySetPhase(): Awaited<ReturnType<typeof buildSetBonuses>> {
     wornSetLadder: [],
     crossingGates: [],
     candidateSlotIndex: new Map(),
+    markedSetIds: [],
   };
 }
 

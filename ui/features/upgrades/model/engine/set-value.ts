@@ -46,9 +46,9 @@ export type UnmeasuredReason =
   | "repair-failed"
   | "unmeasurable-at-this-worn-count"
   /**
-   * The set screen dropped the set (ticket 511 K5ON, `set-screen.ts`). One
-   * marker entry keeps the rows' `setContext`, so they keep their single
-   * breaks and crossing; it has no package, so it is never a future.
+   * The set screen dropped the set (ticket 511 K5ON, `set-screen.ts`). Only
+   * rankings made before ticket 644 carry this marker entry; since then a
+   * dropped set has no entry and `ranking.setScreen` records it.
    */
   | "screened-out";
 

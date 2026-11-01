@@ -24,7 +24,7 @@
  *
  * On mode, the tab's default, runs only the pair at the rule's iteration
  * count and applies `SCREEN_ON_RULE`. A set it drops gets no gate, package
- * or step sims; `rank.ts` gives it one "screened-out" marker entry. A set
+ * or step sims, and no `setBonuses` entry (ticket 644). A set
  * whose readings failed is kept, so a sim failure never hides a set (the
  * known case is ticket 532: off-class Cryptstalker sims fail).
  *

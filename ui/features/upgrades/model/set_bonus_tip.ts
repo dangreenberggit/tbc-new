@@ -212,8 +212,10 @@ function notCountedHeading(hasReachable: boolean, on: boolean): Extract<TipEntry
  * printing it as the bonus would credit the pieces' loss to it (ticket 336).
  */
 function screenedLine(ctx: SetContext, ranking: SetBonusTipContext['ranking']): TipEntry | null {
-	if (!ranking?.setBonuses?.some(b => b.setId === ctx.setId && b.unmeasured === 'screened-out')) return null;
-	const screen = ranking.setScreen?.mode === 'on' ? ranking.setScreen.sets.find(s => s.setId === ctx.setId) : undefined;
+	const screen = ranking?.setScreen?.mode === 'on' ? ranking.setScreen.sets.find(s => s.setId === ctx.setId) : undefined;
+	// Rankings made before ticket 644 also mark the set with a "screened-out" entry.
+	const marked = ranking?.setBonuses?.some(b => b.setId === ctx.setId && b.unmeasured === 'screened-out') ?? false;
+	if (screen?.kept !== false && !marked) return null;
 	// With no screen entry to read, "not measured" is the one value that is still true.
 	const reason = SCREENED_REASONS.find(r => r === screen?.reason) ?? 'outside-band';
 	return line({ kind: 'screened', set: ctx.setName, reason }, undefined);

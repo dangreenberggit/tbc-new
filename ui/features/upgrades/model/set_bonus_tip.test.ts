@@ -60,10 +60,13 @@ const reachable = (dps: number, broken: Array<{ setName: string; threshold: numb
 });
 const totalLine = (dps: number) => ({ type: 'line', label: { kind: 'total' }, dps });
 
-/** A ranking whose set screen dropped Lightbringer for `reason`. */
-const screenedRanking = (reason: 'outside-band' | 'exact-zero' | 'below-zero'): Ranking => ({
+/**
+ * A ranking whose set screen dropped Lightbringer for `reason`. Since ticket 644 the
+ * dropped set has no `setBonuses` entry; `olderMarker` adds the one earlier rankings carry.
+ */
+const screenedRanking = (reason: 'outside-band' | 'exact-zero' | 'below-zero', olderMarker = false): Ranking => ({
 	...RANKING_FIXTURE,
-	setBonuses: [{ setId: 680, setName: LIGHTBRINGER, threshold: 2, piecesWorn: 0, packageItemIds: [], packageDeltaDps: 0, unmeasured: 'screened-out' }],
+	setBonuses: olderMarker ? [{ setId: 680, setName: LIGHTBRINGER, threshold: 2, piecesWorn: 0, packageItemIds: [], packageDeltaDps: 0, unmeasured: 'screened-out' }] : [],
 	setScreen: {
 		mode: 'on',
 		seed: 1,
@@ -215,6 +218,11 @@ describe('setBonusTipLines', () => {
 				{ type: 'heading', heading: 'not_counted' },
 				{ type: 'line', label: { kind: 'screened', set: LIGHTBRINGER, reason }, dps: undefined },
 			]);
+		});
+
+		it('names a set the screen dropped in a ranking made before ticket 644, which also marks it', () => {
+			const tip = setBonusTipLines(stepRow({ futureBonuses: [] }), { ranking: screenedRanking('exact-zero', true), withSetPotential: false });
+			expect(tip?.entries).toContainEqual({ type: 'line', label: { kind: 'screened', set: LIGHTBRINGER, reason: 'exact-zero' }, dps: undefined });
 		});
 
 		it('gives nothing in either state for a future below the noise gate', () => {

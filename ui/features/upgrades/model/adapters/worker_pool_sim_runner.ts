@@ -230,4 +230,18 @@ export class WorkerPoolSimRunner implements SimRunner {
 		}
 		return { stats: [...finalStats.stats], pseudoStats: [...finalStats.pseudoStats] };
 	}
+
+	/** The first player's active set bonuses from the same stats call (ticket 644). */
+	async activeSetBonuses(req: RaidSimRequest): Promise<readonly string[]> {
+		const proto = ComputeStatsRequest.fromJson({ raid: req.raid, encounter: req.encounter } as JsonValue, { ignoreUnknownFields: true });
+		const result = await this.pool.computeStats(proto);
+		if (result.errorResult !== '') {
+			throw new Error(`computeStats error: ${result.errorResult}`);
+		}
+		const player = result.raidStats?.parties[0]?.players[0];
+		if (!player) {
+			throw new Error('computeStats result has no first player');
+		}
+		return [...player.sets];
+	}
 }

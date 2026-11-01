@@ -51,6 +51,14 @@ export interface SimRunner {
    * stays valid.
    */
   computeStats?(req: RaidSimRequest): Promise<PlayerStatsObservation>;
+  /**
+   * Optional (ticket 644): the set bonuses the sim counts active for the
+   * request's first player, in the sim's own form `<set name> (<n>pc)`
+   * (`GetActiveSetBonusNames`, sim/core/item_sets.go). The ranking reads from
+   * it which piece counts a set has a bonus at. When a runner lacks it, the
+   * ranking tries every count the pool can fill.
+   */
+  activeSetBonuses?(req: RaidSimRequest): Promise<readonly string[]>;
 }
 
 /**
