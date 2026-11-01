@@ -3797,11 +3797,15 @@ function stopGuardedDeps(deps: Deps): Deps {
 /**
  * Ticket 644: for each set, the piece counts above the worn count at which
  * the sim has a bonus, up to the most pieces the pool can fill. They are the
- * sim's active bonuses (`<set> (<n>pc)`) on the gear that adds that package,
- * less those already active on the current gear, so no set name is matched.
- * A set is left out when the runner cannot read the bonuses, its package
- * fails gem repair, or the read fails; the gain side then tries every count
- * for it, as before this ticket.
+ * sim's active bonuses (`<set> (<n>pc)`) on the current gear plus the
+ * largest package, less those already active on the current gear. Reading
+ * the sim's own list means no set name has to match a name the tab keeps.
+ * When that package fails gem repair or a read fails, the set gets no counts,
+ * so the gain side tries none for it and the ranking lists none; a console
+ * warning names the set. A Stop refuses the reads the same way, with no
+ * warning, and the caller drops the set phase. A runner that cannot read the
+ * bonuses gets an empty map: the gain side then tries every count, as before
+ * this ticket.
  */
 async function setBonusCountsInReach(
   sim: SimRunner,
@@ -3830,6 +3834,11 @@ async function setBonusCountsInReach(
       build = chainSwapsWithRepairs(equipment, top, gems);
     } catch (err) {
       if (!(err instanceof MetaRepairError)) throw err;
+      console.warn(
+        `[upgrades] set ${setId}: its bonus counts were not read, the package's gem repair failed`,
+        err
+      );
+      out.set(setId, new Set());
       continue;
     }
     try {
@@ -3842,11 +3851,14 @@ async function setBonusCountsInReach(
       }
       out.set(setId, counts);
     } catch (err) {
-      if (err instanceof StopRefusedSim) throw err;
-      console.warn(
-        `[upgrades] set ${setId}: its bonus counts were not read`,
-        err
-      );
+      // A read the Stop guard refused is no failure to report (ticket 533).
+      if (!(err instanceof StopRefusedSim)) {
+        console.warn(
+          `[upgrades] set ${setId}: its bonus counts were not read`,
+          err
+        );
+      }
+      out.set(setId, new Set());
     }
   }
   return out;
