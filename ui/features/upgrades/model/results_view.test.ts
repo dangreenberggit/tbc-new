@@ -250,18 +250,16 @@ describe('resultsViewFor', () => {
 			main: [],
 			notUpgrades: new Set(),
 			belowCutoff: [],
-			emptyReason: 'no-bis-list-row',
+			emptyReason: 'no-upgrades',
 		});
 	});
 
-	it('says a slot has no BiS-list row only under BiS only, and not when its BiS-list row is owned and missed the cutoff', () => {
+	// Ticket 749, owner 2026-11-02: the run may have left the slot's BiS-list item out (pre-run Sources), so a slot pane
+	// with no BiS-list row gets the generic text, never one saying the slot has no BiS-list item.
+	it('under BiS only, gives a slot pane with no BiS-list row the no-upgrades reason', () => {
 		expect(paneRows(applyView(RANKING_FIXTURE), 'chest').emptyReason).toBe('no-upgrades');
+		expect(paneRows(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!, 'chest').emptyReason).toBe('no-upgrades');
 		expect(paneRows(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!, SHOPPING_LIST_TAB).emptyReason).toBe('no-upgrades');
-
-		const ownedBisHelm = resultsViewFor(done({ ...RANKING_FIXTURE, items: [{ ...bisHelm, owned: true }] }), ONLY_BIS)!;
-		const pane = paneRows(ownedBisHelm, 'head');
-		expect(pane.main).toEqual([]);
-		expect(pane.emptyReason).toBe('no-upgrades');
 	});
 
 	// Ticket 625, owner 2026-11-02: a pane whose BiS-list rows are all worn gets the no-upgrades reason, not a reason of its own.
@@ -269,15 +267,10 @@ describe('resultsViewFor', () => {
 		const view = resultsViewFor(done({ ...RANKING_FIXTURE, items: [{ ...bisHelm, owned: true }] }), ONLY_BIS)!;
 		expect(paneRows(view, 'head')).toMatchObject({ main: [], emptyReason: 'no-upgrades' });
 		expect(paneRows(view, SHOPPING_LIST_TAB)).toMatchObject({ main: [], emptyReason: 'no-upgrades' });
-		expect(paneRows(view, 'chest').emptyReason).toBe('no-bis-list-row');
 	});
 
 	// Review R2-CQ7: when more than one reason holds, the order in paneRows decides what the pane says.
-	it('says no BiS-list item before no shown source, and no shown source before no upgrades', () => {
-		// Chest has no BiS-list row before or after the cut, so both of the first two reasons hold.
-		const hidingBlackTemple = bySource(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple']);
-		expect(paneRows(hidingBlackTemple, 'chest')).toMatchObject({ main: [], emptyReason: 'no-bis-list-row' });
-
+	it('says no shown source before no upgrades', () => {
 		// A worn BiS-list helm from Zul'Aman stays; Cursed Vision of Sargeras, the unworn BiS-list helm above the cutoff,
 		// drops in Black Temple. The pane meets both the no-source case and the all-worn case that says no upgrades.
 		const wornZulAmanHelm: RankedItem = { ...bisHelm, owned: true, source: { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin" } };
@@ -446,10 +439,11 @@ describe('sourcesView over resultsViewFor', () => {
 		expect(ids(paneRows(view, 'head').belowCutoff)).toEqual([helm.itemId]);
 	});
 
-	it('under BiS only, says a slot has no BiS-list item only when it had none before the source cut', () => {
+	// Ticket 749: with the BiS-only reason gone, the filter must still not take the blame for a pane BiS only emptied.
+	it('under BiS only, says no row comes from the shown sources only for a slot that had a BiS-list row before the source cut', () => {
 		const view = bySource(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple']);
 		// Chest has no BiS-list row at all.
-		expect(paneRows(view, 'chest')).toMatchObject({ emptyReason: 'no-bis-list-row' });
+		expect(paneRows(view, 'chest')).toMatchObject({ main: [], belowCutoff: [], emptyReason: 'no-upgrades' });
 		// Head's one BiS-list row, Cursed Vision of Sargeras, drops in Black Temple.
 		expect(paneRows(view, 'head')).toMatchObject({ main: [], emptyReason: 'no-source-row' });
 		expect(paneRows(view, 'trinket1')).toMatchObject({ emptyReason: 'no-upgrades' });

@@ -532,9 +532,6 @@
 						"set_bonus_tip_title": {
 							"type": "string"
 						},
-						"empty_no_bis_row": {
-							"type": "string"
-						},
 						"empty_no_source_row": {
 							"type": "string"
 						},
@@ -581,7 +578,6 @@
 						"empty_no_phase_list",
 						"empty_no_phase_list_body",
 						"set_bonus_tip_title",
-						"empty_no_bis_row",
 						"empty_no_source_row",
 						"below_cutoff_group_one",
 						"below_cutoff_group_other",

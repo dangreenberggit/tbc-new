@@ -8,7 +8,6 @@ import { ResultRows, ResultsTable, type RowContext, ScreenReaderResultsHead, Sor
 
 const EMPTY_BODY_KEYS = {
 	'no-source-row': 'upgrades_tab.results.empty_no_source_row',
-	'no-bis-list-row': 'upgrades_tab.results.empty_no_bis_row',
 } as const satisfies Record<Exclude<PaneEmptyReason, 'no-upgrades'>, string>;
 
 export interface ResultsPaneProps {

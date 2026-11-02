@@ -149,7 +149,6 @@
 			"empty_no_phase_list": "No candidate list for Phase {{phase}}",
 			"empty_no_phase_list_body": "The tab has no candidate list for Phase {{phase}}, so nothing was compared. Pick Phase 2 or later and simulate again.",
 			"set_bonus_tip_title": "Set-bonus breakdown",
-			"empty_no_bis_row": "No BiS-list item for this slot.",
 			"empty_no_source_row": "No rows from the shown sources.",
 			"below_cutoff_group_one": "1 more item",
 			"below_cutoff_group_other": "{{count}} more items",

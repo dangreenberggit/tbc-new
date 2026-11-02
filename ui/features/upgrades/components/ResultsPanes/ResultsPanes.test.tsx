@@ -190,12 +190,13 @@ describe('ResultsPanes', () => {
 		expect(namesIn(activePane(container))).toEqual([]);
 	});
 
-	it('under BiS only says a slot with no BiS-list row has no BiS-list item, not that nothing beat the worn gear', () => {
+	// Ticket 749, owner 2026-11-02: the run may have left the slot's BiS-list item out, so the pane shows the generic text.
+	it('under BiS only gives a slot with no BiS-list row the generic empty text, never that the slot has no BiS-list item', () => {
 		const bisOnly = resultsViewFor({ status: 'done', runId: 1, result: RANKING_FIXTURE }, { withSetPotential: false, onlyBis: true })!;
 		const { container } = render(panes(bisOnly));
 
 		clickTab(container, 'Chest');
-		expect(within(activePane(container)).getByTestId('upgrades-empty-state').textContent).toBe('No BiS-list item for this slot.');
+		expect(within(activePane(container)).getByTestId('upgrades-empty-state').textContent).toBe('No items to showTry widening your filters.');
 	});
 
 	it('falls back to the Upgrades list when the open slot has no rows in a new result', () => {

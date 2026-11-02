@@ -34,14 +34,13 @@ export const rowKey = (row: Pick<RankedItem, 'itemId' | 'slot'>): string => `${r
  * display filter cut down: it names the slots of the view before the cut, so
  * each keeps its tab. The old tab's rule (cb561067 `upgrades_tab.tsx`): "a
  * display filter must change which rows a pane shows, never which panes
- * exist" (ticket 614). `bisOnly` is set on a view cut to its BiS-list rows;
- * `sourcesHidden` on one that "Filter by source" cut by at least one row,
- * with `slotsBeforeSourceCut` naming the slots that had a row before that cut
- * and `panesWithMainBeforeSourceCut` the panes whose main table had a row.
+ * exist" (ticket 614). `sourcesHidden` is set on a view that "Filter by
+ * source" cut by at least one row, with `slotsBeforeSourceCut` naming the
+ * slots that had a row before that cut and `panesWithMainBeforeSourceCut`
+ * the panes whose main table had a row.
  */
 export type ResultsViewResult = ViewResult & {
 	tabSlots?: readonly SimSlotName[];
-	bisOnly?: true;
 	sourcesHidden?: true;
 	slotsBeforeSourceCut?: readonly SimSlotName[];
 	panesWithMainBeforeSourceCut?: readonly ResultsTabId[];
@@ -79,7 +78,7 @@ export type PaneRows = {
 };
 
 /** What a pane says when it shows no row: beside a below-cutoff group with rows, any such text would be false (`paneRows`). */
-export type PaneEmptyReason = 'no-bis-list-row' | 'no-source-row' | 'no-upgrades';
+export type PaneEmptyReason = 'no-source-row' | 'no-upgrades';
 
 /**
  * One pane's rows: its main table, the keys of the rows in that table that
@@ -101,22 +100,25 @@ export type PaneEmptyReason = 'no-bis-list-row' | 'no-source-row' | 'no-upgrades
  * reads it only then (`ResultsPane`). One reason, not a flag each, so the
  * order is decided here.
  *
- * - `no-bis-list-row`: a slot pane of a BiS-only view that has no row at all,
- *   so the pane says the slot has no BiS-list item. It reads the slot's rows
- *   before the source cut, so a slot whose BiS-list rows all come from hidden
- *   sources is not said to have none.
  * - `no-source-row`: "Filter by source" emptied the pane, so it says no row
- *   comes from the shown sources.
- * - `no-upgrades`: none of these; the pane says it has no items to show.
+ *   comes from the shown sources. A slot pane that BiS only had already
+ *   emptied before the cut does not get it (as ticket 648 rules for a main
+ *   table already empty).
+ * - `no-upgrades`: otherwise; the pane says it has no items to show.
+ *
+ * Under BiS only there is no reason that says the slot has no BiS-list item:
+ * the run's candidates are cut before the sim (pre-run Sources, the set
+ * prune, `poolFor`), so a slot with no BiS-list row may still have a BiS-list
+ * item the run left out (ticket 749).
  */
 export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 	const rows = tab === SHOPPING_LIST_TAB ? view.rows : view.rows.filter(row => effectiveSlot(row) === tab);
 	const missed = rows.filter(row => row.belowCutoffInView && !row.owned);
 	const shownAnyway = missed.filter(onBisList);
 	const main = rows.filter(inMainTable);
-	const noBisListRow = view.bisOnly === true && tab !== SHOPPING_LIST_TAB && !(view.slotsBeforeSourceCut?.includes(tab) ?? rows.length > 0);
-	const sourceCutEmptied = rows.length === 0 || (main.length === 0 && view.panesWithMainBeforeSourceCut?.includes(tab) === true);
-	const emptyReason: PaneEmptyReason = noBisListRow ? 'no-bis-list-row' : view.sourcesHidden === true && sourceCutEmptied ? 'no-source-row' : 'no-upgrades';
+	const hadRowBeforeSourceCut = tab === SHOPPING_LIST_TAB || view.slotsBeforeSourceCut?.includes(tab) === true;
+	const sourceCutEmptied = (rows.length === 0 && hadRowBeforeSourceCut) || (main.length === 0 && view.panesWithMainBeforeSourceCut?.includes(tab) === true);
+	const emptyReason: PaneEmptyReason = view.sourcesHidden === true && sourceCutEmptied ? 'no-source-row' : 'no-upgrades';
 	return {
 		main,
 		notUpgrades: new Set(shownAnyway.map(rowKey)),
@@ -174,7 +176,7 @@ function bisOnlyView(view: ViewResult): ResultsViewResult {
 	const rows = view.rows.filter(onBisList);
 	const shortlist = view.shortlist.filter(onBisList);
 	const tabSlots = [...new Set(view.rows.map(effectiveSlot))];
-	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length, tabSlots, bisOnly: true };
+	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length, tabSlots };
 }
 
 /**
