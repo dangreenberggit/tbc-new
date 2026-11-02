@@ -6,8 +6,11 @@
  * figure the cell shows.
  */
 export const shownTenths = (value: number, bar?: number): number => {
-	const t = Math.round(Number(value.toFixed(1)) * 10);
+	const t = tenthsOf(value);
 	if (bar === undefined || value <= 0 || value >= bar) return t;
-	const barTenths = Math.round(Number(bar.toFixed(1)) * 10);
+	const barTenths = tenthsOf(bar);
 	return t >= barTenths ? barTenths - 1 : t;
 };
+
+/** `value` in tenths of a DPS, rounded as `toFixed(1)` prints it, so a figure and its printed text agree. */
+export const tenthsOf = (value: number): number => Math.round(Number(value.toFixed(1)) * 10);

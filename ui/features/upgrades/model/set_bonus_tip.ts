@@ -26,7 +26,7 @@ import {
 	stepEligible,
 	stepFutureUnmeasured,
 } from './engine/view';
-import { shownTenths } from './shown_figure';
+import { shownTenths, tenthsOf } from './shown_figure';
 
 /** A set bonus as a label names it: "{set} {count}pc". */
 export type BonusRef = { setName: string; threshold: number };
@@ -78,11 +78,9 @@ export type SetBonusTipContext = {
 
 type Line = { label: TipLabel; dps: number | undefined; figure?: boolean };
 
-/** A figure in tenths of a DPS, rounded the way the popover shows it. */
-const tenths = (v: number): number => Math.round(Number(v.toFixed(1)) * 10);
 
 /** `v` as the row's figure shows it: raw unless the ticket-618 clamp changed it, so a figure the clamp leaves alone keeps its full value. */
-const shownValue = (v: number, bar: number | undefined): number => (shownTenths(v, bar) === tenths(v) ? v : shownTenths(v, bar) / 10);
+const shownValue = (v: number, bar: number | undefined): number => (shownTenths(v, bar) === tenthsOf(v) ? v : shownTenths(v, bar) / 10);
 
 /**
  * Rounds `values` to tenths so they add up to exactly `target` tenths, moving
@@ -90,7 +88,7 @@ const shownValue = (v: number, bar: number | undefined): number => (shownTenths(
  * alone can leave the shown lines a tenth off their shown total.
  */
 export function spreadTenths(values: readonly number[], target: number): number[] {
-	const out = values.map(tenths);
+	const out = values.map(tenthsOf);
 	const diff = target - out.reduce((a, b) => a + b, 0);
 	if (diff === 0 || out.length === 0) return out;
 	const rem = values.map((v, i) => v * 10 - out[i]!);
@@ -323,7 +321,7 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 	// The `??` cannot fire while crossesThreshold is true; it keeps the count a number.
 	const bonus = ctx?.crossesThreshold ? { setName: ctx.setName, threshold: crossingLabelCount(ctx) ?? ctx.piecesAfterSwap } : undefined;
 	const total = row.deltaDps + credit;
-	const breakTenths = measuredBreaks.map(b => tenths(-b.dps));
+	const breakTenths = measuredBreaks.map(b => tenthsOf(-b.dps));
 	const firstTenths = shownTenths(row.deltaDps, bar) - breakTenths.reduce((a, b) => a + b, 0);
 
 	const entries: TipEntry[] = [];
