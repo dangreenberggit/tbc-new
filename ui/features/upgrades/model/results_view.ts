@@ -78,7 +78,7 @@ export type PaneRows = {
 	emptyReason: PaneEmptyReason;
 };
 
-/** What a pane says when its main table is empty (`paneRows`). */
+/** What a pane says when it shows no row: beside a below-cutoff group with rows, any such text would be false (`paneRows`). */
 export type PaneEmptyReason = 'no-bis-list-row' | 'no-source-row' | 'no-upgrades';
 
 /**

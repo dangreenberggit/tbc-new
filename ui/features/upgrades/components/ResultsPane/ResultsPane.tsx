@@ -12,7 +12,7 @@ const EMPTY_BODY_KEYS = {
 } as const satisfies Record<Exclude<PaneEmptyReason, 'no-upgrades'>, string>;
 
 export interface ResultsPaneProps {
-	/** The pane's rows as `paneRows` splits them; with no main table, `emptyReason` picks the empty state's text. */
+	/** The pane's rows as `paneRows` splits them; with no main table and no below-cutoff group, `emptyReason` picks the empty state's text. */
 	rows: PaneRows;
 	rowContext: RowContext;
 	/** Whether the below-cutoff group is open; `ResultsPanes` keeps it per pane, so it survives a switch to another pane. */

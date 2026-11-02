@@ -85,7 +85,7 @@ export const UpgradesResults = memo(({ run, selectedSets, specId }: UpgradesResu
 				);
 			}
 			// A table "Filter by source" emptied keeps its panes, so every slot keeps its tab (ticket 614) and each pane
-			// says no row comes from the shown sources.
+			// can say why it is empty (`paneRows`).
 			const filteredEmpty = !hasRows && view?.sourcesHidden === true;
 			// A stopped run with no finished row shows no empty state: the status line already says so.
 			const noUpgrades = !hasRows && !filteredEmpty && run.status === 'done';
