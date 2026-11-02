@@ -79,7 +79,7 @@ export type PaneRows = {
 };
 
 /** What a pane says when its main table is empty (`paneRows`). */
-export type PaneEmptyReason = 'no-bis-list-row' | 'no-source-row' | 'owned-bis-row' | 'owned-bis-list' | 'no-upgrades';
+export type PaneEmptyReason = 'no-bis-list-row' | 'no-source-row' | 'no-upgrades';
 
 /**
  * One pane's rows: its main table, the keys of the rows in that table that
@@ -109,9 +109,6 @@ export type PaneEmptyReason = 'no-bis-list-row' | 'no-source-row' | 'owned-bis-r
  *   says no row comes from the shown sources rather than that every candidate
  *   simmed at or below the worn gear; its rows below the cutoff still show
  *   under that.
- * - `owned-bis-row` (a slot) or `owned-bis-list` (the Shopping list): a pane of
- *   a BiS-only view whose rows are all owned and so out of the main table, so
- *   the pane says the player already wears the item (ticket 625).
  * - `no-upgrades`: none of these.
  */
 export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
@@ -120,17 +117,8 @@ export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 	const shownAnyway = missed.filter(onBisList);
 	const main = rows.filter(inMainTable);
 	const noBisListRow = view.bisOnly === true && tab !== SHOPPING_LIST_TAB && !(view.slotsBeforeSourceCut?.includes(tab) ?? rows.length > 0);
-	const allOwned = view.bisOnly === true && rows.length > 0 && main.length === 0 && rows.every(row => row.owned === true);
 	const sourceCutEmptied = rows.length === 0 || (main.length === 0 && view.panesWithMainBeforeSourceCut?.includes(tab) === true);
-	const emptyReason: PaneEmptyReason = noBisListRow
-		? 'no-bis-list-row'
-		: view.sourcesHidden === true && sourceCutEmptied
-			? 'no-source-row'
-			: allOwned
-				? tab === SHOPPING_LIST_TAB
-					? 'owned-bis-list'
-					: 'owned-bis-row'
-				: 'no-upgrades';
+	const emptyReason: PaneEmptyReason = noBisListRow ? 'no-bis-list-row' : view.sourcesHidden === true && sourceCutEmptied ? 'no-source-row' : 'no-upgrades';
 	return {
 		main,
 		notUpgrades: new Set(shownAnyway.map(rowKey)),
