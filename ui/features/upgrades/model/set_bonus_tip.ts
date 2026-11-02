@@ -78,7 +78,6 @@ export type SetBonusTipContext = {
 
 type Line = { label: TipLabel; dps: number | undefined; figure?: boolean };
 
-
 /** `v` as the row's figure shows it: raw unless the ticket-618 clamp changed it, so a figure the clamp leaves alone keeps its full value. */
 const shownValue = (v: number, bar: number | undefined): number => (shownTenths(v, bar) === tenthsOf(v) ? v : shownTenths(v, bar) / 10);
 
@@ -282,10 +281,7 @@ function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Li
 	const shift = row.deltaDps - (ctx.singleDeltaDps ?? row.deltaDps);
 	return [
 		{ type: 'heading', heading: 'set_potential_totals' },
-		line(
-			{ kind: 'item_alone', name: row.name, broken: (ctx.singleBreaks ?? []).map(ref) },
-			shownValue(row.deltaDps, bar),
-		),
+		line({ kind: 'item_alone', name: row.name, broken: (ctx.singleBreaks ?? []).map(ref) }, shownValue(row.deltaDps, bar)),
 		...outcomes.map(o => line(o.label, o.figure ? shownValue((o.dps ?? 0) + shift, bar) : (o.dps ?? 0) + shift, o.figure)),
 	];
 }
