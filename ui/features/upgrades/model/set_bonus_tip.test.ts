@@ -140,6 +140,24 @@ describe('setBonusTipLines', () => {
 			expect(lines(tip).find(line => line.label.kind === 'item_alone')?.dps).toBe(1);
 			expect(totalOf(setBonusTipLines(fixtureRow(10), context))).toBe(4.42);
 		});
+
+		// With the toggle off the cell shows the item alone, so the line must read as that cell does.
+		it('shows the item-alone line one tenth under the bar when an outcome is marked', () => {
+			const row: RankedItem = {
+				...stepRow({
+					singleDeltaDps: 2.96,
+					futureBonuses: [
+						future({ stepGearDps: 5.5 }),
+						future({ threshold: 4, stepGearDps: 8, pieces: [{ itemId: 30988, name: 'Lightbringer Legguards' }] }),
+					],
+				}),
+				deltaDps: 2.96,
+			};
+			const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
+			expect(tip?.kind).toBe('outcomes');
+			expect(lines(tip).some(line => line.marker)).toBe(true);
+			expect(lines(tip).find(line => line.label.kind === 'item_alone')?.dps).toBe(2.9);
+		});
 	});
 
 	it('folds an unmeasured break into the first line’s label and keeps that line', () => {

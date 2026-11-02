@@ -275,9 +275,10 @@ function screenedLine(ctx: SetContext, ranking: SetBonusTipContext['ranking']): 
  * ruling of 2026-10-01), so there is no Item stats addend and no total. On a
  * row paired replication rewrote, every bonus's total moves by the same amount
  * as the row's single swap, so the item-alone line and the marked line equal
- * the figures the row shows. The line that is the row's figure (the marked one,
- * or the item alone when none is marked) goes through the ticket-618 clamp, as
- * the cell does; the others are compared, not shown in the cell, so stay raw.
+ * the figures the row shows. The item-alone line is the cell's figure with the
+ * toggle off and the marked line is it with the toggle on, so both go through
+ * the ticket-618 clamp, as the cell does; the others are compared, not shown in
+ * the cell, so stay raw.
  */
 function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Line[], bar: number | undefined): TipEntry[] {
 	const shift = row.deltaDps - (ctx.singleDeltaDps ?? row.deltaDps);
@@ -285,7 +286,7 @@ function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Li
 		{ type: 'heading', heading: 'set_potential_totals' },
 		line(
 			{ kind: 'item_alone', name: row.name, broken: (ctx.singleBreaks ?? []).map(ref) },
-			outcomes.some(o => o.figure) ? row.deltaDps : shownValue(row.deltaDps, bar),
+			shownValue(row.deltaDps, bar),
 		),
 		...outcomes.map(o => line(o.label, o.figure ? shownValue((o.dps ?? 0) + shift, bar) : (o.dps ?? 0) + shift, o.figure)),
 	];
