@@ -195,7 +195,7 @@ describe('UpgradesResults Filter by source', () => {
 
 		expect(tabNames(container)).toEqual(tabsBefore);
 		expect(within(activePane(container)).getByTestId('upgrades-empty-state').textContent).toBe('No rows from the shown sources.');
-		expect(within(container).queryByText('No upgrades found')).toBeNull();
+		expect(within(container).queryByText('No items to show')).toBeNull();
 		expect(within(container).getByTestId('upgrades-view-sources-summary').textContent).toBe('5 of 5 sources hidden');
 
 		openSourcesDialog(container);

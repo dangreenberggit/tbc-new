@@ -96,20 +96,18 @@ export type PaneEmptyReason = 'no-bis-list-row' | 'no-source-row' | 'no-upgrades
  * already fills, so its delta is about 0 by construction and would only list
  * the gear the player wears.
  *
- * `emptyReason` is what the pane says when its main table is empty, the
- * first of these that applies; a pane reads it only then. One reason, not a
- * flag each, so the order is decided here.
+ * `emptyReason` is what the pane says when its main table and its
+ * below-cutoff group are both empty, the first of these that applies; a pane
+ * reads it only then (`ResultsPane`). One reason, not a flag each, so the
+ * order is decided here.
  *
  * - `no-bis-list-row`: a slot pane of a BiS-only view that has no row at all,
- *   so the pane says the slot has no BiS-list item instead of saying every
- *   candidate simmed at or below the worn gear. It reads the slot's rows
+ *   so the pane says the slot has no BiS-list item. It reads the slot's rows
  *   before the source cut, so a slot whose BiS-list rows all come from hidden
  *   sources is not said to have none.
- * - `no-source-row`: "Filter by source" emptied the main table, so the pane
- *   says no row comes from the shown sources rather than that every candidate
- *   simmed at or below the worn gear; its rows below the cutoff still show
- *   under that.
- * - `no-upgrades`: none of these.
+ * - `no-source-row`: "Filter by source" emptied the pane, so it says no row
+ *   comes from the shown sources.
+ * - `no-upgrades`: none of these; the pane says it has no items to show.
  */
 export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 	const rows = tab === SHOPPING_LIST_TAB ? view.rows : view.rows.filter(row => effectiveSlot(row) === tab);

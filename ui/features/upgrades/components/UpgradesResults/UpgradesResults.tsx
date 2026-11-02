@@ -66,7 +66,7 @@ export const UpgradesResults = memo(({ run, selectedSets, specId }: UpgradesResu
 					sources={{ options: sourceOptions, hidden: hiddenSources, onToggle: toggleViewSource, onSetAll: setViewSources }}
 				/>
 			);
-			// Checked before any other empty state: with no candidates at this phase, "No upgrades found" would be wrong.
+			// Checked before any other empty state: with no candidate list at this phase, "No items to show" would not say why.
 			const poolMissing =
 				run.status === 'done' &&
 				!hasRows &&
@@ -85,7 +85,7 @@ export const UpgradesResults = memo(({ run, selectedSets, specId }: UpgradesResu
 				);
 			}
 			// A table "Filter by source" emptied keeps its panes, so every slot keeps its tab (ticket 614) and each pane
-			// says no row comes from the shown sources; "No upgrades found" would be false there.
+			// says no row comes from the shown sources.
 			const filteredEmpty = !hasRows && view?.sourcesHidden === true;
 			// A stopped run with no finished row shows no empty state: the status line already says so.
 			const noUpgrades = !hasRows && !filteredEmpty && run.status === 'done';

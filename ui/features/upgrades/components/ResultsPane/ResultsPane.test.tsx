@@ -58,14 +58,18 @@ describe('ResultsPane', () => {
 		expect(getAllByTestId('upgrades-results-table')).toHaveLength(1);
 		expect(within(getByTestId('upgrades-results-table')).getAllByTestId('upgrades-result-row')).toHaveLength(2);
 		expect(getByTestId('upgrades-sort-item')).not.toBeNull();
-		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 item(s) below the cutoff');
+		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 more item');
 	});
 
-	it('names the bar in DPS on the group once a ranking is shown', () => {
+	// Owner, 2026-11-02: players "dont know a cutoff exists and we shouldnt have to explain it either".
+	it('names the bar as a gain in DPS on the group once a ranking is shown, never as a cutoff', () => {
 		const rowContext = { ...CONTEXT, tip: { ranking: RANKING_FIXTURE } };
-		const { getByTestId } = onPage({ rows: paneRowsOf([fixtureRow(0)], [fixtureRow(5)]), rowContext });
+		const one = onPage({ rows: paneRowsOf([fixtureRow(0)], [fixtureRow(5)]), rowContext });
+		expect(one.getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 item that gains less than 3 DPS');
+		one.unmount();
 
-		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 item(s) below the 3 DPS cutoff');
+		const two = onPage({ rows: paneRowsOf([fixtureRow(0)], [fixtureRow(5), fixtureRow(3)]), rowContext });
+		expect(two.getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('2 items that gain less than 3 DPS');
 	});
 
 	it('names the group columns for screen readers only, with the shared sort, under the main table head', () => {
@@ -95,15 +99,29 @@ describe('ResultsPane', () => {
 		expect(queryByTestId('upgrades-below-cutoff')).toBeNull();
 	});
 
-	it('says no row cleared the cutoff in place of an empty table', () => {
-		const { getByTestId, queryByTestId } = onPage({ rows: paneRowsOf([], [fixtureRow(5)]), rowContext: CONTEXT });
+	// Ticket 748: "No upgrades found" above a row that gained DPS without clearing the bar was false (owner, 2026-11-02:
+	// "there could be upgrades but below the cutoff. so it's now lying"), so the closed group is all the pane shows.
+	it('shows only the closed group, with no empty-state message, when the only row gained DPS below the bar', () => {
+		const gainedBelowBar = fixtureRow(5);
+		expect(gainedBelowBar.deltaDps).toBeGreaterThan(0);
+		expect(gainedBelowBar.deltaDps).toBeLessThan(RANKING_FIXTURE.cutoff.absDps);
+		const rowContext = { ...CONTEXT, tip: { ranking: RANKING_FIXTURE } };
+		const { getByTestId, queryByTestId } = onPage({ rows: paneRowsOf([], [gainedBelowBar]), rowContext });
 
+		expect(queryByTestId('upgrades-empty-state')).toBeNull();
 		expect(queryByTestId('upgrades-results-table')).toBeNull();
-		expect(getByTestId('upgrades-empty-state').textContent).toContain('No upgrades found');
-		// Ticket 625: the hint names no one filter; the owner found "phase or content filter" "too specific" (2026-11-02).
-		expect(getByTestId('upgrades-empty-state').textContent).toContain(
-			'Every candidate simmed at or below your current gear. Widen your filters to consider more items.',
-		);
+		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 item that gains less than 3 DPS');
+	});
+
+	it('says it has no items to show, and suggests wider filters, when the pane has no row at all', () => {
+		const { getByTestId } = onPage({ rows: paneRowsOf([], []), rowContext: CONTEXT });
+		expect(getByTestId('upgrades-empty-state').textContent).toBe('No items to showTry widening your filters.');
+	});
+
+	// "No rows from the shown sources." would be false above rows from the shown sources.
+	it('shows no empty-state message beside the group when Filter by source emptied the main table', () => {
+		const { getByTestId, queryByTestId } = onPage({ rows: { ...paneRowsOf([], [fixtureRow(5)]), emptyReason: 'no-source-row' }, rowContext: CONTEXT });
+		expect(queryByTestId('upgrades-empty-state')).toBeNull();
 		expect(getByTestId('upgrades-below-cutoff')).not.toBeNull();
 	});
 

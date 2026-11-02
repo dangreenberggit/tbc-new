@@ -144,17 +144,17 @@ describe('UpgradesResults', () => {
 			const { getByTestId } = show(emptyAt(1), 'ret');
 			const text = getByTestId('upgrades-empty-state').textContent;
 			expect(text).toContain('No candidate list for Phase 1');
-			expect(text).not.toContain('No upgrades found');
+			expect(text).not.toContain('No items to show');
 		});
 
-		it('says no upgrades were found when the phase has a list', () => {
+		it('says it has no items to show when the phase has a list', () => {
 			const { getByTestId } = show(emptyAt(3), 'ret');
-			expect(getByTestId('upgrades-empty-state').textContent).toContain('No upgrades found');
+			expect(getByTestId('upgrades-empty-state').textContent).toBe('No items to showTry widening your filters.');
 		});
 
-		it('says no upgrades were found when the spec is not known', () => {
+		it('says it has no items to show when the spec is not known', () => {
 			const { getByTestId } = show(emptyAt(1));
-			expect(getByTestId('upgrades-empty-state').textContent).toContain('No upgrades found');
+			expect(getByTestId('upgrades-empty-state').textContent).toBe('No items to showTry widening your filters.');
 		});
 	});
 

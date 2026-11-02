@@ -538,10 +538,16 @@
 						"empty_no_source_row": {
 							"type": "string"
 						},
-						"below_cutoff_group": {
+						"below_cutoff_group_one": {
 							"type": "string"
 						},
-						"below_cutoff_group_bar": {
+						"below_cutoff_group_other": {
+							"type": "string"
+						},
+						"below_cutoff_group_bar_one": {
+							"type": "string"
+						},
+						"below_cutoff_group_bar_other": {
 							"type": "string"
 						},
 						"removes_worn": {
@@ -577,8 +583,10 @@
 						"set_bonus_tip_title",
 						"empty_no_bis_row",
 						"empty_no_source_row",
-						"below_cutoff_group",
-						"below_cutoff_group_bar",
+						"below_cutoff_group_one",
+						"below_cutoff_group_other",
+						"below_cutoff_group_bar_one",
+						"below_cutoff_group_bar_other",
 						"removes_worn",
 						"sort_ascending",
 						"sort_descending"

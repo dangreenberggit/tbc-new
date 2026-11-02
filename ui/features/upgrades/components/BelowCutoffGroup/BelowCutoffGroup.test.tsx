@@ -56,7 +56,7 @@ describe('BelowCutoffGroup', () => {
 	it('starts collapsed, with its row count, and renders no table until opened', () => {
 		const { getByTestId, queryByTestId } = group();
 
-		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('2 item(s) below the cutoff');
+		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('2 more items');
 		expect(queryByTestId('upgrades-results-table')).toBeNull();
 	});
 

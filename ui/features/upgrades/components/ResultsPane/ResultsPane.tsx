@@ -26,6 +26,10 @@ export interface ResultsPaneProps {
  * because the main table's head names the columns on screen; with no main
  * table the group gets the sortable head. Both tables follow the tab store's
  * one sort, so a click on either head orders both.
+ *
+ * An empty-state message shows only when the pane shows no row at all: beside
+ * the group, "No items to show" or "No rows from the shown sources." would be
+ * false (ticket 748). The group's own label says what its rows gained.
  */
 export const ResultsPane = ({ rows, rowContext, groupOpen, onGroupOpenChange }: ResultsPaneProps) => {
 	const { main, notUpgrades, belowCutoff, emptyReason } = rows;
@@ -38,7 +42,7 @@ export const ResultsPane = ({ rows, rowContext, groupOpen, onGroupOpenChange }: 
 					<SortableResultsHead table={mainTable} />
 					<ResultRows table={mainTable} rowContext={rowContext} notUpgrades={notUpgrades} />
 				</ResultsTable>
-			) : emptyReason === 'no-upgrades' ? (
+			) : belowCutoff.length > 0 ? null : emptyReason === 'no-upgrades' ? (
 				<EmptyState
 					title={i18n.t('upgrades_tab.results.empty_no_upgrades', { ns: 'upgrades' })}
 					body={i18n.t('upgrades_tab.results.empty_no_upgrades_body', { ns: 'upgrades' })}

@@ -264,7 +264,7 @@ describe('resultsViewFor', () => {
 		expect(pane.emptyReason).toBe('no-upgrades');
 	});
 
-	// Ticket 625, owner 2026-11-02: a pane whose BiS-list rows are all worn keeps "No upgrades found"; only the hint under it changed.
+	// Ticket 625, owner 2026-11-02: a pane whose BiS-list rows are all worn gets the no-upgrades reason, not a reason of its own.
 	it('under BiS only, gives a pane whose BiS-list rows are all worn the no-upgrades text', () => {
 		const view = resultsViewFor(done({ ...RANKING_FIXTURE, items: [{ ...bisHelm, owned: true }] }), ONLY_BIS)!;
 		expect(paneRows(view, 'head')).toMatchObject({ main: [], emptyReason: 'no-upgrades' });
@@ -287,7 +287,7 @@ describe('resultsViewFor', () => {
 	});
 
 	// The fork's own CI has no main repo around it, so the recording is read only where it exists.
-	it.skipIf(!existsSync(RECORDING))('ret-p3-p2: under BiS only the neck pane, whose BiS-list item is worn, says no upgrades were found (ticket 625)', () => {
+	it.skipIf(!existsSync(RECORDING))('ret-p3-p2: under BiS only the neck pane, whose BiS-list item is worn, gets the no-upgrades reason (ticket 625)', () => {
 		const ranking = (JSON.parse(readFileSync(RECORDING, 'utf8')) as { ranking: Ranking }).ranking;
 		const view = resultsViewFor(done(ranking), ONLY_BIS)!;
 		const neck = paneRows(view, 'neck');
@@ -437,7 +437,7 @@ describe('sourcesView over resultsViewFor', () => {
 		}
 	});
 
-	// Ticket 648: the filter did not empty a main table that was already empty, so the pane keeps "No upgrades found".
+	// Ticket 648: the filter did not empty a main table that was already empty, so the pane keeps the no-upgrades reason.
 	it('does not blame the shown sources for a pane whose rows were all below the cutoff before the cut', () => {
 		// Helm of the Illidari Shatterer (Black Temple) misses the cutoff; the Hyjal Summit weapon is the row the cut hides.
 		const view = bySource(done(withRows([helm, fixtureRow(1)])), NO_VIEW_TOGGLES, ['Hyjal Summit']);

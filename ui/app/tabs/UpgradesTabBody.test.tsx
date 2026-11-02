@@ -219,7 +219,7 @@ describe('UpgradesTabBody', () => {
 		expect(screen.getByTestId('upgrades-baseline-summary').textContent).toMatch(/Took 4\.2s\.$/);
 		// The Upgrades pane lists the ten rows above the cutoff; the eleventh waits in the collapsed group.
 		expect(tableRows()).toHaveLength(10);
-		expect(screen.getAllByTestId('upgrades-below-cutoff-trigger')[0]?.textContent).toBe('1 item(s) below the 3 DPS cutoff');
+		expect(screen.getAllByTestId('upgrades-below-cutoff-trigger')[0]?.textContent).toBe('1 item that gains less than 3 DPS');
 		expect((screen.getByTestId('upgrades-run-button') as HTMLButtonElement).disabled).toBe(false);
 	});
 
@@ -341,7 +341,8 @@ describe('UpgradesTabBody before its tab is first opened', () => {
 
 	const SAVED_KEY = '__upgrades_test__upgradesSettings__';
 	/** The user cleared phase 3's default sets on an earlier visit, so the saved entry holds no sets for `ret:3`. */
-	const clearedAt3 = () => memoryStorage({ [SAVED_KEY]: JSON.stringify({ version: SAVED_VERSION, settings: { selectedSetKeys: [], defaultsFor: 'ret:3' } }) });
+	const clearedAt3 = () =>
+		memoryStorage({ [SAVED_KEY]: JSON.stringify({ version: SAVED_VERSION, settings: { selectedSetKeys: [], defaultsFor: 'ret:3' } }) });
 	const renderClosed = () =>
 		render(
 			<SimHostProvider host={current.host}>
