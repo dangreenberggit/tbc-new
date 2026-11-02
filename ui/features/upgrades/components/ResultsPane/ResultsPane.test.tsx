@@ -42,10 +42,7 @@ const paneRowsOf = (main: readonly RankedItem[], belowCutoff: readonly RankedIte
 	main: main.map(row => ({ ...row, belowCutoffInView: false })),
 	notUpgrades: new Set(),
 	belowCutoff: belowCutoff.map(row => ({ ...row, belowCutoffInView: true })),
-	noBisListRow: false,
-	noSourceRow: false,
-	ownedBisRow: false,
-	ownedBisList: false,
+	emptyReason: 'no-upgrades',
 });
 const onPage = (props: PaneProps) =>
 	render(
@@ -107,19 +104,19 @@ describe('ResultsPane', () => {
 	});
 
 	it('says no row comes from the shown sources when Filter by source emptied the pane', () => {
-		const { getByTestId } = onPage({ rows: { ...paneRowsOf([], []), noSourceRow: true }, rowContext: CONTEXT });
+		const { getByTestId } = onPage({ rows: { ...paneRowsOf([], []), emptyReason: 'no-source-row' }, rowContext: CONTEXT });
 		expect(getByTestId('upgrades-empty-state').textContent).toBe('No rows from the shown sources.');
 	});
 
 	// Ticket 625: under BiS only, a worn BiS-list item is not a reason to widen the filters.
 	it('says the player already wears a BiS-list item in the slot when every BiS-list row is owned', () => {
-		const { getByTestId } = onPage({ rows: { ...paneRowsOf([], []), ownedBisRow: true }, rowContext: CONTEXT });
+		const { getByTestId } = onPage({ rows: { ...paneRowsOf([], []), emptyReason: 'owned-bis-row' }, rowContext: CONTEXT });
 		expect(getByTestId('upgrades-empty-state').textContent).toBe('You already wear a BiS-list item in this slot.');
 		expect(getByTestId('upgrades-empty-state').textContent).not.toContain('No upgrades found');
 	});
 
 	it('says the player already wears every simmed BiS-list item on the Shopping list when every row is owned', () => {
-		const { getByTestId } = onPage({ rows: { ...paneRowsOf([], []), ownedBisList: true }, rowContext: CONTEXT });
+		const { getByTestId } = onPage({ rows: { ...paneRowsOf([], []), emptyReason: 'owned-bis-list' }, rowContext: CONTEXT });
 		expect(getByTestId('upgrades-empty-state').textContent).toBe('You already wear every BiS-list item that was simmed.');
 	});
 });

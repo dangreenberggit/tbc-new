@@ -250,32 +250,29 @@ describe('resultsViewFor', () => {
 			main: [],
 			notUpgrades: new Set(),
 			belowCutoff: [],
-			noBisListRow: true,
-			noSourceRow: false,
-			ownedBisRow: false,
-			ownedBisList: false,
+			emptyReason: 'no-bis-list-row',
 		});
 	});
 
 	it('says a slot has no BiS-list row only under BiS only, and not when its BiS-list row is owned and missed the cutoff', () => {
-		expect(paneRows(applyView(RANKING_FIXTURE), 'chest').noBisListRow).toBe(false);
-		expect(paneRows(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!, SHOPPING_LIST_TAB).noBisListRow).toBe(false);
+		expect(paneRows(applyView(RANKING_FIXTURE), 'chest').emptyReason).not.toBe('no-bis-list-row');
+		expect(paneRows(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!, SHOPPING_LIST_TAB).emptyReason).not.toBe('no-bis-list-row');
 
 		const ownedBisHelm = resultsViewFor(done({ ...RANKING_FIXTURE, items: [{ ...bisHelm, owned: true }] }), ONLY_BIS)!;
 		const pane = paneRows(ownedBisHelm, 'head');
 		expect(pane.main).toEqual([]);
-		expect(pane.noBisListRow).toBe(false);
+		expect(pane.emptyReason).not.toBe('no-bis-list-row');
 	});
 
 	// Ticket 625: a slot whose BiS-list rows are all worn once told the player to widen the filters.
 	it('says a slot pane under BiS only has its BiS-list item worn when every row is owned', () => {
 		const onlyOwned = { ...RANKING_FIXTURE, items: [{ ...bisHelm, owned: true }] };
 		const view = resultsViewFor(done(onlyOwned), ONLY_BIS)!;
-		expect(paneRows(view, 'head').ownedBisRow).toBe(true);
-		expect(paneRows(applyView(onlyOwned), 'head').ownedBisRow).toBe(false);
-		expect(paneRows(view, SHOPPING_LIST_TAB).ownedBisRow).toBe(false);
-		expect(paneRows(view, 'chest').ownedBisRow).toBe(false);
-		expect(paneRows(view, 'chest').noBisListRow).toBe(true);
+		expect(paneRows(view, 'head').emptyReason).toBe('owned-bis-row');
+		expect(paneRows(applyView(onlyOwned), 'head').emptyReason).not.toBe('owned-bis-row');
+		expect(paneRows(view, SHOPPING_LIST_TAB).emptyReason).not.toBe('owned-bis-row');
+		expect(paneRows(view, 'chest').emptyReason).not.toBe('owned-bis-row');
+		expect(paneRows(view, 'chest').emptyReason).toBe('no-bis-list-row');
 
 		const alsoUnowned: Ranking = {
 			...RANKING_FIXTURE,
@@ -284,14 +281,14 @@ describe('resultsViewFor', () => {
 				{ ...fixtureRow(2), bisTags: ['BiS'] },
 			],
 		};
-		expect(paneRows(resultsViewFor(done(alsoUnowned), ONLY_BIS)!, 'head').ownedBisRow).toBe(false);
+		expect(paneRows(resultsViewFor(done(alsoUnowned), ONLY_BIS)!, 'head').emptyReason).not.toBe('owned-bis-row');
 	});
 
 	it('says the Shopping list under BiS only has every BiS-list item worn when every row is owned', () => {
 		const view = resultsViewFor(done({ ...RANKING_FIXTURE, items: [{ ...bisHelm, owned: true }] }), ONLY_BIS)!;
-		expect(paneRows(view, SHOPPING_LIST_TAB).ownedBisList).toBe(true);
-		expect(paneRows(view, 'head').ownedBisList).toBe(false);
-		expect(paneRows(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!, SHOPPING_LIST_TAB).ownedBisList).toBe(false);
+		expect(paneRows(view, SHOPPING_LIST_TAB).emptyReason).toBe('owned-bis-list');
+		expect(paneRows(view, 'head').emptyReason).not.toBe('owned-bis-list');
+		expect(paneRows(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!, SHOPPING_LIST_TAB).emptyReason).not.toBe('owned-bis-list');
 	});
 
 	// The fork's own CI has no main repo around it, so the recording is read only where it exists.
@@ -300,9 +297,9 @@ describe('resultsViewFor', () => {
 		const view = resultsViewFor(done(ranking), ONLY_BIS)!;
 		const neck = paneRows(view, 'neck');
 		expect(neck.main).toEqual([]);
-		expect(neck.ownedBisRow).toBe(true);
-		expect(neck.noBisListRow).toBe(false);
-		expect(paneRows(view, SHOPPING_LIST_TAB).ownedBisList).toBe(false);
+		expect(neck.emptyReason).toBe('owned-bis-row');
+		expect(neck.emptyReason).not.toBe('no-bis-list-row');
+		expect(paneRows(view, SHOPPING_LIST_TAB).emptyReason).not.toBe('owned-bis-list');
 	});
 });
 
@@ -418,13 +415,10 @@ describe('sourcesView over resultsViewFor', () => {
 			main: [],
 			notUpgrades: new Set(),
 			belowCutoff: [],
-			noBisListRow: false,
-			noSourceRow: true,
-			ownedBisRow: false,
-			ownedBisList: false,
+			emptyReason: 'no-source-row',
 		});
-		expect(paneRows(hidingBlackTemple, 'head').noSourceRow).toBe(false);
-		expect(paneRows(VIEW, 'legs').noSourceRow).toBe(false);
+		expect(paneRows(hidingBlackTemple, 'head').emptyReason).not.toBe('no-source-row');
+		expect(paneRows(VIEW, 'legs').emptyReason).not.toBe('no-source-row');
 
 		const everySource = ['Black Temple', 'Hyjal Summit', "Gruul's Lair", 'Tempest Keep', 'PvP vendor'];
 		const allHidden = bySource(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, everySource);
@@ -432,10 +426,7 @@ describe('sourcesView over resultsViewFor', () => {
 			main: [],
 			notUpgrades: new Set(),
 			belowCutoff: [],
-			noBisListRow: false,
-			noSourceRow: true,
-			ownedBisRow: false,
-			ownedBisList: false,
+			emptyReason: 'no-source-row',
 		});
 		expect(slotTabs(allHidden).map(tab => tab.id)).toEqual(['head', 'chest', 'legs', 'trinket1', 'mainhand']);
 	});
@@ -447,7 +438,7 @@ describe('sourcesView over resultsViewFor', () => {
 		const everyOtherSource = ['Black Temple', 'Hyjal Summit', "Gruul's Lair", 'Tempest Keep', 'PvP vendor'];
 		const view = bySource(done(replacing(zulAmanHelm)), NO_VIEW_TOGGLES, everyOtherSource);
 		for (const tab of ['head', SHOPPING_LIST_TAB] as const) {
-			expect(paneRows(view, tab)).toMatchObject({ main: [], noBisListRow: false, noSourceRow: true });
+			expect(paneRows(view, tab)).toMatchObject({ main: [], emptyReason: 'no-source-row' });
 			expect(ids(paneRows(view, tab).belowCutoff)).toEqual([zulAmanHelm.itemId]);
 		}
 	});
@@ -457,17 +448,17 @@ describe('sourcesView over resultsViewFor', () => {
 		// Helm of the Illidari Shatterer (Black Temple) misses the cutoff; the Hyjal Summit weapon is the row the cut hides.
 		const view = bySource(done(withRows([helm, fixtureRow(1)])), NO_VIEW_TOGGLES, ['Hyjal Summit']);
 		expect(view.sourcesHidden).toBe(true);
-		expect(paneRows(view, 'head')).toMatchObject({ main: [], noBisListRow: false, noSourceRow: false });
+		expect(paneRows(view, 'head')).toMatchObject({ main: [], emptyReason: 'no-upgrades' });
 		expect(ids(paneRows(view, 'head').belowCutoff)).toEqual([helm.itemId]);
 	});
 
 	it('under BiS only, says a slot has no BiS-list item only when it had none before the source cut', () => {
 		const view = bySource(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple']);
 		// Chest has no BiS-list row at all.
-		expect(paneRows(view, 'chest')).toMatchObject({ noBisListRow: true, noSourceRow: false });
+		expect(paneRows(view, 'chest')).toMatchObject({ emptyReason: 'no-bis-list-row' });
 		// Head's one BiS-list row, Cursed Vision of Sargeras, drops in Black Temple.
-		expect(paneRows(view, 'head')).toMatchObject({ main: [], noBisListRow: false, noSourceRow: true });
-		expect(paneRows(view, 'trinket1')).toMatchObject({ noBisListRow: false, noSourceRow: false });
+		expect(paneRows(view, 'head')).toMatchObject({ main: [], emptyReason: 'no-source-row' });
+		expect(paneRows(view, 'trinket1')).toMatchObject({ emptyReason: 'no-upgrades' });
 	});
 
 	it('filters a stopped run’s table too', () => {

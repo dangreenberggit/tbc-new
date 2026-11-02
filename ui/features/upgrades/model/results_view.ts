@@ -75,11 +75,11 @@ export type PaneRows = {
 	main: ViewRow[];
 	notUpgrades: ReadonlySet<string>;
 	belowCutoff: ViewRow[];
-	noBisListRow: boolean;
-	noSourceRow: boolean;
-	ownedBisRow: boolean;
-	ownedBisList: boolean;
+	emptyReason: PaneEmptyReason;
 };
+
+/** What a pane says when its main table is empty (`paneRows`). */
+export type PaneEmptyReason = 'no-bis-list-row' | 'no-source-row' | 'owned-bis-row' | 'owned-bis-list' | 'no-upgrades';
 
 /**
  * One pane's rows: its main table, the keys of the rows in that table that
@@ -96,20 +96,23 @@ export type PaneRows = {
  * already fills, so its delta is about 0 by construction and would only list
  * the gear the player wears.
  *
- * `noBisListRow` is true for a slot pane of a BiS-only view that has no row at
- * all, so the pane can say the slot has no BiS-list item instead of saying
- * every candidate simmed at or below the worn gear. A pane of a BiS-only view
- * whose rows are all owned and so out of the main table sets `ownedBisRow` (a
- * slot) or `ownedBisList` (the Shopping list) instead, so the pane can say the
- * player already wears the item (ticket 625).
- * It reads the slot's rows before the source cut, so a slot whose BiS-list
- * rows all come from hidden sources is not said to have none.
+ * `emptyReason` is what the pane says when its main table is empty, the
+ * first of these that applies; a pane reads it only then. One reason, not a
+ * flag each, so the order is decided here.
  *
- * `noSourceRow` is true for a pane whose main table "Filter by source"
- * emptied, so the pane can say no row comes from the shown sources rather
- * than that every candidate simmed at or below the worn gear; its rows below
- * the cutoff still show under that. A slot with no BiS-list row says that
- * instead.
+ * - `no-bis-list-row`: a slot pane of a BiS-only view that has no row at all,
+ *   so the pane says the slot has no BiS-list item instead of saying every
+ *   candidate simmed at or below the worn gear. It reads the slot's rows
+ *   before the source cut, so a slot whose BiS-list rows all come from hidden
+ *   sources is not said to have none.
+ * - `no-source-row`: "Filter by source" emptied the main table, so the pane
+ *   says no row comes from the shown sources rather than that every candidate
+ *   simmed at or below the worn gear; its rows below the cutoff still show
+ *   under that.
+ * - `owned-bis-row` (a slot) or `owned-bis-list` (the Shopping list): a pane of
+ *   a BiS-only view whose rows are all owned and so out of the main table, so
+ *   the pane says the player already wears the item (ticket 625).
+ * - `no-upgrades`: none of these.
  */
 export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 	const rows = tab === SHOPPING_LIST_TAB ? view.rows : view.rows.filter(row => effectiveSlot(row) === tab);
@@ -119,14 +122,20 @@ export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 	const noBisListRow = view.bisOnly === true && tab !== SHOPPING_LIST_TAB && !(view.slotsBeforeSourceCut?.includes(tab) ?? rows.length > 0);
 	const allOwned = view.bisOnly === true && rows.length > 0 && main.length === 0 && rows.every(row => row.owned === true);
 	const sourceCutEmptied = rows.length === 0 || (main.length === 0 && view.panesWithMainBeforeSourceCut?.includes(tab) === true);
+	const emptyReason: PaneEmptyReason = noBisListRow
+		? 'no-bis-list-row'
+		: view.sourcesHidden === true && sourceCutEmptied
+			? 'no-source-row'
+			: allOwned
+				? tab === SHOPPING_LIST_TAB
+					? 'owned-bis-list'
+					: 'owned-bis-row'
+				: 'no-upgrades';
 	return {
 		main,
 		notUpgrades: new Set(shownAnyway.map(rowKey)),
 		belowCutoff: missed.filter(row => !onBisList(row)),
-		noBisListRow,
-		noSourceRow: view.sourcesHidden === true && sourceCutEmptied && !noBisListRow,
-		ownedBisRow: allOwned && tab !== SHOPPING_LIST_TAB,
-		ownedBisList: allOwned && tab === SHOPPING_LIST_TAB,
+		emptyReason,
 	};
 }
 

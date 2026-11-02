@@ -1,18 +1,20 @@
 import i18n from '@i18n/config';
 
 import { useResultsTable } from '../../hooks/useResultsTable';
-import type { PaneRows } from '../../model/results_view';
+import type { PaneEmptyReason, PaneRows } from '../../model/results_view';
 import { BelowCutoffGroup } from '../BelowCutoffGroup';
 import { EmptyState } from '../EmptyState';
 import { ResultRows, ResultsTable, type RowContext, ScreenReaderResultsHead, SortableResultsHead } from '../ResultsTable';
 
+const EMPTY_BODY_KEYS = {
+	'no-source-row': 'upgrades_tab.results.empty_no_source_row',
+	'no-bis-list-row': 'upgrades_tab.results.empty_no_bis_row',
+	'owned-bis-row': 'upgrades_tab.results.empty_owned_bis_row',
+	'owned-bis-list': 'upgrades_tab.results.empty_owned_bis_list',
+} as const satisfies Record<Exclude<PaneEmptyReason, 'no-upgrades'>, string>;
+
 export interface ResultsPaneProps {
-	/**
-	 * The pane's rows as `paneRows` splits them. A slot pane under BiS only with no BiS-list row
-	 * (`noBisListRow`), a pane "Filter by source" emptied (`noSourceRow`), or a pane under BiS only
-	 * whose rows are all worn (`ownedBisRow`, `ownedBisList`), says so in its empty state instead of
-	 * "No upgrades found".
-	 */
+	/** The pane's rows as `paneRows` splits them; with no main table, `emptyReason` picks the empty state's text. */
 	rows: PaneRows;
 	rowContext: RowContext;
 	/** Whether the below-cutoff group is open; `ResultsPanes` keeps it per pane, so it survives a switch to another pane. */
@@ -28,7 +30,7 @@ export interface ResultsPaneProps {
  * one sort, so a click on either head orders both.
  */
 export const ResultsPane = ({ rows, rowContext, groupOpen, onGroupOpenChange }: ResultsPaneProps) => {
-	const { main, notUpgrades, belowCutoff, noBisListRow, noSourceRow, ownedBisRow, ownedBisList } = rows;
+	const { main, notUpgrades, belowCutoff, emptyReason } = rows;
 	const mainTable = useResultsTable(main, rowContext);
 	const groupTable = useResultsTable(belowCutoff, rowContext);
 	return (
@@ -38,19 +40,13 @@ export const ResultsPane = ({ rows, rowContext, groupOpen, onGroupOpenChange }: 
 					<SortableResultsHead table={mainTable} />
 					<ResultRows table={mainTable} rowContext={rowContext} notUpgrades={notUpgrades} />
 				</ResultsTable>
-			) : noSourceRow ? (
-				<EmptyState body={i18n.t('upgrades_tab.results.empty_no_source_row', { ns: 'upgrades' })} />
-			) : noBisListRow ? (
-				<EmptyState body={i18n.t('upgrades_tab.results.empty_no_bis_row', { ns: 'upgrades' })} />
-			) : ownedBisRow ? (
-				<EmptyState body={i18n.t('upgrades_tab.results.empty_owned_bis_row', { ns: 'upgrades' })} />
-			) : ownedBisList ? (
-				<EmptyState body={i18n.t('upgrades_tab.results.empty_owned_bis_list', { ns: 'upgrades' })} />
-			) : (
+			) : emptyReason === 'no-upgrades' ? (
 				<EmptyState
 					title={i18n.t('upgrades_tab.results.empty_no_upgrades', { ns: 'upgrades' })}
 					body={i18n.t('upgrades_tab.results.empty_no_upgrades_body', { ns: 'upgrades' })}
 				/>
+			) : (
+				<EmptyState body={i18n.t(EMPTY_BODY_KEYS[emptyReason], { ns: 'upgrades' })} />
 			)}
 			{belowCutoff.length > 0 && (
 				<BelowCutoffGroup
