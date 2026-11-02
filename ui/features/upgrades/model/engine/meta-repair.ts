@@ -17,6 +17,7 @@ import {
   gemColorCounts,
   isMetaConditionMet,
   metaDeficit,
+  type MetaStatus,
   metaStatus,
   socketBonusActive,
 } from "./meta";
@@ -197,6 +198,22 @@ export function repairMeta(opts: {
   throw new MetaStepBudgetExceededError("meta repair exceeded step budget");
 }
 
+/**
+ * The head's meta status when its meta gem is off, else undefined. It is the
+ * test `repairAndMinimize` makes before it swaps anything; the ranking uses it
+ * to skip the worn-gear stats read when the repair would swap nothing (ticket
+ * 705).
+ */
+export function inactiveMeta(
+  items: readonly SocketedItem[]
+): Extract<MetaStatus, { kind: "inactive" }> | undefined {
+  const head = items[0];
+  const headItem = head ? getItem(head.itemId) : undefined;
+  if (!headItem?.sockets.includes(GemColor.GemColorMeta)) return undefined;
+  const status = metaStatus(headItem.sockets, allGemIds(items));
+  return status.kind === "inactive" ? status : undefined;
+}
+
 function allGemIds(items: readonly SocketedItem[]): number[] {
   const ids: number[] = [];
   for (const it of items) {
@@ -270,12 +287,8 @@ export function repairAndMinimize(opts: {
   hitCap?: HitCapBudget;
   workLimit?: number;
 }): MetaRepairResult {
-  const head = opts.items[0];
-  const headItem = head ? getItem(head.itemId) : undefined;
-  const status = headItem?.sockets.includes(GemColor.GemColorMeta)
-    ? metaStatus(headItem.sockets, allGemIds(opts.items))
-    : undefined;
-  if (status?.kind !== "inactive") {
+  const status = inactiveMeta(opts.items);
+  if (!status) {
     return {
       items: opts.items.map((it) => ({ itemId: it.itemId, gems: [...it.gems] })),
       metaAdjusted: false,

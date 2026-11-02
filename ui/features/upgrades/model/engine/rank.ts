@@ -29,7 +29,7 @@
  * synergy, disclosure assembly — is unchanged from packages/core.
  */
 
-import { GemColor, HandType } from "@generated/proto/common";
+import { HandType } from "@generated/proto/common";
 
 import {
   fillEmptyCandidateGems,
@@ -75,8 +75,8 @@ import {
   equipmentFromLoggedGear,
   socketedItemsFromLoggedGear,
 } from "./logged-gear";
-import { metaStatus } from "./meta";
 import {
+  inactiveMeta,
   MetaRepairError,
   type MetaRepairSwap,
   REPAIR_SEARCH_WORK_LIMIT,
@@ -826,6 +826,33 @@ export async function rankUpgrades(
    * warning alone leaves a full-weight ranking looking like a capped one.
    */
   const hitCapNotes: Substitution[] = [];
+  /** One stats read of `request` as a hit percent and the repair budget it gives. */
+  const readHitCap = async (request: RaidSimRequest) => {
+    const observed = await readStats(deps.sim, request, deps.signal);
+    const hitPercent = hitPercentOf(
+      observed,
+      capProfile.repairCap!.hitPercentPseudoStat
+    );
+    return {
+      hitPercent,
+      budget: hitCapBudgetFrom(capProfile, request, observed.pseudoStats),
+    };
+  };
+  /**
+   * A failed hit read keeps full-weight repair and caches no ranking. A read
+   * Stop ended is no failure to warn or note: the candidate loop returns the
+   * partial ranking (ticket 538). The worn-gear and baseline reads can both
+   * fail, and one note says so.
+   */
+  const hitCapReadFailed = (err: unknown, warning: string) => {
+    if (err instanceof StopRefusedSim) return;
+    console.warn(warning, err);
+    hitCapFailed = true;
+    const unread = hitRatingUnreadNote(err);
+    if (!hitCapNotes.some((n) => n.field === unread.field)) {
+      hitCapNotes.push(unread);
+    }
+  };
 
   const preRepairSocketed = socketedItemsFromLoggedGear(logged);
   let socketed: SocketedItem[] = preRepairSocketed;
@@ -845,29 +872,15 @@ export async function rankUpgrades(
   // baseline read: the run goes on and the candidate loop returns a partial
   // ranking, which is never cached.
   let wornHitCap: HitCapBudget | undefined;
-  if (hitCapReadable && wornMetaInactive(preRepairSocketed)) {
+  if (hitCapReadable && inactiveMeta(preRepairSocketed)) {
     const preRequest = composeFor(equipmentFromLoggedGear(logged));
     try {
-      const observed = await readStats(deps.sim, preRequest, deps.signal);
-      const hitPercent =
-        observed.pseudoStats[capProfile.repairCap!.hitPercentPseudoStat];
-      if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
-        throw new Error(`hit percent read as ${String(hitPercent)}`);
-      }
-      wornHitCap = hitCapBudgetFrom(
-        capProfile,
-        preRequest,
-        observed.pseudoStats
-      );
+      wornHitCap = (await readHitCap(preRequest)).budget;
     } catch (err) {
-      if (!(err instanceof StopRefusedSim)) {
-        console.warn(
-          "[upgrades] meta repair: hit cap not read before the worn-gear repair, full-weight repair used",
-          err
-        );
-        hitCapFailed = true;
-        hitCapNotes.push(hitRatingUnreadNote(err));
-      }
+      hitCapReadFailed(
+        err,
+        "[upgrades] meta repair: hit cap not read before the worn-gear repair, full-weight repair used"
+      );
     }
   }
   try {
@@ -1090,13 +1103,7 @@ export async function rankUpgrades(
     // caches no ranking, so a later run can still read it.
     if (hitCapReadable) {
       try {
-        const observed = await readStats(deps.sim, request, deps.signal);
-        const hitPercent =
-          observed.pseudoStats[capProfile.repairCap!.hitPercentPseudoStat];
-        if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
-          throw new Error(`hit percent read as ${String(hitPercent)}`);
-        }
-        const budget = hitCapBudgetFrom(capProfile, request, observed.pseudoStats);
+        const { hitPercent, budget } = await readHitCap(request);
         if (budget) {
           gems = {
             ...gems,
@@ -1111,20 +1118,10 @@ export async function rankUpgrades(
           hitCapNotes.push(hitCapUnknownNote());
         }
       } catch (err) {
-        // After Stop the candidate loop returns the partial ranking; a read
-        // Stop ended is no failure to warn or note (ticket 538).
-        if (!(err instanceof StopRefusedSim)) {
-          console.warn(
-            "[upgrades] meta repair: hit cap not read, full-weight repair used",
-            err
-          );
-          hitCapFailed = true;
-          // The worn-gear read may have failed already; one note says it.
-          const unread = hitRatingUnreadNote(err);
-          if (!hitCapNotes.some((n) => n.field === unread.field)) {
-            hitCapNotes.push(unread);
-          }
-        }
+        hitCapReadFailed(
+          err,
+          "[upgrades] meta repair: hit cap not read, full-weight repair used"
+        );
       }
     }
 
@@ -1186,12 +1183,10 @@ export async function rankUpgrades(
             read = readStats(deps.sim, request, deps.signal);
             versionReads.set(key, read);
           }
-          const observed = await read;
-          const hitPercent =
-            observed.pseudoStats[capProfile.repairCap!.hitPercentPseudoStat];
-          if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
-            throw new Error(`hit percent read as ${String(hitPercent)}`);
-          }
+          const hitPercent = hitPercentOf(
+            await read,
+            capProfile.repairCap!.hitPercentPseudoStat
+          );
           const missed =
             hitPercent * capProfile.ratingPerPercent -
             baselineSimHit -
@@ -3767,6 +3762,18 @@ class StopRefusedSim extends Error {
   }
 }
 
+/** The hit percent a stats read gives; a value that is not a finite number is a failed read. */
+function hitPercentOf(
+  observed: PlayerStatsObservation,
+  pseudoStat: number
+): number {
+  const hitPercent = observed.pseudoStats[pseudoStat];
+  if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
+    throw new Error(`hit percent read as ${String(hitPercent)}`);
+  }
+  return hitPercent;
+}
+
 /**
  * One stats read, raced against Stop (ticket 538). The listener goes on
  * before the read starts, so an abort fired while the read is being sent is
@@ -4286,23 +4293,6 @@ export function setBonusSkipSubstitution(skip: {
 
 const errorText = (err: unknown): string =>
   err instanceof Error ? err.message : String(err);
-
-/**
- * The same test `repairAndMinimize` makes before it swaps anything. When it
- * fails the worn-gear repair swaps nothing, so its stats read is skipped and
- * a run whose meta is on pays no extra read (ticket 705).
- */
-function wornMetaInactive(items: readonly SocketedItem[]): boolean {
-  const head = items[0];
-  const item = head ? getItem(head.itemId) : undefined;
-  if (!item?.sockets.includes(GemColor.GemColorMeta)) return false;
-  return (
-    metaStatus(
-      item.sockets,
-      items.flatMap((it) => it.gems.filter((g) => g))
-    ).kind === "inactive"
-  );
-}
 
 /**
  * The hit-cap notes are written before any candidate is priced, so they say
