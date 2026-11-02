@@ -29,7 +29,7 @@
  * synergy, disclosure assembly — is unchanged from packages/core.
  */
 
-import { HandType } from "@generated/proto/common";
+import { GemColor, HandType } from "@generated/proto/common";
 
 import {
   fillEmptyCandidateGems,
@@ -40,7 +40,11 @@ import {
   missingMetaPreferenceNote,
 } from "./candidate-gems";
 import { orderCandidatesByEp } from "./candidate-order";
-import { capProfileFor, hitCapBudgetFrom } from "./cap-profile";
+import {
+  capProfileFor,
+  type HitCapBudget,
+  hitCapBudgetFrom,
+} from "./cap-profile";
 import {
   type CapState,
   capStateFrom,
@@ -71,6 +75,7 @@ import {
   equipmentFromLoggedGear,
   socketedItemsFromLoggedGear,
 } from "./logged-gear";
+import { metaStatus } from "./meta";
 import {
   MetaRepairError,
   type MetaRepairSwap,
@@ -789,37 +794,6 @@ export async function rankUpgrades(
 
   onProgress?.({ stage: "composing" });
   const race = input.race ?? raceFromSkeleton(deps.raidSimSkeleton);
-  const preRepairSocketed = socketedItemsFromLoggedGear(logged);
-  let socketed: SocketedItem[] = preRepairSocketed;
-  let metaAdjusted = false;
-  let metaSwaps: MetaRepairSwap[] = [];
-  // Reassigned once, after the baseline's stats read, so every later repair
-  // site gets the hit budget (ticket 535).
-  let gems = gemContext(
-    deps.gemPalette ?? gemsForPhase(input.maxPhase),
-    deps.epWeights,
-    input.spec
-  );
-  try {
-    const minimized = repairAndMinimize({
-      items: preRepairSocketed,
-      epWeights: deps.epWeights,
-      palette: gems.fillPalette,
-    });
-    socketed = minimized.items;
-    metaAdjusted = minimized.metaAdjusted;
-    metaSwaps = minimized.swaps;
-  } catch (err) {
-    if (err instanceof MetaRepairError) {
-      throw new RankError("meta-unsolvable", err.message);
-    }
-    throw err;
-  }
-
-  const equipment = applyRepairedGems(
-    equipmentFromLoggedGear(logged),
-    socketed
-  );
   // Every request describes its own equipment in its own database, which is
   // upstream's invariant (ui/core/sim.ts:346-347). Without a resolver this is
   // exactly today's compose call, so CLI requests stay byte-identical.
@@ -839,6 +813,84 @@ export async function rankUpgrades(
       ...(database !== undefined ? { database } : {}),
     });
   };
+  // Whether repair can value hit up to the cap: the spec has a repair cap and
+  // the runner can read stats (ticket 535).
+  const capProfile = capProfileFor(input.spec);
+  const hitCapReadable =
+    capProfile.repairCap !== undefined &&
+    typeof deps.sim.computeStats === "function";
+  /** A stats read failed, so this run's ranking is not cached (ticket 535). */
+  let hitCapFailed = false;
+  /**
+   * Why repair could not use the hit cap, shown with the ranking: the console
+   * warning alone leaves a full-weight ranking looking like a capped one.
+   */
+  const hitCapNotes: Substitution[] = [];
+
+  const preRepairSocketed = socketedItemsFromLoggedGear(logged);
+  let socketed: SocketedItem[] = preRepairSocketed;
+  let metaAdjusted = false;
+  let metaSwaps: MetaRepairSwap[] = [];
+  // Reassigned once, after the baseline's stats read, so every later repair
+  // site gets the hit budget (ticket 535).
+  let gems = gemContext(
+    deps.gemPalette ?? gemsForPhase(input.maxPhase),
+    deps.epWeights,
+    input.spec
+  );
+  // The worn repair runs before the baseline exists, so its hit budget comes
+  // from its own read of the un-repaired gear (ticket 705). That budget's
+  // `remaining` is relative to the items the repair is given, as
+  // `repairAndMinimize` expects. A read Stop ended is no failure, as at the
+  // baseline read: the run goes on and the candidate loop returns a partial
+  // ranking, which is never cached.
+  let wornHitCap: HitCapBudget | undefined;
+  if (hitCapReadable && wornMetaInactive(preRepairSocketed)) {
+    const preRequest = composeFor(equipmentFromLoggedGear(logged));
+    try {
+      const observed = await readStats(deps.sim, preRequest, deps.signal);
+      const hitPercent =
+        observed.pseudoStats[capProfile.repairCap!.hitPercentPseudoStat];
+      if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
+        throw new Error(`hit percent read as ${String(hitPercent)}`);
+      }
+      wornHitCap = hitCapBudgetFrom(
+        capProfile,
+        preRequest,
+        observed.pseudoStats
+      );
+    } catch (err) {
+      if (!(err instanceof StopRefusedSim)) {
+        console.warn(
+          "[upgrades] meta repair: hit cap not read before the worn-gear repair, full-weight repair used",
+          err
+        );
+        hitCapFailed = true;
+        hitCapNotes.push(hitRatingUnreadNote(err));
+      }
+    }
+  }
+  try {
+    const minimized = repairAndMinimize({
+      items: preRepairSocketed,
+      epWeights: deps.epWeights,
+      palette: gems.fillPalette,
+      ...(wornHitCap ? { hitCap: wornHitCap } : {}),
+    });
+    socketed = minimized.items;
+    metaAdjusted = minimized.metaAdjusted;
+    metaSwaps = minimized.swaps;
+  } catch (err) {
+    if (err instanceof MetaRepairError) {
+      throw new RankError("meta-unsolvable", err.message);
+    }
+    throw err;
+  }
+
+  const equipment = applyRepairedGems(
+    equipmentFromLoggedGear(logged),
+    socketed
+  );
 
   const request = composeFor(equipment);
 
@@ -905,13 +957,6 @@ export async function rankUpgrades(
   );
 
   const simVersion = await deps.sim.version();
-
-  // Whether repair can value hit up to the cap: the spec has a repair cap and
-  // the runner can read stats (ticket 535).
-  const capProfile = capProfileFor(input.spec);
-  const hitCapReadable =
-    capProfile.repairCap !== undefined &&
-    typeof deps.sim.computeStats === "function";
 
   // Hashed on every *eligible* candidate, not the post-cap set: which
   // candidates are eligible is known before any sim runs, so this is stable
@@ -983,8 +1028,10 @@ export async function rankUpgrades(
     ...(deps.setScreen !== undefined ? { setScreen: deps.setScreen } : {}),
     // Only when set, so a run whose repair cannot read hit keeps the key a
     // run with the same rule writes; a run that reads it is never served a
-    // ranking repaired at full weight (ticket 535).
-    ...(hitCapReadable ? { metaRepairHitCap: true } : {}),
+    // ranking repaired at full weight (ticket 535). The value names which
+    // repairs the budget reaches, so a ranking cached when only candidate
+    // repairs used it is not served (ticket 705).
+    ...(hitCapReadable ? { metaRepairHitCap: "worn-and-candidates" } : {}),
     // The repair rule, on every run, so no ranking cached under greedy repair
     // or another work limit is served (ticket 535).
     metaRepair: `exact-credit-per-version;limit=${REPAIR_SEARCH_WORK_LIMIT}`,
@@ -998,15 +1045,8 @@ export async function rankUpgrades(
 
   let simsDone = 0;
   let totalSimsForProgress = 0;
-  /** A stats read failed, so this run's ranking is not cached (ticket 535). */
-  let hitCapFailed = false;
   /** The baseline's sim hit rating, once the budget is set (ticket 535). */
   let baselineSimHit: number | undefined;
-  /**
-   * Why repair could not use the hit cap, shown with the ranking: the console
-   * warning alone leaves a full-weight ranking looking like a capped one.
-   */
-  const hitCapNotes: Substitution[] = [];
 
   const job = await deps.store.job.create({ contentHash, input });
   await deps.store.job.update(job.id, { status: "running" });
@@ -1079,7 +1119,11 @@ export async function rankUpgrades(
             err
           );
           hitCapFailed = true;
-          hitCapNotes.push(hitRatingUnreadNote(err));
+          // The worn-gear read may have failed already; one note says it.
+          const unread = hitRatingUnreadNote(err);
+          if (!hitCapNotes.some((n) => n.field === unread.field)) {
+            hitCapNotes.push(unread);
+          }
         }
       }
     }
@@ -4244,6 +4288,23 @@ const errorText = (err: unknown): string =>
   err instanceof Error ? err.message : String(err);
 
 /**
+ * The same test `repairAndMinimize` makes before it swaps anything. When it
+ * fails the worn-gear repair swaps nothing, so its stats read is skipped and
+ * a run whose meta is on pays no extra read (ticket 705).
+ */
+function wornMetaInactive(items: readonly SocketedItem[]): boolean {
+  const head = items[0];
+  const item = head ? getItem(head.itemId) : undefined;
+  if (!item?.sockets.includes(GemColor.GemColorMeta)) return false;
+  return (
+    metaStatus(
+      item.sockets,
+      items.flatMap((it) => it.gems.filter((g) => g))
+    ).kind === "inactive"
+  );
+}
+
+/**
  * The hit-cap notes are written before any candidate is priced, so they say
  * "If gems were swapped": a run whose meta gem stays on swaps nothing.
  */
@@ -4252,8 +4313,8 @@ export function hitCapUnknownNote(): Substitution {
     field: "Meta gem swaps and the hit cap",
     detail:
       "If gems were swapped to turn your meta gem on, hit rating was " +
-      "treated as always useful, because the hit cap is only known " +
-      "for a fight where every target is level 73.",
+      "treated as always useful, because this tab works out the hit cap " +
+      "only when every target is level 73.",
   };
 }
 

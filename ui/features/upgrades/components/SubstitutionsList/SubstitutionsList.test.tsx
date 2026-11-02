@@ -104,7 +104,7 @@ describe('SubstitutionsList', () => {
 		]);
 		expect(definitions()).toEqual([
 			`Your meta gem was not active, so the ranking swapped 1 gem in its own copy of your gear to turn it on; your gear itself was not changed.${more}`,
-			'If gems were swapped to turn your meta gem on, hit rating was treated as always useful, because the hit cap is only known for a fight where every target is level 73.',
+			'If gems were swapped to turn your meta gem on, hit rating was treated as always useful, because this tab works out the hit cap only when every target is level 73.',
 			`If gems were swapped to turn your meta gem on, hit rating was treated as always useful, because your hit rating could not be read.${more}`,
 			`Your hit rating could not be read at one set piece count, so the gem swaps for your meta gem did not count hit rating from set bonuses against the hit cap.${more}`,
 			`The ranking does not know which meta gem your spec uses, so new items with a meta socket got the meta gem you wear, or an empty socket and no socket bonus if you wear none.${more}`,
