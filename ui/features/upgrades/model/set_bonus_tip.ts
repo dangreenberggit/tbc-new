@@ -1,8 +1,9 @@
 /**
  * The set-bonus popover of a result row, as data (tickets 431, 467, 494, 517,
  * ported from the old tab's `setBonusPresentation`, cb561067
- * `upgrades_tab.tsx`). A receipt whose lines add up to the row's figure, so
- * the reader sees where the number came from; or, for a step ranking row
+ * `upgrades_tab.tsx`). A receipt whose lines add up to the row's figure as the
+ * cell shows it, after the ticket-618 clamp (`shownTenths`), so the reader sees
+ * where the number came from; or, for a step ranking row
  * whose partner sets do not nest (K6), separate outcomes that are not a sum.
  * `utils/set_bonus_labels.ts` turns it into text.
  */
@@ -25,6 +26,7 @@ import {
 	stepEligible,
 	stepFutureUnmeasured,
 } from './engine/view';
+import { shownTenths } from './shown_figure';
 
 /** A set bonus as a label names it: "{set} {count}pc". */
 export type BonusRef = { setName: string; threshold: number };
@@ -78,6 +80,9 @@ type Line = { label: TipLabel; dps: number | undefined; figure?: boolean };
 
 /** A figure in tenths of a DPS, rounded the way the popover shows it. */
 const tenths = (v: number): number => Math.round(Number(v.toFixed(1)) * 10);
+
+/** `v` as the row's figure shows it: raw unless the ticket-618 clamp changed it, so a figure the clamp leaves alone keeps its full value. */
+const shownValue = (v: number, bar: number | undefined): number => (shownTenths(v, bar) === tenths(v) ? v : shownTenths(v, bar) / 10);
 
 /**
  * Rounds `values` to tenths so they add up to exactly `target` tenths, moving
@@ -270,14 +275,19 @@ function screenedLine(ctx: SetContext, ranking: SetBonusTipContext['ranking']): 
  * ruling of 2026-10-01), so there is no Item stats addend and no total. On a
  * row paired replication rewrote, every bonus's total moves by the same amount
  * as the row's single swap, so the item-alone line and the marked line equal
- * the figures the row shows.
+ * the figures the row shows. The line that is the row's figure (the marked one,
+ * or the item alone when none is marked) goes through the ticket-618 clamp, as
+ * the cell does; the others are compared, not shown in the cell, so stay raw.
  */
-function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Line[]): TipEntry[] {
+function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Line[], bar: number | undefined): TipEntry[] {
 	const shift = row.deltaDps - (ctx.singleDeltaDps ?? row.deltaDps);
 	return [
 		{ type: 'heading', heading: 'set_potential_totals' },
-		line({ kind: 'item_alone', name: row.name, broken: (ctx.singleBreaks ?? []).map(ref) }, row.deltaDps),
-		...outcomes.map(o => line(o.label, (o.dps ?? 0) + shift, o.figure)),
+		line(
+			{ kind: 'item_alone', name: row.name, broken: (ctx.singleBreaks ?? []).map(ref) },
+			outcomes.some(o => o.figure) ? row.deltaDps : shownValue(row.deltaDps, bar),
+		),
+		...outcomes.map(o => line(o.label, o.figure ? shownValue((o.dps ?? 0) + shift, bar) : (o.dps ?? 0) + shift, o.figure)),
 	];
 }
 
@@ -291,6 +301,7 @@ function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Li
 export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = {}): SetBonusTip | null {
 	const ctx = row.setContext;
 	const noiseFloorDps = context.ranking ? setBonusNoiseFloorDps(context.ranking.cutoff) : undefined;
+	const bar = context.ranking?.cutoff.absDps;
 	const on = (context.withSetPotential ?? false) && noiseFloorDps !== undefined;
 	const credit = on ? rankableSetPotential(row, noiseFloorDps, 'full') : 0;
 	// A row with no set context gets the same receipt for the worn bonuses its own swap breaks (ticket 536).
@@ -303,7 +314,7 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 	if (subLine === null) return null;
 
 	const potential = ctx && on && (ctx.futureBonuses ?? []).length > 0 ? potentialLines(ctx, noiseFloorDps, credit) : NO_POTENTIAL;
-	if (ctx && potential.kind === 'outcomes') return { subLine, kind: 'outcomes', entries: outcomesEntries(row, ctx, potential.lines) };
+	if (ctx && potential.kind === 'outcomes') return { subLine, kind: 'outcomes', entries: outcomesEntries(row, ctx, potential.lines, bar) };
 
 	const singleBreaks = ctx ? (ctx.singleBreaks ?? []) : ownBreaks;
 	const measuredBreaks = singleBreaks.flatMap(b => (b.dps === undefined ? [] : [{ ...b, dps: b.dps }]));
@@ -312,11 +323,11 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 	const bonus = ctx?.crossesThreshold ? { setName: ctx.setName, threshold: crossingLabelCount(ctx) ?? ctx.piecesAfterSwap } : undefined;
 	const total = row.deltaDps + credit;
 	const breakTenths = measuredBreaks.map(b => tenths(-b.dps));
-	const firstTenths = tenths(row.deltaDps) - breakTenths.reduce((a, b) => a + b, 0);
+	const firstTenths = shownTenths(row.deltaDps, bar) - breakTenths.reduce((a, b) => a + b, 0);
 
 	const entries: TipEntry[] = [];
 	// A folded label is kept even when it equals the total: it is the only place that bonus is named.
-	if (bonus !== undefined || unmeasuredBreaks.length > 0 || firstTenths !== tenths(total)) {
+	if (bonus !== undefined || unmeasuredBreaks.length > 0 || firstTenths !== shownTenths(total, bar)) {
 		entries.push(line({ kind: 'item_stats', ...(bonus ? { bonus } : {}), unmeasuredBreaks }, firstTenths / 10));
 	}
 	measuredBreaks.forEach((b, i) => entries.push(line({ kind: 'breaks', broken: [ref(b)] }, breakTenths[i]! / 10)));
@@ -328,7 +339,7 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 		// The toggle-off lines add up to the toggle-off figure, so these must add up to the difference.
 		const shown = spreadTenths(
 			potential.lines.map(l => l.dps ?? 0),
-			tenths(total) - tenths(row.deltaDps),
+			shownTenths(total, bar) - shownTenths(row.deltaDps, bar),
 		);
 		potential.lines.forEach((l, i) => entries.push(line(l.label, shown[i]! / 10)));
 	}
@@ -343,6 +354,6 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 		if (section.length > 0) notCounted.push({ type: 'heading', heading: notCountedHeading(reachable.length > 0 && !pastStop, on) }, ...section);
 	}
 	if (entries.length === 0 && notCounted.length === 0) return null;
-	entries.push(line({ kind: 'total' }, total), ...notCounted);
+	entries.push(line({ kind: 'total' }, shownValue(total, bar)), ...notCounted);
 	return { subLine, kind: 'receipt', entries };
 }

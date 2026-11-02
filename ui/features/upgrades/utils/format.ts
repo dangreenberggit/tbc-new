@@ -16,6 +16,7 @@ import { SOURCE_LABELS } from '../model/engine/view';
 import type { SortLabels } from '../model/results_columns';
 import type { RunPhase, RunProgressView } from '../model/run_progress';
 import { bucketKeyOf, type SourcedEntry, sourcesOf } from '../model/settings_pool';
+import { shownTenths } from '../model/shown_figure';
 import { FIXTURE_NOT_JSON, type FixtureLoadResult } from './fixture';
 
 const ONE_DECIMAL = { minimumFractionDigits: 1, maximumFractionDigits: 1 };
@@ -24,9 +25,15 @@ export const formatDps = (dps: number): string => formatToNumber(dps, ONE_DECIMA
 
 export const formatSeconds = (ms: number): string => formatToNumber(ms / 1000, { ...ONE_DECIMAL, useGrouping: false });
 
-/** The sign comes from the number: a hard-coded `+` once printed "+-41.0" for a loss. */
-export const formatDelta = (deltaDps: number): string =>
-	i18n.t('upgrades_tab.results.delta_dps_value', { ns: 'upgrades', delta: `${deltaDps > 0 ? '+' : ''}${formatDps(deltaDps)}` });
+/**
+ * The sign comes from the number: a hard-coded `+` once printed "+-41.0" for a loss. `bar` is the
+ * ranking's cutoff, which a figure below it never reads as (`shownTenths`, ticket 618).
+ */
+export const formatDelta = (deltaDps: number, bar?: number): string =>
+	i18n.t('upgrades_tab.results.delta_dps_value', {
+		ns: 'upgrades',
+		delta: `${deltaDps > 0 ? '+' : ''}${formatDps(shownTenths(deltaDps, bar) / 10)}`,
+	});
 
 const ITEM_SLOT_BY_SIM_SLOT: Record<SimOrderName, ItemSlot> = {
 	head: ItemSlot.ItemSlotHead,

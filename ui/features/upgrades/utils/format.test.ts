@@ -48,6 +48,15 @@ describe('formatDelta', () => {
 	it('shows no sign on zero', () => {
 		expect(formatDelta(0)).toBe('0.0');
 	});
+
+	// Ticket 618: a figure below the cutoff bar never reads as the bar.
+	it('shows a figure just below the bar one tenth under it, and every other figure as usual', () => {
+		expect(formatDelta(2.96, 3)).toBe('+2.9');
+		expect(formatDelta(2.94, 3)).toBe('+2.9');
+		expect(formatDelta(3.04, 3)).toBe('+3.0');
+		expect(formatDelta(2.96)).toBe('+3.0');
+		expect(formatDelta(-41.04, 3)).toBe('-41.0');
+	});
 });
 
 describe('formatDps and formatSeconds', () => {

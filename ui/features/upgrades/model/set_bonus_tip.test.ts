@@ -102,6 +102,46 @@ describe('setBonusTipLines', () => {
 		expect(addsUp(tip)).toBe(true);
 	});
 
+	// Ticket 618: the popover's total is the figure the cell shows, so it never reads as the bar for a row below it.
+	describe('a total just below the cutoff bar (ticket 618)', () => {
+		const nearBar: RankedItem = { ...fixtureRow(10), deltaDps: 2.96 };
+		const totalOf = (tip: SetBonusTip | null) => lines(tip).find(line => line.label.kind === 'total')?.dps;
+
+		it('shows the total one tenth under the bar and spreads the receipt against it, with the toggle off', () => {
+			const tip = setBonusTipLines(nearBar, context);
+			expect(totalOf(tip)).toBe(2.9);
+			expect(addsUp(tip)).toBe(true);
+			expect(lines(tip).find(line => line.label.kind === 'item_stats')?.dps).toBe(21.3);
+		});
+
+		it('does the same for a receipt with the toggle on', () => {
+			const row: RankedItem = { ...nearBar, setContext: { ...fixtureRow(10).setContext!, futureBonuses: [{ threshold: 2, piecesNeeded: 1 }] } };
+			const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
+			expect(tip?.kind).toBe('receipt');
+			expect(totalOf(tip)).toBe(2.9);
+			expect(addsUp(tip)).toBe(true);
+		});
+
+		it('shows the outcome marked as the row’s figure one tenth under the bar, and the other lines raw', () => {
+			const row: RankedItem = {
+				...stepRow({
+					singleDeltaDps: 1,
+					futureBonuses: [
+						future({ stepGearDps: 2.5 }),
+						future({ threshold: 4, stepGearDps: 2.96, pieces: [{ itemId: 30988, name: 'Lightbringer Legguards' }] }),
+					],
+				}),
+				deltaDps: 1,
+			};
+			const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
+			expect(tip?.kind).toBe('outcomes');
+			expect(lines(tip).find(line => line.marker)?.dps).toBe(2.9);
+			expect(lines(tip).find(line => line.label.kind === 'pieces' && !line.marker)?.dps).toBe(2.5);
+			expect(lines(tip).find(line => line.label.kind === 'item_alone')?.dps).toBe(1);
+			expect(totalOf(setBonusTipLines(fixtureRow(10), context))).toBe(4.42);
+		});
+	});
+
 	it('folds an unmeasured break into the first line’s label and keeps that line', () => {
 		const row: RankedItem = {
 			...fixtureRow(10),

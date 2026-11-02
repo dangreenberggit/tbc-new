@@ -278,4 +278,15 @@ describe('ResultRow', () => {
 	it('shows a figure with nothing to itemise as plain text, not a button', () => {
 		expect(within(renderRow(fixtureRow(0))).queryByRole('button', { name: '+45.7' })).toBeNull();
 	});
+
+	// Ticket 618: a row below the 3 DPS cutoff once read "+3.0".
+	it('shows a figure just below the cutoff bar one tenth under the bar', () => {
+		const tr = renderRow({ ...fixtureRow(0), deltaDps: 2.96, belowCutoff: true });
+		expect(within(tr).getByTestId('upgrades-delta-cell').textContent).toMatch(/^\+2\.9/);
+	});
+
+	it('keeps a Set potential figure just below the bar under the bar', () => {
+		const tr = renderRow(fixtureRow(0), { ...CONTEXT, dpsKey: () => 2.96 });
+		expect(within(tr).getByTestId('upgrades-delta-cell').textContent).toMatch(/^\+2\.9/);
+	});
 });

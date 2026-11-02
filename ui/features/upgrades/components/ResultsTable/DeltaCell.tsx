@@ -19,11 +19,12 @@ export interface DeltaCellProps {
  * is the trigger of the popover that itemises it. The figure is the one the
  * column sorts on, so with Set potential it is ΔDPS plus the set credit, the
  * popover's total (the old tab's cell, cb561067 `upgrades_tab.tsx:3205-3220`).
+ * A figure below the ranking's cutoff bar never reads as the bar (ticket 618).
  * `memo`: see `ResultRow`.
  */
 export const DeltaCell = memo(({ row, context }: DeltaCellProps) => {
 	const tip = setBonusTipLines(row, context.tip);
-	const figure = formatDelta(context.dpsKey?.(row) ?? row.deltaDps);
+	const figure = formatDelta(context.dpsKey?.(row) ?? row.deltaDps, context.tip.ranking?.cutoff.absDps);
 
 	return (
 		<td className="py-1 pr-3 text-right whitespace-nowrap tabular-nums" data-testid="upgrades-delta-cell">
