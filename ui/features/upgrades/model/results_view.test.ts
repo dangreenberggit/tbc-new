@@ -439,6 +439,16 @@ describe('sourcesView over resultsViewFor', () => {
 		expect(ids(paneRows(view, 'head').belowCutoff)).toEqual([helm.itemId]);
 	});
 
+	// Review R5-1: with no row in any main table before the cut, only the Upgrades pane arm of `hadRowBeforeSourceCut` says the filter emptied it.
+	it('says the Upgrades pane has no row from the shown sources when the filter hid every row, all of them below the cutoff', () => {
+		// Helm of the Illidari Shatterer (Black Temple) and a Midnight Chestguard (Hyjal Summit) moved below the cutoff; neither is on a BiS list.
+		const lowChest: RankedItem = { ...fixtureRow(6), deltaDps: -4, belowCutoff: true };
+		const view = bySource(done(withRows([helm, lowChest])), NO_VIEW_TOGGLES, ['Black Temple', 'Hyjal Summit']);
+		expect(view.rows).toEqual([]);
+		expect(view.panesWithMainBeforeSourceCut).toEqual([]);
+		expect(paneRows(view, SHOPPING_LIST_TAB).emptyReason).toBe('no-source-row');
+	});
+
 	// Ticket 749: with the BiS-only reason gone, the filter must still not take the blame for a pane BiS only emptied.
 	it('under BiS only, says no row comes from the shown sources only for a slot that had a BiS-list row before the source cut', () => {
 		const view = bySource(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple']);
