@@ -95,7 +95,7 @@ describe('ResultRow', () => {
 		});
 		const context = { ...CONTEXT, itemOf: (id: number) => (id === torch.id ? torch : undefined), sim };
 		const link = within(renderRow(fixtureRow(0), context)).getByRole('link', { name: /Illidan Stormrage/ });
-		expect(link.textContent).toBe('Black Temple (N)Illidan Stormrage');
+		expect(link.textContent).toBe('Black Temple\u00a0(N)Illidan Stormrage');
 		expect(link.getAttribute('href')).toBe(ActionId.makeNpcUrl(ILLIDAN));
 	});
 
@@ -168,12 +168,12 @@ describe('ResultRow', () => {
 
 		const overrun = sourceCell(ISALIEN);
 		const overrunLink = within(overrun).getByRole('link');
-		expect(overrunLink.textContent).toBe('Dire Maul (N)Isalien');
+		expect(overrunLink.textContent).toBe('Dire Maul\u00a0(N)Isalien');
 		expect(overrunLink.getAttribute('href')).toBe(ActionId.makeNpcUrl(ISALIEN));
 		expect(overrun.textContent).not.toMatch(/["[\]]/);
 
 		const real = within(sourceCell(ERIC)).getByRole('link');
-		expect(real.textContent).toBe('Dire Maul (N)Eric "The Swift"');
+		expect(real.textContent).toBe('Dire Maul\u00a0(N)Eric "The Swift"');
 		expect(real.getAttribute('href')).toBe(ActionId.makeNpcUrl(ERIC));
 	});
 
@@ -197,7 +197,7 @@ describe('ResultRow', () => {
 			const tr = renderRow(row, { ...CONTEXT, itemOf: () => undefined });
 			return within(tr).getAllByRole('cell')[4]!.querySelector('small')?.textContent;
 		};
-		expect(sourceText(token)).toBe('Black Temple (N) · The Illidari Council');
+		expect(sourceText(token)).toBe('Black Temple\u00a0(N) · The Illidari Council');
 		expect(sourceText({ kind: 'rep', faction: 'The Scale of the Sands', standing: 'Revered' })).toBe('The Scale of the Sands · Revered');
 		expect(sourceText({ kind: 'pvp', via: 'arena' })).toBe('PvP vendor · Arena');
 	});

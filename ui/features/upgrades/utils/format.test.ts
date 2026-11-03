@@ -1,4 +1,5 @@
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
+import { DungeonDifficulty } from '@generated/proto/ui';
 import i18n from '@i18n/config';
 import { describe, expect, it } from 'vitest';
 
@@ -11,6 +12,7 @@ import {
 	formatDelta,
 	formatDps,
 	formatSeconds,
+	keepMarkWithZone,
 	progressBarOf,
 	progressLabel,
 	progressStageOf,
@@ -23,6 +25,7 @@ import {
 	sourceKeyLabel,
 	sourceLabel,
 	substitutionText,
+	zoneWithMark,
 } from './format';
 
 loadEnglishBundles({ character: true });
@@ -149,6 +152,27 @@ describe('sourceDetail', () => {
 		expect(sourceDetail({ kind: 'crafted', profession: 'Blacksmithing' })).toBe('Crafted');
 		expect(sourceDetail({ kind: 'world' })).toBe('World drop');
 		expect(sourceDetail({ kind: 'unknown' })).toBe('Source not recorded');
+	});
+});
+
+// A narrow Source cell wrapped "Tempest Keep (N)" as "Tempest Keep" / "(N)" (ticket 607).
+describe('keepMarkWithZone', () => {
+	it('joins each difficulty mark to the word before it with a no-break space', () => {
+		expect(keepMarkWithZone('Black Temple (N) · The Illidari Council')).toBe('Black Temple (N) · The Illidari Council');
+		expect(keepMarkWithZone('Magisters’ Terrace (H) · Kael’thas Sunstrider')).toBe('Magisters’ Terrace (H) · Kael’thas Sunstrider');
+		expect(keepMarkWithZone('Somewhere (Unknown)')).toBe('Somewhere (Unknown)');
+	});
+
+	it('leaves text with no difficulty mark as it is', () => {
+		expect(keepMarkWithZone('PvP vendor · Arena (de)')).toBe('PvP vendor · Arena (de)');
+		expect(keepMarkWithZone('The Scale of the Sands · Revered')).toBe('The Scale of the Sands · Revered');
+	});
+});
+
+describe('zoneWithMark', () => {
+	it('names the zone and its difficulty mark joined by a no-break space', () => {
+		expect(zoneWithMark('Tempest Keep', DungeonDifficulty.DifficultyNormal)).toBe('Tempest Keep (N)');
+		expect(zoneWithMark('The Slave Pens', DungeonDifficulty.DifficultyHeroic)).toBe('The Slave Pens (H)');
 	});
 });
 

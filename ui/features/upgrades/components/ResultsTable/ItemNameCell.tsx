@@ -32,8 +32,9 @@ export const ItemNameCell = memo(({ row, quality, tags, notUpgrade = false }: It
 		<td className="py-1 pr-3">
 			<span className="flex items-center gap-2">
 				<WowheadIcon as="div" className="size-6 shrink-0" iconUrl={iconUrl} />
-				{/* The table's floor fits every name's widest word (`ResultsTable`); `wrap-anywhere` only keeps a longer one inside the fixed cell. */}
-				<span className="grid min-w-0 wrap-anywhere">
+				{/* The table's floor fits every name's widest word (`ResultsTable`); `wrap-anywhere` only keeps a longer one inside the fixed cell.
+				    The row gap keeps the badges off the name: the owner saw them crowd it at phone width (ticket 423); the layout gate's check 19 measures it. */}
+				<span className="grid min-w-0 gap-y-1 wrap-anywhere">
 					<a
 						href={href || undefined}
 						target="_blank"
