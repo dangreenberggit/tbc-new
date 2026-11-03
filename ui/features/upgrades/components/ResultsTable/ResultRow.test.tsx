@@ -1,6 +1,7 @@
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { ItemQuality } from '@generated/proto/common';
 import { DungeonDifficulty, UIItem } from '@generated/proto/ui';
+import i18n from '@i18n/config';
 import { ActionId } from '@sim/proto/action_id';
 import { fakeHost } from '@sim/testing';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
@@ -214,6 +215,48 @@ describe('ResultRow', () => {
 	it('colours the item name by its quality', () => {
 		const name = within(renderRow(fixtureRow(0))).getByTestId('upgrades-item-name');
 		expect(name.className).toBe('text-quality-epic');
+	});
+
+	// Ticket 620: each reputation-ring step is its own item, and two steps share a name ("Band of Eternity" is 136 at
+	// Honored and 135 at Revered in db.json); the item level is what tells the rows apart.
+	const ringStep = (id: number, ilvl: number) =>
+		UIItem.create({ id, name: 'Band of Eternity', quality: ItemQuality.ItemQualityEpic, scalingOptions: { 0: { ilvl, stats: {} } } });
+	const RINGS: Record<number, UIItem> = { 29299: ringStep(29299, 136), 29300: ringStep(29300, 135) };
+	const ringRow = (itemId: number): RankedItem => ({ ...fixtureRow(1), itemId, name: 'Band of Eternity' });
+
+	it('shows the item level under the name, as the gear picker reads it, so two same-named ring steps differ', () => {
+		const context = { ...CONTEXT, itemOf: (itemId: number) => RINGS[itemId] };
+		const lines = [29299, 29300].map(id => {
+			const tr = renderRow(ringRow(id), context);
+			const name = within(tr).getByTestId('upgrades-item-name');
+			const ilvl = within(tr).getByTestId('upgrades-item-ilvl');
+			// Below the name, in the line the badges share, not inside the link.
+			expect(name.contains(ilvl)).toBe(false);
+			expect(name.compareDocumentPosition(ilvl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+			return ilvl.textContent;
+		});
+		expect(lines).toEqual(['ILvl 136', 'ILvl 135']);
+		// The same word as the gear picker's item-level column heading.
+		expect(lines[0]).toBe(`${i18n.t('gear_tab.gear_picker.table_headers.ilvl')} 136`);
+	});
+
+	it('shows the item level beside the BiS badge, the owned note and the not-an-upgrade note', () => {
+		const context = { ...CONTEXT, itemOf: (itemId: number) => RINGS[itemId] };
+		const row = { ...ringRow(29299), bisTags: ['BiS'] as RankedItem['bisTags'], owned: true };
+		const { container } = render(
+			<table>
+				<tbody>
+					<ResultRow row={row} position={1} context={context} notUpgrade />
+				</tbody>
+			</table>,
+		);
+		const ilvl = within(container).getByTestId('upgrades-item-ilvl');
+		expect(ilvl.parentElement?.textContent).toBe('ILvl 136BiS(Owned)(Not an upgrade)');
+	});
+
+	it('shows no item-level line for an item the site’s database lacks or gives no level', () => {
+		expect(within(renderRow(fixtureRow(0), { ...CONTEXT, itemOf: () => undefined })).queryByTestId('upgrades-item-ilvl')).toBeNull();
+		expect(within(renderRow(fixtureRow(1))).queryByTestId('upgrades-item-ilvl')).toBeNull();
 	});
 
 	it('tags a BiS row', () => {

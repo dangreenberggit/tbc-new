@@ -505,6 +505,9 @@
 						"not_upgrade": {
 							"type": "string"
 						},
+						"item_level": {
+							"type": "string"
+						},
 						"bis_badge": {
 							"type": "string"
 						},
@@ -569,6 +572,7 @@
 						"batch",
 						"owned",
 						"not_upgrade",
+						"item_level",
 						"bis_badge",
 						"empty_no_ranking",
 						"empty_no_ranking_body",

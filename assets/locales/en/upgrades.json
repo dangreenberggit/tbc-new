@@ -140,6 +140,7 @@
 			"batch": "Batch sim",
 			"owned": "Owned",
 			"not_upgrade": "Not an upgrade",
+			"item_level": "ILvl {{ilvl}}",
 			"bis_badge": "BiS",
 			"empty_no_ranking": "No ranking yet",
 			"empty_no_ranking_body": "Click Simulate to start.",

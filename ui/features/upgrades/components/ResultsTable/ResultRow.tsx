@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { memo, type Ref } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
+import { ilvlOf } from '../../model/pool_source';
 import type { DpsSortKey } from '../../model/results_columns';
 import type { SetBonusTipContext } from '../../model/set_bonus_tip';
 import type { RowTag } from '../../model/settings_pool';
@@ -56,25 +57,28 @@ export interface ResultRowProps {
  * `data-index` is the row's index in its table, which the virtualiser reads when it measures the row
  * and the gates read to collect a table's rows across scroll positions.
  */
-export const ResultRow = memo(({ row, position, context, notUpgrade = false, ref }: ResultRowProps) => (
-	<tr
-		ref={ref}
-		className={clsx('border-b border-b-border', row.owned && 'text-muted')}
-		data-testid="upgrades-result-row"
-		data-index={position - 1}
-		data-item-id={row.itemId}
-		data-owned={row.owned ? 'true' : undefined}
-		data-not-upgrade={notUpgrade ? 'true' : undefined}>
-		<td className="py-1 pr-3 tabular-nums">{position}</td>
-		<ItemNameCell row={row} quality={context.itemOf(row.itemId)?.quality} tags={context.tagsOf(row.itemId)} notUpgrade={notUpgrade} />
-		<DeltaCell row={row} context={context} />
-		<td className="py-1 pr-3">{slotLabel(row)}</td>
-		<SourceCell row={row} item={context.itemOf(row.itemId)} sim={context.sim} hiddenSources={context.hiddenSources} />
-		<td className="py-1">
-			<FavoriteToggle itemId={row.itemId} />
-		</td>
-		<td className="py-1">
-			<BatchToggle itemId={row.itemId} />
-		</td>
-	</tr>
-));
+export const ResultRow = memo(({ row, position, context, notUpgrade = false, ref }: ResultRowProps) => {
+	const item = context.itemOf(row.itemId);
+	return (
+		<tr
+			ref={ref}
+			className={clsx('border-b border-b-border', row.owned && 'text-muted')}
+			data-testid="upgrades-result-row"
+			data-index={position - 1}
+			data-item-id={row.itemId}
+			data-owned={row.owned ? 'true' : undefined}
+			data-not-upgrade={notUpgrade ? 'true' : undefined}>
+			<td className="py-1 pr-3 tabular-nums">{position}</td>
+			<ItemNameCell row={row} quality={item?.quality} tags={context.tagsOf(row.itemId)} notUpgrade={notUpgrade} ilvl={item && ilvlOf(item)} />
+			<DeltaCell row={row} context={context} />
+			<td className="py-1 pr-3">{slotLabel(row)}</td>
+			<SourceCell row={row} item={item} sim={context.sim} hiddenSources={context.hiddenSources} />
+			<td className="py-1">
+				<FavoriteToggle itemId={row.itemId} />
+			</td>
+			<td className="py-1">
+				<BatchToggle itemId={row.itemId} />
+			</td>
+		</tr>
+	);
+});

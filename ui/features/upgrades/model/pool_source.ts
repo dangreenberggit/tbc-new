@@ -70,7 +70,7 @@ const knownPhase = (item: Pick<UIItem, 'phase'>): number | undefined => item.pha
 const phaseOf = (item: Pick<UIItem, 'phase'>): number => knownPhase(item) ?? Infinity;
 
 /** The base item level, as the gear picker and db.json's `scalingOptions` key 0 give it. */
-const ilvlOf = (item: Pick<UIItem, 'scalingOptions' | 'ilvl'>): number => item.scalingOptions[0]?.ilvl ?? item.ilvl;
+export const ilvlOf = (item: Pick<UIItem, 'scalingOptions' | 'ilvl'>): number => item.scalingOptions[0]?.ilvl ?? item.ilvl;
 
 /**
  * "Effect record present": db.json gives the item an `itemEffects` record and

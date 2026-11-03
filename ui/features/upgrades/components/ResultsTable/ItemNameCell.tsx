@@ -17,6 +17,8 @@ export interface ItemNameCellProps {
 	tags: readonly RowTag[];
 	/** Shown in the main table although it misses the cutoff (ticket 528): said in text beside the badges, so no hover is needed. */
 	notUpgrade?: boolean;
+	/** The item's level, or undefined (or 0) when the site's database gives none, which shows no level. */
+	ilvl?: number;
 }
 
 /** A row in no selected set shows the pool's BiS tag instead (`pool_source.ts` gives only 'BiS'). */
@@ -24,7 +26,7 @@ const listBadge = (bisTags: RankedItem['bisTags']): RowTag[] =>
 	bisTags.includes('BiS') ? [{ key: 'BiS', label: i18n.t('upgrades_tab.results.bis_badge', { ns: 'upgrades' }) }] : [];
 
 /** The item: its icon, its name as a wowhead link in its quality colour, and its tags beneath. `memo`: see `ResultRow`. */
-export const ItemNameCell = memo(({ row, quality, tags, notUpgrade = false }: ItemNameCellProps) => {
+export const ItemNameCell = memo(({ row, quality, tags, notUpgrade = false, ilvl }: ItemNameCellProps) => {
 	const { iconUrl, href } = useActionId(ActionId.fromItemId(row.itemId));
 	const badges = tags.length > 0 ? tags : listBadge(row.bisTags);
 
@@ -44,8 +46,10 @@ export const ItemNameCell = memo(({ row, quality, tags, notUpgrade = false }: It
 						className={itemQualityClassName(quality)}>
 						{row.name}
 					</a>
-					{(badges.length > 0 || row.owned || notUpgrade) && (
+					{/* Ticket 620: two reputation-ring steps share a name, and the item level is the item fact wowsims has that tells them apart. */}
+					{(!!ilvl || badges.length > 0 || row.owned || notUpgrade) && (
 						<span className="flex flex-wrap items-center gap-1 text-xs">
+							{!!ilvl && <span data-testid="upgrades-item-ilvl">{i18n.t('upgrades_tab.results.item_level', { ns: 'upgrades', ilvl })}</span>}
 							{badges.map(badge => (
 								<span key={badge.key} className="rounded-full bg-warning px-1.5 text-black" data-testid="upgrades-bis-badge">
 									{badge.label}
