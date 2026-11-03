@@ -113,7 +113,7 @@ export const sourceDetail = (source: ItemSource): string => {
 	}
 };
 
-const NO_BREAK_SPACE = ' ';
+const NO_BREAK_SPACE = '\u00a0';
 
 const DIFFICULTY_MARKS = [...new Set(difficultyNames.values())].map(name => ` (${name})`);
 
@@ -125,9 +125,8 @@ const DIFFICULTY_MARKS = [...new Set(difficultyNames.values())].map(name => ` ($
 export const keepMarkWithZone = (text: string): string =>
 	DIFFICULTY_MARKS.reduce((out, mark) => out.replaceAll(mark, NO_BREAK_SPACE + mark.slice(1)), text);
 
-/** A drop's zone and difficulty mark as upstream's `ItemSource` prints them, joined as `keepMarkWithZone` joins them. */
 export const zoneWithMark = (zone: string, difficulty: DungeonDifficulty): string =>
-	`${zone}${NO_BREAK_SPACE}(${difficultyNames.get(difficulty) ?? 'Unknown'})`;
+	keepMarkWithZone(`${zone} (${difficultyNames.get(difficulty) ?? 'Unknown'})`);
 
 /**
  * The key "Filter by source" would hide one source by: a drop's zone, else its

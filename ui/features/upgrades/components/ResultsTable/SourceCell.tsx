@@ -66,10 +66,6 @@ export interface SourceCellProps {
  * plain text instead. The plain text names that one source with what the
  * row holds beyond its zone or bucket: a drop's or token's boss, a
  * reputation's standing, a PvP item's currency.
- *
- * A drop from a known npc is drawn by `dropSource`, and the plain text goes
- * through `keepMarkWithZone`, so neither leaves a difficulty mark alone on a
- * line.
  */
 export const SourceCell = memo(({ row, item, sim, hiddenSources = [] }: SourceCellProps) => {
 	const namesHidden = rowNamesHiddenSource(row, hiddenSources);

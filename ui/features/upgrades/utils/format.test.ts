@@ -158,9 +158,9 @@ describe('sourceDetail', () => {
 // A narrow Source cell wrapped "Tempest Keep (N)" as "Tempest Keep" / "(N)" (ticket 607).
 describe('keepMarkWithZone', () => {
 	it('joins each difficulty mark to the word before it with a no-break space', () => {
-		expect(keepMarkWithZone('Black Temple (N) · The Illidari Council')).toBe('Black Temple (N) · The Illidari Council');
-		expect(keepMarkWithZone('Magisters’ Terrace (H) · Kael’thas Sunstrider')).toBe('Magisters’ Terrace (H) · Kael’thas Sunstrider');
-		expect(keepMarkWithZone('Somewhere (Unknown)')).toBe('Somewhere (Unknown)');
+		expect(keepMarkWithZone('Black Temple (N) · The Illidari Council')).toBe('Black Temple\u00a0(N) · The Illidari Council');
+		expect(keepMarkWithZone('Magisters’ Terrace (H) · Kael’thas Sunstrider')).toBe('Magisters’ Terrace\u00a0(H) · Kael’thas Sunstrider');
+		expect(keepMarkWithZone('Somewhere (Unknown)')).toBe('Somewhere\u00a0(Unknown)');
 	});
 
 	it('leaves text with no difficulty mark as it is', () => {
@@ -171,8 +171,8 @@ describe('keepMarkWithZone', () => {
 
 describe('zoneWithMark', () => {
 	it('names the zone and its difficulty mark joined by a no-break space', () => {
-		expect(zoneWithMark('Tempest Keep', DungeonDifficulty.DifficultyNormal)).toBe('Tempest Keep (N)');
-		expect(zoneWithMark('The Slave Pens', DungeonDifficulty.DifficultyHeroic)).toBe('The Slave Pens (H)');
+		expect(zoneWithMark('Tempest Keep', DungeonDifficulty.DifficultyNormal)).toBe('Tempest Keep\u00a0(N)');
+		expect(zoneWithMark('The Slave Pens', DungeonDifficulty.DifficultyHeroic)).toBe('The Slave Pens\u00a0(H)');
 	});
 });
 
