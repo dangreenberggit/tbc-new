@@ -1,3 +1,5 @@
+import { itemsTabData } from '@features/gear/model/item_data';
+import type { GearData } from '@features/gear/types';
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { ItemQuality } from '@generated/proto/common';
 import { DungeonDifficulty, UIItem } from '@generated/proto/ui';
@@ -33,11 +35,11 @@ const ITEMS: Record<number, UIItem> = {
 };
 const CONTEXT: RowContext = { itemOf: itemId => ITEMS[itemId], sim: fakeHost().sim, tip: { ranking: RANKING_FIXTURE, specId: 'ret' }, tagsOf: () => [] };
 
-const renderRow = (row: RankedItem, context: RowContext = CONTEXT) => {
+const renderRow = (row: RankedItem, context: RowContext = CONTEXT, { notUpgrade = false } = {}) => {
 	const { container } = render(
 		<table>
 			<tbody>
-				<ResultRow row={row} position={3} context={context} />
+				<ResultRow row={row} position={3} context={context} notUpgrade={notUpgrade} />
 			</tbody>
 		</table>,
 	);
@@ -217,40 +219,40 @@ describe('ResultRow', () => {
 		expect(name.className).toBe('text-quality-epic');
 	});
 
-	// Ticket 620: each reputation-ring step is its own item, and two steps share a name ("Band of Eternity" is 136 at
-	// Honored and 135 at Revered in db.json); the item level is what tells the rows apart.
+	// Ticket 620: each reputation-ring step is its own item, and the steps of one chain share a name. The two here are
+	// "Band of Eternity" at 136 (Honored) and 135 (Revered): levels from the fork's db.json, standings from
+	// tbc-gear-prio's data/atlasloot_sources.json. Steps of different chains can share both the name and the level.
 	const ringStep = (id: number, ilvl: number) =>
 		UIItem.create({ id, name: 'Band of Eternity', quality: ItemQuality.ItemQualityEpic, scalingOptions: { 0: { ilvl, stats: {} } } });
 	const RINGS: Record<number, UIItem> = { 29299: ringStep(29299, 136), 29300: ringStep(29300, 135) };
+	const RING_CONTEXT: RowContext = { ...CONTEXT, itemOf: itemId => RINGS[itemId] };
 	const ringRow = (itemId: number): RankedItem => ({ ...fixtureRow(1), itemId, name: 'Band of Eternity' });
+	// `itemsTabData` calls the gear data only when an item is equipped, which this read never does.
+	const pickerGearData: GearData = { equipItem: () => undefined, getEquippedItem: () => null, subscribe: () => () => undefined };
 
-	it('shows the item level under the name, as the gear picker reads it, so two same-named ring steps differ', () => {
-		const context = { ...CONTEXT, itemOf: (itemId: number) => RINGS[itemId] };
-		const lines = [29299, 29300].map(id => {
-			const tr = renderRow(ringRow(id), context);
+	it('shows the item level after the name, as the gear picker reads it, so two steps of one ring chain differ', () => {
+		const ids = [29299, 29300];
+		const lines = ids.map(id => {
+			const tr = renderRow(ringRow(id), RING_CONTEXT);
 			const name = within(tr).getByTestId('upgrades-item-name');
 			const ilvl = within(tr).getByTestId('upgrades-item-ilvl');
-			// Below the name, in the line the badges share, not inside the link.
+			// After the name and outside its link; layout check 22 (scripts/tab-harness/test-layout.mjs) measures that it sits below.
 			expect(name.contains(ilvl)).toBe(false);
 			expect(name.compareDocumentPosition(ilvl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 			return ilvl.textContent;
 		});
 		expect(lines).toEqual(['ILvl 136', 'ILvl 135']);
-		// The same word as the gear picker's item-level column heading.
-		expect(lines[0]).toBe(`${i18n.t('gear_tab.gear_picker.table_headers.ilvl')} 136`);
+		const heading = i18n.t('gear_tab.gear_picker.table_headers.ilvl');
+		const pickerRows = itemsTabData(
+			pickerGearData,
+			ids.map(id => RINGS[id]!),
+		);
+		expect(lines).toEqual(pickerRows.map(picked => `${heading} ${picked.ilvl}`));
 	});
 
 	it('shows the item level beside the BiS badge, the owned note and the not-an-upgrade note', () => {
-		const context = { ...CONTEXT, itemOf: (itemId: number) => RINGS[itemId] };
 		const row = { ...ringRow(29299), bisTags: ['BiS'] as RankedItem['bisTags'], owned: true };
-		const { container } = render(
-			<table>
-				<tbody>
-					<ResultRow row={row} position={1} context={context} notUpgrade />
-				</tbody>
-			</table>,
-		);
-		const ilvl = within(container).getByTestId('upgrades-item-ilvl');
+		const ilvl = within(renderRow(row, RING_CONTEXT, { notUpgrade: true })).getByTestId('upgrades-item-ilvl');
 		expect(ilvl.parentElement?.textContent).toBe('ILvl 136BiS(Owned)(Not an upgrade)');
 	});
 

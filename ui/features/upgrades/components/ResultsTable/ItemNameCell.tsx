@@ -46,7 +46,8 @@ export const ItemNameCell = memo(({ row, quality, tags, notUpgrade = false, ilvl
 						className={itemQualityClassName(quality)}>
 						{row.name}
 					</a>
-					{/* Ticket 620: two reputation-ring steps share a name, and the item level is the item fact wowsims has that tells them apart. */}
+					{/* Ticket 620: the steps of one reputation-ring chain share a name, and the item level is the item fact wowsims has that tells two steps of one chain apart.
+					    Steps of different chains can share both the name and the level. */}
 					{(!!ilvl || badges.length > 0 || row.owned || notUpgrade) && (
 						<span className="flex flex-wrap items-center gap-1 text-xs">
 							{!!ilvl && <span data-testid="upgrades-item-ilvl">{i18n.t('upgrades_tab.results.item_level', { ns: 'upgrades', ilvl })}</span>}
