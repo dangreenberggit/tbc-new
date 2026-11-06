@@ -97,11 +97,10 @@ const EP_WEIGHTS_BY_SET: Record<EpWeightsSet, Readonly<Record<string, number>>> 
  * "unphased default". Saying nothing because a file has no phase number
  * would be the same silent degradation the disclosure exists to prevent.
  *
- * These are the phases named by `data/presets/ep-weights-by-phase.json` for
- * each bundled file. Ret and feral keep the values the outer repo's
- * docs/fork-provenance/data.md already records. That file has no entry for
- * the two talent variants: theirs come from the upstream preset names,
- * `P1_SV_EP_PRESET` and `P3_ARMS_EP_PRESET`.
+ * The phases come from `data/presets/ep-weights-by-phase.json`, except ret
+ * and feral (from the outer repo's docs/fork-provenance/data.md) and the two
+ * talent variants (from the upstream preset names `P1_SV_EP_PRESET` and
+ * `P3_ARMS_EP_PRESET`).
  */
 const EP_WEIGHTS_PHASE_BY_SET: Record<EpWeightsSet, number | undefined> = {
 	ret: 2,

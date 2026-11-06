@@ -61,9 +61,8 @@ const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'cutoff' | 'substi
 	for (const line of substitutionConsoleLines(result.substitutions)) console.warn(line);
 };
 
-/** The assumptions line's spec and EP-weights set, from the page's spec and talents now. */
+/** The assumptions line's EP-weights set, from the page's spec and talents now. */
 const assumptionsContextOf = (host: IndividualSimHost<Spec>, { specId }: MeasuredOn): AssumptionsContext => ({
-	specId,
 	epWeightsSet: specId && epWeightsSetFor(specId, host.player.getTalentTreePoints()),
 });
 

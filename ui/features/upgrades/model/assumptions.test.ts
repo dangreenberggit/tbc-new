@@ -12,8 +12,9 @@ describe('assumptionsLine', () => {
 
 	it('gives every spec the same flat cutoff, borrowed from no other spec (ADR-0037)', () => {
 		for (const specId of ['ret', 'feral', 'warlock'] as const) {
-			const line = assumptionsLine(RANKING_FIXTURE, { specId });
+			const line = assumptionsLine(RANKING_FIXTURE, { epWeightsSet: specId });
 			expect(line).toContain(' · cutoff: 3 DPS');
+			expect(line).toContain(' · EP weights: written for ');
 			expect(line).not.toContain('borrowed');
 		}
 	});
@@ -21,10 +22,10 @@ describe('assumptionsLine', () => {
 	// The Arms set was written for P3 and Fury's for P1 (ticket 803), so the phase in the line shows which set the talents picked.
 	it('says which phase an Arms or a Fury run’s EP weights were written for', () => {
 		const rankingP4 = { ...RANKING_FIXTURE, assumptions: { ...RANKING_FIXTURE.assumptions, maxPhase: 4 as const } };
-		expect(assumptionsLine(rankingP4, { specId: 'warrior', epWeightsSet: epWeightsSetFor('warrior', [33, 28, 0]) })).toContain(
+		expect(assumptionsLine(rankingP4, { epWeightsSet: epWeightsSetFor('warrior', [33, 28, 0]) })).toContain(
 			' · EP weights: written for P3, ranking P4',
 		);
-		expect(assumptionsLine(rankingP4, { specId: 'warrior', epWeightsSet: epWeightsSetFor('warrior', [21, 40, 0]) })).toContain(
+		expect(assumptionsLine(rankingP4, { epWeightsSet: epWeightsSetFor('warrior', [21, 40, 0]) })).toContain(
 			' · EP weights: written for P1, ranking P4',
 		);
 	});
@@ -49,11 +50,11 @@ describe('assumptionsLine', () => {
 	// 1044: ret-p3 under include-unticked, measured once by the independent script `pool_source.cells.fixture.json`'s
 	// _comment describes, which no checkout holds; re-pin as that _comment says.
 	it('names the page’s database and the size of the pool the run drew from', () => {
-		expect(assumptionsLine(RANKING_FIXTURE, { specId: 'ret', host: dbPoolHost('ret') })).toContain(' · pool source: wowsims db (1044 entries)');
+		expect(assumptionsLine(RANKING_FIXTURE, { epWeightsSet: 'ret', host: dbPoolHost('ret') })).toContain(' · pool source: wowsims db (1044 entries)');
 	});
 
 	it('leaves the pool lines out when the page is not known', () => {
-		expect(assumptionsLine(RANKING_FIXTURE, { specId: 'ret' })).not.toContain('pool source');
+		expect(assumptionsLine(RANKING_FIXTURE, { epWeightsSet: 'ret' })).not.toContain('pool source');
 	});
 });
 
