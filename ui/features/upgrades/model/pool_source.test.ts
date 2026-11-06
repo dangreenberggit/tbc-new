@@ -13,8 +13,8 @@ const poolOf = (spec: SpecId, phase: number, policy: HeroicFiveManPolicy) => dbP
 const CELL_NAMES = Object.keys(CELLS);
 
 describe('selectPool over the fork db.json and the wowsims presets', () => {
-	it('covers 11 specs at phases 2-5', () => {
-		expect(CELL_NAMES).toHaveLength(44);
+	it('covers 11 specs at phases 1-5', () => {
+		expect(CELL_NAMES).toHaveLength(55);
 		expect(Object.keys(TEST_PRESETS).sort()).toEqual(Object.keys(PROTO_SPEC).sort());
 	});
 
@@ -30,9 +30,9 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 		}).toEqual(expected);
 	});
 
-	it('totals the measured 36,782 / 38,734 rows and 860 BiS rows', () => {
+	it('totals the measured 41,318 / 43,758 rows and 1,182 BiS rows', () => {
 		const sum = (key: 'exclude' | 'include' | 'bisRows') => CELL_NAMES.reduce((n, name) => n + CELLS[name]![key], 0);
-		expect([sum('exclude'), sum('include'), sum('bisRows')]).toEqual([36782, 38734, 860]);
+		expect([sum('exclude'), sum('include'), sum('bisRows')]).toEqual([41318, 43758, 1182]);
 	});
 
 	it.each(['ret-p5', 'feral-p5'])('%s: exclude is inside include, include-unticked is include, and the difference is the heroic-only items', name => {
