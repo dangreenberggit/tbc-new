@@ -99,7 +99,9 @@ const EP_WEIGHTS_BY_SET: Record<EpWeightsSet, Readonly<Record<string, number>>> 
  *
  * These are the phases named by `data/presets/ep-weights-by-phase.json` for
  * each bundled file. Ret and feral keep the values the outer repo's
- * docs/fork-provenance/data.md already records.
+ * docs/fork-provenance/data.md already records. That file has no entry for
+ * the two talent variants: theirs come from the upstream preset names,
+ * `P1_SV_EP_PRESET` and `P3_ARMS_EP_PRESET`.
  */
 const EP_WEIGHTS_PHASE_BY_SET: Record<EpWeightsSet, number | undefined> = {
 	ret: 2,
