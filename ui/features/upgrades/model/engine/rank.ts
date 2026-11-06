@@ -813,12 +813,15 @@ export async function rankUpgrades(
       ...(database !== undefined ? { database } : {}),
     });
   };
-  // Whether repair can value hit up to the cap: the spec has a repair cap and
-  // the runner can read stats (ticket 535).
+  // Whether repair can value hit up to the cap: the spec's repair is a
+  // budget and the runner can read stats (tickets 535 and 746).
   const capProfile = capProfileFor(input.spec);
+  const budgetSlot =
+    capProfile.repair.kind === "budget"
+      ? capProfile.repair.hitPercentPseudoStat
+      : undefined;
   const hitCapReadable =
-    capProfile.repairCap !== undefined &&
-    typeof deps.sim.computeStats === "function";
+    budgetSlot !== undefined && typeof deps.sim.computeStats === "function";
   /** A stats read failed, so this run's ranking is not cached (ticket 535). */
   let hitCapFailed = false;
   /**
@@ -827,12 +830,9 @@ export async function rankUpgrades(
    */
   const hitCapNotes: Substitution[] = [];
   /** One stats read of `request` as a hit percent and the repair budget it gives. */
-  const readHitCap = async (request: RaidSimRequest) => {
+  const readHitCap = async (request: RaidSimRequest, slot: number) => {
     const observed = await readStats(deps.sim, request, deps.signal);
-    const hitPercent = hitPercentOf(
-      observed,
-      capProfile.repairCap!.hitPercentPseudoStat
-    );
+    const hitPercent = hitPercentOf(observed, slot);
     return {
       hitPercent,
       budget: hitCapBudgetFrom(capProfile, request, observed.pseudoStats),
@@ -875,7 +875,7 @@ export async function rankUpgrades(
   if (hitCapReadable && inactiveMeta(preRepairSocketed)) {
     const preRequest = composeFor(equipmentFromLoggedGear(logged));
     try {
-      wornHitCap = (await readHitCap(preRequest)).budget;
+      wornHitCap = (await readHitCap(preRequest, budgetSlot)).budget;
     } catch (err) {
       hitCapReadFailed(
         err,
@@ -1103,7 +1103,7 @@ export async function rankUpgrades(
     // caches no ranking, so a later run can still read it.
     if (hitCapReadable) {
       try {
-        const { hitPercent, budget } = await readHitCap(request);
+        const { hitPercent, budget } = await readHitCap(request, budgetSlot);
         if (budget) {
           gems = {
             ...gems,
@@ -1123,6 +1123,8 @@ export async function rankUpgrades(
           "[upgrades] meta repair: hit cap not read, full-weight repair used"
         );
       }
+    } else if (capProfile.repair.kind === "fullWeight") {
+      hitCapNotes.push(hitCapFullWeightNote());
     }
 
     /**
@@ -1162,6 +1164,7 @@ export async function rankUpgrades(
       if (
         !base.repaired ||
         !cap ||
+        budgetSlot === undefined ||
         baselineSimHit === undefined ||
         versionBudgetsOff ||
         !deps.sim.computeStats
@@ -1183,10 +1186,7 @@ export async function rankUpgrades(
             read = readStats(deps.sim, request, deps.signal);
             versionReads.set(key, read);
           }
-          const hitPercent = hitPercentOf(
-            await read,
-            capProfile.repairCap!.hitPercentPseudoStat
-          );
+          const hitPercent = hitPercentOf(await read, budgetSlot);
           const missed =
             hitPercent * capProfile.ratingPerPercent -
             baselineSimHit -
@@ -4305,6 +4305,21 @@ export function hitCapUnknownNote(): Substitution {
       "If gems were swapped to turn your meta gem on, hit rating was " +
       "treated as always useful, because this tab works out the hit cap " +
       "only when every target is level 73.",
+  };
+}
+
+/**
+ * The note every `fullWeight` spec gets (ticket 746), with or without a stats
+ * read. It names no reason because the reasons differ by spec (dual wield,
+ * the hunter's melee weave, Balance of Power's bonus inside the stats read),
+ * and the warrior page serves Arms and Fury under one spec id.
+ */
+export function hitCapFullWeightNote(): Substitution {
+  return {
+    field: "Meta gem swaps and the hit cap",
+    detail:
+      "If gems were swapped to turn your meta gem on, hit rating was " +
+      "counted at full value, with no hit cap applied for this spec.",
   };
 }
 

@@ -69,26 +69,78 @@ export type CapProfile = {
   /** Absent when the spec's trees carry no hit talent at all. */
   readonly talentHit?: TalentHitDescriptor;
   /**
-   * Present when meta repair may value hit only up to the character's
-   * remaining cap, read from the sim (ticket 535). Ret and feral only:
-   * dual-wield white swings miss 27% at zero hit, so hit past 9% still helps
-   * them (`sim/core/spell_outcome.go:570-577`, `sim/core/attack.go:441`);
-   * casters keep school hit in per-school pseudo-stats and Balance of Power is
-   * a per-spell mod (`sim/core/character.go:733-739`,
-   * `sim/druid/talents.go:126-138`); hunters' ranged hit is unexamined.
+   * How meta repair values hit gems (tickets 535 and 746). Required, so a new
+   * spec must choose: a `budget` charges hit gems against
+   * `hitCapPercent − (pseudo-stat hit %)`, read from `computeStats`; a
+   * `fullWeight` spec counts hit at full value and the ranking says so in one
+   * note. A spec gets a budget only when one pseudo-stat gives a number that
+   * never undervalues hit the sim still rewards for the spells the page's
+   * default rotation casts. Sources below are at fork `b603564ee`.
    *
-   * The budget is set per spec, not per build: the sim adds the dual-wield
-   * miss penalty only when the off hand has a swing speed
-   * (`sim/core/attack.go:441`), so a two-handed warrior or enhancement shaman
-   * has ret's 9% cap and still gets full-weight repair.
+   * Ret and feral: budget on `PseudoStatMeleeHitPercent` (12), cap 9.
+   * Yellow and two-hand white attacks miss 8% minus (hit % − 1% suppression)
+   * against level 73, nothing past 9% (`sim/core/target.go:385-405`,
+   * `sim/core/spell_result.go:179-190`). Improved Faerie Fire is a
+   * target-side `ReducedPhysicalHitTakenChance` of 3 that the read does not
+   * hold (`sim/core/debuffs.go:43-44,360-369`), so `hitCapBudgetFrom`
+   * subtracts it. One known limit for feral: a druid with Improved Faerie Fire
+   * applies it through its own Faerie Fire (Feral) aura
+   * (`sim/druid/faerie_fire.go:11,51`), which `raid.debuffs` does not show,
+   * so with the raid debuff off the budget wants 3% more hit than the sim
+   * needs.
    *
-   * One known limit for feral: a druid with Improved Faerie Fire applies it
-   * through its own Faerie Fire (Feral) aura (`sim/druid/faerie_fire.go:11,51`),
-   * which `raid.debuffs` does not show, so with the raid debuff off the budget
-   * wants 3% more hit than the sim needs.
+   * Rogue, enhancement and warrior: full weight. White swings add 19% miss
+   * when the off hand has a swing speed (`sim/core/spell_outcome.go:559-566`,
+   * `sim/core/attack.go:437`), and every vendored rogue, Fury and enhancement
+   * set has an off hand, so a 9% budget undervalues hit for each of them and
+   * a 27% budget is never reached by real gear. Arms (two-hander, no penalty)
+   * shares the warrior spec id, and this table is per spec, so Arms gets the
+   * note too.
+   *
+   * Hunter: full weight. Ranged shots skip the dual-wield penalty
+   * (`sim/core/spell_outcome.go:464,480,490`), but the hunter also swings in
+   * melee with its off hand from gear (`sim/hunter/hunter.go:136-143`), the
+   * page's default rotation melee-weaves (`ui/specs/hunter/dps/spec.ts:85-86`,
+   * `presets.ts:54-57`), and every vendored `dw_*` set has an off hand. With a
+   * dual-wield set hit past 9% still cuts melee misses; with a `2h_*` set it
+   * does not; one budget cannot be right for both.
+   *
+   * Mage, shadow, elemental and warlock: budget on `PseudoStatSpellHitPercent`
+   * (13), cap 16, no Faerie Fire term (it is physical only). Spell hit is
+   * `SpellHitPercent` + the spell's own bonus + the school bonus when the
+   * spell has a class mask (`sim/core/spell_result.go:241-247`), with miss
+   * floored at 1% (`:250-262`) and no target-side term. Slot 13 is the term
+   * every spell shares; the per-school slots 6-11 add the school bonus
+   * (`sim/core/character_sheet.go:111-116`), and each undervalues some spell
+   * the default APL casts: the Arcane mage APL casts Frostbolt 27072 and Fire
+   * Blast 27079 (school bonus +6 and +3 against Arcane's +10), the shadow APL
+   * casts Starshards 25446 (Arcane, no bonus), and item procs with no class
+   * mask get no school bonus. School bonuses only add (`sim/mage/talents.go:113,536-537`,
+   * `sim/priest/talents.go:338`, `sim/shaman/talents_elemental.go:210-212`;
+   * none for the warlock), and no talent of these four classes adds
+   * `SpellHitPercent` while stats are measured. The cost: hit between a
+   * school-talented spell's cap and 16 is priced at full weight although only
+   * the untalented spells still gain (mage Arcane spells 6-16, Frostbolt 10-16,
+   * Fire Blast 13-16; shadow's Shadow spells 6-16; elemental's Nature and Fire
+   * spells 10-16). The warlock is exact: Suppression is a per-spell mod, not
+   * in the read.
+   *
+   * Balance: full weight. Balance of Power is a per-spell bonus on Wrath,
+   * Starfire and Moonfire, and while stats are measured it adds a flat +4
+   * `SpellHitPercent` (`sim/druid/talents.go:139-149`); `FillPlayerStats`
+   * turns on build-phase auras before it reads the pseudo-stats
+   * (`sim/core/character.go:319-327,470-480`), so every spell-hit slot of a
+   * Balance of Power druid holds that +4 and none gives the plain
+   * "cap − hit %". Faerie Fire and Insect Swarm, which the default APL can
+   * cast, are outside its mask (`ui/specs/druid/balance/apls/default.apl.json`).
    */
-  readonly repairCap?: { readonly hitPercentPseudoStat: number };
+  readonly repair: RepairPolicy;
 };
+
+/** See `CapProfile.repair`. */
+export type RepairPolicy =
+  | { readonly kind: "budget"; readonly hitPercentPseudoStat: number }
+  | { readonly kind: "fullWeight" };
 
 /**
  * The hit rating still useful against the cap, negative when the gear is over
@@ -96,8 +148,20 @@ export type CapProfile = {
  */
 export type HitCapBudget = { readonly stat: Stat; readonly remaining: number };
 
-/** `PseudoStatMeleeHitPercent` in the fork's proto (`proto/common.ts`). */
+/** `PseudoStatMeleeHitPercent` in `ui/generated/proto/common.ts:1672`. */
 const PSEUDO_STAT_MELEE_HIT_PERCENT = 12;
+/** `PseudoStatSpellHitPercent` in `ui/generated/proto/common.ts:1676`. */
+const PSEUDO_STAT_SPELL_HIT_PERCENT = 13;
+
+const MELEE_HIT_BUDGET: RepairPolicy = {
+  kind: "budget",
+  hitPercentPseudoStat: PSEUDO_STAT_MELEE_HIT_PERCENT,
+};
+const SPELL_HIT_BUDGET: RepairPolicy = {
+  kind: "budget",
+  hitPercentPseudoStat: PSEUDO_STAT_SPELL_HIT_PERCENT,
+};
+const FULL_WEIGHT: RepairPolicy = { kind: "fullWeight" };
 
 /**
  * Improved Faerie Fire's hit, which `computeStats` does not return: it is a
@@ -174,7 +238,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
       talent: "Precision",
       maxPoints: 3,
     },
-    repairCap: { hitPercentPseudoStat: PSEUDO_STAT_MELEE_HIT_PERCENT },
+    repair: MELEE_HIT_BUDGET,
   },
   /**
    * Feral cat's trees carry no physical hit talent: a search of `sim/druid/`
@@ -185,7 +249,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
     hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
     ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
     trackExpertise: true,
-    repairCap: { hitPercentPseudoStat: PSEUDO_STAT_MELEE_HIT_PERCENT },
+    repair: MELEE_HIT_BUDGET,
   },
 
   /**
@@ -211,6 +275,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
       talent: "Balance of Power",
       maxPoints: 2,
     },
+    repair: FULL_WEIGHT,
   },
 
   /**
@@ -240,6 +305,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
       talent: "Surefooted",
       maxPoints: 3,
     },
+    repair: FULL_WEIGHT,
   },
 
   /**
@@ -267,6 +333,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
       talent: "Arcane Focus",
       maxPoints: 5,
     },
+    repair: SPELL_HIT_BUDGET,
   },
 
   /**
@@ -285,6 +352,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
       talent: "Shadow Focus",
       maxPoints: 5,
     },
+    repair: SPELL_HIT_BUDGET,
   },
 
   /**
@@ -304,6 +372,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
       talent: "Precision",
       maxPoints: 5,
     },
+    repair: FULL_WEIGHT,
   },
 
   /**
@@ -324,6 +393,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
       talent: "Elemental Precision",
       maxPoints: 3,
     },
+    repair: SPELL_HIT_BUDGET,
   },
 
   /**
@@ -349,6 +419,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
       talent: "Dual Wield Specialization",
       maxPoints: 3,
     },
+    repair: FULL_WEIGHT,
   },
 
   /**
@@ -373,6 +444,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
       talent: "Suppression",
       maxPoints: 5,
     },
+    repair: SPELL_HIT_BUDGET,
   },
 
   /**
@@ -392,6 +464,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
       talent: "Precision",
       maxPoints: 3,
     },
+    repair: FULL_WEIGHT,
   },
 };
 
@@ -420,20 +493,24 @@ export function capProfileFor(spec: SpecId | undefined): CapProfile {
 }
 
 /**
- * The repair hit budget of a character the sim read (ticket 535):
+ * The repair hit budget of a character the sim read (tickets 535 and 746):
  * `(cap − Improved Faerie Fire − sim hit %) × rating per %`. `pseudoStats` is
  * the first player's `finalStats.pseudoStats` from `computeStats`, whose hit
  * percent holds every player-side source (gear, gems, bonuses, enchants, set
- * bonuses, talents, buffs). Undefined when the spec has no `repairCap`, when
- * any target is not at the level the cap holds for, or when the read is not
- * a finite number.
+ * bonuses, talents, buffs). Undefined when the spec's repair is not a
+ * budget, when any target is not at the level the cap holds for, or when the
+ * read is not a finite number.
+ *
+ * Improved Faerie Fire counts only for melee-hit specs: it lowers the
+ * target's `ReducedPhysicalHitTakenChance`, which spell hit never reads
+ * (`sim/core/debuffs.go:43-44,360-369`, `sim/core/spell_result.go:241-262`).
  */
 export function hitCapBudgetFrom(
   profile: CapProfile,
   request: unknown,
   pseudoStats: readonly number[]
 ): HitCapBudget | undefined {
-  if (!profile.repairCap) return undefined;
+  if (profile.repair.kind !== "budget") return undefined;
   const req = request as {
     raid?: { debuffs?: { faerieFire?: unknown } };
     encounter?: { targets?: ReadonlyArray<{ level?: unknown }> };
@@ -445,14 +522,17 @@ export function hitCapBudgetFrom(
   ) {
     return undefined;
   }
-  const hitPercent = pseudoStats[profile.repairCap.hitPercentPseudoStat];
+  const hitPercent = pseudoStats[profile.repair.hitPercentPseudoStat];
   if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
     return undefined;
   }
   const faerieFire = req.raid?.debuffs?.faerieFire;
   const improved =
     faerieFire === "TristateEffectImproved" || faerieFire === 2;
-  const fire = improved ? IMPROVED_FAERIE_FIRE_HIT_PERCENT : 0;
+  const fire =
+    improved && profile.hitStat === Stat.StatMeleeHitRating
+      ? IMPROVED_FAERIE_FIRE_HIT_PERCENT
+      : 0;
   return {
     stat: profile.hitStat,
     remaining:
