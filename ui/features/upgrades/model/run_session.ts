@@ -11,6 +11,7 @@ import type { IndividualSimHost } from '@sim/sim_host';
 import { equippedItemIds } from './adapters/player_gear_source';
 import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
 import { type AssumptionsContext, assumptionsLine, substitutionConsoleLines } from './assumptions';
+import { epWeightsSetFor } from './data/data';
 import type { Ranking } from './engine/rank';
 import { clearProgress } from './progress_channel';
 import { createRunContext, type RunContext, type RunFn, specIdFor } from './run';
@@ -60,6 +61,12 @@ const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'cutoff' | 'substi
 	for (const line of substitutionConsoleLines(result.substitutions)) console.warn(line);
 };
 
+/** The assumptions line's spec and EP-weights set, from the page's spec and talents now. */
+const assumptionsContextOf = (host: IndividualSimHost<Spec>, { specId }: MeasuredOn): AssumptionsContext => ({
+	specId,
+	epWeightsSet: specId && epWeightsSetFor(specId, host.player.getTalentTreePoints()),
+});
+
 /**
  * The run context is built on the first run that asks for it and kept for the
  * session's lifetime: the store inside it reuses sims across runs.
@@ -80,7 +87,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 
 		clearProgress(host.player);
 		const measuredOn = measuredOnPage(host, inputsSignature);
-		const talentPointsByTree = host.player.getTalentTreePoints();
+		const pageAssumptions = assumptionsContextOf(host, measuredOn);
 		store.getState().startRun(id, Date.now(), measuredOn);
 		runFn(host, settings, {
 			signal: current.signal,
@@ -90,7 +97,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 			result => {
 				store.getState().settleRun(id, result);
 				// The store drops a superseded run's result, so it is not logged either.
-				if (id === runId) logAssumptions(result, { specId: measuredOn.specId, talentPointsByTree, settings, host });
+				if (id === runId) logAssumptions(result, { ...pageAssumptions, settings, host });
 			},
 			(error: unknown) => store.getState().failRun(id, env.describeError(error)),
 		);
@@ -107,7 +114,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		controller?.abort();
 		const measuredOn = measuredOnPage(host, inputsSignature);
 		store.getState().loadFixture(++runId, ranking, measuredOn);
-		logAssumptions(ranking, { specId: measuredOn.specId, talentPointsByTree: host.player.getTalentTreePoints(), host });
+		logAssumptions(ranking, { ...assumptionsContextOf(host, measuredOn), host });
 	};
 
 	/**

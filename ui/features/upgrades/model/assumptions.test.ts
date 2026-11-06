@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { dbPoolHost } from '../testing/db_pool';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import { assumptionsLine, substitutionConsoleLines, substitutionFirstLine } from './assumptions';
+import { epWeightsSetFor } from './data/data';
 
 describe('assumptionsLine', () => {
 	it('names the seeds, iterations, phase and cutoff of a ranking with nothing else known, as for a loaded fixture', () => {
@@ -20,8 +21,12 @@ describe('assumptionsLine', () => {
 	// The Arms set was written for P3 and Fury's for P1 (ticket 803), so the phase in the line shows which set the talents picked.
 	it('says which phase an Arms or a Fury run’s EP weights were written for', () => {
 		const rankingP4 = { ...RANKING_FIXTURE, assumptions: { ...RANKING_FIXTURE.assumptions, maxPhase: 4 as const } };
-		expect(assumptionsLine(rankingP4, { specId: 'warrior', talentPointsByTree: [33, 28, 0] })).toContain(' · EP weights: written for P3, ranking P4');
-		expect(assumptionsLine(rankingP4, { specId: 'warrior', talentPointsByTree: [21, 40, 0] })).toContain(' · EP weights: written for P1, ranking P4');
+		expect(assumptionsLine(rankingP4, { specId: 'warrior', epWeightsSet: epWeightsSetFor('warrior', [33, 28, 0]) })).toContain(
+			' · EP weights: written for P3, ranking P4',
+		);
+		expect(assumptionsLine(rankingP4, { specId: 'warrior', epWeightsSet: epWeightsSetFor('warrior', [21, 40, 0]) })).toContain(
+			' · EP weights: written for P1, ranking P4',
+		);
 	});
 
 	it('names the run’s pool settings when the run is known', () => {

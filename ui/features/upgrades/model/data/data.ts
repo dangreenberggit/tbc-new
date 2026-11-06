@@ -32,7 +32,7 @@ import warriorEpWeights from './warrior-fallback.ep-weights.json';
  * page with another one (Survival on the hunter page, Arms on the warrior
  * page; ticket 803).
  */
-type EpWeightsSet = SpecId | 'hunter-sv' | 'warrior-arms';
+export type EpWeightsSet = SpecId | 'hunter-sv' | 'warrior-arms';
 
 /**
  * The build whose own set replaces the spec's on that spec's page, and the
@@ -48,6 +48,7 @@ const TALENT_VARIANT_BY_SPEC: Partial<Record<SpecId, { set: EpWeightsSet; tree: 
 	warrior: { set: 'warrior-arms', tree: 0 },
 };
 
+/** The set a run on `spec`'s page takes, given the page's `player.getTalentTreePoints()`. */
 export function epWeightsSetFor(spec: SpecId, talentPointsByTree: readonly number[]): EpWeightsSet {
 	const variant = TALENT_VARIANT_BY_SPEC[spec];
 	if (!variant) return spec;
@@ -117,21 +118,16 @@ const EP_WEIGHTS_PHASE_BY_SET: Record<EpWeightsSet, number | undefined> = {
 };
 
 /**
- * The EP-weights disclosure for a run, or `undefined` when the weights were
- * written for exactly the phase being ranked. `talentPointsByTree` is the
- * page's (`player.getTalentTreePoints()`); without it, the spec's own set.
+ * The EP-weights disclosure for a run that took `set`, or `undefined` when
+ * the weights were written for exactly the phase being ranked.
  *
  * EP drives only the candidate prefilter and the gem fill — every ranking
  * number comes from the sim — so a mismatch degrades the shortlist's ordering
  * rather than falsifying a DPS figure. That makes it disclosable rather than
  * blocking, but it is not nothing, and it must not be silent.
  */
-export function epWeightsDisclosureFor(
-	spec: SpecId,
-	maxPhase: ContentPhase,
-	talentPointsByTree: readonly number[] = [],
-): { from: string; requested: string } | undefined {
-	const phase = EP_WEIGHTS_PHASE_BY_SET[epWeightsSetFor(spec, talentPointsByTree)];
+export function epWeightsDisclosureFor(set: EpWeightsSet, maxPhase: ContentPhase): { from: string; requested: string } | undefined {
+	const phase = EP_WEIGHTS_PHASE_BY_SET[set];
 	if (phase === maxPhase) return undefined;
 	return {
 		from: phase === undefined ? 'an unphased default' : `P${phase}`,
@@ -189,7 +185,7 @@ export function unsourcedCountFor(pool: readonly PoolEntry[]): number {
 	return pool.filter(e => (e.sources ?? [e.source]).every(s => s.kind === 'unknown')).length;
 }
 
-/** The EP weights a run on this page takes; `talentPointsByTree` as for `epWeightsDisclosureFor`. */
-export function epWeightsFor(spec: SpecId, talentPointsByTree: readonly number[] = []): Readonly<Record<string, number>> {
-	return EP_WEIGHTS_BY_SET[epWeightsSetFor(spec, talentPointsByTree)];
+/** The EP weights of a bundled set (`epWeightsSetFor`). */
+export function epWeightsFor(set: EpWeightsSet): Readonly<Record<string, number>> {
+	return EP_WEIGHTS_BY_SET[set];
 }
