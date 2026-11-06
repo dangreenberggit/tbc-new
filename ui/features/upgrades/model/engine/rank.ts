@@ -1223,6 +1223,63 @@ export async function rankUpgrades(
       }
     };
 
+    /**
+     * The gem context one candidate's repair runs with. The run's budget
+     * moves by the swap's gear hit change, which misses set-bonus hit the
+     * swap breaks or completes (ticket 535 § Limits; a warlock's Mana-Etched
+     * head breaks a +35 spell hit set). So when the swap turns the meta off,
+     * the candidate's own stats read corrects the budget by its missed hit,
+     * as each set version's read does above. The first failed read repairs
+     * that candidate and every later one at full weight, and the ranking is
+     * not cached. A read Stop refused rejects with `StopRefusedSim`.
+     */
+    let candidateReadsOff = false;
+    const candidateRepairGems = async (
+      slotIndex: number,
+      itemId: number
+    ): Promise<GemContext> => {
+      const cap = gems.repairHitCap;
+      if (
+        !cap ||
+        budgetSlot === undefined ||
+        baselineSimHit === undefined ||
+        !deps.sim.computeStats
+      ) {
+        return gems;
+      }
+      const { repairHitCap: _unused, ...fullWeight } = gems;
+      if (candidateReadsOff) return fullWeight;
+      const pre = candidateSwapPreRepair(equipment, slotIndex, itemId, gems);
+      if (!inactiveMeta(pre.socketed)) return gems;
+      const request = composeFor(pre.swapped);
+      try {
+        const hitPercent = hitPercentOf(
+          await readStats(deps.sim, request, deps.signal),
+          budgetSlot
+        );
+        const missed =
+          hitPercent * capProfile.ratingPerPercent -
+          baselineSimHit -
+          (gearHitRating(pre.swapped, cap.stat) - cap.baselineGearHit);
+        if (Math.abs(missed) < MISSED_HIT_TOLERANCE) return gems;
+        return {
+          ...gems,
+          repairHitCap: {
+            ...cap,
+            baselineRemaining: cap.baselineRemaining - missed,
+          },
+        };
+      } catch (err) {
+        if (err instanceof StopRefusedSim) throw err;
+        candidateReadsOff = true;
+        hitCapReadFailed(
+          err,
+          "[upgrades] meta repair: candidate hit not read, full-weight repair used"
+        );
+        return fullWeight;
+      }
+    };
+
     const baselineDps = observation.dps;
     const ranked: RankedItem[] = [];
     const winningRequests = new Map<number, RaidSimRequest>();
@@ -1350,12 +1407,20 @@ export async function rankUpgrades(
         let swapped: SimItemSpec[];
         let repairSwaps: readonly MetaRepairSwap[];
         let removed: readonly { slotIndex: number; itemId: number }[];
+        let repairGems: GemContext;
+        try {
+          repairGems = await candidateRepairGems(slotIndex, entry.itemId);
+        } catch (err) {
+          // Stop refused the read: the row is left to the Stop placeholder.
+          if (err instanceof StopRefusedSim) return;
+          throw err;
+        }
         try {
           const outcome = candidateSwapWithRepairs(
             equipment,
             slotIndex,
             entry.itemId,
-            gems
+            repairGems
           );
           swapped = outcome.equipment;
           repairSwaps = outcome.swaps;
@@ -3022,12 +3087,12 @@ async function measureSetSteps(args: {
     }
     const plain = plainEntry.request;
     const request = offEntry.request;
-    // On the first step the gear before is the row's single swap, simmed by
-    // the candidate loop with `composeFor` of this same default build. When
-    // entry 0 was rebuilt for set hit that loop's budget missed, no sim of it
-    // exists, so the split is skipped rather than paired with another
-    // layout (ticket 535). The store check below would skip it too; this
-    // check states the rule rather than relying on that.
+    // On the first step the gear before is the row's single swap, built
+    // here on the run's budget. When entry 0 was rebuilt for set hit that
+    // budget misses, it differs from that build, so the split is skipped
+    // rather than paired with another layout (ticket 535). The candidate
+    // loop repairs on the row's own stats read, so it may have simmed entry
+    // 0; this check does not look for that sim.
     if (
       firstStep &&
       stableStringify(plain) !== stableStringify(composeFor(before))
@@ -4311,7 +4376,8 @@ export function hitCapUnknownNote(): Substitution {
 /**
  * The note every `fullWeight` spec gets (ticket 746), with or without a stats
  * read. It names no reason because the reasons differ by spec (dual wield,
- * the hunter's melee weave, Balance of Power's bonus inside the stats read),
+ * the hunter's melee weave, a talent's hit inside the stats read for balance
+ * and elemental),
  * and the warrior page serves Arms and Fury under one spec id.
  */
 export function hitCapFullWeightNote(): Substitution {

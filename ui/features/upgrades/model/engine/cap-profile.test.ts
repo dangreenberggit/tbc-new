@@ -29,19 +29,19 @@ function request(
 }
 
 describe("meta repair hit policy per spec (746)", () => {
-  it("gives the note to rogue, enh, warrior, hunter and balance and a budget to every other spec", () => {
+  it("gives the note to rogue, enh, warrior, hunter, balance and ele and a budget to every other spec", () => {
     const specs = Object.keys(CAP_PROFILE_BY_SPEC) as SpecId[];
     const byKind = (kind: string) =>
       specs.filter((s) => CAP_PROFILE_BY_SPEC[s].repair.kind === kind).sort();
     expect(byKind("fullWeight")).toEqual([
       "balance",
+      "ele",
       "enh",
       "hunter",
       "rogue",
       "warrior",
     ]);
     expect(byKind("budget")).toEqual([
-      "ele",
       "feral",
       "mage",
       "ret",
@@ -64,7 +64,7 @@ describe("meta repair hit policy per spec (746)", () => {
   });
 
   it("charges a caster's hit against 16% read from slot 13, with no Faerie Fire term", () => {
-    for (const spec of ["mage", "shadow", "ele", "warlock"] as const) {
+    for (const spec of ["mage", "shadow", "warlock"] as const) {
       const budget = hitCapBudgetFrom(
         capProfileFor(spec),
         request("TristateEffectImproved"),
@@ -79,7 +79,7 @@ describe("meta repair hit policy per spec (746)", () => {
   });
 
   it("gives a full-weight spec no budget even when both hit slots are read", () => {
-    for (const spec of ["hunter", "balance"] as const) {
+    for (const spec of ["hunter", "balance", "ele"] as const) {
       expect(
         hitCapBudgetFrom(
           capProfileFor(spec),

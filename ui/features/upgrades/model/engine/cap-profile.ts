@@ -105,25 +105,39 @@ export type CapProfile = {
    * dual-wield set hit past 9% still cuts melee misses; with a `2h_*` set it
    * does not; one budget cannot be right for both.
    *
-   * Mage, shadow, elemental and warlock: budget on `PseudoStatSpellHitPercent`
-   * (13), cap 16, no Faerie Fire term (it is physical only). Spell hit is
+   * Mage, shadow and warlock: budget on `PseudoStatSpellHitPercent` (13), cap
+   * 16, no Faerie Fire term (it is physical only). Spell hit is
    * `SpellHitPercent` + the spell's own bonus + the school bonus when the
    * spell has a class mask (`sim/core/spell_result.go:241-247`), with miss
-   * floored at 1% (`:250-262`) and no target-side term. Slot 13 is the term
-   * every spell shares; the per-school slots 6-11 add the school bonus
-   * (`sim/core/character_sheet.go:111-116`), and each undervalues some spell
-   * the default APL casts: the Arcane mage APL casts Frostbolt 27072 and Fire
-   * Blast 27079 (school bonus +6 and +3 against Arcane's +10), the shadow APL
-   * casts Starshards 25446 (Arcane, no bonus), and item procs with no class
-   * mask get no school bonus. School bonuses only add (`sim/mage/talents.go:113,536-537`,
-   * `sim/priest/talents.go:338`, `sim/shaman/talents_elemental.go:210-212`;
-   * none for the warlock), and no talent of these four classes adds
-   * `SpellHitPercent` while stats are measured. The cost: hit between a
-   * school-talented spell's cap and 16 is priced at full weight although only
-   * the untalented spells still gain (mage Arcane spells 6-16, Frostbolt 10-16,
-   * Fire Blast 13-16; shadow's Shadow spells 6-16; elemental's Nature and Fire
-   * spells 10-16). The warlock is exact: Suppression is a per-spell mod, not
-   * in the read.
+   * floored at 1% (`:250-262`). The target adds a term only to binary spells,
+   * whose base hit its resistance scales (`:252-256`, and
+   * `SPELL_HIT_CAP_PERCENT` below); no default target has resistances. Slot
+   * 13 is the term every spell shares; the per-school slots 6-11 add the
+   * school bonus (`sim/core/character_sheet.go:111-116`), and each undervalues
+   * some spell the default APL casts: the Arcane mage APL casts Frostbolt 27072
+   * and Fire Blast 27079 (school bonus +6 and +3 against Arcane's +10), the
+   * shadow APL casts Starshards 25446 (Arcane, no bonus), and item procs with
+   * no class mask get no school bonus. School bonuses only add
+   * (`sim/mage/talents.go:113,536-537`, `sim/priest/talents.go:338`; none for
+   * the warlock), and no mage, priest or warlock talent adds
+   * `SpellHitPercent`. The cost: hit between a talented spell's cap and 16 is
+   * priced at full weight although only the other spells still gain (mage
+   * Arcane spells 6-16, Frostbolt 10-16, Fire Blast 13-16; shadow's Shadow
+   * spells 6-16; with Affliction talents, the Affliction spells that
+   * Suppression's per-spell bonus caps earlier, `sim/warlock/talents.go:75-84`).
+   * The page's default warlock talents are Destruction
+   * (`ui/specs/warlock/dps/spec.ts:71`), which take no Suppression.
+   *
+   * Elemental: full weight. Totem of Wrath, when talented, adds +3
+   * `SpellHitPercent` through a buffs-phase aura
+   * (`sim/shaman/talents_elemental.go:256-271`) that the stats read turns on
+   * (`sim/core/character.go:475`), but in combat only while the totem is down:
+   * a Fire Elemental cancels it (`sim/shaman/fire_totems.go:175-177`) for 120 s
+   * (`sim/shaman/fire_elemental_totem.go:15`). So the read can hold 3% hit
+   * the sim does not give, and a budget from it would undervalue hit, as for
+   * balance below. Nature's Guidance also adds `SpellHitPercent`
+   * (`sim/shaman/talent_restoration.go:18-30`), but permanently, so it alone
+   * would not have mattered.
    *
    * Balance: full weight. Balance of Power is a per-spell bonus on Wrath,
    * Starfire and Moonfire, and while stats are measured it adds a flat +4
@@ -393,7 +407,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
       talent: "Elemental Precision",
       maxPoints: 3,
     },
-    repair: SPELL_HIT_BUDGET,
+    repair: FULL_WEIGHT,
   },
 
   /**
