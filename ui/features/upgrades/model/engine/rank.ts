@@ -1229,11 +1229,11 @@ export async function rankUpgrades(
      * swap breaks or completes (ticket 535 § Limits; a warlock's Mana-Etched
      * head breaks a +35 spell hit set). So when the swap turns the meta off,
      * the candidate's own stats read corrects the budget by its missed hit,
-     * as each set version's read does above. The first failed read repairs
-     * that candidate and every later one at full weight, and the ranking is
-     * not cached. A read Stop refused rejects with `StopRefusedSim`.
+     * as each set version's read does above. The read runs on the same sim
+     * worker as the candidate's sim, so a failed read rejects, and
+     * `runCandidate` reports it as that candidate's failed sim. A read Stop
+     * refused rejects with `StopRefusedSim`.
      */
-    let candidateReadsOff = false;
     const candidateRepairGems = async (
       slotIndex: number,
       itemId: number
@@ -1247,37 +1247,24 @@ export async function rankUpgrades(
       ) {
         return gems;
       }
-      const { repairHitCap: _unused, ...fullWeight } = gems;
-      if (candidateReadsOff) return fullWeight;
       const pre = candidateSwapPreRepair(equipment, slotIndex, itemId, gems);
       if (!inactiveMeta(pre.socketed)) return gems;
-      const request = composeFor(pre.swapped);
-      try {
-        const hitPercent = hitPercentOf(
-          await readStats(deps.sim, request, deps.signal),
-          budgetSlot
-        );
-        const missed =
-          hitPercent * capProfile.ratingPerPercent -
-          baselineSimHit -
-          (gearHitRating(pre.swapped, cap.stat) - cap.baselineGearHit);
-        if (Math.abs(missed) < MISSED_HIT_TOLERANCE) return gems;
-        return {
-          ...gems,
-          repairHitCap: {
-            ...cap,
-            baselineRemaining: cap.baselineRemaining - missed,
-          },
-        };
-      } catch (err) {
-        if (err instanceof StopRefusedSim) throw err;
-        candidateReadsOff = true;
-        hitCapReadFailed(
-          err,
-          "[upgrades] meta repair: candidate hit not read, full-weight repair used"
-        );
-        return fullWeight;
-      }
+      const hitPercent = hitPercentOf(
+        await readStats(deps.sim, composeFor(pre.swapped), deps.signal),
+        budgetSlot
+      );
+      const missed =
+        hitPercent * capProfile.ratingPerPercent -
+        baselineSimHit -
+        (gearHitRating(pre.swapped, cap.stat) - cap.baselineGearHit);
+      if (Math.abs(missed) < MISSED_HIT_TOLERANCE) return gems;
+      return {
+        ...gems,
+        repairHitCap: {
+          ...cap,
+          baselineRemaining: cap.baselineRemaining - missed,
+        },
+      };
     };
 
     const baselineDps = observation.dps;
@@ -1413,7 +1400,14 @@ export async function rankUpgrades(
         } catch (err) {
           // Stop refused the read: the row is left to the Stop placeholder.
           if (err instanceof StopRefusedSim) return;
-          throw err;
+          candidateSkips.push({
+            kind: "sim",
+            itemId: entry.itemId,
+            name: entry.name,
+            slot: slotName,
+            reason: err instanceof Error ? err.message : String(err),
+          });
+          continue;
         }
         try {
           const outcome = candidateSwapWithRepairs(
