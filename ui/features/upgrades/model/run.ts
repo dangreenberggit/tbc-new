@@ -111,7 +111,7 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 			store,
 			clock: () => new Date(),
 			raidSimSkeleton: skeleton,
-			epWeights: epWeightsFor(specId),
+			epWeights: epWeightsFor(specId, host.player.getTalentTreePoints()),
 			pool: effectivePool(poolFor(host, host.individualConfig.presets.gear, maxPhase), {
 				excludedSources: settings.excludedSources ?? [],
 				selectedSetItemIds: settings.guaranteedSetItemIds ?? [],

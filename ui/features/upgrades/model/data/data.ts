@@ -18,15 +18,45 @@ import eleEpWeights from './ele-fallback.ep-weights.json';
 import enhEpWeights from './enh-fallback.ep-weights.json';
 import feralEpWeights from './feral-p1.ep-weights.json';
 import hunterEpWeights from './hunter-fallback.ep-weights.json';
+import hunterSvEpWeights from './hunter-sv-p1.ep-weights.json';
 import mageEpWeights from './mage-fallback.ep-weights.json';
 import retEpWeights from './ret-p2.ep-weights.json';
 import rogueEpWeights from './rogue-fallback.ep-weights.json';
 import shadowEpWeights from './shadow-fallback.ep-weights.json';
 import warlockEpWeights from './warlock-fallback.ep-weights.json';
+import warriorArmsEpWeights from './warrior-arms-p1.ep-weights.json';
 import warriorEpWeights from './warrior-fallback.ep-weights.json';
 
 /**
- * One EP-weights set per spec.
+ * A bundled EP-weights set: one per spec, plus the two builds that share a
+ * page with another one (Survival on the hunter page, Arms on the warrior
+ * page; ticket 803).
+ */
+type EpWeightsSet = SpecId | 'hunter-sv' | 'warrior-arms';
+
+/**
+ * The build whose own set replaces the spec's on that spec's page, and the
+ * talent tree that marks it. The page's talents decide, not its gear: the
+ * build is the variant when that tree has strictly more points than each
+ * other tree, and a tie or no talents keeps the spec's own set. So an
+ * Arms - Kebab build (Mortal Strike with two one-handers, most points in
+ * Arms) takes the Arms set. Tree indexes follow the talents string: hunter
+ * Beast Mastery, Marksmanship, Survival; warrior Arms, Fury, Protection.
+ */
+const TALENT_VARIANT_BY_SPEC: Partial<Record<SpecId, { set: EpWeightsSet; tree: number }>> = {
+	hunter: { set: 'hunter-sv', tree: 2 },
+	warrior: { set: 'warrior-arms', tree: 0 },
+};
+
+function epWeightsSetFor(spec: SpecId, talentPointsByTree: readonly number[]): EpWeightsSet {
+	const variant = TALENT_VARIANT_BY_SPEC[spec];
+	if (!variant) return spec;
+	const own = talentPointsByTree[variant.tree] ?? 0;
+	return talentPointsByTree.every((points, tree) => tree === variant.tree || points < own) ? variant.set : spec;
+}
+
+/**
+ * One EP-weights set per spec, and per talent variant.
  *
  * The nine specs added by the all-DPS-specs pass each bundle their
  * `fallback` file — the entry `data/presets/ep-weights-by-phase.json` names
@@ -36,7 +66,7 @@ import warriorEpWeights from './warrior-fallback.ep-weights.json';
  * and the gem fill, and every ranking number comes from the sim. The tab's
  * Assumptions block states it per run.
  */
-const EP_WEIGHTS_BY_SPEC: Record<SpecId, Readonly<Record<string, number>>> = {
+const EP_WEIGHTS_BY_SET: Record<EpWeightsSet, Readonly<Record<string, number>>> = {
 	ret: (retEpWeights as { weights: Record<string, number> }).weights,
 	feral: (feralEpWeights as { weights: Record<string, number> }).weights,
 	balance: (balanceEpWeights as { weights: Record<string, number> }).weights,
@@ -48,6 +78,12 @@ const EP_WEIGHTS_BY_SPEC: Record<SpecId, Readonly<Record<string, number>>> = {
 	enh: (enhEpWeights as { weights: Record<string, number> }).weights,
 	warlock: (warlockEpWeights as { weights: Record<string, number> }).weights,
 	warrior: (warriorEpWeights as { weights: Record<string, number> }).weights,
+	// P1_SV_EP_PRESET, which has P1_BM_EP_PRESET's numbers at fork b603564ee.
+	'hunter-sv': (hunterSvEpWeights as { weights: Record<string, number> }).weights,
+	// P1_ARMS_EP_PRESET ('P1, P2 - Arms'), not P3_ARMS_EP_PRESET: like Fury and
+	// every other spec, Arms bundles one set, its lowest-phase one, and the
+	// disclosure below says when a run ranks a later phase.
+	'warrior-arms': (warriorArmsEpWeights as { weights: Record<string, number> }).weights,
 };
 
 /**
@@ -62,7 +98,7 @@ const EP_WEIGHTS_BY_SPEC: Record<SpecId, Readonly<Record<string, number>>> = {
  * each bundled file. Ret and feral keep the values the outer repo's
  * docs/fork-provenance/data.md already records.
  */
-const EP_WEIGHTS_PHASE_BY_SPEC: Record<SpecId, number | undefined> = {
+const EP_WEIGHTS_PHASE_BY_SET: Record<EpWeightsSet, number | undefined> = {
 	ret: 2,
 	feral: 1,
 	balance: undefined,
@@ -74,19 +110,26 @@ const EP_WEIGHTS_PHASE_BY_SPEC: Record<SpecId, number | undefined> = {
 	enh: undefined,
 	warlock: 1,
 	warrior: 1,
+	'hunter-sv': 1,
+	'warrior-arms': 1,
 };
 
 /**
  * The EP-weights disclosure for a run, or `undefined` when the weights were
- * written for exactly the phase being ranked.
+ * written for exactly the phase being ranked. `talentPointsByTree` is the
+ * page's (`player.getTalentTreePoints()`); without it, the spec's own set.
  *
  * EP drives only the candidate prefilter and the gem fill — every ranking
  * number comes from the sim — so a mismatch degrades the shortlist's ordering
  * rather than falsifying a DPS figure. That makes it disclosable rather than
  * blocking, but it is not nothing, and it must not be silent.
  */
-export function epWeightsDisclosureFor(spec: SpecId, maxPhase: ContentPhase): { from: string; requested: string } | undefined {
-	const phase = EP_WEIGHTS_PHASE_BY_SPEC[spec];
+export function epWeightsDisclosureFor(
+	spec: SpecId,
+	maxPhase: ContentPhase,
+	talentPointsByTree: readonly number[] = [],
+): { from: string; requested: string } | undefined {
+	const phase = EP_WEIGHTS_PHASE_BY_SET[epWeightsSetFor(spec, talentPointsByTree)];
 	if (phase === maxPhase) return undefined;
 	return {
 		from: phase === undefined ? 'an unphased default' : `P${phase}`,
@@ -144,6 +187,7 @@ export function unsourcedCountFor(pool: readonly PoolEntry[]): number {
 	return pool.filter(e => (e.sources ?? [e.source]).every(s => s.kind === 'unknown')).length;
 }
 
-export function epWeightsFor(spec: SpecId): Readonly<Record<string, number>> {
-	return EP_WEIGHTS_BY_SPEC[spec];
+/** The EP weights a run on this page takes; `talentPointsByTree` as for `epWeightsDisclosureFor`. */
+export function epWeightsFor(spec: SpecId, talentPointsByTree: readonly number[] = []): Readonly<Record<string, number>> {
+	return EP_WEIGHTS_BY_SET[epWeightsSetFor(spec, talentPointsByTree)];
 }

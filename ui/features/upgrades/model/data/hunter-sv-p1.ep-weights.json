@@ -1,0 +1,24 @@
+{
+  "source": "tbc-new-fork ui/specs/hunter/dps/presets.ts P1_SV_EP_PRESET",
+  "pin": "b603564eed544d5e9f62fbc3950309dd65921110",
+  "label": "P1 SV",
+  "notes": [
+    "The Upgrades tab bundles this set for a hunter whose Survival tree has the most talent points (ticket 803); fallback.ep-weights.json (P1 BM) serves every other hunter.",
+    "At this pin P1_SV_EP_PRESET has the same numbers as P1_BM_EP_PRESET; this file keeps its own source so that ep-presets:check catches the day upstream changes one and not the other.",
+    "data/presets/ep-weights-by-phase.json and this repo's CLI do not read this file."
+  ],
+  "weights": {
+    "0": 0.06,
+    "1": 1.0,
+    "3": 0.01,
+    "17": 0.06,
+    "18": 0.4,
+    "20": 0.12,
+    "21": 0.92,
+    "22": 0.788,
+    "23": 0.16
+  },
+  "pseudoWeights": {
+    "2": 1.75
+  }
+}

@@ -42,7 +42,7 @@ const controllableRun = () => {
 /** A fresh page per case, so each case gets its own tab store (the store is keyed by the page's `Sim`). */
 const mount = (runFn: RunFn) => {
 	const host = fakeTabHost({
-		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
+		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin, getTalentTreePoints: () => [] },
 		sim: { store: createSimStore(), getPhase: () => 3 },
 	});
 	const wrapper = ({ children }: { children: ReactNode }) => <SimHostProvider host={host}>{children}</SimHostProvider>;

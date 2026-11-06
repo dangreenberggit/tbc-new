@@ -4,7 +4,7 @@
   "label": "P2, P3, P4 & P5 - Fury",
   "notes": [
     "Transcribed from the fork, not upstream: ui/warrior/dps/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
-    "ui/warrior/dps/sim.ts:63 wires P2_FURY_EP_PRESET, so Fury is the default variant; the Arms pair is not transcribed (single-axis schema)"
+    "ui/warrior/dps/sim.ts:63 wires P2_FURY_EP_PRESET, so Fury is the default variant. P1_ARMS_EP_PRESET is in arms-p1.ep-weights.json (ticket 803); P3_ARMS_EP_PRESET is not transcribed"
   ],
   "weights": {
     "0": 1.0,

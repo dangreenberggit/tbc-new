@@ -15,13 +15,18 @@ import type { RunSettings } from './run_state';
 export type AssumptionsContext = {
 	/** The ranked spec; absent, the lines that depend on the bundled data are left out. */
 	specId?: SpecId;
+	/** The page's talent points per tree at the run, which pick the Survival or Arms EP weights; absent, the spec's own. */
+	talentPointsByTree?: readonly number[];
 	/** The settings the run used; absent for a loaded fixture, whose run settings are not recorded. */
 	settings?: RunSettings;
 	/** The page the run drew its pool from; absent, or before its database has loaded, the lines about the pool are left out. */
 	host?: PagePoolHost;
 };
 
-export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>, { specId, settings, host }: AssumptionsContext = {}): string {
+export function assumptionsLine(
+	ranking: Pick<Ranking, 'assumptions' | 'cutoff'>,
+	{ specId, talentPointsByTree, settings, host }: AssumptionsContext = {},
+): string {
 	const a = ranking.assumptions;
 	const lines = [`seeds: ${a.seeds.join(', ')}`, `iterations: ${a.iterations}`, `max phase: ${a.maxPhase}`, `cutoff: ${ranking.cutoff.absDps} DPS`];
 	if (settings) lines.push(`candidate pool: ${settings.prune ? `selected set items for phase ${a.maxPhase}` : 'every eligible item'}`);
@@ -31,7 +36,7 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
 		const pool = page ? poolFor(page, page.individualConfig.presets.gear, maxPhase) : undefined;
 		const poolSource = pool && poolSourceFor(pool);
 		if (poolSource) lines.push(`pool source: ${poolSource.name} (${poolSource.entries} entries)`);
-		const ep = epWeightsDisclosureFor(specId, maxPhase);
+		const ep = epWeightsDisclosureFor(specId, maxPhase, talentPointsByTree);
 		if (ep) lines.push(`EP weights: written for ${ep.from}, ranking ${ep.requested}`);
 		const tags = page && bisTagPhaseFor(page, page.individualConfig.presets.gear, maxPhase);
 		if (tags && tags.tagsFromPhase < tags.requestedPhase) lines.push(`BiS tags: from P${tags.tagsFromPhase} sets, ranking P${tags.requestedPhase}`);

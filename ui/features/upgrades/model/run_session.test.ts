@@ -52,7 +52,9 @@ let equipped: Array<{ id: number } | null> = [];
 
 const setup = (store = createUpgradesStore({ iterations: 3000 })) => {
 	const { runFn, call } = controllableRun();
-	const host = fakeHost({ player: { getGear: () => ({ getEquippedItems: () => equipped }), getSpec: () => Spec.SpecRetributionPaladin } });
+	const host = fakeHost({
+		player: { getGear: () => ({ getEquippedItems: () => equipped }), getSpec: () => Spec.SpecRetributionPaladin, getTalentTreePoints: () => [] },
+	});
 	const session = createRunSession(store, host, runFn, ENV);
 	return { store, session, call, run: () => store.getState().run };
 };
@@ -143,7 +145,12 @@ describe('createRunSession', () => {
 
 	it('logs the pool lines of the page the run drew from, for a run and for a loaded fixture', async () => {
 		const page = dbPoolHost('ret');
-		const player = { ...page.player, getGear: () => ({ getEquippedItems: () => equipped }), getSpec: () => Spec.SpecRetributionPaladin };
+		const player = {
+			...page.player,
+			getGear: () => ({ getEquippedItems: () => equipped }),
+			getSpec: () => Spec.SpecRetributionPaladin,
+			getTalentTreePoints: () => [],
+		};
 		const host = fakeHost({ sim: page.sim, individualConfig: page.individualConfig, player } as Parameters<typeof fakeHost>[0]);
 		const { runFn, call } = controllableRun();
 		const session = createRunSession(createUpgradesStore({ iterations: 3000 }), host, runFn, ENV);

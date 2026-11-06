@@ -80,6 +80,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 
 		clearProgress(host.player);
 		const measuredOn = measuredOnPage(host, inputsSignature);
+		const talentPointsByTree = host.player.getTalentTreePoints();
 		store.getState().startRun(id, Date.now(), measuredOn);
 		runFn(host, settings, {
 			signal: current.signal,
@@ -89,7 +90,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 			result => {
 				store.getState().settleRun(id, result);
 				// The store drops a superseded run's result, so it is not logged either.
-				if (id === runId) logAssumptions(result, { specId: measuredOn.specId, settings, host });
+				if (id === runId) logAssumptions(result, { specId: measuredOn.specId, talentPointsByTree, settings, host });
 			},
 			(error: unknown) => store.getState().failRun(id, env.describeError(error)),
 		);
@@ -106,7 +107,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		controller?.abort();
 		const measuredOn = measuredOnPage(host, inputsSignature);
 		store.getState().loadFixture(++runId, ranking, measuredOn);
-		logAssumptions(ranking, { specId: measuredOn.specId, host });
+		logAssumptions(ranking, { specId: measuredOn.specId, talentPointsByTree: host.player.getTalentTreePoints(), host });
 	};
 
 	/**
