@@ -1,0 +1,23 @@
+{
+  "source": "tbc-new-fork ui/specs/warrior/dps/presets.ts P3_ARMS_EP_PRESET",
+  "pin": "786a08f96b743642ee02d602f9fec30caedbf77f",
+  "label": "P3, P4 & P5 - Arms",
+  "notes": [
+    "The Upgrades tab bundles this set for a warrior whose Arms tree has strictly more talent points than each other tree (ticket 803); fallback.ep-weights.json (P1 Fury) serves every other warrior.",
+    "Why P3 and not P1_ARMS_EP_PRESET ('P1, P2 - Arms'): upstream's own Arms builds for phases 3, 4 and 5 use this set (P3_PRESET_BUILD_ARMS, P4_PRESET_BUILD_ARMS and P5_PRESET_BUILD_ARMS in ui/specs/warrior/dps/presets.ts:446-480), and the page opens at phase 3 (CURRENT_PHASE in ui/sim/constants/other.ts:12; currentPhase in data/wowsims.lock.json), so phase 3 is what the tab ranks by default. P1_ARMS_EP_PRESET is not transcribed. The tab's assumptions line says when a run ranks a phase other than 3.",
+    "data/presets/ep-weights-by-phase.json and this repo's CLI do not read this file."
+  ],
+  "weights": {
+    "0": 1.0,
+    "1": 0.8,
+    "17": 0.45,
+    "20": 1.01,
+    "21": 1.05,
+    "22": 0.85,
+    "23": 0.23,
+    "24": 1.78
+  },
+  "pseudoWeights": {
+    "0": 6.0
+  }
+}

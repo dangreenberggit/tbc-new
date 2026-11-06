@@ -24,7 +24,7 @@ import retEpWeights from './ret-p2.ep-weights.json';
 import rogueEpWeights from './rogue-fallback.ep-weights.json';
 import shadowEpWeights from './shadow-fallback.ep-weights.json';
 import warlockEpWeights from './warlock-fallback.ep-weights.json';
-import warriorArmsEpWeights from './warrior-arms-p1.ep-weights.json';
+import warriorArmsEpWeights from './warrior-arms-p3.ep-weights.json';
 import warriorEpWeights from './warrior-fallback.ep-weights.json';
 
 /**
@@ -48,11 +48,12 @@ const TALENT_VARIANT_BY_SPEC: Partial<Record<SpecId, { set: EpWeightsSet; tree: 
 	warrior: { set: 'warrior-arms', tree: 0 },
 };
 
-function epWeightsSetFor(spec: SpecId, talentPointsByTree: readonly number[]): EpWeightsSet {
+export function epWeightsSetFor(spec: SpecId, talentPointsByTree: readonly number[]): EpWeightsSet {
 	const variant = TALENT_VARIANT_BY_SPEC[spec];
 	if (!variant) return spec;
 	const own = talentPointsByTree[variant.tree] ?? 0;
-	return talentPointsByTree.every((points, tree) => tree === variant.tree || points < own) ? variant.set : spec;
+	const leads = own > 0 && talentPointsByTree.every((points, tree) => tree === variant.tree || points < own);
+	return leads ? variant.set : spec;
 }
 
 /**
@@ -80,9 +81,10 @@ const EP_WEIGHTS_BY_SET: Record<EpWeightsSet, Readonly<Record<string, number>>> 
 	warrior: (warriorEpWeights as { weights: Record<string, number> }).weights,
 	// P1_SV_EP_PRESET, which has P1_BM_EP_PRESET's numbers at fork b603564ee.
 	'hunter-sv': (hunterSvEpWeights as { weights: Record<string, number> }).weights,
-	// P1_ARMS_EP_PRESET ('P1, P2 - Arms'), not P3_ARMS_EP_PRESET: like Fury and
-	// every other spec, Arms bundles one set, its lowest-phase one, and the
-	// disclosure below says when a run ranks a later phase.
+	// P3_ARMS_EP_PRESET ('P3, P4 & P5 - Arms'), not P1_ARMS_EP_PRESET: upstream's
+	// own Arms builds for phases 3-5 use it (specs/warrior/dps/presets.ts), and the
+	// page opens at phase 3 (CURRENT_PHASE), the phase the tab ranks by default.
+	// The disclosure below says when a run ranks another phase.
 	'warrior-arms': (warriorArmsEpWeights as { weights: Record<string, number> }).weights,
 };
 
@@ -111,7 +113,7 @@ const EP_WEIGHTS_PHASE_BY_SET: Record<EpWeightsSet, number | undefined> = {
 	warlock: 1,
 	warrior: 1,
 	'hunter-sv': 1,
-	'warrior-arms': 1,
+	'warrior-arms': 3,
 };
 
 /**

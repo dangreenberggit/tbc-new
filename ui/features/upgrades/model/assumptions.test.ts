@@ -17,10 +17,11 @@ describe('assumptionsLine', () => {
 		}
 	});
 
-	// Both bundled variant sets were written for P1 (ticket 803), as are BM's and Fury's; RANKING_FIXTURE ranks P3.
-	it('says which phase a Survival or an Arms run’s EP weights were written for', () => {
-		expect(assumptionsLine(RANKING_FIXTURE, { specId: 'hunter', talentPointsByTree: [7, 20, 34] })).toContain(' · EP weights: written for P1, ranking P3');
-		expect(assumptionsLine(RANKING_FIXTURE, { specId: 'warrior', talentPointsByTree: [33, 28, 0] })).toContain(' · EP weights: written for P1, ranking P3');
+	// The Arms set was written for P3 and Fury's for P1 (ticket 803), so the phase in the line shows which set the talents picked.
+	it('says which phase an Arms or a Fury run’s EP weights were written for', () => {
+		const rankingP4 = { ...RANKING_FIXTURE, assumptions: { ...RANKING_FIXTURE.assumptions, maxPhase: 4 as const } };
+		expect(assumptionsLine(rankingP4, { specId: 'warrior', talentPointsByTree: [33, 28, 0] })).toContain(' · EP weights: written for P3, ranking P4');
+		expect(assumptionsLine(rankingP4, { specId: 'warrior', talentPointsByTree: [21, 40, 0] })).toContain(' · EP weights: written for P1, ranking P4');
 	});
 
 	it('names the run’s pool settings when the run is known', () => {

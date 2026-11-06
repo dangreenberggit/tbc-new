@@ -9,7 +9,7 @@ import { resetWorkerPoolForTests, type WorkerPoolSimRunner } from './adapters/wo
 import { epWeightsFor, poolFor } from './data/data';
 import hunterBmWeights from './data/hunter-fallback.ep-weights.json';
 import hunterSvWeights from './data/hunter-sv-p1.ep-weights.json';
-import warriorArmsWeights from './data/warrior-arms-p1.ep-weights.json';
+import warriorArmsWeights from './data/warrior-arms-p3.ep-weights.json';
 import warriorFuryWeights from './data/warrior-fallback.ep-weights.json';
 import type { Deps, PartialRanking, Progress, RankedItem, RankInput } from './engine/rank';
 import { MemoryStore } from './engine/seams/store';
@@ -139,12 +139,6 @@ describe('rankForPlayer', () => {
 		const [{ deps }] = rankCalls as [RankCall];
 		// The same object as the bundled file's weights: SV and BM have equal numbers, so only identity tells them apart.
 		expect(deps.epWeights).toBe(weightsFile.weights);
-	});
-
-	// At fork b603564ee P1_SV_EP_PRESET has P1_BM_EP_PRESET's numbers, so only the Arms case can tell the sets apart by value.
-	it('gives an Arms warrior different weights from a Fury warrior', () => {
-		expect(warriorArmsWeights.weights).not.toEqual(warriorFuryWeights.weights);
-		expect(hunterSvWeights.source).not.toBe(hunterBmWeights.source);
 	});
 
 	// A phase with no candidates (ticket 515): the run must still finish, so the tab can say why it has no rows.

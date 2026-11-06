@@ -4,7 +4,7 @@
   "label": "P1 BM",
   "notes": [
     "Transcribed from the fork, not upstream: ui/hunter/dps/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
-    "ui/hunter/dps/sim.ts:75 wires P1_BM_EP_PRESET as the default. P1_SV_EP_PRESET is in sv-p1.ep-weights.json, which the Upgrades tab uses when the page's Survival tree has the most talent points (ticket 803); ep-weights-by-phase.json and the CLI read only this file"
+    "ui/specs/hunter/dps/spec.ts:77 (ui/hunter/dps/sim.ts:75 at this file's pin) wires P1_BM_EP_PRESET as the default. P1_SV_EP_PRESET is in sv-p1.ep-weights.json, which the Upgrades tab uses when the page's Survival tree has the most talent points (ticket 803); ep-weights-by-phase.json and the CLI read only this file"
   ],
   "weights": {
     "0": 0.06,
