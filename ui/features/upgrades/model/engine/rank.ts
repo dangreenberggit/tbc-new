@@ -39,7 +39,7 @@ import {
   metaSocketUnpriced,
   missingMetaPreferenceNote,
 } from "./candidate-gems";
-import { orderCandidatesByEp } from "./candidate-order";
+import { type ItemEp, orderCandidatesByEp } from "./candidate-order";
 import {
   capProfileFor,
   type HitCapBudget,
@@ -164,6 +164,7 @@ import {
   type UnmeasuredReason,
 } from "./set-value";
 import { SIM_ORDER, type SimItemSpec } from "./slots";
+import { epScore } from "./stats";
 import type {
   CharacterRef,
   ContentPhase,
@@ -200,6 +201,13 @@ export type Deps = {
   clock: () => Date;
   raidSimSkeleton: RaidSimRequest;
   epWeights: Readonly<Record<string, number>> | readonly number[];
+  /**
+   * The candidate order's item score per sim slot. The tab passes wowsims'
+   * own weapon-aware score (`model/item_ep.ts`). Absent means stats times
+   * `epWeights`, which gives a weapon no credit for its weapon damage; the
+   * E-W3 parity harness leaves it absent.
+   */
+  itemEp?: ItemEp;
   gemPalette?: readonly GemEntry[];
   pool?: readonly PoolEntry[];
   /**
@@ -958,14 +966,14 @@ export async function rankUpgrades(
       : phaseEligible.filter(
           (e) => !blockedOffHand.includes(e) && !blockedOneHand.includes(e)
         );
-  // Ordering runs before any sim, from raw stats only, so it cannot fail on
+  // Ordering runs before any sim, from raw item data only, so it cannot fail on
   // a candidate the sim itself would later reject. This order also decides
   // which N the cap keeps (§5.1.1).
   const ordered = orderCandidatesByEp(
     eligible,
     equipment,
-    deps.epWeights,
-    (itemId) => getItem(itemId)?.stats ?? [],
+    deps.itemEp ??
+      ((itemId) => epScore(getItem(itemId)?.stats ?? [], deps.epWeights)),
     input.spec
   );
 

@@ -11,10 +11,11 @@ import { PlayerGearSource } from './adapters/player_gear_source';
 import { simDatabaseResolverFor } from './adapters/sim_database';
 import { currentPageSkeleton } from './adapters/skeleton';
 import { type RunnerEnv, workerCountFor, WorkerPoolSimRunner } from './adapters/worker_pool_sim_runner';
-import { epWeightsFor, epWeightsSetFor, poolFor } from './data/data';
+import { epPseudoWeightsFor, epWeightsFor, epWeightsSetFor, poolFor } from './data/data';
 import { type Progress, type RankedItem, RankError, type RankInput, rankUpgrades } from './engine/rank';
 import { MemoryStore } from './engine/seams/store';
 import type { ContentPhase, SpecId } from './engine/types';
+import { itemEpFor } from './item_ep';
 import { emitProgress } from './progress_channel';
 import { RUN_PROGRESS_ESTIMATOR, RUN_PROGRESS_MIN_CANDIDATES_DONE, RUN_PROGRESS_SHOW_FROM_FRACTION, RunProgressTracker } from './run_progress';
 import type { RunOutcome, RunSettings } from './run_state';
@@ -103,6 +104,7 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 		candidateCap: settings.candidateCap,
 	};
 
+	const weightsSet = epWeightsSetFor(specId, host.player.getTalentTreePoints());
 	const ranking = await rankUpgrades(
 		input,
 		{
@@ -111,7 +113,8 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 			store,
 			clock: () => new Date(),
 			raidSimSkeleton: skeleton,
-			epWeights: epWeightsFor(epWeightsSetFor(specId, host.player.getTalentTreePoints())),
+			epWeights: epWeightsFor(weightsSet),
+			itemEp: itemEpFor(epWeightsFor(weightsSet), epPseudoWeightsFor(weightsSet)),
 			pool: effectivePool(poolFor(host, host.individualConfig.presets.gear, maxPhase), {
 				excludedSources: settings.excludedSources ?? [],
 				selectedSetItemIds: settings.guaranteedSetItemIds ?? [],

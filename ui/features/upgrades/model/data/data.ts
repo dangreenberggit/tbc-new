@@ -68,25 +68,28 @@ export function epWeightsSetFor(spec: SpecId, talentPointsByTree: readonly numbe
  * and the gem fill, and every ranking number comes from the sim. The tab's
  * Assumptions block states it per run.
  */
-const EP_WEIGHTS_BY_SET: Record<EpWeightsSet, Readonly<Record<string, number>>> = {
-	ret: (retEpWeights as { weights: Record<string, number> }).weights,
-	feral: (feralEpWeights as { weights: Record<string, number> }).weights,
-	balance: (balanceEpWeights as { weights: Record<string, number> }).weights,
-	hunter: (hunterEpWeights as { weights: Record<string, number> }).weights,
-	mage: (mageEpWeights as { weights: Record<string, number> }).weights,
-	shadow: (shadowEpWeights as { weights: Record<string, number> }).weights,
-	rogue: (rogueEpWeights as { weights: Record<string, number> }).weights,
-	ele: (eleEpWeights as { weights: Record<string, number> }).weights,
-	enh: (enhEpWeights as { weights: Record<string, number> }).weights,
-	warlock: (warlockEpWeights as { weights: Record<string, number> }).weights,
-	warrior: (warriorEpWeights as { weights: Record<string, number> }).weights,
+// JSON values only: the files' shape is stated here, never derived from the import (AGENTS.md, Types from JSON).
+type EpWeightsFile = { weights: Record<string, number>; pseudoWeights?: Record<string, number> };
+
+const EP_WEIGHTS_BY_SET: Record<EpWeightsSet, EpWeightsFile> = {
+	ret: retEpWeights as EpWeightsFile,
+	feral: feralEpWeights as EpWeightsFile,
+	balance: balanceEpWeights as EpWeightsFile,
+	hunter: hunterEpWeights as EpWeightsFile,
+	mage: mageEpWeights as EpWeightsFile,
+	shadow: shadowEpWeights as EpWeightsFile,
+	rogue: rogueEpWeights as EpWeightsFile,
+	ele: eleEpWeights as EpWeightsFile,
+	enh: enhEpWeights as EpWeightsFile,
+	warlock: warlockEpWeights as EpWeightsFile,
+	warrior: warriorEpWeights as EpWeightsFile,
 	// P1_SV_EP_PRESET, which has P1_BM_EP_PRESET's numbers at fork b603564ee.
-	'hunter-sv': (hunterSvEpWeights as { weights: Record<string, number> }).weights,
+	'hunter-sv': hunterSvEpWeights as EpWeightsFile,
 	// P3_ARMS_EP_PRESET ('P3, P4 & P5 - Arms'), not P1_ARMS_EP_PRESET: upstream's
 	// own Arms builds for phases 3-5 use it (specs/warrior/dps/presets.ts), and the
 	// page opens at phase 3 (CURRENT_PHASE), the phase the tab ranks by default.
 	// The disclosure below says when a run ranks another phase.
-	'warrior-arms': (warriorArmsEpWeights as { weights: Record<string, number> }).weights,
+	'warrior-arms': warriorArmsEpWeights as EpWeightsFile,
 };
 
 /**
@@ -188,5 +191,10 @@ export function unsourcedCountFor(pool: readonly PoolEntry[]): number {
 
 /** The EP weights of a bundled set (`epWeightsSetFor`). */
 export function epWeightsFor(set: EpWeightsSet): Readonly<Record<string, number>> {
-	return EP_WEIGHTS_BY_SET[set];
+	return EP_WEIGHTS_BY_SET[set].weights;
+}
+
+/** The pseudo-stat weights of a bundled set, keyed by wowsims `PseudoStat`; 0, 1 and 2 are main-hand, off-hand and ranged weapon DPS. */
+export function epPseudoWeightsFor(set: EpWeightsSet): Readonly<Record<string, number>> {
+	return EP_WEIGHTS_BY_SET[set].pseudoWeights ?? {};
 }
