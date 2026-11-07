@@ -1,4 +1,5 @@
 import { Spec } from '@generated/proto/common';
+import { getTalentTreePoints } from '@sim/proto/utils';
 import type { IndividualSimHost } from '@sim/sim_host';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -6,6 +7,10 @@ import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import { simDatabaseResolverFor } from './adapters/sim_database';
 import { resetWorkerPoolForTests, type WorkerPoolSimRunner } from './adapters/worker_pool_sim_runner';
 import { epWeightsFor, poolFor } from './data/data';
+import hunterBmWeights from './data/hunter-fallback.ep-weights.json';
+import hunterSvWeights from './data/hunter-sv-p1.ep-weights.json';
+import warriorArmsWeights from './data/warrior-arms-p3.ep-weights.json';
+import warriorFuryWeights from './data/warrior-fallback.ep-weights.json';
 import type { Deps, PartialRanking, Progress, RankedItem, RankInput } from './engine/rank';
 import { MemoryStore } from './engine/seams/store';
 import { progressOf } from './progress_channel';
@@ -51,10 +56,10 @@ vi.mock('./engine/rank', async importOriginal => ({
 	},
 }));
 
-const fakeHost = (spec = Spec.SpecRetributionPaladin, phase = 3) =>
+const fakeHost = (spec = Spec.SpecRetributionPaladin, phase = 3, talentsString = '') =>
 	({
 		sim: { waitForInit: () => Promise.resolve(), getPhase: () => phase },
-		player: { getSpec: () => spec, getName: () => 'Tester' },
+		player: { getSpec: () => spec, getName: () => 'Tester', getTalentTreePoints: () => getTalentTreePoints(talentsString) },
 		individualConfig: { presets: { gear: [] } },
 	}) as unknown as IndividualSimHost<Spec>;
 
@@ -116,6 +121,24 @@ describe('rankForPlayer', () => {
 		expect(deps.epWeights).toBe(epWeightsFor('ret'));
 		expect(deps.measureBrokenSetValue).toBe(true);
 		expect(deps.setScreen).toBe('on');
+	});
+
+	// Survival and Arms have no page of their own (ticket 803): the page's talents say which set the run takes. The
+	// talents strings are upstream's presets (SVTalents, BMTalents in specs/hunter/dps/presets.ts; ArmsTalents,
+	// FuryTalents, ArmsKebabTalents in specs/warrior/dps/presets.ts), copied because ui/features may not import specs.
+	it.each([
+		['a Survival hunter', Spec.SpecHunter, '502-0550201205-333200022003223005103', hunterSvWeights],
+		['a Beast Mastery hunter', Spec.SpecHunter, '522002005150122431051-0505201205', hunterBmWeights],
+		['an Arms warrior', Spec.SpecDpsWarrior, '32005011352010500221-0550000500521203', warriorArmsWeights],
+		['a Fury warrior', Spec.SpecDpsWarrior, '3400502130201-05050005505012050115', warriorFuryWeights],
+		// Mortal Strike with two one-handers: most points are in Arms, so the talents say Arms, whatever the weapons.
+		['an Arms - Kebab warrior', Spec.SpecDpsWarrior, '34005021302010510321-0550000520501203', warriorArmsWeights],
+	])('ranks %s with that build’s own EP weights', async (_build, spec, talents, weightsFile) => {
+		await rankForPlayer(fakeHost(spec, 3, talents), SETTINGS, depsFor());
+
+		const [{ deps }] = rankCalls as [RankCall];
+		// The same object as the bundled file's weights: SV and BM have equal numbers, so only identity tells them apart.
+		expect(deps.epWeights).toBe(weightsFile.weights);
 	});
 
 	// A phase with no candidates (ticket 515): the run must still finish, so the tab can say why it has no rows.

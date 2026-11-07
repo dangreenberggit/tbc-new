@@ -6,32 +6,31 @@
  * on purpose: a console line is a diagnostic, not localised UI.
  */
 
-import { bisTagPhaseFor, epWeightsDisclosureFor, type PagePoolHost, poolFor, poolSourceFor, unsourcedCountFor } from './data/data';
+import { bisTagPhaseFor, epWeightsDisclosureFor, type EpWeightsSet, type PagePoolHost, poolFor, poolSourceFor, unsourcedCountFor } from './data/data';
 import type { Substitution } from './engine/disclosure';
 import type { Ranking } from './engine/rank';
-import type { SpecId } from './engine/types';
 import type { RunSettings } from './run_state';
 
 export type AssumptionsContext = {
-	/** The ranked spec; absent, the lines that depend on the bundled data are left out. */
-	specId?: SpecId;
+	/** The EP-weights set the run took (`epWeightsSetFor`); absent, the lines that depend on the bundled data are left out. */
+	epWeightsSet?: EpWeightsSet;
 	/** The settings the run used; absent for a loaded fixture, whose run settings are not recorded. */
 	settings?: RunSettings;
 	/** The page the run drew its pool from; absent, or before its database has loaded, the lines about the pool are left out. */
 	host?: PagePoolHost;
 };
 
-export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>, { specId, settings, host }: AssumptionsContext = {}): string {
+export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>, { epWeightsSet, settings, host }: AssumptionsContext = {}): string {
 	const a = ranking.assumptions;
 	const lines = [`seeds: ${a.seeds.join(', ')}`, `iterations: ${a.iterations}`, `max phase: ${a.maxPhase}`, `cutoff: ${ranking.cutoff.absDps} DPS`];
 	if (settings) lines.push(`candidate pool: ${settings.prune ? `selected set items for phase ${a.maxPhase}` : 'every eligible item'}`);
-	if (specId) {
+	if (epWeightsSet) {
 		const maxPhase = a.maxPhase;
 		const page = host?.sim.db ? host : undefined;
 		const pool = page ? poolFor(page, page.individualConfig.presets.gear, maxPhase) : undefined;
 		const poolSource = pool && poolSourceFor(pool);
 		if (poolSource) lines.push(`pool source: ${poolSource.name} (${poolSource.entries} entries)`);
-		const ep = epWeightsDisclosureFor(specId, maxPhase);
+		const ep = epWeightsDisclosureFor(epWeightsSet, maxPhase);
 		if (ep) lines.push(`EP weights: written for ${ep.from}, ranking ${ep.requested}`);
 		const tags = page && bisTagPhaseFor(page, page.individualConfig.presets.gear, maxPhase);
 		if (tags && tags.tagsFromPhase < tags.requestedPhase) lines.push(`BiS tags: from P${tags.tagsFromPhase} sets, ranking P${tags.requestedPhase}`);

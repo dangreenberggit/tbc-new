@@ -100,7 +100,7 @@ const makeHost = (storage = memoryStorage()) => {
 	const store = createSimStore();
 	patchSlice(store, 'sim', { phase: 3 });
 	const host = fakeTabHost({
-		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
+		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin, getTalentTreePoints: () => [] },
 		sim: {
 			store,
 			env: { storage },

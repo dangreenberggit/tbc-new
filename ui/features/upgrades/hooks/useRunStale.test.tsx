@@ -43,7 +43,7 @@ const makePage = () => {
 	};
 	const host = fakeTabHost({
 		sim,
-		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin },
+		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin, getTalentTreePoints: () => [] },
 	});
 	const wrapper = ({ children }: { children: ReactNode }) => <SimHostProvider host={host}>{children}</SimHostProvider>;
 	const signatureNow = (settings: RunSettings) => inputsSignature({ liveKey: liveInputsKey(sim), settings });
