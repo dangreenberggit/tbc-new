@@ -12,7 +12,7 @@ import type { SpecId } from './engine/types';
 /** What one click of Run asks for. */
 export type RunSettings = {
 	iterations: number;
-	/** Keep the first N candidates of the EP ordering; undefined is no cap. */
+	/** Keep the first N candidates of the EP ordering that the player does not wear; undefined is no cap. */
 	candidateCap?: number;
 	/**
 	 * The pool filters the old tab offered: excluded sources, and with `prune`

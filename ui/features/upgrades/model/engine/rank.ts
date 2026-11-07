@@ -184,8 +184,8 @@ export type RankInput = {
   iterations?: number;
   seeds?: number[];
   /**
-   * Keeps the first N candidates of the EP ordering, plus every owned row
-   * regardless of N (§5.1.1). `undefined` means "no cap" — hashed
+   * Keeps the first N candidates of the EP ordering that the player does not
+   * wear, plus every owned row (§5.1.1). `undefined` means "no cap" — hashed
    * identically to a cap equal to the eligible set's size
    * (content-hash.ts's `candidateCap` normalization, mirrored below since
    * this file hashes via `canonicalJson` directly rather than through
@@ -1560,10 +1560,15 @@ export async function rankUpgrades(
     }
 
     // Every eligible candidate gets a full-iteration sim; the cap keeps the
-    // first N of the EP order plus every owned row regardless of N (§5.1.1).
+    // first N items of the EP order the player does not wear, plus every owned
+    // row (§5.1.1). Owned rows are kept anyway and the list leaves them out,
+    // so one counted against N would leave the list a row short.
     const cap = input.candidateCap ?? ordered.length;
+    const keptNotOwned = new Set(
+      ordered.filter((e) => !equippedIds.has(e.itemId)).slice(0, cap)
+    );
     const simCandidates = ordered.filter(
-      (e, i) => i < cap || equippedIds.has(e.itemId)
+      (e) => keptNotOwned.has(e) || equippedIds.has(e.itemId)
     );
 
     // Counted here, after the cap decides the full-iteration set. A budget

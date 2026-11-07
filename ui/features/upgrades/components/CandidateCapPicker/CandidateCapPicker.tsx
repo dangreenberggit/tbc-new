@@ -12,7 +12,7 @@ export interface CandidateCapPickerProps {
 	onCapChange: (cap: number) => void;
 }
 
-/** The candidate cap: keep the first N candidates of the EP order; empty or 0 is no cap. */
+/** The candidate cap: keep the first N candidates of the EP order that the player does not wear; empty or 0 is no cap. */
 export const CandidateCapPicker = ({ store, onCapChange }: CandidateCapPickerProps) => (
 	<NumberPicker
 		modObject={store}
