@@ -822,7 +822,7 @@ export async function rankUpgrades(
       : undefined;
   const hitCapReadable =
     budgetSlot !== undefined && typeof deps.sim.computeStats === "function";
-  /** A stats read failed, so this run's ranking is not cached (ticket 535). */
+  /** A worn, baseline or set-version stats read failed, so this run's ranking is not cached (ticket 535). */
   let hitCapFailed = false;
   /**
    * Why repair could not use the hit cap, shown with the ranking: the console
@@ -1230,9 +1230,10 @@ export async function rankUpgrades(
      * head breaks a +35 spell hit set). So when the swap turns the meta off,
      * the candidate's own stats read corrects the budget by its missed hit,
      * as each set version's read does above. The read runs on the same sim
-     * worker as the candidate's sim, so a failed read rejects, and
-     * `runCandidate` reports it as that candidate's failed sim. A read Stop
-     * refused rejects with `StopRefusedSim`.
+     * worker as the candidate's sim, so a failed read rejects with
+     * `CandidateHitReadFailed`, which `runCandidate` reports as that
+     * candidate's failed sim. A read Stop refused rejects with
+     * `StopRefusedSim`.
      */
     const candidateRepairGems = async (
       slotIndex: number,
@@ -1249,10 +1250,17 @@ export async function rankUpgrades(
       }
       const pre = candidateSwapPreRepair(equipment, slotIndex, itemId, gems);
       if (!inactiveMeta(pre.socketed)) return gems;
-      const hitPercent = hitPercentOf(
-        await readStats(deps.sim, composeFor(pre.swapped), deps.signal),
-        budgetSlot
-      );
+      const request = composeFor(pre.swapped);
+      let hitPercent: number;
+      try {
+        hitPercent = hitPercentOf(
+          await readStats(deps.sim, request, deps.signal),
+          budgetSlot
+        );
+      } catch (err) {
+        if (err instanceof StopRefusedSim) throw err;
+        throw new CandidateHitReadFailed(err);
+      }
       const missed =
         hitPercent * capProfile.ratingPerPercent -
         baselineSimHit -
@@ -1400,12 +1408,13 @@ export async function rankUpgrades(
         } catch (err) {
           // Stop refused the read: the row is left to the Stop placeholder.
           if (err instanceof StopRefusedSim) return;
+          if (!(err instanceof CandidateHitReadFailed)) throw err;
           candidateSkips.push({
             kind: "sim",
             itemId: entry.itemId,
             name: entry.name,
             slot: slotName,
-            reason: err instanceof Error ? err.message : String(err),
+            reason: err.message,
           });
           continue;
         }
@@ -3818,6 +3827,20 @@ class StopRefusedSim extends Error {
 
   constructor() {
     super("sim not started: Stop was pressed");
+  }
+}
+
+/**
+ * A candidate's own stats read failed (ticket 746). Its own class, so
+ * `runCandidate` can report only the read as that candidate's failed sim
+ * and still fail the run on a code error around it.
+ */
+class CandidateHitReadFailed extends Error {
+  override readonly name = "CandidateHitReadFailed";
+
+  // `cause` as a field: the fork's lib is es2021, which has no Error options.
+  constructor(readonly cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause));
   }
 }
 
