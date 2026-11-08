@@ -35,7 +35,7 @@ interface TableSetup {
 /** A results table on the test's page, with `stored` as the tab store's sort before it renders. */
 const renderTable = (rows: readonly RankedItem[], stored: ResultsSort, { dpsKey, sortable, hiddenSources }: TableSetup = {}) => {
 	upgradesStoreFor(host).getState().setSort(stored);
-	const context: RowContext = { itemOf: () => undefined, sim: host.sim, tip: {}, tagsOf: () => [], dpsKey, hiddenSources };
+	const context: RowContext = { itemOf: () => undefined, sim: host.sim, tip: {}, tagsOf: () => [], bisHeadingsOf: () => [], dpsKey, hiddenSources };
 	let renders = 0;
 	const hook = renderHook(
 		() => {

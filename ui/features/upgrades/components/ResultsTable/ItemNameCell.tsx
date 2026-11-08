@@ -16,14 +16,12 @@ export interface ItemNameCellProps {
 	/** The selected sets that hold the item (ticket 430). */
 	tags: readonly RowTag[];
 	/** The headings of the BiS sets that hold the item, named on its "BiS" badge when no selected set holds it (ticket 810). */
-	bisHeadings?: readonly string[];
+	bisHeadings: readonly string[];
 	/** Shown in the main table although it misses the cutoff (ticket 528): said in text beside the badges, so no hover is needed. */
 	notUpgrade?: boolean;
 	/** The item's level, or undefined (or 0) when the site's database gives none, which shows no level. */
 	ilvl?: number;
 }
-
-const NO_HEADINGS: readonly string[] = [];
 
 /**
  * A row in no selected set shows the pool's BiS tag instead (`pool_source.ts` gives only 'BiS'), once per heading of
@@ -36,7 +34,7 @@ const listBadge = (bisTags: RankedItem['bisTags'], headings: readonly string[]):
 };
 
 /** The item: its icon, its name as a wowhead link in its quality colour, and its tags beneath. `memo`: see `ResultRow`. */
-export const ItemNameCell = memo(({ row, quality, tags, bisHeadings = NO_HEADINGS, notUpgrade = false, ilvl }: ItemNameCellProps) => {
+export const ItemNameCell = memo(({ row, quality, tags, bisHeadings, notUpgrade = false, ilvl }: ItemNameCellProps) => {
 	const { iconUrl, href } = useActionId(ActionId.fromItemId(row.itemId));
 	const badges = tags.length > 0 ? tags : listBadge(row.bisTags, bisHeadings);
 

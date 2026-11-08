@@ -24,7 +24,7 @@ const set = (key: string, name: string, phase: number | undefined, itemIds: numb
 	inPool: itemIds.length,
 });
 
-const badgesOf = (row: RankedItem, tags: readonly RowTag[], bisHeadings?: readonly string[]) => {
+const badgesOf = (row: RankedItem, tags: readonly RowTag[], bisHeadings: readonly string[] = []) => {
 	const { container } = render(
 		<table>
 			<tbody>

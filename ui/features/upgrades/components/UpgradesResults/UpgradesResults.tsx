@@ -18,7 +18,7 @@ export interface UpgradesResultsProps {
 	/** The sim sets selected now; a row in one of them carries its name (ticket 430). */
 	selectedSets: readonly SetOption[];
 	/** The headings a row's "BiS" badge names when the row is in no selected set (ticket 810). */
-	bisHeadingsOf?: (itemId: number) => readonly string[];
+	bisHeadingsOf: (itemId: number) => readonly string[];
 	/** The spec the run ranked for; with the run's phase it tells a phase with no candidate list from a list with no upgrades (ticket 515). */
 	specId?: SpecId;
 }

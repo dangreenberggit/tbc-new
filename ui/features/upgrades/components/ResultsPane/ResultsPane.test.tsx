@@ -24,7 +24,7 @@ const { upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
 
 loadEnglishBundles({ character: true });
 
-const CONTEXT = { itemOf: () => undefined, sim: fakeTabHost().sim, tip: {}, tagsOf: () => [] };
+const CONTEXT = { itemOf: () => undefined, sim: fakeTabHost().sim, tip: {}, tagsOf: () => [], bisHeadingsOf: () => [] };
 
 // A page per test, so a sort one test stores does not reach the next.
 let host: IndividualSimHost<any>;

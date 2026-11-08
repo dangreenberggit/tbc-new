@@ -27,8 +27,8 @@ export type RowContext = {
 	tip: SetBonusTipContext;
 	/** The names of the selected sets that hold an item (ticket 430); one array per item, so the name cell's memo holds. */
 	tagsOf: (itemId: number) => readonly RowTag[];
-	/** The headings the "BiS" badge names on a row in no selected set (`bisHeadingIndex`); undefined names none. */
-	bisHeadingsOf?: (itemId: number) => readonly string[];
+	/** The headings the "BiS" badge names on a row in no selected set (`bisHeadingIndex`). */
+	bisHeadingsOf: (itemId: number) => readonly string[];
 	/** What the ΔDPS column sorts on; undefined is the bare ΔDPS. */
 	dpsKey?: DpsSortKey;
 	/** The offered sources "Filter by source" hides from a settled table, which the Source cell must not name; undefined hides none. */
@@ -75,7 +75,7 @@ export const ResultRow = memo(({ row, position, context, notUpgrade = false, ref
 				row={row}
 				quality={item?.quality}
 				tags={context.tagsOf(row.itemId)}
-				bisHeadings={context.bisHeadingsOf?.(row.itemId)}
+				bisHeadings={context.bisHeadingsOf(row.itemId)}
 				notUpgrade={notUpgrade}
 				ilvl={item && ilvlOf(item)}
 			/>

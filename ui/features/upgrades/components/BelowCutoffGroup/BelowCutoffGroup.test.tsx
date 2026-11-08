@@ -26,7 +26,7 @@ loadEnglishBundles({ character: true });
 
 const ROWS = [fixtureRow(5), fixtureRow(3)];
 const [FIRST_ID, SECOND_ID] = ROWS.map(row => String(row.itemId));
-const CONTEXT = { itemOf: () => undefined, sim: fakeTabHost().sim, tip: {}, tagsOf: () => [] };
+const CONTEXT = { itemOf: () => undefined, sim: fakeTabHost().sim, tip: {}, tagsOf: () => [], bisHeadingsOf: () => [] };
 const HEAD = (
 	<thead data-testid="head-stub">
 		<tr />

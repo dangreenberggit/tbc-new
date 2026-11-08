@@ -40,7 +40,7 @@ export type ResultsView = {
  * view state of the area: they reshape a ranking already measured and are not
  * run settings. They live in the tab store, which saves them with the settings.
  */
-export function useResultsView(run: RunState, selectedSets: readonly SetOption[], bisHeadingsOf?: (itemId: number) => readonly string[]): ResultsView {
+export function useResultsView(run: RunState, selectedSets: readonly SetOption[], bisHeadingsOf: (itemId: number) => readonly string[]): ResultsView {
 	const { sim } = useSimHost();
 	const toggles = useUpgradesStore(selectViewToggles);
 	const setToggle = useUpgradesStore(state => state.setViewToggle);

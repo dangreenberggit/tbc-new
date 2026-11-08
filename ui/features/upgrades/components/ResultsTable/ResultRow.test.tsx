@@ -33,7 +33,13 @@ const ITEMS: Record<number, UIItem> = {
 	32332: UIItem.create({ id: 32332, name: 'Torch of the Damned', quality: ItemQuality.ItemQualityEpic }),
 	30882: UIItem.create({ id: 30882, name: 'Blade of Infamy', quality: ItemQuality.ItemQualityEpic }),
 };
-const CONTEXT: RowContext = { itemOf: itemId => ITEMS[itemId], sim: fakeHost().sim, tip: { ranking: RANKING_FIXTURE, specId: 'ret' }, tagsOf: () => [] };
+const CONTEXT: RowContext = {
+	itemOf: itemId => ITEMS[itemId],
+	sim: fakeHost().sim,
+	tip: { ranking: RANKING_FIXTURE, specId: 'ret' },
+	tagsOf: () => [],
+	bisHeadingsOf: () => [],
+};
 
 const renderRow = (row: RankedItem, context: RowContext = CONTEXT, { notUpgrade = false } = {}) => {
 	const { container } = render(

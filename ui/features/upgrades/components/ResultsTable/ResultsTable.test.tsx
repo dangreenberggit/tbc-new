@@ -31,7 +31,7 @@ type RankedItem = import('../../model/engine/rank').RankedItem;
 
 loadEnglishBundles({ character: true });
 
-const CONTEXT: RowContext = { itemOf: () => undefined, sim: fakeTabHost().sim, tip: {}, tagsOf: () => [] };
+const CONTEXT: RowContext = { itemOf: () => undefined, sim: fakeTabHost().sim, tip: {}, tagsOf: () => [], bisHeadingsOf: () => [] };
 // Neither Item order nor best first, so each Item sort, either direction, moves every row.
 const FOUR = [fixtureRow(0), fixtureRow(3), fixtureRow(1), fixtureRow(2)];
 

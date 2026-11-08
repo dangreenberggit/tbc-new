@@ -38,7 +38,7 @@ beforeEach(() => {
 const show = (run: RunState, selectedSets: readonly SetOption[] = []) =>
 	render(
 		<SimHostProvider host={host}>
-			<UpgradesResults run={run} selectedSets={selectedSets} />
+			<UpgradesResults run={run} selectedSets={selectedSets} bisHeadingsOf={() => []} />
 		</SimHostProvider>,
 	);
 const done = (result: Ranking): RunState => ({ status: 'done', runId: 1, result });
