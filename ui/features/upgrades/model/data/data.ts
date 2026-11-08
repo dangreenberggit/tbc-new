@@ -69,7 +69,11 @@ export function epWeightsSetFor(spec: SpecId, talentPointsByTree: readonly numbe
  * Assumptions block states it per run.
  */
 // JSON values only: the files' shape is stated here, never derived from the import (AGENTS.md, Types from JSON).
-type EpWeightsFile = { weights: Record<string, number>; pseudoWeights?: Record<string, number> };
+export type EpWeightsFile = {
+	weights: Record<string, number>;
+	/** Keyed by wowsims `PseudoStat`; 0, 1 and 2 are main-hand, off-hand and ranged weapon DPS. */
+	pseudoWeights?: Record<string, number>;
+};
 
 const EP_WEIGHTS_BY_SET: Record<EpWeightsSet, EpWeightsFile> = {
 	ret: retEpWeights as EpWeightsFile,
@@ -189,12 +193,12 @@ export function unsourcedCountFor(pool: readonly PoolEntry[]): number {
 	return pool.filter(e => (e.sources ?? [e.source]).every(s => s.kind === 'unknown')).length;
 }
 
+/** A bundled set (`epWeightsSetFor`): its EP weights and its pseudo-stat weights. */
+export function epWeightsFileFor(set: EpWeightsSet): Readonly<EpWeightsFile> {
+	return EP_WEIGHTS_BY_SET[set];
+}
+
 /** The EP weights of a bundled set (`epWeightsSetFor`). */
 export function epWeightsFor(set: EpWeightsSet): Readonly<Record<string, number>> {
 	return EP_WEIGHTS_BY_SET[set].weights;
-}
-
-/** The pseudo-stat weights of a bundled set, keyed by wowsims `PseudoStat`; 0, 1 and 2 are main-hand, off-hand and ranged weapon DPS. */
-export function epPseudoWeightsFor(set: EpWeightsSet): Readonly<Record<string, number>> {
-	return EP_WEIGHTS_BY_SET[set].pseudoWeights ?? {};
 }

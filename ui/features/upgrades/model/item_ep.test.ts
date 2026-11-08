@@ -17,7 +17,7 @@ const pageItem = (id: number) => {
 };
 
 describe('itemEpFor', () => {
-	const itemEp = itemEpFor({ '17': 1 }, { '0': 8, '1': 3, '2': 2 }, pageItem);
+	const itemEp = itemEpFor({ weights: { '17': 1 }, pseudoWeights: { '0': 8, '1': 3, '2': 2 } }, pageItem);
 
 	it("adds a weapon's damage per second at the weight of the slot it goes in", () => {
 		expect(itemEp(SYPHON, 'mainhand')).toBeCloseTo(50 + SYPHON_DPS * 8, 6);

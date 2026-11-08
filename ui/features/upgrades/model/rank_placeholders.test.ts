@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import type { UIDatabase } from '@generated/proto/ui';
 import { describe, expect, it, vi } from 'vitest';
 
-import { epPseudoWeightsFor, epWeightsFor } from './data/data';
+import { epWeightsFileFor, epWeightsFor } from './data/data';
 import type { PoolEntry } from './engine/pool';
 import { simSlotsForPoolSlot } from './engine/pool';
 import { rankUpgrades } from './engine/rank';
@@ -104,7 +104,7 @@ describe('rankUpgrades: Stop placeholders for rings and trinkets', () => {
 				clock: () => new Date('2026-10-20T00:00:00Z'),
 				raidSimSkeleton: skeleton,
 				epWeights: epWeightsFor('mage'),
-				itemEp: itemEpFor(epWeightsFor('mage'), epPseudoWeightsFor('mage')),
+				itemEp: itemEpFor(epWeightsFileFor('mage')),
 				pool: [
 					entry(29305, 'finger'),
 					entry(32527, 'finger'),
