@@ -300,8 +300,6 @@ export type SettingsOffer = {
 	sourceKeys: readonly string[];
 	options: readonly SetOption[];
 	defaultKeys: readonly string[];
-	/** The headings a row's "BiS" badge names when the row is in no selected set (`bisHeadingIndex`). */
-	bisHeadingsOf: (itemId: number) => readonly string[];
 };
 
 export function settingsOffer({
@@ -322,7 +320,6 @@ export function settingsOffer({
 		sourceKeys: validSourceKeysOf(pool),
 		options,
 		defaultKeys: defaultSetKeys(options, pool, bisTagPhase),
-		bisHeadingsOf: bisHeadingIndex(options, bisTagPhase),
 	};
 }
 

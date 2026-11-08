@@ -11,6 +11,7 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 
 import type { RankedItem, Ranking } from './engine/rank';
+import type { ContentPhase } from './engine/types';
 import type { ExportFlavour } from './export';
 import { NO_VIEW_TOGGLES, type ViewToggles, withViewSourceToggled } from './results_view';
 import {
@@ -181,3 +182,7 @@ export const selectRunStatus = (state: UpgradesState): RunState['status'] => sta
 /** The signature the result on screen was measured on; none while a run is in flight, which is never stale (ticket 560). */
 export const selectSettledSignature = (state: UpgradesState): string | undefined =>
 	state.run.status === 'done' || state.run.status === 'stopped' ? state.run.measuredOn?.inputsSignature : undefined;
+
+/** The phase the ranking on screen ran at; none while no ranking has settled. */
+export const selectSettledPhase = (state: UpgradesState): ContentPhase | undefined =>
+	state.run.status === 'done' || state.run.status === 'stopped' ? state.run.result.assumptions.maxPhase : undefined;

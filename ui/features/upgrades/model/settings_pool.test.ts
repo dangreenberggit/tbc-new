@@ -4,6 +4,7 @@ import { dbPoolFor, dbPoolHost } from '../testing/db_pool';
 import { bisTagPhaseFor, poolFor, presetsWithPhase } from './data/data';
 import type { PoolEntry } from './engine/pool';
 import {
+	bisHeadingIndex,
 	DEFAULT_OFF_SOURCE_KEYS,
 	defaultSetKeys,
 	effectiveExcludedSources,
@@ -264,34 +265,34 @@ describe('rowTags', () => {
 // Ticket 810: warrior's and hunter's gear sets sit under two wowsims headings each (Fury and Arms; Beast Mastery and
 // Survival), and both builds' sets are BiS sets, so every badge for a set names its heading. Ret's sit under none.
 describe('badges on a page whose sets sit under more than one heading', () => {
-	/** The page's offer and default selection at `phase`, as `useUpgradesSettings` builds them over the spec's presets. */
+	/** The page's offer, default selection and BiS headings at `phase`, as `useUpgradesSettings` builds them over the spec's presets. */
 	const pageAt = (spec: 'warrior' | 'hunter' | 'ret', phase: 4) => {
 		const host = dbPoolHost(spec);
 		const presets = presetsWithPhase(host, host.individualConfig.presets.gear);
-		const offer = settingsOffer({
-			pool: poolFor(host, presets, phase),
-			presets,
-			savedSets: [],
-			bisTagPhase: bisTagPhaseFor(host, presets, phase)?.tagsFromPhase,
-		});
+		const bisTagPhase = bisTagPhaseFor(host, presets, phase)?.tagsFromPhase;
+		const offer = settingsOffer({ pool: poolFor(host, presets, phase), presets, savedSets: [], bisTagPhase });
 		const { selectedOptions } = setSelection(offer, offer.defaultKeys, phase);
-		return { offer, labelsOf: (itemId: number) => rowTags(itemId, selectedOptions).map(tag => tag.label) };
+		return {
+			offer,
+			bisHeadingsOf: bisHeadingIndex(offer.options, bisTagPhase),
+			labelsOf: (itemId: number) => rowTags(itemId, selectedOptions).map(tag => tag.label),
+		};
 	};
 
 	it('names Fury or Arms on every warrior badge, for an item in one build’s set or in both', () => {
-		const { offer, labelsOf } = pageAt('warrior', 4);
+		const { offer, bisHeadingsOf, labelsOf } = pageAt('warrior', 4);
 		expect(offer.defaultKeys).toEqual(['preset:4:Fury/BIS', 'preset:4:Arms/BIS']);
 		expect(labelsOf(32345)).toEqual(['BIS (Fury)']); // Dreadboots of the Legion
 		expect(labelsOf(32497)).toEqual(['BIS (Fury)', 'BIS (Arms)']); // Stormrage Signet Ring
-		expect(offer.bisHeadingsOf(32345)).toEqual(['Fury']);
-		expect(offer.bisHeadingsOf(32497)).toEqual(['Fury', 'Arms']);
+		expect(bisHeadingsOf(32345)).toEqual(['Fury']);
+		expect(bisHeadingsOf(32497)).toEqual(['Fury', 'Arms']);
 	});
 
 	it('names Beast Mastery or Survival on every hunter badge', () => {
-		const { offer, labelsOf } = pageAt('hunter', 4);
+		const { bisHeadingsOf, labelsOf } = pageAt('hunter', 4);
 		expect(labelsOf(32346)).toEqual(['2H - 9% hit (Beast Mastery)', 'DW - 9% hit (Beast Mastery)']); // Boneweave Girdle
 		expect(labelsOf(29301)).toEqual(['2H - 6% hit (Survival)', 'DW - 6% hit (Survival)']); // Band of the Eternal Champion
-		expect(offer.bisHeadingsOf(32346)).toEqual(['Beast Mastery']);
+		expect(bisHeadingsOf(32346)).toEqual(['Beast Mastery']);
 	});
 
 	it('keeps the phase in front of two picked sets of one heading that share a name', () => {
@@ -302,9 +303,9 @@ describe('badges on a page whose sets sit under more than one heading', () => {
 	});
 
 	it('keeps today’s badges on ret’s page, whose sets sit under no heading', () => {
-		const { offer, labelsOf } = pageAt('ret', 4);
+		const { bisHeadingsOf, labelsOf } = pageAt('ret', 4);
 		expect(labelsOf(32235)).toEqual(['P3', 'Bulwark']);
-		expect(offer.bisHeadingsOf(32235)).toEqual([]);
+		expect(bisHeadingsOf(32235)).toEqual([]);
 	});
 });
 

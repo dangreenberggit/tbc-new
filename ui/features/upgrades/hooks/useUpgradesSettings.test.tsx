@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { PoolEntry } from '../model/engine/pool';
 import { fakeTabHost, settled } from '../testing/fake_tab_host';
+import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { UpgradesSettings } from './useUpgradesSettings';
 
 const entry = (itemId: number, zone: string, phase: number, bis = false): PoolEntry => ({
@@ -43,13 +44,13 @@ const PRESETS = [
 ];
 
 /** A fresh page per case, so each case gets its own tab store (the store is keyed by the page's `Sim`). */
-const mount = (spec = Spec.SpecRetributionPaladin) => {
+const mount = (spec = Spec.SpecRetributionPaladin, presets: readonly unknown[] = PRESETS) => {
 	const store = createSimStore();
 	patchSlice(store, 'sim', { phase: 3 });
 	const host = fakeTabHost({
 		player: { getSpec: () => spec },
 		sim: { store, getPhase: () => store.getState().sim.phase },
-		individualConfig: { presets: { gear: PRESETS } },
+		individualConfig: { presets: { gear: presets } },
 		getSavedGearStorageKey: () => 'upgrades-settings-test-gear',
 	});
 	const wrapper = ({ children }: { children: ReactNode }) => <SimHostProvider host={host}>{children}</SimHostProvider>;
@@ -192,5 +193,21 @@ describe('useUpgradesSettings', () => {
 		expect(view.result.current.eligibleCount).toBeUndefined();
 		expect(view.result.current.sources).toEqual({ raids: [], other: [] });
 		expect(selectedKeys(view.result.current)).toEqual([]);
+	});
+
+	// Ticket 810: a row's BiS tag comes from the ranking on screen, and the page's phase can move on under it.
+	it('names the BiS headings of the phase the ranking on screen ran at, after the page’s phase changed', async () => {
+		const headed = [
+			{ name: 'BIS', phase: 3, group: 'Fury', gear: gear(1) },
+			{ name: 'BIS', phase: 3, group: 'Arms', gear: gear(2) },
+			{ name: 'BIS', phase: 4, group: 'Arms', gear: gear(1) },
+		];
+		const { view, setPhase, tabStore } = mount(Spec.SpecRetributionPaladin, headed);
+		await setPhase(4);
+		expect(view.result.current.bisHeadingsOf(1)).toEqual(['Arms']);
+
+		act(() => tabStore.getState().loadFixture(1, RANKING_FIXTURE));
+		expect(RANKING_FIXTURE.assumptions.maxPhase).toBe(3);
+		expect(view.result.current.bisHeadingsOf(1)).toEqual(['Fury']);
 	});
 });

@@ -12,6 +12,7 @@ import type { ContentPhase } from '../model/engine/types';
 import { specIdFor } from '../model/run';
 import type { RunSettings } from '../model/run_state';
 import {
+	bisHeadingIndex,
 	effectiveExcludedSources,
 	eligibleCountOf,
 	runSettingsOf,
@@ -21,13 +22,14 @@ import {
 	settingsOffer,
 } from '../model/settings_pool';
 import { appliedSettings, type SettingsScope } from '../model/settings_state';
-import type { UpgradesStore } from '../model/upgrades_store';
+import { selectSettledPhase, type UpgradesStore } from '../model/upgrades_store';
 import { useUpgradesStoreApi } from './useUpgradesStore';
 
 export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
 	runSettings: RunSettings;
 	sources: SettingsOffer['sources'];
-	bisHeadingsOf: SettingsOffer['bisHeadingsOf'];
+	/** The headings a row's "BiS" badge names when the row is in no selected set, for the phase the ranking on screen ran at (ticket 810). */
+	bisHeadingsOf: (itemId: number) => readonly string[];
 	excludedSources: readonly string[];
 	prune: boolean;
 	/** Undefined when the page's spec has no ranking data. */
@@ -66,16 +68,25 @@ export function useUpgradesSettings(): UpgradesSettings {
 	const setIterations = useStore(store, state => state.setIterations);
 	const setCandidateCap = useStore(store, state => state.setCandidateCap);
 
+	const phasedPresets = useMemo(() => (ready ? presetsWithPhase(host, presets) : presets), [ready, host, presets]);
 	// Memoised: `poolFor` builds a new pool on each call, and the tab renders again on every row a run lands.
-	const offer = useMemo(() => {
-		const phasedPresets = ready ? presetsWithPhase(host, presets) : presets;
-		return settingsOffer({
-			pool: specId && ready ? poolFor(host, phasedPresets, phase) : [],
-			presets: phasedPresets,
-			savedSets: saved.map(entry => ({ name: entry.name, gear: entry.data.gear })),
-			bisTagPhase: specId && ready ? bisTagPhaseFor(host, phasedPresets, phase)?.tagsFromPhase : undefined,
-		});
-	}, [specId, ready, host, phase, presets, saved]);
+	const offer = useMemo(
+		() =>
+			settingsOffer({
+				pool: specId && ready ? poolFor(host, phasedPresets, phase) : [],
+				presets: phasedPresets,
+				savedSets: saved.map(entry => ({ name: entry.name, gear: entry.data.gear })),
+				bisTagPhase: specId && ready ? bisTagPhaseFor(host, phasedPresets, phase)?.tagsFromPhase : undefined,
+			}),
+		[specId, ready, host, phase, phasedPresets, saved],
+	);
+	// A row's BiS tag comes from the ranking on screen, which keeps the phase it ran at through a later phase change.
+	// While a run is in flight the page's phase is the run's: the progress dialog blocks the page until it settles.
+	const rankedPhase = useStore(store, selectSettledPhase) ?? phase;
+	const bisHeadingsOf = useMemo(
+		() => bisHeadingIndex(offer.options, specId && ready ? bisTagPhaseFor(host, phasedPresets, rankedPhase)?.tagsFromPhase : undefined),
+		[offer.options, specId, ready, host, phasedPresets, rankedPhase],
+	);
 	const scope = useMemo(
 		(): SettingsScope | undefined =>
 			specId ? { key: `${specId}:${phase}`, selectedSetKeys: offer.defaultKeys, validSourceKeys: offer.sourceKeys } : undefined,
@@ -115,7 +126,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 			chips: selection.chips,
 			runSettings,
 			sources: offer.sources,
-			bisHeadingsOf: offer.bisHeadingsOf,
+			bisHeadingsOf,
 			excludedSources,
 			prune: state.prune,
 			eligibleCount: specId ? eligibleCount : undefined,
@@ -130,6 +141,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 			selection,
 			runSettings,
 			offer,
+			bisHeadingsOf,
 			excludedSources,
 			state.prune,
 			specId,
