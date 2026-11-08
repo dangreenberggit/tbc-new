@@ -22,6 +22,8 @@ import type { SpecId } from "./types";
  */
 export type ItemEp = (itemId: number, slot: SimSlotName) => number;
 
+const OFFHAND_INDEX = SIM_ORDER.indexOf("offhand");
+
 /**
  * The best committed-EP delta a candidate could offer, taken as the max
  * across every sim slot its pool slot maps to (mirroring how the real
@@ -42,16 +44,19 @@ function bestEpDelta(
   itemEp: ItemEp,
   spec?: SpecId
 ): number {
-  const wornEp = (slotName: SimSlotName): number => {
-    const wornId = equipment[SIM_ORDER.indexOf(slotName)]?.id;
+  const wornEp = (slotName: SimSlotName, slotIndex: number): number => {
+    const wornId = equipment[slotIndex]?.id;
     return wornId === undefined ? 0 : itemEp(wornId, slotName);
   };
   const twoHander = getItem(entry.itemId)?.handType === HandType.HandTypeTwoHand;
   let best: number | undefined;
   for (const slotName of simSlotsForPoolSlot(entry.slot, spec, entry.itemId)) {
-    if (SIM_ORDER.indexOf(slotName) < 0) continue;
-    let delta = itemEp(entry.itemId, slotName) - wornEp(slotName);
-    if (twoHander && slotName === "mainhand") delta -= wornEp("offhand");
+    const slotIndex = SIM_ORDER.indexOf(slotName);
+    if (slotIndex < 0) continue;
+    let delta = itemEp(entry.itemId, slotName) - wornEp(slotName, slotIndex);
+    if (twoHander && slotName === "mainhand") {
+      delta -= wornEp("offhand", OFFHAND_INDEX);
+    }
     if (best === undefined || delta > best) best = delta;
   }
   return best ?? 0;
