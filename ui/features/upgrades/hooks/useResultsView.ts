@@ -40,7 +40,7 @@ export type ResultsView = {
  * view state of the area: they reshape a ranking already measured and are not
  * run settings. They live in the tab store, which saves them with the settings.
  */
-export function useResultsView(run: RunState, selectedSets: readonly SetOption[]): ResultsView {
+export function useResultsView(run: RunState, selectedSets: readonly SetOption[], bisHeadingsOf?: (itemId: number) => readonly string[]): ResultsView {
 	const { sim } = useSimHost();
 	const toggles = useUpgradesStore(selectViewToggles);
 	const setToggle = useUpgradesStore(state => state.setViewToggle);
@@ -67,10 +67,11 @@ export function useResultsView(run: RunState, selectedSets: readonly SetOption[]
 			sim,
 			tip: { ranking, wornItemIds: measuredOn?.wornItemIds, specId: measuredOn?.specId, withSetPotential },
 			tagsOf,
+			bisHeadingsOf,
 			dpsKey: dpsSortKeyFor(ranking, withSetPotential),
 			hiddenSources: actingHidden,
 		}),
-		[sim, ranking, measuredOn, withSetPotential, tagsOf, actingHidden],
+		[sim, ranking, measuredOn, withSetPotential, tagsOf, bisHeadingsOf, actingHidden],
 	);
 
 	return { toggles, offered, setToggle, sourceOptions: offeredSources, hiddenSources, toggleViewSource, setViewSources, rowContext, view };

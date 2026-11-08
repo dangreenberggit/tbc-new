@@ -27,6 +27,11 @@ export type SetOption = {
 	phase?: number;
 	/** wowsims' preset `group`, which tells apart two presets of one phase that share a name (ticket 690). */
 	group?: string;
+	/**
+	 * The heading wowsims' gear tab shows over the set (its `group`), set only on a page whose sets sit under more
+	 * than one heading, as warrior's Fury and Arms do: there every badge for the set names it (ticket 810).
+	 */
+	heading?: string;
 	kind: 'preset' | 'saved';
 	itemIds: readonly number[];
 	/** How many of `itemIds` are in this spec and phase's pool. */
@@ -145,6 +150,7 @@ export function setOptions({
 }): SetOption[] {
 	const poolIds = new Set(pool.map(e => e.itemId));
 	const inPool = (itemIds: readonly number[]) => itemIds.filter(id => poolIds.has(id)).length;
+	const headed = new Set(presets.flatMap(p => (p.group ? [p.group] : []))).size > 1;
 	// The group enters the key only where wowsims gives one, so the saved picks of ungrouped presets still match.
 	const presetOptions = presets.map(({ name, phase, group, gear }): SetOption => {
 		const itemIds = itemIdsOf(gear);
@@ -154,6 +160,7 @@ export function setOptions({
 			label: presetLabel(name, phase),
 			phase,
 			...(group ? { group } : {}),
+			...(group && headed ? { heading: group } : {}),
 			kind: 'preset',
 			itemIds,
 			inPool: inPool(itemIds),
@@ -232,18 +239,43 @@ export const eligibleCount = (pool: readonly PoolEntry[], maxPhase: number, { sp
 export type RowTag = { key: string; label: string };
 
 /**
- * One badge per selected set that holds the item (ticket 430). Two selected
- * sets with the same name get their phase in front so the badges do not read
- * the same; two that also share the phase get their wowsims group after it
- * (ticket 690).
+ * One badge per selected set that holds the item (ticket 430). A set with a
+ * heading names it after its name, so on warrior's page a Fury-only item reads
+ * "BIS (Fury)", not a bare "BIS" the Arms build could take for its own
+ * (ticket 810). Two selected sets whose badges would still read the same get
+ * their phase in front; elsewhere, two that also share the phase get their
+ * wowsims group after it (ticket 690).
  */
 export function rowTags(itemId: number, selectedOptions: readonly SetOption[]): RowTag[] {
 	const holding = selectedOptions.filter(o => o.itemIds.includes(itemId));
 	return holding.map(o => {
-		const shared = holding.some(other => other !== o && other.name === o.name);
+		const shared = holding.some(other => other !== o && other.name === o.name && other.heading === o.heading);
 		const label = shared && o.phase !== undefined ? `P${o.phase} ${o.name}` : o.name;
+		if (o.heading !== undefined) return { key: o.key, label: `${label} (${o.heading})` };
 		return { key: o.key, label: sharesPhaseAndName(o, holding) ? `${label} (${o.group})` : label };
 	});
+}
+
+const NO_HEADINGS: readonly string[] = [];
+
+/**
+ * The headings of the BiS sets that hold each item: the presets of the BiS-tag
+ * phase, read on a page whose sets sit under more than one heading, and none
+ * elsewhere. A row in no selected set shows the pool's "BiS" badge, and this
+ * names the build it is BiS for (ticket 810).
+ */
+export function bisHeadingIndex(options: readonly SetOption[], bisTagPhase: number | undefined): (itemId: number) => readonly string[] {
+	const byItem = new Map<number, string[]>();
+	if (bisTagPhase === undefined) return () => NO_HEADINGS;
+	for (const o of options) {
+		if (o.kind !== 'preset' || o.phase !== bisTagPhase || o.heading === undefined) continue;
+		for (const itemId of o.itemIds) {
+			const headings = byItem.get(itemId) ?? [];
+			if (!headings.includes(o.heading)) headings.push(o.heading);
+			byItem.set(itemId, headings);
+		}
+	}
+	return itemId => byItem.get(itemId) ?? NO_HEADINGS;
 }
 
 const NO_TAGS: readonly RowTag[] = [];
@@ -268,6 +300,8 @@ export type SettingsOffer = {
 	sourceKeys: readonly string[];
 	options: readonly SetOption[];
 	defaultKeys: readonly string[];
+	/** The headings a row's "BiS" badge names when the row is in no selected set (`bisHeadingIndex`). */
+	bisHeadingsOf: (itemId: number) => readonly string[];
 };
 
 export function settingsOffer({
@@ -282,7 +316,14 @@ export function settingsOffer({
 	bisTagPhase: number | undefined;
 }): SettingsOffer {
 	const options = setOptions({ presets, savedSets, pool });
-	return { pool, sources: sourceOptions(pool), sourceKeys: validSourceKeysOf(pool), options, defaultKeys: defaultSetKeys(options, pool, bisTagPhase) };
+	return {
+		pool,
+		sources: sourceOptions(pool),
+		sourceKeys: validSourceKeysOf(pool),
+		options,
+		defaultKeys: defaultSetKeys(options, pool, bisTagPhase),
+		bisHeadingsOf: bisHeadingIndex(options, bisTagPhase),
+	};
 }
 
 /** What the user's picks make of an offer: the chips, the run they ask for and its candidate count. */

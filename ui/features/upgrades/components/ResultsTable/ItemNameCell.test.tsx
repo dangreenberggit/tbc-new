@@ -24,12 +24,12 @@ const set = (key: string, name: string, phase: number | undefined, itemIds: numb
 	inPool: itemIds.length,
 });
 
-const badgesOf = (row: RankedItem, tags: readonly RowTag[]) => {
+const badgesOf = (row: RankedItem, tags: readonly RowTag[], bisHeadings?: readonly string[]) => {
 	const { container } = render(
 		<table>
 			<tbody>
 				<tr>
-					<ItemNameCell row={row} quality={ItemQuality.ItemQualityEpic} tags={tags} />
+					<ItemNameCell row={row} quality={ItemQuality.ItemQualityEpic} tags={tags} bisHeadings={bisHeadings} />
 				</tr>
 			</tbody>
 		</table>,
@@ -55,5 +55,12 @@ describe('ItemNameCell badges', () => {
 	it('keeps the pool’s own BiS badge on a row in no selected set', () => {
 		expect(badgesOf(torch, [])).toEqual(['BiS']);
 		expect(badgesOf(fixtureRow(1), [])).toEqual([]);
+	});
+
+	// Ticket 810: on warrior's page the BiS sets sit under Fury and Arms.
+	it('names each heading of the BiS sets that hold a row in no selected set', () => {
+		expect(badgesOf(torch, [], ['Fury'])).toEqual(['BiS (Fury)']);
+		expect(badgesOf(torch, [], ['Fury', 'Arms'])).toEqual(['BiS (Fury)', 'BiS (Arms)']);
+		expect(badgesOf(fixtureRow(1), [], ['Fury'])).toEqual([]);
 	});
 });

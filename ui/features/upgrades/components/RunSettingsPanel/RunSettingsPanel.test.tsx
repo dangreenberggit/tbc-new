@@ -14,6 +14,7 @@ loadEnglishBundles();
 
 const settingsWith = (toggleSource: UpgradesSettings['toggleSource']): UpgradesSettings => ({
 	sources: { raids: [{ key: 'Black Temple', count: 3 }], other: [] },
+	bisHeadingsOf: () => [],
 	selectedOptions: [],
 	selectedKeys: [],
 	chips: { main: [], other: [] },

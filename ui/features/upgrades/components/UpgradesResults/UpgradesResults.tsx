@@ -17,6 +17,8 @@ export interface UpgradesResultsProps {
 	run: RunState;
 	/** The sim sets selected now; a row in one of them carries its name (ticket 430). */
 	selectedSets: readonly SetOption[];
+	/** The headings a row's "BiS" badge names when the row is in no selected set (ticket 810). */
+	bisHeadingsOf?: (itemId: number) => readonly string[];
 	/** The spec the run ranked for; with the run's phase it tells a phase with no candidate list from a list with no upgrades (ticket 515). */
 	specId?: SpecId;
 }
@@ -30,8 +32,12 @@ export interface UpgradesResultsProps {
  * props keep their identity through one that is not a set pick: the panes and
  * the export would otherwise re-sort and re-serialise the shortlist each time.
  */
-export const UpgradesResults = memo(({ run, selectedSets, specId }: UpgradesResultsProps) => {
-	const { toggles, offered, setToggle, sourceOptions, hiddenSources, toggleViewSource, setViewSources, rowContext, view } = useResultsView(run, selectedSets);
+export const UpgradesResults = memo(({ run, selectedSets, bisHeadingsOf, specId }: UpgradesResultsProps) => {
+	const { toggles, offered, setToggle, sourceOptions, hiddenSources, toggleViewSource, setViewSources, rowContext, view } = useResultsView(
+		run,
+		selectedSets,
+		bisHeadingsOf,
+	);
 	const host = useOptionalSimHost();
 
 	switch (run.status) {

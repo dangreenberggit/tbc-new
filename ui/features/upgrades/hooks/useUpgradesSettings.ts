@@ -27,6 +27,7 @@ import { useUpgradesStoreApi } from './useUpgradesStore';
 export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
 	runSettings: RunSettings;
 	sources: SettingsOffer['sources'];
+	bisHeadingsOf: SettingsOffer['bisHeadingsOf'];
 	excludedSources: readonly string[];
 	prune: boolean;
 	/** Undefined when the page's spec has no ranking data. */
@@ -114,6 +115,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 			chips: selection.chips,
 			runSettings,
 			sources: offer.sources,
+			bisHeadingsOf: offer.bisHeadingsOf,
 			excludedSources,
 			prune: state.prune,
 			eligibleCount: specId ? eligibleCount : undefined,

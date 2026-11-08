@@ -43,7 +43,7 @@ export const UpgradesTabBodyInner = () => {
 				<div data-testid="upgrades-tab-left">
 					{stale && <StaleNotice />}
 					<StatusLine run={run} />
-					<UpgradesResults run={run} selectedSets={settings.selectedOptions} specId={specId} />
+					<UpgradesResults run={run} selectedSets={settings.selectedOptions} bisHeadingsOf={settings.bisHeadingsOf} specId={specId} />
 				</div>
 			</TabPanelColumns.Left>
 			{/* First below `xl`, where the columns stack: the run card sits above the results it governs. */}
