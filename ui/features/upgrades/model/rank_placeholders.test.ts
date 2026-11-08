@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import type { UIDatabase } from '@generated/proto/ui';
 import { describe, expect, it, vi } from 'vitest';
 
-import { epWeightsFor } from './data/data';
+import { epPseudoWeightsFor, epWeightsFor } from './data/data';
 import type { PoolEntry } from './engine/pool';
 import { simSlotsForPoolSlot } from './engine/pool';
 import { rankUpgrades } from './engine/rank';
@@ -13,6 +13,7 @@ import { characterFightKey, fightGearKey, type FightSummary, type LoggedGear, Re
 import type { RaidSimRequest, SimObservation, SimRunner } from './engine/seams/sim-runner';
 import { MemoryStore } from './engine/seams/store';
 import { SIM_ORDER } from './engine/slots';
+import { itemEpFor } from './item_ep';
 
 /**
  * Ticket 701 at the fork's own `rankUpgrades`: a Stop placeholder for a ring or
@@ -103,6 +104,7 @@ describe('rankUpgrades: Stop placeholders for rings and trinkets', () => {
 				clock: () => new Date('2026-10-20T00:00:00Z'),
 				raidSimSkeleton: skeleton,
 				epWeights: epWeightsFor('mage'),
+				itemEp: itemEpFor(epWeightsFor('mage'), epPseudoWeightsFor('mage')),
 				pool: [
 					entry(29305, 'finger'),
 					entry(32527, 'finger'),

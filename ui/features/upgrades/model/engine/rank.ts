@@ -164,7 +164,6 @@ import {
   type UnmeasuredReason,
 } from "./set-value";
 import { SIM_ORDER, type SimItemSpec } from "./slots";
-import { epScore } from "./stats";
 import type {
   CharacterRef,
   ContentPhase,
@@ -203,11 +202,12 @@ export type Deps = {
   epWeights: Readonly<Record<string, number>> | readonly number[];
   /**
    * The candidate order's item score per sim slot. The tab passes wowsims'
-   * own weapon-aware score (`model/item_ep.ts`). Absent means stats times
-   * `epWeights`, which gives a weapon no credit for its weapon damage; the
-   * E-W3 parity harness leaves it absent.
+   * own weapon-aware score (`model/item_ep.ts`). Required, with no default:
+   * the old default, stats times `epWeights`, gave a weapon no credit for its
+   * weapon damage (ticket 821), and a caller that forgot this field got that
+   * order back with every test green.
    */
-  itemEp?: ItemEp;
+  itemEp: ItemEp;
   gemPalette?: readonly GemEntry[];
   pool?: readonly PoolEntry[];
   /**
@@ -972,8 +972,7 @@ export async function rankUpgrades(
   const ordered = orderCandidatesByEp(
     eligible,
     equipment,
-    deps.itemEp ??
-      ((itemId) => epScore(getItem(itemId)?.stats ?? [], deps.epWeights)),
+    deps.itemEp,
     input.spec
   );
 
