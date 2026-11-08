@@ -12,6 +12,7 @@ vi.mock("@sim/proto/database", () => ({
 
 const SYPHON = 32262; // Syphon of the Nathrezim, one-hander
 const RIPPER = 28524; // Emerald Ripper, one-hander
+const TALON = 30082; // Talon of Azshara, one-hander
 const CATACLYSM = 30902; // Cataclysm's Edge, two-hander
 const NEXUS_KEY = 29988; // The Nexus Key, two-hander
 
@@ -39,20 +40,21 @@ const order = (entries: PoolEntry[]) => entries.map((e) => e.itemId);
 
 describe("orderCandidatesByEp", () => {
   it("scores a candidate in the slot it would take, so off-hand weapon damage is priced at the off-hand value", () => {
-    // Ripper is worth more than Syphon in the off hand, less in the main hand.
     const itemEp = scores({
       [SYPHON]: { mainhand: 100, offhand: 40 },
-      [RIPPER]: { mainhand: 90, offhand: 60 },
+      [RIPPER]: { mainhand: 50, offhand: 70 },
+      [TALON]: { mainhand: 110, offhand: 20 },
     });
     const equipment = wearing({ mainhand: SYPHON, offhand: SYPHON });
-    // Ripper: max(90 - 100, 60 - 40) = +20. Cataclysm in the main hand alone would be 0 - 100 - 40.
+    // Ripper: max(50 - 100, 70 - 40) = +30, in the off hand. Talon: max(110 - 100, 20 - 40) = +10.
+    // Scored at main-hand values in every slot, Talon would sort first.
     const ordered = orderCandidatesByEp(
-      [weapon(CATACLYSM), weapon(RIPPER)],
+      [weapon(TALON), weapon(RIPPER)],
       equipment,
       itemEp,
       "enh"
     );
-    expect(order(ordered)).toEqual([RIPPER, CATACLYSM]);
+    expect(order(ordered)).toEqual([RIPPER, TALON]);
   });
 
   it("prices a two-hander against the worn main hand and the worn off hand it would remove", () => {
