@@ -3858,7 +3858,12 @@ class CandidateHitReadFailed extends Error {
   }
 }
 
-/** The hit percent a stats read gives; a value that is not a finite number is a failed read. */
+/**
+ * The hit percent a stats read gives. It throws when the value is not a
+ * finite number: `hitPercentOrSimFailed` lets that error fail the run as an
+ * internal error, and `candidateRepairGems` reports it as the candidate's
+ * failed sim.
+ */
 function hitPercentOf(
   observed: PlayerStatsObservation,
   pseudoStat: number

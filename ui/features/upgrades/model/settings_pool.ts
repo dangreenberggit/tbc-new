@@ -238,6 +238,9 @@ export const eligibleCount = (pool: readonly PoolEntry[], maxPhase: number, { sp
 /** A row's badge for a selected set: the set's key, and its name as the gear tab names it. */
 export type RowTag = { key: string; label: string };
 
+/** A badge label that names the gear-set heading it belongs to, such as "BIS (Fury)" (ticket 810). */
+export const withHeading = (label: string, heading: string): string => `${label} (${heading})`;
+
 /**
  * One badge per selected set that holds the item (ticket 430). A set with a
  * heading names it after its name, so on warrior's page a Fury-only item reads
@@ -251,7 +254,7 @@ export function rowTags(itemId: number, selectedOptions: readonly SetOption[]): 
 	return holding.map(o => {
 		const shared = holding.some(other => other !== o && other.name === o.name && other.heading === o.heading);
 		const label = shared && o.phase !== undefined ? `P${o.phase} ${o.name}` : o.name;
-		if (o.heading !== undefined) return { key: o.key, label: `${label} (${o.heading})` };
+		if (o.heading !== undefined) return { key: o.key, label: withHeading(label, o.heading) };
 		return { key: o.key, label: sharesPhaseAndName(o, holding) ? `${label} (${o.group})` : label };
 	});
 }

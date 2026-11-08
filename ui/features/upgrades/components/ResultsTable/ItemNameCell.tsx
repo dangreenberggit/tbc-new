@@ -8,7 +8,7 @@ import { WowheadIcon } from '@ui-kit/WowheadIcon';
 import { memo } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
-import type { RowTag } from '../../model/settings_pool';
+import { type RowTag, withHeading } from '../../model/settings_pool';
 
 export interface ItemNameCellProps {
 	row: Pick<RankedItem, 'itemId' | 'name' | 'bisTags' | 'owned'>;
@@ -30,7 +30,7 @@ export interface ItemNameCellProps {
 const listBadge = (bisTags: RankedItem['bisTags'], headings: readonly string[]): RowTag[] => {
 	if (!bisTags.includes('BiS')) return [];
 	const label = i18n.t('upgrades_tab.results.bis_badge', { ns: 'upgrades' });
-	return headings.length > 0 ? headings.map(heading => ({ key: `BiS:${heading}`, label: `${label} (${heading})` })) : [{ key: 'BiS', label }];
+	return headings.length > 0 ? headings.map(heading => ({ key: `BiS:${heading}`, label: withHeading(label, heading) })) : [{ key: 'BiS', label }];
 };
 
 /** The item: its icon, its name as a wowhead link in its quality colour, and its tags beneath. `memo`: see `ResultRow`. */
