@@ -7,12 +7,10 @@ import {
 	candidateSkipSubstitution,
 	hitCapFullWeightNote,
 	hitCapUnknownNote,
-	hitRatingUnreadNote,
 	metaPreferenceDisclosure,
 	offHandBlockedDisclosure,
 	oneHandBlockedDisclosure,
 	SET_BONUS_SKIP_REASONS,
-	setBonusHitUnreadNote,
 	setBonusSkipSubstitution,
 } from '../../model/engine/rank';
 import type { DetectedSpecId } from '../../model/engine/types';
@@ -59,7 +57,6 @@ describe('SubstitutionsList', () => {
 	// functions, with ids, raw errors and the spec id after the line break.
 	it('shows every engine line as one plain sentence', () => {
 		const more = '… (full text in the browser console)';
-		const workerDied = new Error('worker died');
 		const ring = { itemId: 29283, name: 'Violet Signet of the Master Assassin', reason: 'panic: runtime error' };
 		const setBonus = { setName: 'Justicar Battlegear', threshold: 4 as const };
 		render(
@@ -68,8 +65,6 @@ describe('SubstitutionsList', () => {
 					...substitutionsFromMetaRepair([{ itemId: 30987, itemIndex: 0, socketIndex: 1, from: 24027, to: 24054, cost: 1 }]),
 					hitCapUnknownNote(),
 					hitCapFullWeightNote(),
-					hitRatingUnreadNote(workerDied),
-					setBonusHitUnreadNote(workerDied),
 					// No real spec reaches this line; the cast stands in for a spec added without a meta gem entry.
 					...metaPreferenceDisclosure('unlisted-spec' as DetectedSpecId),
 					...oneHandBlockedDisclosure(2),
@@ -93,8 +88,6 @@ describe('SubstitutionsList', () => {
 			'Meta gem',
 			'Meta gem swaps and the hit cap',
 			'Meta gem swaps and the hit cap',
-			'Meta gem swaps and your hit rating',
-			'Set bonuses and the hit cap',
 			'Meta gem for your spec',
 			'One-handed weapons',
 			'Off-hand items',
@@ -109,8 +102,6 @@ describe('SubstitutionsList', () => {
 			`Your meta gem was not active, so the ranking swapped 1 gem in its own copy of your gear to turn it on; your gear itself was not changed.${more}`,
 			'If gems were swapped to turn your meta gem on, hit rating was treated as always useful, because this tab works out the hit cap only when every target is level 73.',
 			'If gems were swapped to turn your meta gem on, hit rating was counted at full value, with no hit cap applied for this spec.',
-			`If gems were swapped to turn your meta gem on, hit rating was treated as always useful, because your hit rating could not be read.${more}`,
-			`Your hit rating could not be read at one set piece count, so the gem swaps for your meta gem did not count hit rating from set bonuses against the hit cap.${more}`,
 			`The ranking does not know which meta gem your spec uses, so new items with a meta socket got the meta gem you wear, or an empty socket and no socket bonus if you wear none.${more}`,
 			'2 one-handed weapons were not ranked, because you wear a two-handed weapon.',
 			'1 off-hand item was not ranked, because you wear a two-handed weapon.',

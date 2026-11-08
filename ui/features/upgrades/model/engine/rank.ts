@@ -830,36 +830,21 @@ export async function rankUpgrades(
       : undefined;
   const hitCapReadable =
     budgetSlot !== undefined && typeof deps.sim.computeStats === "function";
-  /** A worn, baseline or set-version stats read failed, so this run's ranking is not cached (ticket 535). */
-  let hitCapFailed = false;
   /**
-   * Why repair could not use the hit cap, shown with the ranking: the console
-   * warning alone leaves a full-weight ranking looking like a capped one.
+   * Why repair could not use the hit cap, shown with the ranking, so a
+   * full-weight ranking does not look like a capped one.
    */
   const hitCapNotes: Substitution[] = [];
   /** One stats read of `request` as a hit percent and the repair budget it gives. */
   const readHitCap = async (request: RaidSimRequest, slot: number) => {
-    const observed = await readStats(deps.sim, request, deps.signal);
-    const hitPercent = hitPercentOf(observed, slot);
+    const { observed, hitPercent } = await hitPercentOrSimFailed(
+      readStats(deps.sim, request, deps.signal),
+      slot
+    );
     return {
       hitPercent,
       budget: hitCapBudgetFrom(capProfile, request, observed.pseudoStats),
     };
-  };
-  /**
-   * A failed hit read keeps full-weight repair and caches no ranking. A read
-   * Stop ended is no failure to warn or note: the candidate loop returns the
-   * partial ranking (ticket 538). The worn-gear and baseline reads can both
-   * fail, and one note says so.
-   */
-  const hitCapReadFailed = (err: unknown, warning: string) => {
-    if (err instanceof StopRefusedSim) return;
-    console.warn(warning, err);
-    hitCapFailed = true;
-    const unread = hitRatingUnreadNote(err);
-    if (!hitCapNotes.some((n) => n.field === unread.field)) {
-      hitCapNotes.push(unread);
-    }
   };
 
   const preRepairSocketed = socketedItemsFromLoggedGear(logged);
@@ -885,10 +870,7 @@ export async function rankUpgrades(
     try {
       wornHitCap = (await readHitCap(preRequest, budgetSlot)).budget;
     } catch (err) {
-      hitCapReadFailed(
-        err,
-        "[upgrades] meta repair: hit cap not read before the worn-gear repair, full-weight repair used"
-      );
+      if (!(err instanceof StopRefusedSim)) throw err;
     }
   }
   try {
@@ -1106,8 +1088,8 @@ export async function rankUpgrades(
 
     // Ticket 535: one stats read of the baseline turns into the repair hit
     // budget every later swap starts from. Before the first candidate site,
-    // so every repair gets it. A failed read keeps full-weight repair and
-    // caches no ranking, so a later run can still read it.
+    // so every repair gets it. A read Stop ended is no failure: the run goes
+    // on and the candidate loop returns a partial ranking.
     if (hitCapReadable) {
       try {
         const { hitPercent, budget } = await readHitCap(request, budgetSlot);
@@ -1125,10 +1107,7 @@ export async function rankUpgrades(
           hitCapNotes.push(hitCapUnknownNote());
         }
       } catch (err) {
-        hitCapReadFailed(
-          err,
-          "[upgrades] meta repair: hit cap not read, full-weight repair used"
-        );
+        if (!(err instanceof StopRefusedSim)) throw err;
       }
     } else if (capProfile.repair.kind === "fullWeight") {
       hitCapNotes.push(hitCapFullWeightNote());
@@ -1141,10 +1120,10 @@ export async function rankUpgrades(
      * `sim hit(version) − sim hit(baseline) − (gear hit(build) − gear hit(baseline))`,
      * the gear hit taken on real item ids before the copies. A version whose
      * build made no repair is never read. One read per distinct default
-     * request, raced against Stop. The first failed read turns version
+     * request, raced against Stop. The first read Stop ended turns version
      * budgets off for the rest of the set phase: the whole call, and every
      * later one, gets the default builds, so no pair mixes a version budget
-     * with the shared layout, and the ranking is not cached.
+     * with the shared layout. A read that fails fails the run.
      */
     const versionReads = new Map<string, Promise<PlayerStatsObservation>>();
     let versionBudgetsOff = false;
@@ -1193,7 +1172,7 @@ export async function rankUpgrades(
             read = readStats(deps.sim, request, deps.signal);
             versionReads.set(key, read);
           }
-          const hitPercent = hitPercentOf(await read, budgetSlot);
+          const { hitPercent } = await hitPercentOrSimFailed(read, budgetSlot);
           const missed =
             hitPercent * capProfile.ratingPerPercent -
             baselineSimHit -
@@ -1216,16 +1195,8 @@ export async function rankUpgrades(
         }
         return out;
       } catch (err) {
+        if (!(err instanceof StopRefusedSim)) throw err;
         versionBudgetsOff = true;
-        hitCapFailed = true;
-        // A read Stop ended is no failure to report (ticket 538).
-        if (!(err instanceof StopRefusedSim)) {
-          console.warn(
-            "[upgrades] meta repair: set version hit not read, shared layout used",
-            err
-          );
-          hitCapNotes.push(setBonusHitUnreadNote(err));
-        }
         return shared();
       }
     };
@@ -1894,11 +1865,7 @@ export async function rankUpgrades(
     }
 
     const ranking: Ranking = { ...rankingBase, complete: true };
-    // A ranking repaired without the hit it should have read is not cached,
-    // so the next run reads again (ticket 535).
-    if (!hitCapFailed) {
-      await deps.store.put(rankingCacheKey(contentHash), ranking);
-    }
+    await deps.store.put(rankingCacheKey(contentHash), ranking);
     await deps.store.job.update(job.id, {
       status: "done",
       result: ranking,
@@ -3869,6 +3836,25 @@ function hitPercentOf(
 }
 
 /**
+ * The hit percent of a worn-gear, baseline or set-version stats read. A read
+ * that fails, or gives no hit number, fails the run with the sim's error, as
+ * a failed baseline sim does (ticket 852). A read Stop ended still rejects
+ * with `StopRefusedSim`.
+ */
+async function hitPercentOrSimFailed(
+  read: Promise<PlayerStatsObservation>,
+  pseudoStat: number
+): Promise<{ observed: PlayerStatsObservation; hitPercent: number }> {
+  try {
+    const observed = await read;
+    return { observed, hitPercent: hitPercentOf(observed, pseudoStat) };
+  } catch (err) {
+    if (err instanceof StopRefusedSim) throw err;
+    throw new RankError("sim-failed", errorText(err));
+  }
+}
+
+/**
  * One stats read, raced against Stop (ticket 538). The listener goes on
  * before the read starts, so an abort fired while the read is being sent is
  * not missed. There is no timeout. Every path on which a read gets no answer
@@ -4187,7 +4173,10 @@ type VersionEntry = {
  * Each version of one set-phase build, a pair's versions in one call
  * (ticket 535; `rankUpgrades` defines it). `base` is the build with the run's
  * budget; `rebuild` builds the same chain with another budget. An entry is
- * undefined when that version's request cannot be composed. Never rejects.
+ * undefined when that version's request cannot be composed. It rejects only
+ * to fail the run: when a version's stats read fails (ticket 852), or on an
+ * error while rebuilding a version. So a caller does not catch its
+ * rejection as a failed sim.
  */
 type VersionGears = (
   rebuild: (gems: GemContext) => ChainBuild,
@@ -4415,30 +4404,6 @@ export function hitCapFullWeightNote(): Substitution {
     detail:
       "If gems were swapped to turn your meta gem on, hit rating was " +
       "counted at full value, with no hit cap applied for this spec.",
-  };
-}
-
-export function hitRatingUnreadNote(err: unknown): Substitution {
-  return {
-    field: "Meta gem swaps and your hit rating",
-    detail:
-      "If gems were swapped to turn your meta gem on, hit rating was " +
-      "treated as always useful, because your hit rating could not " +
-      `be read.\n${errorText(err)}`,
-  };
-}
-
-/**
- * States the swaps as fact, unlike the notes above: `versionGears` reads a
- * version's hit only when its build swapped gems.
- */
-export function setBonusHitUnreadNote(err: unknown): Substitution {
-  return {
-    field: "Set bonuses and the hit cap",
-    detail:
-      "Your hit rating could not be read at one set piece count, so the " +
-      "gem swaps for your meta gem did not count hit rating from set " +
-      `bonuses against the hit cap.\n${errorText(err)}`,
   };
 }
 

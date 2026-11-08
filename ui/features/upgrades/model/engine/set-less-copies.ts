@@ -128,7 +128,8 @@ export function applySetLessCopies(
  * nothing is left to copy, or when either sim, or building either request,
  * fails. With `requestsFor`, both requests come from one call to it, so each
  * can carry the gems repair chose for its own hit (ticket 535); without it,
- * both are `composedRequest` with the copies applied.
+ * both are `composedRequest` with the copies applied. A rejection from
+ * `requestsFor` is not caught: it fails the run (ticket 852).
  */
 export async function measureSameGearBonus(
   runSim: (request: RaidSimRequest) => Promise<DpsSample>,
@@ -142,12 +143,13 @@ export async function measureSameGearBonus(
   const inSlotOrder = [...setPieceSlots].sort((a, b) => a - b);
   const toCopy = inSlotOrder.slice(0, inSlotOrder.length - lowerCount);
   if (toCopy.length === 0) return undefined;
+  const requests = await requestsFor?.([
+    { setKept: toCopy, setLess: [] },
+    { setKept: [], setLess: toCopy },
+  ]);
   try {
-    if (requestsFor) {
-      const [onRequest, offRequest] = await requestsFor([
-        { setKept: toCopy, setLess: [] },
-        { setKept: [], setLess: toCopy },
-      ]);
+    if (requests) {
+      const [onRequest, offRequest] = requests;
       if (!onRequest || !offRequest) return undefined;
       const on = await runSim(onRequest);
       const off = await runSim(offRequest);
