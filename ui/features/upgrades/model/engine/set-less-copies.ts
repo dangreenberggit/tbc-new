@@ -129,7 +129,7 @@ export function applySetLessCopies(
  * fails. With `requestsFor`, both requests come from one call to it, so each
  * can carry the gems repair chose for its own hit (ticket 535); without it,
  * both are `composedRequest` with the copies applied. A rejection from
- * `requestsFor` is not caught: it fails the run (ticket 852).
+ * `requestsFor` is not caught here: it goes to the caller (ticket 852).
  */
 export async function measureSameGearBonus(
   runSim: (request: RaidSimRequest) => Promise<DpsSample>,
