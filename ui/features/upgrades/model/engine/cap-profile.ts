@@ -127,14 +127,14 @@ export type CapProfile = {
    * no Starshards (`sim/priest/priest.go:58-62`), casts only Shadow spells
    * and values no hit past its Shadow cap. Three estimates remain. A spell
    * with no class mask (an item proc) gets no school bonus but is priced at
-   * its school's slot, which undervalues hit for its share. An explosive gets 100% bonus hit
-   * (`sim/core/consumes.go:625-626`), so the player's hit never changes it,
-   * but its Fire damage is priced as if it did, which overvalues hit for its
-   * share; the sim result does not mark it (`proto/api.proto:142-158`). A
-   * per-spell
-   * talent (`perSpellHitTalents`: Suppression, Focused Power) shows in no
-   * slot and no metric, so the spells it covers are priced as if it gave
-   * nothing, and the ranking says so in one note.
+   * its school's slot, which undervalues hit for its share. An explosive
+   * gets 100% bonus hit (`sim/core/consumes.go:625-626`), so the player's
+   * hit never changes it, but its Fire damage is priced as if it did, which
+   * overvalues hit for its share; the sim result does not mark it
+   * (`proto/api.proto:142-158`). A per-spell talent (`perSpellHitTalents`:
+   * Suppression, Focused Power) shows in no slot and no metric, so the
+   * spells it covers are priced as if it gave nothing, and the ranking says
+   * so in one note.
    *
    * Elemental: full weight. Totem of Wrath, when talented, adds +3
    * `SpellHitPercent` through a buffs-phase aura
