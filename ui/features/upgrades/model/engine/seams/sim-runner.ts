@@ -44,13 +44,12 @@ export interface SimRunner {
   version(): Promise<string>;
   run(req: RaidSimRequest, opts: SimRunOpts): Promise<SimObservation>;
   /**
-   * Optional stats read (ticket 535): the first player's final stats for the
-   * request's gear, with no sim. Meta repair reads the baseline's hit with it,
-   * and each set-phase version's, so hit counts only up to the cap. When a
-   * runner lacks it, repair values hit at full weight, so a runner without it
-   * stays valid.
+   * The stats read (ticket 535): the first player's final stats for the
+   * request's gear, with no sim. Meta repair reads hit with it, so hit
+   * counts only up to the cap. Required (ticket 830): a runner without it
+   * would repair a hit-budget spec at full weight and say nothing.
    */
-  computeStats?(req: RaidSimRequest): Promise<PlayerStatsObservation>;
+  computeStats(req: RaidSimRequest): Promise<PlayerStatsObservation>;
   /**
    * Optional (ticket 644): the set bonuses the sim counts active for the
    * request's first player, in the sim's own form `<set name> (<n>pc)`
@@ -123,5 +122,10 @@ export class RecordedSimRunner implements SimRunner {
       throw new Error(`no recording for sim key ${key}`);
     }
     return hit;
+  }
+
+  /** Recordings hold sims only, so a hit-budget spec's read fails its run. */
+  async computeStats(): Promise<PlayerStatsObservation> {
+    throw new Error("RecordedSimRunner has no recorded stats reads");
   }
 }

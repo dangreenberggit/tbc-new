@@ -821,15 +821,14 @@ export async function rankUpgrades(
       ...(database !== undefined ? { database } : {}),
     });
   };
-  // Whether repair can value hit up to the cap: the spec's repair is a
-  // budget and the runner can read stats (tickets 535 and 746).
+  // Whether repair values hit up to the cap: the spec's repair is a budget
+  // (tickets 535 and 746). Every runner can read stats (ticket 830).
   const capProfile = capProfileFor(input.spec);
   const budgetSlot =
     capProfile.repair.kind === "budget"
       ? capProfile.repair.hitPercentPseudoStat
       : undefined;
-  const hitCapReadable =
-    budgetSlot !== undefined && typeof deps.sim.computeStats === "function";
+  const hitCapReadable = budgetSlot !== undefined;
   /**
    * Why repair could not use the hit cap, shown with the ranking, so a
    * full-weight ranking does not look like a capped one.
@@ -1028,8 +1027,8 @@ export async function rankUpgrades(
     // The same rule for the screen: a ranking without its readings is never
     // served to a run that asked for them.
     ...(deps.setScreen !== undefined ? { setScreen: deps.setScreen } : {}),
-    // Only when set, so a run whose repair cannot read hit keeps the key a
-    // run with the same rule writes; a run that reads it is never served a
+    // Only when set, so a full-weight spec keeps the key a run with the
+    // same rule writes; a run that reads hit is never served a
     // ranking repaired at full weight (ticket 535). The value names which
     // repairs the budget reaches, so a ranking cached when only candidate
     // repairs used it is not served (ticket 705).
@@ -1157,8 +1156,7 @@ export async function rankUpgrades(
         !cap ||
         budgetSlot === undefined ||
         baselineSimHit === undefined ||
-        versionBudgetsOff ||
-        !deps.sim.computeStats
+        versionBudgetsOff
       ) {
         return shared();
       }
@@ -1234,8 +1232,7 @@ export async function rankUpgrades(
       if (
         !cap ||
         budgetSlot === undefined ||
-        baselineSimHit === undefined ||
-        !deps.sim.computeStats
+        baselineSimHit === undefined
       ) {
         return gems;
       }
@@ -3920,7 +3917,7 @@ async function readStats(
   if (signal?.aborted) throw new StopRefusedSim();
   const started = performance.now();
   if (!signal) {
-    const observed = await sim.computeStats!(req);
+    const observed = await sim.computeStats(req);
     logStatsRead(started);
     return observed;
   }
@@ -3930,7 +3927,7 @@ async function readStats(
     signal.addEventListener("abort", onAbort, { once: true });
   });
   try {
-    const read = sim.computeStats!(req);
+    const read = sim.computeStats(req);
     // After Stop wins the race nobody awaits the read, so its late failure
     // must not become an unhandled rejection.
     read.catch(() => {});
@@ -3969,6 +3966,10 @@ function stopGuardedDeps(deps: Deps): Deps {
       run: async (req, opts) => {
         if (signal.aborted) throw new StopRefusedSim();
         return sim.run(req, opts);
+      },
+      computeStats: async (req) => {
+        if (signal.aborted) throw new StopRefusedSim();
+        return sim.computeStats(req);
       },
       ...(sim.activeSetBonuses
         ? {

@@ -58,7 +58,16 @@ const skeleton = {
 const sim: SimRunner = {
 	version: async () => 'synthetic-1',
 	run: async (): Promise<SimObservation> => ({ dps: 1000, stdev: 1.5, iterationsDone: 3000, simVersion: 'synthetic-1' }),
+	computeStats: async () => ({ stats: [], pseudoStats: new Array<number>(25).fill(0) }),
 };
+
+describe('SimRunner', () => {
+	it('must read stats, so a hit-budget spec never repairs at full weight unannounced (ticket 830)', () => {
+		// @ts-expect-error computeStats is required; the fork's tsc fails here if it turns optional again.
+		const noStatsReader: SimRunner = { version: sim.version, run: sim.run };
+		expect(noStatsReader.computeStats).toBeUndefined();
+	});
+});
 
 const entry = (itemId: number, slot: 'neck' | 'trinket'): PoolEntry => ({
 	itemId,

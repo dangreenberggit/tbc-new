@@ -10,7 +10,7 @@ import type { PoolEntry } from './engine/pool';
 import { simSlotsForPoolSlot } from './engine/pool';
 import { rankUpgrades } from './engine/rank';
 import { characterFightKey, fightGearKey, type FightSummary, type LoggedGear, RecordedGearSource } from './engine/seams/gear-source';
-import type { RaidSimRequest, SimObservation, SimRunner } from './engine/seams/sim-runner';
+import type { PlayerStatsObservation, RaidSimRequest, SimObservation, SimRunner } from './engine/seams/sim-runner';
 import { MemoryStore } from './engine/seams/store';
 import { SIM_ORDER } from './engine/slots';
 import { itemEpFor } from './item_ep';
@@ -75,6 +75,9 @@ class SyntheticSimRunner implements SimRunner {
 				?.equipment?.items ?? [];
 		const acc = items.reduce((sum, item, i) => sum + ((item?.id ?? 0) % 977) * (i + 1), 0);
 		return { dps: 1000 + (acc % 5000) / 10, stdev: 1.5, iterationsDone: 3000, simVersion: 'synthetic-1' };
+	}
+	async computeStats(): Promise<PlayerStatsObservation> {
+		return { stats: [], pseudoStats: new Array<number>(25).fill(0) };
 	}
 }
 
