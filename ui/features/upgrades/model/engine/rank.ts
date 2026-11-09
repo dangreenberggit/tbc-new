@@ -1123,11 +1123,18 @@ export async function rankUpgrades(
      * request, raced against Stop. The first read Stop ended turns version
      * budgets off for the rest of the set phase: the whole call, and every
      * later one, gets the default builds, so no pair mixes a version budget
-     * with the shared layout. A read that fails fails the run.
+     * with the shared layout. A read that fails fails the run. A version
+     * whose rebuild fails its gem repair is not measured: its entry is
+     * undefined, never the shared layout.
      */
     const versionReads = new Map<string, Promise<PlayerStatsObservation>>();
     let versionBudgetsOff = false;
-    const versionGears: VersionGears = async (rebuild, base, copiesList) => {
+    const versionGears: VersionGears = async (
+      rebuild,
+      base,
+      copiesList,
+      onRepairFailed
+    ) => {
       let plain: RaidSimRequest | undefined;
       try {
         plain = composeFor(base.equipment);
@@ -1181,13 +1188,21 @@ export async function rankUpgrades(
             out.push({ request, swaps: base.swaps });
             continue;
           }
-          const rebuilt = rebuild({
-            ...gems,
-            repairHitCap: {
-              ...cap,
-              baselineRemaining: cap.baselineRemaining - missed,
-            },
-          });
+          let rebuilt: ChainBuild;
+          try {
+            rebuilt = rebuild({
+              ...gems,
+              repairHitCap: {
+                ...cap,
+                baselineRemaining: cap.baselineRemaining - missed,
+              },
+            });
+          } catch (err) {
+            if (!(err instanceof MetaRepairError)) throw err;
+            onRepairFailed?.(err);
+            out.push(undefined);
+            continue;
+          }
           out.push({
             request: applyCopies(composeFor(rebuilt.equipment), copiesList[i]!),
             swaps: rebuilt.swaps,
@@ -2162,20 +2177,14 @@ async function buildSetBonuses(
               added: pieces,
               // Each rung its own repair (ticket 535). A rung whose repair
               // fails is not measured, as a package whose repair fails above.
-              requestsFor: async (copiesList) => {
-                try {
-                  return (
-                    await versionGears(
-                      (g) => chainSwapsWithRepairs(equipment, pieces, g),
-                      base,
-                      copiesList
-                    )
-                  ).map((entry) => entry?.request);
-                } catch (err) {
-                  if (!(err instanceof MetaRepairError)) throw err;
-                  return copiesList.map(() => undefined);
-                }
-              },
+              requestsFor: async (copiesList) =>
+                (
+                  await versionGears(
+                    (g) => chainSwapsWithRepairs(equipment, pieces, g),
+                    base,
+                    copiesList
+                  )
+                ).map((entry) => entry?.request),
             };
           },
           runSimAt: (request, opts) => runSimAt(deps, request, simVersion, opts),
@@ -2354,13 +2363,23 @@ async function buildSetBonuses(
       const plainVersion: { built: boolean; entry?: VersionEntry } = {
         built: false,
       };
+      // A version's failed repair skips the package with the repair's error,
+      // as on the package's own build; an undefined entry alone would show
+      // a failed sim, and none ran.
+      let versionRepairError: MetaRepairError | undefined;
+      const noteRepairError = (err: MetaRepairError) => {
+        versionRepairError ??= err;
+      };
       const packageVersions = async (copiesList: readonly VersionCopies[]) => {
-        const entries = await versionGears(rebuildPackage, builtPackage, [
-          {},
-          ...copiesList,
-        ]);
+        const entries = await versionGears(
+          rebuildPackage,
+          builtPackage,
+          [{}, ...copiesList],
+          noteRepairError
+        );
         plainVersion.built = true;
         if (entries[0]) plainVersion.entry = entries[0];
+        if (versionRepairError) return copiesList.map(() => undefined);
         return entries.slice(1).map((entry) => entry?.request);
       };
 
@@ -2369,19 +2388,17 @@ async function buildSetBonuses(
       // else. It does not need the package's result.
       let sameGear: DpsSample | undefined;
       if (measureBrokenSetValue) {
-        try {
-          sameGear = await measureSameGearBonus(
-            cachedSampleRun(`${label} ${threshold}pc same-gear bonus`),
-            composeFor(builtPackage.equipment),
-            builtPackage.equipment.flatMap((spec, i) =>
-              spec.id && getItem(spec.id)?.setId === setId ? [i] : []
-            ),
-            threshold - 1,
-            packageVersions
-          );
-        } catch (err) {
-          if (!(err instanceof MetaRepairError)) throw err;
-          skipRepairFailed(err);
+        sameGear = await measureSameGearBonus(
+          cachedSampleRun(`${label} ${threshold}pc same-gear bonus`),
+          composeFor(builtPackage.equipment),
+          builtPackage.equipment.flatMap((spec, i) =>
+            spec.id && getItem(spec.id)?.setId === setId ? [i] : []
+          ),
+          threshold - 1,
+          packageVersions
+        );
+        if (versionRepairError) {
+          skipRepairFailed(versionRepairError);
           continue;
         }
         if (!sameGear) {
@@ -2423,14 +2440,15 @@ async function buildSetBonuses(
         : {};
 
       if (!plainVersion.built) {
-        try {
-          const [entry] = await versionGears(rebuildPackage, builtPackage, [
-            {},
-          ]);
-          if (entry) plainVersion.entry = entry;
-        } catch (err) {
-          if (!(err instanceof MetaRepairError)) throw err;
-          skipRepairFailed(err);
+        const [entry] = await versionGears(
+          rebuildPackage,
+          builtPackage,
+          [{}],
+          noteRepairError
+        );
+        if (entry) plainVersion.entry = entry;
+        if (versionRepairError) {
+          skipRepairFailed(versionRepairError);
           continue;
         }
       }
@@ -2619,33 +2637,34 @@ async function buildSetBonuses(
       }
       if (!best) continue;
       const crossing = [{ slotIndex: best.slotIndex, itemId: best.itemId }];
-      // A failed gem repair, on the swap's build or on either version,
-      // leaves the gate unmeasured.
-      let value: DpsSample | undefined;
+      let swapped: ChainBuild | undefined;
       try {
-        const crossingBuild = chainSwapsWithRepairs(equipment, crossing, gems);
-        value = await measureSameGearBonus(
-          cachedSampleRun(
-            `${setLabel(equipment, setId)} ${worn + 1}pc crossing gate`
-          ),
-          composeFor(crossingBuild.equipment),
-          crossingBuild.equipment.flatMap((spec, i) =>
-            spec.id && getItem(spec.id)?.setId === setId ? [i] : []
-          ),
-          worn,
-          // "On" and "off" are one pair: one call (ticket 535).
-          async (copiesList) =>
-            (
-              await versionGears(
-                (g) => chainSwapsWithRepairs(equipment, crossing, g),
-                crossingBuild,
-                copiesList
-              )
-            ).map((entry) => entry?.request)
-        );
+        swapped = chainSwapsWithRepairs(equipment, crossing, gems);
       } catch (err) {
         if (!(err instanceof MetaRepairError)) throw err;
       }
+      const crossingBuild = swapped;
+      const value = crossingBuild
+        ? await measureSameGearBonus(
+            cachedSampleRun(
+              `${setLabel(equipment, setId)} ${worn + 1}pc crossing gate`
+            ),
+            composeFor(crossingBuild.equipment),
+            crossingBuild.equipment.flatMap((spec, i) =>
+              spec.id && getItem(spec.id)?.setId === setId ? [i] : []
+            ),
+            worn,
+            // "On" and "off" are one pair: one call (ticket 535).
+            async (copiesList) =>
+              (
+                await versionGears(
+                  (g) => chainSwapsWithRepairs(equipment, crossing, g),
+                  crossingBuild,
+                  copiesList
+                )
+              ).map((entry) => entry?.request)
+          )
+        : undefined;
       crossingGates.push({
         setId,
         count: worn + 1,
@@ -2853,13 +2872,8 @@ async function measureSetSteps(args: {
   ): Promise<RaidSimRequest | undefined> => {
     const build = stepBuild(swaps);
     if (!build) return undefined;
-    try {
-      const [entry] = await args.versionGears(stepRebuild(swaps), build, [{}]);
-      return entry?.request;
-    } catch (err) {
-      if (!(err instanceof MetaRepairError)) throw err;
-      return undefined;
-    }
+    const [entry] = await args.versionGears(stepRebuild(swaps), build, [{}]);
+    return entry?.request;
   };
 
   type Future = NonNullable<SetContext["futureBonuses"]>[number];
@@ -3085,17 +3099,11 @@ async function measureSetSteps(args: {
     // the bonus-off version its pair, so both come from one call. On later
     // steps entry 0 is the previous step's own request (the build is
     // deterministic and its read is cached).
-    let entries: Array<VersionEntry | undefined>;
-    try {
-      entries = await args.versionGears(stepRebuild(prevSwaps), beforeBuild, [
-        {},
-        { setLess: replaced },
-      ]);
-    } catch (err) {
-      if (!(err instanceof MetaRepairError)) throw err;
-      return false;
-    }
-    const [plainEntry, offEntry] = entries;
+    const [plainEntry, offEntry] = await args.versionGears(
+      stepRebuild(prevSwaps),
+      beforeBuild,
+      [{}, { setLess: replaced }]
+    );
     if (!plainEntry || !offEntry) {
       console.warn(
         "[upgrades] set step break not split: its request could not be built"
@@ -3274,14 +3282,9 @@ async function measurePairTwoPiece(
   runOpts: SimRunOpts,
   versionGears: VersionGears
 ): Promise<{ dps: number; se: number } | undefined> {
-  let entry: VersionEntry | undefined;
+  let pairBuild: ChainBuild;
   try {
-    const pairBuild = chainSwapsWithRepairs(equipment, pair, gems);
-    [entry] = await versionGears(
-      (g) => chainSwapsWithRepairs(equipment, pair, g),
-      pairBuild,
-      [{}]
-    );
+    pairBuild = chainSwapsWithRepairs(equipment, pair, gems);
   } catch (err) {
     if (!(err instanceof MetaRepairError)) throw err;
     console.warn(
@@ -3290,6 +3293,11 @@ async function measurePairTwoPiece(
     );
     return undefined;
   }
+  const [entry] = await versionGears(
+    (g) => chainSwapsWithRepairs(equipment, pair, g),
+    pairBuild,
+    [{}]
+  );
   if (!entry) {
     console.warn(
       `[upgrades] ${bonusLabel} net value not measured: the request for the worn-1 pair that measures the 2pc could not be built`
@@ -4215,17 +4223,18 @@ type VersionEntry = {
  * Each version of one set-phase build, a pair's versions in one call
  * (ticket 535; `rankUpgrades` defines it). `base` is the build with the run's
  * budget; `rebuild` builds the same chain with another budget. An entry is
- * undefined when that version's request cannot be composed. When rebuilding
- * a version fails its gem repair, it rejects with that `MetaRepairError`,
- * which each caller handles as the same error on its own build. Any other
- * rejection fails the run: a version's failed stats read (ticket 852), or
- * another error while rebuilding. So a caller does not catch its rejection
- * as a failed sim.
+ * undefined when that version's request cannot be built: it cannot be
+ * composed, or rebuilding it fails its gem repair. That `MetaRepairError`
+ * also goes to `onRepairFailed`, for a caller whose note names it. It
+ * rejects only to fail the run: when a version's stats read fails (ticket
+ * 852), or on any other error while rebuilding. So a caller does not catch
+ * its rejection.
  */
 type VersionGears = (
   rebuild: (gems: GemContext) => ChainBuild,
   base: ChainBuild,
-  copiesList: readonly VersionCopies[]
+  copiesList: readonly VersionCopies[],
+  onRepairFailed?: (err: MetaRepairError) => void
 ) => Promise<Array<VersionEntry | undefined>>;
 
 /**
