@@ -44,7 +44,7 @@ import {
   capProfileFor,
   type HitCapBudget,
   hitCapBudgetFrom,
-  talentCapsSomeSpellsSooner,
+  someSpellsCapSooner,
 } from "./cap-profile";
 import {
   type CapState,
@@ -822,20 +822,24 @@ export async function rankUpgrades(
       ...(database !== undefined ? { database } : {}),
     });
   };
-  // Whether repair values hit up to the cap: the spec's repair is a budget
-  // (tickets 535 and 746). Every runner can read stats (ticket 830).
+  // Set when repair values hit only up to the cap: the spec's repair is a
+  // budget (tickets 535 and 746), read through `computeStats`, which every
+  // runner has (ticket 830).
   const capProfile = capProfileFor(input.spec);
   const budgetSlot =
     capProfile.repair.kind === "budget"
       ? capProfile.repair.hitPercentPseudoStat
       : undefined;
-  const hitCapReadable = budgetSlot !== undefined;
   /**
-   * Why repair could not use the hit cap, shown with the ranking, so a
-   * full-weight ranking does not look like a capped one.
+   * How repair priced hit where the ranking cannot show it: no cap used
+   * (a full-weight spec, or a target not at level 73), or a cap that some
+   * spells reach sooner (ticket 831).
    */
   const hitCapNotes: Substitution[] = [];
-  /** One stats read of `request` as a hit percent and the repair budget it gives. */
+  /**
+   * One stats read of `request`: the read itself, its hit percent, and the
+   * repair budget it gives.
+   */
   const readHitCap = async (request: RaidSimRequest, slot: number) => {
     const { observed, hitPercent } = await hitPercentOrSimFailed(
       readStats(deps.sim, request, deps.signal),
@@ -866,7 +870,7 @@ export async function rankUpgrades(
   // baseline read: the run goes on and the candidate loop returns a partial
   // ranking, which is never cached.
   let wornHitCap: HitCapBudget | undefined;
-  if (hitCapReadable && inactiveMeta(preRepairSocketed)) {
+  if (budgetSlot !== undefined && inactiveMeta(preRepairSocketed)) {
     const preRequest = composeFor(equipmentFromLoggedGear(logged));
     try {
       wornHitCap = (await readHitCap(preRequest, budgetSlot)).budget;
@@ -1034,7 +1038,9 @@ export async function rankUpgrades(
     // ranking repaired at full weight (ticket 535). The value names which
     // repairs the budget reaches, so a ranking cached when only candidate
     // repairs used it is not served (ticket 705).
-    ...(hitCapReadable ? { metaRepairHitCap: "worn-and-candidates" } : {}),
+    ...(budgetSlot !== undefined
+      ? { metaRepairHitCap: "worn-and-candidates" }
+      : {}),
     // The repair rule, on every run, so no ranking cached under greedy repair
     // or another work limit is served (ticket 535).
     metaRepair: `exact-credit-per-version;limit=${REPAIR_SEARCH_WORK_LIMIT}`,
@@ -1091,7 +1097,7 @@ export async function rankUpgrades(
     // budget every later swap starts from. Before the first candidate site,
     // so every repair gets it. A read Stop ended is no failure: the run goes
     // on and the candidate loop returns a partial ranking.
-    if (hitCapReadable) {
+    if (budgetSlot !== undefined) {
       try {
         const { observed, hitPercent, budget } = await readHitCap(
           request,
@@ -1108,7 +1114,7 @@ export async function rankUpgrades(
           };
           baselineSimHit = hitPercent * capProfile.ratingPerPercent;
           if (
-            talentCapsSomeSpellsSooner(
+            someSpellsCapSooner(
               capProfile,
               observed.pseudoStats,
               talentsStringFromRequest(request)
@@ -4472,17 +4478,18 @@ export function hitCapFullWeightNote(): Substitution {
 }
 
 /**
- * The note a spell-hit budget gets when a talent caps some spells before the
- * cap (ticket 831), since the budget still counts hit to the cap in full.
+ * The note a spell-hit budget gets when some spells reach the cap sooner
+ * (ticket 831), since the budget still counts hit to the cap in full. It
+ * names no source: talents give that hit, and so does school hit in the
+ * player's bonus stats (`sim/core/character.go:149-160`).
  */
 export function hitCapTalentNote(capPercent: number): Substitution {
   return {
     field: "Meta gem swaps and the hit cap",
     detail:
       "If gems were swapped to turn your meta gem on, hit rating was " +
-      `counted at full value up to ${capPercent}% spell hit, although your ` +
-      "talents give some of your spells extra hit, so they reach the hit " +
-      "cap sooner.",
+      `counted at full value up to ${capPercent}% spell hit, although some ` +
+      "of your spells get extra hit and reach the hit cap sooner.",
   };
 }
 
