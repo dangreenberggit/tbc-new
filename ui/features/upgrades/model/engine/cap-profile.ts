@@ -27,7 +27,7 @@ import { Stat } from "./stats";
 import type { SpecId } from "./types";
 
 /**
- * Talent-string position of a hit-granting talent, plus what it grants.
+ * Talent-string position of a talent.
  *
  * `treeSegment` indexes `talentsString.split("-")`; `talentIndex` indexes the
  * characters within that segment. Both follow the UI tree order that
@@ -37,11 +37,15 @@ import type { SpecId } from "./types";
  * for ret by inspection, and that agreement is a coincidence rather than a
  * rule.
  */
-export type TalentHitDescriptor = {
+export type TalentPosition = {
   readonly treeSegment: number;
   readonly talentIndex: number;
-  readonly percentPerPoint: number;
   readonly talent: string;
+};
+
+/** A hit-granting talent's position, plus what it grants. */
+export type TalentHitDescriptor = TalentPosition & {
+  readonly percentPerPoint: number;
   readonly maxPoints: number;
 };
 
@@ -106,34 +110,26 @@ export type CapProfile = {
    * does not; one budget cannot be right for both.
    *
    * Mage, shadow and warlock: budget on `PseudoStatSpellHitPercent` (13), cap
-   * 16, no Faerie Fire term (it is physical only). Spell hit is
+   * 16, no Faerie Fire term (it is physical only), priced by the spells the
+   * baseline sim cast (ticket 831, `HitCapBudget.groups`). Spell hit is
    * `SpellHitPercent` + the spell's own bonus + the school bonus when the
    * spell has a class mask (`sim/core/spell_result.go:241-247`), with miss
    * floored at 1% (`:250-262`). The target adds a term only to binary spells,
    * whose base hit its resistance scales (`:252-256`, and
    * `SPELL_HIT_CAP_PERCENT` below); no default target has resistances. Slot
    * 13 is the term every spell shares; the per-school slots 6-11 add the
-   * school bonus (`sim/core/character_sheet.go:111-116`), and each undervalues
-   * some spell the default APL casts: the Arcane mage APL casts Frostbolt 27072
-   * and Fire Blast 27079 (school bonus +6 and +3 against Arcane's +10), the
-   * shadow APL casts Starshards 25446 (Arcane, no bonus), and item procs with
-   * no class mask get no school bonus. School bonuses only add
-   * (`sim/mage/talents.go:113,536-537`, `sim/priest/talents.go:338`; none for
-   * the warlock), and no mage, priest or warlock talent adds
-   * `SpellHitPercent`. The cost: hit between a talented spell's cap and 16 is
-   * priced at full weight although only the other spells still gain (mage
-   * Arcane spells 6-16, Frostbolt 10-16, Fire Blast 13-16; shadow's Shadow
-   * spells 6-16; with Affliction talents, the Affliction spells that
-   * Suppression's per-spell bonus caps earlier, `sim/warlock/talents.go:75-84`).
-   * The page's default warlock talents are Destruction
-   * (`ui/specs/warlock/dps/spec.ts:71`), which take no Suppression. Only a
-   * Night Elf priest has Starshards (`sim/priest/priest.go:58-62`); the
-   * page's default shadow priest is a Troll (`ui/specs/priest/dps/presets.ts`,
-   * `OtherDefaults`), so every damage spell its default APL
-   * (`ui/specs/priest/dps/apls/default.apl.json`) casts gets Shadow Focus's
-   * hit, and hit from 6 to 16 is priced at full weight though none of
-   * those spells gains from it. Whenever some spells cap sooner the ranking
-   * says so in one note (`someSpellsCapSooner`, ticket 831).
+   * school bonus (`sim/core/character_sheet.go:111-116`), which comes from
+   * talents (`sim/mage/talents.go:113,536-537`, `sim/priest/talents.go:338`;
+   * none for the warlock) or bonus stats. So hit is worth, for each school
+   * the sim cast spells of, that school's share of the spell damage until
+   * its own slot reaches 16: the page's default shadow priest, a Troll with
+   * no Starshards (`sim/priest/priest.go:58-62`), casts only Shadow spells
+   * and values no hit past its Shadow cap. Two estimates remain. A spell
+   * with no class mask (an item proc) gets no school bonus but is priced at
+   * its school's slot, which undervalues hit for its share. A per-spell
+   * talent (`perSpellHitTalents`: Suppression, Focused Power) shows in no
+   * slot and no metric, so the spells it covers are priced as if it gave
+   * nothing, and the ranking says so in one note.
    *
    * Elemental: full weight. Totem of Wrath, when talented, adds +3
    * `SpellHitPercent` through a buffs-phase aura
@@ -164,35 +160,52 @@ export type RepairPolicy =
       readonly kind: "budget";
       readonly hitPercentPseudoStat: number;
       /**
-       * Talents that add hit to some spells only, which no pseudo-stat holds
-       * (ticket 831). See `someSpellsCapSooner`.
+       * Talents that add hit to some spells only, which neither the stats
+       * read nor the sim's action metrics show (ticket 831). See
+       * `perSpellHitTalentTaken`.
        */
       readonly perSpellHitTalents?: readonly TalentPosition[];
     }
   | { readonly kind: "fullWeight" };
 
-/** Where a talent's points sit in a talent string; see `TalentHitDescriptor`. */
-export type TalentPosition = {
-  readonly treeSegment: number;
-  readonly talentIndex: number;
-  readonly talent: string;
-};
-
 /**
  * The hit rating still useful against the cap, negative when the gear is over
- * it (ticket 535).
+ * it (ticket 535). `remaining` is for the hit every attack or spell shares,
+ * the budget's pseudo-stat. A spell-hit budget also has `groups` (ticket
+ * 831): the spells the baseline sim cast, grouped by how much more hit than
+ * that they get (`offset`, rating), each with its share of their damage.
+ * Hit is worth a group's share until `remaining − offset` is used up.
+ * Absent means one group with offset 0 and share 1.
  */
-export type HitCapBudget = { readonly stat: Stat; readonly remaining: number };
+export type HitCapBudget = {
+  readonly stat: Stat;
+  readonly remaining: number;
+  readonly groups?: readonly HitCapGroup[];
+};
+
+/** See `HitCapBudget.groups`. */
+export type HitCapGroup = { readonly offset: number; readonly share: number };
 
 /** `PseudoStatMeleeHitPercent` in `ui/generated/proto/common.ts:1672`. */
 const PSEUDO_STAT_MELEE_HIT_PERCENT = 12;
 /** `PseudoStatSpellHitPercent` in `ui/generated/proto/common.ts:1676`. */
 const PSEUDO_STAT_SPELL_HIT_PERCENT = 13;
 /**
- * `PseudoStatSchoolHitPercentArcane` to `...Shadow` in
- * `ui/generated/proto/common.ts:1648-1668`.
+ * The school hit pseudo-stat (`PseudoStatSchoolHitPercentArcane` to
+ * `...Shadow`, `ui/generated/proto/common.ts:1648-1668`) of each single magic
+ * school, keyed by the sim's `SpellSchool` bit (`sim/core/flags.go:226-232`),
+ * the value `ActionMetrics.spell_school` carries.
  */
-const PSEUDO_STAT_SCHOOL_HIT_PERCENTS = [6, 7, 8, 9, 10, 11] as const;
+const SCHOOL_HIT_PSEUDO_STAT: Readonly<Record<number, number>> = {
+  64: 6, // Arcane
+  4: 7, // Fire
+  16: 8, // Frost
+  2: 9, // Holy
+  8: 10, // Nature
+  32: 11, // Shadow
+};
+/** `SpellSchoolPhysical`, which uses melee hit, not spell hit. */
+const SPELL_SCHOOL_PHYSICAL = 1;
 
 const MELEE_HIT_BUDGET: RepairPolicy = {
   kind: "budget",
@@ -205,7 +218,7 @@ const SPELL_HIT_BUDGET: RepairPolicy = {
 /**
  * The two `SpellMod_BonusHit_Percent` talents of the spell-budget classes
  * (`grep -rn SpellMod_BonusHit_Percent sim/mage sim/priest sim/warlock`).
- * Positions follow `ui/sim/talents/trees/<class>.json`, as `talentHit` does.
+ * Positions follow `ui/sim/talents/trees/<class>.json`.
  */
 const SHADOW_SPELL_HIT_BUDGET: RepairPolicy = {
   ...SPELL_HIT_BUDGET,
@@ -564,13 +577,24 @@ export function capProfileFor(spec: SpecId | undefined): CapProfile {
  * Improved Faerie Fire counts only for melee-hit specs: it lowers the
  * target's `ReducedPhysicalHitTakenChance`, which spell hit never reads
  * (`sim/core/debuffs.go:43-44,360-369`, `sim/core/spell_result.go:241-262`).
+ *
+ * A spell-hit budget also takes `spellDamageBySchool`, a sim result's damage
+ * by school (`SimObservation.spellDamageBySchool`), and gets `groups` from it
+ * (ticket 831): a spell's hit is slot 13 plus its school's bonus
+ * (`sim/core/spell_result.go:241-249`), which the read gives as the school's
+ * slot 6-11 (`sim/core/character_sheet.go:110-116`). A two-school spell gets
+ * no school bonus (`SchoolIndex`, `sim/core/flags.go:288-308`). Physical
+ * damage takes no share: it uses melee hit. It throws when a spell budget has
+ * no damage by school, so no caster is priced without it.
  */
 export function hitCapBudgetFrom(
   profile: CapProfile,
   request: unknown,
-  pseudoStats: readonly number[]
+  pseudoStats: readonly number[],
+  spellDamageBySchool?: Readonly<Record<number, number>>
 ): HitCapBudget | undefined {
-  if (profile.repair.kind !== "budget") return undefined;
+  const { repair } = profile;
+  if (repair.kind !== "budget") return undefined;
   const req = request as {
     raid?: { debuffs?: { faerieFire?: unknown } };
     encounter?: { targets?: ReadonlyArray<{ level?: unknown }> };
@@ -582,7 +606,7 @@ export function hitCapBudgetFrom(
   ) {
     return undefined;
   }
-  const hitPercent = pseudoStats[profile.repair.hitPercentPseudoStat];
+  const hitPercent = pseudoStats[repair.hitPercentPseudoStat];
   if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
     return undefined;
   }
@@ -593,11 +617,61 @@ export function hitCapBudgetFrom(
     improved && profile.hitStat === Stat.StatMeleeHitRating
       ? IMPROVED_FAERIE_FIRE_HIT_PERCENT
       : 0;
+  const remaining =
+    (profile.hitCapPercent - fire - hitPercent) * profile.ratingPerPercent;
+  if (!pricesHitBySpells(profile)) {
+    return { stat: profile.hitStat, remaining };
+  }
+  if (spellDamageBySchool === undefined) {
+    throw new Error(
+      "the sim result has no spell damage by school, so spell hit cannot be priced"
+    );
+  }
   return {
     stat: profile.hitStat,
-    remaining:
-      (profile.hitCapPercent - fire - hitPercent) * profile.ratingPerPercent,
+    remaining,
+    groups: spellHitGroups(
+      pseudoStats,
+      hitPercent,
+      spellDamageBySchool,
+      profile.ratingPerPercent
+    ),
   };
+}
+
+/**
+ * Whether the spec's budget is on spell hit, which `hitCapBudgetFrom` prices
+ * by the spells a sim result shows cast (ticket 831).
+ */
+export function pricesHitBySpells(profile: CapProfile): boolean {
+  return (
+    profile.repair.kind === "budget" &&
+    profile.repair.hitPercentPseudoStat === PSEUDO_STAT_SPELL_HIT_PERCENT
+  );
+}
+
+function spellHitGroups(
+  pseudoStats: readonly number[],
+  sharedPercent: number,
+  spellDamageBySchool: Readonly<Record<number, number>>,
+  ratingPerPercent: number
+): HitCapGroup[] {
+  const damageByOffset = new Map<number, number>();
+  let total = 0;
+  for (const [key, damage] of Object.entries(spellDamageBySchool)) {
+    const school = Number(key);
+    if (!(damage > 0) || school === SPELL_SCHOOL_PHYSICAL) continue;
+    const slot = SCHOOL_HIT_PSEUDO_STAT[school];
+    const schoolPercent =
+      slot === undefined ? sharedPercent : (pseudoStats[slot] ?? sharedPercent);
+    const offset =
+      Math.max(0, schoolPercent - sharedPercent) * ratingPerPercent;
+    damageByOffset.set(offset, (damageByOffset.get(offset) ?? 0) + damage);
+    total += damage;
+  }
+  return [...damageByOffset]
+    .sort(([a], [b]) => a - b)
+    .map(([offset, damage]) => ({ offset, share: damage / total }));
 }
 
 /**
@@ -617,40 +691,18 @@ export function talentPoints(
 }
 
 /**
- * Whether some spells reach the spell-hit budget's cap sooner (ticket 831),
- * so the budget counts hit at full value that only the other spells still
- * gain, or none of the spells the rotation casts. A school bonus (Arcane
- * Focus, a mage's Elemental Precision, Shadow Focus, or school hit in the
- * bonus stats, `sim/core/character.go:149-160`) shows in the read as a
- * school slot above slot 13 (`sim/core/character_sheet.go:110-116`). A
- * per-spell talent (`perSpellHitTalents`) is in no slot, so its points come
- * from the talent string the sim reads.
- *
- * Pricing that hit by what the rotation's spells still gain would need each
- * spell's share of the damage, which no sim result the ranking keeps holds,
- * and a tiered hit value in the repair search; the ranking says it in one
- * note instead.
+ * The first per-spell hit talent the player has points in (ticket 831), whose
+ * hit the budget leaves out: neither the stats read nor the sim's action
+ * metrics show it, so the spells it covers reach the cap sooner than the
+ * budget counts.
  */
-export function someSpellsCapSooner(
+export function perSpellHitTalentTaken(
   profile: CapProfile,
-  pseudoStats: readonly number[],
   talentsString: string | undefined
-): boolean {
+): string | undefined {
   const { repair } = profile;
-  if (
-    repair.kind !== "budget" ||
-    repair.hitPercentPseudoStat !== PSEUDO_STAT_SPELL_HIT_PERCENT
-  ) {
-    return false;
-  }
-  const shared = pseudoStats[PSEUDO_STAT_SPELL_HIT_PERCENT] ?? 0;
-  const schoolAbove = PSEUDO_STAT_SCHOOL_HIT_PERCENTS.some(
-    (slot) => (pseudoStats[slot] ?? 0) > shared + 1e-9
-  );
-  return (
-    schoolAbove ||
-    (repair.perSpellHitTalents ?? []).some(
-      (position) => talentPoints(talentsString, position) > 0
-    )
-  );
+  if (repair.kind !== "budget") return undefined;
+  return (repair.perSpellHitTalents ?? []).find(
+    (position) => talentPoints(talentsString, position) > 0
+  )?.talent;
 }

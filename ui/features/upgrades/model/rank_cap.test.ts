@@ -57,7 +57,13 @@ const skeleton = {
 
 const sim: SimRunner = {
 	version: async () => 'synthetic-1',
-	run: async (): Promise<SimObservation> => ({ dps: 1000, stdev: 1.5, iterationsDone: 3000, simVersion: 'synthetic-1' }),
+	run: async (): Promise<SimObservation> => ({
+		dps: 1000,
+		stdev: 1.5,
+		iterationsDone: 3000,
+		simVersion: 'synthetic-1',
+		spellDamageBySchool: { 64: 1 },
+	}),
 	computeStats: async () => ({ stats: [], pseudoStats: new Array<number>(25).fill(0) }),
 };
 

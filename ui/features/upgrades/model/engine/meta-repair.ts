@@ -116,12 +116,18 @@ function valueModel(weights: EpWeights, hitCap?: HitCapBudget): ValueModel {
   }
   const { stat, remaining: r } = hitCap;
   const w = weightOf(weights, stat);
+  // Each group's hit is worth its share until its own cap (ticket 831).
+  const groups = hitCap.groups ?? [{ offset: 0, share: 1 }];
   return {
     gem,
     gemHit: (gemId) => (gemId ? (getGem(gemId)?.stats[stat] ?? 0) : 0),
     bonus,
     bonusHit: (itemId) => getItem(itemId)?.socketBonus[stat] ?? 0,
-    hitTerm: (dH) => w * (Math.min(dH, r) - Math.min(0, r)),
+    hitTerm: (dH) =>
+      groups.reduce((sum, { offset, share }) => {
+        const left = r - offset;
+        return sum + w * share * (Math.min(dH, left) - Math.min(0, left));
+      }, 0),
   };
 }
 

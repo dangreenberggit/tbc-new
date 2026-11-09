@@ -9,7 +9,7 @@
  */
 import { GemColor } from "@generated/proto/common";
 
-import { capProfileFor } from "./cap-profile";
+import { capProfileFor, type HitCapGroup } from "./cap-profile";
 import { fillEligibleGems, type GemEntry,getGem } from "./gems";
 import { getItem, socketsFor } from "./items";
 import {
@@ -76,12 +76,14 @@ export type GemContext = {
    * baseline's hit: the rating still useful on the baseline, and the hit the
    * baseline's equipment has by `gearHitRating`. Each swap's budget is
    * `baselineRemaining − (gearHitRating(swapped) − baselineGearHit)`. Absent
-   * means repair values hit at full weight.
+   * means repair values hit at full weight. `groups` are the baseline
+   * budget's (`HitCapBudget.groups`, ticket 831); every swap keeps them.
    */
   readonly repairHitCap?: {
     readonly stat: Stat;
     readonly baselineRemaining: number;
     readonly baselineGearHit: number;
+    readonly groups?: readonly HitCapGroup[];
   };
 };
 

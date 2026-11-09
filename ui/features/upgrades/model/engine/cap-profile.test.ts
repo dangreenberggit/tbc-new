@@ -68,7 +68,8 @@ describe("meta repair hit policy per spec (746)", () => {
       const budget = hitCapBudgetFrom(
         capProfileFor(spec),
         request("TristateEffectImproved"),
-        pseudoStats({ melee: 2, spell: 10 })
+        pseudoStats({ melee: 2, spell: 10 }),
+        { 32: 1 }
       );
       expect(budget?.stat, spec).toBe(Stat.StatSpellHitRating);
       expect(budget?.remaining, spec).toBeCloseTo(

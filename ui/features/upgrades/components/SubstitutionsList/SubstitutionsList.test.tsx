@@ -6,7 +6,7 @@ import { substitutionsFromMetaRepair } from '../../model/engine/disclosure';
 import {
 	candidateSkipSubstitution,
 	hitCapFullWeightNote,
-	hitCapTalentNote,
+	hitCapPerSpellTalentNote,
 	hitCapUnknownNote,
 	metaPreferenceDisclosure,
 	offHandBlockedDisclosure,
@@ -66,7 +66,7 @@ describe('SubstitutionsList', () => {
 					...substitutionsFromMetaRepair([{ itemId: 30987, itemIndex: 0, socketIndex: 1, from: 24027, to: 24054, cost: 1 }]),
 					hitCapUnknownNote(),
 					hitCapFullWeightNote(),
-					hitCapTalentNote(16),
+					hitCapPerSpellTalentNote('Suppression'),
 					// No real spec reaches this line; the cast stands in for a spec added without a meta gem entry.
 					...metaPreferenceDisclosure('unlisted-spec' as DetectedSpecId),
 					...oneHandBlockedDisclosure(2),
@@ -105,7 +105,7 @@ describe('SubstitutionsList', () => {
 			`Your meta gem was not active, so the ranking swapped 1 gem in its own copy of your gear to turn it on; your gear itself was not changed.${more}`,
 			'If gems were swapped to turn your meta gem on, hit rating was treated as always useful, because this tab works out the hit cap only when every target is level 73.',
 			'If gems were swapped to turn your meta gem on, hit rating was counted at full value, with no hit cap applied for this spec.',
-			'If gems were swapped to turn your meta gem on, hit rating was counted at full value up to 16% spell hit, although some of your spells get extra hit and reach the hit cap sooner.',
+			'If gems were swapped to turn your meta gem on, hit rating was valued as if your Suppression talent added no hit, so it may be valued too high.',
 			`The ranking does not know which meta gem your spec uses, so new items with a meta socket got the meta gem you wear, or an empty socket and no socket bonus if you wear none.${more}`,
 			'2 one-handed weapons were not ranked, because you wear a two-handed weapon.',
 			'1 off-hand item was not ranked, because you wear a two-handed weapon.',

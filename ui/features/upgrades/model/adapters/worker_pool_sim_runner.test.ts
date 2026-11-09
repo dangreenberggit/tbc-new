@@ -2,12 +2,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { RaidSimRequest } from '../engine/seams/sim-runner';
 
-// A unit test starts no sim workers, so the pool answers the stats call itself.
+// A unit test starts no sim workers, so the pool answers the stats call and the sim itself.
 const computeStats = vi.fn();
+const raidSimAsync = vi.fn();
 vi.mock('@sim/workers/worker_pool', async importOriginal => ({
 	...(await importOriginal<typeof import('@sim/workers/worker_pool')>()),
 	WorkerPool: class {
 		computeStats = computeStats;
+		raidSimAsync = raidSimAsync;
 		getNumWorkers = () => 1;
 		setNumWorkers = () => {};
 	},
@@ -80,5 +82,39 @@ describe('WorkerPoolSimRunner.activeSetBonuses', () => {
 		await expect(runner.activeSetBonuses(request)).rejects.toThrow('computeStats error: bad gear');
 		computeStats.mockResolvedValueOnce(answer({ raidStats: { parties: [] } }));
 		await expect(runner.activeSetBonuses(request)).rejects.toThrow('no first player');
+	});
+});
+
+describe('WorkerPoolSimRunner.run', () => {
+	beforeEach(() => {
+		raidSimAsync.mockReset();
+		resetWorkerPoolForTests();
+	});
+
+	it("gives the first player's spell damage by school, without melee actions or pets (ticket 831)", async () => {
+		const action = (spellSchool: number, damages: number[], isMelee = false) => ({
+			isMelee,
+			spellSchool,
+			targets: damages.map(damage => ({ damage })),
+		});
+		raidSimAsync.mockResolvedValue({
+			iterationsDone: 10,
+			raidMetrics: {
+				dps: { avg: 1000, stdev: 5 },
+				parties: [
+					{
+						players: [
+							{
+								actions: [action(32, [600, 100]), action(32, [300]), action(64, [100]), action(1, [50], true), action(4, [0])],
+								pets: [{ actions: [action(4, [999])] }],
+							},
+						],
+					},
+				],
+			},
+		});
+		const request = { raid: { parties: [] }, encounter: { duration: 180 } } as unknown as RaidSimRequest;
+		const observation = await new WorkerPoolSimRunner(1).run(request, { seed: 1, iterations: 10 });
+		expect(observation.spellDamageBySchool).toEqual({ 32: 1000, 64: 100 });
 	});
 });

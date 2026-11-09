@@ -44,7 +44,8 @@ import {
   capProfileFor,
   type HitCapBudget,
   hitCapBudgetFrom,
-  someSpellsCapSooner,
+  perSpellHitTalentTaken,
+  pricesHitBySpells,
 } from "./cap-profile";
 import {
   type CapState,
@@ -832,25 +833,47 @@ export async function rankUpgrades(
       : undefined;
   /**
    * How repair priced hit where the ranking cannot show it: no cap used
-   * (a full-weight spec, or a target not at level 73), or a cap that some
-   * spells reach sooner (ticket 831).
+   * (a full-weight spec, or a target not at level 73), or a per-spell hit
+   * talent the cap leaves out (ticket 831).
    */
   const hitCapNotes: Substitution[] = [];
   /**
-   * One stats read of `request`: the read itself, its hit percent, and the
-   * repair budget it gives.
+   * One stats read of `request` as a hit percent and the repair budget it
+   * gives. A spell-hit budget also needs a sim result's spell damage by
+   * school (ticket 831).
    */
-  const readHitCap = async (request: RaidSimRequest, slot: number) => {
+  const readHitCap = async (
+    request: RaidSimRequest,
+    slot: number,
+    spellDamageBySchool?: Readonly<Record<number, number>>
+  ) => {
     const { observed, hitPercent } = await hitPercentOrSimFailed(
       readStats(deps.sim, request, deps.signal),
       slot
     );
     return {
-      observed,
       hitPercent,
-      budget: hitCapBudgetFrom(capProfile, request, observed.pseudoStats),
+      budget: hitCapBudgetFrom(
+        capProfile,
+        request,
+        observed.pseudoStats,
+        spellDamageBySchool
+      ),
     };
   };
+
+  const iterations = input.iterations ?? DEFAULT_ITERATIONS;
+  const seeds = input.seeds ?? defaultSeedsFor(iterations);
+  try {
+    assertUsableSeeds(seeds, iterations);
+  } catch (err) {
+    if (err instanceof DegenerateSeedsError) {
+      throw new RankError("internal", err.message);
+    }
+    throw err;
+  }
+  const seed = seeds[0] ?? DEFAULT_SEED_BASE;
+  const runOpts = { seed, iterations };
 
   const preRepairSocketed = socketedItemsFromLoggedGear(logged);
   let socketed: SocketedItem[] = preRepairSocketed;
@@ -868,12 +891,24 @@ export async function rankUpgrades(
   // `remaining` is relative to the items the repair is given, as
   // `repairAndMinimize` expects. A read Stop ended is no failure, as at the
   // baseline read: the run goes on and the candidate loop returns a partial
-  // ranking, which is never cached.
+  // ranking, which is never cached. A spell-hit budget also sims that gear
+  // first, for the spells it casts (ticket 831); that sim failing fails the
+  // run with the sim's error, as the baseline sim's does.
   let wornHitCap: HitCapBudget | undefined;
   if (budgetSlot !== undefined && inactiveMeta(preRepairSocketed)) {
     const preRequest = composeFor(equipmentFromLoggedGear(logged));
+    let spellDamage: Readonly<Record<number, number>> | undefined;
+    if (pricesHitBySpells(capProfile)) {
+      try {
+        spellDamage = (await deps.sim.run(preRequest, runOpts))
+          .spellDamageBySchool;
+      } catch (err) {
+        throw new RankError("sim-failed", errorText(err));
+      }
+    }
     try {
-      wornHitCap = (await readHitCap(preRequest, budgetSlot)).budget;
+      wornHitCap = (await readHitCap(preRequest, budgetSlot, spellDamage))
+        .budget;
     } catch (err) {
       if (!(err instanceof StopRefusedSim)) throw err;
     }
@@ -902,18 +937,6 @@ export async function rankUpgrades(
 
   const request = composeFor(equipment);
 
-  const iterations = input.iterations ?? DEFAULT_ITERATIONS;
-  const seeds = input.seeds ?? defaultSeedsFor(iterations);
-  try {
-    assertUsableSeeds(seeds, iterations);
-  } catch (err) {
-    if (err instanceof DegenerateSeedsError) {
-      throw new RankError("internal", err.message);
-    }
-    throw err;
-  }
-  const seed = seeds[0] ?? DEFAULT_SEED_BASE;
-  const runOpts = { seed, iterations };
   const guardedDeps = stopGuardedDeps(deps);
 
   onProgress?.({ stage: "building-pool" });
@@ -1099,9 +1122,10 @@ export async function rankUpgrades(
     // on and the candidate loop returns a partial ranking.
     if (budgetSlot !== undefined) {
       try {
-        const { observed, hitPercent, budget } = await readHitCap(
+        const { hitPercent, budget } = await readHitCap(
           request,
-          budgetSlot
+          budgetSlot,
+          observation.spellDamageBySchool
         );
         if (budget) {
           gems = {
@@ -1110,17 +1134,16 @@ export async function rankUpgrades(
               stat: budget.stat,
               baselineRemaining: budget.remaining,
               baselineGearHit: gearHitRating(equipment, budget.stat),
+              ...(budget.groups ? { groups: budget.groups } : {}),
             },
           };
           baselineSimHit = hitPercent * capProfile.ratingPerPercent;
-          if (
-            someSpellsCapSooner(
-              capProfile,
-              observed.pseudoStats,
-              talentsStringFromRequest(request)
-            )
-          ) {
-            hitCapNotes.push(hitCapTalentNote(capProfile.hitCapPercent));
+          const talent = perSpellHitTalentTaken(
+            capProfile,
+            talentsStringFromRequest(request)
+          );
+          if (talent !== undefined) {
+            hitCapNotes.push(hitCapPerSpellTalentNote(talent));
           }
         } else {
           hitCapNotes.push(hitCapUnknownNote());
@@ -4201,6 +4224,7 @@ export function candidateSwapWithRepairs(
             remaining:
               cap.baselineRemaining -
               (gearHitRating(swapped, cap.stat) - cap.baselineGearHit),
+            ...(cap.groups ? { groups: cap.groups } : {}),
           },
         }
       : {}),
@@ -4478,18 +4502,16 @@ export function hitCapFullWeightNote(): Substitution {
 }
 
 /**
- * The note a spell-hit budget gets when some spells reach the cap sooner
- * (ticket 831), since the budget still counts hit to the cap in full. It
- * names no source: talents give that hit, and so does school hit in the
- * player's bonus stats (`sim/core/character.go:149-160`).
+ * The note a spell-hit budget gets when the player has points in a per-spell
+ * hit talent (ticket 831): the budget leaves that talent's hit out, so the
+ * spells it covers reach the cap sooner than the budget counts.
  */
-export function hitCapTalentNote(capPercent: number): Substitution {
+export function hitCapPerSpellTalentNote(talent: string): Substitution {
   return {
     field: "Meta gem swaps and the hit cap",
     detail:
-      "If gems were swapped to turn your meta gem on, hit rating was " +
-      `counted at full value up to ${capPercent}% spell hit, although some ` +
-      "of your spells get extra hit and reach the hit cap sooner.",
+      "If gems were swapped to turn your meta gem on, hit rating was valued " +
+      `as if your ${talent} talent added no hit, so it may be valued too high.`,
   };
 }
 

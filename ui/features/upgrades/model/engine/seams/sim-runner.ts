@@ -38,6 +38,13 @@ export type SimObservation = {
   simVersion: string;
   /** Each iteration's DPS, only when the run asked with `saveAllValues`. */
   allValues?: readonly number[];
+  /**
+   * The first player's own spell damage summed over the run, keyed by the
+   * sim's `SpellSchool` bit (`ActionMetrics.spell_school`), melee actions and
+   * pets left out (ticket 831). A spell-hit budget prices hit by it; a
+   * caster ranked on a runner that leaves it out fails at the budget.
+   */
+  spellDamageBySchool?: Readonly<Record<number, number>>;
 };
 
 export interface SimRunner {

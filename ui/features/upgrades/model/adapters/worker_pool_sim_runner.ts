@@ -207,6 +207,7 @@ export class WorkerPoolSimRunner implements SimRunner {
 				iterationsDone: result.iterationsDone,
 				simVersion: await this.version(),
 				...(saveAllValues ? { allValues: [...dps.allValues] } : {}),
+				spellDamageBySchool: spellDamageBySchool(result.raidMetrics?.parties[0]?.players[0]?.actions ?? []),
 			};
 		} finally {
 			this.signalManager.unregisterRunning(signals);
@@ -244,4 +245,20 @@ export class WorkerPoolSimRunner implements SimRunner {
 		}
 		return [...player.sets];
 	}
+}
+
+/**
+ * The first player's spell damage by the sim's `SpellSchool` bit, its melee
+ * actions left out (ticket 831). Pets are separate units, so they are not here.
+ */
+export function spellDamageBySchool(
+	actions: readonly { isMelee: boolean; spellSchool: number; targets: readonly { damage: number }[] }[],
+): Record<number, number> {
+	const out: Record<number, number> = {};
+	for (const action of actions) {
+		if (action.isMelee) continue;
+		const damage = action.targets.reduce((sum, target) => sum + target.damage, 0);
+		if (damage > 0) out[action.spellSchool] = (out[action.spellSchool] ?? 0) + damage;
+	}
+	return out;
 }

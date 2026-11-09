@@ -74,7 +74,7 @@ class SyntheticSimRunner implements SimRunner {
 			(req as { raid?: { parties?: Array<{ players?: Array<{ equipment?: { items?: Array<{ id?: number }> } }> }> } }).raid?.parties?.[0]?.players?.[0]
 				?.equipment?.items ?? [];
 		const acc = items.reduce((sum, item, i) => sum + ((item?.id ?? 0) % 977) * (i + 1), 0);
-		return { dps: 1000 + (acc % 5000) / 10, stdev: 1.5, iterationsDone: 3000, simVersion: 'synthetic-1' };
+		return { dps: 1000 + (acc % 5000) / 10, stdev: 1.5, iterationsDone: 3000, simVersion: 'synthetic-1', spellDamageBySchool: { 64: 1 } };
 	}
 	async computeStats(): Promise<PlayerStatsObservation> {
 		return { stats: [], pseudoStats: new Array<number>(25).fill(0) };
