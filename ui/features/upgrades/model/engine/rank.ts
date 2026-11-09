@@ -1123,9 +1123,7 @@ export async function rankUpgrades(
      * request, raced against Stop. The first read Stop ended turns version
      * budgets off for the rest of the set phase: the whole call, and every
      * later one, gets the default builds, so no pair mixes a version budget
-     * with the shared layout. A read that fails fails the run. A version
-     * whose rebuild fails its gem repair is not measured: its entry is
-     * undefined, never the shared layout.
+     * with the shared layout. A read that fails fails the run.
      */
     const versionReads = new Map<string, Promise<PlayerStatsObservation>>();
     let versionBudgetsOff = false;
@@ -4223,9 +4221,10 @@ type VersionEntry = {
  * Each version of one set-phase build, a pair's versions in one call
  * (ticket 535; `rankUpgrades` defines it). `base` is the build with the run's
  * budget; `rebuild` builds the same chain with another budget. An entry is
- * undefined when that version's request cannot be built: it cannot be
- * composed, or rebuilding it fails its gem repair. That `MetaRepairError`
- * also goes to `onRepairFailed`, for a caller whose note names it. It
+ * undefined when that version's default request cannot be composed or,
+ * unless Stop ends a later read in the same call, when rebuilding it fails
+ * its gem repair. That `MetaRepairError` also goes to `onRepairFailed`,
+ * for a caller whose note names it. It
  * rejects only to fail the run: when a version's stats read fails (ticket
  * 852), or on any other error while rebuilding. So a caller does not catch
  * its rejection.
