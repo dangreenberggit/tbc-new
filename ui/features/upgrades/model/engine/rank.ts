@@ -4224,10 +4224,7 @@ type VersionEntry = {
  * undefined when that version's default request cannot be composed or,
  * unless Stop ends a later read in the same call, when rebuilding it fails
  * its gem repair. That `MetaRepairError` also goes to `onRepairFailed`,
- * for a caller whose note names it. It
- * rejects only to fail the run: when a version's stats read fails (ticket
- * 852), or on any other error while rebuilding. So a caller does not catch
- * its rejection.
+ * for a caller whose note names it.
  */
 type VersionGears = (
   rebuild: (gems: GemContext) => ChainBuild,
