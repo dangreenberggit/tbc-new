@@ -44,6 +44,7 @@ import {
   capProfileFor,
   type HitCapBudget,
   hitCapBudgetFrom,
+  talentCapsSomeSpellsSooner,
 } from "./cap-profile";
 import {
   type CapState,
@@ -841,6 +842,7 @@ export async function rankUpgrades(
       slot
     );
     return {
+      observed,
       hitPercent,
       budget: hitCapBudgetFrom(capProfile, request, observed.pseudoStats),
     };
@@ -1091,7 +1093,10 @@ export async function rankUpgrades(
     // on and the candidate loop returns a partial ranking.
     if (hitCapReadable) {
       try {
-        const { hitPercent, budget } = await readHitCap(request, budgetSlot);
+        const { observed, hitPercent, budget } = await readHitCap(
+          request,
+          budgetSlot
+        );
         if (budget) {
           gems = {
             ...gems,
@@ -1102,6 +1107,15 @@ export async function rankUpgrades(
             },
           };
           baselineSimHit = hitPercent * capProfile.ratingPerPercent;
+          if (
+            talentCapsSomeSpellsSooner(
+              capProfile,
+              observed.pseudoStats,
+              talentsStringFromRequest(request)
+            )
+          ) {
+            hitCapNotes.push(hitCapTalentNote(capProfile.hitCapPercent));
+          }
         } else {
           hitCapNotes.push(hitCapUnknownNote());
         }
@@ -4454,6 +4468,21 @@ export function hitCapFullWeightNote(): Substitution {
     detail:
       "If gems were swapped to turn your meta gem on, hit rating was " +
       "counted at full value, with no hit cap applied for this spec.",
+  };
+}
+
+/**
+ * The note a spell-hit budget gets when a talent caps some spells before the
+ * cap (ticket 831), since the budget still counts hit to the cap in full.
+ */
+export function hitCapTalentNote(capPercent: number): Substitution {
+  return {
+    field: "Meta gem swaps and the hit cap",
+    detail:
+      "If gems were swapped to turn your meta gem on, hit rating was " +
+      `counted at full value up to ${capPercent}% spell hit, although your ` +
+      "talents give some of your spells extra hit, so they reach the hit " +
+      "cap sooner.",
   };
 }
 

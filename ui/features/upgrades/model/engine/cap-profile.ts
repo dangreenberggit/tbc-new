@@ -126,7 +126,9 @@ export type CapProfile = {
    * spells 6-16; with Affliction talents, the Affliction spells that
    * Suppression's per-spell bonus caps earlier, `sim/warlock/talents.go:75-84`).
    * The page's default warlock talents are Destruction
-   * (`ui/specs/warlock/dps/spec.ts:71`), which take no Suppression.
+   * (`ui/specs/warlock/dps/spec.ts:71`), which take no Suppression. When a
+   * talent opens that window the ranking says so in one note
+   * (`talentCapsSomeSpellsSooner`, ticket 831).
    *
    * Elemental: full weight. Totem of Wrath, when talented, adds +3
    * `SpellHitPercent` through a buffs-phase aura
@@ -166,6 +168,11 @@ export type HitCapBudget = { readonly stat: Stat; readonly remaining: number };
 const PSEUDO_STAT_MELEE_HIT_PERCENT = 12;
 /** `PseudoStatSpellHitPercent` in `ui/generated/proto/common.ts:1676`. */
 const PSEUDO_STAT_SPELL_HIT_PERCENT = 13;
+/**
+ * `PseudoStatSchoolHitPercentArcane` to `...Shadow` in
+ * `ui/generated/proto/common.ts:1648-1668`.
+ */
+const PSEUDO_STAT_SCHOOL_HIT_PERCENTS = [6, 7, 8, 9, 10, 11] as const;
 
 const MELEE_HIT_BUDGET: RepairPolicy = {
   kind: "budget",
@@ -552,4 +559,52 @@ export function hitCapBudgetFrom(
     remaining:
       (profile.hitCapPercent - fire - hitPercent) * profile.ratingPerPercent,
   };
+}
+
+/**
+ * The points in `entry`'s talent, read from a wowhead-format `talentsString`
+ * (proto.Player.talents_string). 0 when there is no entry, no string, or no
+ * digit at the entry's position. The same decode as `talentHitFromString` in
+ * `caps.ts`, which stays as ported from core.
+ */
+export function talentPoints(
+  talentsString: string | undefined,
+  entry: TalentHitDescriptor | undefined
+): number {
+  if (!entry || talentsString === undefined) return 0;
+  const segment = talentsString.split("-")[entry.treeSegment];
+  const points = Number(segment?.charAt(entry.talentIndex) || 0);
+  return Number.isFinite(points) && points > 0 ? points : 0;
+}
+
+/**
+ * Whether a talent caps some spells before the spell-hit budget's cap
+ * (ticket 831), so the budget counts hit at full value that only the other
+ * spells still gain. A school bonus (Arcane Focus, a mage's Elemental
+ * Precision, Shadow Focus) shows in the read as a school slot above slot 13
+ * (`sim/core/character_sheet.go:110-116`). Suppression is a per-spell bonus
+ * that no slot holds (`sim/warlock/talents.go:75-84`), so its points come
+ * from the talent string the sim reads.
+ *
+ * Pricing that hit by what the rotation's spells still gain would need each
+ * spell's share of the damage, which no sim result the ranking keeps holds,
+ * and a tiered hit value in the repair search; the ranking says it in one
+ * note instead.
+ */
+export function talentCapsSomeSpellsSooner(
+  profile: CapProfile,
+  pseudoStats: readonly number[],
+  talentsString: string | undefined
+): boolean {
+  if (
+    profile.repair.kind !== "budget" ||
+    profile.repair.hitPercentPseudoStat !== PSEUDO_STAT_SPELL_HIT_PERCENT
+  ) {
+    return false;
+  }
+  const shared = pseudoStats[PSEUDO_STAT_SPELL_HIT_PERCENT] ?? 0;
+  const schoolAbove = PSEUDO_STAT_SCHOOL_HIT_PERCENTS.some(
+    (slot) => (pseudoStats[slot] ?? 0) > shared + 1e-9
+  );
+  return schoolAbove || talentPoints(talentsString, profile.talentHit) > 0;
 }
