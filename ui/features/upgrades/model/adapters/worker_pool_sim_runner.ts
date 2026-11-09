@@ -30,7 +30,14 @@ import { RequestTypes, SimSignalManager } from '@sim/sim_signal_manager';
 import { generateRequestId, WorkerPool } from '@sim/workers/worker_pool';
 import { SimRequest } from '@worker/types';
 
-import type { PlayerStatsObservation, RaidSimRequest, SimObservation, SimRunner, SimRunOpts } from '../engine/seams/sim-runner';
+import {
+	type PlayerStatsObservation,
+	type RaidSimRequest,
+	type SimObservation,
+	type SimRunner,
+	type SimRunOpts,
+	spellDamageBySchool,
+} from '../engine/seams/sim-runner';
 
 /** Matches upstream's own default (`ui/core/sim.ts`'s WorkerPool(1) plus its
  * wasm-concurrency auto-sizing, capped at 4 — see that file's constructor). */
@@ -245,20 +252,4 @@ export class WorkerPoolSimRunner implements SimRunner {
 		}
 		return [...player.sets];
 	}
-}
-
-/**
- * The first player's spell damage by the sim's `SpellSchool` bit, its melee
- * actions left out (ticket 831). Pets are separate units, so they are not here.
- */
-export function spellDamageBySchool(
-	actions: readonly { isMelee: boolean; spellSchool: number; targets: readonly { damage: number }[] }[],
-): Record<number, number> {
-	const out: Record<number, number> = {};
-	for (const action of actions) {
-		if (action.isMelee) continue;
-		const damage = action.targets.reduce((sum, target) => sum + target.damage, 0);
-		if (damage > 0) out[action.spellSchool] = (out[action.spellSchool] ?? 0) + damage;
-	}
-	return out;
 }

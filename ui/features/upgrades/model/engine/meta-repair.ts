@@ -116,7 +116,6 @@ function valueModel(weights: EpWeights, hitCap?: HitCapBudget): ValueModel {
   }
   const { stat, remaining: r } = hitCap;
   const w = weightOf(weights, stat);
-  // Each group's hit is worth its share until its own cap (ticket 831).
   const groups = hitCap.groups ?? [{ offset: 0, share: 1 }];
   return {
     gem,

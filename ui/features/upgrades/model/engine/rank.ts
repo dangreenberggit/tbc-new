@@ -46,6 +46,7 @@ import {
   hitCapBudgetFrom,
   perSpellHitTalentTaken,
   pricesHitBySpells,
+  targetsAtCapLevel,
 } from "./cap-profile";
 import {
   type CapState,
@@ -126,6 +127,7 @@ import {
   type SimObservation,
   type SimRunner,
   type SimRunOpts,
+  type SpellDamageBySchool,
   stableStringify,
 } from "./seams/sim-runner";
 import type { Store } from "./seams/store";
@@ -845,7 +847,7 @@ export async function rankUpgrades(
   const readHitCap = async (
     request: RaidSimRequest,
     slot: number,
-    spellDamageBySchool?: Readonly<Record<number, number>>
+    spellDamageBySchool?: SpellDamageBySchool
   ) => {
     const { observed, hitPercent } = await hitPercentOrSimFailed(
       readStats(deps.sim, request, deps.signal),
@@ -897,8 +899,11 @@ export async function rankUpgrades(
   let wornHitCap: HitCapBudget | undefined;
   if (budgetSlot !== undefined && inactiveMeta(preRepairSocketed)) {
     const preRequest = composeFor(equipmentFromLoggedGear(logged));
-    let spellDamage: Readonly<Record<number, number>> | undefined;
-    if (pricesHitBySpells(capProfile)) {
+    let spellDamage: SpellDamageBySchool | undefined;
+    if (
+      pricesHitBySpells(capProfile) &&
+      targetsAtCapLevel(preRequest)
+    ) {
       try {
         spellDamage = (await deps.sim.run(preRequest, runOpts))
           .spellDamageBySchool;

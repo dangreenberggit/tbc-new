@@ -39,13 +39,41 @@ export type SimObservation = {
   /** Each iteration's DPS, only when the run asked with `saveAllValues`. */
   allValues?: readonly number[];
   /**
-   * The first player's own spell damage summed over the run, keyed by the
-   * sim's `SpellSchool` bit (`ActionMetrics.spell_school`), melee actions and
-   * pets left out (ticket 831). A spell-hit budget prices hit by it; a
-   * caster ranked on a runner that leaves it out fails at the budget.
+   * The first player's own spell damage summed over the run (ticket 831).
+   * A spell-hit budget prices hit by it; a caster ranked on a runner that
+   * leaves it out fails at the budget.
    */
-  spellDamageBySchool?: Readonly<Record<number, number>>;
+  spellDamageBySchool?: SpellDamageBySchool;
 };
+
+/**
+ * Damage keyed by the sim's `SpellSchool` bit (`sim/core/flags.go:226-232`),
+ * the value `ActionMetrics.spell_school` carries.
+ */
+export type SpellDamageBySchool = Readonly<Record<number, number>>;
+
+/**
+ * A sim result's first player's damage by school, from its action metrics,
+ * melee actions left out (ticket 831). Pets are separate units, so a caller
+ * that passes the player's own actions leaves them out too.
+ */
+export function spellDamageBySchool(
+  actions: readonly {
+    isMelee: boolean;
+    spellSchool: number;
+    targets: readonly { damage: number }[];
+  }[]
+): SpellDamageBySchool {
+  const out: Record<number, number> = {};
+  for (const action of actions) {
+    if (action.isMelee) continue;
+    const damage = action.targets.reduce((sum, t) => sum + t.damage, 0);
+    if (damage > 0) {
+      out[action.spellSchool] = (out[action.spellSchool] ?? 0) + damage;
+    }
+  }
+  return out;
+}
 
 export interface SimRunner {
   version(): Promise<string>;

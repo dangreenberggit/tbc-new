@@ -23,6 +23,7 @@
  * the vendored sim at runtime.
  */
 
+import type { SpellDamageBySchool } from "./seams/sim-runner";
 import { Stat } from "./stats";
 import type { SpecId } from "./types";
 
@@ -124,9 +125,13 @@ export type CapProfile = {
    * the sim cast spells of, that school's share of the spell damage until
    * its own slot reaches 16: the page's default shadow priest, a Troll with
    * no Starshards (`sim/priest/priest.go:58-62`), casts only Shadow spells
-   * and values no hit past its Shadow cap. Two estimates remain. A spell
+   * and values no hit past its Shadow cap. Three estimates remain. A spell
    * with no class mask (an item proc) gets no school bonus but is priced at
-   * its school's slot, which undervalues hit for its share. A per-spell
+   * its school's slot, which undervalues hit for its share. An explosive gets 100% bonus hit
+   * (`sim/core/consumes.go:625-626`), so the player's hit never changes it,
+   * but its Fire damage is priced as if it did, which overvalues hit for its
+   * share; the sim result does not mark it (`proto/api.proto:142-158`). A
+   * per-spell
    * talent (`perSpellHitTalents`: Suppression, Focused Power) shows in no
    * slot and no metric, so the spells it covers are priced as if it gave
    * nothing, and the ranking says so in one note.
@@ -591,21 +596,12 @@ export function hitCapBudgetFrom(
   profile: CapProfile,
   request: unknown,
   pseudoStats: readonly number[],
-  spellDamageBySchool?: Readonly<Record<number, number>>
+  spellDamageBySchool?: SpellDamageBySchool
 ): HitCapBudget | undefined {
   const { repair } = profile;
   if (repair.kind !== "budget") return undefined;
-  const req = request as {
-    raid?: { debuffs?: { faerieFire?: unknown } };
-    encounter?: { targets?: ReadonlyArray<{ level?: unknown }> };
-  };
-  const targets = req.encounter?.targets ?? [];
-  if (
-    targets.length === 0 ||
-    targets.some((t) => t.level !== RAID_BOSS_LEVEL)
-  ) {
-    return undefined;
-  }
+  if (!targetsAtCapLevel(request)) return undefined;
+  const req = request as { raid?: { debuffs?: { faerieFire?: unknown } } };
   const hitPercent = pseudoStats[repair.hitPercentPseudoStat];
   if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
     return undefined;
@@ -640,6 +636,19 @@ export function hitCapBudgetFrom(
 }
 
 /**
+ * Whether the request has targets and every one is at the level the caps
+ * hold for, which a budget needs.
+ */
+export function targetsAtCapLevel(request: unknown): boolean {
+  const targets =
+    (request as { encounter?: { targets?: ReadonlyArray<{ level?: unknown }> } })
+      .encounter?.targets ?? [];
+  return (
+    targets.length > 0 && targets.every((t) => t.level === RAID_BOSS_LEVEL)
+  );
+}
+
+/**
  * Whether the spec's budget is on spell hit, which `hitCapBudgetFrom` prices
  * by the spells a sim result shows cast (ticket 831).
  */
@@ -653,7 +662,7 @@ export function pricesHitBySpells(profile: CapProfile): boolean {
 function spellHitGroups(
   pseudoStats: readonly number[],
   sharedPercent: number,
-  spellDamageBySchool: Readonly<Record<number, number>>,
+  spellDamageBySchool: SpellDamageBySchool,
   ratingPerPercent: number
 ): HitCapGroup[] {
   const damageByOffset = new Map<number, number>();
