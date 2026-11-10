@@ -13,6 +13,8 @@ import {
 	oneHandBlockedDisclosure,
 	SET_BONUS_SKIP_REASONS,
 	setBonusSkipSubstitution,
+	setScreenSkipSubstitution,
+	wornSetSkipSubstitution,
 } from '../../model/engine/rank';
 import type { DetectedSpecId } from '../../model/engine/types';
 import { RANKING_FIXTURE } from '../../testing/ranking_fixture';
@@ -82,7 +84,10 @@ describe('SubstitutionsList', () => {
 					}),
 					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.simFailed('sim error: boom') }),
 					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.metaOff('no gem layout activates meta 32409') }),
-					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.measuringSimsFailed }),
+					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.rowSimsFailed('sim error: boom'), onSomeRows: true }),
+					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt }),
+					setScreenSkipSubstitution({ setName: 'Justicar Battlegear', error: 'sim error: boom' }),
+					wornSetSkipSubstitution({ setName: 'Justicar Battlegear', pieces: 3, error: 'sim error: boom' }),
 				]}
 			/>,
 		);
@@ -100,6 +105,9 @@ describe('SubstitutionsList', () => {
 			'Justicar Battlegear 4-piece set bonus',
 			'Justicar Battlegear 4-piece set bonus',
 			'Justicar Battlegear 4-piece set bonus',
+			'Justicar Battlegear 4-piece set bonus',
+			'Justicar Battlegear set',
+			'Justicar Battlegear set',
 		]);
 		expect(definitions()).toEqual([
 			`Your meta gem was not active, so the ranking swapped 1 gem in its own copy of your gear to turn it on; your gear itself was not changed.${more}`,
@@ -114,7 +122,10 @@ describe('SubstitutionsList', () => {
 			`This item was not ranked in this slot, because no gem swap could turn your meta gem on with it equipped.${more}`,
 			`The Justicar Battlegear 4-piece set bonus was not measured, because its sim failed.${more}`,
 			`The Justicar Battlegear 4-piece set bonus was not measured, because no gem swap could turn your meta gem on.${more}`,
-			'The Justicar Battlegear 4-piece set bonus was not measured, because the sims that measure it failed.',
+			`The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed.${more}`,
+			'The Justicar Battlegear 4-piece set bonus was not measured, because the sims that measure it could not be built.',
+			`The Justicar Battlegear set was kept without the quick check that can skip it, because the check's sim failed.${more}`,
+			`The value of the Justicar Battlegear set at 3 pieces on your gear was not measured, because its sim failed.${more}`,
 		]);
 		expect([...terms(), ...definitions()].join(' ')).not.toMatch(/\d{4,}|\bEP\b|repair|candidate|priced|\bpool\b|worker died|panic|unlisted/i);
 	});

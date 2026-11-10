@@ -195,6 +195,8 @@ export type SetScreenInput = {
    * no warning (ticket 533).
    */
   signal?: AbortSignal;
+  /** Each failed sim's error, except a sim Stop refused (ticket 863). */
+  onSimFailed?: (setId: number, error: string) => void;
   pairIterations?: readonly number[];
   ladderIterations?: readonly number[];
 };
@@ -236,7 +238,7 @@ function screenPackage(
  * the first reading asks for all of them in one call.
  */
 function rungSimmer(
-  input: Pick<SetScreenInput, "runSimAt" | "seed" | "signal">,
+  input: Pick<SetScreenInput, "runSimAt" | "seed" | "signal" | "onSimFailed">,
   setId: number,
   worn: number,
   pkg: ScreenPackage | undefined,
@@ -281,7 +283,13 @@ function rungSimmer(
       return observation;
     } catch (err) {
       counter.simmed += 1;
-      if (!input.signal?.aborted) console.warn(what, err);
+      if (!input.signal?.aborted) {
+        console.warn(what, err);
+        input.onSimFailed?.(
+          setId,
+          err instanceof Error ? err.message : String(err)
+        );
+      }
       return undefined;
     }
   };

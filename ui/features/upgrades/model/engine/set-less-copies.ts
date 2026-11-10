@@ -119,17 +119,24 @@ export function applySetLessCopies(
   return applyCopies(request, { setLess: slots });
 }
 
+/** A sim that failed, with the sim's own error text for the player (ticket 863). */
+export type SimFailure = { simError: string };
+
+const simErrorText = (err: unknown): string =>
+  err instanceof Error ? err.message : String(err);
+
 /**
  * The value of one set bonus on the gear `composedRequest` wears. The first
  * `setPieceSlots.length − lowerCount` set pieces, in slot order, are copies in
  * both sims: set-kept in the "on" sim, set-less in the "off" sim. With
  * `lowerCount` = t − 1 the "off" sim keeps every bonus below t. The value is
  * on − off, and `se` combines both sims' standard errors. Undefined when
- * nothing is left to copy, or when either sim, or building either request,
- * fails. With `requestsFor`, both requests come from one call to it, so each
- * can carry the gems repair chose for its own hit (ticket 535); without it,
- * both are `composedRequest` with the copies applied. A rejection from
- * `requestsFor` is not caught here: it goes to the caller (ticket 852).
+ * nothing is left to copy or a request cannot be built, so no sim ran; a
+ * `SimFailure` when a sim fails. With `requestsFor`, both requests come from
+ * one call to it, so each can carry the gems repair chose for its own hit
+ * (ticket 535); without it, both are `composedRequest` with the copies
+ * applied. A rejection from `requestsFor` is not caught here: it goes to the
+ * caller (ticket 852).
  */
 export async function measureSameGearBonus(
   runSim: (request: RaidSimRequest) => Promise<DpsSample>,
@@ -139,7 +146,7 @@ export async function measureSameGearBonus(
   requestsFor?: (
     copiesList: Array<{ setKept: number[]; setLess: number[] }>
   ) => Promise<Array<RaidSimRequest | undefined>>
-): Promise<DpsSample | undefined> {
+): Promise<DpsSample | SimFailure | undefined> {
   const inSlotOrder = [...setPieceSlots].sort((a, b) => a - b);
   const toCopy = inSlotOrder.slice(0, inSlotOrder.length - lowerCount);
   if (toCopy.length === 0) return undefined;
@@ -147,21 +154,32 @@ export async function measureSameGearBonus(
     { setKept: toCopy, setLess: [] },
     { setKept: [], setLess: toCopy },
   ]);
-  try {
-    if (requests) {
-      const [onRequest, offRequest] = requests;
-      if (!onRequest || !offRequest) return undefined;
-      const on = await runSim(onRequest);
-      const off = await runSim(offRequest);
-      return { dps: on.dps - off.dps, se: Math.sqrt(on.se ** 2 + off.se ** 2) };
+  let onRequest: RaidSimRequest | undefined;
+  let offRequest: RaidSimRequest | undefined;
+  if (requests) {
+    [onRequest, offRequest] = requests;
+  } else {
+    try {
+      onRequest = applyCopies(composedRequest, { setKept: toCopy });
+      offRequest = applyCopies(composedRequest, { setLess: toCopy });
+    } catch {
+      return undefined;
     }
-    const on = await runSim(applyCopies(composedRequest, { setKept: toCopy }));
-    const off = await runSim(applyCopies(composedRequest, { setLess: toCopy }));
+  }
+  if (!onRequest || !offRequest) return undefined;
+  try {
+    const on = await runSim(onRequest);
+    const off = await runSim(offRequest);
     return { dps: on.dps - off.dps, se: Math.sqrt(on.se ** 2 + off.se ** 2) };
-  } catch {
-    return undefined;
+  } catch (err) {
+    return { simError: simErrorText(err) };
   }
 }
+
+/** Whether a measurement ended in a failed sim. */
+export const isSimFailure = <T extends object>(
+  value: T | SimFailure | undefined
+): value is SimFailure => value !== undefined && "simError" in value;
 
 /** One count of a worn set's ladder: the value of its c-th piece's bonus. */
 export type WornSetRung = {
@@ -181,12 +199,15 @@ export type WornSetRung = {
  * se = √(se_c² + se_(c−1)²), an upper bound because the rungs share a seed. A
  * count at which the set has no bonus reads 0. There is no cap on w: a set
  * with bonuses at 6 or 8 pieces gets those counts too. A failed rung makes
- * both counts that use it `sim-failed`. Empty when w < 2.
+ * both counts that use it `sim-failed`, and its piece count and error go to
+ * `onSimFailed` (ticket 863): the ladder does not know which counts hold a
+ * bonus, so the failure names the rung, not a bonus. Empty when w < 2.
  */
 export async function measureWornSetLadder(
   runSim: (request: RaidSimRequest) => Promise<DpsSample>,
   composedRequest: RaidSimRequest,
-  wornSetSlots: readonly number[]
+  wornSetSlots: readonly number[],
+  onSimFailed?: (pieces: number, error: string) => void
 ): Promise<WornSetRung[]> {
   const slots = [...wornSetSlots].sort((a, b) => a - b);
   if (slots.length < 2) return [];
@@ -199,8 +220,9 @@ export async function measureWornSetLadder(
           setLess: slots.slice(c),
         })
       );
-    } catch {
+    } catch (err) {
       rungs[c] = undefined;
+      onSimFailed?.(c, simErrorText(err));
     }
   }
   const out: WornSetRung[] = [];
