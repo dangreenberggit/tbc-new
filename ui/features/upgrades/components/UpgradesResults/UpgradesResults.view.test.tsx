@@ -35,10 +35,10 @@ beforeEach(() => {
 	const store = upgradesStoreFor(host);
 	store.setState(store.getInitialState(), true);
 });
-const show = (run: RunState, selectedSets: readonly SetOption[] = []) =>
+const show = (run: RunState) =>
 	render(
 		<SimHostProvider host={host}>
-			<UpgradesResults run={run} selectedSets={selectedSets} bisHeadingsOf={() => []} />
+			<UpgradesResults run={run} bisHeadingsOf={() => []} />
 		</SimHostProvider>,
 	);
 const done = (result: Ranking): RunState => ({ status: 'done', runId: 1, result });
@@ -134,9 +134,9 @@ describe('UpgradesResults view toggles', () => {
 		expect(figure().textContent).toBe(total);
 	});
 
-	it('badges a row with the name of each selected set that holds it', () => {
+	it('badges a row with the name of each set the run was ranked with that holds it', () => {
 		const p3: SetOption = { key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [32332], inPool: 1 };
-		const { container } = show(done(RANKING_FIXTURE), [p3]);
+		const { container } = show({ status: 'done', runId: 1, result: RANKING_FIXTURE, measuredOn: { selectedSets: [p3] } });
 		const torch = within(activePane(container)).getAllByTestId('upgrades-result-row')[0]!;
 		expect(
 			within(torch)

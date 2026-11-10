@@ -8,6 +8,7 @@
 
 import type { PartialRanking, RankedItem, Ranking } from './engine/rank';
 import type { SpecId } from './engine/types';
+import type { SetOption } from './settings_pool';
 
 /** What one click of Run asks for. */
 export type RunSettings = {
@@ -54,9 +55,17 @@ export type RunOutcome = RunResult & { runner?: RunnerName };
  * worn now (ticket 536). `inputsSignature` is the page and settings when the
  * run started or the fixture loaded (`run_inputs.ts`); the result is stale
  * once the same signature built now differs. `runner` is set only by a live
- * run, never by a fixture or a replay.
+ * run, never by a fixture or a replay. `selectedSets` are the sim sets picked
+ * then, which a row's gear-set badges name: a phase change after the run picks
+ * the new phase's sets, which this result was not ranked with (ticket 865).
  */
-export type MeasuredOn = { wornItemIds?: readonly number[]; specId?: SpecId; inputsSignature?: string; runner?: RunnerName };
+export type MeasuredOn = {
+	wornItemIds?: readonly number[];
+	specId?: SpecId;
+	inputsSignature?: string;
+	runner?: RunnerName;
+	selectedSets?: readonly SetOption[];
+};
 
 export type RunState =
 	| { status: 'idle' }

@@ -6,7 +6,6 @@ import { useResultsView } from '../../hooks/useResultsView';
 import { bisTagPhaseFor, poolFor } from '../../model/data/data';
 import type { SpecId } from '../../model/engine/types';
 import type { RunState } from '../../model/run_state';
-import type { SetOption } from '../../model/settings_pool';
 import { EmptyState } from '../EmptyState';
 import { ResultsPanes } from '../ResultsPanes';
 import { ProvisionalResultsTable } from '../ResultsTable';
@@ -15,8 +14,6 @@ import { ViewToggles } from '../ViewToggles';
 
 export interface UpgradesResultsProps {
 	run: RunState;
-	/** The sim sets selected now; a row in one of them carries its name (ticket 430). */
-	selectedSets: readonly SetOption[];
 	/** The headings a row's "BiS" badge names when the row is in no selected set (ticket 810). */
 	bisHeadingsOf: (itemId: number) => readonly string[];
 	/** The spec the run ranked for; with the run's phase it tells a phase with no candidate list from a list with no upgrades (ticket 515). */
@@ -28,14 +25,13 @@ export interface UpgradesResultsProps {
  * view toggles, sub-tabs and dropped candidates once it settles, or what to
  * say in their place.
  *
- * `memo`, because the tab body renders again on every settings edit and both
- * props keep their identity through one that is not a set pick: the panes and
- * the export would otherwise re-sort and re-serialise the shortlist each time.
+ * `memo`, because the tab body renders again on every settings edit and the
+ * props keep their identity through it: the panes and the export would
+ * otherwise re-sort and re-serialise the shortlist each time.
  */
-export const UpgradesResults = memo(({ run, selectedSets, bisHeadingsOf, specId }: UpgradesResultsProps) => {
+export const UpgradesResults = memo(({ run, bisHeadingsOf, specId }: UpgradesResultsProps) => {
 	const { toggles, offered, setToggle, sourceOptions, hiddenSources, toggleViewSource, setViewSources, rowContext, view } = useResultsView(
 		run,
-		selectedSets,
 		bisHeadingsOf,
 	);
 	const host = useOptionalSimHost();

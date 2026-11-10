@@ -16,6 +16,7 @@ import type { Ranking } from './engine/rank';
 import { clearProgress } from './progress_channel';
 import { createRunContext, type RunContext, type RunFn, specIdFor } from './run';
 import type { MeasuredOn, RunSettings } from './run_state';
+import type { SetOption } from './settings_pool';
 import type { UpgradesStore } from './upgrades_store';
 
 /**
@@ -31,12 +32,12 @@ export type RunSessionEnv = {
 export type RunSession = {
 	/**
 	 * A click handler: a run starts only from the user's Run. The caller passes
-	 * the inputs signature (`run_inputs.ts`), because the tab's settings live
-	 * with the caller.
+	 * the inputs signature (`run_inputs.ts`) and the sim sets picked, because
+	 * the tab's settings live with the caller.
 	 */
-	start: (settings: RunSettings, inputsSignature: string) => void;
+	start: (settings: RunSettings, inputsSignature: string, selectedSets?: readonly SetOption[]) => void;
 	stop: () => void;
-	loadFixture: (ranking: Ranking, inputsSignature: string) => void;
+	loadFixture: (ranking: Ranking, inputsSignature: string, selectedSets?: readonly SetOption[]) => void;
 	dispose: () => void;
 };
 
@@ -45,10 +46,11 @@ export type RunSession = {
  * dialog blocks gear edits until the run settles, so this is the gear the
  * engine reads; and read when a fixture loads, which sets the page gear first.
  */
-const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string): MeasuredOn => ({
+const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string, selectedSets: readonly SetOption[] | undefined): MeasuredOn => ({
 	wornItemIds: equippedItemIds(host.player),
 	specId: specIdFor(host.player.getSpec()),
 	inputsSignature,
+	...(selectedSets ? { selectedSets } : {}),
 });
 
 /**
@@ -78,14 +80,14 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 	let runId = stored.status === 'idle' ? 0 : stored.runId;
 	let context: RunContext | null = null;
 
-	const start = (settings: RunSettings, inputsSignature: string) => {
+	const start = (settings: RunSettings, inputsSignature: string, selectedSets?: readonly SetOption[]) => {
 		controller?.abort();
 		const current = new AbortController();
 		controller = current;
 		const id = ++runId;
 
 		clearProgress(host.player);
-		const measuredOn = measuredOnPage(host, inputsSignature);
+		const measuredOn = measuredOnPage(host, inputsSignature, selectedSets);
 		const pageAssumptions = assumptionsContextOf(host, measuredOn);
 		store.getState().startRun(id, Date.now(), measuredOn);
 		runFn(host, settings, {
@@ -109,9 +111,9 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		store.getState().requestStop(runId);
 	};
 
-	const loadFixture = (ranking: Ranking, inputsSignature: string) => {
+	const loadFixture = (ranking: Ranking, inputsSignature: string, selectedSets?: readonly SetOption[]) => {
 		controller?.abort();
-		const measuredOn = measuredOnPage(host, inputsSignature);
+		const measuredOn = measuredOnPage(host, inputsSignature, selectedSets);
 		store.getState().loadFixture(++runId, ranking, measuredOn);
 		logAssumptions(ranking, { ...assumptionsContextOf(host, measuredOn), host });
 	};

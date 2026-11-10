@@ -100,8 +100,8 @@ export function useUpgradesSettings(): UpgradesSettings {
 		() => ({ ...applied, excludedSources: effectiveExcludedSources(applied.excludedSources, offer.sourceKeys) }),
 		[applied, offer.sourceKeys],
 	);
-	// Memoised on the picked sets alone, so it keeps its identity while other settings change: the results
-	// area builds its row badges from it, and a new selection renders every row again.
+	// Memoised on the picked sets alone, so it keeps its identity while other settings change: the run settings
+	// and the eligible count key on it.
 	const selection = useMemo(() => setSelection(offer, state.selectedSetKeys, phase), [offer, state.selectedSetKeys, phase]);
 	// Memoised, as is the result below, so a render that changes no setting (a row a run lands) hands the run card
 	// the same settings and its `memo` skips the render (review K2-4).

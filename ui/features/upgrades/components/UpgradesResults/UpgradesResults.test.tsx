@@ -57,7 +57,7 @@ beforeEach(() => {
 const show = (run: RunState, specId?: SpecId) =>
 	render(
 		<SimHostProvider host={host}>
-			<UpgradesResults run={run} selectedSets={[]} bisHeadingsOf={() => []} specId={specId} />
+			<UpgradesResults run={run} bisHeadingsOf={() => []} specId={specId} />
 		</SimHostProvider>,
 	);
 

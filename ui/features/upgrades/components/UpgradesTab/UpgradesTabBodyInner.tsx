@@ -32,9 +32,10 @@ export const UpgradesTabBodyInner = () => {
 	// Read when Run is clicked or a fixture lands, so it records the page as it is then. Memoised with `onStart`, so
 	// a row a run lands hands the run card, a `memo` component, the same handler (review K2-4).
 	const signatureNow = useCallback(() => inputsSignature({ liveKey: liveInputsKey(sim), settings: runSettings }), [sim, runSettings]);
-	const onStart = useCallback(() => start(runSettings, signatureNow()), [start, runSettings, signatureNow]);
+	const { selectedOptions } = settings;
+	const onStart = useCallback(() => start(runSettings, signatureNow(), selectedOptions), [start, runSettings, signatureNow, selectedOptions]);
 	const specId = measuredOnOf(run)?.specId ?? specIdFor(player.getSpec());
-	useFixtureAutoload({ onLoaded: ranking => loadFixture(ranking, signatureNow()), currentRanking: () => shownRanking(run) });
+	useFixtureAutoload({ onLoaded: ranking => loadFixture(ranking, signatureNow(), selectedOptions), currentRanking: () => shownRanking(run) });
 
 	return (
 		// `contents`, so the two columns stay the pane's own flex items.
@@ -43,7 +44,7 @@ export const UpgradesTabBodyInner = () => {
 				<div data-testid="upgrades-tab-left">
 					{stale && <StaleNotice />}
 					<StatusLine run={run} />
-					<UpgradesResults run={run} selectedSets={settings.selectedOptions} bisHeadingsOf={settings.bisHeadingsOf} specId={specId} />
+					<UpgradesResults run={run} bisHeadingsOf={settings.bisHeadingsOf} specId={specId} />
 				</div>
 			</TabPanelColumns.Left>
 			{/* First below `xl`, where the columns stack: the run card sits above the results it governs. */}

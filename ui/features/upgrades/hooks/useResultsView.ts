@@ -18,6 +18,8 @@ import { rowTagIndex, type SetOption, sourceOptions } from '../model/settings_po
 import { selectHiddenSources, selectViewToggles } from '../model/upgrades_store';
 import { useUpgradesStore } from './useUpgradesStore';
 
+const NO_SETS: readonly SetOption[] = [];
+
 export type ResultsView = {
 	/** The view toggles as the user set them, and the ones the tab shows for this run. */
 	toggles: ViewToggles;
@@ -40,7 +42,7 @@ export type ResultsView = {
  * view state of the area: they reshape a ranking already measured and are not
  * run settings. They live in the tab store, which saves them with the settings.
  */
-export function useResultsView(run: RunState, selectedSets: readonly SetOption[], bisHeadingsOf: (itemId: number) => readonly string[]): ResultsView {
+export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) => readonly string[]): ResultsView {
 	const { sim } = useSimHost();
 	const toggles = useUpgradesStore(selectViewToggles);
 	const setToggle = useUpgradesStore(state => state.setViewToggle);
@@ -51,8 +53,11 @@ export function useResultsView(run: RunState, selectedSets: readonly SetOption[]
 	const { withSetPotential, onlyBis } = appliedToggles(offered, toggles);
 	const ranking = run.status === 'done' || run.status === 'stopped' ? run.result : undefined;
 	const measuredOn = run.status === 'running' || run.status === 'done' || run.status === 'stopped' ? run.measuredOn : undefined;
-	// Memoised on the selection alone, so a row's tags keep their identity and its memoised name cell holds.
-	const tagsOf = useMemo(() => rowTagIndex(selectedSets), [selectedSets]);
+	// The sets the run was ranked with, not the sets selected now: a phase change after the run selects the new
+	// phase's sets (ticket 865). Memoised on them alone, so a row's tags keep their identity and its memoised name
+	// cell holds.
+	const rankedSets = measuredOn?.selectedSets ?? NO_SETS;
+	const tagsOf = useMemo(() => rowTagIndex(rankedSets), [rankedSets]);
 	// Memoised for the same rows: `applyView` builds new row objects on every call. The source cut runs on this view
 	// in a memo of its own, so ticking a source does not run `applyView` again.
 	const preCutView = useMemo(() => resultsViewFor(run, { withSetPotential, onlyBis }), [run, withSetPotential, onlyBis]);
