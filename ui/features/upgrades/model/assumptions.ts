@@ -59,6 +59,8 @@ export function substitutionFirstLine(detail: string): { line: string; truncated
 	return { line, truncated: rest.join('').trim() !== '' };
 }
 
-/** The full text of every reason the page shortens; the page says it is in the console. */
+/** The full text of every reason or error the page shortens; the page says it is in the console. */
 export const substitutionConsoleLines = (substitutions: readonly Substitution[]): string[] =>
-	substitutions.filter(s => substitutionFirstLine(s.detail).truncated).map(s => `[upgrades] ${s.field}: ${s.detail}`);
+	substitutions
+		.filter(s => substitutionFirstLine(s.detail).truncated || (s.error !== undefined && substitutionFirstLine(s.error.trimStart()).truncated))
+		.map(s => `[upgrades] ${s.field}: ${s.detail}${s.error ? `\n${s.error}` : ''}`);

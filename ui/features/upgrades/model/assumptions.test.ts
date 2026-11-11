@@ -75,8 +75,12 @@ describe('substitutionFirstLine', () => {
 describe('substitutionConsoleLines', () => {
 	it('gives the full text of each reason the page shortened, for the console the page points to', () => {
 		expect(substitutionConsoleLines(RANKING_FIXTURE.substitutions)).toEqual([
-			'[upgrades] Warglaive of Azzinoth: This item was not ranked in this slot, because its sim failed.\nitem 32837, slot mainhand: panic: runtime error\ngoroutine 1 [running]:\nmain.main()',
+			'[upgrades] Warglaive of Azzinoth: This item was not ranked in this slot, because its sim failed.\npanic: runtime error\ngoroutine 1 [running]:\nmain.main()\nitem 32837, slot mainhand',
 		]);
 		expect(substitutionConsoleLines([{ field: 'hit cap', detail: 'Kept the worn hit gems.' }])).toEqual([]);
+		// Ticket 874: an error the page shows whole needs no console copy; a cut one gets one.
+		const failed = (error: string) => ({ field: 'set', detail: 'Its sim failed.', error });
+		expect(substitutionConsoleLines([failed('HTTP 500 from /raidSimAsync')])).toEqual([]);
+		expect(substitutionConsoleLines([failed('panic: boom\ngoroutine 7')])).toEqual(['[upgrades] set: Its sim failed.\npanic: boom\ngoroutine 7']);
 	});
 });

@@ -185,6 +185,13 @@ export const substitutionText = (detail: string): string => {
 	return line.endsWith('.') ? `${line.slice(0, -1)}${where}.` : `${line}${where}`;
 };
 
+/**
+ * A failed call's error under its line (ticket 874): its first line, and where the rest went when it was cut, as the
+ * status line shows a failed run's error. Undefined when the error is missing or blank, so no empty line shows.
+ */
+export const substitutionErrorText = (error: string | undefined): string | undefined =>
+	error?.trim() ? substitutionText(error.trimStart()) : undefined;
+
 /** A sim that panics ends its error in the Go stack trace, which `run_session.ts` sends to the console (ticket 868). */
 export const describeRunError = (error: unknown): string => {
 	if (error instanceof RankError && error.kind === 'not-implemented') return i18n.t('upgrades_tab.status.unsupported_spec', { ns: 'upgrades' });

@@ -29,10 +29,11 @@ const terms = () =>
 	within(screen.getByTestId('upgrades-substitutions'))
 		.getAllByRole('term')
 		.map(term => term.textContent);
-const definitions = () =>
+/** Each cell's lines: the tab's sentence, then the failed call's error when it has one. */
+const cellLines = () =>
 	within(screen.getByTestId('upgrades-substitutions'))
 		.getAllByRole('definition')
-		.map(definition => definition.textContent);
+		.map(definition => [...definition.children].map(line => line.textContent));
 
 describe('SubstitutionsList', () => {
 	it('lists each left-out item with the first line of the reason the engine gave', () => {
@@ -40,7 +41,31 @@ describe('SubstitutionsList', () => {
 
 		expect(screen.getByText(`Items left out and other notes (${RANKING_FIXTURE.substitutions.length})`)).toBeTruthy();
 		expect(terms()).toEqual(['Warglaive of Azzinoth (Main Hand)']);
-		expect(definitions()).toEqual(['This item was not ranked in this slot, because its sim failed (full text in the browser console).']);
+		expect(cellLines()).toEqual([
+			['This item was not ranked in this slot, because its sim failed.', 'panic: runtime error (full text in the browser console)'],
+		]);
+	});
+
+	// Ticket 874: the failed call's own error shows under the tab's sentence, its first line only.
+	it("shows a failed call's error on a second line, in every state of the error", () => {
+		const sentence = 'The Justicar Battlegear 2-piece set bonus was not measured, because its sim failed.';
+		const line = (error?: string) => ({ field: 'Justicar Battlegear 2-piece set bonus', detail: sentence, ...(error === undefined ? {} : { error }) });
+		const long = `HTTP 500 from /raidSimAsync: ${'x'.repeat(300)}`;
+		const cases: Array<[string | undefined, string[]]> = [
+			['HTTP 500 from /raidSimAsync: injected failure', [sentence, 'HTTP 500 from /raidSimAsync: injected failure']],
+			[long, [sentence, long]],
+			['panic: boom\nStack Trace:\ngoroutine 7 [running]:', [sentence, 'panic: boom (full text in the browser console)']],
+			['panic: boom\\ngoroutine 7', [sentence, 'panic: boom (full text in the browser console)']],
+			['\npanic: boom', [sentence, 'panic: boom']],
+			['', [sentence]],
+			['  \n ', [sentence]],
+			[undefined, [sentence]],
+		];
+		for (const [error, lines] of cases) {
+			const { unmount } = render(<SubstitutionsList substitutions={[line(error)]} />);
+			expect(cellLines()).toEqual([lines]);
+			unmount();
+		}
 	});
 
 	it('cuts a trace whose line breaks are written out as backslash-n', () => {
@@ -49,9 +74,7 @@ describe('SubstitutionsList', () => {
 				substitutions={[{ field: 'candidate 30900', detail: 'sim panicked: index out of range\ngoroutine 1 [running]:\nmain.go:12' }]}
 			/>,
 		);
-		expect(within(screen.getByTestId('upgrades-substitutions')).getByRole('definition').textContent).toBe(
-			'sim panicked: index out of range (full text in the browser console)',
-		);
+		expect(cellLines()).toEqual([['sim panicked: index out of range (full text in the browser console)']]);
 	});
 
 	// A Go panic's error ends in a stack trace whose goroutine number and argument addresses change from sim to sim.
@@ -64,7 +87,9 @@ describe('SubstitutionsList', () => {
 				onSomeRows: true,
 			});
 		render(<SubstitutionsList substitutions={uniqueSubstitutions([failed(41), failed(57)])} />);
-		expect(definitions()).toEqual(['The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed (full text in the browser console).']);
+		expect(cellLines()).toEqual([
+			['The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed.', 'interface conversion: panic (full text in the browser console)'],
+		]);
 	});
 
 	it('leaves a one-line reason whole', () => {
@@ -136,29 +161,41 @@ describe('SubstitutionsList', () => {
 			'Justicar Battlegear 4-piece set bonus',
 			'Justicar Battlegear set',
 		]);
-		expect(definitions()).toEqual([
-			inConsole(`Your meta gem was not active, so the ranking swapped 1 gem in its own copy of your gear to turn it on; your gear itself was not changed.`),
-			'If gems were swapped to turn your meta gem on, hit rating was treated as always useful, because this tab works out the hit cap only when every target is level 73.',
-			'If gems were swapped to turn your meta gem on, hit rating was counted at full value, with no hit cap applied for this spec.',
-			'If gems were swapped to turn your meta gem on, hit rating was valued as if your Suppression talent added no hit, so it may be valued too high.',
-			inConsole(`The ranking does not know which meta gem your spec uses, so new items with a meta socket got the meta gem you wear, or an empty socket and no socket bonus if you wear none.`),
-			'2 one-handed weapons were not ranked, because you wear a two-handed weapon.',
-			'1 off-hand item was not ranked, because you wear a two-handed weapon.',
-			inConsole(`This item was not ranked in this slot, because its sim failed.`),
-			inConsole(`This item was not ranked in this slot, because its sim failed.`),
-			inConsole(`This item was not ranked in this slot, because no gem swap could turn your meta gem on with it equipped.`),
-			inConsole(`The Justicar Battlegear 4-piece set bonus was not measured, because its sim failed.`),
-			inConsole(`The Justicar Battlegear 4-piece set bonus was not measured, because no gem swap could turn your meta gem on.`),
-			inConsole(`The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed.`),
-			inConsole(`On some rows, the cost of breaking the Justicar Battlegear 4-piece set bonus was not measured apart from the pieces that break it, because their sim failed.`),
-			'The Justicar Battlegear 4-piece set bonus was not measured, because the sims that measure it could not be built.',
-			inConsole(`The Justicar Battlegear set was kept without the quick check that can skip it, because the check's sim failed.`),
-			inConsole(`The value of the Justicar Battlegear set on your gear was not fully measured, because its sim failed.`),
-			inConsole(`The Justicar Battlegear set bonuses were not all measured, because the sim could not list the set's bonuses.`),
-			inConsole(`The Justicar Battlegear set bonuses were not all measured, because no gem swap could turn your meta gem on.`),
-			inConsole(`The Justicar Battlegear 4-piece set bonus was not measured, because the sims that measure it could not be built.`),
-			inConsole(`The Justicar Battlegear set was kept without the quick check that can skip it, because the check's sim could not be built.`),
+		const boom = 'sim error: boom';
+		const noRow = 'the request database has no row for item 30987';
+		const noLayout = 'no gem layout activates meta 32409';
+		expect(cellLines()).toEqual([
+			[inConsole(`Your meta gem was not active, so the ranking swapped 1 gem in its own copy of your gear to turn it on; your gear itself was not changed.`)],
+			['If gems were swapped to turn your meta gem on, hit rating was treated as always useful, because this tab works out the hit cap only when every target is level 73.'],
+			['If gems were swapped to turn your meta gem on, hit rating was counted at full value, with no hit cap applied for this spec.'],
+			['If gems were swapped to turn your meta gem on, hit rating was valued as if your Suppression talent added no hit, so it may be valued too high.'],
+			[inConsole(`The ranking does not know which meta gem your spec uses, so new items with a meta socket got the meta gem you wear, or an empty socket and no socket bonus if you wear none.`)],
+			['2 one-handed weapons were not ranked, because you wear a two-handed weapon.'],
+			['1 off-hand item was not ranked, because you wear a two-handed weapon.'],
+			['This item was not ranked in this slot, because its sim failed.', 'panic: runtime error (full text in the browser console)'],
+			['This item was not ranked in this slot, because its sim failed.', 'panic: runtime error (full text in the browser console)'],
+			[
+				'This item was not ranked in this slot, because no gem swap could turn your meta gem on with it equipped.',
+				`${noLayout} (full text in the browser console)`,
+			],
+			['The Justicar Battlegear 4-piece set bonus was not measured, because its sim failed.', boom],
+			['The Justicar Battlegear 4-piece set bonus was not measured, because no gem swap could turn your meta gem on.', noLayout],
+			['The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed.', boom],
+			[
+				'On some rows, the cost of breaking the Justicar Battlegear 4-piece set bonus was not measured apart from the pieces that break it, because their sim failed.',
+				boom,
+			],
+			['The Justicar Battlegear 4-piece set bonus was not measured, because the sims that measure it could not be built.'],
+			["The Justicar Battlegear set was kept without the quick check that can skip it, because the check's sim failed.", boom],
+			['The value of the Justicar Battlegear set on your gear was not fully measured, because its sim failed.', boom],
+			["The Justicar Battlegear set bonuses were not all measured, because the sim could not list the set's bonuses.", 'computeStats error: boom'],
+			['The Justicar Battlegear set bonuses were not all measured, because no gem swap could turn your meta gem on.', noLayout],
+			['The Justicar Battlegear 4-piece set bonus was not measured, because the sims that measure it could not be built.', noRow],
+			["The Justicar Battlegear set was kept without the quick check that can skip it, because the check's sim could not be built.", noRow],
 		]);
-		expect([...terms(), ...definitions()].join(' ')).not.toMatch(/\d{4,}|\bEP\b|repair|candidate|priced|\bpool\b|worker died|panic|unlisted/i);
+		// The tab's own words: the label and each cell's first line. The second line is the call's error, word for word.
+		expect([...terms(), ...cellLines().map(([sentence]) => sentence)].join(' ')).not.toMatch(
+			/\d{4,}|\bEP\b|repair|candidate|priced|\bpool\b|worker died|panic|unlisted/i,
+		);
 	});
 });

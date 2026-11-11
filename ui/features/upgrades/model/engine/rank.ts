@@ -2076,7 +2076,7 @@ async function buildSetBonuses(
   const bonusNotMeasured = (
     setName: string,
     threshold: SetThreshold,
-    reason: string
+    reason: SkipReason
   ) =>
     setBonusLines.push(
       setBonusSkipSubstitution({ setName, threshold, reason })
@@ -4245,7 +4245,7 @@ async function setBonusCountsInReach(
   equipment: readonly SimItemSpec[],
   gems: GemContext,
   composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
-  onNotRead: (setId: number, reason: string) => void
+  onNotRead: (setId: number, reason: SkipReason) => void
 ): Promise<Map<number, ReadonlySet<number>>> {
   const out = new Map<number, ReadonlySet<number>>();
   if (!sim.activeSetBonuses) return out;
@@ -4645,44 +4645,70 @@ export function candidateSkipSubstitution(skip: CandidateSkip): Substitution {
     field: skip.name,
     slot: skip.slot,
     detail:
-      (skip.kind === "sim"
+      skip.kind === "sim"
         ? "This item was not ranked in this slot, because its sim failed."
-        : "This item was not ranked in this slot, because no gem swap could turn your meta gem on with it equipped.") +
-      `\nitem ${skip.itemId}, slot ${skip.slot}: ${skip.reason}`,
+        : "This item was not ranked in this slot, because no gem swap could turn your meta gem on with it equipped.",
+    // The item id is for the console only: the page names the item and slot.
+    error: `${skip.reason}\nitem ${skip.itemId}, slot ${skip.slot}`,
   };
 }
 
 /**
- * Why one set bonus was not measured; each ends its sentence before any error
- * text. A failed sim's reason carries the sim's own error (ticket 863).
+ * Why a set bonus or a set was not measured: the end of the tab's sentence
+ * and, when a call failed, its own error (tickets 863 and 874).
  */
+export type SkipReason = { because: string; error?: string };
+
 export const SET_BONUS_SKIP_REASONS = {
-  simFailed: (error: string) => `its sim failed.\n${error}`,
+  simFailed: (error: string): SkipReason => ({
+    because: "its sim failed.",
+    error,
+  }),
   /** For a skip `onSomeRows`: the sims of those rows' gear failed. */
-  rowSimsFailed: (error: string) => `their sim failed.\n${error}`,
-  metaOff: (error: string) =>
-    `no gem swap could turn your meta gem on.\n${error}`,
-  measuringSimsNotBuilt: "the sims that measure it could not be built.",
-  notBuilt: (error: string) =>
-    `the sims that measure it could not be built.\n${error}`,
+  rowSimsFailed: (error: string): SkipReason => ({
+    because: "their sim failed.",
+    error,
+  }),
+  metaOff: (error: string): SkipReason => ({
+    because: "no gem swap could turn your meta gem on.",
+    error,
+  }),
+  measuringSimsNotBuilt: {
+    because: "the sims that measure it could not be built.",
+  } as SkipReason,
+  notBuilt: (error: string): SkipReason => ({
+    because: "the sims that measure it could not be built.",
+    error,
+  }),
   /** The sim's list of a set's active bonuses (ticket 644) failed. */
-  bonusListFailed: (error: string) =>
-    `the sim could not list the set's bonuses.\n${error}`,
+  bonusListFailed: (error: string): SkipReason => ({
+    because: "the sim could not list the set's bonuses.",
+    error,
+  }),
 } as const;
+
+/** A line whose sentence is `detail` and whose call failed with `error`. */
+const withError = (
+  line: { field: string; detail: string },
+  error: string | undefined
+): Substitution => (error === undefined ? line : { ...line, error });
 
 /** One set bonus the set phase could not measure, for the run or `onSomeRows` only. */
 export type SetBonusSkip = {
   setName: string;
   threshold: SetThreshold;
-  reason: string;
+  reason: SkipReason;
   onSomeRows?: true;
 };
 
 export function setBonusSkipSubstitution(skip: SetBonusSkip): Substitution {
-  return {
-    field: `${skip.setName} ${skip.threshold}-piece set bonus`,
-    detail: `The ${skip.setName} ${skip.threshold}-piece set bonus was not measured${skip.onSomeRows ? " on some rows" : ""}, because ${skip.reason}`,
-  };
+  return withError(
+    {
+      field: `${skip.setName} ${skip.threshold}-piece set bonus`,
+      detail: `The ${skip.setName} ${skip.threshold}-piece set bonus was not measured${skip.onSomeRows ? " on some rows" : ""}, because ${skip.reason.because}`,
+    },
+    skip.reason.error
+  );
 }
 
 /**
@@ -4692,12 +4718,15 @@ export function setBonusSkipSubstitution(skip: SetBonusSkip): Substitution {
  */
 export function setBonusesSkipSubstitution(skip: {
   setName: string;
-  reason: string;
+  reason: SkipReason;
 }): Substitution {
-  return {
-    field: `${skip.setName} set`,
-    detail: `The ${skip.setName} set bonuses were not all measured, because ${skip.reason}`,
-  };
+  return withError(
+    {
+      field: `${skip.setName} set`,
+      detail: `The ${skip.setName} set bonuses were not all measured, because ${skip.reason.because}`,
+    },
+    skip.reason.error
+  );
 }
 
 /**
@@ -4711,7 +4740,8 @@ export function breakSplitSkipSubstitution(skip: {
 }): Substitution {
   return {
     field: `${skip.setName} ${skip.threshold}-piece set bonus`,
-    detail: `On some rows, the cost of breaking the ${skip.setName} ${skip.threshold}-piece set bonus was not measured apart from the pieces that break it, because their sim failed.\n${skip.error}`,
+    detail: `On some rows, the cost of breaking the ${skip.setName} ${skip.threshold}-piece set bonus was not measured apart from the pieces that break it, because their sim failed.`,
+    error: skip.error,
   };
 }
 
@@ -4729,7 +4759,8 @@ export type SetScreenSkip = {
 export function setScreenSkipSubstitution(skip: SetScreenSkip): Substitution {
   return {
     field: `${skip.setName} set`,
-    detail: `The ${skip.setName} set was kept without the quick check that can skip it, because the check's sim ${skip.notBuilt ? "could not be built" : "failed"}.\n${skip.error}`,
+    detail: `The ${skip.setName} set was kept without the quick check that can skip it, because the check's sim ${skip.notBuilt ? "could not be built" : "failed"}.`,
+    error: skip.error,
   };
 }
 
@@ -4744,7 +4775,8 @@ export function wornSetSkipSubstitution(skip: {
 }): Substitution {
   return {
     field: `${skip.setName} set`,
-    detail: `The value of the ${skip.setName} set on your gear was not fully measured, because its sim failed.\n${skip.error}`,
+    detail: `The value of the ${skip.setName} set on your gear was not fully measured, because its sim failed.`,
+    error: skip.error,
   };
 }
 

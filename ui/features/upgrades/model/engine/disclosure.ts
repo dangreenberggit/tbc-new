@@ -39,6 +39,11 @@ export type Substitution = {
    * same ring, trinket or one-hander is tried once per slot.
    */
   slot?: SimOrderName;
+  /**
+   * The error that a failed sim, read or request build gave, word for word,
+   * apart from the tab's one-sentence `detail` (ticket 874).
+   */
+  error?: string;
 };
 
 export function buildStandingAssumptions(race: Race): StandingAssumption[] {
@@ -118,7 +123,8 @@ export function renderDisclosure(opts: {
 
   if (substitutions.length > 0) {
     lines.push(`substitutions this run (${substitutions.length}):`);
-    for (const s of substitutions) lines.push(`  - ${s.field}: ${s.detail}`);
+    for (const s of substitutions)
+      lines.push(`  - ${s.field}: ${s.detail}${s.error ? `\n${s.error}` : ""}`);
   }
   return lines;
 }
