@@ -3037,6 +3037,10 @@ async function measureSetSteps(args: {
               args.individualDeltasByItemId
             ).filter((p) => p.itemId !== item.itemId)
           : undefined;
+      // A partner set whose comparison sim fails is skipped, and the chosen
+      // set's step gear is simmed below, so a failure is the row's only when
+      // no set is chosen.
+      let comparisonError: string | undefined;
       const choice = await choosePartnerSet(
         {
           row: {
@@ -3056,7 +3060,7 @@ async function measureSetSteps(args: {
             if (!request) return undefined;
             const total = await runCounted(request, stepCounter, stepFailure);
             if (!isSimFailure(total)) return total;
-            skipOnSomeRows(setId, ctx.setName, f.threshold, total.simError);
+            comparisonError ??= total.simError;
             return undefined;
           },
         },
@@ -3066,7 +3070,12 @@ async function measureSetSteps(args: {
       // partner choice's, so the ticket 502 path's are dropped first.
       delete f.pieces;
       delete f.breaks;
-      if (choice === undefined) continue;
+      if (choice === undefined) {
+        if (comparisonError !== undefined) {
+          skipOnSomeRows(setId, ctx.setName, f.threshold, comparisonError);
+        }
+        continue;
+      }
       if ("unmeasured" in choice) {
         f.partnerUnmeasured = choice.unmeasured;
         continue;
