@@ -2928,7 +2928,6 @@ async function measureSetSteps(args: {
 
   /** A bonus some rows could not measure because their sim failed. */
   const skipOnSomeRows = (
-    setId: number,
     setName: string,
     threshold: SetThreshold,
     simError: string
@@ -2972,12 +2971,7 @@ async function measureSetSteps(args: {
 
   type Future = NonNullable<SetContext["futureBonuses"]>[number];
   const requests = new Map<string, RaidSimRequest>();
-  const pending: Array<{
-    future: Future;
-    key: string;
-    setId: number;
-    setName: string;
-  }> = [];
+  const pending: Array<{ future: Future; key: string; setName: string }> = [];
   const audits: PartnerAuditEntry[] = [];
   const rowSwapOf = new Map<RankedItem, PackagePiece>();
   const partnersOf = new Map<Future, PackagePiece[]>();
@@ -3072,7 +3066,7 @@ async function measureSetSteps(args: {
       delete f.breaks;
       if (choice === undefined) {
         if (comparisonError !== undefined) {
-          skipOnSomeRows(setId, ctx.setName, f.threshold, comparisonError);
+          skipOnSomeRows(ctx.setName, f.threshold, comparisonError);
         }
         continue;
       }
@@ -3120,7 +3114,7 @@ async function measureSetSteps(args: {
       if (!request) continue;
       const key = simCacheKey(request, args.simVersion, runOpts);
       requests.set(key, request);
-      pending.push({ future: f, key, setId, setName: ctx.setName });
+      pending.push({ future: f, key, setName: ctx.setName });
     }
   }
 
@@ -3141,10 +3135,10 @@ async function measureSetSteps(args: {
     }),
     deps.concurrency ?? 1
   );
-  for (const { future, key, setId, setName } of pending) {
+  for (const { future, key, setName } of pending) {
     const simError = stepErrors.get(key);
     if (simError !== undefined) {
-      skipOnSomeRows(setId, setName, future.threshold, simError);
+      skipOnSomeRows(setName, future.threshold, simError);
     }
     const total = totals.get(key);
     if (!total) continue;
@@ -3312,11 +3306,12 @@ async function measureSetSteps(args: {
     const simError = offErrors.get(key);
     if (simError !== undefined) {
       for (const b of lost) {
-        skipOnSomeRows(
-          b.setId,
-          setLabel(equipment, b.setId),
-          b.threshold,
-          simError
+        args.bonusLines.push(
+          breakSplitSkipSubstitution({
+            setName: setLabel(equipment, b.setId),
+            threshold: b.threshold,
+            error: simError,
+          })
         );
       }
     }
@@ -4572,6 +4567,21 @@ export function setBonusSkipSubstitution(skip: SetBonusSkip): Substitution {
   return {
     field: `${skip.setName} ${skip.threshold}-piece set bonus`,
     detail: `The ${skip.setName} ${skip.threshold}-piece set bonus was not measured${skip.onSomeRows ? " on some rows" : ""}, because ${skip.reason}`,
+  };
+}
+
+/**
+ * A step's bonus-off sim that failed (ticket 863). The step is still measured
+ * as one line; only the split of its break from its pieces is lost.
+ */
+export function breakSplitSkipSubstitution(skip: {
+  setName: string;
+  threshold: SetThreshold;
+  error: string;
+}): Substitution {
+  return {
+    field: `${skip.setName} ${skip.threshold}-piece set bonus`,
+    detail: `On some rows, the cost of breaking the ${skip.setName} ${skip.threshold}-piece set bonus was not measured apart from the pieces that break it, because their sim failed.\n${skip.error}`,
   };
 }
 

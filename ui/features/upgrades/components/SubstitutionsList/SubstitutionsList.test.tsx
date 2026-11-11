@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { substitutionsFromMetaRepair } from '../../model/engine/disclosure';
 import {
+	breakSplitSkipSubstitution,
 	candidateSkipSubstitution,
 	hitCapFullWeightNote,
 	hitCapPerSpellTalentNote,
@@ -85,6 +86,7 @@ describe('SubstitutionsList', () => {
 					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.simFailed('sim error: boom') }),
 					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.metaOff('no gem layout activates meta 32409') }),
 					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.rowSimsFailed('sim error: boom'), onSomeRows: true }),
+					breakSplitSkipSubstitution({ ...setBonus, error: 'sim error: boom' }),
 					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt }),
 					setScreenSkipSubstitution({ setName: 'Justicar Battlegear', error: 'sim error: boom' }),
 					wornSetSkipSubstitution({ setName: 'Justicar Battlegear', pieces: 3, error: 'sim error: boom' }),
@@ -106,6 +108,7 @@ describe('SubstitutionsList', () => {
 			'Justicar Battlegear 4-piece set bonus',
 			'Justicar Battlegear 4-piece set bonus',
 			'Justicar Battlegear 4-piece set bonus',
+			'Justicar Battlegear 4-piece set bonus',
 			'Justicar Battlegear set',
 			'Justicar Battlegear set',
 		]);
@@ -123,6 +126,7 @@ describe('SubstitutionsList', () => {
 			`The Justicar Battlegear 4-piece set bonus was not measured, because its sim failed.${more}`,
 			`The Justicar Battlegear 4-piece set bonus was not measured, because no gem swap could turn your meta gem on.${more}`,
 			`The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed.${more}`,
+			`On some rows, the cost of breaking the Justicar Battlegear 4-piece set bonus was not measured apart from the pieces that break it, because their sim failed.${more}`,
 			'The Justicar Battlegear 4-piece set bonus was not measured, because the sims that measure it could not be built.',
 			`The Justicar Battlegear set was kept without the quick check that can skip it, because the check's sim failed.${more}`,
 			`The value of the Justicar Battlegear set at 3 pieces on your gear was not measured, because its sim failed.${more}`,
