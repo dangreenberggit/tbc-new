@@ -176,15 +176,16 @@ export const substitutionLabel = (substitution: Substitution): string =>
 		? i18n.t('upgrades_tab.assumptions.substitution_in_slot', { ns: 'upgrades', field: substitution.field, slot: simSlotLabel(substitution.slot) })
 		: substitution.field;
 
-/** A dropped-list reason as the page shows it: the first line, and where the rest went when it was cut. */
+/** A dropped-list reason or a failed run's error as the page shows it: the first line, and where the rest went when it was cut. */
 export const substitutionText = (detail: string): string => {
 	const { line, truncated } = substitutionFirstLine(detail);
 	return truncated ? `${line}${i18n.t('upgrades_tab.assumptions.substitution_truncated_suffix', { ns: 'upgrades' })}` : line;
 };
 
+/** A sim that panics ends its error in the Go stack trace, which `run_session.ts` sends to the console (ticket 868). */
 export const describeRunError = (error: unknown): string => {
 	if (error instanceof RankError && error.kind === 'not-implemented') return i18n.t('upgrades_tab.status.unsupported_spec', { ns: 'upgrades' });
-	return i18n.t('upgrades_tab.status.error', { ns: 'upgrades', message: error instanceof Error ? error.message : String(error) });
+	return i18n.t('upgrades_tab.status.error', { ns: 'upgrades', message: substitutionText(error instanceof Error ? error.message : String(error)) });
 };
 
 /** What the progress dialog names: the engine's stage until sims start, the run phase after. */

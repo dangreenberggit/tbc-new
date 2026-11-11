@@ -285,6 +285,13 @@ describe('describeRunError', () => {
 		expect(describeRunError(new Error('worker died'))).toBe('Ranking failed: worker died');
 		expect(describeRunError('boom')).toBe('Ranking failed: boom');
 	});
+
+	it('shows a failure up to its first line break and says the rest is in the console (ticket 868)', () => {
+		const panic = 'sim error (ErrorOutcome): runtime error: index out of range\nStack Trace:\ngoroutine 7 [running]:';
+		expect(describeRunError(new Error(panic))).toBe(
+			'Ranking failed: sim error (ErrorOutcome): runtime error: index out of range… (full text in the browser console)',
+		);
+	});
 });
 
 describe('progress', () => {

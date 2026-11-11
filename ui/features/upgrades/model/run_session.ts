@@ -100,7 +100,11 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 				// The store drops a superseded run's result, so it is not logged either.
 				if (id === runId) logAssumptions(result, { ...pageAssumptions, settings, host });
 			},
-			(error: unknown) => store.getState().failRun(id, env.describeError(error)),
+			(error: unknown) => {
+				// The status line shows the error's first line only (ticket 868).
+				if (id === runId) console.error('[upgrades] the run failed', error);
+				store.getState().failRun(id, env.describeError(error));
+			},
 		);
 	};
 

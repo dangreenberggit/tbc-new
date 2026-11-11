@@ -141,6 +141,17 @@ describe('createRunSession', () => {
 		await vi.waitFor(() => expect(run()).toMatchObject({ status: 'error', message: 'failed: worker died' }));
 	});
 
+	it("sends a failed run's whole error to the console, as the status line shows only its first line (ticket 868)", async () => {
+		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const { session, call, run } = setup();
+		session.start(SETTINGS, SIGNATURE, []);
+
+		const error = new Error('sim error (ErrorOutcome): panic\nStack Trace:\ngoroutine 7 [running]:');
+		call(0).fail(error);
+		await vi.waitFor(() => expect(run()).toMatchObject({ status: 'error' }));
+		expect(consoleError).toHaveBeenCalledWith('[upgrades] the run failed', error);
+	});
+
 	it('shows a loaded fixture as a finished run, aborts the run it replaced and logs the fixture once', async () => {
 		const { session, call, run } = setup();
 		equipped = [{ id: 28830 }];
