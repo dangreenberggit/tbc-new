@@ -198,15 +198,14 @@ export type WornSetRung = {
  * se = √(se_c² + se_(c−1)²), an upper bound because the rungs share a seed. A
  * count at which the set has no bonus reads 0. There is no cap on w: a set
  * with bonuses at 6 or 8 pieces gets those counts too. A failed rung makes
- * both counts that use it `sim-failed`, and its piece count and error go to
- * `onSimFailed` (ticket 863): the ladder does not know which counts hold a
- * bonus, so the failure names the rung, not a bonus. Empty when w < 2.
+ * both counts that use it `sim-failed`, and its error goes to `onSimFailed`
+ * (ticket 863). Empty when w < 2.
  */
 export async function measureWornSetLadder(
   runSim: (request: RaidSimRequest) => Promise<DpsSample>,
   composedRequest: RaidSimRequest,
   wornSetSlots: readonly number[],
-  onSimFailed?: (pieces: number, error: string) => void
+  onSimFailed?: (error: string) => void
 ): Promise<WornSetRung[]> {
   const slots = [...wornSetSlots].sort((a, b) => a - b);
   if (slots.length < 2) return [];
@@ -221,7 +220,7 @@ export async function measureWornSetLadder(
       );
     } catch (err) {
       rungs[c] = undefined;
-      onSimFailed?.(c, errorText(err));
+      onSimFailed?.(errorText(err));
     }
   }
   const out: WornSetRung[] = [];

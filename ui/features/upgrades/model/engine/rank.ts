@@ -3567,8 +3567,7 @@ async function measureWornSetLadders(
       cachedSampleRun(`${setName} worn-set ladder`),
       request,
       slots,
-      (pieces, error) =>
-        lines.push(wornSetSkipSubstitution({ setName, pieces, error }))
+      (error) => lines.push(wornSetSkipSubstitution({ setName, error }))
     );
     for (const rung of rungs) {
       const counted =
@@ -4599,16 +4598,17 @@ export function setScreenSkipSubstitution(skip: SetScreenSkip): Substitution {
 }
 
 /**
- * A worn-set ladder sim that failed, by the pieces the sim counted (ticket
- * 863). The ladder does not know which counts hold a bonus, so the line names
- * no bonus.
+ * A worn-set ladder sim that failed (ticket 863). The line names the set and
+ * no count: the ladder does not know which counts hold a bonus, and a rung's
+ * count (1 for the first) is no count the player wears.
  */
-export type WornSetSkip = { setName: string; pieces: number; error: string };
-
-export function wornSetSkipSubstitution(skip: WornSetSkip): Substitution {
+export function wornSetSkipSubstitution(skip: {
+  setName: string;
+  error: string;
+}): Substitution {
   return {
     field: `${skip.setName} set`,
-    detail: `The value of the ${skip.setName} set at ${skip.pieces} pieces on your gear was not measured, because its sim failed.\n${skip.error}`,
+    detail: `The value of the ${skip.setName} set on your gear was not fully measured, because its sim failed.\n${skip.error}`,
   };
 }
 

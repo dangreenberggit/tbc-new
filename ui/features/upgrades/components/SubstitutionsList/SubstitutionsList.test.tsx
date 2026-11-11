@@ -103,7 +103,7 @@ describe('SubstitutionsList', () => {
 					breakSplitSkipSubstitution({ ...setBonus, error: 'sim error: boom' }),
 					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt }),
 					setScreenSkipSubstitution({ setName: 'Justicar Battlegear', error: 'sim error: boom' }),
-					wornSetSkipSubstitution({ setName: 'Justicar Battlegear', pieces: 3, error: 'sim error: boom' }),
+					wornSetSkipSubstitution({ setName: 'Justicar Battlegear', error: 'sim error: boom' }),
 				]}
 			/>,
 		);
@@ -143,7 +143,7 @@ describe('SubstitutionsList', () => {
 			`On some rows, the cost of breaking the Justicar Battlegear 4-piece set bonus was not measured apart from the pieces that break it, because their sim failed.${more}`,
 			'The Justicar Battlegear 4-piece set bonus was not measured, because the sims that measure it could not be built.',
 			`The Justicar Battlegear set was kept without the quick check that can skip it, because the check's sim failed.${more}`,
-			`The value of the Justicar Battlegear set at 3 pieces on your gear was not measured, because its sim failed.${more}`,
+			`The value of the Justicar Battlegear set on your gear was not fully measured, because its sim failed.${more}`,
 		]);
 		expect([...terms(), ...definitions()].join(' ')).not.toMatch(/\d{4,}|\bEP\b|repair|candidate|priced|\bpool\b|worker died|panic|unlisted/i);
 	});
