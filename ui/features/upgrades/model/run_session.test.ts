@@ -1,5 +1,6 @@
 import { Spec } from '@generated/proto/common';
 import { fakeHost } from '@sim/testing';
+import { toastManager } from '@ui-kit/Toast';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { dbPoolHost } from '../testing/db_pool';
@@ -141,8 +142,10 @@ describe('createRunSession', () => {
 		await vi.waitFor(() => expect(run()).toMatchObject({ status: 'error', message: 'failed: worker died' }));
 	});
 
-	it("sends a failed run's whole error to the console, as the status line shows only its first line (ticket 868)", async () => {
+	// Ticket 868, as wowsims' bulk sim shows a failed run (`ui/features/bulk/model/run.ts:301-310` at 24606be6).
+	it("sends a failed run's whole error to the console and its own message to one error toast", async () => {
 		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+		const toast = vi.spyOn(toastManager, 'add');
 		const { session, call, run } = setup();
 		session.start(SETTINGS, SIGNATURE, []);
 
@@ -150,6 +153,23 @@ describe('createRunSession', () => {
 		call(0).fail(error);
 		await vi.waitFor(() => expect(run()).toMatchObject({ status: 'error' }));
 		expect(consoleError).toHaveBeenCalledWith('[upgrades] the run failed', error);
+		expect(toast.mock.calls).toEqual([[{ variant: 'error', body: error.message }]]);
+	});
+
+	it('shows no toast for a failed run that was stopped or superseded', async () => {
+		vi.spyOn(console, 'error').mockImplementation(() => {});
+		const toast = vi.spyOn(toastManager, 'add');
+		const { session, call, run } = setup();
+		session.start(SETTINGS, SIGNATURE, []);
+		session.stop();
+		call(0).fail(new Error('refused after Stop'));
+		await vi.waitFor(() => expect(run()).toMatchObject({ status: 'error' }));
+
+		session.start(SETTINGS, SIGNATURE, []);
+		session.start(SETTINGS, SIGNATURE, []);
+		call(1).fail(new Error('superseded'));
+		await settled();
+		expect(toast).not.toHaveBeenCalled();
 	});
 
 	it('shows a loaded fixture as a finished run, aborts the run it replaced and logs the fixture once', async () => {

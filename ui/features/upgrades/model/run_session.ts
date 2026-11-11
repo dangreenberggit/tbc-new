@@ -7,6 +7,7 @@
 
 import type { Spec } from '@generated/proto/common';
 import type { IndividualSimHost } from '@sim/sim_host';
+import { toastManager } from '@ui-kit/Toast';
 
 import { equippedItemIds } from './adapters/player_gear_source';
 import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
@@ -63,6 +64,16 @@ const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'cutoff' | 'substi
 	for (const line of substitutionConsoleLines(result.substitutions)) console.warn(line);
 };
 
+/**
+ * A failed run's own message, shown as wowsims' bulk sim shows one
+ * (`ui/features/bulk/model/run.ts:301-310` at 24606be6, ticket 868). The
+ * caller skips it after Stop, as wowsims skips it when the user cancelled.
+ */
+const toastErrorMessage = (error: unknown) => {
+	const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : undefined;
+	if (errorMessage) toastManager.add({ variant: 'error', body: errorMessage });
+};
+
 /** The assumptions line's EP-weights set, from the page's spec and talents now. */
 const assumptionsContextOf = (host: IndividualSimHost<Spec>, { specId }: MeasuredOn): AssumptionsContext => ({
 	epWeightsSet: specId && epWeightsSetFor(specId, host.player.getTalentTreePoints()),
@@ -101,8 +112,10 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 				if (id === runId) logAssumptions(result, { ...pageAssumptions, settings, host });
 			},
 			(error: unknown) => {
-				// The status line shows the error's first line only (ticket 868).
-				if (id === runId) console.error('[upgrades] the run failed', error);
+				if (id === runId) {
+					console.error('[upgrades] the run failed', error);
+					if (!current.signal.aborted) toastErrorMessage(error);
+				}
 				store.getState().failRun(id, env.describeError(error));
 			},
 		);

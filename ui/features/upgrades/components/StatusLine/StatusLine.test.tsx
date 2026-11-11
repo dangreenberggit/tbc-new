@@ -60,8 +60,8 @@ describe('StatusLine', () => {
 	});
 
 	it('puts a failure in the alert region and leaves the polite region empty', () => {
-		const { getByRole } = render(<StatusLine run={{ status: 'error', runId: 1, message: 'Ranking failed: boom' }} />);
-		expect(getByRole('alert').textContent).toBe('Ranking failed: boom');
+		const { getByRole } = render(<StatusLine run={{ status: 'error', runId: 1, message: 'Ranking failed.' }} />);
+		expect(getByRole('alert').textContent).toBe('Ranking failed.');
 		expect(getByRole('status').textContent).toBe('');
 	});
 });

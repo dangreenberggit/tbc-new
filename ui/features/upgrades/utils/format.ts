@@ -122,8 +122,7 @@ const DIFFICULTY_MARKS = [...new Set(difficultyNames.values())].map(name => ` ($
  * "Tempest Keep (N)" before "Keep" and never leaves "(N)" alone on a line (ticket 607). Only the drawn text changes:
  * `sourceDetail` keeps the plain space, because the column sorts on it and tests compare it with recorded text.
  */
-export const keepMarkWithZone = (text: string): string =>
-	DIFFICULTY_MARKS.reduce((out, mark) => out.replaceAll(mark, NO_BREAK_SPACE + mark.slice(1)), text);
+export const keepMarkWithZone = (text: string): string => DIFFICULTY_MARKS.reduce((out, mark) => out.replaceAll(mark, NO_BREAK_SPACE + mark.slice(1)), text);
 
 export const zoneWithMark = (zone: string, difficulty: DungeonDifficulty): string =>
 	keepMarkWithZone(`${zone} (${difficultyNames.get(difficulty) ?? 'Unknown'})`);
@@ -189,13 +188,12 @@ export const substitutionText = (detail: string): string => {
  * A failed call's error under its line (ticket 874): its first line, and where the rest went when it was cut, as the
  * status line shows a failed run's error. Undefined when the error is missing or blank, so no empty line shows.
  */
-export const substitutionErrorText = (error: string | undefined): string | undefined =>
-	error?.trim() ? substitutionText(error.trimStart()) : undefined;
+export const substitutionErrorText = (error: string | undefined): string | undefined => (error?.trim() ? substitutionText(error.trimStart()) : undefined);
 
-/** A sim that panics ends its error in the Go stack trace, which `run_session.ts` sends to the console (ticket 868). */
+/** The status line names no error: `run_session.ts` shows the error's own message in a toast (ticket 868). */
 export const describeRunError = (error: unknown): string => {
 	if (error instanceof RankError && error.kind === 'not-implemented') return i18n.t('upgrades_tab.status.unsupported_spec', { ns: 'upgrades' });
-	return i18n.t('upgrades_tab.status.error', { ns: 'upgrades', message: substitutionText(error instanceof Error ? error.message : String(error)) });
+	return i18n.t('upgrades_tab.status.error', { ns: 'upgrades' });
 };
 
 /** What the progress dialog names: the engine's stage until sims start, the run phase after. */

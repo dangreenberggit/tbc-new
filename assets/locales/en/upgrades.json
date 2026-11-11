@@ -45,7 +45,7 @@
 		"status": {
 			"idle": "Ranks upgrades against your current gear and settings on this page.",
 			"unsupported_spec": "This spec has no ranking data yet.",
-			"error": "Ranking failed: {{message}}",
+			"error": "Ranking failed.",
 			"done": "Your current gear: {{dps}} DPS.",
 			"stale": "settings changed since this ranking — results may be out of date",
 			"stale_hint": "Run again to rank with the current settings.",
