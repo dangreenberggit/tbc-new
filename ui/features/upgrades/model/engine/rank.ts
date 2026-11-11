@@ -2453,9 +2453,8 @@ async function buildSetBonuses(
       // Ticket 535: the package sim and its gate's "on" and "off" are one
       // pair, so all three come from one `versionGears` call when the gate
       // runs; the package's own version is kept for its sim.
-      const plainVersion: { built: boolean; entry?: VersionEntry } = {
-        built: false,
-      };
+      // The package's plain version once built, or why it could not be.
+      const plainVersion: { entry?: VersionEntry | BuildFailure } = {};
       // A version's failed repair skips the package with the repair's error,
       // as on the package's own build; an undefined entry alone would show
       // a failed sim, and none ran.
@@ -2470,10 +2469,7 @@ async function buildSetBonuses(
           [{}, ...copiesList],
           noteRepairError
         );
-        plainVersion.built = true;
-        if (entries[0] && !isBuildFailure(entries[0])) {
-          plainVersion.entry = entries[0];
-        }
+        plainVersion.entry = entries[0];
         if (versionRepairError) {
           const failed = { buildError: errorText(versionRepairError) };
           return copiesList.map(() => failed);
@@ -2540,35 +2536,56 @@ async function buildSetBonuses(
       const gateFields = sameGear
         ? { sameGearDps: sameGear.dps, sameGearSe: sameGear.se }
         : {};
+      const packageNotMeasured = (reason: SkipReason) => {
+        bonusNotMeasured(label, threshold, reason);
+        results.push({
+          setId,
+          setName: label,
+          threshold,
+          piecesWorn,
+          packageItemIds: addedPieces.map((p) => p.itemId),
+          packageDeltaDps: 0,
+          ...gateFields,
+          unmeasured: "sim-failed",
+        });
+        if (threshold === 2) twoPieceFailed = true;
+      };
 
-      if (!plainVersion.built) {
-        const [entry] = await versionGears(
+      if (!plainVersion.entry) {
+        [plainVersion.entry] = await versionGears(
           rebuildPackage,
           builtPackage,
           [{}],
           noteRepairError
         );
-        if (entry && !isBuildFailure(entry)) plainVersion.entry = entry;
         if (versionRepairError) {
           skipRepairFailed(versionRepairError);
           continue;
         }
       }
-      const packageRequest = plainVersion.entry?.request;
+      // `versionGears` gives one entry per copies, so the entry is set here.
+      const packageEntry = plainVersion.entry!;
+      if (isBuildFailure(packageEntry)) {
+        packageNotMeasured(
+          SET_BONUS_SKIP_REASONS.notBuilt(packageEntry.buildError)
+        );
+        continue;
+      }
+      const packageRequest = packageEntry.request;
       // The package entry's gem changes are the swaps of the build its sim
       // wore, without the package's own slots (ticket 535).
       const packageSlots = new Set(addedPieces.map((p) => p.slotIndex));
-      const packageRepairSwaps = (plainVersion.entry?.swaps ?? []).filter(
+      const packageRepairSwaps = packageEntry.swaps.filter(
         (s) => !packageSlots.has(s.itemIndex)
       );
-      let packageObs = packageRequest
-        ? await readCachedSim(deps, packageRequest, simVersion, runOpts)
-        : undefined;
+      let packageObs = await readCachedSim(
+        deps,
+        packageRequest,
+        simVersion,
+        runOpts
+      );
       if (!packageObs) {
         try {
-          if (!packageRequest) {
-            throw new Error("the package request could not be built");
-          }
           packageObs = await deps.sim.run(packageRequest, runOpts);
         } catch (err) {
           // No warning for a sim the Stop guard refused (ticket 533).
@@ -2578,22 +2595,9 @@ async function buildSetBonuses(
               err
             );
           }
-          bonusNotMeasured(
-            label,
-            threshold,
+          packageNotMeasured(
             SET_BONUS_SKIP_REASONS.simFailed(errorText(err))
           );
-          results.push({
-            setId,
-            setName: label,
-            threshold,
-            piecesWorn,
-            packageItemIds: addedPieces.map((p) => p.itemId),
-            packageDeltaDps: 0,
-            ...gateFields,
-            unmeasured: "sim-failed",
-          });
-          if (threshold === 2) twoPieceFailed = true;
           continue;
         }
         await cacheSimResult(
@@ -2665,12 +2669,7 @@ async function buildSetBonuses(
                 simVersion,
                 runOpts,
                 versionGears,
-                (error) =>
-                  bonusNotMeasured(
-                    label,
-                    2,
-                    SET_BONUS_SKIP_REASONS.simFailed(error)
-                  )
+                (reason) => bonusNotMeasured(label, 2, reason)
               )
             : undefined;
         if (pairB2) {
@@ -2970,48 +2969,57 @@ async function measureSetSteps(args: {
     };
   };
 
-  /** A bonus some rows could not measure because their sim failed. */
+  /** A bonus some rows could not measure, and why. */
   const skipOnSomeRows = (
     setName: string,
     threshold: SetThreshold,
-    simError: string
+    reason: SkipReason
   ) =>
     args.bonusLines.push(
-      setBonusSkipSubstitution({
-        setName,
-        threshold,
-        reason: SET_BONUS_SKIP_REASONS.rowSimsFailed(simError),
-        onSomeRows: true,
-      })
+      setBonusSkipSubstitution({ setName, threshold, reason, onSomeRows: true })
     );
 
   const inSlotOrder = (swaps: readonly PackagePiece[]) =>
     [...swaps].sort((a, b) => a.slotIndex - b.slotIndex);
-  /** The step gear's chain, or undefined when a gem repair fails. */
-  const stepBuild = (swaps: readonly PackagePiece[]): ChainBuild | undefined => {
+  /** The step gear's chain, or the error of its failed gem repair. */
+  const stepChain = (
+    swaps: readonly PackagePiece[]
+  ): ChainBuild | MetaRepairError => {
     try {
       return chainSwapsWithRepairs(equipment, inSlotOrder(swaps), gems);
     } catch (err) {
       if (!(err instanceof MetaRepairError)) throw err;
-      return undefined;
+      return err;
     }
+  };
+  /** The step gear's chain, or undefined when a gem repair fails. */
+  const stepBuild = (swaps: readonly PackagePiece[]): ChainBuild | undefined => {
+    const chain = stepChain(swaps);
+    return chain instanceof MetaRepairError ? undefined : chain;
   };
   const stepRebuild =
     (swaps: readonly PackagePiece[]) => (g: GemContext) =>
       chainSwapsWithRepairs(equipment, inSlotOrder(swaps), g);
 
   /**
-   * The step gear's request, its own version (ticket 535), or undefined when
-   * a gem repair fails.
+   * The step gear's request, its own version (ticket 535), or why it could
+   * not be built: a failed gem repair or a request build error (ticket 872).
    */
   const stepGear = async (
     swaps: readonly PackagePiece[]
-  ): Promise<RaidSimRequest | undefined> => {
-    const build = stepBuild(swaps);
-    if (!build) return undefined;
-    const [entry] = await args.versionGears(stepRebuild(swaps), build, [{}]);
-    return entry && !isBuildFailure(entry) ? entry.request : undefined;
+  ): Promise<RaidSimRequest | SkipReason> => {
+    const build = stepChain(swaps);
+    if (build instanceof MetaRepairError) {
+      return SET_BONUS_SKIP_REASONS.metaOff(build.message);
+    }
+    // `versionGears` gives one entry per copies.
+    const entry = (await args.versionGears(stepRebuild(swaps), build, [{}]))[0]!;
+    return isBuildFailure(entry)
+      ? SET_BONUS_SKIP_REASONS.rowsNotBuilt(entry.buildError)
+      : entry.request;
   };
+  const isSkipReason = (value: RaidSimRequest | SkipReason): value is SkipReason =>
+    "because" in value;
 
   type Future = NonNullable<SetContext["futureBonuses"]>[number];
   const requests = new Map<string, RaidSimRequest>();
@@ -3078,7 +3086,7 @@ async function measureSetSteps(args: {
       // A partner set whose comparison sim fails is skipped, and the chosen
       // set's step gear is simmed below, so a failure is the row's only when
       // no set is chosen.
-      let comparisonError: string | undefined;
+      let comparisonFailure: SkipReason | undefined;
       const choice = await choosePartnerSet(
         {
           row: {
@@ -3095,10 +3103,15 @@ async function measureSetSteps(args: {
           ...(todaysPieces ? { todaysPieces } : {}),
           simGear: async (partners) => {
             const request = await stepGear([rowSwap, ...partners]);
-            if (!request) return undefined;
+            if (isSkipReason(request)) {
+              comparisonFailure ??= request;
+              return undefined;
+            }
             const total = await runCounted(request, stepCounter, stepFailure);
             if (!isSimFailure(total)) return total;
-            comparisonError ??= total.simError;
+            comparisonFailure ??= SET_BONUS_SKIP_REASONS.rowSimsFailed(
+              total.simError
+            );
             return undefined;
           },
         },
@@ -3109,8 +3122,8 @@ async function measureSetSteps(args: {
       delete f.pieces;
       delete f.breaks;
       if (choice === undefined) {
-        if (comparisonError !== undefined) {
-          skipOnSomeRows(ctx.setName, f.threshold, comparisonError);
+        if (comparisonFailure !== undefined) {
+          skipOnSomeRows(ctx.setName, f.threshold, comparisonFailure);
         }
         continue;
       }
@@ -3155,7 +3168,10 @@ async function measureSetSteps(args: {
         });
       }
       const request = await stepGear([rowSwap, ...partners]);
-      if (!request) continue;
+      if (isSkipReason(request)) {
+        skipOnSomeRows(ctx.setName, f.threshold, request);
+        continue;
+      }
       const key = simCacheKey(request, args.simVersion, runOpts);
       requests.set(key, request);
       pending.push({ future: f, key, setName: ctx.setName });
@@ -3182,7 +3198,11 @@ async function measureSetSteps(args: {
   for (const { future, key, setName } of pending) {
     const simError = stepErrors.get(key);
     if (simError !== undefined) {
-      skipOnSomeRows(setName, future.threshold, simError);
+      skipOnSomeRows(
+        setName,
+        future.threshold,
+        SET_BONUS_SKIP_REASONS.rowSimsFailed(simError)
+      );
     }
     const total = totals.get(key);
     if (!total) continue;
@@ -3264,10 +3284,23 @@ async function measureSetSteps(args: {
       isBuildFailure(plainEntry) ||
       isBuildFailure(offEntry)
     ) {
+      const error = [plainEntry, offEntry].find(isBuildFailure)?.buildError;
       console.warn(
         "[upgrades] set step break not split: its request could not be built",
-        [plainEntry, offEntry].find(isBuildFailure)?.buildError
+        error
       );
+      if (error !== undefined) {
+        for (const b of lost) {
+          args.bonusLines.push(
+            breakSplitSkipSubstitution({
+              setName: setLabel(equipment, b.setId),
+              threshold: b.threshold,
+              error,
+              notBuilt: true,
+            })
+          );
+        }
+      }
       return false;
     }
     const plain = plainEntry.request;
@@ -3442,8 +3475,9 @@ function substitutedPackageBreaks(
  * One sim of two break-free set pieces added together at worn 1, giving the
  * 2pc value `B2 = Σ singles − pair delta` (ticket 492). Undefined when the gem
  * repair or the sim fails; the caller then keeps the raw 4pc `bonusDps` and
- * leaves its `bonusDpsNet` unset. A failed sim's error goes to `onSimFailed`
- * (ticket 863), except a sim Stop refused.
+ * leaves its `bonusDpsNet` unset. Why it was not measured goes to
+ * `onNotMeasured` with the error (tickets 863 and 872), except a sim Stop
+ * refused.
  */
 async function measurePairTwoPiece(
   bonusLabel: string,
@@ -3457,7 +3491,7 @@ async function measurePairTwoPiece(
   simVersion: string,
   runOpts: SimRunOpts,
   versionGears: VersionGears,
-  onSimFailed: (error: string) => void
+  onNotMeasured: (reason: SkipReason) => void
 ): Promise<{ dps: number; se: number } | undefined> {
   let pairBuild: ChainBuild;
   try {
@@ -3468,6 +3502,7 @@ async function measurePairTwoPiece(
       `[upgrades] ${bonusLabel} net value not measured: gem repair failed for the worn-1 pair that measures the 2pc`,
       err
     );
+    onNotMeasured(SET_BONUS_SKIP_REASONS.metaOff(err.message));
     return undefined;
   }
   const [entry] = await versionGears(
@@ -3480,6 +3515,7 @@ async function measurePairTwoPiece(
       `[upgrades] ${bonusLabel} net value not measured: the request for the worn-1 pair that measures the 2pc could not be built`,
       entry?.buildError
     );
+    if (entry) onNotMeasured(SET_BONUS_SKIP_REASONS.notBuilt(entry.buildError));
     return undefined;
   }
   const request = entry.request;
@@ -3494,7 +3530,7 @@ async function measurePairTwoPiece(
           `[upgrades] ${bonusLabel} net value not measured: the sim failed for the worn-1 pair that measures the 2pc`,
           err
         );
-        onSimFailed(errorText(err));
+        onNotMeasured(SET_BONUS_SKIP_REASONS.simFailed(errorText(err)));
       }
       return undefined;
     }
@@ -3625,7 +3661,14 @@ async function measureWornSetLadders(
       cachedSampleRun(`${setName} worn-set ladder`),
       request,
       slots,
-      (error) => lines.push(wornSetSkipSubstitution({ setName, error }))
+      (error, notBuilt) =>
+        lines.push(
+          wornSetSkipSubstitution({
+            setName,
+            error,
+            ...(notBuilt ? { notBuilt } : {}),
+          })
+        )
     );
     const bonusCounts =
       readBonuses && rungs.some((rung) => rung.unmeasured !== undefined)
@@ -3656,11 +3699,22 @@ async function wornSetBonusCounts(
   setName: string,
   lines: Substitution[]
 ): Promise<ReadonlySet<number> | undefined> {
+  let setLess: RaidSimRequest;
+  try {
+    setLess = applySetLessCopies(request, slots);
+  } catch (err) {
+    console.warn(`[upgrades] ${setName}: its bonus counts were not read`, err);
+    lines.push(
+      setBonusesSkipSubstitution({
+        setName,
+        reason: SET_BONUS_SKIP_REASONS.bonusListNotBuilt(errorText(err)),
+      })
+    );
+    return new Set();
+  }
   try {
     const worn = await readBonuses(request);
-    const left = new Set(
-      await readBonuses(applySetLessCopies(request, slots))
-    );
+    const left = new Set(await readBonuses(setLess));
     const counts = new Set<number>();
     for (const name of worn) {
       if (left.has(name)) continue;
@@ -4680,6 +4734,16 @@ export const SET_BONUS_SKIP_REASONS = {
     because: "the sims that measure it could not be built.",
     error,
   }),
+  /** For a skip `onSomeRows`: those rows' requests could not be built. */
+  rowsNotBuilt: (error: string): SkipReason => ({
+    because: "their sims could not be built.",
+    error,
+  }),
+  /** The request for the set's bonus list could not be built (ticket 872). */
+  bonusListNotBuilt: (error: string): SkipReason => ({
+    because: "the check that lists the set's bonuses could not be built.",
+    error,
+  }),
   /** The sim's list of a set's active bonuses (ticket 644) failed. */
   bonusListFailed: (error: string): SkipReason => ({
     because: "the sim could not list the set's bonuses.",
@@ -4737,10 +4801,12 @@ export function breakSplitSkipSubstitution(skip: {
   setName: string;
   threshold: SetThreshold;
   error: string;
+  /** The bonus-off request could not be built, so no sim ran (ticket 872). */
+  notBuilt?: true;
 }): Substitution {
   return {
     field: `${skip.setName} ${skip.threshold}-piece set bonus`,
-    detail: `On some rows, the cost of breaking the ${skip.setName} ${skip.threshold}-piece set bonus was not measured apart from the pieces that break it, because their sim failed.`,
+    detail: `On some rows, the cost of breaking the ${skip.setName} ${skip.threshold}-piece set bonus was not measured apart from the pieces that break it, because their sim ${skip.notBuilt ? "could not be built" : "failed"}.`,
     error: skip.error,
   };
 }
@@ -4772,10 +4838,12 @@ export function setScreenSkipSubstitution(skip: SetScreenSkip): Substitution {
 export function wornSetSkipSubstitution(skip: {
   setName: string;
   error: string;
+  /** The rung's request could not be built, so no sim ran (ticket 872). */
+  notBuilt?: true;
 }): Substitution {
   return {
     field: `${skip.setName} set`,
-    detail: `The value of the ${skip.setName} set on your gear was not fully measured, because its sim failed.`,
+    detail: `The value of the ${skip.setName} set on your gear was not fully measured, because its sim ${skip.notBuilt ? "could not be built" : "failed"}.`,
     error: skip.error,
   };
 }

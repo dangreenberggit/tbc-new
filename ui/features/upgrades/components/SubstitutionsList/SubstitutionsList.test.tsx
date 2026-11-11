@@ -135,6 +135,13 @@ describe('SubstitutionsList', () => {
 					setBonusesSkipSubstitution({ setName: 'Justicar Battlegear', reason: SET_BONUS_SKIP_REASONS.metaOff('no gem layout activates meta 32409') }),
 					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.notBuilt('the request database has no row for item 30987') }),
 					setScreenSkipSubstitution({ setName: 'Justicar Battlegear', error: 'the request database has no row for item 30987', notBuilt: true }),
+					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.rowsNotBuilt('the request database has no row for item 30987'), onSomeRows: true }),
+					breakSplitSkipSubstitution({ ...setBonus, error: 'the request database has no row for item 30987', notBuilt: true }),
+					wornSetSkipSubstitution({ setName: 'Justicar Battlegear', error: 'the request database has no row for item 30987', notBuilt: true }),
+					setBonusesSkipSubstitution({
+						setName: 'Justicar Battlegear',
+						reason: SET_BONUS_SKIP_REASONS.bonusListNotBuilt('the request database has no row for item 30987'),
+					}),
 				]}
 			/>,
 		);
@@ -159,6 +166,10 @@ describe('SubstitutionsList', () => {
 			'Justicar Battlegear set',
 			'Justicar Battlegear set',
 			'Justicar Battlegear 4-piece set bonus',
+			'Justicar Battlegear set',
+			'Justicar Battlegear 4-piece set bonus',
+			'Justicar Battlegear 4-piece set bonus',
+			'Justicar Battlegear set',
 			'Justicar Battlegear set',
 		]);
 		const boom = 'sim error: boom';
@@ -192,6 +203,13 @@ describe('SubstitutionsList', () => {
 			['The Justicar Battlegear set bonuses were not all measured, because no gem swap could turn your meta gem on.', noLayout],
 			['The Justicar Battlegear 4-piece set bonus was not measured, because the sims that measure it could not be built.', noRow],
 			["The Justicar Battlegear set was kept without the quick check that can skip it, because the check's sim could not be built.", noRow],
+			['The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sims could not be built.', noRow],
+			[
+				'On some rows, the cost of breaking the Justicar Battlegear 4-piece set bonus was not measured apart from the pieces that break it, because their sim could not be built.',
+				noRow,
+			],
+			['The value of the Justicar Battlegear set on your gear was not fully measured, because its sim could not be built.', noRow],
+			["The Justicar Battlegear set bonuses were not all measured, because the check that lists the set's bonuses could not be built.", noRow],
 		]);
 		// The tab's own words: the label and each cell's first line. The second line is the call's error, word for word.
 		expect([...terms(), ...cellLines().map(([sentence]) => sentence)].join(' ')).not.toMatch(

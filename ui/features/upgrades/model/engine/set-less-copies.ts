@@ -211,29 +211,36 @@ export type WornSetRung = {
  * se = √(se_c² + se_(c−1)²), an upper bound because the rungs share a seed. A
  * count at which the set has no bonus reads 0. There is no cap on w: a set
  * with bonuses at 6 or 8 pieces gets those counts too. A failed rung makes
- * both counts that use it `sim-failed`, and its error goes to `onSimFailed`
- * (ticket 863). Empty when w < 2.
+ * both counts that use it `sim-failed`, and its error goes to `onFailed`,
+ * with `notBuilt` when the rung's request could not be built and no sim ran
+ * (tickets 863 and 872). Empty when w < 2.
  */
 export async function measureWornSetLadder(
   runSim: (request: RaidSimRequest) => Promise<DpsSample>,
   composedRequest: RaidSimRequest,
   wornSetSlots: readonly number[],
-  onSimFailed?: (error: string) => void
+  onFailed?: (error: string, notBuilt?: true) => void
 ): Promise<WornSetRung[]> {
   const slots = [...wornSetSlots].sort((a, b) => a - b);
   if (slots.length < 2) return [];
   const rungs: Array<DpsSample | undefined> = [];
   for (let c = 1; c <= slots.length; c++) {
+    let request: RaidSimRequest;
     try {
-      rungs[c] = await runSim(
-        applyCopies(composedRequest, {
-          setKept: slots.slice(1, c),
-          setLess: slots.slice(c),
-        })
-      );
+      request = applyCopies(composedRequest, {
+        setKept: slots.slice(1, c),
+        setLess: slots.slice(c),
+      });
     } catch (err) {
       rungs[c] = undefined;
-      onSimFailed?.(errorText(err));
+      onFailed?.(errorText(err), true);
+      continue;
+    }
+    try {
+      rungs[c] = await runSim(request);
+    } catch (err) {
+      rungs[c] = undefined;
+      onFailed?.(errorText(err));
     }
   }
   const out: WornSetRung[] = [];
