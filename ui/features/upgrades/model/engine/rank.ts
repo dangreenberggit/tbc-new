@@ -134,6 +134,7 @@ import type { Store } from "./seams/store";
 import { setBreakNote } from "./set-bonus";
 import {
   applyCopies,
+  applySetLessCopies,
   clearsSameGearGate,
   errorText,
   isSimFailure,
@@ -2112,7 +2113,10 @@ async function buildSetBonuses(
         composeFor,
         cachedSampleRun,
         setBonusNoiseFloorDps(cutoff),
-        setCheckLines
+        setCheckLines,
+        deps.sim.activeSetBonuses
+          ? (request) => deps.sim.activeSetBonuses!(request)
+          : undefined
       )
     : [];
   const counts: BonusCountPredicate = measureBrokenSetValue
@@ -3550,8 +3554,11 @@ function countMembersBreaking(
 /**
  * The worn-set ladder of every set worn at 2 or more pieces, in set-id order
  * (ticket 512). Each count is `counted` when its value clears the same noise
- * gate as a set bonus, or when its sims failed. No table decides which sets or
- * counts are measured.
+ * gate as a set bonus, or when its sims failed and the set has a bonus at
+ * that count. No table decides which sets or counts are measured. A failed
+ * rung leaves its count unknown, and a count with no bonus would then be
+ * listed as a break (ticket 870), so the sim's list of the set's bonuses
+ * (`readBonuses`) decides; without that list, a failed count is counted.
  */
 async function measureWornSetLadders(
   equipment: readonly SimItemSpec[],
@@ -3560,7 +3567,8 @@ async function measureWornSetLadders(
     what: string
   ) => (request: RaidSimRequest) => Promise<DpsSample>,
   floorDps: number,
-  lines: Substitution[]
+  lines: Substitution[],
+  readBonuses?: (request: RaidSimRequest) => Promise<readonly string[]>
 ): Promise<WornSetLadderEntry[]> {
   const worn = [...setCounts(equipment)]
     .filter(([, count]) => count >= 2)
@@ -3580,15 +3588,59 @@ async function measureWornSetLadders(
       slots,
       (error) => lines.push(wornSetSkipSubstitution({ setName, error }))
     );
+    const bonusCounts =
+      readBonuses && rungs.some((rung) => rung.unmeasured !== undefined)
+        ? await wornSetBonusCounts(readBonuses, request, slots, setName, lines)
+        : undefined;
     for (const rung of rungs) {
       const counted =
-        rung.unmeasured !== undefined ||
-        (rung.dps !== undefined &&
-          clearsSameGearGate(rung.dps, rung.se ?? 0, floorDps));
+        rung.unmeasured !== undefined
+          ? (bonusCounts?.has(rung.count) ?? true)
+          : rung.dps !== undefined &&
+            clearsSameGearGate(rung.dps, rung.se ?? 0, floorDps);
       entries.push({ setId, setName, ...rung, counted });
     }
   }
   return entries;
+}
+
+/**
+ * The counts at which a worn set has a bonus, as the sim lists them (ticket
+ * 870): the bonuses active on the worn gear that go when the set's pieces are
+ * sent as set-less copies. Undefined when a read fails; a failure that Stop
+ * did not cause adds a line with its error.
+ */
+async function wornSetBonusCounts(
+  readBonuses: (request: RaidSimRequest) => Promise<readonly string[]>,
+  request: RaidSimRequest,
+  slots: readonly number[],
+  setName: string,
+  lines: Substitution[]
+): Promise<ReadonlySet<number> | undefined> {
+  try {
+    const worn = await readBonuses(request);
+    const left = new Set(
+      await readBonuses(applySetLessCopies(request, slots))
+    );
+    const counts = new Set<number>();
+    for (const name of worn) {
+      if (left.has(name)) continue;
+      const match = / \((\d+)pc\)$/.exec(name);
+      if (match) counts.add(Number(match[1]));
+    }
+    return counts;
+  } catch (err) {
+    if (!(err instanceof StopRefusedSim)) {
+      console.warn(`[upgrades] ${setName}: its bonus counts were not read`, err);
+      lines.push(
+        setBonusesSkipSubstitution({
+          setName,
+          reason: SET_BONUS_SKIP_REASONS.bonusListFailed(errorText(err)),
+        })
+      );
+    }
+    return undefined;
+  }
 }
 
 /** The break predicate the flag path uses: a count the ladder counted. */
