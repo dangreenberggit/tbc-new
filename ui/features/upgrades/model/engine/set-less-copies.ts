@@ -126,13 +126,24 @@ export const errorText = (err: unknown): string =>
   err instanceof Error ? err.message : String(err);
 
 /**
+ * A request that could not be built, with the error that stopped it, so no
+ * sim ran (ticket 869).
+ */
+export type BuildFailure = { buildError: string };
+
+export const isBuildFailure = <T extends object>(
+  value: T | BuildFailure | undefined
+): value is BuildFailure => value !== undefined && "buildError" in value;
+
+/**
  * The value of one set bonus on the gear `composedRequest` wears. The first
  * `setPieceSlots.length − lowerCount` set pieces, in slot order, are copies in
  * both sims: set-kept in the "on" sim, set-less in the "off" sim. With
  * `lowerCount` = t − 1 the "off" sim keeps every bonus below t. The value is
  * on − off, and `se` combines both sims' standard errors. Undefined when
- * nothing is left to copy or a request cannot be built, so no sim ran; a
- * `SimFailure` when a sim fails. With `requestsFor`, both requests come from
+ * nothing is left to copy, a `BuildFailure` when a request cannot be built,
+ * so no sim ran; a `SimFailure` when a sim fails. With `requestsFor`, both
+ * requests come from
  * one call to it, so each can carry the gems repair chose for its own hit
  * (ticket 535); without it, both are `composedRequest` with the copies
  * applied. A rejection from `requestsFor` is not caught here: it goes to the
@@ -145,8 +156,8 @@ export async function measureSameGearBonus(
   lowerCount: number,
   requestsFor?: (
     copiesList: Array<{ setKept: number[]; setLess: number[] }>
-  ) => Promise<Array<RaidSimRequest | undefined>>
-): Promise<DpsSample | SimFailure | undefined> {
+  ) => Promise<Array<RaidSimRequest | BuildFailure>>
+): Promise<DpsSample | SimFailure | BuildFailure | undefined> {
   const inSlotOrder = [...setPieceSlots].sort((a, b) => a - b);
   const toCopy = inSlotOrder.slice(0, inSlotOrder.length - lowerCount);
   if (toCopy.length === 0) return undefined;
@@ -154,19 +165,21 @@ export async function measureSameGearBonus(
     { setKept: toCopy, setLess: [] },
     { setKept: [], setLess: toCopy },
   ]);
-  let onRequest: RaidSimRequest | undefined;
-  let offRequest: RaidSimRequest | undefined;
+  let onRequest: RaidSimRequest | BuildFailure | undefined;
+  let offRequest: RaidSimRequest | BuildFailure | undefined;
   if (requests) {
     [onRequest, offRequest] = requests;
   } else {
     try {
       onRequest = applyCopies(composedRequest, { setKept: toCopy });
       offRequest = applyCopies(composedRequest, { setLess: toCopy });
-    } catch {
-      return undefined;
+    } catch (err) {
+      return { buildError: errorText(err) };
     }
   }
   if (!onRequest || !offRequest) return undefined;
+  if (isBuildFailure(onRequest)) return onRequest;
+  if (isBuildFailure(offRequest)) return offRequest;
   try {
     const on = await runSim(onRequest);
     const off = await runSim(offRequest);

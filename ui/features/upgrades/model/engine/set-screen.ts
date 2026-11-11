@@ -36,7 +36,12 @@ import type {
   SimObservation,
   SimRunOpts,
 } from "./seams/sim-runner";
-import { applyCopies, errorText } from "./set-less-copies";
+import {
+  applyCopies,
+  type BuildFailure,
+  errorText,
+  isBuildFailure,
+} from "./set-less-copies";
 
 export type SetScreenMode = "off" | "record" | "on";
 
@@ -166,12 +171,12 @@ export type ScreenPackage = {
   added: ReadonlyArray<{ slotIndex: number; itemId: number }>;
   /**
    * Each rung's request with its own repair-chosen gems (ticket 535), one
-   * entry per copies, undefined when that request cannot be built. Absent
-   * means every rung is `request` with its copies applied.
+   * entry per copies, a `BuildFailure` when that request cannot be built.
+   * Absent means every rung is `request` with its copies applied.
    */
   requestsFor?: (
     copiesList: Array<{ setKept: number[]; setLess: number[] }>
-  ) => Promise<Array<RaidSimRequest | undefined>>;
+  ) => Promise<Array<RaidSimRequest | BuildFailure>>;
 };
 
 export type SetScreenInput = {
@@ -197,6 +202,8 @@ export type SetScreenInput = {
   signal?: AbortSignal;
   /** Each failed sim's error, except a sim Stop refused (ticket 863). */
   onSimFailed?: (setId: number, error: string) => void;
+  /** The error of each rung request that could not be built (ticket 869). */
+  onRequestNotBuilt?: (setId: number, error: string) => void;
   pairIterations?: readonly number[];
   ladderIterations?: readonly number[];
 };
@@ -238,7 +245,10 @@ function screenPackage(
  * the first reading asks for all of them in one call.
  */
 function rungSimmer(
-  input: Pick<SetScreenInput, "runSimAt" | "seed" | "signal" | "onSimFailed">,
+  input: Pick<
+    SetScreenInput,
+    "runSimAt" | "seed" | "signal" | "onSimFailed" | "onRequestNotBuilt"
+  >,
   setId: number,
   worn: number,
   pkg: ScreenPackage | undefined,
@@ -257,18 +267,22 @@ function rungSimmer(
     let request: RaidSimRequest | undefined;
     if (pkg.requestsFor) {
       requests ??= pkg.requestsFor(rungs.map(copiesAt));
-      request = (await requests)[rungs.indexOf(k)];
-      if (!request) {
+      const built = (await requests)[rungs.indexOf(k)];
+      if (!built) throw new Error(`${what}: rung ${k} is not a screened rung`);
+      if (isBuildFailure(built)) {
         if (!input.signal?.aborted) {
-          console.warn(what, new Error("the rung's request could not be built"));
+          console.warn(what, built.buildError);
+          input.onRequestNotBuilt?.(setId, built.buildError);
         }
         return undefined;
       }
+      request = built;
     } else {
       try {
         request = applyCopies(pkg.request, copiesAt(k));
       } catch (err) {
         console.warn(what, err);
+        input.onRequestNotBuilt?.(setId, errorText(err));
         return undefined;
       }
     }

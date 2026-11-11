@@ -135,8 +135,10 @@ import { setBreakNote } from "./set-bonus";
 import {
   applyCopies,
   applySetLessCopies,
+  type BuildFailure,
   clearsSameGearGate,
   errorText,
+  isBuildFailure,
   isSimFailure,
   measureSameGearBonus,
   measureWornSetLadder,
@@ -1184,23 +1186,23 @@ export async function rankUpgrades(
       copiesList,
       onRepairFailed
     ) => {
-      let plain: RaidSimRequest | undefined;
+      let plain: RaidSimRequest | BuildFailure;
       try {
         plain = composeFor(base.equipment);
-      } catch {
-        plain = undefined;
+      } catch (err) {
+        plain = { buildError: errorText(err) };
       }
-      const defaults = copiesList.map((copies) => {
-        if (!plain) return undefined;
+      const defaults = copiesList.map((copies): RaidSimRequest | BuildFailure => {
+        if (isBuildFailure(plain)) return plain;
         try {
           return applyCopies(plain, copies);
-        } catch {
-          return undefined;
+        } catch (err) {
+          return { buildError: errorText(err) };
         }
       });
       const shared = () =>
         defaults.map((request) =>
-          request ? { request, swaps: base.swaps } : undefined
+          isBuildFailure(request) ? request : { request, swaps: base.swaps }
         );
       const cap = gems.repairHitCap;
       if (
@@ -1214,11 +1216,11 @@ export async function rankUpgrades(
       }
       try {
         const buildHit = gearHitRating(base.equipment, cap.stat);
-        const out: Array<VersionEntry | undefined> = [];
+        const out: Array<VersionEntry | BuildFailure> = [];
         for (let i = 0; i < copiesList.length; i++) {
-          const request = defaults[i];
-          if (!request) {
-            out.push(undefined);
+          const request = defaults[i]!;
+          if (isBuildFailure(request)) {
+            out.push(request);
             continue;
           }
           const key = stableStringify(request);
@@ -1248,7 +1250,7 @@ export async function rankUpgrades(
           } catch (err) {
             if (!(err instanceof MetaRepairError)) throw err;
             onRepairFailed?.(err);
-            out.push(undefined);
+            out.push({ buildError: errorText(err) });
             continue;
           }
           out.push({
@@ -2253,7 +2255,7 @@ async function buildSetBonuses(
                     base,
                     copiesList
                   )
-                ).map((entry) => entry?.request),
+                ).map(requestOf),
             };
           },
           runSimAt: (request, opts) => runSimAt(deps, request, simVersion, opts),
@@ -2268,6 +2270,18 @@ async function buildSetBonuses(
                   candidates.map((entry) => entry.itemId)
                 ),
                 error,
+              })
+            ),
+          onRequestNotBuilt: (setId, error) =>
+            setCheckLines.push(
+              setScreenSkipSubstitution({
+                setName: setLabel(
+                  equipment,
+                  setId,
+                  candidates.map((entry) => entry.itemId)
+                ),
+                error,
+                notBuilt: true,
               })
             ),
         }
@@ -2457,9 +2471,14 @@ async function buildSetBonuses(
           noteRepairError
         );
         plainVersion.built = true;
-        if (entries[0]) plainVersion.entry = entries[0];
-        if (versionRepairError) return copiesList.map(() => undefined);
-        return entries.slice(1).map((entry) => entry?.request);
+        if (entries[0] && !isBuildFailure(entries[0])) {
+          plainVersion.entry = entries[0];
+        }
+        if (versionRepairError) {
+          const failed = { buildError: errorText(versionRepairError) };
+          return copiesList.map(() => failed);
+        }
+        return entries.slice(1).map(requestOf);
       };
 
       // Ticket 511, flag only: the gate runs before the package sim, so a
@@ -2480,13 +2499,15 @@ async function buildSetBonuses(
           skipRepairFailed(versionRepairError);
           continue;
         }
-        if (!measured || isSimFailure(measured)) {
+        if (!measured || isSimFailure(measured) || isBuildFailure(measured)) {
           bonusNotMeasured(
             label,
             threshold,
-            measured
-              ? SET_BONUS_SKIP_REASONS.simFailed(measured.simError)
-              : SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt
+            !measured
+              ? SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt
+              : isSimFailure(measured)
+                ? SET_BONUS_SKIP_REASONS.simFailed(measured.simError)
+                : SET_BONUS_SKIP_REASONS.notBuilt(measured.buildError)
           );
           results.push({
             setId,
@@ -2527,7 +2548,7 @@ async function buildSetBonuses(
           [{}],
           noteRepairError
         );
-        if (entry) plainVersion.entry = entry;
+        if (entry && !isBuildFailure(entry)) plainVersion.entry = entry;
         if (versionRepairError) {
           skipRepairFailed(versionRepairError);
           continue;
@@ -2745,7 +2766,7 @@ async function buildSetBonuses(
                   crossingBuild,
                   copiesList
                 )
-              ).map((entry) => entry?.request)
+              ).map(requestOf)
           )
         : undefined;
       if (isSimFailure(measured)) {
@@ -2755,7 +2776,15 @@ async function buildSetBonuses(
           SET_BONUS_SKIP_REASONS.simFailed(measured.simError)
         );
       }
-      const value = isSimFailure(measured) ? undefined : measured;
+      if (isBuildFailure(measured)) {
+        bonusNotMeasured(
+          crossingLabel,
+          worn + 1,
+          SET_BONUS_SKIP_REASONS.notBuilt(measured.buildError)
+        );
+      }
+      const value =
+        isSimFailure(measured) || isBuildFailure(measured) ? undefined : measured;
       crossingGates.push({
         setId,
         count: worn + 1,
@@ -2981,7 +3010,7 @@ async function measureSetSteps(args: {
     const build = stepBuild(swaps);
     if (!build) return undefined;
     const [entry] = await args.versionGears(stepRebuild(swaps), build, [{}]);
-    return entry?.request;
+    return entry && !isBuildFailure(entry) ? entry.request : undefined;
   };
 
   type Future = NonNullable<SetContext["futureBonuses"]>[number];
@@ -3229,9 +3258,15 @@ async function measureSetSteps(args: {
       beforeBuild,
       [{}, { setLess: replaced }]
     );
-    if (!plainEntry || !offEntry) {
+    if (
+      !plainEntry ||
+      !offEntry ||
+      isBuildFailure(plainEntry) ||
+      isBuildFailure(offEntry)
+    ) {
       console.warn(
-        "[upgrades] set step break not split: its request could not be built"
+        "[upgrades] set step break not split: its request could not be built",
+        [plainEntry, offEntry].find(isBuildFailure)?.buildError
       );
       return false;
     }
@@ -3440,9 +3475,10 @@ async function measurePairTwoPiece(
     pairBuild,
     [{}]
   );
-  if (!entry) {
+  if (!entry || isBuildFailure(entry)) {
     console.warn(
-      `[upgrades] ${bonusLabel} net value not measured: the request for the worn-1 pair that measures the 2pc could not be built`
+      `[upgrades] ${bonusLabel} net value not measured: the request for the worn-1 pair that measures the 2pc could not be built`,
+      entry?.buildError
     );
     return undefined;
   }
@@ -4425,17 +4461,23 @@ type VersionEntry = {
  * Each version of one set-phase build, a pair's versions in one call
  * (ticket 535; `rankUpgrades` defines it). `base` is the build with the run's
  * budget; `rebuild` builds the same chain with another budget. An entry is
- * undefined when that version's default request cannot be composed or,
- * unless Stop ends a later read in the same call, when rebuilding it fails
- * its gem repair. That `MetaRepairError` also goes to `onRepairFailed`,
- * for a caller whose note names it.
+ * a `BuildFailure` with the error when that version's default request cannot
+ * be composed or, unless Stop ends a later read in the same call, when
+ * rebuilding it fails its gem repair (ticket 869). That `MetaRepairError`
+ * also goes to `onRepairFailed`, for a caller whose note names it.
  */
 type VersionGears = (
   rebuild: (gems: GemContext) => ChainBuild,
   base: ChainBuild,
   copiesList: readonly VersionCopies[],
   onRepairFailed?: (err: MetaRepairError) => void
-) => Promise<Array<VersionEntry | undefined>>;
+) => Promise<Array<VersionEntry | BuildFailure>>;
+
+/** A version's request, or why it could not be built. */
+const requestOf = (
+  entry: VersionEntry | BuildFailure
+): RaidSimRequest | BuildFailure =>
+  isBuildFailure(entry) ? entry : entry.request;
 
 /**
  * Missed hit below this many rating keeps a version on the run's budget. On
@@ -4619,6 +4661,8 @@ export const SET_BONUS_SKIP_REASONS = {
   metaOff: (error: string) =>
     `no gem swap could turn your meta gem on.\n${error}`,
   measuringSimsNotBuilt: "the sims that measure it could not be built.",
+  notBuilt: (error: string) =>
+    `the sims that measure it could not be built.\n${error}`,
   /** The sim's list of a set's active bonuses (ticket 644) failed. */
   bonusListFailed: (error: string) =>
     `the sim could not list the set's bonuses.\n${error}`,
@@ -4673,12 +4717,17 @@ export function breakSplitSkipSubstitution(skip: {
  * A set screen sim that failed (ticket 863). The screen only decides whether
  * a set's bonuses are measured at all, and a set it could not read is kept.
  */
-export type SetScreenSkip = { setName: string; error: string };
+export type SetScreenSkip = {
+  setName: string;
+  error: string;
+  /** The check's request could not be built, so no sim ran (ticket 869). */
+  notBuilt?: true;
+};
 
 export function setScreenSkipSubstitution(skip: SetScreenSkip): Substitution {
   return {
     field: `${skip.setName} set`,
-    detail: `The ${skip.setName} set was kept without the quick check that can skip it, because the check's sim failed.\n${skip.error}`,
+    detail: `The ${skip.setName} set was kept without the quick check that can skip it, because the check's sim ${skip.notBuilt ? "could not be built" : "failed"}.\n${skip.error}`,
   };
 }
 
