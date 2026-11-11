@@ -55,9 +55,10 @@ const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string, 
 });
 
 /**
- * The run's assumptions for whoever diagnoses a bad ranking (ticket 318), and
- * the full text of each dropped-candidate reason the page cuts to one line
- * (ticket 311). Logged once when a ranking arrives, never from a render.
+ * The run's assumptions for whoever diagnoses a bad ranking (ticket 318), the
+ * full text of each notes-list reason the page cuts to one line (ticket 311),
+ * and each failed call's error, which the page does not show. Logged once
+ * when a ranking arrives, never from a render.
  */
 const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'cutoff' | 'substitutions'>, context: AssumptionsContext) => {
 	console.info(assumptionsLine(result, context));

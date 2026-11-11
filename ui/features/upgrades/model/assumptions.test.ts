@@ -22,12 +22,8 @@ describe('assumptionsLine', () => {
 	// The Arms set was written for P3 and Fury's for P1 (ticket 803), so the phase in the line shows which set the talents picked.
 	it('says which phase an Arms or a Fury run’s EP weights were written for', () => {
 		const rankingP4 = { ...RANKING_FIXTURE, assumptions: { ...RANKING_FIXTURE.assumptions, maxPhase: 4 as const } };
-		expect(assumptionsLine(rankingP4, { epWeightsSet: epWeightsSetFor('warrior', [33, 28, 0]) })).toContain(
-			' · EP weights: written for P3, ranking P4',
-		);
-		expect(assumptionsLine(rankingP4, { epWeightsSet: epWeightsSetFor('warrior', [21, 40, 0]) })).toContain(
-			' · EP weights: written for P1, ranking P4',
-		);
+		expect(assumptionsLine(rankingP4, { epWeightsSet: epWeightsSetFor('warrior', [33, 28, 0]) })).toContain(' · EP weights: written for P3, ranking P4');
+		expect(assumptionsLine(rankingP4, { epWeightsSet: epWeightsSetFor('warrior', [21, 40, 0]) })).toContain(' · EP weights: written for P1, ranking P4');
 	});
 
 	it('names the run’s pool settings when the run is known', () => {
@@ -73,14 +69,15 @@ describe('substitutionFirstLine', () => {
 });
 
 describe('substitutionConsoleLines', () => {
-	it('gives the full text of each reason the page shortened, for the console the page points to', () => {
+	it("gives the full text of each reason the page shortened, and every failed call's error, which the page does not show", () => {
 		expect(substitutionConsoleLines(RANKING_FIXTURE.substitutions)).toEqual([
 			'[upgrades] Warglaive of Azzinoth: This item was not ranked in this slot, because its sim failed.\npanic: runtime error\ngoroutine 1 [running]:\nmain.main()\nitem 32837, slot mainhand',
 		]);
 		expect(substitutionConsoleLines([{ field: 'hit cap', detail: 'Kept the worn hit gems.' }])).toEqual([]);
-		// Ticket 874: an error the page shows whole needs no console copy; a cut one gets one.
+		// Owner's ruling 2026-11-11: the page shows no error, so each failure's whole error goes to the console.
 		const failed = (error: string) => ({ field: 'set', detail: 'Its sim failed.', error });
-		expect(substitutionConsoleLines([failed('HTTP 500 from /raidSimAsync')])).toEqual([]);
+		expect(substitutionConsoleLines([failed('HTTP 500 from /raidSimAsync')])).toEqual(['[upgrades] set: Its sim failed.\nHTTP 500 from /raidSimAsync']);
+		expect(substitutionConsoleLines([failed(' \n')])).toEqual([]);
 		expect(substitutionConsoleLines([failed('panic: boom\ngoroutine 7')])).toEqual(['[upgrades] set: Its sim failed.\npanic: boom\ngoroutine 7']);
 	});
 });

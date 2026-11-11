@@ -175,20 +175,8 @@ export const substitutionLabel = (substitution: Substitution): string =>
 		? i18n.t('upgrades_tab.assumptions.substitution_in_slot', { ns: 'upgrades', field: substitution.field, slot: simSlotLabel(substitution.slot) })
 		: substitution.field;
 
-/** A dropped-list reason or a failed run's error as the page shows it: the first line, and where the rest went when it was cut. */
-export const substitutionText = (detail: string): string => {
-	const { line, truncated } = substitutionFirstLine(detail);
-	if (!truncated) return line;
-	const where = i18n.t('upgrades_tab.assumptions.substitution_truncated_suffix', { ns: 'upgrades' });
-	// The note is part of the cut sentence, so it goes before the sentence's full stop.
-	return line.endsWith('.') ? `${line.slice(0, -1)}${where}.` : `${line}${where}`;
-};
-
-/**
- * A failed call's error under its line (ticket 874): its first line, and where the rest went when it was cut, as the
- * status line shows a failed run's error. Undefined when the error is missing or blank, so no empty line shows.
- */
-export const substitutionErrorText = (error: string | undefined): string | undefined => (error?.trim() ? substitutionText(error.trimStart()) : undefined);
+/** A notes-list reason as the page shows it: its first line. The run logs the whole text to the console. */
+export const substitutionText = (detail: string): string => substitutionFirstLine(detail).line;
 
 /** The status line names no error: `run_session.ts` shows the error's own message in a toast (ticket 868). */
 export const describeRunError = (error: unknown): string => {

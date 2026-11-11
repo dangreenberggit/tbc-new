@@ -616,13 +616,10 @@
 					"properties": {
 						"substitutions_title": {
 							"type": "string"
-						},
-						"substitution_truncated_suffix": {
-							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["substitutions_title", "substitution_truncated_suffix"]
+					"required": ["substitutions_title"]
 				}
 			},
 			"additionalProperties": false,

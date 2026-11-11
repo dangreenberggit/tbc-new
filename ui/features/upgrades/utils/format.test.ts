@@ -227,15 +227,15 @@ describe('sortLabelsFor', () => {
 });
 
 describe('substitutionText', () => {
-	it('shows a crash trace’s first line and says the rest is in the console, and leaves a one-line reason whole', () => {
-		expect(substitutionText('panic: boom\ngoroutine 1')).toBe('panic: boom (full text in the browser console)');
+	it('shows a crash trace’s first line only, and leaves a one-line reason whole', () => {
+		expect(substitutionText('panic: boom\ngoroutine 1')).toBe('panic: boom');
 		expect(substitutionText('Kept the worn hit gems.')).toBe('Kept the worn hit gems.');
 	});
 
-	// Live check of ticket 863: a cut sentence read "failed.… (full text in the browser console)".
-	it('puts the console note inside a cut sentence’s full stop, in every state of the error after it', () => {
+	// Tickets 873 and 874, owner's ruling 2026-11-11: the page adds no note about the console.
+	it('shows the sentence alone, in every state of the text after it', () => {
 		const sentence = 'The Justicar Battlegear 2-piece set bonus was not measured, because its sim failed.';
-		const cut = 'The Justicar Battlegear 2-piece set bonus was not measured, because its sim failed (full text in the browser console).';
+		const cut = sentence;
 		expect(substitutionText(`${sentence}\nHTTP 500 from /raidSimAsync: injected failure`)).toBe(cut);
 		expect(substitutionText(`${sentence}\n${'x'.repeat(2000)}`)).toBe(cut);
 		expect(substitutionText(`${sentence}\npanic: boom\nStack Trace:\ngoroutine 7 [running]:`)).toBe(cut);
