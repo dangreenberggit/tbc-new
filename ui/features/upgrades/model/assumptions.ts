@@ -54,8 +54,9 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
  * the sim's error object is stringified into the detail.
  */
 export function substitutionFirstLine(detail: string): { line: string; truncated: boolean } {
-	const line = detail.split(/\r?\n|\\n/, 1)[0] ?? detail;
-	return { line, truncated: line !== detail };
+	const [line = detail, ...rest] = detail.split(/\r?\n|\\n/);
+	// An empty error after the line leaves nothing for the console to add.
+	return { line, truncated: rest.join('').trim() !== '' };
 }
 
 /** The full text of every reason the page shortens; the page says it is in the console. */

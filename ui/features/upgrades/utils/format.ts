@@ -179,7 +179,10 @@ export const substitutionLabel = (substitution: Substitution): string =>
 /** A dropped-list reason or a failed run's error as the page shows it: the first line, and where the rest went when it was cut. */
 export const substitutionText = (detail: string): string => {
 	const { line, truncated } = substitutionFirstLine(detail);
-	return truncated ? `${line}${i18n.t('upgrades_tab.assumptions.substitution_truncated_suffix', { ns: 'upgrades' })}` : line;
+	if (!truncated) return line;
+	const where = i18n.t('upgrades_tab.assumptions.substitution_truncated_suffix', { ns: 'upgrades' });
+	// The note is part of the cut sentence, so it goes before the sentence's full stop.
+	return line.endsWith('.') ? `${line.slice(0, -1)}${where}.` : `${line}${where}`;
 };
 
 /** A sim that panics ends its error in the Go stack trace, which `run_session.ts` sends to the console (ticket 868). */

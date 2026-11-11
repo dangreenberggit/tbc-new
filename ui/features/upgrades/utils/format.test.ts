@@ -228,8 +228,21 @@ describe('sortLabelsFor', () => {
 
 describe('substitutionText', () => {
 	it('shows a crash trace’s first line and says the rest is in the console, and leaves a one-line reason whole', () => {
-		expect(substitutionText('panic: boom\ngoroutine 1')).toBe('panic: boom… (full text in the browser console)');
+		expect(substitutionText('panic: boom\ngoroutine 1')).toBe('panic: boom (full text in the browser console)');
 		expect(substitutionText('Kept the worn hit gems.')).toBe('Kept the worn hit gems.');
+	});
+
+	// Live check of ticket 863: a cut sentence read "failed.… (full text in the browser console)".
+	it('puts the console note inside a cut sentence’s full stop, in every state of the error after it', () => {
+		const sentence = 'The Justicar Battlegear 2-piece set bonus was not measured, because its sim failed.';
+		const cut = 'The Justicar Battlegear 2-piece set bonus was not measured, because its sim failed (full text in the browser console).';
+		expect(substitutionText(`${sentence}\nHTTP 500 from /raidSimAsync: injected failure`)).toBe(cut);
+		expect(substitutionText(`${sentence}\n${'x'.repeat(2000)}`)).toBe(cut);
+		expect(substitutionText(`${sentence}\npanic: boom\nStack Trace:\ngoroutine 7 [running]:`)).toBe(cut);
+		expect(substitutionText(`${sentence}\\npanic: boom`)).toBe(cut);
+		expect(substitutionText(`${sentence}\n`)).toBe(sentence);
+		expect(substitutionText(`${sentence}\n  \n`)).toBe(sentence);
+		expect(substitutionText(sentence)).toBe(sentence);
 	});
 });
 
@@ -289,7 +302,7 @@ describe('describeRunError', () => {
 	it('shows a failure up to its first line break and says the rest is in the console (ticket 868)', () => {
 		const panic = 'sim error (ErrorOutcome): runtime error: index out of range\nStack Trace:\ngoroutine 7 [running]:';
 		expect(describeRunError(new Error(panic))).toBe(
-			'Ranking failed: sim error (ErrorOutcome): runtime error: index out of range… (full text in the browser console)',
+			'Ranking failed: sim error (ErrorOutcome): runtime error: index out of range (full text in the browser console)',
 		);
 	});
 });

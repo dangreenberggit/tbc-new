@@ -64,6 +64,12 @@ describe('substitutionFirstLine', () => {
 		expect(substitutionFirstLine('panic: boom\\ngoroutine 1')).toEqual({ line: 'panic: boom', truncated: true });
 		expect(substitutionFirstLine('Kept the worn hit gems.')).toEqual({ line: 'Kept the worn hit gems.', truncated: false });
 	});
+
+	it('does not count an empty error after the first line as cut text', () => {
+		expect(substitutionFirstLine('Its sim failed.\n')).toEqual({ line: 'Its sim failed.', truncated: false });
+		expect(substitutionFirstLine('Its sim failed.\n \n')).toEqual({ line: 'Its sim failed.', truncated: false });
+		expect(substitutionConsoleLines([{ field: 'set', detail: 'Its sim failed.\n' }])).toEqual([]);
+	});
 });
 
 describe('substitutionConsoleLines', () => {

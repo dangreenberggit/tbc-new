@@ -13,6 +13,7 @@ import {
 	offHandBlockedDisclosure,
 	oneHandBlockedDisclosure,
 	SET_BONUS_SKIP_REASONS,
+	setBonusesSkipSubstitution,
 	setBonusSkipSubstitution,
 	setScreenSkipSubstitution,
 	uniqueSubstitutions,
@@ -39,7 +40,7 @@ describe('SubstitutionsList', () => {
 
 		expect(screen.getByText(`Items left out and other notes (${RANKING_FIXTURE.substitutions.length})`)).toBeTruthy();
 		expect(terms()).toEqual(['Warglaive of Azzinoth (Main Hand)']);
-		expect(definitions()).toEqual(['This item was not ranked in this slot, because its sim failed.… (full text in the browser console)']);
+		expect(definitions()).toEqual(['This item was not ranked in this slot, because its sim failed (full text in the browser console).']);
 	});
 
 	it('cuts a trace whose line breaks are written out as backslash-n', () => {
@@ -49,7 +50,7 @@ describe('SubstitutionsList', () => {
 			/>,
 		);
 		expect(within(screen.getByTestId('upgrades-substitutions')).getByRole('definition').textContent).toBe(
-			'sim panicked: index out of range… (full text in the browser console)',
+			'sim panicked: index out of range (full text in the browser console)',
 		);
 	});
 
@@ -63,7 +64,7 @@ describe('SubstitutionsList', () => {
 				onSomeRows: true,
 			});
 		render(<SubstitutionsList substitutions={uniqueSubstitutions([failed(41), failed(57)])} />);
-		expect(definitions()).toEqual(['The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed.… (full text in the browser console)']);
+		expect(definitions()).toEqual(['The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed (full text in the browser console).']);
 	});
 
 	it('leaves a one-line reason whole', () => {
@@ -74,7 +75,8 @@ describe('SubstitutionsList', () => {
 	// Ticket 704: every line the engine writes, built by the engine's own
 	// functions, with ids, raw errors and the spec id after the line break.
 	it('shows every engine line as one plain sentence', () => {
-		const more = '… (full text in the browser console)';
+		// The console note goes inside the cut sentence's full stop.
+		const inConsole = (sentence: string) => `${sentence.slice(0, -1)} (full text in the browser console).`;
 		const ring = { itemId: 29283, name: 'Violet Signet of the Master Assassin', reason: 'panic: runtime error' };
 		const setBonus = { setName: 'Justicar Battlegear', threshold: 4 as const };
 		render(
@@ -104,6 +106,10 @@ describe('SubstitutionsList', () => {
 					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt }),
 					setScreenSkipSubstitution({ setName: 'Justicar Battlegear', error: 'sim error: boom' }),
 					wornSetSkipSubstitution({ setName: 'Justicar Battlegear', error: 'sim error: boom' }),
+					setBonusesSkipSubstitution({ setName: 'Justicar Battlegear', reason: SET_BONUS_SKIP_REASONS.bonusListFailed('computeStats error: boom') }),
+					setBonusesSkipSubstitution({ setName: 'Justicar Battlegear', reason: SET_BONUS_SKIP_REASONS.metaOff('no gem layout activates meta 32409') }),
+					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.notBuilt('the request database has no row for item 30987') }),
+					setScreenSkipSubstitution({ setName: 'Justicar Battlegear', error: 'the request database has no row for item 30987', notBuilt: true }),
 				]}
 			/>,
 		);
@@ -125,25 +131,33 @@ describe('SubstitutionsList', () => {
 			'Justicar Battlegear 4-piece set bonus',
 			'Justicar Battlegear set',
 			'Justicar Battlegear set',
+			'Justicar Battlegear set',
+			'Justicar Battlegear set',
+			'Justicar Battlegear 4-piece set bonus',
+			'Justicar Battlegear set',
 		]);
 		expect(definitions()).toEqual([
-			`Your meta gem was not active, so the ranking swapped 1 gem in its own copy of your gear to turn it on; your gear itself was not changed.${more}`,
+			inConsole(`Your meta gem was not active, so the ranking swapped 1 gem in its own copy of your gear to turn it on; your gear itself was not changed.`),
 			'If gems were swapped to turn your meta gem on, hit rating was treated as always useful, because this tab works out the hit cap only when every target is level 73.',
 			'If gems were swapped to turn your meta gem on, hit rating was counted at full value, with no hit cap applied for this spec.',
 			'If gems were swapped to turn your meta gem on, hit rating was valued as if your Suppression talent added no hit, so it may be valued too high.',
-			`The ranking does not know which meta gem your spec uses, so new items with a meta socket got the meta gem you wear, or an empty socket and no socket bonus if you wear none.${more}`,
+			inConsole(`The ranking does not know which meta gem your spec uses, so new items with a meta socket got the meta gem you wear, or an empty socket and no socket bonus if you wear none.`),
 			'2 one-handed weapons were not ranked, because you wear a two-handed weapon.',
 			'1 off-hand item was not ranked, because you wear a two-handed weapon.',
-			`This item was not ranked in this slot, because its sim failed.${more}`,
-			`This item was not ranked in this slot, because its sim failed.${more}`,
-			`This item was not ranked in this slot, because no gem swap could turn your meta gem on with it equipped.${more}`,
-			`The Justicar Battlegear 4-piece set bonus was not measured, because its sim failed.${more}`,
-			`The Justicar Battlegear 4-piece set bonus was not measured, because no gem swap could turn your meta gem on.${more}`,
-			`The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed.${more}`,
-			`On some rows, the cost of breaking the Justicar Battlegear 4-piece set bonus was not measured apart from the pieces that break it, because their sim failed.${more}`,
+			inConsole(`This item was not ranked in this slot, because its sim failed.`),
+			inConsole(`This item was not ranked in this slot, because its sim failed.`),
+			inConsole(`This item was not ranked in this slot, because no gem swap could turn your meta gem on with it equipped.`),
+			inConsole(`The Justicar Battlegear 4-piece set bonus was not measured, because its sim failed.`),
+			inConsole(`The Justicar Battlegear 4-piece set bonus was not measured, because no gem swap could turn your meta gem on.`),
+			inConsole(`The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed.`),
+			inConsole(`On some rows, the cost of breaking the Justicar Battlegear 4-piece set bonus was not measured apart from the pieces that break it, because their sim failed.`),
 			'The Justicar Battlegear 4-piece set bonus was not measured, because the sims that measure it could not be built.',
-			`The Justicar Battlegear set was kept without the quick check that can skip it, because the check's sim failed.${more}`,
-			`The value of the Justicar Battlegear set on your gear was not fully measured, because its sim failed.${more}`,
+			inConsole(`The Justicar Battlegear set was kept without the quick check that can skip it, because the check's sim failed.`),
+			inConsole(`The value of the Justicar Battlegear set on your gear was not fully measured, because its sim failed.`),
+			inConsole(`The Justicar Battlegear set bonuses were not all measured, because the sim could not list the set's bonuses.`),
+			inConsole(`The Justicar Battlegear set bonuses were not all measured, because no gem swap could turn your meta gem on.`),
+			inConsole(`The Justicar Battlegear 4-piece set bonus was not measured, because the sims that measure it could not be built.`),
+			inConsole(`The Justicar Battlegear set was kept without the quick check that can skip it, because the check's sim could not be built.`),
 		]);
 		expect([...terms(), ...definitions()].join(' ')).not.toMatch(/\d{4,}|\bEP\b|repair|candidate|priced|\bpool\b|worker died|panic|unlisted/i);
 	});
