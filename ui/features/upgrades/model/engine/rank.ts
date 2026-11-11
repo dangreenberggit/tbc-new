@@ -3594,7 +3594,10 @@ function countMembersBreaking(
  * that count. No table decides which sets or counts are measured. A failed
  * rung leaves its count unknown, and a count with no bonus would then be
  * listed as a break (ticket 870), so the sim's list of the set's bonuses
- * (`readBonuses`) decides; without that list, a failed count is counted.
+ * (`readBonuses`) decides. When that list fails too, no failed count is
+ * counted (ticket 871): the row claims no break it did not measure, and the
+ * ladder's and the read's lines say what was not measured. A runner with no
+ * list gives no such line, so there a failed count is counted.
  */
 async function measureWornSetLadders(
   equipment: readonly SimItemSpec[],
@@ -3643,8 +3646,8 @@ async function measureWornSetLadders(
 /**
  * The counts at which a worn set has a bonus, as the sim lists them (ticket
  * 870): the bonuses active on the worn gear that go when the set's pieces are
- * sent as set-less copies. Undefined when a read fails; a failure that Stop
- * did not cause adds a line with its error.
+ * sent as set-less copies. Empty when a read fails, with a line that gives
+ * its error; undefined when Stop refused the read.
  */
 async function wornSetBonusCounts(
   readBonuses: (request: RaidSimRequest) => Promise<readonly string[]>,
@@ -3666,16 +3669,15 @@ async function wornSetBonusCounts(
     }
     return counts;
   } catch (err) {
-    if (!(err instanceof StopRefusedSim)) {
-      console.warn(`[upgrades] ${setName}: its bonus counts were not read`, err);
-      lines.push(
-        setBonusesSkipSubstitution({
-          setName,
-          reason: SET_BONUS_SKIP_REASONS.bonusListFailed(errorText(err)),
-        })
-      );
-    }
-    return undefined;
+    if (err instanceof StopRefusedSim) return undefined;
+    console.warn(`[upgrades] ${setName}: its bonus counts were not read`, err);
+    lines.push(
+      setBonusesSkipSubstitution({
+        setName,
+        reason: SET_BONUS_SKIP_REASONS.bonusListFailed(errorText(err)),
+      })
+    );
+    return new Set();
   }
 }
 
