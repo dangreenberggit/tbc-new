@@ -84,7 +84,8 @@ vi.mock('@features/upgrades/components/EligibleCount', async importOriginal => {
 const { UpgradesTabBody } = await import('./UpgradesTabBody');
 const { UpgradesTabBodyInner } = await import('@features/upgrades/components/UpgradesTab');
 const { useUpgradesSettings } = await import('@features/upgrades/hooks/useUpgradesSettings');
-const { selectRunStatus, useUpgradesStore } = await import('@features/upgrades/hooks/useUpgradesStore');
+const { selectRun, selectRunStatus, useUpgradesStore } = await import('@features/upgrades/hooks/useUpgradesStore');
+const { measuredOnOf } = await import('@features/upgrades/model/run_state');
 
 loadEnglishBundles({ character: true });
 
@@ -163,6 +164,13 @@ const Probe = () => {
 	);
 };
 const probe = (field: string) => screen.getByTestId(`probe-${field}`).textContent;
+
+/** The sets the shown result was ranked with, which its rows' set badges name (ticket 865). */
+const RankedSetsProbe = () => {
+	const run = useUpgradesStore(selectRun);
+	const keys = (measuredOnOf(run)?.selectedSets ?? []).map(set => set.key);
+	return <span data-testid="probe-ranked-sets">{keys.sort().join(',')}</span>;
+};
 
 /** The sets the tab's chips show as selected. */
 const tabSetKeys = () =>
@@ -248,6 +256,19 @@ describe('UpgradesTabBody', () => {
 			guaranteedSetItemIds: [1],
 			prune: false,
 		});
+	});
+
+	it('records the sets picked at Run and at a fixture load as the sets the result was ranked with', async () => {
+		mount(<RankedSetsProbe />);
+		expect(probe('ranked-sets')).toBe('');
+		const run = clickRun();
+		expect(probe('ranked-sets')).toBe('preset:3:P3');
+		await act(async () => run.settle({ ...RANKING_FIXTURE, durationMs: 1 }));
+		expect(probe('ranked-sets')).toBe('preset:3:P3');
+
+		act(() => patchSlice(current.store, 'sim', { phase: 4 }));
+		act(() => autoload.current?.onLoaded(RANKING_FIXTURE));
+		expect(probe('ranked-sets')).toBe('preset:4:P4');
 	});
 
 	it('marks a live run with its runner, and shows it current until the gear changes', async () => {

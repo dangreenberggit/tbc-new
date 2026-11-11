@@ -61,7 +61,7 @@ describe('useUpgradesRun', () => {
 		const { result, run } = mount(runFn);
 		expect(run().status).toBe('idle');
 
-		act(() => result.current.start(SETTINGS, SIGNATURE));
+		act(() => result.current.start(SETTINGS, SIGNATURE, []));
 		expect(run()).toMatchObject({ status: 'running', landedRows: [] });
 
 		act(() => call(0).deps.onLanded(rowA));
@@ -74,11 +74,11 @@ describe('useUpgradesRun', () => {
 	it('keeps one session across renders, so a later run reuses the workers and supersedes the earlier one', () => {
 		const { runFn, call } = controllableRun();
 		const { result, rerender } = mount(runFn);
-		act(() => result.current.start(SETTINGS, SIGNATURE));
+		act(() => result.current.start(SETTINGS, SIGNATURE, []));
 		const first = call(0).deps.runContext();
 
 		rerender();
-		act(() => result.current.start(SETTINGS, SIGNATURE));
+		act(() => result.current.start(SETTINGS, SIGNATURE, []));
 		expect(call(0).deps.signal.aborted).toBe(true);
 		expect(call(1).deps.runContext()).toBe(first);
 		expect(contexts).toHaveLength(1);
@@ -87,7 +87,7 @@ describe('useUpgradesRun', () => {
 	it('stops the run in flight', () => {
 		const { runFn, call } = controllableRun();
 		const { result, run } = mount(runFn);
-		act(() => result.current.start(SETTINGS, SIGNATURE));
+		act(() => result.current.start(SETTINGS, SIGNATURE, []));
 
 		act(() => result.current.stop());
 		expect(call(0).deps.signal.aborted).toBe(true);
@@ -97,14 +97,14 @@ describe('useUpgradesRun', () => {
 	it('shows a loaded fixture as a finished run', () => {
 		const { runFn } = controllableRun();
 		const { result, run } = mount(runFn);
-		act(() => result.current.loadFixture(RANKING_FIXTURE, SIGNATURE));
+		act(() => result.current.loadFixture(RANKING_FIXTURE, SIGNATURE, []));
 		expect(run()).toMatchObject({ status: 'done', result: RANKING_FIXTURE, measuredOn: { inputsSignature: SIGNATURE } });
 	});
 
 	it('aborts the run on unmount', () => {
 		const { runFn, call } = controllableRun();
 		const { result, unmount } = mount(runFn);
-		act(() => result.current.start(SETTINGS, SIGNATURE));
+		act(() => result.current.start(SETTINGS, SIGNATURE, []));
 		call(0).deps.runContext();
 
 		unmount();

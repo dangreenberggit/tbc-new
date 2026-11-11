@@ -72,7 +72,7 @@ describe('createRunSession', () => {
 	it('runs from idle through landed rows to done, keeping the gear and signature of the click', async () => {
 		const { session, call, run } = setup();
 		equipped = [{ id: 30990 }, null];
-		session.start(SETTINGS, SIGNATURE);
+		session.start(SETTINGS, SIGNATURE, []);
 		equipped = [{ id: 1 }];
 		const worn = [30990, ...Array.from({ length: 16 }, () => 0)];
 		expect(run()).toMatchObject({ status: 'running', landedRows: [], measuredOn: { wornItemIds: worn, specId: 'ret', inputsSignature: SIGNATURE } });
@@ -103,7 +103,7 @@ describe('createRunSession', () => {
 
 	it('aborts the run on stop and shows the partial ranking it returns', async () => {
 		const { session, call, run } = setup();
-		session.start(SETTINGS, SIGNATURE);
+		session.start(SETTINGS, SIGNATURE, []);
 
 		session.stop();
 		expect(call(0).deps.signal.aborted).toBe(true);
@@ -121,8 +121,8 @@ describe('createRunSession', () => {
 
 	it('drops a superseded run’s late rows and result, and does not log it', async () => {
 		const { session, call, run } = setup();
-		session.start(SETTINGS, SIGNATURE);
-		session.start(SETTINGS, SIGNATURE);
+		session.start(SETTINGS, SIGNATURE, []);
+		session.start(SETTINGS, SIGNATURE, []);
 		expect(call(0).deps.signal.aborted).toBe(true);
 
 		call(0).deps.onLanded(rowA);
@@ -135,7 +135,7 @@ describe('createRunSession', () => {
 
 	it('shows a failed run as an error in the words the caller gave', async () => {
 		const { session, call, run } = setup();
-		session.start(SETTINGS, SIGNATURE);
+		session.start(SETTINGS, SIGNATURE, []);
 
 		call(0).fail(new Error('worker died'));
 		await vi.waitFor(() => expect(run()).toMatchObject({ status: 'error', message: 'failed: worker died' }));
@@ -144,9 +144,9 @@ describe('createRunSession', () => {
 	it('shows a loaded fixture as a finished run, aborts the run it replaced and logs the fixture once', async () => {
 		const { session, call, run } = setup();
 		equipped = [{ id: 28830 }];
-		session.start(SETTINGS, SIGNATURE);
+		session.start(SETTINGS, SIGNATURE, []);
 
-		session.loadFixture(RANKING_FIXTURE, 'sig-at-load');
+		session.loadFixture(RANKING_FIXTURE, 'sig-at-load', []);
 		expect(call(0).deps.signal.aborted).toBe(true);
 		call(0).settle(partialOf());
 		await settled();
@@ -171,10 +171,10 @@ describe('createRunSession', () => {
 		const { runFn, call } = controllableRun();
 		const session = createRunSession(createUpgradesStore({ iterations: 3000 }), host, runFn, ENV);
 
-		session.start(SETTINGS, SIGNATURE);
+		session.start(SETTINGS, SIGNATURE, []);
 		call(0).settle({ ...RANKING_FIXTURE, durationMs: 1200, runner: 'WorkerPoolSimRunner' });
 		await vi.waitFor(() => expect(console.info).toHaveBeenCalledOnce());
-		session.loadFixture(RANKING_FIXTURE, SIGNATURE);
+		session.loadFixture(RANKING_FIXTURE, SIGNATURE, []);
 
 		const lines = vi.mocked(console.info).mock.calls.map(([line]) => String(line));
 		expect(lines).toHaveLength(2);
@@ -183,18 +183,18 @@ describe('createRunSession', () => {
 
 	it('builds the run context once, on first use, and reuses it across runs', () => {
 		const { session, call } = setup();
-		session.start(SETTINGS, SIGNATURE);
+		session.start(SETTINGS, SIGNATURE, []);
 		expect(contexts).toHaveLength(0);
 
 		const first = call(0).deps.runContext();
-		session.start(SETTINGS, SIGNATURE);
+		session.start(SETTINGS, SIGNATURE, []);
 		expect(call(1).deps.runContext()).toBe(first);
 		expect(contexts).toHaveLength(1);
 	});
 
 	it('aborts the run on dispose', () => {
 		const { session, call } = setup();
-		session.start(SETTINGS, SIGNATURE);
+		session.start(SETTINGS, SIGNATURE, []);
 		call(0).deps.runContext();
 
 		session.dispose();
@@ -203,11 +203,11 @@ describe('createRunSession', () => {
 
 	it('runs again after dispose, with the same run context and the run id counting on (StrictMode remount)', async () => {
 		const { session, call, run } = setup();
-		session.start(SETTINGS, SIGNATURE);
+		session.start(SETTINGS, SIGNATURE, []);
 		const first = call(0).deps.runContext();
 		session.dispose();
 
-		session.start(SETTINGS, SIGNATURE);
+		session.start(SETTINGS, SIGNATURE, []);
 		expect(run()).toMatchObject({ status: 'running', runId: 2 });
 		expect(call(1).deps.runContext()).toBe(first);
 		expect(contexts).toHaveLength(1);
@@ -220,11 +220,11 @@ describe('createRunSession', () => {
 
 	it('continues the store’s run ids in a new session, so an older session’s late row is dropped (remount mid-run)', () => {
 		const first = setup();
-		first.session.start(SETTINGS, SIGNATURE);
+		first.session.start(SETTINGS, SIGNATURE, []);
 		first.session.dispose();
 
 		const second = setup(first.store);
-		second.session.start(SETTINGS, SIGNATURE);
+		second.session.start(SETTINGS, SIGNATURE, []);
 		first.call(0).deps.onLanded(rowA);
 		expect(second.run()).toMatchObject({ status: 'running', runId: 2, landedRows: [] });
 

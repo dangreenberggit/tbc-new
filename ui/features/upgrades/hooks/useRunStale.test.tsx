@@ -76,7 +76,7 @@ beforeEach(() => {
 describe('useRunStale', () => {
 	it('shows a fresh run as current, and as stale once the gear changes', async () => {
 		const { view, settle, signatureNow, changeGear } = mountRun();
-		act(() => view.result.current.start(SETTINGS, signatureNow(SETTINGS)));
+		act(() => view.result.current.start(SETTINGS, signatureNow(SETTINGS), []));
 		expect(view.result.current.stale).toBe(false);
 
 		await act(async () => settle({ ...RANKING_FIXTURE, durationMs: 10 }));
@@ -89,7 +89,7 @@ describe('useRunStale', () => {
 
 	it('shows a fresh fixture as current, and as stale once the gear changes', () => {
 		const { view, signatureNow, changeGear } = mountRun();
-		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
+		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS), []));
 		expect(view.result.current.stale).toBe(false);
 
 		act(changeGear);
@@ -98,7 +98,7 @@ describe('useRunStale', () => {
 
 	it('marks a result stale when a tab setting or the iterations change', () => {
 		const { view, signatureNow } = mountRun();
-		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
+		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS), []));
 
 		view.rerender({ settings: { ...SETTINGS, excludedSources: ['Black Temple'] } });
 		expect(view.result.current.stale).toBe(true);
@@ -110,7 +110,7 @@ describe('useRunStale', () => {
 
 	it('keeps a result current through an edit the run does not read, and a render with the same settings', () => {
 		const { view, signatureNow, changeSeed } = mountRun();
-		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
+		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS), []));
 
 		// A fixed seed notifies, but leaves raid, encounter and phase alone.
 		act(changeSeed);
@@ -120,7 +120,7 @@ describe('useRunStale', () => {
 
 	it('is never stale while running', () => {
 		const { view } = mountRun();
-		act(() => view.result.current.start(SETTINGS, 'an older page'));
+		act(() => view.result.current.start(SETTINGS, 'an older page', []));
 		expect(view.result.current.stale).toBe(false);
 	});
 
@@ -137,7 +137,7 @@ describe('useRunStale', () => {
 			{ wrapper },
 		);
 		act(changeGear);
-		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS)));
+		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS), []));
 		expect(seen).not.toContain(true);
 	});
 });

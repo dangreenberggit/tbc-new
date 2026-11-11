@@ -35,9 +35,9 @@ export type RunSession = {
 	 * the inputs signature (`run_inputs.ts`) and the sim sets picked, because
 	 * the tab's settings live with the caller.
 	 */
-	start: (settings: RunSettings, inputsSignature: string, selectedSets?: readonly SetOption[]) => void;
+	start: (settings: RunSettings, inputsSignature: string, selectedSets: readonly SetOption[]) => void;
 	stop: () => void;
-	loadFixture: (ranking: Ranking, inputsSignature: string, selectedSets?: readonly SetOption[]) => void;
+	loadFixture: (ranking: Ranking, inputsSignature: string, selectedSets: readonly SetOption[]) => void;
 	dispose: () => void;
 };
 
@@ -46,11 +46,11 @@ export type RunSession = {
  * dialog blocks gear edits until the run settles, so this is the gear the
  * engine reads; and read when a fixture loads, which sets the page gear first.
  */
-const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string, selectedSets: readonly SetOption[] | undefined): MeasuredOn => ({
+const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string, selectedSets: readonly SetOption[]): MeasuredOn => ({
 	wornItemIds: equippedItemIds(host.player),
 	specId: specIdFor(host.player.getSpec()),
 	inputsSignature,
-	...(selectedSets ? { selectedSets } : {}),
+	selectedSets,
 });
 
 /**
@@ -80,7 +80,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 	let runId = stored.status === 'idle' ? 0 : stored.runId;
 	let context: RunContext | null = null;
 
-	const start = (settings: RunSettings, inputsSignature: string, selectedSets?: readonly SetOption[]) => {
+	const start = (settings: RunSettings, inputsSignature: string, selectedSets: readonly SetOption[]) => {
 		controller?.abort();
 		const current = new AbortController();
 		controller = current;
@@ -111,7 +111,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		store.getState().requestStop(runId);
 	};
 
-	const loadFixture = (ranking: Ranking, inputsSignature: string, selectedSets?: readonly SetOption[]) => {
+	const loadFixture = (ranking: Ranking, inputsSignature: string, selectedSets: readonly SetOption[]) => {
 		controller?.abort();
 		const measuredOn = measuredOnPage(host, inputsSignature, selectedSets);
 		store.getState().loadFixture(++runId, ranking, measuredOn);
