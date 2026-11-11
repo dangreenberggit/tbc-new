@@ -2183,7 +2183,18 @@ async function buildSetBonuses(
         },
         equipment,
         gems,
-        composeFor
+        composeFor,
+        (setId, reason) =>
+          setCheckLines.push(
+            setBonusesSkipSubstitution({
+              setName: setLabel(
+                equipment,
+                setId,
+                candidates.map((entry) => entry.itemId)
+              ),
+              reason,
+            })
+          )
       )
     : new Map<number, ReadonlySet<number>>();
   // Ticket 511, flag only: the counts in reach at which the set has a bonus.
@@ -4129,7 +4140,8 @@ function stopGuardedDeps(deps: Deps): Deps {
  *
  * When those pieces fail gem repair or a read fails, the set gets no counts,
  * so the gain side tries none for it and the ranking lists none; a console
- * warning names the set. The crossing gate also skips a set with no counts,
+ * warning names the set, and `onNotRead` gets the reason with the error
+ * (ticket 867). The crossing gate also skips a set with no counts,
  * which is intended: a failed check gives the set no entry. When Stop
  * refuses a read, the set also gets no counts, with no warning, and
  * `rankUpgrades` then drops the whole set phase. A runner that cannot read
@@ -4142,7 +4154,8 @@ async function setBonusCountsInReach(
   largestPackage: (setId: number) => PackagePiece[] | undefined,
   equipment: readonly SimItemSpec[],
   gems: GemContext,
-  composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest
+  composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
+  onNotRead: (setId: number, reason: string) => void
 ): Promise<Map<number, ReadonlySet<number>>> {
   const out = new Map<number, ReadonlySet<number>>();
   if (!sim.activeSetBonuses) return out;
@@ -4161,6 +4174,7 @@ async function setBonusCountsInReach(
         `[upgrades] set ${setId}: its bonus counts were not read, the package's gem repair failed`,
         err
       );
+      onNotRead(setId, SET_BONUS_SKIP_REASONS.metaOff(err.message));
       out.set(setId, new Set());
       continue;
     }
@@ -4180,6 +4194,7 @@ async function setBonusCountsInReach(
           `[upgrades] set ${setId}: its bonus counts were not read`,
           err
         );
+        onNotRead(setId, SET_BONUS_SKIP_REASONS.bonusListFailed(errorText(err)));
       }
       out.set(setId, new Set());
     }
@@ -4552,6 +4567,9 @@ export const SET_BONUS_SKIP_REASONS = {
   metaOff: (error: string) =>
     `no gem swap could turn your meta gem on.\n${error}`,
   measuringSimsNotBuilt: "the sims that measure it could not be built.",
+  /** The sim's list of a set's active bonuses (ticket 644) failed. */
+  bonusListFailed: (error: string) =>
+    `the sim could not list the set's bonuses.\n${error}`,
 } as const;
 
 /** One set bonus the set phase could not measure, for the run or `onSomeRows` only. */
@@ -4566,6 +4584,21 @@ export function setBonusSkipSubstitution(skip: SetBonusSkip): Substitution {
   return {
     field: `${skip.setName} ${skip.threshold}-piece set bonus`,
     detail: `The ${skip.setName} ${skip.threshold}-piece set bonus was not measured${skip.onSomeRows ? " on some rows" : ""}, because ${skip.reason}`,
+  };
+}
+
+/**
+ * A set whose bonus counts were not read (ticket 867). No count above the worn
+ * one is tried for it, so its bonuses in reach get no figure; its worn bonuses
+ * are measured apart, by the worn-set ladder.
+ */
+export function setBonusesSkipSubstitution(skip: {
+  setName: string;
+  reason: string;
+}): Substitution {
+  return {
+    field: `${skip.setName} set`,
+    detail: `The ${skip.setName} set bonuses were not all measured, because ${skip.reason}`,
   };
 }
 
