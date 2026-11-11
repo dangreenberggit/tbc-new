@@ -36,7 +36,7 @@ import type {
   SimObservation,
   SimRunOpts,
 } from "./seams/sim-runner";
-import { applyCopies } from "./set-less-copies";
+import { applyCopies, errorText } from "./set-less-copies";
 
 export type SetScreenMode = "off" | "record" | "on";
 
@@ -285,10 +285,7 @@ function rungSimmer(
       counter.simmed += 1;
       if (!input.signal?.aborted) {
         console.warn(what, err);
-        input.onSimFailed?.(
-          setId,
-          err instanceof Error ? err.message : String(err)
-        );
+        input.onSimFailed?.(setId, errorText(err));
       }
       return undefined;
     }

@@ -122,7 +122,7 @@ export function applySetLessCopies(
 /** A sim that failed, with the sim's own error text for the player (ticket 863). */
 export type SimFailure = { simError: string };
 
-const simErrorText = (err: unknown): string =>
+export const errorText = (err: unknown): string =>
   err instanceof Error ? err.message : String(err);
 
 /**
@@ -172,11 +172,10 @@ export async function measureSameGearBonus(
     const off = await runSim(offRequest);
     return { dps: on.dps - off.dps, se: Math.sqrt(on.se ** 2 + off.se ** 2) };
   } catch (err) {
-    return { simError: simErrorText(err) };
+    return { simError: errorText(err) };
   }
 }
 
-/** Whether a measurement ended in a failed sim. */
 export const isSimFailure = <T extends object>(
   value: T | SimFailure | undefined
 ): value is SimFailure => value !== undefined && "simError" in value;
@@ -222,7 +221,7 @@ export async function measureWornSetLadder(
       );
     } catch (err) {
       rungs[c] = undefined;
-      onSimFailed?.(c, simErrorText(err));
+      onSimFailed?.(c, errorText(err));
     }
   }
   const out: WornSetRung[] = [];
