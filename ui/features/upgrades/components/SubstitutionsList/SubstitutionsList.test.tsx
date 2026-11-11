@@ -15,6 +15,7 @@ import {
 	SET_BONUS_SKIP_REASONS,
 	setBonusSkipSubstitution,
 	setScreenSkipSubstitution,
+	uniqueSubstitutions,
 	wornSetSkipSubstitution,
 } from '../../model/engine/rank';
 import type { DetectedSpecId } from '../../model/engine/types';
@@ -50,6 +51,19 @@ describe('SubstitutionsList', () => {
 		expect(within(screen.getByTestId('upgrades-substitutions')).getByRole('definition').textContent).toBe(
 			'sim panicked: index out of range… (full text in the browser console)',
 		);
+	});
+
+	// A Go panic's error ends in a stack trace whose goroutine number and argument addresses change from sim to sim.
+	it('shows a failed sim\'s line once when only the stack trace differs between the sims', () => {
+		const failed = (goroutine: number) =>
+			setBonusSkipSubstitution({
+				setName: 'Justicar Battlegear',
+				threshold: 4,
+				reason: SET_BONUS_SKIP_REASONS.rowSimsFailed(`interface conversion: panic\nStack Trace:\ngoroutine ${goroutine} [running]:`),
+				onSomeRows: true,
+			});
+		render(<SubstitutionsList substitutions={uniqueSubstitutions([failed(41), failed(57)])} />);
+		expect(definitions()).toEqual(['The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed.… (full text in the browser console)']);
 	});
 
 	it('leaves a one-line reason whole', () => {

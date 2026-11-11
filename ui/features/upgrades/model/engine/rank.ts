@@ -4612,13 +4612,19 @@ export function wornSetSkipSubstitution(skip: WornSetSkip): Substitution {
   };
 }
 
-/** Each distinct substitution once: many rows' sims can fail with one error. */
+/**
+ * Each substitution once by the text the page shows: its field, slot and the
+ * first line of its detail. Many rows' sims can fail for one cause, and a Go
+ * panic's error ends in a stack trace that differs from sim to sim (its
+ * goroutine number and argument addresses), so a key on the whole detail
+ * would show one sentence many times. The first one's full text stays.
+ */
 export function uniqueSubstitutions(
   substitutions: readonly Substitution[]
 ): Substitution[] {
   const seen = new Set<string>();
   return substitutions.filter((s) => {
-    const key = `${s.field}|${s.slot ?? ""}|${s.detail}`;
+    const key = `${s.field}|${s.slot ?? ""}|${s.detail.split("\n", 1)[0]}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
