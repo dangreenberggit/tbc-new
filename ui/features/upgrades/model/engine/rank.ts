@@ -48,14 +48,7 @@ import {
   pricesHitBySpells,
   targetsAtCapLevel,
 } from "./cap-profile";
-import {
-  type CapState,
-  capStateFrom,
-  gearHitRating,
-  hitRegression,
-  isHitDriven,
-  statDeltaBetween,
-} from "./caps";
+import { gearHitRating } from "./caps";
 import { compose } from "./compose";
 import { canonicalJson, ENGINE_VERSION, type HashedGearItem } from "./content-hash";
 import {
@@ -338,8 +331,6 @@ export type RankedItem = {
   bisTags: Array<"BiS" | "Alt" | "Realistic">;
   curatedSets?: string[];
   bisSets?: string[];
-  hitDriven?: boolean;
-  hitRegression?: { lost: number; gapAfter: number };
   setBonusNote?: string;
   gemSubstitutions?: Array<{
     itemId: number;
@@ -631,7 +622,6 @@ export type Ranking = {
   baseline: { dps: number; stdev: number; metaAdjusted: boolean };
   assumptions: Assumptions;
   substitutions: Substitution[];
-  caps: CapState;
   items: RankedItem[];
   setBonuses?: SetBonusValue[];
   /**
@@ -714,8 +704,6 @@ type BestSwap = {
   slotChoice?: SimSlotName;
   slotIndex: number;
   setBonusNote?: string;
-  hitDriven: boolean;
-  hitRegression: { lost: number; gapAfter: number } | null;
   repairSwaps: readonly MetaRepairSwap[];
   /** Worn items the winning attempt took off beyond the swap itself (350). */
   removed: readonly { slotIndex: number; itemId: number }[];
@@ -1323,13 +1311,6 @@ export async function rankUpgrades(
     const candidateSkips: CandidateSkip[] = [];
     const individualDeltasByItemId = new Map<number, IndividualDelta>();
 
-    const talentsString = talentsStringFromRequest(request);
-    const caps = capStateFrom(equipment, socketed, {
-      assumedRace: race,
-      spec: input.spec,
-      ...(talentsString !== undefined ? { talentsString } : {}),
-    });
-
     /**
      * Which `(item, slot)` attempts are eligible to be priced at all.
      *
@@ -1501,24 +1482,11 @@ export async function rankUpgrades(
         const deltaDps = candObs.dps - baselineDps;
         const note = setBreakNote(equipment, slotIndex, entry.itemId);
         if (!best || deltaDps > best.deltaDps) {
-          const statDelta = statDeltaBetween(equipment, swapped);
           const next: BestSwap = {
             deltaDps,
             stdev: candObs.stdev,
             request: candReq,
             slotIndex,
-            hitDriven: isHitDriven(
-              statDelta,
-              caps.hit,
-              { deltaDps },
-              input.spec
-            ),
-            hitRegression: hitRegression(
-              statDelta,
-              caps.hit,
-              { deltaDps },
-              input.spec
-            ),
             repairSwaps,
             removed,
             candidateGems: swapped[slotIndex]?.gems ?? [],
@@ -1566,8 +1534,6 @@ export async function rankUpgrades(
         belowCutoff,
       };
       if (entry.sources) item.sources = entry.sources;
-      if (best.hitDriven) item.hitDriven = true;
-      if (best.hitRegression) item.hitRegression = best.hitRegression;
       if (best.slotChoice) item.slotChoice = best.slotChoice;
       if (best.setBonusNote) item.setBonusNote = best.setBonusNote;
       if (best.repairSwaps.length > 0) {
@@ -1886,7 +1852,6 @@ export async function rankUpgrades(
         presetId: presetIdFor(input.spec),
         standing: buildStandingAssumptions(race),
       },
-      caps,
       substitutions: [
         ...substitutionsFromMetaRepair(metaSwaps),
         ...hitCapNotes,
@@ -4571,8 +4536,8 @@ function chainSwapsWithRepairs(
  *
  * A two-hander occupies both hands, so pricing one beside a worn off-hand item
  * composes gear the game cannot equip. Clearing the slot leaves a legal,
- * ordinary two-hander build and an honest swap — the row then debits the
- * off-hand item's stats through `statDeltaBetween` and discloses it through
+ * ordinary two-hander build and an honest swap — the row's sim runs without
+ * the off-hand item and the row discloses it through
  * `RankedItem.removedItems`, so a reader cannot mistake the two-item change
  * for a one-item one.
  *

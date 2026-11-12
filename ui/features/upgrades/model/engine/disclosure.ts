@@ -1,12 +1,12 @@
 /**
  * Standing assumptions vs this-run substitutions.
  *
- * PORTED from packages/core/src/disclosure.ts, unchanged. Pure formatting
- * over `types.ts`/`caps.ts`/`meta-repair.ts` types — no data-source
- * dependency to adapt.
+ * PORTED from packages/core/src/disclosure.ts, unchanged except that ticket
+ * 521 deleted `hitCapBanner`: nothing called it, and the cap readout it
+ * formatted is gone from the fork (`caps.ts`). Pure formatting over
+ * `types.ts`/`meta-repair.ts` types — no data-source dependency to adapt.
  */
 
-import type { TalentHitAssumption } from "./caps";
 import type { MetaRepairSwap } from "./meta-repair";
 import type { SimOrderName } from "./slots";
 import type { ContentPhase, Race } from "./types";
@@ -68,40 +68,6 @@ export function buildStandingAssumptions(race: Race): StandingAssumption[] {
         "WCL temporaryEnchant (effect id) is omitted: no effectId→itemId imbue table in db.json. Any mhImbueId pinned by the skeleton is carried unchanged into every candidate — including weapon candidates of the other stone family and off-hand items — so a weapon-slot delta is measured under the baseline's imbue rather than the candidate's (ticket 351).",
     },
   ];
-}
-
-export function hitCapBanner(hit: {
-  rating: number;
-  gap: number;
-  capUncertainty: number;
-  talentHitAssumed?: TalentHitAssumption;
-}): string {
-  const rounded = Math.round(Math.abs(hit.gap));
-  const band = Math.round(hit.capUncertainty);
-  const assumed = hit.talentHitAssumed;
-  const assumption = assumed
-    ? ` Assumes ${assumed.points}/${assumed.maxPoints} ${assumed.talent} — ` +
-      `your logged build is not read for talents yet.`
-    : "";
-
-  if (hit.gap > 0) {
-    const direction = assumed
-      ? `The real shortfall could run either way.`
-      : `The real shortfall may be smaller than this.`;
-    return (
-      `~${rounded} rating under the hit cap — ` +
-      `Heroic Presence in your party would lower the cap by ~${band}. ` +
-      `${direction}${assumption}`
-    );
-  }
-  const floor = assumed
-    ? `Heroic Presence would lower the cap further.`
-    : `You are over by at least this much.`;
-  return (
-    `~${rounded} rating over the hit cap — ` +
-    `Heroic Presence in your party would lower the cap by ~${band}. ` +
-    `${floor}${assumption}`
-  );
 }
 
 export function renderDisclosure(opts: {
