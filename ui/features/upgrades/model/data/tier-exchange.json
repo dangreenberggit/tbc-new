@@ -2231,6 +2231,26 @@
       "upgradeId": 34406
     },
     {
+      "baseId": 34244,
+      "upgradeId": 34404
+    },
+    {
+      "baseId": 34245,
+      "upgradeId": 34403
+    },
+    {
+      "baseId": 34332,
+      "upgradeId": 34402
+    },
+    {
+      "baseId": 34243,
+      "upgradeId": 34401
+    },
+    {
+      "baseId": 34345,
+      "upgradeId": 34400
+    },
+    {
       "baseId": 34351,
       "upgradeId": 34407
     },
