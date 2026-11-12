@@ -171,12 +171,15 @@ export type ScreenPackage = {
   added: ReadonlyArray<{ slotIndex: number; itemId: number }>;
   /**
    * Each rung's request with its own repair-chosen gems (ticket 535), one
-   * entry per copies, a `BuildFailure` when that request cannot be built.
-   * Absent means every rung is `request` with its copies applied.
+   * entry per copies, a `BuildFailure` when that request cannot be built, and
+   * undefined when that rung's gem repair fails: that rung is not measured,
+   * with no line, as when `packageAt` gives no package (review A1 of
+   * `fix/867-870-tab-errors`). Absent means every rung is `request` with its
+   * copies applied.
    */
   requestsFor?: (
     copiesList: Array<{ setKept: number[]; setLess: number[] }>
-  ) => Promise<Array<RaidSimRequest | BuildFailure>>;
+  ) => Promise<Array<RaidSimRequest | BuildFailure | undefined>>;
 };
 
 export type SetScreenInput = {
@@ -260,15 +263,19 @@ function rungSimmer(
     setKept: slots.slice(0, k),
     setLess: slots.slice(k),
   });
-  let requests: Promise<Array<RaidSimRequest | undefined>> | undefined;
+  let requests:
+    | Promise<Array<RaidSimRequest | BuildFailure | undefined>>
+    | undefined;
   return async (k, iterations) => {
     if (!pkg) return undefined;
     const what = `[upgrades] set screen: set ${setId} at ${worn + k} pieces, ${iterations} iterations, not measured`;
     let request: RaidSimRequest | undefined;
     if (pkg.requestsFor) {
       requests ??= pkg.requestsFor(rungs.map(copiesAt));
-      const built = (await requests)[rungs.indexOf(k)];
-      if (!built) throw new Error(`${what}: rung ${k} is not a screened rung`);
+      const index = rungs.indexOf(k);
+      if (index < 0) throw new Error(`${what}: rung ${k} is not a screened rung`);
+      const built = (await requests)[index];
+      if (built === undefined) return undefined;
       if (isBuildFailure(built)) {
         if (!input.signal?.aborted) {
           console.warn(what, built.buildError);

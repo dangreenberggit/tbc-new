@@ -1168,12 +1168,7 @@ export async function rankUpgrades(
      */
     const versionReads = new Map<string, Promise<PlayerStatsObservation>>();
     let versionBudgetsOff = false;
-    const versionGears: VersionGears = async (
-      rebuild,
-      base,
-      copiesList,
-      onRepairFailed
-    ) => {
+    const versionGears: VersionGears = async (rebuild, base, copiesList) => {
       let plain: RaidSimRequest | BuildFailure;
       try {
         plain = composeFor(base.equipment);
@@ -1204,7 +1199,7 @@ export async function rankUpgrades(
       }
       try {
         const buildHit = gearHitRating(base.equipment, cap.stat);
-        const out: Array<VersionEntry | BuildFailure> = [];
+        const out: VersionResult[] = [];
         for (let i = 0; i < copiesList.length; i++) {
           const request = defaults[i]!;
           if (isBuildFailure(request)) {
@@ -1237,8 +1232,7 @@ export async function rankUpgrades(
             });
           } catch (err) {
             if (!(err instanceof MetaRepairError)) throw err;
-            onRepairFailed?.(err);
-            out.push({ buildError: errorText(err) });
+            out.push({ repairError: err });
             continue;
           }
           out.push({
@@ -2220,7 +2214,9 @@ async function buildSetBonuses(
                     base,
                     copiesList
                   )
-                ).map(requestOf),
+                ).map((entry) =>
+                  isRepairFailure(entry) ? undefined : requestOf(entry)
+                ),
             };
           },
           runSimAt: (request, opts) => runSimAt(deps, request, simVersion, opts),
@@ -2424,21 +2420,20 @@ async function buildSetBonuses(
       // as on the package's own build; an undefined entry alone would show
       // a failed sim, and none ran.
       let versionRepairError: MetaRepairError | undefined;
-      const noteRepairError = (err: MetaRepairError) => {
-        versionRepairError ??= err;
-      };
       const packageVersions = async (copiesList: readonly VersionCopies[]) => {
-        const entries = await versionGears(
-          rebuildPackage,
-          builtPackage,
-          [{}, ...copiesList],
-          noteRepairError
+        const entries = repairErrorOr(
+          await versionGears(rebuildPackage, builtPackage, [
+            {},
+            ...copiesList,
+          ])
         );
-        plainVersion.entry = entries[0];
-        if (versionRepairError) {
-          const failed = { buildError: errorText(versionRepairError) };
+        if (entries instanceof MetaRepairError) {
+          versionRepairError ??= entries;
+          // Never read: the caller checks `versionRepairError` first.
+          const failed = { buildError: errorText(entries) };
           return copiesList.map(() => failed);
         }
+        plainVersion.entry = entries[0];
         return entries.slice(1).map(requestOf);
       };
 
@@ -2517,16 +2512,14 @@ async function buildSetBonuses(
       };
 
       if (!plainVersion.entry) {
-        [plainVersion.entry] = await versionGears(
-          rebuildPackage,
-          builtPackage,
-          [{}],
-          noteRepairError
+        const entries = repairErrorOr(
+          await versionGears(rebuildPackage, builtPackage, [{}])
         );
-        if (versionRepairError) {
-          skipRepairFailed(versionRepairError);
+        if (entries instanceof MetaRepairError) {
+          skipRepairFailed(entries);
           continue;
         }
+        [plainVersion.entry] = entries;
       }
       // `versionGears` gives one entry per copies, so the entry is set here.
       const packageEntry = plainVersion.entry!;
@@ -2714,7 +2707,10 @@ async function buildSetBonuses(
       }
       const crossingBuild = swapped;
       const crossingLabel = setLabel(equipment, setId);
-      const measured = crossingBuild
+      // A version's failed repair leaves the gate unmeasured with no line,
+      // as a failed repair of the crossing build does above.
+      let versionRepairFailed = false;
+      const gateResult = crossingBuild
         ? await measureSameGearBonus(
             cachedSampleRun(`${crossingLabel} ${worn + 1}pc crossing gate`),
             composeFor(crossingBuild.equipment),
@@ -2723,16 +2719,24 @@ async function buildSetBonuses(
             ),
             worn,
             // "On" and "off" are one pair: one call (ticket 535).
-            async (copiesList) =>
-              (
+            async (copiesList) => {
+              const entries = repairErrorOr(
                 await versionGears(
                   (g) => chainSwapsWithRepairs(equipment, crossing, g),
                   crossingBuild,
                   copiesList
                 )
-              ).map(requestOf)
+              );
+              if (!(entries instanceof MetaRepairError)) {
+                return entries.map(requestOf);
+              }
+              versionRepairFailed = true;
+              // Never read: the gate's result is dropped below.
+              return copiesList.map(() => ({ buildError: errorText(entries) }));
+            }
           )
         : undefined;
+      const measured = versionRepairFailed ? undefined : gateResult;
       if (isSimFailure(measured)) {
         bonusNotMeasured(
           crossingLabel,
@@ -2979,6 +2983,9 @@ async function measureSetSteps(args: {
     }
     // `versionGears` gives one entry per copies.
     const entry = (await args.versionGears(stepRebuild(swaps), build, [{}]))[0]!;
+    if (isRepairFailure(entry)) {
+      return SET_BONUS_SKIP_REASONS.metaOff(entry.repairError.message);
+    }
     return isBuildFailure(entry)
       ? SET_BONUS_SKIP_REASONS.rowsNotBuilt(entry.buildError)
       : entry.request;
@@ -3238,11 +3245,22 @@ async function measureSetSteps(args: {
     // the bonus-off version its pair, so both come from one call. On later
     // steps entry 0 is the previous step's own request (the build is
     // deterministic and its read is cached).
-    const [plainEntry, offEntry] = await args.versionGears(
-      stepRebuild(prevSwaps),
-      beforeBuild,
-      [{}, { setLess: replaced }]
+    const versions = repairErrorOr(
+      await args.versionGears(stepRebuild(prevSwaps), beforeBuild, [
+        {},
+        { setLess: replaced },
+      ])
     );
+    // As when the gear before or after fails its repair above: the split is
+    // skipped, with no line, since no call failed.
+    if (versions instanceof MetaRepairError) {
+      console.warn(
+        "[upgrades] set step break not split: a version's gem repair failed",
+        versions
+      );
+      return false;
+    }
+    const [plainEntry, offEntry] = versions;
     if (
       !plainEntry ||
       !offEntry ||
@@ -3475,6 +3493,14 @@ async function measurePairTwoPiece(
     pairBuild,
     [{}]
   );
+  if (isRepairFailure(entry)) {
+    console.warn(
+      `[upgrades] ${bonusLabel} net value not measured: gem repair failed for the worn-1 pair that measures the 2pc`,
+      entry.repairError
+    );
+    onNotMeasured(SET_BONUS_SKIP_REASONS.metaOff(entry.repairError.message));
+    return undefined;
+  }
   if (!entry || isBuildFailure(entry)) {
     console.warn(
       `[upgrades] ${bonusLabel} net value not measured: the request for the worn-1 pair that measures the 2pc could not be built`,
@@ -4479,20 +4505,42 @@ type VersionEntry = {
 };
 
 /**
+ * A version whose rebuild failed its gem repair. It is no failed call, so a
+ * caller handles it as the same failure on its own build, never as a request
+ * that could not be built (review A1 of `fix/867-870-tab-errors`): a line with
+ * a build error carries `Substitution.error`, which the run's error toast
+ * shows.
+ */
+type RepairFailure = { repairError: MetaRepairError };
+
+type VersionResult = VersionEntry | BuildFailure | RepairFailure;
+
+const isRepairFailure = (
+  entry: VersionResult | undefined
+): entry is RepairFailure => entry !== undefined && "repairError" in entry;
+
+/** The first version's failed repair, or every entry when none failed. */
+const repairErrorOr = (
+  entries: readonly VersionResult[]
+): MetaRepairError | Array<VersionEntry | BuildFailure> =>
+  entries.find(isRepairFailure)?.repairError ??
+  entries.filter(
+    (entry): entry is VersionEntry | BuildFailure => !isRepairFailure(entry)
+  );
+
+/**
  * Each version of one set-phase build, a pair's versions in one call
  * (ticket 535; `rankUpgrades` defines it). `base` is the build with the run's
  * budget; `rebuild` builds the same chain with another budget. An entry is
  * a `BuildFailure` with the error when that version's default request cannot
- * be composed or, unless Stop ends a later read in the same call, when
- * rebuilding it fails its gem repair (ticket 869). That `MetaRepairError`
- * also goes to `onRepairFailed`, for a caller whose note names it.
+ * be composed (ticket 869), and, unless Stop ends a later read in the same
+ * call, a `RepairFailure` when rebuilding it fails its gem repair.
  */
 type VersionGears = (
   rebuild: (gems: GemContext) => ChainBuild,
   base: ChainBuild,
-  copiesList: readonly VersionCopies[],
-  onRepairFailed?: (err: MetaRepairError) => void
-) => Promise<Array<VersionEntry | BuildFailure>>;
+  copiesList: readonly VersionCopies[]
+) => Promise<VersionResult[]>;
 
 /** A version's request, or why it could not be built. */
 const requestOf = (
