@@ -149,6 +149,12 @@ describe('runSettled', () => {
 		expect(settled).toEqual({ status: 'done', runId: 4, result, measuredOn: { runner: 'WorkerPoolSimRunner' } });
 		expect(settled.status === 'done' && 'runner' in settled.result).toBe(false);
 	});
+
+	it('drops the EP-weights set from the result, so a recorded ranking never carries it', () => {
+		const result = { ...RANKING_FIXTURE, durationMs: 5 };
+		const settled = runSettled(running(4), 4, { ...result, runner: 'WorkerPoolSimRunner', epWeightsSet: 'hunter-sv' });
+		expect(settled).toEqual({ status: 'done', runId: 4, result, measuredOn: { runner: 'WorkerPoolSimRunner' } });
+	});
 });
 
 describe('visibleRows', () => {

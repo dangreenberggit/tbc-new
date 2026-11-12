@@ -141,6 +141,16 @@ describe('rankForPlayer', () => {
 		expect(deps.epWeights).toBe(weightsFile.weights);
 	});
 
+	// One decision (ticket 811): the set the engine's weights came from is the set the run resolves with, for the
+	// session's assumptions line.
+	it('resolves with the EP-weights set it ranked with', async () => {
+		const result = await rankForPlayer(fakeHost(Spec.SpecHunter, 3, '502-0550201205-333200022003223005103'), SETTINGS, depsFor());
+
+		const [{ deps }] = rankCalls as [RankCall];
+		expect(deps.epWeights).toBe(hunterSvWeights.weights);
+		expect(result.epWeightsSet).toBe('hunter-sv');
+	});
+
 	// A phase with no candidates (ticket 515): the run must still finish, so the tab can say why it has no rows.
 	// The engine is mocked here; that it returns no rows on an empty pool is tested by `packages/core/test/rank.test.ts`
 	// (the slamaltman baseline case) in the main repo, tbc-gear-prio, not in this fork.
@@ -176,7 +186,7 @@ describe('rankForPlayer', () => {
 		await vi.waitFor(() => expect(rankCalls).toHaveLength(1));
 
 		controller.abort();
-		expect(await pending).toEqual({ ...partial, durationMs: expect.any(Number), runner: 'WorkerPoolSimRunner' });
+		expect(await pending).toEqual({ ...partial, durationMs: expect.any(Number), runner: 'WorkerPoolSimRunner', epWeightsSet: 'ret' });
 	});
 
 	it('takes the run context before its first await, so an unmount after the click can end it', () => {
