@@ -7,7 +7,7 @@ import { dbPoolHost } from '../testing/db_pool';
 import { settled } from '../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
-import type { PartialRanking } from './engine/rank';
+import { candidateSkipSubstitution, hitCapUnknownNote, type PartialRanking, SET_BONUS_SKIP_REASONS, setBonusSkipSubstitution } from './engine/rank';
 import type { RunDeps, RunFn } from './run';
 import type { RunOutcome, RunResult } from './run_state';
 import type { SetOption } from './settings_pool';
@@ -170,6 +170,55 @@ describe('createRunSession', () => {
 		call(1).fail(new Error('superseded'));
 		await settled();
 		expect(toast).not.toHaveBeenCalled();
+	});
+
+	// Ticket 874, owner's ruling 2026-11-11: the run goes on past a failed sim, and its end shows one toast, not one per
+	// failure, with the first failure's own message as wowsims' bulk sim shows its one failure (`run.ts:301-310`).
+	describe('a run that ends with failed sims', () => {
+		const setBonus = { setName: 'Justicar Battlegear', threshold: 4 as const };
+		const failures = [
+			candidateSkipSubstitution({
+				kind: 'repair',
+				itemId: 32461,
+				name: 'Furious Gizmatic Goggles',
+				slot: 'head',
+				reason: 'no gem layout activates meta 32409',
+			}),
+			setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.metaOff('no gem layout activates meta 32409') }),
+			hitCapUnknownNote(),
+			setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.simFailed('HTTP 500 from /raidSimAsync: first\nStack Trace:') }),
+			candidateSkipSubstitution({ kind: 'sim', itemId: 29283, name: 'Violet Signet of the Master Assassin', slot: 'finger1', reason: 'worker died' }),
+		];
+		const ranking = (substitutions: RunResult['substitutions']) => ({ ...RANKING_FIXTURE, substitutions, durationMs: 9 });
+
+		it("shows one error toast with the first failed call's own message, in the notes list's order", async () => {
+			const toast = vi.spyOn(toastManager, 'add');
+			const { session, call, run } = setup();
+			session.start(SETTINGS, SIGNATURE, []);
+			call(0).settle(ranking(failures));
+			await vi.waitFor(() => expect(run().status).toBe('done'));
+			expect(toast.mock.calls).toEqual([[{ variant: 'error', body: 'HTTP 500 from /raidSimAsync: first\nStack Trace:' }]]);
+		});
+
+		it('shows no toast when no call failed, after Stop, for a superseded run or for a loaded fixture', async () => {
+			const toast = vi.spyOn(toastManager, 'add');
+			const { session, call, run } = setup();
+			session.start(SETTINGS, SIGNATURE, []);
+			call(0).settle(ranking(failures.slice(0, 3)));
+			await vi.waitFor(() => expect(run().status).toBe('done'));
+
+			session.start(SETTINGS, SIGNATURE, []);
+			session.stop();
+			call(1).settle({ ...partialOf(), substitutions: failures });
+			await vi.waitFor(() => expect(run().status).toBe('stopped'));
+
+			session.start(SETTINGS, SIGNATURE, []);
+			session.start(SETTINGS, SIGNATURE, []);
+			call(2).settle(ranking(failures));
+			session.loadFixture(ranking(failures), SIGNATURE, []);
+			await settled();
+			expect(toast).not.toHaveBeenCalled();
+		});
 	});
 
 	it('shows a loaded fixture as a finished run, aborts the run it replaced and logs the fixture once', async () => {

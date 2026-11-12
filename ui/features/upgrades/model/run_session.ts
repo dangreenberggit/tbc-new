@@ -69,6 +69,8 @@ const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'cutoff' | 'substi
  * A failed run's own message, shown as wowsims' bulk sim shows one
  * (`ui/features/bulk/model/run.ts:301-310` at 24606be6, ticket 868). The
  * caller skips it after Stop, as wowsims skips it when the user cancelled.
+ * A run that goes on past failed sims shows the first one's error the same
+ * way, once (ticket 874): wowsims' bulk sim stops at its one failure.
  */
 const toastErrorMessage = (error: unknown) => {
 	const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : undefined;
@@ -110,7 +112,10 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 			result => {
 				store.getState().settleRun(id, result);
 				// The store drops a superseded run's result, so it is not logged either.
-				if (id === runId) logAssumptions(result, { ...pageAssumptions, settings, host });
+				if (id !== runId) return;
+				logAssumptions(result, { ...pageAssumptions, settings, host });
+				// The notes list's order: the first line whose call failed.
+				if (!current.signal.aborted) toastErrorMessage(result.substitutions.find(s => s.error?.trim())?.error);
 			},
 			(error: unknown) => {
 				if (id === runId) {
