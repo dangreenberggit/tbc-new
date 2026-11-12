@@ -1,7 +1,8 @@
 /**
  * PORTED from packages/core/src/cutoff.ts, adapted in comments only: the
  * `setBonusNoiseFloorDps` doc names `futureBonuses` where core names
- * `prospectiveBonusDps` (ticket 467). The code is core's.
+ * `prospectiveBonusDps` (ticket 467), and says which fork figures it floors
+ * and which it does not (ticket 623). The code is core's.
  */
 
 /**
@@ -21,18 +22,29 @@ export type Cutoff = { readonly absDps: number };
 export const CUTOFF: Cutoff = { absDps: 3 };
 
 /**
- * Noise floor for a prospective set bonus, in DPS, derived from the ranking's
- * cutoff. A set-bonus figure near zero is indistinguishable from sim noise;
- * only a figure strictly above this floor may move anything.
+ * Noise floor for a four-sim prospective set bonus, in DPS, derived from the
+ * ranking's cutoff. A set-bonus figure near zero is indistinguishable from sim
+ * noise; only a figure strictly above this floor may move anything.
  *
- * The display gate (the fork tab) and the ranking gate (`rankableSetPotential`,
- * view.ts) both obtain the floor by calling this function on the SAME frozen
- * `Cutoff` — the one carried on the `Ranking` the rows came from, threaded to
- * the row renderer as a parameter, never a live lookup and never a state field
- * a mid-run render lacks — so for any displayed row the two layers read the
- * same number and can never disagree: no row sorts on a bonus the display
- * hides, even while a stale ranking is on screen. A mid-run skeleton row has no
- * ranking and shows no prospective line at all.
+ * Which figures it floors (ticket 623): only the bonus in
+ * `futureBonuses[].dps` of a ranking made without `measureBrokenSetValue`,
+ * which folds four sims. Those are the E-W3 parity harness's rankings and
+ * core's. The tab always sets that flag (`model/run.ts`), so its rankings take
+ * the step path, and every set figure there is one sim minus another: a
+ * same-gear value, a worn-set ladder rung, a crossing gate, a gap between two
+ * step gears. Such a figure has the noise of one item delta, so it is held to
+ * the item bar itself, `absDps`, through `clearsSameGearGate`
+ * (set-less-copies.ts) and `walkSteps` (view.ts), never to this floor.
+ *
+ * The display gate (the fork tab's popover) and the ranking gate
+ * (`rankableSetPotential`, view.ts) both derive their floor from the SAME
+ * frozen `Cutoff`, by the same rule. It is the one carried on the `Ranking`
+ * the rows came from, threaded to the row renderer as a parameter, never a
+ * live lookup and never a state field a mid-run render lacks. So for any
+ * displayed row the two layers read the same number and can never disagree:
+ * no row sorts on a bonus the display hides, even while a stale ranking is on
+ * screen. A mid-run skeleton row has no ranking and shows no prospective line
+ * at all.
  *
  * Derivation: `√2 × absDps`. A 2pc prospective bonus folds four sims (base +
  * package + two singles), so its combined SE `sqrt(Σ se_i²)` (see `combineSe`,
@@ -53,7 +65,8 @@ export const CUTOFF: Cutoff = { absDps: 3 };
  * replication precisely to be coarse-and-inclusive (ADR-0021). Ticket 335
  * measured that no bonus in the committed `.scratch/**` fixtures fell in the
  * old ret window (4.81, 5.89); that scan has not been re-run for the 4.24 floor
- * (untested).
+ * (untested). The tab never applies this floor (ticket 623), so that scan
+ * bears on flag-off rankings only.
  *
  * See tickets 331, 332, and 335, and
  * .scratch/stage-gate/ticket-332-per-spec-ranking-floor/plan.md.

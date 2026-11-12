@@ -351,17 +351,21 @@ describe('setBonusTipLines', () => {
 			});
 
 			it('gives a step past the stop no figure when its difference from the stop’s gear is within the noise', () => {
-				// The noise floor is √2 × 3 = 4.24. A tie under the strict best-stop rule, then a 3.5 gap.
-				for (const stepGearDps of [30.5, 27]) {
+				// The gap is one step gear's sim minus another's, so its floor is the item bar, 3, not √2 × 3 (ticket 623).
+				// A tie under the strict best-stop rule, then a gap of exactly 3.
+				for (const stepGearDps of [30.5, 27.5]) {
 					const row = stepRow({ futureBonuses: [future(), fourPiece(stepGearDps)] });
 					const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
 					expect(tip?.entries.slice(-2)).toEqual([{ type: 'heading', heading: 'not_counted' }, pastStop4(undefined)]);
 				}
+				// A 3.5 gap clears the bar, so it gets its figure.
+				const row = stepRow({ futureBonuses: [future(), fourPiece(27)] });
+				expect(setBonusTipLines(row, { ...context, withSetPotential: true })?.entries.at(-1)).toEqual(pastStop4(-3.5));
 			});
 
 			it('compares the gap with twice the two step gears’ standard errors added in quadrature', () => {
 				// A 10.5 gap. Either error alone at 6 hides it (2 × 6 = 12), so a gate that read only the other one would show it.
-				// Both at 4 hide it only together: 2 × √32 = 11.31, but 2 × 4 = 8. At 3, the floor 4.24 and 2 × √18 = 8.49 do not.
+				// Both at 4 hide it only together: 2 × √32 = 11.31, but 2 × 4 = 8. At 3, the bar 3 and 2 × √18 = 8.49 do not.
 				for (const [stopSe, stepSe, expected] of [
 					[6, 0, pastStop4(undefined)],
 					[0, 6, pastStop4(undefined)],

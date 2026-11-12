@@ -51,12 +51,7 @@ import {
 import { gearHitRating } from "./caps";
 import { compose } from "./compose";
 import { canonicalJson, ENGINE_VERSION, type HashedGearItem } from "./content-hash";
-import {
-  CUTOFF,
-  type Cutoff,
-  meetsCutoff,
-  setBonusNoiseFloorDps,
-} from "./cutoff";
+import { CUTOFF, type Cutoff, meetsCutoff } from "./cutoff";
 import {
   type Assumptions,
   buildStandingAssumptions,
@@ -1733,7 +1728,7 @@ export async function rankUpgrades(
             },
             simVersion,
             runOpts,
-            floorDps: setBonusNoiseFloorDps(cutoff),
+            cutoff,
             versionGears,
             bonusLines: setBonusLines,
           })
@@ -2073,7 +2068,7 @@ async function buildSetBonuses(
         equipment,
         composeFor,
         cachedSampleRun,
-        setBonusNoiseFloorDps(cutoff),
+        cutoff,
         setCheckLines,
         deps.sim.activeSetBonuses
           ? (request) => deps.sim.activeSetBonuses!(request)
@@ -2114,7 +2109,6 @@ async function buildSetBonuses(
     return undefined;
   };
 
-  const floorDps = setBonusNoiseFloorDps(cutoff);
   const selectFor = (setId: number, threshold: SetThreshold) =>
     selectPackage(
       setId,
@@ -2478,7 +2472,7 @@ async function buildSetBonuses(
           continue;
         }
         sameGear = measured;
-        if (!clearsSameGearGate(sameGear.dps, sameGear.se, floorDps)) {
+        if (!clearsSameGearGate(sameGear.dps, sameGear.se, cutoff)) {
           results.push({
             setId,
             setName: label,
@@ -2760,7 +2754,7 @@ async function buildSetBonuses(
         ...(value ? { dps: value.dps, se: value.se } : {}),
         cleared:
           value !== undefined &&
-          clearsSameGearGate(value.dps, value.se, floorDps),
+          clearsSameGearGate(value.dps, value.se, cutoff),
       });
     }
   }
@@ -2890,7 +2884,7 @@ async function measureSetSteps(args: {
   baseline: DpsSample;
   simVersion: string;
   runOpts: SimRunOpts;
-  floorDps: number;
+  cutoff: Cutoff;
   /** Every step sim's request comes from it (ticket 535). */
   versionGears: VersionGears;
   /** A line for each set bonus whose step or bonus-off sim failed, with the sim's error (ticket 863). */
@@ -3010,7 +3004,7 @@ async function measureSetSteps(args: {
       (f) =>
         !f.belowGate &&
         f.sameGearDps !== undefined &&
-        clearsSameGearGate(f.sameGearDps, f.sameGearSe ?? 0, args.floorDps)
+        clearsSameGearGate(f.sameGearDps, f.sameGearSe ?? 0, args.cutoff)
     );
     if (eligible.length === 0) continue;
 
@@ -3310,7 +3304,7 @@ async function measureSetSteps(args: {
     const ctx = item.setContext;
     const rowSwap = rowSwapOf.get(item);
     if (!ctx?.stepRanking || !rowSwap || setCreditUnmeasured(ctx)) continue;
-    const steps = setPotentialSteps(ctx, args.floorDps);
+    const steps = setPotentialSteps(ctx, args.cutoff);
     if (!steps) continue;
     let prevSwaps: PackagePiece[] | undefined = [rowSwap];
     let firstStep = true;
@@ -3632,7 +3626,7 @@ async function measureWornSetLadders(
   cachedSampleRun: (
     what: string
   ) => (request: RaidSimRequest) => Promise<DpsSample>,
-  floorDps: number,
+  cutoff: Cutoff,
   lines: Substitution[],
   readBonuses?: (request: RaidSimRequest) => Promise<readonly string[]>
 ): Promise<WornSetLadderEntry[]> {
@@ -3670,7 +3664,7 @@ async function measureWornSetLadders(
         rung.unmeasured !== undefined
           ? (bonusCounts?.has(rung.count) ?? true)
           : rung.dps !== undefined &&
-            clearsSameGearGate(rung.dps, rung.se ?? 0, floorDps);
+            clearsSameGearGate(rung.dps, rung.se ?? 0, cutoff);
       entries.push({ setId, setName, ...rung, counted });
     }
   }

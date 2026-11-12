@@ -235,11 +235,7 @@ function belowCutoffUnderView(
   setCredit: SetCreditView
 ): boolean {
   if (!withSetPotential) return item.belowCutoff;
-  const prospective = rankableSetPotential(
-    item,
-    setBonusNoiseFloorDps(cutoff),
-    setCredit
-  );
+  const prospective = rankableSetPotential(item, cutoff, setCredit);
   if (prospective === 0) return item.belowCutoff;
   return !meetsCutoff(item.deltaDps + prospective, cutoff);
 }
@@ -407,13 +403,18 @@ type CreditWalk = {
  * The top package's `commitBreaks` are not charged: a row whose own path to
  * each future keeps the other set's bonus should not pay for a slot only the
  * top package vacates (a Malorne chest row charged the Thunderheart 2pc).
+ *
+ * The floor is `setBonusNoiseFloorDps`, √2 × the item bar, because here each
+ * bonus folds four sims. A step ranking's figures are each one sim minus
+ * another, so `walkSteps` floors them at the item bar itself (ticket 623).
  */
 function walkCredit(
   ctx: SetContextLike | undefined,
-  noiseFloorDps: number,
+  cutoff: Cutoff,
   rule: SetCreditRule
 ): CreditWalk {
-  if (ctx?.stepRanking) return walkSteps(ctx, noiseFloorDps, rule);
+  if (ctx?.stepRanking) return walkSteps(ctx, cutoff, rule);
+  const noiseFloorDps = setBonusNoiseFloorDps(cutoff);
   const future = [...(ctx?.futureBonuses ?? [])].sort(
     (a, b) => a.threshold - b.threshold
   );
@@ -489,13 +490,13 @@ function walkCredit(
  */
 export function stepEligible(
   future: Pick<FutureLike, "belowGate" | "sameGearDps" | "sameGearSe">,
-  noiseFloorDps: number
+  cutoff: Cutoff
 ): boolean {
   if (future.belowGate || future.sameGearDps === undefined) return false;
   return clearsSameGearGate(
     future.sameGearDps,
     future.sameGearSe ?? 0,
-    noiseFloorDps
+    cutoff
   );
 }
 
@@ -511,22 +512,22 @@ export function stepEligible(
  * The split view keeps its per-step formula with `sameGearDps` in place of the
  * bonus: each eligible step adds its value per piece and loses each newly
  * lost worn bonus beyond the row's own break, floored, taken at the stop.
+ * Each value is one sim minus another, so the floor is the item bar
+ * (`cutoff.absDps`), not the four-sim floor (ticket 623).
  */
 function walkSteps(
   ctx: SetContextLike,
-  noiseFloorDps: number,
+  cutoff: Cutoff,
   rule: SetCreditRule
 ): CreditWalk {
   const singleDeltaDps = ctx.singleDeltaDps;
   const eligible = [...(ctx.futureBonuses ?? [])]
-    .filter(
-      (f) => f.stepGearDps !== undefined && stepEligible(f, noiseFloorDps)
-    )
+    .filter((f) => f.stepGearDps !== undefined && stepEligible(f, cutoff))
     .sort((a, b) => a.threshold - b.threshold);
   if (singleDeltaDps === undefined || eligible.length === 0) {
     return { credit: 0, split: 0, stopThreshold: 0, terms: [] };
   }
-  const floored = (v: number): number => (v > noiseFloorDps ? v : 0);
+  const floored = (v: number): number => (v > cutoff.absDps ? v : 0);
   const charged = new Set((ctx.singleBreaks ?? []).map(bonusKey));
   let splitRunning = 0;
   let best = { credit: 0, split: 0, stopThreshold: 0 };
@@ -598,10 +599,10 @@ export function crossingLabelCount(
  */
 export function setPotentialTerms(
   ctx: SetContextLike | undefined,
-  noiseFloorDps: number,
+  cutoff: Cutoff,
   rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE
 ): { credit: number; stopThreshold: number; terms: SetPotentialTerm[] } {
-  const { credit, stopThreshold, terms } = walkCredit(ctx, noiseFloorDps, rule);
+  const { credit, stopThreshold, terms } = walkCredit(ctx, cutoff, rule);
   return { credit, stopThreshold, terms };
 }
 
@@ -649,11 +650,11 @@ export type SetPotentialStep = {
  */
 export function setPotentialSteps(
   ctx: SetContextLike | undefined,
-  noiseFloorDps: number,
+  cutoff: Cutoff,
   rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE
 ): SetPotentialStep[] | null {
   if (!ctx?.stepRanking || ctx.singleDeltaDps === undefined) return null;
-  const stops = walkSteps(ctx, noiseFloorDps, rule).terms.filter(
+  const stops = walkSteps(ctx, cutoff, rule).terms.filter(
     (t): t is Extract<SetPotentialTerm, { kind: "stop" }> => t.kind === "stop"
   );
   const last = stops.findIndex((t) => t.isStop);
@@ -701,11 +702,11 @@ export function setPotentialSteps(
 /** The credit of `walkCredit` in the full or the split view. */
 export function setPotentialCredit(
   ctx: SetContextLike | undefined,
-  noiseFloorDps: number,
+  cutoff: Cutoff,
   setCredit: SetCreditView = "full",
   rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE
 ): number {
-  const walk = walkCredit(ctx, noiseFloorDps, rule);
+  const walk = walkCredit(ctx, cutoff, rule);
   return setCredit === "split" ? walk.split : walk.credit;
 }
 
@@ -713,13 +714,14 @@ export function setPotentialCredit(
  * The ON-view set-potential credit for a row (`setPotentialCredit`), in the
  * full view or the split view (each future divided by its FULL piece count).
  *
- * Each bonus is floored at the noise floor (`setBonusNoiseFloorDps` of the
- * ranking's own `Cutoff`, ≈4.24 for every spec): a figure at or below
- * it is noise around a true zero and contributes nothing, so no row sorts on a
- * bonus the display hides (tickets 331, 332). The floor arrives as a parameter,
- * so this stays ignorant of the `Cutoff` type; the comparison is strict (`>`),
- * matching the display gate. Path pieces and path breaks are not floored
- * (ticket 502; see `walkCredit`).
+ * Each bonus is floored at a noise floor derived from the ranking's own
+ * `Cutoff`: a figure at or below it is noise around a true zero and
+ * contributes nothing, so no row sorts on a bonus the display hides (tickets
+ * 331, 332). The floor matches the figure's noise (ticket 623): a step
+ * ranking's same-gear values are one sim minus another and need the item bar
+ * (3 DPS); a flag-off bonus folds four sims and needs `setBonusNoiseFloorDps`
+ * (≈4.24). The comparison is strict (`>`), matching the display gate. Path
+ * pieces and path breaks are not floored (ticket 502; see `walkCredit`).
  *
  * Fallback (ticket 467 N5): if any figure the credit depends on lacks a
  * measured `dps` (`setCreditUnmeasured`) — the no-neutral-candidates case where
@@ -730,21 +732,21 @@ export function setPotentialCredit(
  */
 export function rankableSetPotential(
   item: Pick<RankedItem, "setContext">,
-  noiseFloorDps: number,
+  cutoff: Cutoff,
   setCredit: SetCreditView = "full"
 ): number {
   if ((item.setContext?.futureBonuses ?? []).length === 0) return 0;
   if (setCreditUnmeasured(item.setContext)) return 0;
-  return setPotentialCredit(item.setContext, noiseFloorDps, setCredit);
+  return setPotentialCredit(item.setContext, cutoff, setCredit);
 }
 
 function sortKeyFor(
   withSetPotential: boolean,
-  noiseFloorDps: number,
+  cutoff: Cutoff,
   setCredit: SetCreditView = "full"
 ): (r: ViewRow) => number {
   return withSetPotential
-    ? (r) => r.deltaDps + rankableSetPotential(r, noiseFloorDps, setCredit)
+    ? (r) => r.deltaDps + rankableSetPotential(r, cutoff, setCredit)
     : (r) => r.deltaDps;
 }
 
@@ -771,13 +773,8 @@ export function applyView(r: Ranking, v: ViewOptions = {}): ViewResult {
   const pinBis = v.pinBis ?? false;
   const zone = v.raid === undefined || v.raid === "all" ? undefined : v.raid;
   const boss = v.boss === undefined || v.boss === "all" ? undefined : v.boss;
-  const noiseFloorDps = setBonusNoiseFloorDps(r.cutoff);
   const setCredit = v.setCredit ?? "full";
-  const sortKey = sortKeyFor(
-    v.withSetPotential ?? false,
-    noiseFloorDps,
-    setCredit
-  );
+  const sortKey = sortKeyFor(v.withSetPotential ?? false, r.cutoff, setCredit);
 
   const rows: ViewRow[] = r.items
     .filter((item) => {

@@ -6,7 +6,6 @@
  * 614). Pure; the panes render what this returns.
  */
 
-import { setBonusNoiseFloorDps } from './engine/cutoff';
 import { type SimSlotName, simSlotsForPoolSlot } from './engine/pool';
 import type { RankedItem, Ranking } from './engine/rank';
 import { SIM_ORDER } from './engine/slots';
@@ -259,6 +258,5 @@ export function resultsViewFor(run: RunState, { withSetPotential, onlyBis }: Vie
  */
 export function dpsSortKeyFor(ranking: Pick<Ranking, 'cutoff'> | undefined, withSetPotential: boolean): DpsSortKey | undefined {
 	if (!ranking || !withSetPotential) return undefined;
-	const noiseFloorDps = setBonusNoiseFloorDps(ranking.cutoff);
-	return row => row.deltaDps + rankableSetPotential(row, noiseFloorDps);
+	return row => row.deltaDps + rankableSetPotential(row, ranking.cutoff);
 }

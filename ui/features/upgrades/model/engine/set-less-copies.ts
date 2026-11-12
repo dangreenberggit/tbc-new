@@ -26,6 +26,7 @@
  * pieces' id-keyed effects (a second-order difference; hypothesis, untested).
  */
 
+import type { Cutoff } from "./cutoff";
 import type { RaidSimRequest } from "./seams/sim-runner";
 import type { DpsSample } from "./set-value";
 
@@ -261,14 +262,20 @@ export async function measureWornSetLadder(
 }
 
 /**
- * Whether a same-gear value is above noise: greater than both the set-bonus
- * noise floor and twice its standard error. A value at or below that is not
- * counted as a bonus or a break.
+ * Whether a same-gear value is above noise: greater than both the item bar
+ * (`cutoff.absDps`) and twice its standard error. A value at or below that is
+ * not counted as a bonus or a break.
+ *
+ * Every value this gate reads is one sim minus another (a same-gear value, a
+ * ladder rung, a crossing, a gap between two step gears), so it has the noise
+ * of one item delta and gets the item delta's bar, not the √2 floor of
+ * `setBonusNoiseFloorDps`, which is for a four-sim figure (ticket 623). It
+ * takes the `Cutoff` rather than a number so that floor cannot be passed in.
  */
 export function clearsSameGearGate(
   dps: number,
   se: number,
-  floorDps: number
+  cutoff: Cutoff
 ): boolean {
-  return dps > Math.max(floorDps, 2 * se);
+  return dps > Math.max(cutoff.absDps, 2 * se);
 }

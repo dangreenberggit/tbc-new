@@ -8,7 +8,7 @@
  * `utils/set_bonus_labels.ts` turns it into text.
  */
 
-import { setBonusNoiseFloorDps } from './engine/cutoff';
+import type { Cutoff } from './engine/cutoff';
 import type { RankedItem, Ranking, SetContext } from './engine/rank';
 import { clearsSameGearGate } from './engine/set-less-copies';
 import type { ScreenReason } from './engine/set-screen';
@@ -122,7 +122,7 @@ const NO_POTENTIAL: Potential = { lines: [], kind: 'none' };
  * steps up to the stop, which add up to the credit (K6, K6B); `outcomes` a
  * step ranking whose partner sets do not nest, one total per bonus.
  */
-function potentialLines(ctx: SetContext, noiseFloorDps: number, credit: number): Potential {
+function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): Potential {
 	const futures = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
 	const bonusLabel = (threshold: number): TipLabel => ({ kind: 'bonus', set: ctx.setName, threshold, have: ctx.piecesWornBefore });
 	if (setCreditUnmeasured(ctx) && ctx.stepRanking) {
@@ -145,7 +145,7 @@ function potentialLines(ctx: SetContext, noiseFloorDps: number, credit: number):
 	}
 	if (credit === 0) return NO_POTENTIAL;
 	if (ctx.stepRanking) {
-		const steps = setPotentialSteps(ctx, noiseFloorDps);
+		const steps = setPotentialSteps(ctx, cutoff);
 		if (steps !== null) {
 			const lines = steps.flatMap((s): Line[] =>
 				s.breaksLineDps === undefined || s.piecesLineDps === undefined
@@ -157,12 +157,12 @@ function potentialLines(ctx: SetContext, noiseFloorDps: number, credit: number):
 			);
 			return { lines, kind: 'steps', stopThreshold: steps.at(-1)!.threshold };
 		}
-		const lines = setPotentialTerms(ctx, noiseFloorDps)
+		const lines = setPotentialTerms(ctx, cutoff)
 			.terms.filter((term): term is Extract<SetPotentialTerm, { kind: 'stop' }> => term.kind === 'stop')
 			.map(term => ({ label: piecesLine('stop', term), dps: term.totalDps, figure: term.isStop }));
 		return { lines, kind: 'outcomes' };
 	}
-	const lines = setPotentialTerms(ctx, noiseFloorDps).terms.map((term): Line => {
+	const lines = setPotentialTerms(ctx, cutoff).terms.map((term): Line => {
 		switch (term.kind) {
 			case 'bonus':
 				return { label: { kind: 'bonus', set: term.setName, threshold: term.threshold, have: term.have }, dps: term.dps };
@@ -195,7 +195,7 @@ function potentialLines(ctx: SetContext, noiseFloorDps: number, credit: number):
  * future's figure is the bonus's own value, which a label naming pieces and
  * breaks would misstate.
  */
-function reachableLines(row: RankedItem, ctx: SetContext, noiseFloorDps: number, stopThreshold?: number): TipEntry[] {
+function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopThreshold?: number): TipEntry[] {
 	if (!ctx.stepRanking) return [];
 	const own = new Set((ctx.singleBreaks ?? []).map(bonusKey));
 	const stop = stopThreshold === undefined ? undefined : ctx.futureBonuses?.find(f => f.threshold === stopThreshold);
@@ -203,7 +203,7 @@ function reachableLines(row: RankedItem, ctx: SetContext, noiseFloorDps: number,
 	const reference = stop?.stepGearDps ?? ctx.singleDeltaDps ?? row.deltaDps;
 	return [...(ctx.futureBonuses ?? [])]
 		.sort((a, b) => a.threshold - b.threshold)
-		.filter(f => f.threshold > (stopThreshold ?? 0) && stepEligible(f, noiseFloorDps))
+		.filter(f => f.threshold > (stopThreshold ?? 0) && stepEligible(f, cutoff))
 		.map((f): TipEntry => {
 			const dps = f.stepGearDps === undefined ? undefined : f.stepGearDps - reference;
 			// Both step gears are differences from the same baseline sim, so adding
@@ -212,7 +212,7 @@ function reachableLines(row: RankedItem, ctx: SetContext, noiseFloorDps: number,
 			const belowNoise =
 				stop !== undefined &&
 				dps !== undefined &&
-				!clearsSameGearGate(Math.abs(dps), Math.hypot(f.stepGearSe ?? 0, stop.stepGearSe ?? 0), noiseFloorDps);
+				!clearsSameGearGate(Math.abs(dps), Math.hypot(f.stepGearSe ?? 0, stop.stepGearSe ?? 0), cutoff);
 			return {
 				type: 'line',
 				label: {
@@ -237,9 +237,9 @@ function reachableLines(row: RankedItem, ctx: SetContext, noiseFloorDps: number,
  * one line each, with no figure, so the row says its set was tried. A row with
  * a bonus that clears the gate lists that one instead (`reachableLines`).
  */
-function noiseLines(ctx: SetContext, noiseFloorDps: number): TipEntry[] {
+function noiseLines(ctx: SetContext, cutoff: Cutoff): TipEntry[] {
 	const futures = ctx.futureBonuses ?? [];
-	if (!ctx.stepRanking || futures.some(f => stepEligible(f, noiseFloorDps))) return [];
+	if (!ctx.stepRanking || futures.some(f => stepEligible(f, cutoff))) return [];
 	return futures
 		.filter(f => f.belowGate)
 		.sort((a, b) => a.threshold - b.threshold)
@@ -295,10 +295,10 @@ function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Li
  */
 export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = {}): SetBonusTip | null {
 	const ctx = row.setContext;
-	const noiseFloorDps = context.ranking ? setBonusNoiseFloorDps(context.ranking.cutoff) : undefined;
-	const bar = context.ranking?.cutoff.absDps;
-	const on = (context.withSetPotential ?? false) && noiseFloorDps !== undefined;
-	const credit = on ? rankableSetPotential(row, noiseFloorDps, 'full') : 0;
+	const cutoff = context.ranking?.cutoff;
+	const bar = cutoff?.absDps;
+	const on = (context.withSetPotential ?? false) && cutoff !== undefined;
+	const credit = on ? rankableSetPotential(row, cutoff, 'full') : 0;
 	// A row with no set context gets the same receipt for the worn bonuses its own swap breaks (ticket 536).
 	const ownBreaks =
 		ctx || !context.ranking || !context.specId ? [] : singleSwapBreaks(row, context.ranking.brokenSetValues, context.wornItemIds, context.specId);
@@ -308,7 +308,7 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 	const subLine = setBonusSubLine(ctx ?? { singleBreaks: ownBreaks }, on) ?? (screened ? 'hover_hint' : null);
 	if (subLine === null) return null;
 
-	const potential = ctx && on && (ctx.futureBonuses ?? []).length > 0 ? potentialLines(ctx, noiseFloorDps, credit) : NO_POTENTIAL;
+	const potential = ctx && on && (ctx.futureBonuses ?? []).length > 0 ? potentialLines(ctx, cutoff, credit) : NO_POTENTIAL;
 	if (ctx && potential.kind === 'outcomes') return { subLine, kind: 'outcomes', entries: outcomesEntries(row, ctx, potential.lines, bar) };
 
 	const singleBreaks = ctx ? (ctx.singleBreaks ?? []) : ownBreaks;
@@ -341,10 +341,10 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 
 	// What the figure does not count, after the total, so the toggle never decides whether the popover exists (ticket 336).
 	const notCounted: TipEntry[] = [];
-	if (ctx && noiseFloorDps !== undefined) {
+	if (ctx && cutoff !== undefined) {
 		const pastStop = on && potential.stopThreshold !== undefined;
-		const reachable = !on || potential.kind === 'none' || pastStop ? reachableLines(row, ctx, noiseFloorDps, potential.stopThreshold) : [];
-		const section = [...reachable, ...(screened ? [screened] : []), ...noiseLines(ctx, noiseFloorDps)];
+		const reachable = !on || potential.kind === 'none' || pastStop ? reachableLines(row, ctx, cutoff, potential.stopThreshold) : [];
+		const section = [...reachable, ...(screened ? [screened] : []), ...noiseLines(ctx, cutoff)];
 		// "No gain over the item alone" would misstate a step past the stop, which is measured against the stop.
 		if (section.length > 0) notCounted.push({ type: 'heading', heading: notCountedHeading(reachable.length > 0 && !pastStop, on) }, ...section);
 	}
