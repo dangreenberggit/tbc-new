@@ -382,6 +382,9 @@
 						},
 						"tip_total": {
 							"type": "string"
+						},
+						"tip_too_small": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
@@ -418,7 +421,8 @@
 						"tip_dps_more",
 						"tip_dps_less",
 						"tip_figure_marker",
-						"tip_total"
+						"tip_total",
+						"tip_too_small"
 					]
 				},
 				"prune": {
@@ -616,10 +620,13 @@
 					"properties": {
 						"substitutions_title": {
 							"type": "string"
+						},
+						"substitution_in_slot": {
+							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["substitutions_title"]
+					"required": ["substitutions_title", "substitution_in_slot"]
 				}
 			},
 			"additionalProperties": false,
