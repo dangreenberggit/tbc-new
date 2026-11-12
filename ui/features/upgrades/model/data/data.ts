@@ -12,7 +12,7 @@
 
 import type { PoolEntry } from '../engine/pool';
 import type { ContentPhase, SpecId } from '../engine/types';
-import { bisSetsFor, buildPool, itemPhaseLookup, type PoolHost, presetPhase, presetSetOf } from '../pool_source';
+import { bisSetsFor, buildPool, itemPhaseLookup, type PoolHost, presetPhase, presetSetOf, twinIdsOf } from '../pool_source';
 import balanceEpWeights from './balance-fallback.ep-weights.json';
 import eleEpWeights from './ele-fallback.ep-weights.json';
 import enhEpWeights from './enh-fallback.ep-weights.json';
@@ -154,6 +154,9 @@ export function poolFor(host: PoolHost, presets: readonly PagePreset[], maxPhase
 	if (!host.sim.db) return [];
 	return buildPool(host, presets.map(presetSetOf), maxPhase);
 }
+
+/** `twinIdsOf` over the page's database, for the settings' set matching; empty until the database has loaded. */
+export const twinIdsFor = (host: PoolHost): ReadonlyMap<number, readonly number[]> => (host.sim.db ? twinIdsOf(host.sim.db.getAllItems()) : new Map());
 
 /**
  * Where a run's pool came from and how many entries it has, for the

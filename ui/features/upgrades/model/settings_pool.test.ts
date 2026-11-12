@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { dbPoolFor, dbPoolHost } from '../testing/db_pool';
+import { dbPoolFor, dbPoolHost, TEST_DB, TEST_MISSING_IDS, testItem } from '../testing/db_pool';
 import { bisTagPhaseFor, poolFor, presetsWithPhase } from './data/data';
 import type { PoolEntry } from './engine/pool';
+import { type PresetSet, presetSetOf, selectPool, twinIdsOf } from './pool_source';
 import {
 	bisHeadingIndex,
 	DEFAULT_OFF_SOURCE_KEYS,
@@ -326,6 +327,39 @@ describe('rowTagIndex', () => {
 		const tagsOf = rowTagIndex(selected);
 		expect(tagsOf(2)).toBe(tagsOf(2));
 		expect(tagsOf(9)).toBe(tagsOf(8));
+	});
+});
+
+// Ticket 753: the pool offers one id of items db.json describes the same but the id, the worn one if any, so a set
+// can name the id the pool left out. The set still holds the item the pool offers.
+describe('a set that names the other id of an item the pool offers once', () => {
+	const twins = twinIdsOf(TEST_DB.items);
+	const cloaks = [testItem(28377)!, testItem(28380)!];
+	const poolWearing = (worn: number[], presets: PresetSet[] = []) =>
+		selectPool(cloaks, () => true, presets, TEST_MISSING_IDS, 5, 'include', undefined, new Set(worn));
+
+	it.each([
+		{ named: 28380, worn: [], offered: 28377 },
+		{ named: 28377, worn: [28380], offered: 28380 },
+	])('a saved set naming $named, the pool offering $offered: counted in the pool, kept by prune, badged', ({ named, worn, offered }) => {
+		const pool = poolWearing(worn);
+		const offer = settingsOffer({ pool, presets: [], savedSets: [{ name: 'Mine', gear: gear(named) }], bisTagPhase: undefined, twins });
+		const { selectedOptions, selectedItemIds } = setSelection(offer, ['saved:Mine'], 5);
+		expect(pool.map(e => e.itemId)).toEqual([offered]);
+		expect(offer.options[0]).toMatchObject({ itemIds: [named], inPool: 1 });
+		expect(effectivePool(pool, { excludedSources: [], selectedSetItemIds: selectedItemIds, prune: true }).map(e => e.itemId)).toEqual([offered]);
+		expect(rowTagIndex(selectedOptions)(offered)).toEqual([{ key: 'saved:Mine', label: 'Mine' }]);
+	});
+
+	it('selects a BiS preset that names the other id by default and names its heading on the offered row', () => {
+		const presets = [
+			{ name: 'BIS', phase: 5, group: 'Fury', gear: gear(28377) },
+			{ name: 'BIS', phase: 5, group: 'Arms', gear: gear() },
+		];
+		const pool = poolWearing([28380], presets.map(presetSetOf));
+		const offer = settingsOffer({ pool, presets, savedSets: [], bisTagPhase: 5, twins });
+		expect(offer.defaultKeys).toEqual(['preset:5:Fury/BIS']);
+		expect(bisHeadingIndex(offer.options, 5)(28380)).toEqual(['Fury']);
 	});
 });
 

@@ -34,9 +34,19 @@ export type SetOption = {
 	heading?: string;
 	kind: 'preset' | 'saved';
 	itemIds: readonly number[];
-	/** How many of `itemIds` are in this spec and phase's pool. */
+	/**
+	 * The other ids of items in `itemIds` that db.json describes the same but the id (`twinIdsOf`, ticket 753), set only
+	 * where there are any. The pool offers one id of such an item, maybe not the set's, and the set holds it under any.
+	 */
+	sameItemIds?: readonly number[];
+	/** How many of `itemIds` are in this spec and phase's pool, under their own id or another in `sameItemIds`. */
 	inPool: number;
 };
+
+/** Every id under which the set holds an item: its own and `sameItemIds`. */
+const heldIds = (o: Pick<SetOption, 'itemIds' | 'sameItemIds'>): readonly number[] => (o.sameItemIds ? [...o.itemIds, ...o.sameItemIds] : o.itemIds);
+
+const NO_TWINS: ReadonlyMap<number, readonly number[]> = new Map();
 
 export type PoolFilter = {
 	excludedSources: readonly string[];
@@ -143,13 +153,20 @@ export function setOptions({
 	presets,
 	savedSets,
 	pool,
+	twins = NO_TWINS,
 }: {
 	presets: readonly PagePreset[];
 	savedSets: readonly { name: string; gear?: GearItems }[];
 	pool: readonly PoolEntry[];
+	/** `twinIdsOf` over the page's database. */
+	twins?: ReadonlyMap<number, readonly number[]>;
 }): SetOption[] {
 	const poolIds = new Set(pool.map(e => e.itemId));
-	const inPool = (itemIds: readonly number[]) => itemIds.filter(id => poolIds.has(id)).length;
+	const inPool = (itemIds: readonly number[]) => itemIds.filter(id => (twins.get(id) ?? [id]).some(t => poolIds.has(t))).length;
+	const withSameItemIds = (itemIds: readonly number[]) => {
+		const same = [...new Set(itemIds.flatMap(id => twins.get(id) ?? []))].filter(id => !itemIds.includes(id));
+		return same.length > 0 ? { itemIds, sameItemIds: same } : { itemIds };
+	};
 	const headed = new Set(presets.flatMap(p => (p.group ? [p.group] : []))).size > 1;
 	// The group enters the key only where wowsims gives one, so the saved picks of ungrouped presets still match.
 	const presetOptions = presets.map(({ name, phase, group, gear }): SetOption => {
@@ -162,14 +179,14 @@ export function setOptions({
 			...(group ? { group } : {}),
 			...(group && headed ? { heading: group } : {}),
 			kind: 'preset',
-			itemIds,
+			...withSameItemIds(itemIds),
 			inPool: inPool(itemIds),
 		};
 	});
 	const fromPresets = presetOptions.map(o => (sharesPhaseAndName(o, presetOptions) ? { ...o, label: `${o.label} (${o.group})` } : o));
 	const fromSaved = savedSets.map(({ name, gear }): SetOption => {
 		const itemIds = itemIdsOf(gear);
-		return { key: `saved:${name}`, name, label: name, kind: 'saved', itemIds, inPool: inPool(itemIds) };
+		return { key: `saved:${name}`, name, label: name, kind: 'saved', ...withSameItemIds(itemIds), inPool: inPool(itemIds) };
 	});
 	return [...fromPresets, ...fromSaved];
 }
@@ -190,7 +207,7 @@ export function defaultSetKeys(options: readonly SetOption[], pool: readonly Poo
 	return options
 		.filter(o => o.kind === 'preset' && o.phase === bisTagPhase)
 		.filter(o => {
-			const inPool = o.itemIds.filter(id => poolIds.has(id));
+			const inPool = heldIds(o).filter(id => poolIds.has(id));
 			return inPool.length > 0 && inPool.every(id => bisIds.has(id));
 		})
 		.map(o => o.key);
@@ -203,7 +220,7 @@ export function splitSetChips(options: readonly SetOption[], selectedKeys: reado
 }
 
 export const selectedSetItemIds = (options: readonly SetOption[], selectedKeys: readonly string[]): number[] => [
-	...new Set(options.filter(o => selectedKeys.includes(o.key)).flatMap(o => o.itemIds)),
+	...new Set(options.filter(o => selectedKeys.includes(o.key)).flatMap(heldIds)),
 ];
 
 /**
@@ -250,7 +267,7 @@ export const withHeading = (label: string, heading: string): string => `${label}
  * wowsims group after it (ticket 690).
  */
 export function rowTags(itemId: number, selectedOptions: readonly SetOption[]): RowTag[] {
-	const holding = selectedOptions.filter(o => o.itemIds.includes(itemId));
+	const holding = selectedOptions.filter(o => heldIds(o).includes(itemId));
 	return holding.map(o => {
 		const shared = holding.some(other => other !== o && other.name === o.name && other.heading === o.heading);
 		const label = shared && o.phase !== undefined ? `P${o.phase} ${o.name}` : o.name;
@@ -272,7 +289,7 @@ export function bisHeadingIndex(options: readonly SetOption[], bisTagPhase: numb
 	if (bisTagPhase === undefined) return () => NO_HEADINGS;
 	for (const o of options) {
 		if (o.kind !== 'preset' || o.phase !== bisTagPhase || o.heading === undefined) continue;
-		for (const itemId of o.itemIds) {
+		for (const itemId of heldIds(o)) {
 			const headings = byItem.get(itemId) ?? [];
 			if (!headings.includes(o.heading)) headings.push(o.heading);
 			byItem.set(itemId, headings);
@@ -290,7 +307,7 @@ const NO_TAGS: readonly RowTag[] = [];
  */
 export function rowTagIndex(selectedOptions: readonly SetOption[]): (itemId: number) => readonly RowTag[] {
 	const byItem = new Map<number, readonly RowTag[]>();
-	for (const itemId of new Set(selectedOptions.flatMap(o => o.itemIds))) byItem.set(itemId, rowTags(itemId, selectedOptions));
+	for (const itemId of new Set(selectedOptions.flatMap(heldIds))) byItem.set(itemId, rowTags(itemId, selectedOptions));
 	return itemId => byItem.get(itemId) ?? NO_TAGS;
 }
 
@@ -310,13 +327,16 @@ export function settingsOffer({
 	presets,
 	savedSets,
 	bisTagPhase,
+	twins,
 }: {
 	pool: readonly PoolEntry[];
 	presets: readonly PagePreset[];
 	savedSets: readonly SavedSet[];
 	bisTagPhase: number | undefined;
+	/** `twinIdsOf` over the page's database, so a set naming another id of an item the pool offers once still holds it. */
+	twins?: ReadonlyMap<number, readonly number[]>;
 }): SettingsOffer {
-	const options = setOptions({ presets, savedSets, pool });
+	const options = setOptions({ presets, savedSets, pool, twins });
 	return {
 		pool,
 		sources: sourceOptions(pool),

@@ -7,7 +7,7 @@ import { useSimStore } from '@sim/hooks/useSimStore';
 import { useMemo } from 'react';
 import { useStore } from 'zustand';
 
-import { bisTagPhaseFor, poolFor, presetsWithPhase } from '../model/data/data';
+import { bisTagPhaseFor, poolFor, presetsWithPhase, twinIdsFor } from '../model/data/data';
 import type { ContentPhase } from '../model/engine/types';
 import { specIdFor } from '../model/run';
 import type { RunSettings } from '../model/run_state';
@@ -77,6 +77,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 				presets: phasedPresets,
 				savedSets: saved.map(entry => ({ name: entry.name, gear: entry.data.gear })),
 				bisTagPhase: specId && ready ? bisTagPhaseFor(host, phasedPresets, phase)?.tagsFromPhase : undefined,
+				twins: specId && ready ? twinIdsFor(host) : undefined,
 			}),
 		[specId, ready, host, phase, phasedPresets, saved],
 	);

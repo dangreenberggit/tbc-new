@@ -1,9 +1,9 @@
 import { UIItem } from '@generated/proto/ui';
 import { describe, expect, it } from 'vitest';
 
-import { dbPoolFor, PROTO_SPEC, TEST_MISSING_IDS, TEST_PRESETS, testItem, testItemPhase } from '../testing/db_pool';
+import { dbPoolFor, PROTO_SPEC, TEST_DB, TEST_MISSING_IDS, TEST_PRESETS, testItem, testItemPhase } from '../testing/db_pool';
 import type { SpecId } from './engine/types';
-import { bisSetsFor, hasEffectRecord, type HeroicFiveManPolicy, isHeroicFiveManOnly, presetPhase, type PresetSet, selectPool } from './pool_source';
+import { bisSetsFor, hasEffectRecord, type HeroicFiveManPolicy, isHeroicFiveManOnly, presetPhase, type PresetSet, selectPool, twinIdsOf } from './pool_source';
 import cellsFixture from './pool_source.cells.fixture.json';
 import { effectiveExcludedSources, effectivePool, validSourceKeysOf } from './settings_pool';
 
@@ -93,6 +93,18 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 				.map(b => [a.id, b.id]),
 		);
 		expect(twins).toEqual([]);
+	});
+
+	it('maps each id db.json describes the same as another but the id to every id of the group, and leaves the Marks apart', () => {
+		const twins = twinIdsOf(TEST_DB.items);
+		expect([28377, 28380, 28378, 28379, 23206, 23207].map(id => twins.get(id))).toEqual([
+			[28377, 28380],
+			[28377, 28380],
+			[28378, 28379],
+			[28378, 28379],
+			undefined,
+			undefined,
+		]);
 	});
 
 	describe('keeps the id the player wears, else one a preset holds, with the group’s tags', () => {

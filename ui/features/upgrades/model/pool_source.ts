@@ -176,6 +176,25 @@ export function selectPool(
 /** db.json describes `a` and `b` the same in every field but the id. */
 const sameButId = (a: UIItem, b: UIItem): boolean => UIItem.equals(a, { ...b, id: a.id });
 
+/** `entries` grouped by `sameButId` over their items, groups in first-seen order. Equal records share a name, so only same-name entries are compared. */
+function groupTwins<T>(entries: readonly T[], itemOf: (entry: T) => UIItem): T[][] {
+	const groups: T[][] = [];
+	const groupsByName = new Map<string, T[][]>();
+	for (const entry of entries) {
+		const item = itemOf(entry);
+		const sameName = groupsByName.get(item.name) ?? [];
+		groupsByName.set(item.name, sameName);
+		const twins = sameName.find(group => sameButId(itemOf(group[0]!), item));
+		if (twins) twins.push(entry);
+		else {
+			const group = [entry];
+			sameName.push(group);
+			groups.push(group);
+		}
+	}
+	return groups;
+}
+
 /**
  * One entry per group of items wowsims' database describes the same in every
  * field but the id, such as Sergeant's Heavy Cape 28378 and 28379 (ticket 753):
@@ -186,21 +205,24 @@ const sameButId = (a: UIItem, b: UIItem): boolean => UIItem.equals(a, { ...b, id
  * entry takes the tags of every member and the first member's place.
  */
 function offerTwinsOnce(pool: readonly PoolEntry[], byId: ReadonlyMap<number, UIItem>, wornIds: ReadonlySet<number>): PoolEntry[] {
-	const itemOf = (entry: PoolEntry) => byId.get(entry.itemId)!;
-	const groups: PoolEntry[][] = [];
-	const groupsByName = new Map<string, PoolEntry[][]>();
-	for (const entry of pool) {
-		const sameName = groupsByName.get(entry.name) ?? [];
-		groupsByName.set(entry.name, sameName);
-		const twins = sameName.find(group => sameButId(itemOf(group[0]!), itemOf(entry)));
-		if (twins) twins.push(entry);
-		else {
-			const group = [entry];
-			sameName.push(group);
-			groups.push(group);
-		}
-	}
+	const groups = groupTwins(pool, entry => byId.get(entry.itemId)!);
 	return groups.map(group => (group.length === 1 ? group[0]! : mergeTwins(group, wornIds)));
+}
+
+/**
+ * Each id that `offerTwinsOnce` would group, with every id of its group. The
+ * pool offers one of them, chosen by the gear worn, so a gear set that names
+ * another still holds the item the pool offers; the settings match set items
+ * through this (`settings_pool.ts`).
+ */
+export function twinIdsOf(items: readonly UIItem[]): ReadonlyMap<number, readonly number[]> {
+	const twins = new Map<number, readonly number[]>();
+	for (const group of groupTwins(items, item => item)) {
+		if (group.length < 2) continue;
+		const ids = group.map(item => item.id);
+		for (const id of ids) twins.set(id, ids);
+	}
+	return twins;
 }
 
 function mergeTwins(group: readonly PoolEntry[], wornIds: ReadonlySet<number>): PoolEntry {
