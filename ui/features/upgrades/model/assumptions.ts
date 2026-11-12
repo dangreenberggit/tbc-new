@@ -12,7 +12,7 @@ import type { Ranking } from './engine/rank';
 import type { RunSettings } from './run_state';
 
 export type AssumptionsContext = {
-	/** The EP-weights set the run took (`epWeightsSetFor`); absent, the lines that depend on the bundled data are left out. */
+	/** The EP-weights set the run took (`epWeightsSetFor`); absent for a replay or a loaded fixture, the EP-weights lines are left out. */
 	epWeightsSet?: EpWeightsSet;
 	/** The settings the run used; absent for a loaded fixture, whose run settings are not recorded. */
 	settings?: RunSettings;
@@ -24,19 +24,20 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
 	const a = ranking.assumptions;
 	const lines = [`seeds: ${a.seeds.join(', ')}`, `iterations: ${a.iterations}`, `max phase: ${a.maxPhase}`, `cutoff: ${ranking.cutoff.absDps} DPS`];
 	if (settings) lines.push(`candidate pool: ${settings.prune ? `selected set items for phase ${a.maxPhase}` : 'every eligible item'}`);
+	const maxPhase = a.maxPhase;
+	const page = host?.sim.db ? host : undefined;
+	const pool = page ? poolFor(page, page.individualConfig.presets.gear, maxPhase) : undefined;
+	const poolSource = pool && poolSourceFor(pool);
+	if (poolSource) lines.push(`pool source: ${poolSource.name} (${poolSource.entries} entries)`);
 	if (epWeightsSet) {
-		const maxPhase = a.maxPhase;
-		const page = host?.sim.db ? host : undefined;
-		const pool = page ? poolFor(page, page.individualConfig.presets.gear, maxPhase) : undefined;
-		const poolSource = pool && poolSourceFor(pool);
-		if (poolSource) lines.push(`pool source: ${poolSource.name} (${poolSource.entries} entries)`);
+		lines.push(`EP weights set: ${epWeightsSet}`);
 		const ep = epWeightsDisclosureFor(epWeightsSet, maxPhase);
 		if (ep) lines.push(`EP weights: written for ${ep.from}, ranking ${ep.requested}`);
-		const tags = page && bisTagPhaseFor(page, page.individualConfig.presets.gear, maxPhase);
-		if (tags && tags.tagsFromPhase < tags.requestedPhase) lines.push(`BiS tags: from P${tags.tagsFromPhase} sets, ranking P${tags.requestedPhase}`);
-		const unsourced = pool ? unsourcedCountFor(pool) : 0;
-		if (unsourced > 0) lines.push(`source attribution: partial, ${unsourced} items with no recorded source`);
 	}
+	const tags = page && bisTagPhaseFor(page, page.individualConfig.presets.gear, maxPhase);
+	if (tags && tags.tagsFromPhase < tags.requestedPhase) lines.push(`BiS tags: from P${tags.tagsFromPhase} sets, ranking P${tags.requestedPhase}`);
+	const unsourced = pool ? unsourcedCountFor(pool) : 0;
+	if (unsourced > 0) lines.push(`source attribution: partial, ${unsourced} items with no recorded source`);
 	if (settings) {
 		if (settings.candidateCap !== undefined) lines.push(`candidate cap: top ${settings.candidateCap} simmed in full, plus anything you already own`);
 		const excluded = settings.excludedSources ?? [];

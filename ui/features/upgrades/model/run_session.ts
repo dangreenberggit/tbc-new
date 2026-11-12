@@ -12,7 +12,6 @@ import { toastManager } from '@ui-kit/Toast';
 import { equippedItemIds } from './adapters/player_gear_source';
 import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
 import { type AssumptionsContext, assumptionsLine, substitutionConsoleLines } from './assumptions';
-import { epWeightsSetFor } from './data/data';
 import { RankError, type Ranking } from './engine/rank';
 import { clearProgress } from './progress_channel';
 import { createRunContext, type RunContext, type RunFn, specIdFor } from './run';
@@ -77,11 +76,6 @@ const toastErrorMessage = (error: unknown) => {
 	if (errorMessage) toastManager.add({ variant: 'error', body: errorMessage });
 };
 
-/** The assumptions line's EP-weights set, from the page's spec and talents now. */
-const assumptionsContextOf = (host: IndividualSimHost<Spec>, { specId }: MeasuredOn): AssumptionsContext => ({
-	epWeightsSet: specId && epWeightsSetFor(specId, host.player.getTalentTreePoints()),
-});
-
 /**
  * The run context is built on the first run that asks for it and kept for the
  * session's lifetime: the store inside it reuses sims across runs.
@@ -102,7 +96,6 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 
 		clearProgress(host.player);
 		const measuredOn = measuredOnPage(host, inputsSignature, selectedSets);
-		const pageAssumptions = assumptionsContextOf(host, measuredOn);
 		store.getState().startRun(id, Date.now(), measuredOn);
 		runFn(host, settings, {
 			signal: current.signal,
@@ -113,7 +106,8 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 				store.getState().settleRun(id, result);
 				// The store drops a superseded run's result, so it is not logged either.
 				if (id !== runId) return;
-				logAssumptions(result, { ...pageAssumptions, settings, host });
+				// The set the run says it ranked with (ticket 811); a replay names none, as it ranked nothing.
+				logAssumptions(result, { epWeightsSet: result.epWeightsSet, settings, host });
 				// The notes list's order: the first line whose call failed.
 				if (!current.signal.aborted) toastErrorMessage(result.substitutions.find(s => s.error?.trim())?.error);
 			},
@@ -140,7 +134,8 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		controller?.abort();
 		const measuredOn = measuredOnPage(host, inputsSignature, selectedSets);
 		store.getState().loadFixture(++runId, ranking, measuredOn);
-		logAssumptions(ranking, { ...assumptionsContextOf(host, measuredOn), host });
+		// A fixture records no EP-weights set, and the page's talents now need not be the ones it was ranked with.
+		logAssumptions(ranking, { host });
 	};
 
 	/**

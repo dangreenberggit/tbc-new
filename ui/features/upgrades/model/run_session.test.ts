@@ -273,6 +273,43 @@ describe('createRunSession', () => {
 		for (const line of lines) expect(line).toMatch(/pool source: wowsims db \(\d+ entries\)/);
 	});
 
+	describe('the EP-weights set (ticket 811)', () => {
+		// A Fury page: were the session to read the talents itself, its line would name Fury's set, not the run's.
+		const furyPage = () => {
+			const getTalentTreePoints = vi.fn(() => [21, 40, 0]);
+			const host = fakeHost({
+				player: { getGear: () => ({ getEquippedItems: () => equipped }), getSpec: () => Spec.SpecDpsWarrior, getTalentTreePoints },
+			});
+			const { runFn, call } = controllableRun();
+			const session = createRunSession(createUpgradesStore({ iterations: 3000 }), host, runFn, ENV);
+			return { session, call, getTalentTreePoints };
+		};
+		const infoLines = () => vi.mocked(console.info).mock.calls.map(([line]) => String(line));
+
+		it('names the set the run returned, without reading the page’s talents', async () => {
+			const { session, call, getTalentTreePoints } = furyPage();
+			session.start(SETTINGS, SIGNATURE, []);
+			call(0).settle({ ...RANKING_FIXTURE, durationMs: 1200, runner: 'WorkerPoolSimRunner', epWeightsSet: 'warrior-arms' });
+			await vi.waitFor(() => expect(console.info).toHaveBeenCalledOnce());
+
+			expect(infoLines()[0]).toContain(' · EP weights set: warrior-arms');
+			expect(getTalentTreePoints).not.toHaveBeenCalled();
+		});
+
+		// A replay returns no set, and a fixture records none: the page's talents now need not be the ones it was ranked with.
+		it('names no EP weights for a run that returned no set, or a loaded fixture', async () => {
+			const { session, call, getTalentTreePoints } = furyPage();
+			session.start(SETTINGS, SIGNATURE, []);
+			call(0).settle({ ...RANKING_FIXTURE, durationMs: 9 });
+			await vi.waitFor(() => expect(console.info).toHaveBeenCalledOnce());
+			session.loadFixture(RANKING_FIXTURE, SIGNATURE, []);
+
+			expect(infoLines()).toHaveLength(2);
+			for (const line of infoLines()) expect(line).not.toContain('EP weights');
+			expect(getTalentTreePoints).not.toHaveBeenCalled();
+		});
+	});
+
 	it('builds the run context once, on first use, and reuses it across runs', () => {
 		const { session, call } = setup();
 		session.start(SETTINGS, SIGNATURE, []);

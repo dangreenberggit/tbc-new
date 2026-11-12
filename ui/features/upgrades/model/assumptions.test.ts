@@ -49,6 +49,13 @@ describe('assumptionsLine', () => {
 		expect(assumptionsLine(RANKING_FIXTURE, { epWeightsSet: 'ret', host: dbPoolHost('ret') })).toContain(' · pool source: wowsims db (1042 entries)');
 	});
 
+	// A replayed run and a loaded fixture record no EP-weights set (ticket 811), but the page's pool is still known.
+	it('names the page’s pool and no EP weights when no set is known', () => {
+		const line = assumptionsLine(RANKING_FIXTURE, { host: dbPoolHost('ret') });
+		expect(line).toContain(' · pool source: wowsims db (1042 entries)');
+		expect(line).not.toContain('EP weights');
+	});
+
 	it('leaves the pool lines out when the page is not known', () => {
 		expect(assumptionsLine(RANKING_FIXTURE, { epWeightsSet: 'ret' })).not.toContain('pool source');
 	});

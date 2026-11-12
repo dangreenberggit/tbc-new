@@ -6,6 +6,7 @@
  * (`run_session.ts`) holds the abort controller and the run id counter.
  */
 
+import type { EpWeightsSet } from './data/data';
 import type { PartialRanking, RankedItem, Ranking } from './engine/rank';
 import type { SpecId } from './engine/types';
 import type { SetOption } from './settings_pool';
@@ -44,10 +45,11 @@ export type RunnerName = 'WorkerPoolSimRunner';
 
 /**
  * What a run function resolves with: the result and, for a live run, the
- * runner that measured it. The runner moves to `MeasuredOn` when the run
- * settles, so the ranking a fixture recorder saves never carries it.
+ * runner that measured it and the EP-weights set it ranked with. The runner
+ * moves to `MeasuredOn` when the run settles and the set is dropped, so the
+ * ranking a fixture recorder saves carries neither. A replay sets neither.
  */
-export type RunOutcome = RunResult & { runner?: RunnerName };
+export type RunOutcome = RunResult & { runner?: RunnerName; epWeightsSet?: EpWeightsSet };
 
 /**
  * What a ranking was measured against. The ranking holds no gear, and a row's
@@ -116,11 +118,12 @@ export const stopRequested = (state: RunState, runId: number): RunState => (isCu
 
 /**
  * A partial ranking is what Stop returns, so it settles as stopped and a complete one as done. The runner moves off
- * the result into `measuredOn`, so a ranking the fixture recorder saves never carries it.
+ * the result into `measuredOn` and the EP-weights set, which only the assumptions line reads, is dropped, so a ranking
+ * the fixture recorder saves carries neither.
  */
 export function runSettled(state: RunState, runId: number, outcome: RunOutcome): RunState {
 	if (!isCurrentRun(state, runId)) return state;
-	const { runner, ...result } = outcome;
+	const { runner, epWeightsSet: _forTheLogOnly, ...result } = outcome;
 	const measuredOn = withRunner(state.measuredOn, runner);
 	return result.complete ? { status: 'done', runId, result, measuredOn } : { status: 'stopped', runId, result, measuredOn };
 }

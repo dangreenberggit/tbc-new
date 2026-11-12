@@ -27,6 +27,10 @@ describe('sourcesOf over the fork db.json and tier-exchange.json', () => {
 		expect(sourcesOfId(34386)).toEqual([{ kind: 'token', zone: 'Sunwell Plateau', boss: 'Kalecgos', token: 'Sunmote + Pantaloons of Calming Strife' }]);
 	});
 
+	it('gives a Sunmote helm its Kil’jaeden base even though the trade lowers the item level (ticket 672)', () => {
+		expect(sourcesOfId(34401)).toEqual([{ kind: 'token', zone: 'Sunwell Plateau', boss: "Kil'jaeden", token: 'Sunmote + Helm of Burning Righteousness' }]);
+	});
+
 	it('gives a Gladiator piece one arena source with no season', () => {
 		expect(sourcesOfId(33688)).toEqual([{ kind: 'pvp', via: 'arena' }]);
 	});

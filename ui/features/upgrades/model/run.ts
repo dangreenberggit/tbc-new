@@ -104,7 +104,9 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 		candidateCap: settings.candidateCap,
 	};
 
-	const weights = epWeightsFileFor(epWeightsSetFor(specId, host.player.getTalentTreePoints()));
+	// The run picks its EP-weights set once (ticket 811): that set drives the engine and is the one the run returns.
+	const epWeightsSet = epWeightsSetFor(specId, host.player.getTalentTreePoints());
+	const weights = epWeightsFileFor(epWeightsSet);
 	const ranking = await rankUpgrades(
 		input,
 		{
@@ -131,5 +133,5 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 		onProgress,
 	);
 
-	return { ...ranking, durationMs: Date.now() - startedAt, runner: 'WorkerPoolSimRunner' };
+	return { ...ranking, durationMs: Date.now() - startedAt, runner: 'WorkerPoolSimRunner', epWeightsSet };
 };
