@@ -36,17 +36,6 @@ export const RANKING_FIXTURE: Ranking = {
 			reason: 'panic: runtime error\ngoroutine 1 [running]:\nmain.main()',
 		}),
 	],
-	caps: {
-		hit: {
-			rating: 83.307699,
-			capRating: 141.92309699999998,
-			gap: 58.615397999999985,
-			capUncertainty: 15.769233,
-			assumedRace: 'RaceBloodElf',
-			talentHitAssumed: { talent: 'Precision', points: 3, maxPoints: 3 },
-		},
-		expertise: { rating: 95, capRating: null, gap: null },
-	},
 	items: [
 		{
 			rank: 1,
@@ -121,7 +110,6 @@ export const RANKING_FIXTURE: Ranking = {
 			seMethod: 'independent',
 			bisTags: [],
 			belowCutoff: false,
-			hitRegression: { lost: 2, gapAfter: 60.615397999999985 },
 			setContext: {
 				setId: 680,
 				setName: 'Lightbringer Battlegear',
@@ -149,7 +137,6 @@ export const RANKING_FIXTURE: Ranking = {
 			seMethod: 'independent',
 			bisTags: [],
 			belowCutoff: true,
-			hitDriven: true,
 		},
 		{
 			// Recorded figures. The old percentage rule admitted it (3.32 DPS < 3.4, 0.159% ≥ 0.15%); it clears the flat 3 DPS bar (ADR-0037).
@@ -164,7 +151,6 @@ export const RANKING_FIXTURE: Ranking = {
 			seMethod: 'independent',
 			bisTags: [],
 			belowCutoff: false,
-			hitDriven: true,
 		},
 		{
 			rank: 7,

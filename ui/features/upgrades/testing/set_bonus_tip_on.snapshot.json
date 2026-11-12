@@ -1268,7 +1268,6 @@
 							"origin": "two-hop"
 						}
 					],
-					"hitRegression": { "lost": 27, "gapAfter": 36.923096999999984 },
 					"setContext": {
 						"setId": 676,
 						"setName": "Thunderheart Harness",
@@ -1342,7 +1341,6 @@
 							"origin": "two-hop"
 						}
 					],
-					"hitRegression": { "lost": 27, "gapAfter": 36.923096999999984 },
 					"setContext": {
 						"setId": 640,
 						"setName": "Malorne Harness",
