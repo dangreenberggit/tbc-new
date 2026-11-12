@@ -4875,18 +4875,27 @@ export function wornSetSkipSubstitution(skip: {
  * first line of its detail. Many rows' sims can fail for one cause, and a Go
  * panic's error ends in a stack trace that differs from sim to sim (its
  * goroutine number and argument addresses), so a key on the whole detail
- * would show one sentence many times. The first one's full text stays.
+ * would show one sentence many times. The first one's full text stays, in
+ * its place, unless it has no `error` and a later one does: that one then
+ * takes the place, so the console and the run's error toast keep the failed
+ * call's error (review N3 of `fix/867-870-tab-errors`).
  */
 export function uniqueSubstitutions(
   substitutions: readonly Substitution[]
 ): Substitution[] {
-  const seen = new Set<string>();
-  return substitutions.filter((s) => {
+  const placeOf = new Map<string, number>();
+  const out: Substitution[] = [];
+  for (const s of substitutions) {
     const key = `${s.field}|${s.slot ?? ""}|${s.detail.split("\n", 1)[0]}`;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
+    const at = placeOf.get(key);
+    if (at === undefined) {
+      placeOf.set(key, out.length);
+      out.push(s);
+    } else if (out[at]!.error === undefined && s.error !== undefined) {
+      out[at] = s;
+    }
+  }
+  return out;
 }
 
 /**

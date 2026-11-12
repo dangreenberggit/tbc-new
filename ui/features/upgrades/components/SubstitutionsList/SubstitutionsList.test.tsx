@@ -86,6 +86,17 @@ describe('SubstitutionsList', () => {
 		expect(cells()).toEqual(['The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed.']);
 	});
 
+	// Review N3 of `fix/867-870-tab-errors`: `measuringSimsNotBuilt` and `notBuilt` give one sentence, and only the second
+	// carries the error the console and the run's error toast need, so the line once must keep it, in the first one's place.
+	it("keeps a failed call's error when an earlier line with the same sentence has none", () => {
+		const setBonus = { setName: 'Justicar Battlegear', threshold: 4 as const };
+		const noError = setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt });
+		const withError = setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.notBuilt('the request database has no row for item 30987') });
+		const other = hitCapUnknownNote();
+		expect(uniqueSubstitutions([noError, other, withError])).toEqual([withError, other]);
+		expect(uniqueSubstitutions([withError, other, noError])).toEqual([withError, other]);
+	});
+
 	it('leaves a one-line reason whole', () => {
 		render(<SubstitutionsList substitutions={[{ field: 'hit cap', detail: 'Kept the worn hit gems.' }]} />);
 		expect(within(screen.getByTestId('upgrades-substitutions')).getByRole('definition').textContent).toBe('Kept the worn hit gems.');
