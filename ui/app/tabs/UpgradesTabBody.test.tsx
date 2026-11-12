@@ -46,6 +46,7 @@ vi.mock('@features/upgrades/model/data/data', async importOriginal => ({
 	poolFor: (_host: unknown, _presets: unknown, phase: number) => POOLS[phase] ?? [],
 	presetsWithPhase: (_host: unknown, presets: unknown) => presets,
 	bisTagPhaseFor: (_host: unknown, _presets: unknown, phase: number) => ({ tagsFromPhase: phase, requestedPhase: phase }),
+	twinIdsFor: () => new Map(),
 }));
 
 /**
