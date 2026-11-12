@@ -13,7 +13,7 @@ import { equippedItemIds } from './adapters/player_gear_source';
 import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
 import { type AssumptionsContext, assumptionsLine, substitutionConsoleLines } from './assumptions';
 import { epWeightsSetFor } from './data/data';
-import type { Ranking } from './engine/rank';
+import { RankError, type Ranking } from './engine/rank';
 import { clearProgress } from './progress_channel';
 import { createRunContext, type RunContext, type RunFn, specIdFor } from './run';
 import type { MeasuredOn, RunSettings } from './run_state';
@@ -120,7 +120,9 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 			(error: unknown) => {
 				if (id === runId) {
 					console.error('[upgrades] the run failed', error);
-					if (!current.signal.aborted) toastErrorMessage(error);
+					// A spec with no Upgrades data is the tab's own error, not a sim's, and the status line says so (review A2).
+					const noSpecData = error instanceof RankError && error.kind === 'not-implemented';
+					if (!current.signal.aborted && !noSpecData) toastErrorMessage(error);
 				}
 				store.getState().failRun(id, env.describeError(error));
 			},

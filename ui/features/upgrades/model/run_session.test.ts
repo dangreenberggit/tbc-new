@@ -7,7 +7,7 @@ import { dbPoolHost } from '../testing/db_pool';
 import { settled } from '../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
-import { candidateSkipSubstitution, hitCapUnknownNote, type PartialRanking, SET_BONUS_SKIP_REASONS, setBonusSkipSubstitution } from './engine/rank';
+import { candidateSkipSubstitution, hitCapUnknownNote, type PartialRanking, RankError, SET_BONUS_SKIP_REASONS, setBonusSkipSubstitution } from './engine/rank';
 import type { RunDeps, RunFn } from './run';
 import type { RunOutcome, RunResult } from './run_state';
 import type { SetOption } from './settings_pool';
@@ -169,6 +169,18 @@ describe('createRunSession', () => {
 		session.start(SETTINGS, SIGNATURE, []);
 		call(1).fail(new Error('superseded'));
 		await settled();
+		expect(toast).not.toHaveBeenCalled();
+	});
+
+	// Review A2 of `fix/867-870-tab-errors`: on a spec with no Upgrades data the status line already says so in the
+	// tab's words, and the error is the tab's own, not a sim's, so the wowsims precedent for a toast does not apply.
+	it('shows no toast for a run on a spec with no Upgrades data', async () => {
+		vi.spyOn(console, 'error').mockImplementation(() => {});
+		const toast = vi.spyOn(toastManager, 'add');
+		const { session, call, run } = setup();
+		session.start(SETTINGS, SIGNATURE, []);
+		call(0).fail(new RankError('not-implemented', 'no Upgrades data for spec SpecProtectionWarrior'));
+		await vi.waitFor(() => expect(run()).toMatchObject({ status: 'error' }));
 		expect(toast).not.toHaveBeenCalled();
 	});
 
