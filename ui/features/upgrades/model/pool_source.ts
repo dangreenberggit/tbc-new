@@ -7,7 +7,7 @@
  */
 
 import { ItemQuality, ItemType, type Spec } from '@generated/proto/common';
-import type { UIItem } from '@generated/proto/ui';
+import { UIItem } from '@generated/proto/ui';
 import { MISSING_ITEM_EFFECTS } from '@sim/constants/missing_effects_auto_gen';
 import { canEquipItem } from '@sim/proto/items';
 import type { IndividualSimHost } from '@sim/sim_host';
@@ -125,7 +125,8 @@ export function bisSetsFor(
  * missing an effect, kept when it meets the floor at or below `maxPhase` or is
  * in one of the spec's presets of that phase or earlier; then the heroic
  * five-man policy. Each entry's sources come from `sourcesFor`; without it
- * they are unknown (`[{kind: 'unknown'}]`).
+ * they are unknown (`[{kind: 'unknown'}]`). Items db.json describes the same but
+ * the id are offered once (`offerTwinsOnce`), as the id in `wornIds` if any.
  */
 export function selectPool(
 	items: readonly UIItem[],
@@ -135,6 +136,7 @@ export function selectPool(
 	maxPhase: number,
 	policy: HeroicFiveManPolicy,
 	sourcesFor: (item: UIItem) => ItemSource[] = () => [{ kind: 'unknown' }],
+	wornIds: ReadonlySet<number> = new Set(),
 ): PoolEntry[] {
 	const byId = new Map(items.map(item => [item.id, item]));
 	const itemPhaseOf = (id: number): number | undefined => {
@@ -168,7 +170,51 @@ export function selectPool(
 			...(curatedSets.length > 0 ? { curatedSets } : {}),
 		});
 	}
-	return pool;
+	return offerTwinsOnce(pool, byId, wornIds);
+}
+
+/** db.json describes `a` and `b` the same in every field but the id. */
+const sameButId = (a: UIItem, b: UIItem): boolean => UIItem.equals(a, { ...b, id: a.id });
+
+/**
+ * One entry per group of items wowsims' database describes the same in every
+ * field but the id, such as Sergeant's Heavy Cape 28378 and 28379 (ticket 753):
+ * the tab would show the same row twice, and nothing on the page tells the two
+ * apart. The page cannot see Go's id-keyed effects (see `hasEffectRecord`), so
+ * equal records are the only signal. The group keeps the id the player wears,
+ * so the row reads as owned; else one a preset holds; else the lowest. The kept
+ * entry takes the tags of every member and the first member's place.
+ */
+function offerTwinsOnce(pool: readonly PoolEntry[], byId: ReadonlyMap<number, UIItem>, wornIds: ReadonlySet<number>): PoolEntry[] {
+	const itemOf = (entry: PoolEntry) => byId.get(entry.itemId)!;
+	const groups: PoolEntry[][] = [];
+	const groupsByName = new Map<string, PoolEntry[][]>();
+	for (const entry of pool) {
+		const sameName = groupsByName.get(entry.name) ?? [];
+		groupsByName.set(entry.name, sameName);
+		const twins = sameName.find(group => sameButId(itemOf(group[0]!), itemOf(entry)));
+		if (twins) twins.push(entry);
+		else {
+			const group = [entry];
+			sameName.push(group);
+			groups.push(group);
+		}
+	}
+	return groups.map(group => (group.length === 1 ? group[0]! : mergeTwins(group, wornIds)));
+}
+
+function mergeTwins(group: readonly PoolEntry[], wornIds: ReadonlySet<number>): PoolEntry {
+	const lowest = group.reduce((a, b) => (b.itemId < a.itemId ? b : a));
+	const kept = group.find(e => wornIds.has(e.itemId)) ?? group.find(e => (e.curatedSets?.length ?? 0) > 0) ?? lowest;
+	const union = (sets: (e: PoolEntry) => string[] | undefined) => [...new Set(group.flatMap(e => sets(e) ?? []))];
+	const { bisTags: _bisTags, bisSets: _bisSets, curatedSets: _curatedSets, ...rest } = kept;
+	const bisSets = union(e => e.bisSets);
+	const curatedSets = union(e => e.curatedSets);
+	return {
+		...rest,
+		...(bisSets.length > 0 ? { bisTags: ['BiS' as const], bisSets } : {}),
+		...(curatedSets.length > 0 ? { curatedSets } : {}),
+	};
 }
 
 let missingIdsCache: ReadonlySet<number> | undefined;
@@ -211,6 +257,12 @@ export function buildPool(host: PoolHost, presets: readonly PresetSet[], maxPhas
 	const db = host.sim.db;
 	if (!db) return [];
 	const playerSpec = host.player.getPlayerSpec();
+	const wornIds = new Set(
+		host.player
+			.getGear()
+			.getEquippedItems()
+			.flatMap(eq => (eq ? [eq.id] : [])),
+	);
 	return selectPool(
 		db.getAllItems(),
 		item => canEquipItem(item, playerSpec, undefined),
@@ -219,5 +271,6 @@ export function buildPool(host: PoolHost, presets: readonly PresetSet[], maxPhas
 		maxPhase,
 		HEROIC_FIVE_MAN,
 		item => sourcesOf(item, db, exchange()),
+		wornIds,
 	);
 }

@@ -1,8 +1,9 @@
+import { UIItem } from '@generated/proto/ui';
 import { describe, expect, it } from 'vitest';
 
 import { dbPoolFor, PROTO_SPEC, TEST_MISSING_IDS, TEST_PRESETS, testItem, testItemPhase } from '../testing/db_pool';
 import type { SpecId } from './engine/types';
-import { bisSetsFor, hasEffectRecord, type HeroicFiveManPolicy, isHeroicFiveManOnly, presetPhase, type PresetSet } from './pool_source';
+import { bisSetsFor, hasEffectRecord, type HeroicFiveManPolicy, isHeroicFiveManOnly, presetPhase, type PresetSet, selectPool } from './pool_source';
 import cellsFixture from './pool_source.cells.fixture.json';
 import { effectiveExcludedSources, effectivePool, validSourceKeysOf } from './settings_pool';
 
@@ -30,9 +31,10 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 		}).toEqual(expected);
 	});
 
-	it('totals the measured 41,318 / 43,758 rows and 1,182 BiS rows', () => {
+	// 41,318 / 43,758 before ticket 753 took one Sergeant's cape and one cloak out of each of the 55 cells.
+	it('totals the measured 41,208 / 43,648 rows and 1,182 BiS rows', () => {
 		const sum = (key: 'exclude' | 'include' | 'bisRows') => CELL_NAMES.reduce((n, name) => n + CELLS[name]![key], 0);
-		expect([sum('exclude'), sum('include'), sum('bisRows')]).toEqual([41318, 43758, 1182]);
+		expect([sum('exclude'), sum('include'), sum('bisRows')]).toEqual([41208, 43648, 1182]);
 	});
 
 	it.each(['ret-p5', 'feral-p5'])('%s: exclude is inside include, include-unticked is include, and the difference is the heroic-only items', name => {
@@ -70,6 +72,52 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 	it('keeps both Mark of the Champion items on their effect record', () => {
 		const ids = new Set(poolOf('ret', 5, 'include').map(e => e.itemId));
 		expect([ids.has(23206), ids.has(23207)]).toEqual([true, true]);
+	});
+
+	// Ticket 753: db.json gives 28378/28379 and 28377/28380 the same record but the id, so the tab showed each item
+	// twice. The two Marks differ in effect (attack power or spell damage), so both stay.
+	it('offers each Sergeant’s cape and cloak once and keeps both Mark of the Champion items', () => {
+		const pool = poolOf('ret', 5, 'include');
+		const count = (name: string) => pool.filter(e => e.name === name).length;
+		expect([count("Sergeant's Heavy Cape"), count("Sergeant's Heavy Cloak"), count('Mark of the Champion')]).toEqual([1, 1, 2]);
+	});
+
+	it.each(CELL_NAMES)('%s offers no two items db.json describes the same but the id', name => {
+		const [spec, phase] = name.split('-p') as [SpecId, string];
+		const items = poolOf(spec, Number(phase), 'include').map(e => testItem(e.itemId)!);
+		// Equal records share a name, so only same-name pairs need the full comparison.
+		const twins = items.flatMap((a, i) =>
+			items
+				.slice(i + 1)
+				.filter(b => b.name === a.name && UIItem.equals(a, { ...b, id: a.id }))
+				.map(b => [a.id, b.id]),
+		);
+		expect(twins).toEqual([]);
+	});
+
+	describe('keeps the id the player wears, else one a preset holds, with the group’s tags', () => {
+		const capes = [testItem(28378)!, testItem(28379)!];
+		const cloaks = [testItem(28377)!, testItem(28380)!];
+		const presets: PresetSet[] = [{ name: 'P1', phase: 1, itemIds: [28380] }];
+		const kept = (items: UIItem[], wornIds: number[], sets: PresetSet[] = []) =>
+			selectPool(items, () => true, sets, TEST_MISSING_IDS, 5, 'include', undefined, new Set(wornIds)).map(e => ({
+				itemId: e.itemId,
+				bisSets: e.bisSets,
+				curatedSets: e.curatedSets,
+			}));
+
+		it('a worn 28379 over the lower 28378', () => {
+			expect(kept(capes, [28379])).toEqual([{ itemId: 28379 }]);
+		});
+
+		it('with nothing worn, the preset’s 28380 over the lower 28377', () => {
+			expect(kept(cloaks, [], presets)).toEqual([{ itemId: 28380, bisSets: ['P1'], curatedSets: ['P1'] }]);
+		});
+
+		it('a worn 28380 over the preset’s 28377, keeping the preset’s tags', () => {
+			const lowInPreset: PresetSet[] = [{ name: 'P1', phase: 1, itemIds: [28377] }];
+			expect(kept(cloaks, [28380], lowInPreset)).toEqual([{ itemId: 28380, bisSets: ['P1'], curatedSets: ['P1'] }]);
+		});
 	});
 });
 

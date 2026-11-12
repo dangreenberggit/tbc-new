@@ -1,279 +1,279 @@
 {
-	"_comment": "Per spec-phase pool sizes under the heroic five-man policies and BiS-tagged rows (include pool). Measured once by an independent Python script, measure_pool_rule.py, that applied the pool rule to db.json. The script is not committed: it is in the outer repo's main checkout, in the gitignored stage folder .scratch/stage-gate/tab-wowsims-items/poolrule/. To re-pin after db.json, the presets or the pool rule change: run pool_source.test.ts, and before copying the sizes the TypeScript pool gives, list the item ids each changed cell gained or lost (testing/db_pool.ts dbPoolFor) and check each one against db.json and the rule in pool_source.ts. A size copied without that check pins whatever the code does. 2026-10-18, ticket 686 (every preset of the tag phase counts as a BiS set): bisRows re-pinned for ret-p3, ret-p4 and ret-p5 (+1, 28485), feral-p2 (+5, the Alt 6% and Alt 9% sets: 30222, 30223, 30229, 30230, 30834) and shadow-p2 (+8, its pre-raid set: 25295, 28245, 28555, 30832, 31166, 31199, 31201, 31225); no other cell changed and no item lost its tag. 2026-10-25, wowsims catch-up to upstream cec2a7b68 (db.json and missing_effects_auto_gen.ts changed): every cell lost the six old Hallow's End ring ids upstream removed from db.json (33957, 33958, 33959, 34073, 34074, 34075), and ret and warrior also lost the old Horseman's Helm 33808; at phases 3-5 every cell gained the re-issued phase-3 rings (281907, 281911, 281915), ret and warrior also the re-issued helm 281919; ele-p4, ele-p5, enh-p4 and enh-p5 gained 33507 Stonebreaker's Totem (phase 4), which upstream took off the missing-effects list, and it is a BiS row for enh-p4 and enh-p5. The re-issued Horseman's Blade 281923 stays out: upstream lists its effect as missing, as it did for the old id 38175. The 21 weapons upstream moved from main hand to one hand changed no cell. Lists made by running selectPool over the old and the new db.json and missing-effects lists; the old run reproduced every committed cell. 2026-11-06, ticket 804 (phase 1 had no pinned cell): the 11 phase-1 cells were measured by the same script (2026-10-17, it measured the first 44 cells), copied into the gitignored 452d stage folder. Edits to the copy: REPO and PAIR set to the checkout path; the check that MISSING_ITEM_EFFECTS has 450 ids replaced by a print (it has 449); ticket 686's rule (no preset name filter for BiS sets); a cell with no data/universes file reads an empty universe, which changes only the script's comparison columns, not the pool sizes; PHASES = (1, 2, 3, 4, 5). Command: python3 -I measure_pool_rule.py --picker --default-run. Before PHASES gained 1, it reproduced all 44 committed cells. Phase-1 cells as exclude/include/bisRows: balance-p1 395/435/25; ele-p1 468/520/28; enh-p1 478/531/26; feral-p1 394/435/33; hunter-p1 438/489/36; mage-p1 297/327/28; ret-p1 507/564/26; rogue-p1 390/431/28; shadow-p1 313/342/25; warlock-p1 303/335/35; warrior-p1 553/615/32.",
+	"_comment": "Per spec-phase pool sizes under the heroic five-man policies and BiS-tagged rows (include pool). Measured once by an independent Python script, measure_pool_rule.py, that applied the pool rule to db.json. The script is not committed: it is in the outer repo's main checkout, in the gitignored stage folder .scratch/stage-gate/tab-wowsims-items/poolrule/. To re-pin after db.json, the presets or the pool rule change: run pool_source.test.ts, and before copying the sizes the TypeScript pool gives, list the item ids each changed cell gained or lost (testing/db_pool.ts dbPoolFor) and check each one against db.json and the rule in pool_source.ts. A size copied without that check pins whatever the code does. 2026-10-18, ticket 686 (every preset of the tag phase counts as a BiS set): bisRows re-pinned for ret-p3, ret-p4 and ret-p5 (+1, 28485), feral-p2 (+5, the Alt 6% and Alt 9% sets: 30222, 30223, 30229, 30230, 30834) and shadow-p2 (+8, its pre-raid set: 25295, 28245, 28555, 30832, 31166, 31199, 31201, 31225); no other cell changed and no item lost its tag. 2026-10-25, wowsims catch-up to upstream cec2a7b68 (db.json and missing_effects_auto_gen.ts changed): every cell lost the six old Hallow's End ring ids upstream removed from db.json (33957, 33958, 33959, 34073, 34074, 34075), and ret and warrior also lost the old Horseman's Helm 33808; at phases 3-5 every cell gained the re-issued phase-3 rings (281907, 281911, 281915), ret and warrior also the re-issued helm 281919; ele-p4, ele-p5, enh-p4 and enh-p5 gained 33507 Stonebreaker's Totem (phase 4), which upstream took off the missing-effects list, and it is a BiS row for enh-p4 and enh-p5. The re-issued Horseman's Blade 281923 stays out: upstream lists its effect as missing, as it did for the old id 38175. The 21 weapons upstream moved from main hand to one hand changed no cell. Lists made by running selectPool over the old and the new db.json and missing-effects lists; the old run reproduced every committed cell. 2026-11-06, ticket 804 (phase 1 had no pinned cell): the 11 phase-1 cells were measured by the same script (2026-10-17, it measured the first 44 cells), copied into the gitignored 452d stage folder. Edits to the copy: REPO and PAIR set to the checkout path; the check that MISSING_ITEM_EFFECTS has 450 ids replaced by a print (it has 449); ticket 686's rule (no preset name filter for BiS sets); a cell with no data/universes file reads an empty universe, which changes only the script's comparison columns, not the pool sizes; PHASES = (1, 2, 3, 4, 5). Command: python3 -I measure_pool_rule.py --picker --default-run. Before PHASES gained 1, it reproduced all 44 committed cells. Phase-1 cells as exclude/include/bisRows: balance-p1 395/435/25; ele-p1 468/520/28; enh-p1 478/531/26; feral-p1 394/435/33; hunter-p1 438/489/36; mage-p1 297/327/28; ret-p1 507/564/26; rogue-p1 390/431/28; shadow-p1 313/342/25; warlock-p1 303/335/35; warrior-p1 553/615/32. 2026-11-12, ticket 753 (the pool offers once each group of items db.json describes the same in every field but the id): every cell, under both policies, lost 28379 Sergeant's Heavy Cape and 28380 Sergeant's Heavy Cloak, whose db.json records equal those of 28378 and 28377 but the id; no cell gained an item and no bisRows changed. Lists made by running the old and the new selectPool over the same db.json.",
 	"cells": {
 		"balance-p1": {
-			"exclude": 395,
-			"include": 435,
+			"exclude": 393,
+			"include": 433,
 			"bisRows": 25
 		},
 		"balance-p2": {
-			"exclude": 553,
-			"include": 593,
+			"exclude": 551,
+			"include": 591,
 			"bisRows": 16
 		},
 		"balance-p3": {
-			"exclude": 760,
-			"include": 800,
+			"exclude": 758,
+			"include": 798,
 			"bisRows": 16
 		},
 		"balance-p4": {
-			"exclude": 841,
-			"include": 881,
+			"exclude": 839,
+			"include": 879,
 			"bisRows": 16
 		},
 		"balance-p5": {
-			"exclude": 1039,
-			"include": 1079,
+			"exclude": 1037,
+			"include": 1077,
 			"bisRows": 17
 		},
 		"ele-p1": {
-			"exclude": 468,
-			"include": 520,
+			"exclude": 466,
+			"include": 518,
 			"bisRows": 28
 		},
 		"ele-p2": {
-			"exclude": 653,
-			"include": 705,
+			"exclude": 651,
+			"include": 703,
 			"bisRows": 16
 		},
 		"ele-p3": {
-			"exclude": 905,
-			"include": 957,
+			"exclude": 903,
+			"include": 955,
 			"bisRows": 16
 		},
 		"ele-p4": {
-			"exclude": 1015,
-			"include": 1067,
+			"exclude": 1013,
+			"include": 1065,
 			"bisRows": 15
 		},
 		"ele-p5": {
-			"exclude": 1255,
-			"include": 1307,
+			"exclude": 1253,
+			"include": 1305,
 			"bisRows": 17
 		},
 		"enh-p1": {
-			"exclude": 478,
-			"include": 531,
+			"exclude": 476,
+			"include": 529,
 			"bisRows": 26
 		},
 		"enh-p2": {
-			"exclude": 668,
-			"include": 721,
+			"exclude": 666,
+			"include": 719,
 			"bisRows": 17
 		},
 		"enh-p3": {
-			"exclude": 928,
-			"include": 981,
+			"exclude": 926,
+			"include": 979,
 			"bisRows": 16
 		},
 		"enh-p4": {
-			"exclude": 1039,
-			"include": 1092,
+			"exclude": 1037,
+			"include": 1090,
 			"bisRows": 16
 		},
 		"enh-p5": {
-			"exclude": 1292,
-			"include": 1345,
+			"exclude": 1290,
+			"include": 1343,
 			"bisRows": 17
 		},
 		"feral-p1": {
-			"exclude": 394,
-			"include": 435,
+			"exclude": 392,
+			"include": 433,
 			"bisRows": 33
 		},
 		"feral-p2": {
-			"exclude": 552,
-			"include": 593,
+			"exclude": 550,
+			"include": 591,
 			"bisRows": 23
 		},
 		"feral-p3": {
-			"exclude": 759,
-			"include": 800,
+			"exclude": 757,
+			"include": 798,
 			"bisRows": 18
 		},
 		"feral-p4": {
-			"exclude": 840,
-			"include": 881,
+			"exclude": 838,
+			"include": 879,
 			"bisRows": 18
 		},
 		"feral-p5": {
-			"exclude": 1038,
-			"include": 1079,
+			"exclude": 1036,
+			"include": 1077,
 			"bisRows": 16
 		},
 		"hunter-p1": {
-			"exclude": 438,
-			"include": 489,
+			"exclude": 436,
+			"include": 487,
 			"bisRows": 36
 		},
 		"hunter-p2": {
-			"exclude": 605,
-			"include": 656,
+			"exclude": 603,
+			"include": 654,
 			"bisRows": 25
 		},
 		"hunter-p3": {
-			"exclude": 839,
-			"include": 890,
+			"exclude": 837,
+			"include": 888,
 			"bisRows": 26
 		},
 		"hunter-p4": {
-			"exclude": 948,
-			"include": 999,
+			"exclude": 946,
+			"include": 997,
 			"bisRows": 27
 		},
 		"hunter-p5": {
-			"exclude": 1181,
-			"include": 1232,
+			"exclude": 1179,
+			"include": 1230,
 			"bisRows": 27
 		},
 		"mage-p1": {
-			"exclude": 297,
-			"include": 327,
+			"exclude": 295,
+			"include": 325,
 			"bisRows": 28
 		},
 		"mage-p2": {
-			"exclude": 406,
-			"include": 436,
+			"exclude": 404,
+			"include": 434,
 			"bisRows": 16
 		},
 		"mage-p3": {
-			"exclude": 555,
-			"include": 585,
+			"exclude": 553,
+			"include": 583,
 			"bisRows": 21
 		},
 		"mage-p4": {
-			"exclude": 610,
-			"include": 640,
+			"exclude": 608,
+			"include": 638,
 			"bisRows": 21
 		},
 		"mage-p5": {
-			"exclude": 743,
-			"include": 773,
+			"exclude": 741,
+			"include": 771,
 			"bisRows": 21
 		},
 		"ret-p1": {
-			"exclude": 507,
-			"include": 564,
+			"exclude": 505,
+			"include": 562,
 			"bisRows": 26
 		},
 		"ret-p2": {
-			"exclude": 712,
-			"include": 769,
+			"exclude": 710,
+			"include": 767,
 			"bisRows": 16
 		},
 		"ret-p3": {
-			"exclude": 987,
-			"include": 1044,
+			"exclude": 985,
+			"include": 1042,
 			"bisRows": 17
 		},
 		"ret-p4": {
-			"exclude": 1118,
-			"include": 1175,
+			"exclude": 1116,
+			"include": 1173,
 			"bisRows": 17
 		},
 		"ret-p5": {
-			"exclude": 1384,
-			"include": 1441,
+			"exclude": 1382,
+			"include": 1439,
 			"bisRows": 17
 		},
 		"rogue-p1": {
-			"exclude": 390,
-			"include": 431,
+			"exclude": 388,
+			"include": 429,
 			"bisRows": 28
 		},
 		"rogue-p2": {
-			"exclude": 537,
-			"include": 578,
+			"exclude": 535,
+			"include": 576,
 			"bisRows": 17
 		},
 		"rogue-p3": {
-			"exclude": 742,
-			"include": 783,
+			"exclude": 740,
+			"include": 781,
 			"bisRows": 17
 		},
 		"rogue-p4": {
-			"exclude": 826,
-			"include": 867,
+			"exclude": 824,
+			"include": 865,
 			"bisRows": 17
 		},
 		"rogue-p5": {
-			"exclude": 1026,
-			"include": 1067,
+			"exclude": 1024,
+			"include": 1065,
 			"bisRows": 17
 		},
 		"shadow-p1": {
-			"exclude": 313,
-			"include": 342,
+			"exclude": 311,
+			"include": 340,
 			"bisRows": 25
 		},
 		"shadow-p2": {
-			"exclude": 434,
-			"include": 463,
+			"exclude": 432,
+			"include": 461,
 			"bisRows": 25
 		},
 		"shadow-p3": {
-			"exclude": 595,
-			"include": 624,
+			"exclude": 593,
+			"include": 622,
 			"bisRows": 31
 		},
 		"shadow-p4": {
-			"exclude": 649,
-			"include": 678,
+			"exclude": 647,
+			"include": 676,
 			"bisRows": 31
 		},
 		"shadow-p5": {
-			"exclude": 794,
-			"include": 823,
+			"exclude": 792,
+			"include": 821,
 			"bisRows": 31
 		},
 		"warlock-p1": {
-			"exclude": 303,
-			"include": 335,
+			"exclude": 301,
+			"include": 333,
 			"bisRows": 35
 		},
 		"warlock-p2": {
-			"exclude": 416,
-			"include": 448,
+			"exclude": 414,
+			"include": 446,
 			"bisRows": 17
 		},
 		"warlock-p3": {
-			"exclude": 569,
-			"include": 601,
+			"exclude": 567,
+			"include": 599,
 			"bisRows": 15
 		},
 		"warlock-p4": {
-			"exclude": 624,
-			"include": 656,
+			"exclude": 622,
+			"include": 654,
 			"bisRows": 15
 		},
 		"warlock-p5": {
-			"exclude": 761,
-			"include": 793,
+			"exclude": 759,
+			"include": 791,
 			"bisRows": 17
 		},
 		"warrior-p1": {
-			"exclude": 553,
-			"include": 615,
+			"exclude": 551,
+			"include": 613,
 			"bisRows": 32
 		},
 		"warrior-p2": {
-			"exclude": 770,
-			"include": 832,
+			"exclude": 768,
+			"include": 830,
 			"bisRows": 23
 		},
 		"warrior-p3": {
-			"exclude": 1076,
-			"include": 1138,
+			"exclude": 1074,
+			"include": 1136,
 			"bisRows": 23
 		},
 		"warrior-p4": {
-			"exclude": 1218,
-			"include": 1280,
+			"exclude": 1216,
+			"include": 1278,
 			"bisRows": 24
 		},
 		"warrior-p5": {
-			"exclude": 1520,
-			"include": 1582,
+			"exclude": 1518,
+			"include": 1580,
 			"bisRows": 19
 		}
 	}

@@ -70,7 +70,7 @@ export const dbPoolFor = (spec: SpecId, phase: number, policy: HeroicFiveManPoli
 export const dbPoolHost = (spec: SpecId) =>
 	({
 		sim: { db: { getAllItems: () => TEST_DB.items, ...TEST_SOURCE_DB } },
-		player: { getPlayerSpec: () => PlayerSpecs.fromProto(PROTO_SPEC[spec]) },
+		player: { getPlayerSpec: () => PlayerSpecs.fromProto(PROTO_SPEC[spec]), getGear: () => ({ getEquippedItems: () => [] }) },
 		individualConfig: {
 			presets: {
 				gear: TEST_PRESETS[spec]!.map(p => ({
