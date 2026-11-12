@@ -104,7 +104,7 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 		candidateCap: settings.candidateCap,
 	};
 
-	// The run's one read of the talents (ticket 811): the set it picks drives the engine and is what the run returns.
+	// The run picks its EP-weights set once (ticket 811): that set drives the engine and is the one the run returns.
 	const epWeightsSet = epWeightsSetFor(specId, host.player.getTalentTreePoints());
 	const weights = epWeightsFileFor(epWeightsSet);
 	const ranking = await rankUpgrades(
