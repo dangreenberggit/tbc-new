@@ -71,7 +71,7 @@ describe('substitutionFirstLine', () => {
 describe('substitutionConsoleLines', () => {
 	it("gives the full text of each reason the page shortened, and every failed call's error, which the page does not show", () => {
 		expect(substitutionConsoleLines(RANKING_FIXTURE.substitutions)).toEqual([
-			'[upgrades] Warglaive of Azzinoth: This item was not ranked in this slot, because its sim failed.\npanic: runtime error\ngoroutine 1 [running]:\nmain.main()\nitem 32837, slot mainhand',
+			'[upgrades] Warglaive of Azzinoth: This item was not ranked in this slot, because its sim failed.\nitem 32837, slot mainhand\npanic: runtime error\ngoroutine 1 [running]:\nmain.main()',
 		]);
 		expect(substitutionConsoleLines([{ field: 'hit cap', detail: 'Kept the worn hit gems.' }])).toEqual([]);
 		// Owner's ruling 2026-11-11: the page shows no error, so each failure's whole error goes to the console.

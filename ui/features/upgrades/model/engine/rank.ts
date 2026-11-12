@@ -4695,16 +4695,21 @@ export type CandidateSkip = {
  * same item can still rank from its other slot.
  */
 export function candidateSkipSubstitution(skip: CandidateSkip): Substitution {
-  return {
-    field: skip.name,
-    slot: skip.slot,
-    detail:
-      skip.kind === "sim"
-        ? "This item was not ranked in this slot, because its sim failed."
-        : "This item was not ranked in this slot, because no gem swap could turn your meta gem on with it equipped.",
-    // The item id is for the console only: the page names the item and slot.
-    error: `${skip.reason}\nitem ${skip.itemId}, slot ${skip.slot}`,
-  };
+  // After the sentence, so for the console only: the page shows a line's
+  // first line, and names the item and slot.
+  const where = `item ${skip.itemId}, slot ${skip.slot}`;
+  const line = { field: skip.name, slot: skip.slot };
+  return skip.kind === "sim"
+    ? {
+        ...line,
+        detail: `This item was not ranked in this slot, because its sim failed.\n${where}`,
+        error: skip.reason,
+      }
+    : {
+        ...line,
+        // A gem repair that finds no swap is no failed call (`metaOff`).
+        detail: `This item was not ranked in this slot, because no gem swap could turn your meta gem on with it equipped.\n${where}: ${skip.reason}`,
+      };
 }
 
 /**
@@ -4723,9 +4728,13 @@ export const SET_BONUS_SKIP_REASONS = {
     because: "their sim failed.",
     error,
   }),
-  metaOff: (error: string): SkipReason => ({
-    because: "no gem swap could turn your meta gem on.",
-    error,
+  /**
+   * A gem repair that finds no swap is no failed call, so its rule follows
+   * the sentence, for the console: `error` holds only a failed call's error,
+   * which the run's error toast shows.
+   */
+  metaOff: (rule: string): SkipReason => ({
+    because: `no gem swap could turn your meta gem on.\n${rule}`,
   }),
   measuringSimsNotBuilt: {
     because: "the sims that measure it could not be built.",
