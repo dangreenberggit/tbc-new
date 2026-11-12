@@ -1,14 +1,11 @@
 /**
- * Per-spec cap descriptor — the table that lets one cap implementation serve
- * both hit schools.
+ * Per-spec hit-cap descriptor: the numbers gem fill (`gemFillWeights`) and
+ * meta repair (`hitCapBudgetFrom`) need to value hit and expertise gems.
  *
- * Before this file, `caps.ts` was physical-only: it summed
- * `StatMeleeHitRating`, compared it to a melee cap, and decoded ret's Precision
- * from a table living inside the module. A caster spec cannot be expressed that
- * way at all — it needs a different stat key, a different rating-per-percent
- * conversion, a different cap percentage, and no expertise line. Rather than
- * branch on the spec inside every function, each spec names its numbers here
- * once and the cap code reads them.
+ * A caster cannot share a melee spec's numbers: it needs a different stat key,
+ * a different rating-per-percent conversion, a different cap percentage, and
+ * no expertise. Rather than branch on the spec inside every function, each
+ * spec names its numbers here once and those readers use them.
  *
  * The `Record<SpecId, CapProfile>` is deliberately **total**: a spec added to
  * `SpecId` without a cap profile is a compile error, which is the only thing
@@ -16,9 +13,8 @@
  * failure mode this replaces was quieter than a wrong number — it was a *right*
  * number for the wrong school.
  *
- * The cap percentages are game-rule constants, the same category as the melee
- * `HIT_CAP_PERCENT = 9` this repo already shipped. The sim hardcodes neither
- * (it derives miss chance from level difference), so they live here as
+ * The cap percentages are game-rule constants. The sim hardcodes neither (it
+ * derives miss chance from level difference), so they live here as
  * engine-owned facts with the reasoning attached rather than being read out of
  * the vendored sim at runtime.
  */
@@ -44,7 +40,8 @@ export type TalentPosition = {
 };
 
 /**
- * Everything the cap computation needs to know about one spec.
+ * What gem fill and meta repair need to know about one spec's hit and
+ * expertise caps.
  *
  * `hitStat` is a real `Stat` for both schools — casters carry
  * `StatSpellHitRating` on gear, so the pseudo-stat vocabulary the fork uses for
@@ -60,8 +57,8 @@ export type CapProfile = {
   readonly ratingPerPercent: number;
   /**
    * Whether expertise is a cap this spec has, so gem fill zeroes its weight
-   * (`gemFillWeights`). False for casters and for hunters: nothing they do can
-   * be dodged or parried.
+   * (`gemFillWeights`). False for casters, whose spells cannot be dodged or
+   * parried, and for hunters, whose ranged shots cannot be.
    */
   readonly trackExpertise: boolean;
   /**
