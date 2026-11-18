@@ -28,7 +28,7 @@ import {
 	spellDamageBySchool,
 } from '../engine/seams/sim-runner';
 
-/** Matches the default worker count `Sim`'s constructor picks (`ui/sim/sim.ts`). */
+/** The cap on the default worker count `Sim`'s constructor picks (`ui/sim/sim.ts`). */
 export const DEFAULT_WORKER_COUNT = 4;
 
 /**

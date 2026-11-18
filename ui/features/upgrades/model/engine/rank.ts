@@ -150,8 +150,8 @@ export type Deps = {
 	measureBrokenSetValue?: boolean;
 	/**
 	 * The rule that picks each set row's partner pieces for a bonus
-	 * (`partner-choice.ts`). Absent means `PARTNER_RULE`. Only the tab's check
-	 * hook sets it, in dev and gate builds, to score the rules; it joins the
+	 * (`partner-choice.ts`). Absent means `PARTNER_RULE`. The tab never sets
+	 * it; tests set it to score the rules against each other. It joins the
 	 * content hash only when set, so a ranking cached under one rule is never
 	 * served for another.
 	 */
@@ -159,9 +159,9 @@ export type Deps = {
 	/**
 	 * The set screen (`set-screen.ts`), with the flag only. "on" filters the
 	 * gain side to the sets the screen keeps; the tab passes it. "record" runs
-	 * the record mode's sims, filtering nothing; only the tab's check hook sets
-	 * it, in dev and gate builds. Both write `Ranking.setScreen`. Absent means
-	 * "off", so the CLI is unchanged. It joins the content hash only when set.
+	 * the record mode's sims, filtering nothing; the tab never sets it, only
+	 * tests do. Both write `Ranking.setScreen`. Absent means "off", so the CLI
+	 * is unchanged. It joins the content hash only when set.
 	 */
 	setScreen?: SetScreenMode;
 	/**
@@ -548,8 +548,8 @@ export type Ranking = {
 	setBonusOffSims?: SetBonusOffSims;
 	/**
 	 * Every partner set simmed for every eligible future, written only under
-	 * the "every-combination" rule, which the tab's check hook sets to score
-	 * the zero-sim rules. Players never get it.
+	 * the "every-combination" rule, which tests set to score the zero-sim
+	 * rules. Players never get it.
 	 */
 	partnerAudit?: PartnerAuditEntry[];
 	/**
