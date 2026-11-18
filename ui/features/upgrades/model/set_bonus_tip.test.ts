@@ -66,7 +66,9 @@ const totalLine = (dps: number) => ({ type: 'line', label: { kind: 'total' }, dp
  */
 const screenedRanking = (reason: 'outside-band' | 'exact-zero' | 'below-zero', olderMarker = false): Ranking => ({
 	...RANKING_FIXTURE,
-	setBonuses: olderMarker ? [{ setId: 680, setName: LIGHTBRINGER, threshold: 2, piecesWorn: 0, packageItemIds: [], packageDeltaDps: 0, unmeasured: 'screened-out' }] : [],
+	setBonuses: olderMarker
+		? [{ setId: 680, setName: LIGHTBRINGER, threshold: 2, piecesWorn: 0, packageItemIds: [], packageDeltaDps: 0, unmeasured: 'screened-out' }]
+		: [],
 	setScreen: {
 		mode: 'on',
 		seed: 1,
@@ -346,7 +348,12 @@ describe('setBonusTipLines', () => {
 					pastStop4(-10.5),
 				]);
 				// Toggle off is unchanged: both bonuses, each against the item alone.
-				expect(setBonusTipLines(row, context)?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_off' }, reachable(26), reachable4(15.5)]);
+				expect(setBonusTipLines(row, context)?.entries).toEqual([
+					totalLine(4.5),
+					{ type: 'heading', heading: 'not_counted_off' },
+					reachable(26),
+					reachable4(15.5),
+				]);
 			});
 
 			it('gives a step past the stop no figure when its difference from the stop’s gear is within the noise', () => {

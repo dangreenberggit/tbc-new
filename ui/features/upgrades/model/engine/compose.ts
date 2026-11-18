@@ -4,51 +4,48 @@
  * seams/sim-runner.ts for why the typed proto interface is not used here.
  */
 
-import type { RaidSimRequest } from "./seams/sim-runner";
-import type { SimItemSpec } from "./slots";
-import type { Race } from "./types";
+import type { RaidSimRequest } from './seams/sim-runner';
+import type { SimItemSpec } from './slots';
+import type { Race } from './types';
 
 export type ComposePlayer = {
-  name: string;
-  race: Race;
-  equipment: readonly SimItemSpec[];
-  /**
-   * Per-request item rows for the WASM sim, which is built without
-   * `with_db` and so starts with an empty registry. Opaque protojson, like
-   * RaidSimRequest: the type belongs to the sim's SimDatabase. Omitted by CLI
-   * callers, whose binary is built with_db.
-   */
-  database?: Readonly<Record<string, unknown>>;
+	name: string;
+	race: Race;
+	equipment: readonly SimItemSpec[];
+	/**
+	 * Per-request item rows for the WASM sim, which is built without
+	 * `with_db` and so starts with an empty registry. Opaque protojson, like
+	 * RaidSimRequest: the type belongs to the sim's SimDatabase. Omitted by CLI
+	 * callers, whose binary is built with_db.
+	 */
+	database?: Readonly<Record<string, unknown>>;
 };
 
-export function compose(
-  skeleton: RaidSimRequest,
-  player: ComposePlayer
-): RaidSimRequest {
-  const req = structuredClone(skeleton) as Record<string, unknown>;
-  delete req.simOptions;
-  delete req.requestId;
+export function compose(skeleton: RaidSimRequest, player: ComposePlayer): RaidSimRequest {
+	const req = structuredClone(skeleton) as Record<string, unknown>;
+	delete req.simOptions;
+	delete req.requestId;
 
-  const raid = req.raid as {
-    parties: Array<{ players: Array<Record<string, unknown>> }>;
-  };
-  const slot = raid.parties[0]?.players[0];
-  if (!slot) {
-    throw new Error("skeleton missing raid.parties[0].players[0]");
-  }
+	const raid = req.raid as {
+		parties: Array<{ players: Array<Record<string, unknown>> }>;
+	};
+	const slot = raid.parties[0]?.players[0];
+	if (!slot) {
+		throw new Error('skeleton missing raid.parties[0].players[0]');
+	}
 
-  slot.name = player.name;
-  slot.race = player.race;
-  slot.equipment = { items: player.equipment.map(toProtoItem) };
-  if (player.database) slot.database = player.database;
+	slot.name = player.name;
+	slot.race = player.race;
+	slot.equipment = { items: player.equipment.map(toProtoItem) };
+	if (player.database) slot.database = player.database;
 
-  return req;
+	return req;
 }
 
 function toProtoItem(spec: SimItemSpec): Record<string, unknown> {
-  if (!spec.id) return {};
-  const out: Record<string, unknown> = { id: spec.id };
-  if (spec.enchant) out.enchant = spec.enchant;
-  if (spec.gems.length > 0) out.gems = [...spec.gems];
-  return out;
+	if (!spec.id) return {};
+	const out: Record<string, unknown> = { id: spec.id };
+	if (spec.enchant) out.enchant = spec.enchant;
+	if (spec.gems.length > 0) out.gems = [...spec.gems];
+	return out;
 }

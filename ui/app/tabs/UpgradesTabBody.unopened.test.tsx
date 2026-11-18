@@ -41,7 +41,8 @@ const pageModules = async () => {
 };
 
 const KEY = '__upgrades_test__upgradesSettings__';
-const savedEntry = (settings: object) => JSON.stringify({ version: SAVED_VERSION, settings, sort: [{ id: 'source', desc: true }], view: {}, exportFlavour: 'gear' });
+const savedEntry = (settings: object) =>
+	JSON.stringify({ version: SAVED_VERSION, settings, sort: [{ id: 'source', desc: true }], view: {}, exportFlavour: 'gear' });
 
 /**
  * A page at `startPhase` (3 unless given) whose Upgrades tab is closed, on real page subscriptions. `load` is the

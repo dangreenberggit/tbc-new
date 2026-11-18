@@ -207,9 +207,7 @@ function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopTh
 			// their errors in quadrature counts the baseline's error twice: the gate
 			// errs toward "too small to measure".
 			const belowNoise =
-				stop !== undefined &&
-				dps !== undefined &&
-				!clearsSameGearGate(Math.abs(dps), Math.hypot(f.stepGearSe ?? 0, stop.stepGearSe ?? 0), cutoff);
+				stop !== undefined && dps !== undefined && !clearsSameGearGate(Math.abs(dps), Math.hypot(f.stepGearSe ?? 0, stop.stepGearSe ?? 0), cutoff);
 			return {
 				type: 'line',
 				label: {

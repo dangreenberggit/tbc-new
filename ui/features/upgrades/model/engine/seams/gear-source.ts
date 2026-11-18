@@ -3,98 +3,94 @@
  * readGear.
  */
 
-import type { CharacterRef, FightRef, SpecId } from "../types";
-import type { Store } from "./store";
+import type { CharacterRef, FightRef, SpecId } from '../types';
+import type { Store } from './store';
 
 export type FightSummary = {
-  reportCode: string;
-  fightId: number;
-  encounterName: string;
-  killedAt?: string;
-  route: "ranked" | "report-events";
-  confidence: number;
-  salvationUptime?: number;
+	reportCode: string;
+	fightId: number;
+	encounterName: string;
+	killedAt?: string;
+	route: 'ranked' | 'report-events';
+	confidence: number;
+	salvationUptime?: number;
 };
 
 export type LoggedItem = {
-  id: number;
-  slot: string;
-  enchant?: number;
-  gems?: number[];
+	id: number;
+	slot: string;
+	enchant?: number;
+	gems?: number[];
 };
 
 export type LoggedGear = {
-  items: LoggedItem[];
-  talentPointsByTree: [number, number, number];
-  className?: string;
-  specIdHint?: number;
-  provenance: {
-    reportCode: string;
-    fightId: number;
-    sourceID: number;
-  };
+	items: LoggedItem[];
+	talentPointsByTree: [number, number, number];
+	className?: string;
+	specIdHint?: number;
+	provenance: {
+		reportCode: string;
+		fightId: number;
+		sourceID: number;
+	};
 };
 
 export interface GearSource {
-  findFights(c: CharacterRef, spec: SpecId): Promise<FightSummary[]>;
-  readGear(f: FightRef): Promise<LoggedGear>;
+	findFights(c: CharacterRef, spec: SpecId): Promise<FightSummary[]>;
+	readGear(f: FightRef): Promise<LoggedGear>;
 }
 
 export type RecordedGearSourceData = {
-  fights: ReadonlyMap<string, FightSummary[]>;
-  gear: ReadonlyMap<string, LoggedGear>;
+	fights: ReadonlyMap<string, FightSummary[]>;
+	gear: ReadonlyMap<string, LoggedGear>;
 };
 
 export function characterFightKey(c: CharacterRef, spec: SpecId): string {
-  return `${c.region}|${c.realm.toLowerCase()}|${c.name.toLowerCase()}|${spec}`;
+	return `${c.region}|${c.realm.toLowerCase()}|${c.name.toLowerCase()}|${spec}`;
 }
 
 export function fightGearKey(f: FightRef): string {
-  return `${f.reportCode}|${f.fightId}`;
+	return `${f.reportCode}|${f.fightId}`;
 }
 
 export class CachingGearSource implements GearSource {
-  constructor(
-    private readonly inner: GearSource,
-    private readonly store: Pick<Store, "get" | "put">,
-    private readonly character: CharacterRef,
-    private readonly spec: SpecId
-  ) {}
+	constructor(
+		private readonly inner: GearSource,
+		private readonly store: Pick<Store, 'get' | 'put'>,
+		private readonly character: CharacterRef,
+		private readonly spec: SpecId,
+	) {}
 
-  findFights(c: CharacterRef, spec: SpecId): Promise<FightSummary[]> {
-    return this.inner.findFights(c, spec);
-  }
+	findFights(c: CharacterRef, spec: SpecId): Promise<FightSummary[]> {
+		return this.inner.findFights(c, spec);
+	}
 
-  async readGear(f: FightRef): Promise<LoggedGear> {
-    const key = gearCacheKey(f, this.character, this.spec);
-    const cached = await this.store.get<LoggedGear>(key);
-    if (cached) return cached;
-    const logged = await this.inner.readGear(f);
-    await this.store.put(key, logged);
-    return logged;
-  }
+	async readGear(f: FightRef): Promise<LoggedGear> {
+		const key = gearCacheKey(f, this.character, this.spec);
+		const cached = await this.store.get<LoggedGear>(key);
+		if (cached) return cached;
+		const logged = await this.inner.readGear(f);
+		await this.store.put(key, logged);
+		return logged;
+	}
 }
 
-export function gearCacheKey(
-  f: FightRef,
-  c: CharacterRef,
-  spec: SpecId
-): string {
-  return `gear:${fightGearKey(f)}|${characterFightKey(c, spec)}`;
+export function gearCacheKey(f: FightRef, c: CharacterRef, spec: SpecId): string {
+	return `gear:${fightGearKey(f)}|${characterFightKey(c, spec)}`;
 }
 
 export class RecordedGearSource implements GearSource {
-  constructor(private readonly data: RecordedGearSourceData) {}
+	constructor(private readonly data: RecordedGearSourceData) {}
 
-  async findFights(c: CharacterRef, spec: SpecId): Promise<FightSummary[]> {
-    return this.data.fights.get(characterFightKey(c, spec)) ?? [];
-  }
+	async findFights(c: CharacterRef, spec: SpecId): Promise<FightSummary[]> {
+		return this.data.fights.get(characterFightKey(c, spec)) ?? [];
+	}
 
-  async readGear(f: FightRef): Promise<LoggedGear> {
-    const hit = this.data.gear.get(fightGearKey(f));
-    if (!hit) {
-      throw new Error(`no recording for fight ${fightGearKey(f)}`);
-    }
-    return hit;
-  }
+	async readGear(f: FightRef): Promise<LoggedGear> {
+		const hit = this.data.gear.get(fightGearKey(f));
+		if (!hit) {
+			throw new Error(`no recording for fight ${fightGearKey(f)}`);
+		}
+		return hit;
+	}
 }

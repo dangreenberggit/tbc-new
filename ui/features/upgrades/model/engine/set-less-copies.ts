@@ -24,9 +24,9 @@
  * second-order difference, not measured).
  */
 
-import type { Cutoff } from "./cutoff";
-import type { RaidSimRequest } from "./seams/sim-runner";
-import type { DpsSample } from "./set-value";
+import type { Cutoff } from './cutoff';
+import type { RaidSimRequest } from './seams/sim-runner';
+import type { DpsSample } from './set-value';
 
 /**
  * Added to an item id to name that item's set-less copy.
@@ -54,17 +54,15 @@ export const SET_KEPT_ID_OFFSET = 2_000_000;
 
 type MutableItem = { id?: number } & Record<string, unknown>;
 type MutablePlayer = {
-  equipment?: { items?: MutableItem[] };
-  database?: { items?: Array<Record<string, unknown>> };
+	equipment?: { items?: MutableItem[] };
+	database?: { items?: Array<Record<string, unknown>> };
 };
 
 function firstPlayer(request: Record<string, unknown>): MutablePlayer {
-  const raid = request.raid as
-    | { parties?: Array<{ players?: MutablePlayer[] }> }
-    | undefined;
-  const player = raid?.parties?.[0]?.players?.[0];
-  if (!player) throw new Error("request has no raid.parties[0].players[0]");
-  return player;
+	const raid = request.raid as { parties?: Array<{ players?: MutablePlayer[] }> } | undefined;
+	const player = raid?.parties?.[0]?.players?.[0];
+	if (!player) throw new Error('request has no raid.parties[0].players[0]');
+	return player;
 }
 
 /**
@@ -76,53 +74,46 @@ function firstPlayer(request: Record<string, unknown>): MutablePlayer {
  * database (the CLI, which is built with the full item database) gets the id
  * swap only.
  */
-export function applyCopies(
-  request: RaidSimRequest,
-  copies: { setLess?: readonly number[]; setKept?: readonly number[] }
-): RaidSimRequest {
-  const out = structuredClone(request) as Record<string, unknown>;
-  const player = firstPlayer(out);
-  const items = player.equipment?.items ?? [];
-  const rows = player.database ? (player.database.items ??= []) : undefined;
-  const kinds = [
-    { slots: copies.setLess ?? [], offset: SET_LESS_ID_OFFSET, setLess: true },
-    { slots: copies.setKept ?? [], offset: SET_KEPT_ID_OFFSET, setLess: false },
-  ];
-  for (const { slots, offset, setLess } of kinds) {
-    for (const slot of slots) {
-      const item = items[slot];
-      const id = item?.id;
-      if (!item || !id || id >= SET_LESS_ID_OFFSET) {
-        throw new Error(`slot ${slot} holds no item that can be copied`);
-      }
-      const copyId = offset + id;
-      item.id = copyId;
-      if (!rows || rows.some((r) => r.id === copyId)) continue;
-      const row = rows.find((r) => r.id === id);
-      if (!row) throw new Error(`the request database has no row for item ${id}`);
-      rows.push({
-        ...structuredClone(row),
-        id: copyId,
-        ...(setLess ? { setName: "", setId: 0 } : {}),
-      });
-    }
-  }
-  return out;
+export function applyCopies(request: RaidSimRequest, copies: { setLess?: readonly number[]; setKept?: readonly number[] }): RaidSimRequest {
+	const out = structuredClone(request) as Record<string, unknown>;
+	const player = firstPlayer(out);
+	const items = player.equipment?.items ?? [];
+	const rows = player.database ? (player.database.items ??= []) : undefined;
+	const kinds = [
+		{ slots: copies.setLess ?? [], offset: SET_LESS_ID_OFFSET, setLess: true },
+		{ slots: copies.setKept ?? [], offset: SET_KEPT_ID_OFFSET, setLess: false },
+	];
+	for (const { slots, offset, setLess } of kinds) {
+		for (const slot of slots) {
+			const item = items[slot];
+			const id = item?.id;
+			if (!item || !id || id >= SET_LESS_ID_OFFSET) {
+				throw new Error(`slot ${slot} holds no item that can be copied`);
+			}
+			const copyId = offset + id;
+			item.id = copyId;
+			if (!rows || rows.some(r => r.id === copyId)) continue;
+			const row = rows.find(r => r.id === id);
+			if (!row) throw new Error(`the request database has no row for item ${id}`);
+			rows.push({
+				...structuredClone(row),
+				id: copyId,
+				...(setLess ? { setName: '', setId: 0 } : {}),
+			});
+		}
+	}
+	return out;
 }
 
 /** `applyCopies` with set-less copies only. */
-export function applySetLessCopies(
-  request: RaidSimRequest,
-  slots: readonly number[]
-): RaidSimRequest {
-  return applyCopies(request, { setLess: slots });
+export function applySetLessCopies(request: RaidSimRequest, slots: readonly number[]): RaidSimRequest {
+	return applyCopies(request, { setLess: slots });
 }
 
 /** A sim that failed, with the sim's own error text for the player. */
 export type SimFailure = { simError: string };
 
-export const errorText = (err: unknown): string =>
-  err instanceof Error ? err.message : String(err);
+export const errorText = (err: unknown): string => (err instanceof Error ? err.message : String(err));
 
 /**
  * A request that could not be built, with the error that stopped it, so no
@@ -130,9 +121,7 @@ export const errorText = (err: unknown): string =>
  */
 export type BuildFailure = { buildError: string };
 
-export const isBuildFailure = <T extends object>(
-  value: T | BuildFailure | undefined
-): value is BuildFailure => value !== undefined && "buildError" in value;
+export const isBuildFailure = <T extends object>(value: T | BuildFailure | undefined): value is BuildFailure => value !== undefined && 'buildError' in value;
 
 /**
  * The value of one set bonus on the gear `composedRequest` wears. The first
@@ -148,55 +137,51 @@ export const isBuildFailure = <T extends object>(
  * caller.
  */
 export async function measureSameGearBonus(
-  runSim: (request: RaidSimRequest) => Promise<DpsSample>,
-  composedRequest: RaidSimRequest,
-  setPieceSlots: readonly number[],
-  lowerCount: number,
-  requestsFor?: (
-    copiesList: Array<{ setKept: number[]; setLess: number[] }>
-  ) => Promise<Array<RaidSimRequest | BuildFailure>>
+	runSim: (request: RaidSimRequest) => Promise<DpsSample>,
+	composedRequest: RaidSimRequest,
+	setPieceSlots: readonly number[],
+	lowerCount: number,
+	requestsFor?: (copiesList: Array<{ setKept: number[]; setLess: number[] }>) => Promise<Array<RaidSimRequest | BuildFailure>>,
 ): Promise<DpsSample | SimFailure | BuildFailure | undefined> {
-  const inSlotOrder = [...setPieceSlots].sort((a, b) => a - b);
-  const toCopy = inSlotOrder.slice(0, inSlotOrder.length - lowerCount);
-  if (toCopy.length === 0) return undefined;
-  const requests = await requestsFor?.([
-    { setKept: toCopy, setLess: [] },
-    { setKept: [], setLess: toCopy },
-  ]);
-  let onRequest: RaidSimRequest | BuildFailure | undefined;
-  let offRequest: RaidSimRequest | BuildFailure | undefined;
-  if (requests) {
-    [onRequest, offRequest] = requests;
-  } else {
-    try {
-      onRequest = applyCopies(composedRequest, { setKept: toCopy });
-      offRequest = applyCopies(composedRequest, { setLess: toCopy });
-    } catch (err) {
-      return { buildError: errorText(err) };
-    }
-  }
-  if (!onRequest || !offRequest) return undefined;
-  if (isBuildFailure(onRequest)) return onRequest;
-  if (isBuildFailure(offRequest)) return offRequest;
-  try {
-    const on = await runSim(onRequest);
-    const off = await runSim(offRequest);
-    return { dps: on.dps - off.dps, se: Math.sqrt(on.se ** 2 + off.se ** 2) };
-  } catch (err) {
-    return { simError: errorText(err) };
-  }
+	const inSlotOrder = [...setPieceSlots].sort((a, b) => a - b);
+	const toCopy = inSlotOrder.slice(0, inSlotOrder.length - lowerCount);
+	if (toCopy.length === 0) return undefined;
+	const requests = await requestsFor?.([
+		{ setKept: toCopy, setLess: [] },
+		{ setKept: [], setLess: toCopy },
+	]);
+	let onRequest: RaidSimRequest | BuildFailure | undefined;
+	let offRequest: RaidSimRequest | BuildFailure | undefined;
+	if (requests) {
+		[onRequest, offRequest] = requests;
+	} else {
+		try {
+			onRequest = applyCopies(composedRequest, { setKept: toCopy });
+			offRequest = applyCopies(composedRequest, { setLess: toCopy });
+		} catch (err) {
+			return { buildError: errorText(err) };
+		}
+	}
+	if (!onRequest || !offRequest) return undefined;
+	if (isBuildFailure(onRequest)) return onRequest;
+	if (isBuildFailure(offRequest)) return offRequest;
+	try {
+		const on = await runSim(onRequest);
+		const off = await runSim(offRequest);
+		return { dps: on.dps - off.dps, se: Math.sqrt(on.se ** 2 + off.se ** 2) };
+	} catch (err) {
+		return { simError: errorText(err) };
+	}
 }
 
-export const isSimFailure = <T extends object>(
-  value: T | SimFailure | undefined
-): value is SimFailure => value !== undefined && "simError" in value;
+export const isSimFailure = <T extends object>(value: T | SimFailure | undefined): value is SimFailure => value !== undefined && 'simError' in value;
 
 /** One count of a worn set's ladder: the value of its c-th piece's bonus. */
 export type WornSetRung = {
-  count: number;
-  dps?: number;
-  se?: number;
-  unmeasured?: "sim-failed";
+	count: number;
+	dps?: number;
+	se?: number;
+	unmeasured?: 'sim-failed';
 };
 
 /**
@@ -214,48 +199,48 @@ export type WornSetRung = {
  * Empty when w < 2.
  */
 export async function measureWornSetLadder(
-  runSim: (request: RaidSimRequest) => Promise<DpsSample>,
-  composedRequest: RaidSimRequest,
-  wornSetSlots: readonly number[],
-  onFailed?: (error: string, notBuilt?: true) => void
+	runSim: (request: RaidSimRequest) => Promise<DpsSample>,
+	composedRequest: RaidSimRequest,
+	wornSetSlots: readonly number[],
+	onFailed?: (error: string, notBuilt?: true) => void,
 ): Promise<WornSetRung[]> {
-  const slots = [...wornSetSlots].sort((a, b) => a - b);
-  if (slots.length < 2) return [];
-  const rungs: Array<DpsSample | undefined> = [];
-  for (let c = 1; c <= slots.length; c++) {
-    let request: RaidSimRequest;
-    try {
-      request = applyCopies(composedRequest, {
-        setKept: slots.slice(1, c),
-        setLess: slots.slice(c),
-      });
-    } catch (err) {
-      rungs[c] = undefined;
-      onFailed?.(errorText(err), true);
-      continue;
-    }
-    try {
-      rungs[c] = await runSim(request);
-    } catch (err) {
-      rungs[c] = undefined;
-      onFailed?.(errorText(err));
-    }
-  }
-  const out: WornSetRung[] = [];
-  for (let c = 2; c <= slots.length; c++) {
-    const upper = rungs[c];
-    const lower = rungs[c - 1];
-    out.push(
-      upper && lower
-        ? {
-            count: c,
-            dps: upper.dps - lower.dps,
-            se: Math.sqrt(upper.se ** 2 + lower.se ** 2),
-          }
-        : { count: c, unmeasured: "sim-failed" }
-    );
-  }
-  return out;
+	const slots = [...wornSetSlots].sort((a, b) => a - b);
+	if (slots.length < 2) return [];
+	const rungs: Array<DpsSample | undefined> = [];
+	for (let c = 1; c <= slots.length; c++) {
+		let request: RaidSimRequest;
+		try {
+			request = applyCopies(composedRequest, {
+				setKept: slots.slice(1, c),
+				setLess: slots.slice(c),
+			});
+		} catch (err) {
+			rungs[c] = undefined;
+			onFailed?.(errorText(err), true);
+			continue;
+		}
+		try {
+			rungs[c] = await runSim(request);
+		} catch (err) {
+			rungs[c] = undefined;
+			onFailed?.(errorText(err));
+		}
+	}
+	const out: WornSetRung[] = [];
+	for (let c = 2; c <= slots.length; c++) {
+		const upper = rungs[c];
+		const lower = rungs[c - 1];
+		out.push(
+			upper && lower
+				? {
+						count: c,
+						dps: upper.dps - lower.dps,
+						se: Math.sqrt(upper.se ** 2 + lower.se ** 2),
+					}
+				: { count: c, unmeasured: 'sim-failed' },
+		);
+	}
+	return out;
 }
 
 /**
@@ -269,10 +254,6 @@ export async function measureWornSetLadder(
  * `setBonusNoiseFloorDps`, which is for a four-sim figure. It
  * takes the `Cutoff` rather than a number so that floor cannot be passed in.
  */
-export function clearsSameGearGate(
-  dps: number,
-  se: number,
-  cutoff: Cutoff
-): boolean {
-  return dps > Math.max(cutoff.absDps, 2 * se);
+export function clearsSameGearGate(dps: number, se: number, cutoff: Cutoff): boolean {
+	return dps > Math.max(cutoff.absDps, 2 * se);
 }

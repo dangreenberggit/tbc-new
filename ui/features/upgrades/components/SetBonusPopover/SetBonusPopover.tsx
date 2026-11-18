@@ -64,7 +64,10 @@ export const SetBonusPopover = ({ tip, children }: SetBonusPopoverProps) => {
 						<dl className="contents">
 							{section.lines.map(line => (
 								<div key={line.id} className="contents" data-testid={line.total ? 'upgrades-set-bonus-tip-total' : undefined}>
-									<dt className={line.total ? 'border-t border-t-border pt-0.5 font-semibold' : `font-normal${line.muted ? ' text-muted' : ''}`}>
+									<dt
+										className={
+											line.total ? 'border-t border-t-border pt-0.5 font-semibold' : `font-normal${line.muted ? ' text-muted' : ''}`
+										}>
 										{line.label}
 										{line.marker && <small className="block text-muted">{line.marker}</small>}
 									</dt>

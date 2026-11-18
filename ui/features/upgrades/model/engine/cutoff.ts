@@ -35,7 +35,7 @@ export const CUTOFF: Cutoff = { absDps: 3 };
  * coarse and inclusive.
  */
 export function setBonusNoiseFloorDps(cutoff: Cutoff): number {
-  return Math.SQRT2 * cutoff.absDps;
+	return Math.SQRT2 * cutoff.absDps;
 }
 
 /**
@@ -45,5 +45,5 @@ export function setBonusNoiseFloorDps(cutoff: Cutoff): number {
  * measures a different quantity against the same bar (`view.ts`).
  */
 export function meetsCutoff(deltaDps: number, cutoff: Cutoff): boolean {
-  return deltaDps >= cutoff.absDps;
+	return deltaDps >= cutoff.absDps;
 }

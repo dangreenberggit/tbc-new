@@ -15,10 +15,10 @@ export const PAIRED_REPLICATE_TOP_N = 8;
  * input from the caller.
  */
 export class DegenerateSeedsError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "DegenerateSeedsError";
-  }
+	constructor(message: string) {
+		super(message);
+		this.name = 'DegenerateSeedsError';
+	}
 }
 
 /**
@@ -26,7 +26,7 @@ export class DegenerateSeedsError extends Error {
  * replication. No second flag, so the two cannot disagree.
  */
 export function usesPairedReplication(seeds: readonly number[]): boolean {
-  return seeds.length > 1;
+	return seeds.length > 1;
 }
 
 /**
@@ -35,21 +35,21 @@ export function usesPairedReplication(seeds: readonly number[]): boolean {
  * that reads as precision. Fail loudly instead of reporting it.
  */
 export function assertDistinctSeeds(seeds: readonly number[]): void {
-  if (!usesPairedReplication(seeds)) return;
-  const seen = new Set<number>();
-  const repeated = new Set<number>();
-  for (const seed of seeds) {
-    if (seen.has(seed)) repeated.add(seed);
-    seen.add(seed);
-  }
-  if (repeated.size > 0) {
-    const list = [...repeated].sort((a, b) => a - b).join(", ");
-    throw new DegenerateSeedsError(
-      `seeds must be distinct to measure a spread: ${list} repeated in [${seeds.join(", ")}]. ` +
-        `A shared seed repeats bit-identical, so a repeated seed contributes no ` +
-        `variance and drives the paired-replicate SE toward a false zero (PLAN.md §10).`
-    );
-  }
+	if (!usesPairedReplication(seeds)) return;
+	const seen = new Set<number>();
+	const repeated = new Set<number>();
+	for (const seed of seeds) {
+		if (seen.has(seed)) repeated.add(seed);
+		seen.add(seed);
+	}
+	if (repeated.size > 0) {
+		const list = [...repeated].sort((a, b) => a - b).join(', ');
+		throw new DegenerateSeedsError(
+			`seeds must be distinct to measure a spread: ${list} repeated in [${seeds.join(', ')}]. ` +
+				`A shared seed repeats bit-identical, so a repeated seed contributes no ` +
+				`variance and drives the paired-replicate SE toward a false zero (PLAN.md §10).`,
+		);
+	}
 }
 
 /**
@@ -60,27 +60,24 @@ export function assertDistinctSeeds(seeds: readonly number[]): void {
  * omission. A caller that wants distinctness alone calls
  * `assertDistinctSeeds` by name, so the weaker check is a visible choice.
  */
-export function assertUsableSeeds(
-  seeds: readonly number[],
-  iterations: number
-): void {
-  assertDistinctSeeds(seeds);
-  if (!usesPairedReplication(seeds)) return;
-  const ordered = [...seeds].sort((a, b) => a - b);
-  for (let i = 1; i < ordered.length; i += 1) {
-    const lo = ordered[i - 1]!;
-    const hi = ordered[i]!;
-    const gap = hi - lo;
-    if (gap >= iterations) continue;
-    throw new DegenerateSeedsError(
-      `seeds must be at least ${iterations} apart to be independent replicates: ` +
-        `${lo} and ${hi} are ${gap} apart in [${seeds.join(", ")}]. ` +
-        `A run of N iterations from seed S consumes the per-iteration streams ` +
-        `S..S+N-1, so these two share ${iterations - gap} of ${iterations} streams ` +
-        `and their spread measures overlap rather than simulation noise ` +
-        `(ticket 236; upstream vendor/tbc-new-fork/sim/core/sim.go:248-251).`
-    );
-  }
+export function assertUsableSeeds(seeds: readonly number[], iterations: number): void {
+	assertDistinctSeeds(seeds);
+	if (!usesPairedReplication(seeds)) return;
+	const ordered = [...seeds].sort((a, b) => a - b);
+	for (let i = 1; i < ordered.length; i += 1) {
+		const lo = ordered[i - 1]!;
+		const hi = ordered[i]!;
+		const gap = hi - lo;
+		if (gap >= iterations) continue;
+		throw new DegenerateSeedsError(
+			`seeds must be at least ${iterations} apart to be independent replicates: ` +
+				`${lo} and ${hi} are ${gap} apart in [${seeds.join(', ')}]. ` +
+				`A run of N iterations from seed S consumes the per-iteration streams ` +
+				`S..S+N-1, so these two share ${iterations - gap} of ${iterations} streams ` +
+				`and their spread measures overlap rather than simulation noise ` +
+				`(ticket 236; upstream vendor/tbc-new-fork/sim/core/sim.go:248-251).`,
+		);
+	}
 }
 
 /**
@@ -93,12 +90,8 @@ export function assertUsableSeeds(
  * A single five-seed sd ratio cannot test independence: at n=5 the sample sd
  * has 34 % relative error, so it cannot separate 0.5 from 1.0.
  */
-export function replicateSeeds(
-  base: number,
-  count: number,
-  iterations: number
-): number[] {
-  return Array.from({ length: count }, (_, k) => base + k * iterations);
+export function replicateSeeds(base: number, count: number, iterations: number): number[] {
+	return Array.from({ length: count }, (_, k) => base + k * iterations);
 }
 
 /**
@@ -109,14 +102,11 @@ export function replicateSeeds(
  * precision this method exists to avoid.
  */
 export function pairedReplicateSe(deltas: readonly number[]): number {
-  if (deltas.length < 2) {
-    throw new Error(
-      `paired-replicate SE needs at least two deltas, got ${deltas.length}`
-    );
-  }
-  const n = deltas.length;
-  const mean = deltas.reduce((sum, d) => sum + d, 0) / n;
-  const variance =
-    deltas.reduce((sum, d) => sum + (d - mean) ** 2, 0) / (n - 1);
-  return Math.sqrt(variance) / Math.sqrt(n);
+	if (deltas.length < 2) {
+		throw new Error(`paired-replicate SE needs at least two deltas, got ${deltas.length}`);
+	}
+	const n = deltas.length;
+	const mean = deltas.reduce((sum, d) => sum + d, 0) / n;
+	const variance = deltas.reduce((sum, d) => sum + (d - mean) ** 2, 0) / (n - 1);
+	return Math.sqrt(variance) / Math.sqrt(n);
 }

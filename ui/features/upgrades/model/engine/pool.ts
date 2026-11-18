@@ -2,38 +2,28 @@
  * Candidate pool types and filters.
  */
 
-import { HandType } from "@generated/proto/common";
+import { HandType } from '@generated/proto/common';
 
-import { getItem } from "./items";
-import type { SpecId } from "./types";
+import { getItem } from './items';
+import type { SpecId } from './types';
 
 export type ItemSlot =
-  | "head"
-  | "neck"
-  | "shoulder"
-  | "back"
-  | "chest"
-  | "wrist"
-  | "hands"
-  | "waist"
-  | "legs"
-  | "feet"
-  | "finger"
-  | "trinket"
-  | "weapon"
-  | "ranged";
+	| 'head'
+	| 'neck'
+	| 'shoulder'
+	| 'back'
+	| 'chest'
+	| 'wrist'
+	| 'hands'
+	| 'waist'
+	| 'legs'
+	| 'feet'
+	| 'finger'
+	| 'trinket'
+	| 'weapon'
+	| 'ranged';
 
-export const ITEM_SOURCE_KINDS = [
-  "raid",
-  "token",
-  "badge",
-  "crafted",
-  "rep",
-  "heroic",
-  "pvp",
-  "world",
-  "unknown",
-] as const;
+export const ITEM_SOURCE_KINDS = ['raid', 'token', 'badge', 'crafted', 'rep', 'heroic', 'pvp', 'world', 'unknown'] as const;
 
 export type ItemSourceKindName = (typeof ITEM_SOURCE_KINDS)[number];
 
@@ -44,23 +34,23 @@ export type ItemSourceKindName = (typeof ITEM_SOURCE_KINDS)[number];
  * `world` variant.
  */
 export type ItemSource =
-  | { kind: "raid"; zone: string; boss?: string; heroic?: boolean }
-  | {
-      kind: "token";
-      zone: string;
-      boss?: string;
-      token: string;
-      tokenId?: number;
-    }
-  | { kind: "badge"; cost: number }
-  | { kind: "crafted"; profession: string }
-  | { kind: "rep"; faction: string; standing: string }
-  | { kind: "heroic"; dungeon: string }
-  | { kind: "pvp"; via: "arena" }
-  | { kind: "world" }
-  | { kind: "unknown" };
+	| { kind: 'raid'; zone: string; boss?: string; heroic?: boolean }
+	| {
+			kind: 'token';
+			zone: string;
+			boss?: string;
+			token: string;
+			tokenId?: number;
+	  }
+	| { kind: 'badge'; cost: number }
+	| { kind: 'crafted'; profession: string }
+	| { kind: 'rep'; faction: string; standing: string }
+	| { kind: 'heroic'; dungeon: string }
+	| { kind: 'pvp'; via: 'arena' }
+	| { kind: 'world' }
+	| { kind: 'unknown' };
 
-export type ItemSourceKind = ItemSource["kind"];
+export type ItemSourceKind = ItemSource['kind'];
 
 type Assert<_ extends true> = true;
 type Extends<A, B> = [A] extends [B] ? true : false;
@@ -68,156 +58,120 @@ type _JsonCoversUnion = Assert<Extends<ItemSourceKind, ItemSourceKindName>>;
 type _UnionCoversJson = Assert<Extends<ItemSourceKindName, ItemSourceKind>>;
 
 export type PoolEntry = {
-  itemId: number;
-  name: string;
-  slot: ItemSlot;
-  phase: number;
-  source: ItemSource;
-  sources?: ItemSource[];
-  curationHint?: number;
-  bisTags?: Array<"BiS" | "Alt" | "Realistic">;
-  curatedSets?: string[];
-  bisSets?: string[];
+	itemId: number;
+	name: string;
+	slot: ItemSlot;
+	phase: number;
+	source: ItemSource;
+	sources?: ItemSource[];
+	curationHint?: number;
+	bisTags?: Array<'BiS' | 'Alt' | 'Realistic'>;
+	curatedSets?: string[];
+	bisSets?: string[];
 };
 
 export type UniverseEntry = {
-  itemId: number;
-  name: string;
-  slot: ItemSlot;
-  phase: number;
-  sources: ItemSource[];
-  curationHint?: number;
-  /** @deprecated JSON key from pre-rename generators; mapped to curationHint */
-  ep?: number;
-  bisTags?: Array<"BiS" | "Alt" | "Realistic">;
-  curatedSets?: string[];
-  bisSets?: string[];
+	itemId: number;
+	name: string;
+	slot: ItemSlot;
+	phase: number;
+	sources: ItemSource[];
+	curationHint?: number;
+	/** @deprecated JSON key from pre-rename generators; mapped to curationHint */
+	ep?: number;
+	bisTags?: Array<'BiS' | 'Alt' | 'Realistic'>;
+	curatedSets?: string[];
+	bisSets?: string[];
 };
 
 export function poolEntryFromUniverse(entry: UniverseEntry): PoolEntry {
-  const source = entry.sources[0];
-  if (!source) {
-    throw new Error(`universe row ${entry.itemId} has no sources`);
-  }
-  const curationHint = entry.curationHint ?? entry.ep;
-  return {
-    itemId: entry.itemId,
-    name: entry.name,
-    slot: entry.slot,
-    phase: entry.phase,
-    source,
-    sources: [...entry.sources],
-    ...(curationHint !== undefined ? { curationHint } : {}),
-    ...(entry.bisTags !== undefined ? { bisTags: entry.bisTags } : {}),
-    ...(entry.curatedSets !== undefined
-      ? { curatedSets: [...entry.curatedSets] }
-      : {}),
-    ...(entry.bisSets !== undefined ? { bisSets: [...entry.bisSets] } : {}),
-  };
+	const source = entry.sources[0];
+	if (!source) {
+		throw new Error(`universe row ${entry.itemId} has no sources`);
+	}
+	const curationHint = entry.curationHint ?? entry.ep;
+	return {
+		itemId: entry.itemId,
+		name: entry.name,
+		slot: entry.slot,
+		phase: entry.phase,
+		source,
+		sources: [...entry.sources],
+		...(curationHint !== undefined ? { curationHint } : {}),
+		...(entry.bisTags !== undefined ? { bisTags: entry.bisTags } : {}),
+		...(entry.curatedSets !== undefined ? { curatedSets: [...entry.curatedSets] } : {}),
+		...(entry.bisSets !== undefined ? { bisSets: [...entry.bisSets] } : {}),
+	};
 }
 
-export function poolFromUniverse(data: {
-  entries: readonly UniverseEntry[];
-}): PoolEntry[] {
-  return data.entries.map(poolEntryFromUniverse);
+export function poolFromUniverse(data: { entries: readonly UniverseEntry[] }): PoolEntry[] {
+	return data.entries.map(poolEntryFromUniverse);
 }
 
-export function filterPoolByPhase(
-  pool: readonly PoolEntry[],
-  maxPhase: number
-): PoolEntry[] {
-  return pool.filter((e) => e.phase <= maxPhase);
+export function filterPoolByPhase(pool: readonly PoolEntry[], maxPhase: number): PoolEntry[] {
+	return pool.filter(e => e.phase <= maxPhase);
 }
 
 function sourceHasZone(source: ItemSource, zone: string): boolean {
-  return "zone" in source && source.zone === zone;
+	return 'zone' in source && source.zone === zone;
 }
 
-export function filterByZone<
-  T extends { source: ItemSource; sources?: readonly ItemSource[] },
->(entries: readonly T[], zone: string): T[] {
-  return entries.filter(
-    (e) =>
-      sourceHasZone(e.source, zone) ||
-      (e.sources?.some((s) => sourceHasZone(s, zone)) ?? false)
-  );
+export function filterByZone<T extends { source: ItemSource; sources?: readonly ItemSource[] }>(entries: readonly T[], zone: string): T[] {
+	return entries.filter(e => sourceHasZone(e.source, zone) || (e.sources?.some(s => sourceHasZone(s, zone)) ?? false));
 }
 
-export function filterPoolByZone(
-  pool: readonly PoolEntry[],
-  zone: string
-): PoolEntry[] {
-  return filterByZone(pool, zone);
+export function filterPoolByZone(pool: readonly PoolEntry[], zone: string): PoolEntry[] {
+	return filterByZone(pool, zone);
 }
 
 export function zonesInPool(pool: readonly PoolEntry[]): string[] {
-  const zones = new Set<string>();
-  for (const e of pool) {
-    if ("zone" in e.source) zones.add(e.source.zone);
-    for (const s of e.sources ?? []) {
-      if ("zone" in s) zones.add(s.zone);
-    }
-  }
-  return [...zones].sort();
+	const zones = new Set<string>();
+	for (const e of pool) {
+		if ('zone' in e.source) zones.add(e.source.zone);
+		for (const s of e.sources ?? []) {
+			if ('zone' in s) zones.add(s.zone);
+		}
+	}
+	return [...zones].sort();
 }
 
-export const VIEW_ALL = "all";
+export const VIEW_ALL = 'all';
 
 export function viewFilterValue(raw: string | undefined): string | undefined {
-  return raw === undefined || raw === VIEW_ALL ? undefined : raw;
+	return raw === undefined || raw === VIEW_ALL ? undefined : raw;
 }
 
-export function validateViewFilter(
-  value: string | undefined,
-  known: readonly string[]
-): { ok: true } | { ok: false; known: readonly string[] } {
-  const wanted = viewFilterValue(value);
-  if (wanted === undefined || known.includes(wanted)) return { ok: true };
-  return { ok: false, known };
+export function validateViewFilter(value: string | undefined, known: readonly string[]): { ok: true } | { ok: false; known: readonly string[] } {
+	const wanted = viewFilterValue(value);
+	if (wanted === undefined || known.includes(wanted)) return { ok: true };
+	return { ok: false, known };
 }
 
-function sourcesOfEntry(entry: {
-  source: ItemSource;
-  sources?: readonly ItemSource[];
-}): readonly ItemSource[] {
-  return entry.sources ?? [entry.source];
+function sourcesOfEntry(entry: { source: ItemSource; sources?: readonly ItemSource[] }): readonly ItemSource[] {
+	return entry.sources ?? [entry.source];
 }
 
-export function sourceMatchesBoss(
-  source: ItemSource,
-  boss: string,
-  zone: string | undefined
-): boolean {
-  if (!("boss" in source) || source.boss !== boss) return false;
-  return zone === undefined || ("zone" in source && source.zone === zone);
+export function sourceMatchesBoss(source: ItemSource, boss: string, zone: string | undefined): boolean {
+	if (!('boss' in source) || source.boss !== boss) return false;
+	return zone === undefined || ('zone' in source && source.zone === zone);
 }
 
-export function bossesInPool(
-  pool: readonly PoolEntry[],
-  zone?: string
-): string[] {
-  const bosses = new Set<string>();
-  for (const e of pool) {
-    for (const s of sourcesOfEntry(e)) {
-      if (!("boss" in s) || s.boss === undefined) continue;
-      if (sourceMatchesBoss(s, s.boss, zone)) bosses.add(s.boss);
-    }
-  }
-  return [...bosses].sort();
+export function bossesInPool(pool: readonly PoolEntry[], zone?: string): string[] {
+	const bosses = new Set<string>();
+	for (const e of pool) {
+		for (const s of sourcesOfEntry(e)) {
+			if (!('boss' in s) || s.boss === undefined) continue;
+			if (sourceMatchesBoss(s, s.boss, zone)) bosses.add(s.boss);
+		}
+	}
+	return [...bosses].sort();
 }
 
 /**
  * A sim equipment slot name, written out from `ItemSlot` to match
  * `SimOrderName` (slots.ts).
  */
-export type SimSlotName =
-  | Exclude<ItemSlot, "finger" | "trinket" | "weapon">
-  | "finger1"
-  | "finger2"
-  | "trinket1"
-  | "trinket2"
-  | "mainhand"
-  | "offhand";
+export type SimSlotName = Exclude<ItemSlot, 'finger' | 'trinket' | 'weapon'> | 'finger1' | 'finger2' | 'trinket1' | 'trinket2' | 'mainhand' | 'offhand';
 
 /**
  * Specs that can put a one-handed *weapon* in the off hand.
@@ -235,12 +189,7 @@ export type SimSlotName =
  * same as having no off hand. Which off-hand items a spec may wear at all is
  * decided earlier, where the pool admits only what wowsims lets it equip.
  */
-export const DUAL_WIELD_SPECS: ReadonlySet<SpecId> = new Set<SpecId>([
-  "rogue",
-  "enh",
-  "warrior",
-  "hunter",
-]);
+export const DUAL_WIELD_SPECS: ReadonlySet<SpecId> = new Set<SpecId>(['rogue', 'enh', 'warrior', 'hunter']);
 
 /**
  * Whether an item can physically be placed in the given sim slot.
@@ -259,16 +208,13 @@ export const DUAL_WIELD_SPECS: ReadonlySet<SpecId> = new Set<SpecId>([
  * a missing field is not evidence of a restriction.
  */
 function itemFitsSimSlot(itemId: number, slotName: SimSlotName): boolean {
-  if (slotName !== "mainhand" && slotName !== "offhand") return true;
-  const handType = getItem(itemId)?.handType;
-  if (handType == null) return true;
-  if (slotName === "offhand") {
-    return (
-      handType === HandType.HandTypeOneHand ||
-      handType === HandType.HandTypeOffHand
-    );
-  }
-  return handType !== HandType.HandTypeOffHand;
+	if (slotName !== 'mainhand' && slotName !== 'offhand') return true;
+	const handType = getItem(itemId)?.handType;
+	if (handType == null) return true;
+	if (slotName === 'offhand') {
+		return handType === HandType.HandTypeOneHand || handType === HandType.HandTypeOffHand;
+	}
+	return handType !== HandType.HandTypeOffHand;
 }
 
 /**
@@ -287,34 +233,25 @@ function itemFitsSimSlot(itemId: number, slotName: SimSlotName): boolean {
  * slot — with no particular item in hand — keep working. Passing it filters the
  * list down to placements that item can actually occupy.
  */
-export function simSlotsForPoolSlot(
-  slot: ItemSlot,
-  spec?: SpecId,
-  itemId?: number
-): readonly SimSlotName[] {
-  const placements: readonly SimSlotName[] = ((): readonly SimSlotName[] => {
-    switch (slot) {
-      case "finger":
-        return ["finger1", "finger2"];
-      case "trinket":
-        return ["trinket1", "trinket2"];
-      case "weapon":
-        if (
-          itemId !== undefined &&
-          getItem(itemId)?.handType === HandType.HandTypeOffHand
-        ) {
-          return ["offhand"];
-        }
-        return spec !== undefined && DUAL_WIELD_SPECS.has(spec)
-          ? ["mainhand", "offhand"]
-          : ["mainhand"];
-      default:
-        return [slot];
-    }
-  })();
+export function simSlotsForPoolSlot(slot: ItemSlot, spec?: SpecId, itemId?: number): readonly SimSlotName[] {
+	const placements: readonly SimSlotName[] = ((): readonly SimSlotName[] => {
+		switch (slot) {
+			case 'finger':
+				return ['finger1', 'finger2'];
+			case 'trinket':
+				return ['trinket1', 'trinket2'];
+			case 'weapon':
+				if (itemId !== undefined && getItem(itemId)?.handType === HandType.HandTypeOffHand) {
+					return ['offhand'];
+				}
+				return spec !== undefined && DUAL_WIELD_SPECS.has(spec) ? ['mainhand', 'offhand'] : ['mainhand'];
+			default:
+				return [slot];
+		}
+	})();
 
-  if (itemId === undefined) return placements;
-  return placements.filter((slotName) => itemFitsSimSlot(itemId, slotName));
+	if (itemId === undefined) return placements;
+	return placements.filter(slotName => itemFitsSimSlot(itemId, slotName));
 }
 
 /**
@@ -325,11 +262,9 @@ export function simSlotsForPoolSlot(
  * hand, and a character with no weapon at all should still see off-hand
  * rows rather than silently losing the slot.
  */
-export function mainHandLeavesOffHandFree(
-  wornMainHandId: number | undefined
-): boolean {
-  if (!wornMainHandId) return true;
-  return getItem(wornMainHandId)?.handType !== HandType.HandTypeTwoHand;
+export function mainHandLeavesOffHandFree(wornMainHandId: number | undefined): boolean {
+	if (!wornMainHandId) return true;
+	return getItem(wornMainHandId)?.handType !== HandType.HandTypeTwoHand;
 }
 
 /**
@@ -338,16 +273,12 @@ export function mainHandLeavesOffHandFree(
  * them out before ordering (rank.ts), and the tab's candidate count leaves
  * them out with the same rule.
  */
-export function offHandBlockedEntries(
-  pool: readonly PoolEntry[],
-  spec: SpecId | undefined,
-  wornMainHandId: number | undefined
-): PoolEntry[] {
-  if (mainHandLeavesOffHandFree(wornMainHandId)) return [];
-  return pool.filter((e) => {
-    const placements = simSlotsForPoolSlot(e.slot, spec, e.itemId);
-    return placements.length === 1 && placements[0] === "offhand";
-  });
+export function offHandBlockedEntries(pool: readonly PoolEntry[], spec: SpecId | undefined, wornMainHandId: number | undefined): PoolEntry[] {
+	if (mainHandLeavesOffHandFree(wornMainHandId)) return [];
+	return pool.filter(e => {
+		const placements = simSlotsForPoolSlot(e.slot, spec, e.itemId);
+		return placements.length === 1 && placements[0] === 'offhand';
+	});
 }
 
 /**
@@ -359,19 +290,15 @@ export function offHandBlockedEntries(
  * candidate count leaves them out with the same rule. Two-handers stay, and
  * an item whose hand type the database does not give stays too.
  */
-export function oneHandBlockedEntries(
-  pool: readonly PoolEntry[],
-  spec: SpecId | undefined,
-  wornMainHandId: number | undefined
-): PoolEntry[] {
-  if (mainHandLeavesOffHandFree(wornMainHandId)) return [];
-  return pool.filter((e) => {
-    if (e.slot !== "weapon") return false;
-    const handType = getItem(e.itemId)?.handType;
-    if (handType == null || handType === HandType.HandTypeTwoHand) {
-      return false;
-    }
-    const placements = simSlotsForPoolSlot(e.slot, spec, e.itemId);
-    return !(placements.length === 1 && placements[0] === "offhand");
-  });
+export function oneHandBlockedEntries(pool: readonly PoolEntry[], spec: SpecId | undefined, wornMainHandId: number | undefined): PoolEntry[] {
+	if (mainHandLeavesOffHandFree(wornMainHandId)) return [];
+	return pool.filter(e => {
+		if (e.slot !== 'weapon') return false;
+		const handType = getItem(e.itemId)?.handType;
+		if (handType == null || handType === HandType.HandTypeTwoHand) {
+			return false;
+		}
+		const placements = simSlotsForPoolSlot(e.slot, spec, e.itemId);
+		return !(placements.length === 1 && placements[0] === 'offhand');
+	});
 }

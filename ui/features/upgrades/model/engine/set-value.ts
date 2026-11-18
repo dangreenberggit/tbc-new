@@ -3,9 +3,9 @@
  * only: no sim calls, no seams.
  */
 
-import { getItem } from "./items";
-import type { PoolEntry } from "./pool";
-import type { SimItemSpec } from "./slots";
+import { getItem } from './items';
+import type { PoolEntry } from './pool';
+import type { SimItemSpec } from './slots';
 
 /**
  * A piece count of 2 or more at which a set may have a bonus. A plain number,
@@ -30,17 +30,17 @@ export const SET_THRESHOLDS: readonly SetThreshold[] = [2, 4];
 export type BonusCountPredicate = (setId: number, count: number) => boolean;
 
 export type UnmeasuredReason =
-  | "not-implemented-in-sim"
-  | "insufficient-pieces"
-  | "sim-failed"
-  | "repair-failed"
-  | "unmeasurable-at-this-worn-count"
-  /**
-   * The set screen dropped the set (`set-screen.ts`). Only rankings from an
-   * older engine version carry this marker entry; now a dropped set has no
-   * entry and `ranking.setScreen` records it.
-   */
-  | "screened-out";
+	| 'not-implemented-in-sim'
+	| 'insufficient-pieces'
+	| 'sim-failed'
+	| 'repair-failed'
+	| 'unmeasurable-at-this-worn-count'
+	/**
+	 * The set screen dropped the set (`set-screen.ts`). Only rankings from an
+	 * older engine version carry this marker entry; now a dropped set has no
+	 * entry and `ranking.setScreen` records it.
+	 */
+	| 'screened-out';
 
 /**
  * Which (setId, threshold) bonuses a ranking without `measureBrokenSetValue`
@@ -48,83 +48,64 @@ export type UnmeasuredReason =
  * measures every lost count and the noise gate decides. The tab keeps no list
  * of implemented set bonuses, so do not extend this table.
  */
-const IMPLEMENTED_IN_SIM: Record<
-  number,
-  Partial<Record<SetThreshold, boolean>>
-> = {
-  // Justicar 2pc is `false` although it has an effect body: its item_sets.go
-  // closure is empty, but sim/paladin/seals.go scales the Judgement of the
-  // Crusader bonus by 1.15. The default ret APL judges Crusader only in its
-  // prepull actions, so the effect is expected near 0 DPS (not measured).
-  626: { 2: false, 4: true }, // Justicar Battlegear
-  629: { 2: true, 4: true }, // Crystalforge Battlegear
-  680: { 2: true, 4: true }, // Lightbringer Battlegear
-  640: { 2: true, 4: true }, // Malorne Harness
-  641: { 2: false, 4: true }, // Nordrassil Harness
-  676: { 2: true, 4: true }, // Thunderheart Harness
+const IMPLEMENTED_IN_SIM: Record<number, Partial<Record<SetThreshold, boolean>>> = {
+	// Justicar 2pc is `false` although it has an effect body: its item_sets.go
+	// closure is empty, but sim/paladin/seals.go scales the Judgement of the
+	// Crusader bonus by 1.15. The default ret APL judges Crusader only in its
+	// prepull actions, so the effect is expected near 0 DPS (not measured).
+	626: { 2: false, 4: true }, // Justicar Battlegear
+	629: { 2: true, 4: true }, // Crystalforge Battlegear
+	680: { 2: true, 4: true }, // Lightbringer Battlegear
+	640: { 2: true, 4: true }, // Malorne Harness
+	641: { 2: false, 4: true }, // Nordrassil Harness
+	676: { 2: true, 4: true }, // Thunderheart Harness
 };
 
 /** The set ids the table above covers, for tests that pin facts per set. */
-export const IMPLEMENTED_SET_IDS: readonly number[] = Object.keys(
-  IMPLEMENTED_IN_SIM
-).map(Number);
+export const IMPLEMENTED_SET_IDS: readonly number[] = Object.keys(IMPLEMENTED_IN_SIM).map(Number);
 
-export function isBonusImplemented(
-  setId: number,
-  threshold: SetThreshold
-): boolean {
-  return IMPLEMENTED_IN_SIM[setId]?.[threshold] ?? false;
+export function isBonusImplemented(setId: number, threshold: SetThreshold): boolean {
+	return IMPLEMENTED_IN_SIM[setId]?.[threshold] ?? false;
 }
 
-export function setCounts(
-  equipment: readonly SimItemSpec[]
-): Map<number, number> {
-  const counts = new Map<number, number>();
-  for (const spec of equipment) {
-    if (!spec.id) continue;
-    const setId = getItem(spec.id)?.setId;
-    if (setId == null) continue;
-    counts.set(setId, (counts.get(setId) ?? 0) + 1);
-  }
-  return counts;
+export function setCounts(equipment: readonly SimItemSpec[]): Map<number, number> {
+	const counts = new Map<number, number>();
+	for (const spec of equipment) {
+		if (!spec.id) continue;
+		const setId = getItem(spec.id)?.setId;
+		if (setId == null) continue;
+		counts.set(setId, (counts.get(setId) ?? 0) + 1);
+	}
+	return counts;
 }
 
-export function setLabel(
-  equipment: readonly SimItemSpec[],
-  setId: number,
-  alsoConsider: readonly number[] = []
-): string {
-  for (const spec of equipment) {
-    if (!spec.id) continue;
-    const item = getItem(spec.id);
-    if (item?.setId === setId && item.setName) return item.setName;
-  }
-  for (const itemId of alsoConsider) {
-    const item = getItem(itemId);
-    if (item?.setId === setId && item.setName) return item.setName;
-  }
-  return `set ${setId}`;
+export function setLabel(equipment: readonly SimItemSpec[], setId: number, alsoConsider: readonly number[] = []): string {
+	for (const spec of equipment) {
+		if (!spec.id) continue;
+		const item = getItem(spec.id);
+		if (item?.setId === setId && item.setName) return item.setName;
+	}
+	for (const itemId of alsoConsider) {
+		const item = getItem(itemId);
+		if (item?.setId === setId && item.setName) return item.setName;
+	}
+	return `set ${setId}`;
 }
 
-export function nextMeasurableThreshold(
-  setId: number,
-  piecesAfterSwap: number
-): SetThreshold | null {
-  for (const t of SET_THRESHOLDS) {
-    if (t <= piecesAfterSwap) continue;
-    if (isBonusImplemented(setId, t)) return t;
-  }
-  return null;
+export function nextMeasurableThreshold(setId: number, piecesAfterSwap: number): SetThreshold | null {
+	for (const t of SET_THRESHOLDS) {
+		if (t <= piecesAfterSwap) continue;
+		if (isBonusImplemented(setId, t)) return t;
+	}
+	return null;
 }
 
 export type PackagePiece = {
-  itemId: number;
-  slotIndex: number;
+	itemId: number;
+	slotIndex: number;
 };
 
-export type PackageSelectionResult =
-  | { ok: true; piecesWorn: number; addedPieces: PackagePiece[] }
-  | { ok: false; reason: "insufficient-pieces" };
+export type PackageSelectionResult = { ok: true; piecesWorn: number; addedPieces: PackagePiece[] } | { ok: false; reason: 'insufficient-pieces' };
 
 /**
  * One item's own DPS delta, used both to pick a set package's pieces and to
@@ -142,107 +123,93 @@ export type PackageSelectionResult =
  * restore it, by reintroducing the very offset the subtraction removed.
  */
 export type IndividualDelta = {
-  itemId: number;
-  slotIndex: number;
-  deltaDps: number;
-  se: number;
+	itemId: number;
+	slotIndex: number;
+	deltaDps: number;
+	se: number;
 };
 
 export function selectPackage(
-  setId: number,
-  threshold: SetThreshold,
-  equipment: readonly SimItemSpec[],
-  poolCandidates: readonly PoolEntry[],
-  individualDeltas: readonly IndividualDelta[],
-  slotIndexForPoolEntry: (entry: PoolEntry) => number | undefined
+	setId: number,
+	threshold: SetThreshold,
+	equipment: readonly SimItemSpec[],
+	poolCandidates: readonly PoolEntry[],
+	individualDeltas: readonly IndividualDelta[],
+	slotIndexForPoolEntry: (entry: PoolEntry) => number | undefined,
 ): PackageSelectionResult {
-  const wornSlotIndices = new Set<number>();
-  let piecesWorn = 0;
-  for (let i = 0; i < equipment.length; i++) {
-    const spec = equipment[i];
-    if (!spec?.id) continue;
-    if (getItem(spec.id)?.setId === setId) {
-      piecesWorn++;
-      wornSlotIndices.add(i);
-    }
-  }
+	const wornSlotIndices = new Set<number>();
+	let piecesWorn = 0;
+	for (let i = 0; i < equipment.length; i++) {
+		const spec = equipment[i];
+		if (!spec?.id) continue;
+		if (getItem(spec.id)?.setId === setId) {
+			piecesWorn++;
+			wornSlotIndices.add(i);
+		}
+	}
 
-  const needed = threshold - piecesWorn;
-  if (needed <= 0) {
-    return { ok: true, piecesWorn, addedPieces: [] };
-  }
+	const needed = threshold - piecesWorn;
+	if (needed <= 0) {
+		return { ok: true, piecesWorn, addedPieces: [] };
+	}
 
-  const deltaByItemId = new Map(
-    individualDeltas.map((d) => [d.itemId, d] as const)
-  );
+	const deltaByItemId = new Map(individualDeltas.map(d => [d.itemId, d] as const));
 
-  const bestPerSlot = new Map<number, IndividualDelta & { itemId: number }>();
-  for (const entry of poolCandidates) {
-    const item = getItem(entry.itemId);
-    if (item?.setId !== setId) continue;
-    const slotIndex = slotIndexForPoolEntry(entry);
-    if (slotIndex === undefined) continue;
-    if (wornSlotIndices.has(slotIndex)) continue;
-    const delta = deltaByItemId.get(entry.itemId);
-    if (!delta) continue;
+	const bestPerSlot = new Map<number, IndividualDelta & { itemId: number }>();
+	for (const entry of poolCandidates) {
+		const item = getItem(entry.itemId);
+		if (item?.setId !== setId) continue;
+		const slotIndex = slotIndexForPoolEntry(entry);
+		if (slotIndex === undefined) continue;
+		if (wornSlotIndices.has(slotIndex)) continue;
+		const delta = deltaByItemId.get(entry.itemId);
+		if (!delta) continue;
 
-    const current = bestPerSlot.get(slotIndex);
-    if (
-      !current ||
-      delta.deltaDps > current.deltaDps ||
-      (delta.deltaDps === current.deltaDps && delta.itemId < current.itemId)
-    ) {
-      bestPerSlot.set(slotIndex, delta);
-    }
-  }
+		const current = bestPerSlot.get(slotIndex);
+		if (!current || delta.deltaDps > current.deltaDps || (delta.deltaDps === current.deltaDps && delta.itemId < current.itemId)) {
+			bestPerSlot.set(slotIndex, delta);
+		}
+	}
 
-  const candidates = [...bestPerSlot.values()].sort((a, b) =>
-    b.deltaDps !== a.deltaDps ? b.deltaDps - a.deltaDps : a.itemId - b.itemId
-  );
+	const candidates = [...bestPerSlot.values()].sort((a, b) => (b.deltaDps !== a.deltaDps ? b.deltaDps - a.deltaDps : a.itemId - b.itemId));
 
-  if (candidates.length < needed) {
-    return { ok: false, reason: "insufficient-pieces" };
-  }
+	if (candidates.length < needed) {
+		return { ok: false, reason: 'insufficient-pieces' };
+	}
 
-  const addedPieces: PackagePiece[] = candidates
-    .slice(0, needed)
-    .map((c) => ({
-      itemId: c.itemId,
-      slotIndex: c.slotIndex,
-    }))
-    .sort((a, b) => a.slotIndex - b.slotIndex);
+	const addedPieces: PackagePiece[] = candidates
+		.slice(0, needed)
+		.map(c => ({
+			itemId: c.itemId,
+			slotIndex: c.slotIndex,
+		}))
+		.sort((a, b) => a.slotIndex - b.slotIndex);
 
-  return { ok: true, piecesWorn, addedPieces };
+	return { ok: true, piecesWorn, addedPieces };
 }
 
 export type BrokenSetBonus = {
-  setId: number;
-  setName: string;
-  threshold: SetThreshold;
-  piecesBefore: number;
-  piecesAfter: number;
+	setId: number;
+	setName: string;
+	threshold: SetThreshold;
+	piecesBefore: number;
+	piecesAfter: number;
 };
 
 /** The map key of one worn bonus: its set and its count. */
-export const bonusKey = (b: { setId: number; threshold: number }): string =>
-  `${b.setId}:${b.threshold}`;
+export const bonusKey = (b: { setId: number; threshold: number }): string => `${b.setId}:${b.threshold}`;
 
 /**
  * The counts of `setId` lost when its worn count drops from `before` to
  * `after` (`before ≥ t > after`, t ≥ 2) that `counts` accepts, highest first.
  * Every count in that range is tried; no list decides which exist.
  */
-export function lostThresholds(
-  setId: number,
-  before: number,
-  after: number,
-  counts: BonusCountPredicate = isBonusImplemented
-): SetThreshold[] {
-  const lost: SetThreshold[] = [];
-  for (let t = before; t > after && t >= 2; t--) {
-    if (counts(setId, t)) lost.push(t);
-  }
-  return lost;
+export function lostThresholds(setId: number, before: number, after: number, counts: BonusCountPredicate = isBonusImplemented): SetThreshold[] {
+	const lost: SetThreshold[] = [];
+	for (let t = before; t > after && t >= 2; t--) {
+		if (counts(setId, t)) lost.push(t);
+	}
+	return lost;
 }
 
 /**
@@ -252,48 +219,41 @@ export function lostThresholds(
  * reported and both count in the net.
  */
 export function brokenSetBonuses(
-  equipment: readonly SimItemSpec[],
-  addedPieces: readonly PackagePiece[],
-  completingSetId: number,
-  counts: BonusCountPredicate = isBonusImplemented
+	equipment: readonly SimItemSpec[],
+	addedPieces: readonly PackagePiece[],
+	completingSetId: number,
+	counts: BonusCountPredicate = isBonusImplemented,
 ): BrokenSetBonus[] {
-  const before = setCounts(equipment);
-  const after = new Map(before);
-  for (const piece of addedPieces) {
-    const displaced = equipment[piece.slotIndex]?.id;
-    const displacedSetId = displaced ? getItem(displaced)?.setId : undefined;
-    if (displacedSetId != null) {
-      after.set(displacedSetId, (after.get(displacedSetId) ?? 0) - 1);
-    }
-    const addedSetId = getItem(piece.itemId)?.setId;
-    if (addedSetId != null) {
-      after.set(addedSetId, (after.get(addedSetId) ?? 0) + 1);
-    }
-  }
+	const before = setCounts(equipment);
+	const after = new Map(before);
+	for (const piece of addedPieces) {
+		const displaced = equipment[piece.slotIndex]?.id;
+		const displacedSetId = displaced ? getItem(displaced)?.setId : undefined;
+		if (displacedSetId != null) {
+			after.set(displacedSetId, (after.get(displacedSetId) ?? 0) - 1);
+		}
+		const addedSetId = getItem(piece.itemId)?.setId;
+		if (addedSetId != null) {
+			after.set(addedSetId, (after.get(addedSetId) ?? 0) + 1);
+		}
+	}
 
-  const broken: BrokenSetBonus[] = [];
-  for (const [setId, piecesBefore] of before) {
-    if (setId === completingSetId) continue;
-    const piecesAfter = after.get(setId) ?? 0;
-    if (piecesAfter >= piecesBefore) continue;
-    for (const threshold of lostThresholds(
-      setId,
-      piecesBefore,
-      piecesAfter,
-      counts
-    )) {
-      broken.push({
-        setId,
-        setName: setLabel(equipment, setId),
-        threshold,
-        piecesBefore,
-        piecesAfter,
-      });
-    }
-  }
-  return broken.sort((a, b) =>
-    a.setId !== b.setId ? a.setId - b.setId : b.threshold - a.threshold
-  );
+	const broken: BrokenSetBonus[] = [];
+	for (const [setId, piecesBefore] of before) {
+		if (setId === completingSetId) continue;
+		const piecesAfter = after.get(setId) ?? 0;
+		if (piecesAfter >= piecesBefore) continue;
+		for (const threshold of lostThresholds(setId, piecesBefore, piecesAfter, counts)) {
+			broken.push({
+				setId,
+				setName: setLabel(equipment, setId),
+				threshold,
+				piecesBefore,
+				piecesAfter,
+			});
+		}
+	}
+	return broken.sort((a, b) => (a.setId !== b.setId ? a.setId - b.setId : b.threshold - a.threshold));
 }
 
 /**
@@ -304,11 +264,11 @@ export function brokenSetBonuses(
  * breaks it. The 2pc fields are 0 when the package is itself the 2pc.
  */
 export type InflationKey = {
-  membersPkg: number;
-  members2pc: number;
-  pkgEnd: number;
-  twoPcEnd: number;
-  B: number;
+	membersPkg: number;
+	members2pc: number;
+	pkgEnd: number;
+	twoPcEnd: number;
+	B: number;
 };
 
 /**
@@ -323,60 +283,49 @@ export type InflationKey = {
  * `twoPcEnd` gives the same answer there and shows only at other worn counts.
  */
 export function netInflation(keys: readonly InflationKey[]): number {
-  return keys.reduce(
-    (sum, k) =>
-      sum + (k.membersPkg - k.members2pc - k.pkgEnd + k.twoPcEnd) * k.B,
-    0
-  );
+	return keys.reduce((sum, k) => sum + (k.membersPkg - k.members2pc - k.pkgEnd + k.twoPcEnd) * k.B, 0);
 }
 
 export type DpsSample = { dps: number; se: number };
 
 export function combineSe(samples: readonly DpsSample[]): number {
-  return Math.sqrt(samples.reduce((sum, s) => sum + s.se * s.se, 0));
+	return Math.sqrt(samples.reduce((sum, s) => sum + s.se * s.se, 0));
 }
 
 export type AddedPieceSample = {
-  deltaDps: number;
-  se: number;
+	deltaDps: number;
+	se: number;
 };
 
 export type SynergyInput = {
-  baseline: DpsSample;
-  packageSample: DpsSample;
-  addedPieceSamples: readonly AddedPieceSample[];
-  twoPieceBonus?: number;
+	baseline: DpsSample;
+	packageSample: DpsSample;
+	addedPieceSamples: readonly AddedPieceSample[];
+	twoPieceBonus?: number;
 };
 
 export type SynergyResult = {
-  packageDeltaDps: number;
-  bonusDps: number;
-  se: number;
+	packageDeltaDps: number;
+	bonusDps: number;
+	se: number;
 };
 
 export type SelfSetConfound = {
-  threshold: SetThreshold;
-  /**
-   * The confounding threshold's own value, measured by one pair sim and
-   * already added back into the 4pc `bonusDps`. Absent when no
-   * two package pieces were break-free alone and together, or that sim or its
-   * gem repair failed: the 4pc `bonusDps` then still has the `−(n−1)·B2`
-   * confound, and `rank.ts` leaves its `bonusDpsNet` unset.
-   */
-  dps?: number;
+	threshold: SetThreshold;
+	/**
+	 * The confounding threshold's own value, measured by one pair sim and
+	 * already added back into the 4pc `bonusDps`. Absent when no
+	 * two package pieces were break-free alone and together, or that sim or its
+	 * gem repair failed: the 4pc `bonusDps` then still has the `−(n−1)·B2`
+	 * confound, and `rank.ts` leaves its `bonusDpsNet` unset.
+	 */
+	dps?: number;
 };
 
 export function computeSynergy(input: SynergyInput): SynergyResult {
-  const packageDeltaDps = input.packageSample.dps - input.baseline.dps;
-  const sumSingles = input.addedPieceSamples.reduce(
-    (sum, s) => sum + s.deltaDps,
-    0
-  );
-  const bonusDps = packageDeltaDps - sumSingles - (input.twoPieceBonus ?? 0);
-  const se = combineSe([
-    input.baseline,
-    input.packageSample,
-    ...input.addedPieceSamples.map((s) => ({ dps: 0, se: s.se })),
-  ]);
-  return { packageDeltaDps, bonusDps, se };
+	const packageDeltaDps = input.packageSample.dps - input.baseline.dps;
+	const sumSingles = input.addedPieceSamples.reduce((sum, s) => sum + s.deltaDps, 0);
+	const bonusDps = packageDeltaDps - sumSingles - (input.twoPieceBonus ?? 0);
+	const se = combineSe([input.baseline, input.packageSample, ...input.addedPieceSamples.map(s => ({ dps: 0, se: s.se }))]);
+	return { packageDeltaDps, bonusDps, se };
 }

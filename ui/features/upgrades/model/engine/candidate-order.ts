@@ -7,12 +7,12 @@
  * itself would reject. Ordering only changes *when* a row fills and what a
  * candidate cap keeps; it never changes a displayed number.
  */
-import { HandType } from "@generated/proto/common";
+import { HandType } from '@generated/proto/common';
 
-import { getItem } from "./items";
-import { type PoolEntry, type SimSlotName, simSlotsForPoolSlot } from "./pool";
-import { SIM_ORDER, type SimItemSpec } from "./slots";
-import type { SpecId } from "./types";
+import { getItem } from './items';
+import { type PoolEntry, type SimSlotName, simSlotsForPoolSlot } from './pool';
+import { SIM_ORDER, type SimItemSpec } from './slots';
+import type { SpecId } from './types';
 
 /**
  * An item's EP in one sim slot. The slot matters for weapons: wowsims prices
@@ -22,7 +22,7 @@ import type { SpecId } from "./types";
  */
 export type ItemEp = (itemId: number, slot: SimSlotName) => number;
 
-const OFFHAND_INDEX = SIM_ORDER.indexOf("offhand");
+const OFFHAND_INDEX = SIM_ORDER.indexOf('offhand');
 
 /**
  * The best committed-EP delta a candidate could offer, taken as the max
@@ -38,28 +38,23 @@ const OFFHAND_INDEX = SIM_ORDER.indexOf("offhand");
  * delta of 0 rather than throwing — this must run before any sim, with no
  * sim result yet to explain a skip.
  */
-function bestEpDelta(
-  entry: PoolEntry,
-  equipment: readonly SimItemSpec[],
-  itemEp: ItemEp,
-  spec?: SpecId
-): number {
-  const wornEp = (slotName: SimSlotName, slotIndex: number): number => {
-    const wornId = equipment[slotIndex]?.id;
-    return wornId === undefined ? 0 : itemEp(wornId, slotName);
-  };
-  const twoHander = getItem(entry.itemId)?.handType === HandType.HandTypeTwoHand;
-  let best: number | undefined;
-  for (const slotName of simSlotsForPoolSlot(entry.slot, spec, entry.itemId)) {
-    const slotIndex = SIM_ORDER.indexOf(slotName);
-    if (slotIndex < 0) continue;
-    let delta = itemEp(entry.itemId, slotName) - wornEp(slotName, slotIndex);
-    if (twoHander && slotName === "mainhand") {
-      delta -= wornEp("offhand", OFFHAND_INDEX);
-    }
-    if (best === undefined || delta > best) best = delta;
-  }
-  return best ?? 0;
+function bestEpDelta(entry: PoolEntry, equipment: readonly SimItemSpec[], itemEp: ItemEp, spec?: SpecId): number {
+	const wornEp = (slotName: SimSlotName, slotIndex: number): number => {
+		const wornId = equipment[slotIndex]?.id;
+		return wornId === undefined ? 0 : itemEp(wornId, slotName);
+	};
+	const twoHander = getItem(entry.itemId)?.handType === HandType.HandTypeTwoHand;
+	let best: number | undefined;
+	for (const slotName of simSlotsForPoolSlot(entry.slot, spec, entry.itemId)) {
+		const slotIndex = SIM_ORDER.indexOf(slotName);
+		if (slotIndex < 0) continue;
+		let delta = itemEp(entry.itemId, slotName) - wornEp(slotName, slotIndex);
+		if (twoHander && slotName === 'mainhand') {
+			delta -= wornEp('offhand', OFFHAND_INDEX);
+		}
+		if (best === undefined || delta > best) best = delta;
+	}
+	return best ?? 0;
 }
 
 /**
@@ -67,19 +62,12 @@ function bestEpDelta(
  * ascending — a total order, so two runs over the same input never disagree
  * on placement. Does not mutate `candidates`.
  */
-export function orderCandidatesByEp(
-  candidates: readonly PoolEntry[],
-  equipment: readonly SimItemSpec[],
-  itemEp: ItemEp,
-  spec?: SpecId
-): PoolEntry[] {
-  const delta = new Map(
-    candidates.map((c) => [c, bestEpDelta(c, equipment, itemEp, spec)])
-  );
-  return [...candidates].sort((a, b) => {
-    const deltaA = delta.get(a) ?? 0;
-    const deltaB = delta.get(b) ?? 0;
-    if (deltaA !== deltaB) return deltaB - deltaA;
-    return a.itemId - b.itemId;
-  });
+export function orderCandidatesByEp(candidates: readonly PoolEntry[], equipment: readonly SimItemSpec[], itemEp: ItemEp, spec?: SpecId): PoolEntry[] {
+	const delta = new Map(candidates.map(c => [c, bestEpDelta(c, equipment, itemEp, spec)]));
+	return [...candidates].sort((a, b) => {
+		const deltaA = delta.get(a) ?? 0;
+		const deltaB = delta.get(b) ?? 0;
+		if (deltaA !== deltaB) return deltaB - deltaA;
+		return a.itemId - b.itemId;
+	});
 }

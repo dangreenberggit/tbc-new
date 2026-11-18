@@ -18,9 +18,9 @@
  * the sim at runtime.
  */
 
-import type { SpellDamageBySchool } from "./seams/sim-runner";
-import { Stat } from "./stats";
-import type { SpecId } from "./types";
+import type { SpellDamageBySchool } from './seams/sim-runner';
+import { Stat } from './stats';
+import type { SpecId } from './types';
 
 /**
  * Talent-string position of a talent.
@@ -33,9 +33,9 @@ import type { SpecId } from "./types";
  * coincidence rather than a rule.
  */
 export type TalentPosition = {
-  readonly treeSegment: number;
-  readonly talentIndex: number;
-  readonly talent: string;
+	readonly treeSegment: number;
+	readonly talentIndex: number;
+	readonly talent: string;
 };
 
 /**
@@ -48,117 +48,117 @@ export type TalentPosition = {
  * here.
  */
 export type CapProfile = {
-  /** The rating stat the spec's gear uses for hit. */
-  readonly hitStat: Stat;
-  /** Percent of hit needed against a raid boss (level 73). */
-  readonly hitCapPercent: number;
-  /** Rating per one percent of hit, for this school. */
-  readonly ratingPerPercent: number;
-  /**
-   * Whether expertise is a cap this spec has, so gem fill zeroes its weight
-   * (`gemFillWeights`). False for casters, whose spells cannot be dodged or
-   * parried, and for hunters, whose ranged shots cannot be.
-   */
-  readonly trackExpertise: boolean;
-  /**
-   * How meta repair values hit gems. Required, so a new
-   * spec must choose: a `budget` charges hit gems against
-   * `hitCapPercent − (pseudo-stat hit %)`, read from `computeStats`; a
-   * `fullWeight` spec counts hit at full value and the ranking says so in one
-   * note. A spec gets a budget only when one pseudo-stat gives a number that
-   * never undervalues hit the sim still rewards for the spells the page's
-   * default rotation casts.
-   *
-   * Ret and feral: budget on `PseudoStatMeleeHitPercent` (12), cap 9.
-   * Yellow and two-hand white attacks miss 8% minus (hit % − 1% suppression)
-   * against level 73, nothing past 9% (`sim/core/target.go`,
-   * `sim/core/spell_result.go`). Improved Faerie Fire is a
-   * target-side `ReducedPhysicalHitTakenChance` of 3 that the read does not
-   * hold (`sim/core/debuffs.go`), so `hitCapBudgetFrom`
-   * subtracts it. One known limit for feral: a druid with Improved Faerie Fire
-   * applies it through its own Faerie Fire (Feral) aura
-   * (`sim/druid/faerie_fire.go`), which `raid.debuffs` does not show,
-   * so with the raid debuff off the budget wants 3% more hit than the sim
-   * needs.
-   *
-   * Rogue, enhancement and warrior: full weight. White swings add 19% miss
-   * when the off hand has a swing speed (`sim/core/spell_outcome.go`,
-   * `sim/core/attack.go`), and every rogue, Fury and enhancement gear
-   * preset has an off hand, so a 9% budget undervalues hit for each of them and
-   * a 27% budget is never reached by real gear. Arms (two-hander, no penalty)
-   * shares the warrior spec id, and this table is per spec, so Arms gets the
-   * note too.
-   *
-   * Hunter: full weight. Ranged shots skip the dual-wield penalty
-   * (`sim/core/spell_outcome.go`), but the hunter also swings in
-   * melee with its off hand from gear (`sim/hunter/hunter.go`), the
-   * page's default rotation melee-weaves (`ui/specs/hunter/dps/spec.ts`,
-   * `presets.ts`), and every `dw_*` gear preset has an off hand. With a
-   * dual-wield set hit past 9% still cuts melee misses; with a `2h_*` set it
-   * does not; one budget cannot be right for both.
-   *
-   * Mage, shadow and warlock: budget on `PseudoStatSpellHitPercent` (13), cap
-   * 16, no Faerie Fire term (it is physical only), priced by the spells the
-   * baseline sim cast (`HitCapBudget.groups`). Spell hit is
-   * `SpellHitPercent` + the spell's own bonus + the school bonus when the
-   * spell has a class mask (`sim/core/spell_result.go`), with miss
-   * floored at 1%. The target adds a term only to binary spells,
-   * whose base hit its resistance scales (`SPELL_HIT_CAP_PERCENT`
-   * below); no default target has resistances. Slot
-   * 13 is the term every spell shares; the per-school slots 6-11 add the
-   * school bonus (`sim/core/character_sheet.go`), which comes from
-   * talents (`sim/mage/talents.go`, `sim/priest/talents.go`;
-   * none for the warlock) or bonus stats. So hit is worth, for each school
-   * the sim cast spells of, that school's share of the spell damage until
-   * its own slot reaches 16: the page's default shadow priest, a Troll with
-   * no Starshards (`sim/priest/priest.go`), casts only Shadow spells
-   * and values no hit past its Shadow cap. Three estimates remain. A spell
-   * with no class mask (an item proc) gets no school bonus but is priced at
-   * its school's slot, which undervalues hit for its share. An explosive
-   * gets 100% bonus hit (`sim/core/consumes.go`), so the player's
-   * hit never changes it, but its Fire damage is priced as if it did, which
-   * overvalues hit for its share; the sim result does not mark it
-   * (`proto/api.proto`). A per-spell talent (`perSpellHitTalents`:
-   * Suppression, Focused Power) shows in no slot and no metric, so the
-   * spells it covers are priced as if it gave nothing, and the ranking says
-   * so in one note.
-   *
-   * Elemental: full weight. Totem of Wrath, when talented, adds +3
-   * `SpellHitPercent` through a buffs-phase aura
-   * (`sim/shaman/talents_elemental.go`) that the stats read turns on
-   * (`sim/core/character.go`), but in combat only while the totem is down:
-   * a Fire Elemental cancels it (`sim/shaman/fire_totems.go`) for 120 s
-   * (`sim/shaman/fire_elemental_totem.go`). So the read can hold 3% hit
-   * the sim does not give, and a budget from it would undervalue hit, as for
-   * balance below. Nature's Guidance also adds `SpellHitPercent`
-   * (`sim/shaman/talent_restoration.go`), but permanently, so it alone
-   * would not have mattered.
-   *
-   * Balance: full weight. Balance of Power is a per-spell bonus on Wrath,
-   * Starfire and Moonfire, and while stats are measured it adds a flat +4
-   * `SpellHitPercent` (`sim/druid/talents.go`); `FillPlayerStats`
-   * turns on build-phase auras before it reads the pseudo-stats
-   * (`sim/core/character.go`), so every spell-hit slot of a
-   * Balance of Power druid holds that +4 and none gives the plain
-   * "cap − hit %". Faerie Fire and Insect Swarm, which the default APL can
-   * cast, are outside its mask (`ui/specs/druid/balance/apls/default.apl.json`).
-   */
-  readonly repair: RepairPolicy;
+	/** The rating stat the spec's gear uses for hit. */
+	readonly hitStat: Stat;
+	/** Percent of hit needed against a raid boss (level 73). */
+	readonly hitCapPercent: number;
+	/** Rating per one percent of hit, for this school. */
+	readonly ratingPerPercent: number;
+	/**
+	 * Whether expertise is a cap this spec has, so gem fill zeroes its weight
+	 * (`gemFillWeights`). False for casters, whose spells cannot be dodged or
+	 * parried, and for hunters, whose ranged shots cannot be.
+	 */
+	readonly trackExpertise: boolean;
+	/**
+	 * How meta repair values hit gems. Required, so a new
+	 * spec must choose: a `budget` charges hit gems against
+	 * `hitCapPercent − (pseudo-stat hit %)`, read from `computeStats`; a
+	 * `fullWeight` spec counts hit at full value and the ranking says so in one
+	 * note. A spec gets a budget only when one pseudo-stat gives a number that
+	 * never undervalues hit the sim still rewards for the spells the page's
+	 * default rotation casts.
+	 *
+	 * Ret and feral: budget on `PseudoStatMeleeHitPercent` (12), cap 9.
+	 * Yellow and two-hand white attacks miss 8% minus (hit % − 1% suppression)
+	 * against level 73, nothing past 9% (`sim/core/target.go`,
+	 * `sim/core/spell_result.go`). Improved Faerie Fire is a
+	 * target-side `ReducedPhysicalHitTakenChance` of 3 that the read does not
+	 * hold (`sim/core/debuffs.go`), so `hitCapBudgetFrom`
+	 * subtracts it. One known limit for feral: a druid with Improved Faerie Fire
+	 * applies it through its own Faerie Fire (Feral) aura
+	 * (`sim/druid/faerie_fire.go`), which `raid.debuffs` does not show,
+	 * so with the raid debuff off the budget wants 3% more hit than the sim
+	 * needs.
+	 *
+	 * Rogue, enhancement and warrior: full weight. White swings add 19% miss
+	 * when the off hand has a swing speed (`sim/core/spell_outcome.go`,
+	 * `sim/core/attack.go`), and every rogue, Fury and enhancement gear
+	 * preset has an off hand, so a 9% budget undervalues hit for each of them and
+	 * a 27% budget is never reached by real gear. Arms (two-hander, no penalty)
+	 * shares the warrior spec id, and this table is per spec, so Arms gets the
+	 * note too.
+	 *
+	 * Hunter: full weight. Ranged shots skip the dual-wield penalty
+	 * (`sim/core/spell_outcome.go`), but the hunter also swings in
+	 * melee with its off hand from gear (`sim/hunter/hunter.go`), the
+	 * page's default rotation melee-weaves (`ui/specs/hunter/dps/spec.ts`,
+	 * `presets.ts`), and every `dw_*` gear preset has an off hand. With a
+	 * dual-wield set hit past 9% still cuts melee misses; with a `2h_*` set it
+	 * does not; one budget cannot be right for both.
+	 *
+	 * Mage, shadow and warlock: budget on `PseudoStatSpellHitPercent` (13), cap
+	 * 16, no Faerie Fire term (it is physical only), priced by the spells the
+	 * baseline sim cast (`HitCapBudget.groups`). Spell hit is
+	 * `SpellHitPercent` + the spell's own bonus + the school bonus when the
+	 * spell has a class mask (`sim/core/spell_result.go`), with miss
+	 * floored at 1%. The target adds a term only to binary spells,
+	 * whose base hit its resistance scales (`SPELL_HIT_CAP_PERCENT`
+	 * below); no default target has resistances. Slot
+	 * 13 is the term every spell shares; the per-school slots 6-11 add the
+	 * school bonus (`sim/core/character_sheet.go`), which comes from
+	 * talents (`sim/mage/talents.go`, `sim/priest/talents.go`;
+	 * none for the warlock) or bonus stats. So hit is worth, for each school
+	 * the sim cast spells of, that school's share of the spell damage until
+	 * its own slot reaches 16: the page's default shadow priest, a Troll with
+	 * no Starshards (`sim/priest/priest.go`), casts only Shadow spells
+	 * and values no hit past its Shadow cap. Three estimates remain. A spell
+	 * with no class mask (an item proc) gets no school bonus but is priced at
+	 * its school's slot, which undervalues hit for its share. An explosive
+	 * gets 100% bonus hit (`sim/core/consumes.go`), so the player's
+	 * hit never changes it, but its Fire damage is priced as if it did, which
+	 * overvalues hit for its share; the sim result does not mark it
+	 * (`proto/api.proto`). A per-spell talent (`perSpellHitTalents`:
+	 * Suppression, Focused Power) shows in no slot and no metric, so the
+	 * spells it covers are priced as if it gave nothing, and the ranking says
+	 * so in one note.
+	 *
+	 * Elemental: full weight. Totem of Wrath, when talented, adds +3
+	 * `SpellHitPercent` through a buffs-phase aura
+	 * (`sim/shaman/talents_elemental.go`) that the stats read turns on
+	 * (`sim/core/character.go`), but in combat only while the totem is down:
+	 * a Fire Elemental cancels it (`sim/shaman/fire_totems.go`) for 120 s
+	 * (`sim/shaman/fire_elemental_totem.go`). So the read can hold 3% hit
+	 * the sim does not give, and a budget from it would undervalue hit, as for
+	 * balance below. Nature's Guidance also adds `SpellHitPercent`
+	 * (`sim/shaman/talent_restoration.go`), but permanently, so it alone
+	 * would not have mattered.
+	 *
+	 * Balance: full weight. Balance of Power is a per-spell bonus on Wrath,
+	 * Starfire and Moonfire, and while stats are measured it adds a flat +4
+	 * `SpellHitPercent` (`sim/druid/talents.go`); `FillPlayerStats`
+	 * turns on build-phase auras before it reads the pseudo-stats
+	 * (`sim/core/character.go`), so every spell-hit slot of a
+	 * Balance of Power druid holds that +4 and none gives the plain
+	 * "cap − hit %". Faerie Fire and Insect Swarm, which the default APL can
+	 * cast, are outside its mask (`ui/specs/druid/balance/apls/default.apl.json`).
+	 */
+	readonly repair: RepairPolicy;
 };
 
 /** See `CapProfile.repair`. */
 export type RepairPolicy =
-  | {
-      readonly kind: "budget";
-      readonly hitPercentPseudoStat: number;
-      /**
-       * Talents that add hit to some spells only, which neither the stats
-       * read nor the sim's action metrics show. See
-       * `perSpellHitTalentTaken`.
-       */
-      readonly perSpellHitTalents?: readonly TalentPosition[];
-    }
-  | { readonly kind: "fullWeight" };
+	| {
+			readonly kind: 'budget';
+			readonly hitPercentPseudoStat: number;
+			/**
+			 * Talents that add hit to some spells only, which neither the stats
+			 * read nor the sim's action metrics show. See
+			 * `perSpellHitTalentTaken`.
+			 */
+			readonly perSpellHitTalents?: readonly TalentPosition[];
+	  }
+	| { readonly kind: 'fullWeight' };
 
 /**
  * The hit rating still useful against the cap, negative when the gear is over
@@ -170,9 +170,9 @@ export type RepairPolicy =
  * Absent means one group with offset 0 and share 1.
  */
 export type HitCapBudget = {
-  readonly stat: Stat;
-  readonly remaining: number;
-  readonly groups?: readonly HitCapGroup[];
+	readonly stat: Stat;
+	readonly remaining: number;
+	readonly groups?: readonly HitCapGroup[];
 };
 
 /** See `HitCapBudget.groups`. */
@@ -189,23 +189,23 @@ const PSEUDO_STAT_SPELL_HIT_PERCENT = 13;
  * the value `ActionMetrics.spell_school` carries.
  */
 const SCHOOL_HIT_PSEUDO_STAT: Readonly<Record<number, number>> = {
-  64: 6, // Arcane
-  4: 7, // Fire
-  16: 8, // Frost
-  2: 9, // Holy
-  8: 10, // Nature
-  32: 11, // Shadow
+	64: 6, // Arcane
+	4: 7, // Fire
+	16: 8, // Frost
+	2: 9, // Holy
+	8: 10, // Nature
+	32: 11, // Shadow
 };
 /** `SpellSchoolPhysical`, which uses melee hit, not spell hit. */
 const SPELL_SCHOOL_PHYSICAL = 1;
 
 const MELEE_HIT_BUDGET: RepairPolicy = {
-  kind: "budget",
-  hitPercentPseudoStat: PSEUDO_STAT_MELEE_HIT_PERCENT,
+	kind: 'budget',
+	hitPercentPseudoStat: PSEUDO_STAT_MELEE_HIT_PERCENT,
 };
 const SPELL_HIT_BUDGET: RepairPolicy = {
-  kind: "budget",
-  hitPercentPseudoStat: PSEUDO_STAT_SPELL_HIT_PERCENT,
+	kind: 'budget',
+	hitPercentPseudoStat: PSEUDO_STAT_SPELL_HIT_PERCENT,
 };
 /**
  * The two `SpellMod_BonusHit_Percent` talents of the spell-budget classes
@@ -213,20 +213,16 @@ const SPELL_HIT_BUDGET: RepairPolicy = {
  * Positions follow `ui/sim/talents/trees/<class>.json`.
  */
 const SHADOW_SPELL_HIT_BUDGET: RepairPolicy = {
-  ...SPELL_HIT_BUDGET,
-  // Smite and Mind Blast only (`sim/priest/talents.go`).
-  perSpellHitTalents: [
-    { treeSegment: 0, talentIndex: 15, talent: "Focused Power" },
-  ],
+	...SPELL_HIT_BUDGET,
+	// Smite and Mind Blast only (`sim/priest/talents.go`).
+	perSpellHitTalents: [{ treeSegment: 0, talentIndex: 15, talent: 'Focused Power' }],
 };
 const WARLOCK_SPELL_HIT_BUDGET: RepairPolicy = {
-  ...SPELL_HIT_BUDGET,
-  // Affliction spells only (`sim/warlock/talents.go`).
-  perSpellHitTalents: [
-    { treeSegment: 0, talentIndex: 0, talent: "Suppression" },
-  ],
+	...SPELL_HIT_BUDGET,
+	// Affliction spells only (`sim/warlock/talents.go`).
+	perSpellHitTalents: [{ treeSegment: 0, talentIndex: 0, talent: 'Suppression' }],
 };
-const FULL_WEIGHT: RepairPolicy = { kind: "fullWeight" };
+const FULL_WEIGHT: RepairPolicy = { kind: 'fullWeight' };
 
 /**
  * Improved Faerie Fire's hit, which `computeStats` does not return: it is a
@@ -277,103 +273,103 @@ export const SPELL_HIT_CAP_PERCENT = 16;
  * comment on why that totality is the point.
  */
 export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
-  ret: {
-    hitStat: Stat.StatMeleeHitRating,
-    hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
-    ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
-    trackExpertise: true,
-    repair: MELEE_HIT_BUDGET,
-  },
-  feral: {
-    hitStat: Stat.StatMeleeHitRating,
-    hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
-    ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
-    trackExpertise: true,
-    repair: MELEE_HIT_BUDGET,
-  },
+	ret: {
+		hitStat: Stat.StatMeleeHitRating,
+		hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
+		ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
+		trackExpertise: true,
+		repair: MELEE_HIT_BUDGET,
+	},
+	feral: {
+		hitStat: Stat.StatMeleeHitRating,
+		hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
+		ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
+		trackExpertise: true,
+		repair: MELEE_HIT_BUDGET,
+	},
 
-  balance: {
-    hitStat: Stat.StatSpellHitRating,
-    hitCapPercent: SPELL_HIT_CAP_PERCENT,
-    ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
-    trackExpertise: false,
-    repair: FULL_WEIGHT,
-  },
+	balance: {
+		hitStat: Stat.StatSpellHitRating,
+		hitCapPercent: SPELL_HIT_CAP_PERCENT,
+		ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
+		trackExpertise: false,
+		repair: FULL_WEIGHT,
+	},
 
-  /**
-   * Hunters read **melee** hit rating, not a ranged one: this sim has no
-   * `StatRangedHitRating`, and `sim/core/unit.go` declares only two
-   * hit-rating dependencies — `MeleeHitRating → PhysicalHitPercent` and
-   * `SpellHitRating → SpellHitPercent`. Ranged attacks read
-   * `PhysicalHitPercent` and add a flat `RangedHitPercent` on top
-   * (`sim/core/spell_result.go`), which is a percent-only channel with
-   * no rating behind it.
-   *
-   * No expertise: nothing a hunter fires can be dodged or parried.
-   */
-  hunter: {
-    hitStat: Stat.StatMeleeHitRating,
-    hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
-    ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
-    trackExpertise: false,
-    repair: FULL_WEIGHT,
-  },
+	/**
+	 * Hunters read **melee** hit rating, not a ranged one: this sim has no
+	 * `StatRangedHitRating`, and `sim/core/unit.go` declares only two
+	 * hit-rating dependencies — `MeleeHitRating → PhysicalHitPercent` and
+	 * `SpellHitRating → SpellHitPercent`. Ranged attacks read
+	 * `PhysicalHitPercent` and add a flat `RangedHitPercent` on top
+	 * (`sim/core/spell_result.go`), which is a percent-only channel with
+	 * no rating behind it.
+	 *
+	 * No expertise: nothing a hunter fires can be dodged or parried.
+	 */
+	hunter: {
+		hitStat: Stat.StatMeleeHitRating,
+		hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
+		ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
+		trackExpertise: false,
+		repair: FULL_WEIGHT,
+	},
 
-  mage: {
-    hitStat: Stat.StatSpellHitRating,
-    hitCapPercent: SPELL_HIT_CAP_PERCENT,
-    ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
-    trackExpertise: false,
-    repair: SPELL_HIT_BUDGET,
-  },
+	mage: {
+		hitStat: Stat.StatSpellHitRating,
+		hitCapPercent: SPELL_HIT_CAP_PERCENT,
+		ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
+		trackExpertise: false,
+		repair: SPELL_HIT_BUDGET,
+	},
 
-  shadow: {
-    hitStat: Stat.StatSpellHitRating,
-    hitCapPercent: SPELL_HIT_CAP_PERCENT,
-    ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
-    trackExpertise: false,
-    repair: SHADOW_SPELL_HIT_BUDGET,
-  },
+	shadow: {
+		hitStat: Stat.StatSpellHitRating,
+		hitCapPercent: SPELL_HIT_CAP_PERCENT,
+		ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
+		trackExpertise: false,
+		repair: SHADOW_SPELL_HIT_BUDGET,
+	},
 
-  rogue: {
-    hitStat: Stat.StatMeleeHitRating,
-    hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
-    ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
-    trackExpertise: true,
-    repair: FULL_WEIGHT,
-  },
+	rogue: {
+		hitStat: Stat.StatMeleeHitRating,
+		hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
+		ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
+		trackExpertise: true,
+		repair: FULL_WEIGHT,
+	},
 
-  ele: {
-    hitStat: Stat.StatSpellHitRating,
-    hitCapPercent: SPELL_HIT_CAP_PERCENT,
-    ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
-    trackExpertise: false,
-    repair: FULL_WEIGHT,
-  },
+	ele: {
+		hitStat: Stat.StatSpellHitRating,
+		hitCapPercent: SPELL_HIT_CAP_PERCENT,
+		ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
+		trackExpertise: false,
+		repair: FULL_WEIGHT,
+	},
 
-  enh: {
-    hitStat: Stat.StatMeleeHitRating,
-    hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
-    ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
-    trackExpertise: true,
-    repair: FULL_WEIGHT,
-  },
+	enh: {
+		hitStat: Stat.StatMeleeHitRating,
+		hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
+		ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
+		trackExpertise: true,
+		repair: FULL_WEIGHT,
+	},
 
-  warlock: {
-    hitStat: Stat.StatSpellHitRating,
-    hitCapPercent: SPELL_HIT_CAP_PERCENT,
-    ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
-    trackExpertise: false,
-    repair: WARLOCK_SPELL_HIT_BUDGET,
-  },
+	warlock: {
+		hitStat: Stat.StatSpellHitRating,
+		hitCapPercent: SPELL_HIT_CAP_PERCENT,
+		ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
+		trackExpertise: false,
+		repair: WARLOCK_SPELL_HIT_BUDGET,
+	},
 
-  warrior: {
-    hitStat: Stat.StatMeleeHitRating,
-    hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
-    ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
-    trackExpertise: true,
-    repair: FULL_WEIGHT,
-  },
+	warrior: {
+		hitStat: Stat.StatMeleeHitRating,
+		hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
+		ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
+		trackExpertise: true,
+		repair: FULL_WEIGHT,
+	},
 };
 
 /**
@@ -392,8 +388,8 @@ export const DEFAULT_CAP_PROFILE: CapProfile = CAP_PROFILE_BY_SPEC.ret;
  * fill must degrade rather than throw on a spec it does not recognise.
  */
 export function capProfileFor(spec: SpecId | undefined): CapProfile {
-  if (spec === undefined) return DEFAULT_CAP_PROFILE;
-  return CAP_PROFILE_BY_SPEC[spec] ?? DEFAULT_CAP_PROFILE;
+	if (spec === undefined) return DEFAULT_CAP_PROFILE;
+	return CAP_PROFILE_BY_SPEC[spec] ?? DEFAULT_CAP_PROFILE;
 }
 
 /**
@@ -419,46 +415,34 @@ export function capProfileFor(spec: SpecId | undefined): CapProfile {
  * no damage by school, so no caster is priced without it.
  */
 export function hitCapBudgetFrom(
-  profile: CapProfile,
-  request: unknown,
-  pseudoStats: readonly number[],
-  spellDamageBySchool?: SpellDamageBySchool
+	profile: CapProfile,
+	request: unknown,
+	pseudoStats: readonly number[],
+	spellDamageBySchool?: SpellDamageBySchool,
 ): HitCapBudget | undefined {
-  const { repair } = profile;
-  if (repair.kind !== "budget") return undefined;
-  if (!targetsAtCapLevel(request)) return undefined;
-  const req = request as { raid?: { debuffs?: { faerieFire?: unknown } } };
-  const hitPercent = pseudoStats[repair.hitPercentPseudoStat];
-  if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
-    return undefined;
-  }
-  const faerieFire = req.raid?.debuffs?.faerieFire;
-  const improved =
-    faerieFire === "TristateEffectImproved" || faerieFire === 2;
-  const fire =
-    improved && profile.hitStat === Stat.StatMeleeHitRating
-      ? IMPROVED_FAERIE_FIRE_HIT_PERCENT
-      : 0;
-  const remaining =
-    (profile.hitCapPercent - fire - hitPercent) * profile.ratingPerPercent;
-  if (!pricesHitBySpells(profile)) {
-    return { stat: profile.hitStat, remaining };
-  }
-  if (spellDamageBySchool === undefined) {
-    throw new Error(
-      "the sim result has no spell damage by school, so spell hit cannot be priced"
-    );
-  }
-  return {
-    stat: profile.hitStat,
-    remaining,
-    groups: spellHitGroups(
-      pseudoStats,
-      hitPercent,
-      spellDamageBySchool,
-      profile.ratingPerPercent
-    ),
-  };
+	const { repair } = profile;
+	if (repair.kind !== 'budget') return undefined;
+	if (!targetsAtCapLevel(request)) return undefined;
+	const req = request as { raid?: { debuffs?: { faerieFire?: unknown } } };
+	const hitPercent = pseudoStats[repair.hitPercentPseudoStat];
+	if (typeof hitPercent !== 'number' || !Number.isFinite(hitPercent)) {
+		return undefined;
+	}
+	const faerieFire = req.raid?.debuffs?.faerieFire;
+	const improved = faerieFire === 'TristateEffectImproved' || faerieFire === 2;
+	const fire = improved && profile.hitStat === Stat.StatMeleeHitRating ? IMPROVED_FAERIE_FIRE_HIT_PERCENT : 0;
+	const remaining = (profile.hitCapPercent - fire - hitPercent) * profile.ratingPerPercent;
+	if (!pricesHitBySpells(profile)) {
+		return { stat: profile.hitStat, remaining };
+	}
+	if (spellDamageBySchool === undefined) {
+		throw new Error('the sim result has no spell damage by school, so spell hit cannot be priced');
+	}
+	return {
+		stat: profile.hitStat,
+		remaining,
+		groups: spellHitGroups(pseudoStats, hitPercent, spellDamageBySchool, profile.ratingPerPercent),
+	};
 }
 
 /**
@@ -466,12 +450,8 @@ export function hitCapBudgetFrom(
  * hold for, which a budget needs.
  */
 export function targetsAtCapLevel(request: unknown): boolean {
-  const targets =
-    (request as { encounter?: { targets?: ReadonlyArray<{ level?: unknown }> } })
-      .encounter?.targets ?? [];
-  return (
-    targets.length > 0 && targets.every((t) => t.level === RAID_BOSS_LEVEL)
-  );
+	const targets = (request as { encounter?: { targets?: ReadonlyArray<{ level?: unknown }> } }).encounter?.targets ?? [];
+	return targets.length > 0 && targets.every(t => t.level === RAID_BOSS_LEVEL);
 }
 
 /**
@@ -479,34 +459,27 @@ export function targetsAtCapLevel(request: unknown): boolean {
  * by the spells a sim result shows cast.
  */
 export function pricesHitBySpells(profile: CapProfile): boolean {
-  return (
-    profile.repair.kind === "budget" &&
-    profile.repair.hitPercentPseudoStat === PSEUDO_STAT_SPELL_HIT_PERCENT
-  );
+	return profile.repair.kind === 'budget' && profile.repair.hitPercentPseudoStat === PSEUDO_STAT_SPELL_HIT_PERCENT;
 }
 
 function spellHitGroups(
-  pseudoStats: readonly number[],
-  sharedPercent: number,
-  spellDamageBySchool: SpellDamageBySchool,
-  ratingPerPercent: number
+	pseudoStats: readonly number[],
+	sharedPercent: number,
+	spellDamageBySchool: SpellDamageBySchool,
+	ratingPerPercent: number,
 ): HitCapGroup[] {
-  const damageByOffset = new Map<number, number>();
-  let total = 0;
-  for (const [key, damage] of Object.entries(spellDamageBySchool)) {
-    const school = Number(key);
-    if (!(damage > 0) || school === SPELL_SCHOOL_PHYSICAL) continue;
-    const slot = SCHOOL_HIT_PSEUDO_STAT[school];
-    const schoolPercent =
-      slot === undefined ? sharedPercent : (pseudoStats[slot] ?? sharedPercent);
-    const offset =
-      Math.max(0, schoolPercent - sharedPercent) * ratingPerPercent;
-    damageByOffset.set(offset, (damageByOffset.get(offset) ?? 0) + damage);
-    total += damage;
-  }
-  return [...damageByOffset]
-    .sort(([a], [b]) => a - b)
-    .map(([offset, damage]) => ({ offset, share: damage / total }));
+	const damageByOffset = new Map<number, number>();
+	let total = 0;
+	for (const [key, damage] of Object.entries(spellDamageBySchool)) {
+		const school = Number(key);
+		if (!(damage > 0) || school === SPELL_SCHOOL_PHYSICAL) continue;
+		const slot = SCHOOL_HIT_PSEUDO_STAT[school];
+		const schoolPercent = slot === undefined ? sharedPercent : (pseudoStats[slot] ?? sharedPercent);
+		const offset = Math.max(0, schoolPercent - sharedPercent) * ratingPerPercent;
+		damageByOffset.set(offset, (damageByOffset.get(offset) ?? 0) + damage);
+		total += damage;
+	}
+	return [...damageByOffset].sort(([a], [b]) => a - b).map(([offset, damage]) => ({ offset, share: damage / total }));
 }
 
 /**
@@ -514,14 +487,11 @@ function spellHitGroups(
  * (proto.Player.talents_string). 0 when there is no entry, no string, or no
  * digit at the entry's position.
  */
-export function talentPoints(
-  talentsString: string | undefined,
-  entry: TalentPosition | undefined
-): number {
-  if (!entry || talentsString === undefined) return 0;
-  const segment = talentsString.split("-")[entry.treeSegment];
-  const points = Number(segment?.charAt(entry.talentIndex) || 0);
-  return Number.isFinite(points) && points > 0 ? points : 0;
+export function talentPoints(talentsString: string | undefined, entry: TalentPosition | undefined): number {
+	if (!entry || talentsString === undefined) return 0;
+	const segment = talentsString.split('-')[entry.treeSegment];
+	const points = Number(segment?.charAt(entry.talentIndex) || 0);
+	return Number.isFinite(points) && points > 0 ? points : 0;
 }
 
 /**
@@ -530,13 +500,8 @@ export function talentPoints(
  * metrics show it, so the spells it covers reach the cap sooner than the
  * budget counts.
  */
-export function perSpellHitTalentTaken(
-  profile: CapProfile,
-  talentsString: string | undefined
-): string | undefined {
-  const { repair } = profile;
-  if (repair.kind !== "budget") return undefined;
-  return (repair.perSpellHitTalents ?? []).find(
-    (position) => talentPoints(talentsString, position) > 0
-  )?.talent;
+export function perSpellHitTalentTaken(profile: CapProfile, talentsString: string | undefined): string | undefined {
+	const { repair } = profile;
+	if (repair.kind !== 'budget') return undefined;
+	return (repair.perSpellHitTalents ?? []).find(position => talentPoints(talentsString, position) > 0)?.talent;
 }

@@ -11,304 +11,242 @@
  * like `simCacheKey` in seams/sim-runner.ts.
  */
 
-import { HandType } from "@generated/proto/common";
+import { HandType } from '@generated/proto/common';
 
+import { fillEmptyCandidateGems, type FillEmptyOpts, type GemContext, gemContext, metaSocketUnpriced, missingMetaPreferenceNote } from './candidate-gems';
+import { type ItemEp, orderCandidatesByEp } from './candidate-order';
+import { capProfileFor, type HitCapBudget, hitCapBudgetFrom, perSpellHitTalentTaken, pricesHitBySpells, targetsAtCapLevel } from './cap-profile';
+import { gearHitRating } from './caps';
+import { compose } from './compose';
+import { canonicalJson, ENGINE_VERSION, type HashedGearItem } from './content-hash';
+import { CUTOFF, type Cutoff, meetsCutoff } from './cutoff';
+import { type Assumptions, buildStandingAssumptions, type Substitution, substitutionsFromMetaRepair } from './disclosure';
+import { enchantAppliesToItem } from './enchants';
+import { findMetaGemId, type GemEntry, gemsForPhase, getGem } from './gems';
+import { getItem } from './items';
+import { isKaelTempLegendary } from './kael-temp';
+import { equipmentFromLoggedGear, socketedItemsFromLoggedGear } from './logged-gear';
+import { inactiveMeta, MetaRepairError, type MetaRepairSwap, REPAIR_SEARCH_WORK_LIMIT, repairAndMinimize, type SocketedItem } from './meta-repair';
+import { migrateGemsToItem } from './migrate-gems';
+import { choosePartnerSet, PARTNER_RULE, type PartnerAudit, type PartnerPiece, partnerPool, type PartnerRule, sumOfSinglesEstimate } from './partner-choice';
+import { type PlausibilityWarning, plausibilityWarnings } from './plausibility';
 import {
-  fillEmptyCandidateGems,
-  type FillEmptyOpts,
-  type GemContext,
-  gemContext,
-  metaSocketUnpriced,
-  missingMetaPreferenceNote,
-} from "./candidate-gems";
-import { type ItemEp, orderCandidatesByEp } from "./candidate-order";
+	filterPoolByPhase,
+	type ItemSource,
+	mainHandLeavesOffHandFree,
+	offHandBlockedEntries,
+	oneHandBlockedEntries,
+	type PoolEntry,
+	type SimSlotName,
+	simSlotsForPoolSlot,
+} from './pool';
+import { promisePool } from './promise-pool';
+import { assertUsableSeeds, DegenerateSeedsError, PAIRED_REPLICATE_TOP_N, pairedReplicateSe, replicateSeeds, usesPairedReplication } from './se';
+import type { FightSummary, GearSource } from './seams/gear-source';
 import {
-  capProfileFor,
-  type HitCapBudget,
-  hitCapBudgetFrom,
-  perSpellHitTalentTaken,
-  pricesHitBySpells,
-  targetsAtCapLevel,
-} from "./cap-profile";
-import { gearHitRating } from "./caps";
-import { compose } from "./compose";
-import { canonicalJson, ENGINE_VERSION, type HashedGearItem } from "./content-hash";
-import { CUTOFF, type Cutoff, meetsCutoff } from "./cutoff";
+	type PlayerStatsObservation,
+	type RaidSimRequest,
+	simCacheKey,
+	type SimObservation,
+	type SimRunner,
+	type SimRunOpts,
+	type SpellDamageBySchool,
+	stableStringify,
+} from './seams/sim-runner';
+import type { Store } from './seams/store';
+import { setBreakNote } from './set-bonus';
 import {
-  type Assumptions,
-  buildStandingAssumptions,
-  type Substitution,
-  substitutionsFromMetaRepair,
-} from "./disclosure";
-import { enchantAppliesToItem } from "./enchants";
-import { findMetaGemId, type GemEntry,gemsForPhase, getGem } from "./gems";
-import { getItem } from "./items";
-import { isKaelTempLegendary } from "./kael-temp";
+	applyCopies,
+	applySetLessCopies,
+	type BuildFailure,
+	clearsSameGearGate,
+	errorText,
+	isBuildFailure,
+	isSimFailure,
+	measureSameGearBonus,
+	measureWornSetLadder,
+	type SimFailure,
+} from './set-less-copies';
+import { recordSetScreen, runSetScreenOn, type SetScreen, type SetScreenInput, type SetScreenMode } from './set-screen';
 import {
-  equipmentFromLoggedGear,
-  socketedItemsFromLoggedGear,
-} from "./logged-gear";
-import {
-  inactiveMeta,
-  MetaRepairError,
-  type MetaRepairSwap,
-  REPAIR_SEARCH_WORK_LIMIT,
-  repairAndMinimize,
-  type SocketedItem,
-} from "./meta-repair";
-import { migrateGemsToItem } from "./migrate-gems";
-import {
-  choosePartnerSet,
-  PARTNER_RULE,
-  type PartnerAudit,
-  type PartnerPiece,
-  partnerPool,
-  type PartnerRule,
-  sumOfSinglesEstimate,
-} from "./partner-choice";
-import {
-  type PlausibilityWarning,
-  plausibilityWarnings,
-} from "./plausibility";
-import {
-  filterPoolByPhase,
-  type ItemSource,
-  mainHandLeavesOffHandFree,
-  offHandBlockedEntries,
-  oneHandBlockedEntries,
-  type PoolEntry,
-  type SimSlotName,
-  simSlotsForPoolSlot,
-} from "./pool";
-import { promisePool } from "./promise-pool";
-import {
-  assertUsableSeeds,
-  DegenerateSeedsError,
-  PAIRED_REPLICATE_TOP_N,
-  pairedReplicateSe,
-  replicateSeeds,
-  usesPairedReplication,
-} from "./se";
-import type { FightSummary, GearSource } from "./seams/gear-source";
-import {
-  type PlayerStatsObservation,
-  type RaidSimRequest,
-  simCacheKey,
-  type SimObservation,
-  type SimRunner,
-  type SimRunOpts,
-  type SpellDamageBySchool,
-  stableStringify,
-} from "./seams/sim-runner";
-import type { Store } from "./seams/store";
-import { setBreakNote } from "./set-bonus";
-import {
-  applyCopies,
-  applySetLessCopies,
-  type BuildFailure,
-  clearsSameGearGate,
-  errorText,
-  isBuildFailure,
-  isSimFailure,
-  measureSameGearBonus,
-  measureWornSetLadder,
-  type SimFailure,
-} from "./set-less-copies";
-import {
-  recordSetScreen,
-  runSetScreenOn,
-  type SetScreen,
-  type SetScreenInput,
-  type SetScreenMode,
-} from "./set-screen";
-import {
-  type BonusCountPredicate,
-  bonusKey,
-  type BrokenSetBonus,
-  brokenSetBonuses,
-  combineSe,
-  computeSynergy,
-  type DpsSample,
-  type IndividualDelta,
-  type InflationKey,
-  isBonusImplemented,
-  netInflation,
-  nextMeasurableThreshold,
-  type PackagePiece,
-  selectPackage,
-  type SelfSetConfound,
-  SET_THRESHOLDS,
-  setCounts,
-  setLabel,
-  type SetThreshold,
-  type UnmeasuredReason,
-} from "./set-value";
-import { SIM_ORDER, type SimItemSpec } from "./slots";
-import type {
-  CharacterRef,
-  ContentPhase,
-  DetectedSpecId,
-  FightRef,
-  Race,
-  SpecId,
-} from "./types";
-import { setCreditUnmeasured, setPotentialSteps } from "./view";
+	type BonusCountPredicate,
+	bonusKey,
+	type BrokenSetBonus,
+	brokenSetBonuses,
+	combineSe,
+	computeSynergy,
+	type DpsSample,
+	type IndividualDelta,
+	type InflationKey,
+	isBonusImplemented,
+	netInflation,
+	nextMeasurableThreshold,
+	type PackagePiece,
+	selectPackage,
+	type SelfSetConfound,
+	SET_THRESHOLDS,
+	setCounts,
+	setLabel,
+	type SetThreshold,
+	type UnmeasuredReason,
+} from './set-value';
+import { SIM_ORDER, type SimItemSpec } from './slots';
+import type { CharacterRef, ContentPhase, DetectedSpecId, FightRef, Race, SpecId } from './types';
+import { setCreditUnmeasured, setPotentialSteps } from './view';
 
 export type RankInput = {
-  character: CharacterRef;
-  spec: SpecId;
-  maxPhase: ContentPhase;
-  fight?: FightRef;
-  race?: Race;
-  iterations?: number;
-  seeds?: number[];
-  /**
-   * Keeps the first N candidates of the EP ordering that the player does not
-   * wear, plus every owned row. `undefined` means no cap, and hashes the
-   * same as a cap equal to the eligible set's size.
-   */
-  candidateCap?: number;
+	character: CharacterRef;
+	spec: SpecId;
+	maxPhase: ContentPhase;
+	fight?: FightRef;
+	race?: Race;
+	iterations?: number;
+	seeds?: number[];
+	/**
+	 * Keeps the first N candidates of the EP ordering that the player does not
+	 * wear, plus every owned row. `undefined` means no cap, and hashes the
+	 * same as a cap equal to the eligible set's size.
+	 */
+	candidateCap?: number;
 };
 
 export type Deps = {
-  gear: GearSource;
-  sim: SimRunner;
-  store: Store;
-  clock: () => Date;
-  raidSimSkeleton: RaidSimRequest;
-  epWeights: Readonly<Record<string, number>> | readonly number[];
-  /**
-   * The candidate order's item score per sim slot. The tab passes wowsims'
-   * own weapon-aware score (`model/item_ep.ts`). Required, with no default:
-   * stats times `epWeights` gives a weapon no credit for its weapon damage.
-   */
-  itemEp: ItemEp;
-  gemPalette?: readonly GemEntry[];
-  pool?: readonly PoolEntry[];
-  /**
-   * Per-request item rows for the sim's database. Plain data, like `pool` and
-   * `epWeights`: synchronous, no I/O.
-   *
-   * The browser's WASM sim is built without `with_db`, so the registry is
-   * filled per request; a candidate is never worn, so the skeleton's own
-   * database never describes it. CLI callers omit it (`wowsimcli` is built
-   * `with_db`), and composed requests then keep the skeleton's database.
-   */
-  simDatabaseFor?: (
-    equipment: readonly SimItemSpec[]
-  ) => Readonly<Record<string, unknown>> | undefined;
-  /**
-   * How many candidate sims may be in flight at once. It changes how fast a
-   * run goes, never what it returns, so it stays out of the content hash.
-   * Defaults to 1 (serial).
-   */
-  concurrency?: number;
-  /**
-   * When set, `buildSetBonuses` measures every bonus of every worn set on the
-   * player's own gear with the worn-set ladder, and charges a break only where
-   * that value clears the noise gate; it also measures each package's bonus on
-   * the package's own gear. The tab passes it. Absent, none of those sims run.
-   */
-  measureBrokenSetValue?: boolean;
-  /**
-   * The rule that picks each set row's partner pieces for a bonus
-   * (`partner-choice.ts`). Absent means `PARTNER_RULE`. Only the tab's check
-   * hook sets it, in dev and gate builds, to score the rules; it joins the
-   * content hash only when set, so a ranking cached under one rule is never
-   * served for another.
-   */
-  partnerRule?: PartnerRule;
-  /**
-   * The set screen (`set-screen.ts`), with the flag only. "on" filters the
-   * gain side to the sets the screen keeps; the tab passes it. "record" runs
-   * the record mode's sims, filtering nothing; only the tab's check hook sets
-   * it, in dev and gate builds. Both write `Ranking.setScreen`. Absent means
-   * "off", so the CLI is unchanged. It joins the content hash only when set.
-   */
-  setScreen?: SetScreenMode;
-  /**
-   * Stop signal. On abort, in-flight per-candidate sims finish, no further
-   * sim is sent, and the run returns a `PartialRanking` (`complete: false`).
-   * A Stop during the set phase or paired replication returns the same
-   * `PartialRanking` as a Stop during the last candidate sim.
-   */
-  signal?: AbortSignal;
+	gear: GearSource;
+	sim: SimRunner;
+	store: Store;
+	clock: () => Date;
+	raidSimSkeleton: RaidSimRequest;
+	epWeights: Readonly<Record<string, number>> | readonly number[];
+	/**
+	 * The candidate order's item score per sim slot. The tab passes wowsims'
+	 * own weapon-aware score (`model/item_ep.ts`). Required, with no default:
+	 * stats times `epWeights` gives a weapon no credit for its weapon damage.
+	 */
+	itemEp: ItemEp;
+	gemPalette?: readonly GemEntry[];
+	pool?: readonly PoolEntry[];
+	/**
+	 * Per-request item rows for the sim's database. Plain data, like `pool` and
+	 * `epWeights`: synchronous, no I/O.
+	 *
+	 * The browser's WASM sim is built without `with_db`, so the registry is
+	 * filled per request; a candidate is never worn, so the skeleton's own
+	 * database never describes it. CLI callers omit it (`wowsimcli` is built
+	 * `with_db`), and composed requests then keep the skeleton's database.
+	 */
+	simDatabaseFor?: (equipment: readonly SimItemSpec[]) => Readonly<Record<string, unknown>> | undefined;
+	/**
+	 * How many candidate sims may be in flight at once. It changes how fast a
+	 * run goes, never what it returns, so it stays out of the content hash.
+	 * Defaults to 1 (serial).
+	 */
+	concurrency?: number;
+	/**
+	 * When set, `buildSetBonuses` measures every bonus of every worn set on the
+	 * player's own gear with the worn-set ladder, and charges a break only where
+	 * that value clears the noise gate; it also measures each package's bonus on
+	 * the package's own gear. The tab passes it. Absent, none of those sims run.
+	 */
+	measureBrokenSetValue?: boolean;
+	/**
+	 * The rule that picks each set row's partner pieces for a bonus
+	 * (`partner-choice.ts`). Absent means `PARTNER_RULE`. Only the tab's check
+	 * hook sets it, in dev and gate builds, to score the rules; it joins the
+	 * content hash only when set, so a ranking cached under one rule is never
+	 * served for another.
+	 */
+	partnerRule?: PartnerRule;
+	/**
+	 * The set screen (`set-screen.ts`), with the flag only. "on" filters the
+	 * gain side to the sets the screen keeps; the tab passes it. "record" runs
+	 * the record mode's sims, filtering nothing; only the tab's check hook sets
+	 * it, in dev and gate builds. Both write `Ranking.setScreen`. Absent means
+	 * "off", so the CLI is unchanged. It joins the content hash only when set.
+	 */
+	setScreen?: SetScreenMode;
+	/**
+	 * Stop signal. On abort, in-flight per-candidate sims finish, no further
+	 * sim is sent, and the run returns a `PartialRanking` (`complete: false`).
+	 * A Stop during the set phase or paired replication returns the same
+	 * `PartialRanking` as a Stop during the last candidate sim.
+	 */
+	signal?: AbortSignal;
 };
 
 export type Progress =
-  | { stage: "resolving" }
-  | { stage: "reading-gear" }
-  | { stage: "composing" }
-  | { stage: "building-pool" }
-  /**
-   * `total` counts sims (baseline, candidates, paired replicas). The first
-   * total is a budget: it counts replicas for up to `PAIRED_REPLICATE_TOP_N`
-   * rows before the run knows how many rows clear the cutoff. The first
-   * `simming` after `ranking` repeats `done` with the exact total, and the run
-   * ends on `done === total`.
-   */
-  | { stage: "simming"; done: number; total: number }
-  /**
-   * One candidate's row finished, fired as each sim finishes so a caller can
-   * fill rows before the "ranking" stage. No `stage` field: this is a side
-   * channel beside the stage sequence, not a replacement for "simming".
-   */
-  | { kind: "row"; row: RankedItem }
-  | { stage: "ranking" };
+	| { stage: 'resolving' }
+	| { stage: 'reading-gear' }
+	| { stage: 'composing' }
+	| { stage: 'building-pool' }
+	/**
+	 * `total` counts sims (baseline, candidates, paired replicas). The first
+	 * total is a budget: it counts replicas for up to `PAIRED_REPLICATE_TOP_N`
+	 * rows before the run knows how many rows clear the cutoff. The first
+	 * `simming` after `ranking` repeats `done` with the exact total, and the run
+	 * ends on `done === total`.
+	 */
+	| { stage: 'simming'; done: number; total: number }
+	/**
+	 * One candidate's row finished, fired as each sim finishes so a caller can
+	 * fill rows before the "ranking" stage. No `stage` field: this is a side
+	 * channel beside the stage sequence, not a replacement for "simming".
+	 */
+	| { kind: 'row'; row: RankedItem }
+	| { stage: 'ranking' };
 
 export type RankErrorKind =
-  | "character-not-found"
-  | "no-qualifying-fight"
-  | "gear-unreadable"
-  | "meta-unsolvable"
-  | "sim-failed"
-  | "wcl-budget-exhausted"
-  | "not-implemented"
-  | "internal";
+	| 'character-not-found'
+	| 'no-qualifying-fight'
+	| 'gear-unreadable'
+	| 'meta-unsolvable'
+	| 'sim-failed'
+	| 'wcl-budget-exhausted'
+	| 'not-implemented'
+	| 'internal';
 
 export class RankError extends Error {
-  readonly kind: RankErrorKind;
+	readonly kind: RankErrorKind;
 
-  constructor(kind: RankErrorKind, message: string) {
-    super(message);
-    this.name = "RankError";
-    this.kind = kind;
-  }
+	constructor(kind: RankErrorKind, message: string) {
+		super(message);
+		this.name = 'RankError';
+		this.kind = kind;
+	}
 }
 
 export type RankedItem = {
-  rank: number | null;
-  itemId: number;
-  name: string;
-  slot: PoolEntry["slot"];
-  slotChoice?: SimSlotName;
-  source: ItemSource;
-  sources?: ItemSource[];
-  deltaDps: number;
-  deltaPct: number;
-  se: number;
-  seMethod: "independent" | "paired-replicate";
-  bisTags: Array<"BiS" | "Alt" | "Realistic">;
-  curatedSets?: string[];
-  bisSets?: string[];
-  setBonusNote?: string;
-  gemSubstitutions?: Array<{
-    itemId: number;
-    socketIndex: number;
-    from: number;
-    to: number;
-  }>;
-  removedItems?: Array<{ itemId: number; slot: SimSlotName }>;
-  emptyMetaSocket?: boolean;
-  owned?: boolean;
-  /**
-   * `false` only on a row Stop left unsimmed; absent otherwise, never
-   * `true`. Such a row's `deltaDps`/`se`/etc. are placeholders, excluded from
-   * cutoff classification and tie groups.
-   */
-  simmed?: false;
-  belowCutoff: boolean;
-  setContext?: SetContext;
+	rank: number | null;
+	itemId: number;
+	name: string;
+	slot: PoolEntry['slot'];
+	slotChoice?: SimSlotName;
+	source: ItemSource;
+	sources?: ItemSource[];
+	deltaDps: number;
+	deltaPct: number;
+	se: number;
+	seMethod: 'independent' | 'paired-replicate';
+	bisTags: Array<'BiS' | 'Alt' | 'Realistic'>;
+	curatedSets?: string[];
+	bisSets?: string[];
+	setBonusNote?: string;
+	gemSubstitutions?: Array<{
+		itemId: number;
+		socketIndex: number;
+		from: number;
+		to: number;
+	}>;
+	removedItems?: Array<{ itemId: number; slot: SimSlotName }>;
+	emptyMetaSocket?: boolean;
+	owned?: boolean;
+	/**
+	 * `false` only on a row Stop left unsimmed; absent otherwise, never
+	 * `true`. Such a row's `deltaDps`/`se`/etc. are placeholders, excluded from
+	 * cutoff classification and tie groups.
+	 */
+	simmed?: false;
+	belowCutoff: boolean;
+	setContext?: SetContext;
 };
 
 /**
@@ -342,86 +280,86 @@ export type RankedItem = {
  * path; `dps` is absent when an input was unmeasured.
  */
 export type SetContext = {
-  setId: number;
-  setName: string;
-  piecesWornBefore: number;
-  piecesAfterSwap: number;
-  nextThreshold: SetThreshold | null;
-  crossesThreshold: boolean;
-  /**
-   * Set on every row of a step ranking: the engine valued each future as a
-   * sim of the row's step gear. The view's helpers that see only this context
-   * read it to apply the step rule instead of summing `pieces`. Absent on
-   * rankings made without `measureBrokenSetValue`.
-   */
-  stepRanking?: true;
-  /**
-   * The row's single-swap figure d_r, taken before paired replication
-   * rewrites `deltaDps`. A step's credit is its `stepGearDps` minus this.
-   */
-  singleDeltaDps?: number;
-  singleBreaks?: Array<{
-    setId: number;
-    setName: string;
-    threshold: SetThreshold;
-    dps?: number;
-  }>;
-  futureBonuses?: Array<{
-    threshold: SetThreshold;
-    piecesNeeded: number;
-    dps?: number;
-    /** The entry's `sameGearDps` and `sameGearSe`, copied. */
-    sameGearDps?: number;
-    sameGearSe?: number;
-    /** The entry's gate did not clear: no package or step sim ran. */
-    belowGate?: true;
-    /**
-     * The sim of the current gear plus this row plus its partner pieces, minus
-     * the sim of the current gear, and that difference's standard error.
-     * Present only on a step ranking, for a future whose gate
-     * cleared, when the partner choice and the sim succeeded.
-     */
-    stepGearDps?: number;
-    stepGearSe?: number;
-    /**
-     * The sim of the gear just before this step with the worn bonuses the
-     * step newly loses turned off (the lost set's replaced pieces sent as
-     * set-less copies), minus the sim of the current gear; that difference's
-     * standard error; and the bonuses that sim turned off. The popover
-     * splits the step into a Breaks line and a pieces line from it. Present
-     * only on a step ranking, for a shown step that newly loses a worn bonus,
-     * when the plain gear before was in the store and the sim succeeded.
-     */
-    bonusOffDps?: number;
-    bonusOffSe?: number;
-    bonusOff?: Array<{ setId: number; threshold: SetThreshold }>;
-    /** The partner choice needed a worn bonus whose value is unmeasured. */
-    partnerUnmeasured?: "break-unmeasured";
-    /** The rule that chose `pieces` on a step ranking. */
-    partnerRule?: PartnerRule;
-    breaks?: Array<{
-      setId: number;
-      setName: string;
-      threshold: SetThreshold;
-      dps?: number;
-    }>;
-    pieces?: Array<{ itemId: number; name: string; dps?: number }>;
-  }>;
-  commitBreaks?: Array<{
-    setId: number;
-    setName: string;
-    threshold: SetThreshold;
-    dps?: number;
-  }>;
-  commitPackageDeltaDps?: number;
-  packages?: SetPackageContext[];
+	setId: number;
+	setName: string;
+	piecesWornBefore: number;
+	piecesAfterSwap: number;
+	nextThreshold: SetThreshold | null;
+	crossesThreshold: boolean;
+	/**
+	 * Set on every row of a step ranking: the engine valued each future as a
+	 * sim of the row's step gear. The view's helpers that see only this context
+	 * read it to apply the step rule instead of summing `pieces`. Absent on
+	 * rankings made without `measureBrokenSetValue`.
+	 */
+	stepRanking?: true;
+	/**
+	 * The row's single-swap figure d_r, taken before paired replication
+	 * rewrites `deltaDps`. A step's credit is its `stepGearDps` minus this.
+	 */
+	singleDeltaDps?: number;
+	singleBreaks?: Array<{
+		setId: number;
+		setName: string;
+		threshold: SetThreshold;
+		dps?: number;
+	}>;
+	futureBonuses?: Array<{
+		threshold: SetThreshold;
+		piecesNeeded: number;
+		dps?: number;
+		/** The entry's `sameGearDps` and `sameGearSe`, copied. */
+		sameGearDps?: number;
+		sameGearSe?: number;
+		/** The entry's gate did not clear: no package or step sim ran. */
+		belowGate?: true;
+		/**
+		 * The sim of the current gear plus this row plus its partner pieces, minus
+		 * the sim of the current gear, and that difference's standard error.
+		 * Present only on a step ranking, for a future whose gate
+		 * cleared, when the partner choice and the sim succeeded.
+		 */
+		stepGearDps?: number;
+		stepGearSe?: number;
+		/**
+		 * The sim of the gear just before this step with the worn bonuses the
+		 * step newly loses turned off (the lost set's replaced pieces sent as
+		 * set-less copies), minus the sim of the current gear; that difference's
+		 * standard error; and the bonuses that sim turned off. The popover
+		 * splits the step into a Breaks line and a pieces line from it. Present
+		 * only on a step ranking, for a shown step that newly loses a worn bonus,
+		 * when the plain gear before was in the store and the sim succeeded.
+		 */
+		bonusOffDps?: number;
+		bonusOffSe?: number;
+		bonusOff?: Array<{ setId: number; threshold: SetThreshold }>;
+		/** The partner choice needed a worn bonus whose value is unmeasured. */
+		partnerUnmeasured?: 'break-unmeasured';
+		/** The rule that chose `pieces` on a step ranking. */
+		partnerRule?: PartnerRule;
+		breaks?: Array<{
+			setId: number;
+			setName: string;
+			threshold: SetThreshold;
+			dps?: number;
+		}>;
+		pieces?: Array<{ itemId: number; name: string; dps?: number }>;
+	}>;
+	commitBreaks?: Array<{
+		setId: number;
+		setName: string;
+		threshold: SetThreshold;
+		dps?: number;
+	}>;
+	commitPackageDeltaDps?: number;
+	packages?: SetPackageContext[];
 };
 
 export type SetPackageContext = {
-  threshold: SetThreshold;
-  deltaDps: number;
-  itemIds: number[];
-  piecesNeeded: number;
+	threshold: SetThreshold;
+	deltaDps: number;
+	itemIds: number[];
+	piecesNeeded: number;
 };
 
 /**
@@ -432,16 +370,12 @@ export type SetPackageContext = {
  * produced now; the other members keep older saved rankings readable.
  */
 export type BrokenSetValue = {
-  setId: number;
-  setName: string;
-  threshold: SetThreshold;
-  dps?: number;
-  se?: number;
-  unmeasured?:
-    | "no-neutral-candidates"
-    | "sim-failed"
-    | "repair-failed"
-    | "dependent-unmeasured";
+	setId: number;
+	setName: string;
+	threshold: SetThreshold;
+	dps?: number;
+	se?: number;
+	unmeasured?: 'no-neutral-candidates' | 'sim-failed' | 'repair-failed' | 'dependent-unmeasured';
 };
 
 /**
@@ -452,33 +386,33 @@ export type BrokenSetValue = {
  * counted.
  */
 export type WornSetLadderEntry = {
-  setId: number;
-  setName: string;
-  count: number;
-  dps?: number;
-  se?: number;
-  unmeasured?: "sim-failed";
-  counted: boolean;
+	setId: number;
+	setName: string;
+	count: number;
+	dps?: number;
+	se?: number;
+	unmeasured?: 'sim-failed';
+	counted: boolean;
 };
 
 /** One crossing gate of `Ranking.crossingGates`. */
 export type CrossingGate = {
-  setId: number;
-  /** One more than the worn count: the count a single swap reaches. */
-  count: number;
-  /** The candidate whose single-swap gear the gate was measured on. */
-  itemId: number;
-  dps?: number;
-  se?: number;
-  cleared: boolean;
+	setId: number;
+	/** One more than the worn count: the count a single swap reaches. */
+	count: number;
+	/** The candidate whose single-swap gear the gate was measured on. */
+	itemId: number;
+	dps?: number;
+	se?: number;
+	cleared: boolean;
 };
 
 export type SetStepSims = {
-  partnerRule: PartnerRule;
-  /** Distinct step gears across every row and future. */
-  gears: number;
-  simmed: number;
-  fromStore: number;
+	partnerRule: PartnerRule;
+	/** Distinct step gears across every row and future. */
+	gears: number;
+	simmed: number;
+	fromStore: number;
 };
 
 /**
@@ -494,148 +428,148 @@ export type SetStepSims = {
  * plain gear before was not in the store.
  */
 export type SetBonusOffSims = {
-  gears: number;
-  simmed: number;
-  fromStore: number;
-  failedGears: number;
-  skippedSteps: number;
-  beforeInStore: number;
+	gears: number;
+	simmed: number;
+	fromStore: number;
+	failedGears: number;
+	skippedSteps: number;
+	beforeInStore: number;
 };
 
 export type PartnerAuditEntry = {
-  itemId: number;
-  setId: number;
-  count: number;
-  audit: PartnerAudit;
+	itemId: number;
+	setId: number;
+	count: number;
+	audit: PartnerAudit;
 };
 
 export type SetBonusValue = {
-  setId: number;
-  setName: string;
-  threshold: SetThreshold;
-  piecesWorn: number;
-  packageItemIds: number[];
-  packageDeltaDps: number;
-  /**
-   * The package synergy `pkgΔ − Σsingles − raw2pc`, before any broken-bonus
-   * correction. One exception: at worn 1 a 4pc also adds back `(n−1)·B2` from
-   * the pair sim (`selfConfound`).
-   */
-  bonusDps?: number;
-  /**
-   * `bonusDps` corrected for the worn bonuses the package breaks
-   * (`netInflation`), using the measured broken-bonus value `B`; the value
-   * the ON credit and sort key use. Absent when any needed `B` is
-   * unmeasured, or when a worn-1
-   * 4pc's `selfConfound` has no `dps` (no usable pair, or the pair sim or its
-   * gem repair failed). Absent reverts the row to disclosure-only.
-   */
-  bonusDpsNet?: number;
-  se?: number;
-  /**
-   * The bonus measured on its own package's gear: the same gear simmed twice
-   * with enough of this set's pieces sent as copies to leave `threshold − 1`
-   * without them, set kept in one sim and set-less in the other
-   * (`measureSameGearBonus`). The noise gate for a set step reads it;
-   * `bonusDps` is left as it was. Present only under
-   * `deps.measureBrokenSetValue` and for a measured package; absent when a sim
-   * failed. `sameGearSe` is the combined standard error of the two sims.
-   */
-  sameGearDps?: number;
-  sameGearSe?: number;
-  /**
-   * The same-gear value is at or below the noise gate, so this count is not
-   * a bonus here and no package, pair or step sim ran for it.
-   * Such an entry is never a simmed package: `packageDeltaDps` is 0 and
-   * `bonusDps` is absent.
-   */
-  belowGate?: true;
-  unmeasured?: UnmeasuredReason;
-  breaks?: BrokenSetBonus[];
-  selfConfound?: SelfSetConfound;
-  gemSubstitutions?: Array<{
-    itemId: number;
-    itemIndex: number;
-    socketIndex: number;
-    from: number;
-    to: number;
-  }>;
+	setId: number;
+	setName: string;
+	threshold: SetThreshold;
+	piecesWorn: number;
+	packageItemIds: number[];
+	packageDeltaDps: number;
+	/**
+	 * The package synergy `pkgΔ − Σsingles − raw2pc`, before any broken-bonus
+	 * correction. One exception: at worn 1 a 4pc also adds back `(n−1)·B2` from
+	 * the pair sim (`selfConfound`).
+	 */
+	bonusDps?: number;
+	/**
+	 * `bonusDps` corrected for the worn bonuses the package breaks
+	 * (`netInflation`), using the measured broken-bonus value `B`; the value
+	 * the ON credit and sort key use. Absent when any needed `B` is
+	 * unmeasured, or when a worn-1
+	 * 4pc's `selfConfound` has no `dps` (no usable pair, or the pair sim or its
+	 * gem repair failed). Absent reverts the row to disclosure-only.
+	 */
+	bonusDpsNet?: number;
+	se?: number;
+	/**
+	 * The bonus measured on its own package's gear: the same gear simmed twice
+	 * with enough of this set's pieces sent as copies to leave `threshold − 1`
+	 * without them, set kept in one sim and set-less in the other
+	 * (`measureSameGearBonus`). The noise gate for a set step reads it;
+	 * `bonusDps` is left as it was. Present only under
+	 * `deps.measureBrokenSetValue` and for a measured package; absent when a sim
+	 * failed. `sameGearSe` is the combined standard error of the two sims.
+	 */
+	sameGearDps?: number;
+	sameGearSe?: number;
+	/**
+	 * The same-gear value is at or below the noise gate, so this count is not
+	 * a bonus here and no package, pair or step sim ran for it.
+	 * Such an entry is never a simmed package: `packageDeltaDps` is 0 and
+	 * `bonusDps` is absent.
+	 */
+	belowGate?: true;
+	unmeasured?: UnmeasuredReason;
+	breaks?: BrokenSetBonus[];
+	selfConfound?: SelfSetConfound;
+	gemSubstitutions?: Array<{
+		itemId: number;
+		itemIndex: number;
+		socketIndex: number;
+		from: number;
+		to: number;
+	}>;
 };
 
 export type ResolvedFight = {
-  reportCode: string;
-  fightId: number;
-  encounterName?: string;
-  killedAt?: string;
-  route: FightSummary["route"];
-  confidence?: number;
-  salvationUptime?: number;
+	reportCode: string;
+	fightId: number;
+	encounterName?: string;
+	killedAt?: string;
+	route: FightSummary['route'];
+	confidence?: number;
+	salvationUptime?: number;
 };
 
 export type Ranking = {
-  contentHash: string;
-  cutoff: Cutoff;
-  fight: ResolvedFight;
-  baseline: { dps: number; stdev: number; metaAdjusted: boolean };
-  assumptions: Assumptions;
-  substitutions: Substitution[];
-  items: RankedItem[];
-  setBonuses?: SetBonusValue[];
-  /**
-   * Standalone value `B` of each worn set bonus a swap can break: one entry per
-   * counted ladder count. Present only when `deps.measureBrokenSetValue` is
-   * set.
-   */
-  brokenSetValues?: BrokenSetValue[];
-  /**
-   * Every count from 2 to the worn count of every worn set, measured with the
-   * ladder, counted or not. Present only when
-   * `deps.measureBrokenSetValue` is set and a set is worn at 2 or more.
-   */
-  wornSetLadder?: WornSetLadderEntry[];
-  /**
-   * One gate per worn set with a pool piece in a slot the set does not fill:
-   * the bonus at one piece more than worn, measured on that set's best such
-   * candidate's own swap. A row crosses a bonus only when its
-   * count's gate here cleared. Present only with `measureBrokenSetValue`.
-   */
-  crossingGates?: CrossingGate[];
-  /**
-   * The step-gear sims of a step ranking: the rule that chose
-   * the partner pieces, how many distinct step gears there were, and how many
-   * of their sims ran or came from the store. Its presence marks the ranking
-   * as one whose set rows are valued by the step rule.
-   */
-  setStepSims?: SetStepSims;
-  /**
-   * The bonus-off sims that split a shown step's broken-set loss onto its own
-   * popover line. Present whenever `setStepSims` is.
-   */
-  setBonusOffSims?: SetBonusOffSims;
-  /**
-   * Every partner set simmed for every eligible future, written only under
-   * the "every-combination" rule, which the tab's check hook sets to score
-   * the zero-sim rules. Players never get it.
-   */
-  partnerAudit?: PartnerAuditEntry[];
-  /**
-   * The set screen's readings, written only when `deps.setScreen` is
-   * "record" or "on". In "on" mode it also holds each screened
-   * set's verdict and reason. Nothing in the engine or the view reads it:
-   * the gain side filters on the screen's own result, and record mode's
-   * readings are scored offline.
-   */
-  setScreen?: SetScreen;
-  plausibilityWarnings?: PlausibilityWarning[];
-  /**
-   * `true` unless Stop cut this run short.
-   *
-   * The literal type keeps a `PartialRanking` out of `applyView`, but it does
-   * not guard the ranking cache: `Store.put<T>` is generic. Only the
-   * `if (aborted) return partial` branch below, which returns before the
-   * write, keeps a partial out of the cache.
-   */
-  complete: true;
+	contentHash: string;
+	cutoff: Cutoff;
+	fight: ResolvedFight;
+	baseline: { dps: number; stdev: number; metaAdjusted: boolean };
+	assumptions: Assumptions;
+	substitutions: Substitution[];
+	items: RankedItem[];
+	setBonuses?: SetBonusValue[];
+	/**
+	 * Standalone value `B` of each worn set bonus a swap can break: one entry per
+	 * counted ladder count. Present only when `deps.measureBrokenSetValue` is
+	 * set.
+	 */
+	brokenSetValues?: BrokenSetValue[];
+	/**
+	 * Every count from 2 to the worn count of every worn set, measured with the
+	 * ladder, counted or not. Present only when
+	 * `deps.measureBrokenSetValue` is set and a set is worn at 2 or more.
+	 */
+	wornSetLadder?: WornSetLadderEntry[];
+	/**
+	 * One gate per worn set with a pool piece in a slot the set does not fill:
+	 * the bonus at one piece more than worn, measured on that set's best such
+	 * candidate's own swap. A row crosses a bonus only when its
+	 * count's gate here cleared. Present only with `measureBrokenSetValue`.
+	 */
+	crossingGates?: CrossingGate[];
+	/**
+	 * The step-gear sims of a step ranking: the rule that chose
+	 * the partner pieces, how many distinct step gears there were, and how many
+	 * of their sims ran or came from the store. Its presence marks the ranking
+	 * as one whose set rows are valued by the step rule.
+	 */
+	setStepSims?: SetStepSims;
+	/**
+	 * The bonus-off sims that split a shown step's broken-set loss onto its own
+	 * popover line. Present whenever `setStepSims` is.
+	 */
+	setBonusOffSims?: SetBonusOffSims;
+	/**
+	 * Every partner set simmed for every eligible future, written only under
+	 * the "every-combination" rule, which the tab's check hook sets to score
+	 * the zero-sim rules. Players never get it.
+	 */
+	partnerAudit?: PartnerAuditEntry[];
+	/**
+	 * The set screen's readings, written only when `deps.setScreen` is
+	 * "record" or "on". In "on" mode it also holds each screened
+	 * set's verdict and reason. Nothing in the engine or the view reads it:
+	 * the gain side filters on the screen's own result, and record mode's
+	 * readings are scored offline.
+	 */
+	setScreen?: SetScreen;
+	plausibilityWarnings?: PlausibilityWarning[];
+	/**
+	 * `true` unless Stop cut this run short.
+	 *
+	 * The literal type keeps a `PartialRanking` out of `applyView`, but it does
+	 * not guard the ranking cache: `Store.put<T>` is generic. Only the
+	 * `if (aborted) return partial` branch below, which returns before the
+	 * write, keeps a partial out of the cache.
+	 */
+	complete: true;
 };
 
 /**
@@ -645,19 +579,19 @@ export type Ranking = {
  * finished are still written, so a re-run resumes cheaply; the partial
  * ranking itself is never cached.
  */
-export type PartialRanking = Omit<Ranking, "complete"> & { complete: false };
+export type PartialRanking = Omit<Ranking, 'complete'> & { complete: false };
 
 type BestSwap = {
-  deltaDps: number;
-  stdev: number;
-  request: RaidSimRequest;
-  slotChoice?: SimSlotName;
-  slotIndex: number;
-  setBonusNote?: string;
-  repairSwaps: readonly MetaRepairSwap[];
-  /** Worn items the winning attempt took off beyond the swap itself. */
-  removed: readonly { slotIndex: number; itemId: number }[];
-  candidateGems: readonly number[];
+	deltaDps: number;
+	stdev: number;
+	request: RaidSimRequest;
+	slotChoice?: SimSlotName;
+	slotIndex: number;
+	setBonusNote?: string;
+	repairSwaps: readonly MetaRepairSwap[];
+	/** Worn items the winning attempt took off beyond the swap itself. */
+	removed: readonly { slotIndex: number; itemId: number }[];
+	candidateGems: readonly number[];
 };
 
 /**
@@ -686,7 +620,7 @@ const DEFAULT_SEED_COUNT = 5;
  * which overlap and fail `assertUsableSeeds`.
  */
 function defaultSeedsFor(iterations: number): number[] {
-  return replicateSeeds(DEFAULT_SEED_BASE, DEFAULT_SEED_COUNT, iterations);
+	return replicateSeeds(DEFAULT_SEED_BASE, DEFAULT_SEED_COUNT, iterations);
 }
 
 /**
@@ -694,2056 +628,1747 @@ function defaultSeedsFor(iterations: number): number[] {
  * a file path: the skeleton is the page's own current settings.
  */
 const PRESET_ID_BY_SPEC: Record<SpecId, string> = {
-  ret: "ret/current-page-settings",
-  feral: "feral/current-page-settings",
-  balance: "balance/current-page-settings",
-  hunter: "hunter/current-page-settings",
-  mage: "mage/current-page-settings",
-  shadow: "shadow/current-page-settings",
-  rogue: "rogue/current-page-settings",
-  ele: "ele/current-page-settings",
-  enh: "enh/current-page-settings",
-  warlock: "warlock/current-page-settings",
-  warrior: "warrior/current-page-settings",
+	ret: 'ret/current-page-settings',
+	feral: 'feral/current-page-settings',
+	balance: 'balance/current-page-settings',
+	hunter: 'hunter/current-page-settings',
+	mage: 'mage/current-page-settings',
+	shadow: 'shadow/current-page-settings',
+	rogue: 'rogue/current-page-settings',
+	ele: 'ele/current-page-settings',
+	enh: 'enh/current-page-settings',
+	warlock: 'warlock/current-page-settings',
+	warrior: 'warrior/current-page-settings',
 };
 
 function presetIdFor(spec: SpecId): string {
-  return PRESET_ID_BY_SPEC[spec];
+	return PRESET_ID_BY_SPEC[spec];
 }
 
-export async function rankUpgrades(
-  input: RankInput,
-  deps: Deps,
-  onProgress?: (p: Progress) => void
-): Promise<Ranking | PartialRanking> {
-  onProgress?.({ stage: "resolving" });
-  const cutoff = CUTOFF;
-  const fights = await deps.gear.findFights(input.character, input.spec);
-  const maybeResolved = resolveFight(fights, input.fight);
-  if (!maybeResolved) {
-    throw new RankError(
-      "no-qualifying-fight",
-      `no qualifying fights for ${input.character.name}`
-    );
-  }
-  const resolved: ResolvedFight = maybeResolved;
-  const fight = { reportCode: resolved.reportCode, fightId: resolved.fightId };
+export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p: Progress) => void): Promise<Ranking | PartialRanking> {
+	onProgress?.({ stage: 'resolving' });
+	const cutoff = CUTOFF;
+	const fights = await deps.gear.findFights(input.character, input.spec);
+	const maybeResolved = resolveFight(fights, input.fight);
+	if (!maybeResolved) {
+		throw new RankError('no-qualifying-fight', `no qualifying fights for ${input.character.name}`);
+	}
+	const resolved: ResolvedFight = maybeResolved;
+	const fight = { reportCode: resolved.reportCode, fightId: resolved.fightId };
 
-  onProgress?.({ stage: "reading-gear" });
-  const logged = await deps.gear.readGear(fight);
+	onProgress?.({ stage: 'reading-gear' });
+	const logged = await deps.gear.readGear(fight);
 
-  onProgress?.({ stage: "composing" });
-  const race = input.race ?? raceFromSkeleton(deps.raidSimSkeleton);
-  // Every request describes its own equipment in its own database, as the sim
-  // does when it sets `player.database` from the gear (`ui/sim/sim.ts`).
-  // Without a resolver this is a plain compose call, the CLI path.
-  const composeFor = (forEquipment: readonly SimItemSpec[]) => {
-    const database = deps.simDatabaseFor?.(forEquipment);
-    return compose(deps.raidSimSkeleton, {
-      name: input.character.name.toLowerCase(),
-      race,
-      equipment: forEquipment,
-      // Spread rather than `database: undefined`: exactOptionalPropertyTypes
-      // tells an absent key from an explicit undefined. `!== undefined`, not
-      // truthiness: an empty database ("no extra rows") is still written.
-      ...(database !== undefined ? { database } : {}),
-    });
-  };
-  // Set when repair values hit only up to the cap: the spec's repair is a
-  // budget, read through `computeStats`, which every runner has.
-  const capProfile = capProfileFor(input.spec);
-  const budgetSlot =
-    capProfile.repair.kind === "budget"
-      ? capProfile.repair.hitPercentPseudoStat
-      : undefined;
-  /**
-   * How repair priced hit where the ranking cannot show it: no cap used
-   * (a full-weight spec, or a target not at level 73), or a per-spell hit
-   * talent the cap leaves out.
-   */
-  const hitCapNotes: Substitution[] = [];
-  /**
-   * One stats read of `request` as a hit percent and the repair budget it
-   * gives. A spell-hit budget also needs a sim result's spell damage by
-   * school.
-   */
-  const readHitCap = async (
-    request: RaidSimRequest,
-    slot: number,
-    spellDamageBySchool?: SpellDamageBySchool
-  ) => {
-    const { observed, hitPercent } = await hitPercentOrSimFailed(
-      readStats(deps.sim, request, deps.signal),
-      slot
-    );
-    return {
-      hitPercent,
-      budget: hitCapBudgetFrom(
-        capProfile,
-        request,
-        observed.pseudoStats,
-        spellDamageBySchool
-      ),
-    };
-  };
+	onProgress?.({ stage: 'composing' });
+	const race = input.race ?? raceFromSkeleton(deps.raidSimSkeleton);
+	// Every request describes its own equipment in its own database, as the sim
+	// does when it sets `player.database` from the gear (`ui/sim/sim.ts`).
+	// Without a resolver this is a plain compose call, the CLI path.
+	const composeFor = (forEquipment: readonly SimItemSpec[]) => {
+		const database = deps.simDatabaseFor?.(forEquipment);
+		return compose(deps.raidSimSkeleton, {
+			name: input.character.name.toLowerCase(),
+			race,
+			equipment: forEquipment,
+			// Spread rather than `database: undefined`: exactOptionalPropertyTypes
+			// tells an absent key from an explicit undefined. `!== undefined`, not
+			// truthiness: an empty database ("no extra rows") is still written.
+			...(database !== undefined ? { database } : {}),
+		});
+	};
+	// Set when repair values hit only up to the cap: the spec's repair is a
+	// budget, read through `computeStats`, which every runner has.
+	const capProfile = capProfileFor(input.spec);
+	const budgetSlot = capProfile.repair.kind === 'budget' ? capProfile.repair.hitPercentPseudoStat : undefined;
+	/**
+	 * How repair priced hit where the ranking cannot show it: no cap used
+	 * (a full-weight spec, or a target not at level 73), or a per-spell hit
+	 * talent the cap leaves out.
+	 */
+	const hitCapNotes: Substitution[] = [];
+	/**
+	 * One stats read of `request` as a hit percent and the repair budget it
+	 * gives. A spell-hit budget also needs a sim result's spell damage by
+	 * school.
+	 */
+	const readHitCap = async (request: RaidSimRequest, slot: number, spellDamageBySchool?: SpellDamageBySchool) => {
+		const { observed, hitPercent } = await hitPercentOrSimFailed(readStats(deps.sim, request, deps.signal), slot);
+		return {
+			hitPercent,
+			budget: hitCapBudgetFrom(capProfile, request, observed.pseudoStats, spellDamageBySchool),
+		};
+	};
 
-  const iterations = input.iterations ?? DEFAULT_ITERATIONS;
-  const seeds = input.seeds ?? defaultSeedsFor(iterations);
-  try {
-    assertUsableSeeds(seeds, iterations);
-  } catch (err) {
-    if (err instanceof DegenerateSeedsError) {
-      throw new RankError("internal", err.message);
-    }
-    throw err;
-  }
-  const seed = seeds[0] ?? DEFAULT_SEED_BASE;
-  const runOpts = { seed, iterations };
+	const iterations = input.iterations ?? DEFAULT_ITERATIONS;
+	const seeds = input.seeds ?? defaultSeedsFor(iterations);
+	try {
+		assertUsableSeeds(seeds, iterations);
+	} catch (err) {
+		if (err instanceof DegenerateSeedsError) {
+			throw new RankError('internal', err.message);
+		}
+		throw err;
+	}
+	const seed = seeds[0] ?? DEFAULT_SEED_BASE;
+	const runOpts = { seed, iterations };
 
-  const preRepairSocketed = socketedItemsFromLoggedGear(logged);
-  let socketed: SocketedItem[] = preRepairSocketed;
-  let metaAdjusted = false;
-  let metaSwaps: MetaRepairSwap[] = [];
-  // Reassigned once, after the baseline's stats read, so every later repair
-  // site gets the hit budget.
-  let gems = gemContext(
-    deps.gemPalette ?? gemsForPhase(input.maxPhase),
-    deps.epWeights,
-    input.spec
-  );
-  // The worn repair runs before the baseline exists, so its hit budget comes
-  // from its own read of the un-repaired gear. That budget's
-  // `remaining` is relative to the items the repair is given, as
-  // `repairAndMinimize` expects. A read Stop ended is no failure, as at the
-  // baseline read: the run goes on and the candidate loop returns a partial
-  // ranking, which is never cached. A spell-hit budget also sims that gear
-  // first, for the spells it casts; that sim failing fails the
-  // run with the sim's error, as the baseline sim's does.
-  let wornHitCap: HitCapBudget | undefined;
-  if (budgetSlot !== undefined && inactiveMeta(preRepairSocketed)) {
-    const preRequest = composeFor(equipmentFromLoggedGear(logged));
-    let spellDamage: SpellDamageBySchool | undefined;
-    if (
-      pricesHitBySpells(capProfile) &&
-      targetsAtCapLevel(preRequest)
-    ) {
-      try {
-        spellDamage = (await deps.sim.run(preRequest, runOpts))
-          .spellDamageBySchool;
-      } catch (err) {
-        throw new RankError("sim-failed", errorText(err));
-      }
-    }
-    try {
-      wornHitCap = (await readHitCap(preRequest, budgetSlot, spellDamage))
-        .budget;
-    } catch (err) {
-      if (!(err instanceof StopRefusedSim)) throw err;
-    }
-  }
-  try {
-    const minimized = repairAndMinimize({
-      items: preRepairSocketed,
-      epWeights: deps.epWeights,
-      palette: gems.fillPalette,
-      ...(wornHitCap ? { hitCap: wornHitCap } : {}),
-    });
-    socketed = minimized.items;
-    metaAdjusted = minimized.metaAdjusted;
-    metaSwaps = minimized.swaps;
-  } catch (err) {
-    if (err instanceof MetaRepairError) {
-      throw new RankError("meta-unsolvable", err.message);
-    }
-    throw err;
-  }
+	const preRepairSocketed = socketedItemsFromLoggedGear(logged);
+	let socketed: SocketedItem[] = preRepairSocketed;
+	let metaAdjusted = false;
+	let metaSwaps: MetaRepairSwap[] = [];
+	// Reassigned once, after the baseline's stats read, so every later repair
+	// site gets the hit budget.
+	let gems = gemContext(deps.gemPalette ?? gemsForPhase(input.maxPhase), deps.epWeights, input.spec);
+	// The worn repair runs before the baseline exists, so its hit budget comes
+	// from its own read of the un-repaired gear. That budget's
+	// `remaining` is relative to the items the repair is given, as
+	// `repairAndMinimize` expects. A read Stop ended is no failure, as at the
+	// baseline read: the run goes on and the candidate loop returns a partial
+	// ranking, which is never cached. A spell-hit budget also sims that gear
+	// first, for the spells it casts; that sim failing fails the
+	// run with the sim's error, as the baseline sim's does.
+	let wornHitCap: HitCapBudget | undefined;
+	if (budgetSlot !== undefined && inactiveMeta(preRepairSocketed)) {
+		const preRequest = composeFor(equipmentFromLoggedGear(logged));
+		let spellDamage: SpellDamageBySchool | undefined;
+		if (pricesHitBySpells(capProfile) && targetsAtCapLevel(preRequest)) {
+			try {
+				spellDamage = (await deps.sim.run(preRequest, runOpts)).spellDamageBySchool;
+			} catch (err) {
+				throw new RankError('sim-failed', errorText(err));
+			}
+		}
+		try {
+			wornHitCap = (await readHitCap(preRequest, budgetSlot, spellDamage)).budget;
+		} catch (err) {
+			if (!(err instanceof StopRefusedSim)) throw err;
+		}
+	}
+	try {
+		const minimized = repairAndMinimize({
+			items: preRepairSocketed,
+			epWeights: deps.epWeights,
+			palette: gems.fillPalette,
+			...(wornHitCap ? { hitCap: wornHitCap } : {}),
+		});
+		socketed = minimized.items;
+		metaAdjusted = minimized.metaAdjusted;
+		metaSwaps = minimized.swaps;
+	} catch (err) {
+		if (err instanceof MetaRepairError) {
+			throw new RankError('meta-unsolvable', err.message);
+		}
+		throw err;
+	}
 
-  const equipment = applyRepairedGems(
-    equipmentFromLoggedGear(logged),
-    socketed
-  );
+	const equipment = applyRepairedGems(equipmentFromLoggedGear(logged), socketed);
 
-  const request = composeFor(equipment);
+	const request = composeFor(equipment);
 
-  const guardedDeps = stopGuardedDeps(deps);
+	const guardedDeps = stopGuardedDeps(deps);
 
-  onProgress?.({ stage: "building-pool" });
-  const equippedIds = new Set(
-    equipment.map((s) => s.id).filter((id): id is number => !!id)
-  );
-  const wornMainHandId = equipment[SIM_ORDER.indexOf("mainhand")]?.id;
-  const mainHandIsOneHanded = mainHandLeavesOffHandFree(wornMainHandId);
-  const phaseEligible = filterPoolByPhase(
-    deps.pool ?? [],
-    input.maxPhase
-  ).filter((e) => !isKaelTempLegendary(e.itemId));
-  /**
-   * Off-hand-only items that cannot be placed beside the worn two-hander
-   * without a two-item swap (the trade the off-hand guard in `runCandidate`
-   * rejects). They leave here, before ordering, rather than at that guard:
-   * by then the EP order has priced them against an empty off hand, so they
-   * would take candidate-cap places, and a Stop would bring them back as
-   * unsimmed placeholders. One substitution line counts them instead.
-   */
-  const blockedOffHand = offHandBlockedEntries(
-    phaseEligible,
-    input.spec,
-    wornMainHandId
-  );
-  // One-handed weapons beside the worn two-hander: priced alone, each would
-  // leave the off hand empty (`oneHandBlockedEntries`). They leave here for
-  // the same reasons as the off-hand items, with their own line.
-  const blockedOneHand = oneHandBlockedEntries(
-    phaseEligible,
-    input.spec,
-    wornMainHandId
-  );
-  const eligible =
-    blockedOffHand.length + blockedOneHand.length === 0
-      ? phaseEligible
-      : phaseEligible.filter(
-          (e) => !blockedOffHand.includes(e) && !blockedOneHand.includes(e)
-        );
-  // Ordering runs before any sim, from raw item data only, so it cannot fail on
-  // a candidate the sim itself would later reject. This order also decides
-  // which N the cap keeps.
-  const ordered = orderCandidatesByEp(
-    eligible,
-    equipment,
-    deps.itemEp,
-    input.spec
-  );
+	onProgress?.({ stage: 'building-pool' });
+	const equippedIds = new Set(equipment.map(s => s.id).filter((id): id is number => !!id));
+	const wornMainHandId = equipment[SIM_ORDER.indexOf('mainhand')]?.id;
+	const mainHandIsOneHanded = mainHandLeavesOffHandFree(wornMainHandId);
+	const phaseEligible = filterPoolByPhase(deps.pool ?? [], input.maxPhase).filter(e => !isKaelTempLegendary(e.itemId));
+	/**
+	 * Off-hand-only items that cannot be placed beside the worn two-hander
+	 * without a two-item swap (the trade the off-hand guard in `runCandidate`
+	 * rejects). They leave here, before ordering, rather than at that guard:
+	 * by then the EP order has priced them against an empty off hand, so they
+	 * would take candidate-cap places, and a Stop would bring them back as
+	 * unsimmed placeholders. One substitution line counts them instead.
+	 */
+	const blockedOffHand = offHandBlockedEntries(phaseEligible, input.spec, wornMainHandId);
+	// One-handed weapons beside the worn two-hander: priced alone, each would
+	// leave the off hand empty (`oneHandBlockedEntries`). They leave here for
+	// the same reasons as the off-hand items, with their own line.
+	const blockedOneHand = oneHandBlockedEntries(phaseEligible, input.spec, wornMainHandId);
+	const eligible =
+		blockedOffHand.length + blockedOneHand.length === 0
+			? phaseEligible
+			: phaseEligible.filter(e => !blockedOffHand.includes(e) && !blockedOneHand.includes(e));
+	// Ordering runs before any sim, from raw item data only, so it cannot fail on
+	// a candidate the sim itself would later reject. This order also decides
+	// which N the cap keeps.
+	const ordered = orderCandidatesByEp(eligible, equipment, deps.itemEp, input.spec);
 
-  const simVersion = await deps.sim.version();
+	const simVersion = await deps.sim.version();
 
-  // Hashed on every eligible candidate, not the post-cap set; `candidateCap`
-  // is its own hashed field. Hashed here rather than at entry because the
-  // logged gear, the largest input to every delta, is known only after
-  // readGear, and this is still before the expensive sim loop.
-  const contentHash = canonicalJson({
-    character: {
-      region: input.character.region.toLowerCase(),
-      realm: input.character.realm.toLowerCase(),
-      name: input.character.name.toLowerCase(),
-    },
-    spec: input.spec,
-    maxPhase: input.maxPhase,
-    race,
-    fight,
-    gear: [...(logged.items as readonly HashedGearItem[])]
-      .map((item) => ({
-        id: item.id,
-        slot: item.slot,
-        enchant: item.enchant ?? 0,
-        gems: [...(item.gems ?? [])],
-      }))
-      .sort((a, b) => (a.slot < b.slot ? -1 : a.slot > b.slot ? 1 : a.id - b.id)),
-    candidates: ordered
-      .map((e) => ({ itemId: e.itemId, slot: e.slot }))
-      .sort((a, b) =>
-        a.itemId !== b.itemId
-          ? a.itemId - b.itemId
-          : a.slot < b.slot
-            ? -1
-            : a.slot > b.slot
-              ? 1
-              : 0
-      ),
-    gemPaletteIds: gems.palette.map((g) => g.id).sort((a, b) => a - b),
-    epWeights: deps.epWeights,
-    presetId: presetIdFor(input.spec),
-    skeleton: deps.raidSimSkeleton,
-    iterations,
-    seeds: [...seeds],
-    simVersion,
-    engineVersion: ENGINE_VERSION,
-    // No cap hashes the same as an explicit cap of every eligible candidate.
-    candidateCap: input.candidateCap ?? ordered.length,
-    // Fixed values that describe nothing the engine still does, kept because
-    // they are part of every cache key already written: dropping them would
-    // rehash every stored ranking and re-sim it. Delete only alongside an
-    // ENGINE_VERSION bump.
-    fullPool: true,
-    screenIterations: null,
-    promoteTopK: null,
-    // Only when set, so a run without it keeps every key already written; a
-    // run with it is never served a ranking another rule made.
-    ...(deps.partnerRule !== undefined ? { partnerRule: deps.partnerRule } : {}),
-    // The same rule for the screen: a ranking without its readings is never
-    // served to a run that asked for them.
-    ...(deps.setScreen !== undefined ? { setScreen: deps.setScreen } : {}),
-    // Only when set, so a full-weight spec keeps the key a run with the
-    // same rule writes; a run that reads hit is never served a
-    // ranking repaired at full weight. The value names which repairs the
-    // budget reaches, so a ranking cached when only candidate repairs used it
-    // is not served.
-    ...(budgetSlot !== undefined
-      ? { metaRepairHitCap: "worn-and-candidates" }
-      : {}),
-    // The repair rule, on every run, so no ranking cached under greedy repair
-    // or another work limit is served.
-    metaRepair: `exact-credit-per-version;limit=${REPAIR_SEARCH_WORK_LIMIT}`,
-  });
+	// Hashed on every eligible candidate, not the post-cap set; `candidateCap`
+	// is its own hashed field. Hashed here rather than at entry because the
+	// logged gear, the largest input to every delta, is known only after
+	// readGear, and this is still before the expensive sim loop.
+	const contentHash = canonicalJson({
+		character: {
+			region: input.character.region.toLowerCase(),
+			realm: input.character.realm.toLowerCase(),
+			name: input.character.name.toLowerCase(),
+		},
+		spec: input.spec,
+		maxPhase: input.maxPhase,
+		race,
+		fight,
+		gear: [...(logged.items as readonly HashedGearItem[])]
+			.map(item => ({
+				id: item.id,
+				slot: item.slot,
+				enchant: item.enchant ?? 0,
+				gems: [...(item.gems ?? [])],
+			}))
+			.sort((a, b) => (a.slot < b.slot ? -1 : a.slot > b.slot ? 1 : a.id - b.id)),
+		candidates: ordered
+			.map(e => ({ itemId: e.itemId, slot: e.slot }))
+			.sort((a, b) => (a.itemId !== b.itemId ? a.itemId - b.itemId : a.slot < b.slot ? -1 : a.slot > b.slot ? 1 : 0)),
+		gemPaletteIds: gems.palette.map(g => g.id).sort((a, b) => a - b),
+		epWeights: deps.epWeights,
+		presetId: presetIdFor(input.spec),
+		skeleton: deps.raidSimSkeleton,
+		iterations,
+		seeds: [...seeds],
+		simVersion,
+		engineVersion: ENGINE_VERSION,
+		// No cap hashes the same as an explicit cap of every eligible candidate.
+		candidateCap: input.candidateCap ?? ordered.length,
+		// Fixed values that describe nothing the engine still does, kept because
+		// they are part of every cache key already written: dropping them would
+		// rehash every stored ranking and re-sim it. Delete only alongside an
+		// ENGINE_VERSION bump.
+		fullPool: true,
+		screenIterations: null,
+		promoteTopK: null,
+		// Only when set, so a run without it keeps every key already written; a
+		// run with it is never served a ranking another rule made.
+		...(deps.partnerRule !== undefined ? { partnerRule: deps.partnerRule } : {}),
+		// The same rule for the screen: a ranking without its readings is never
+		// served to a run that asked for them.
+		...(deps.setScreen !== undefined ? { setScreen: deps.setScreen } : {}),
+		// Only when set, so a full-weight spec keeps the key a run with the
+		// same rule writes; a run that reads hit is never served a
+		// ranking repaired at full weight. The value names which repairs the
+		// budget reaches, so a ranking cached when only candidate repairs used it
+		// is not served.
+		...(budgetSlot !== undefined ? { metaRepairHitCap: 'worn-and-candidates' } : {}),
+		// The repair rule, on every run, so no ranking cached under greedy repair
+		// or another work limit is served.
+		metaRepair: `exact-credit-per-version;limit=${REPAIR_SEARCH_WORK_LIMIT}`,
+	});
 
-  const cached = await deps.store.get<Ranking>(rankingCacheKey(contentHash));
-  if (cached) {
-    onProgress?.({ stage: "ranking" });
-    return cached;
-  }
+	const cached = await deps.store.get<Ranking>(rankingCacheKey(contentHash));
+	if (cached) {
+		onProgress?.({ stage: 'ranking' });
+		return cached;
+	}
 
-  let simsDone = 0;
-  let totalSimsForProgress = 0;
-  /** The baseline's sim hit rating, once the budget is set. */
-  let baselineSimHit: number | undefined;
+	let simsDone = 0;
+	let totalSimsForProgress = 0;
+	/** The baseline's sim hit rating, once the budget is set. */
+	let baselineSimHit: number | undefined;
 
-  const job = await deps.store.job.create({ contentHash, input });
-  await deps.store.job.update(job.id, { status: "running" });
+	const job = await deps.store.job.create({ contentHash, input });
+	await deps.store.job.update(job.id, { status: 'running' });
 
-  try {
-    return await rankAfterJobCreated();
-  } catch (err) {
-    try {
-      await deps.store.job.update(job.id, {
-        status: "error",
-        errorKind: err instanceof RankError ? err.kind : "internal",
-        errorDetail: err instanceof Error ? err.message : String(err),
-      });
-    } catch {
-      // A failed status write must not replace the error being rethrown.
-    }
-    throw err;
-  }
+	try {
+		return await rankAfterJobCreated();
+	} catch (err) {
+		try {
+			await deps.store.job.update(job.id, {
+				status: 'error',
+				errorKind: err instanceof RankError ? err.kind : 'internal',
+				errorDetail: err instanceof Error ? err.message : String(err),
+			});
+		} catch {
+			// A failed status write must not replace the error being rethrown.
+		}
+		throw err;
+	}
 
-  async function rankAfterJobCreated(): Promise<Ranking | PartialRanking> {
-    // Only `deps.sim.run` belongs inside this catch. A store read or write
-    // that fails is an `internal` fault, and labelling it `sim-failed` sends
-    // an operator to the wrong subsystem.
-    let observation = await readCachedSim(deps, request, simVersion, runOpts);
-    if (!observation) {
-      try {
-        observation = await deps.sim.run(request, runOpts);
-      } catch (err) {
-        throw new RankError(
-          "sim-failed",
-          err instanceof Error ? err.message : String(err)
-        );
-      }
-      await cacheSimResult(deps, request, simVersion, runOpts, observation);
-    }
-    simsDone = 1;
+	async function rankAfterJobCreated(): Promise<Ranking | PartialRanking> {
+		// Only `deps.sim.run` belongs inside this catch. A store read or write
+		// that fails is an `internal` fault, and labelling it `sim-failed` sends
+		// an operator to the wrong subsystem.
+		let observation = await readCachedSim(deps, request, simVersion, runOpts);
+		if (!observation) {
+			try {
+				observation = await deps.sim.run(request, runOpts);
+			} catch (err) {
+				throw new RankError('sim-failed', err instanceof Error ? err.message : String(err));
+			}
+			await cacheSimResult(deps, request, simVersion, runOpts, observation);
+		}
+		simsDone = 1;
 
-    // One stats read of the baseline turns into the repair hit budget every
-    // later swap starts from. Before the first candidate site,
-    // so every repair gets it. A read Stop ended is no failure: the run goes
-    // on and the candidate loop returns a partial ranking.
-    if (budgetSlot !== undefined) {
-      try {
-        const { hitPercent, budget } = await readHitCap(
-          request,
-          budgetSlot,
-          observation.spellDamageBySchool
-        );
-        if (budget) {
-          gems = {
-            ...gems,
-            repairHitCap: {
-              stat: budget.stat,
-              baselineRemaining: budget.remaining,
-              baselineGearHit: gearHitRating(equipment, budget.stat),
-              ...(budget.groups ? { groups: budget.groups } : {}),
-            },
-          };
-          baselineSimHit = hitPercent * capProfile.ratingPerPercent;
-          const talent = perSpellHitTalentTaken(
-            capProfile,
-            talentsStringFromRequest(request)
-          );
-          if (talent !== undefined) {
-            hitCapNotes.push(hitCapPerSpellTalentNote(talent));
-          }
-        } else {
-          hitCapNotes.push(hitCapUnknownNote());
-        }
-      } catch (err) {
-        if (!(err instanceof StopRefusedSim)) throw err;
-      }
-    } else if (capProfile.repair.kind === "fullWeight") {
-      hitCapNotes.push(hitCapFullWeightNote());
-    }
+		// One stats read of the baseline turns into the repair hit budget every
+		// later swap starts from. Before the first candidate site,
+		// so every repair gets it. A read Stop ended is no failure: the run goes
+		// on and the candidate loop returns a partial ranking.
+		if (budgetSlot !== undefined) {
+			try {
+				const { hitPercent, budget } = await readHitCap(request, budgetSlot, observation.spellDamageBySchool);
+				if (budget) {
+					gems = {
+						...gems,
+						repairHitCap: {
+							stat: budget.stat,
+							baselineRemaining: budget.remaining,
+							baselineGearHit: gearHitRating(equipment, budget.stat),
+							...(budget.groups ? { groups: budget.groups } : {}),
+						},
+					};
+					baselineSimHit = hitPercent * capProfile.ratingPerPercent;
+					const talent = perSpellHitTalentTaken(capProfile, talentsStringFromRequest(request));
+					if (talent !== undefined) {
+						hitCapNotes.push(hitCapPerSpellTalentNote(talent));
+					}
+				} else {
+					hitCapNotes.push(hitCapUnknownNote());
+				}
+			} catch (err) {
+				if (!(err instanceof StopRefusedSim)) throw err;
+			}
+		} else if (capProfile.repair.kind === 'fullWeight') {
+			hitCapNotes.push(hitCapFullWeightNote());
+		}
 
-    /**
-     * Each version of one set-phase build, with its own hit budget. A
-     * version's missed hit is the hit the local budget cannot see, set-bonus
-     * hit on the measured gear:
-     * `sim hit(version) − sim hit(baseline) − (gear hit(build) − gear hit(baseline))`,
-     * the gear hit taken on real item ids before the copies. A version whose
-     * build made no repair is never read. One read per distinct default
-     * request, raced against Stop. The first read Stop ended turns version
-     * budgets off for the rest of the set phase: the whole call, and every
-     * later one, gets the default builds, so no pair mixes a version budget
-     * with the shared layout. A read that fails fails the run.
-     */
-    const versionReads = new Map<string, Promise<PlayerStatsObservation>>();
-    let versionBudgetsOff = false;
-    const versionGears: VersionGears = async (rebuild, base, copiesList) => {
-      let plain: RaidSimRequest | BuildFailure;
-      try {
-        plain = composeFor(base.equipment);
-      } catch (err) {
-        plain = { buildError: errorText(err) };
-      }
-      const defaults = copiesList.map((copies): RaidSimRequest | BuildFailure => {
-        if (isBuildFailure(plain)) return plain;
-        try {
-          return applyCopies(plain, copies);
-        } catch (err) {
-          return { buildError: errorText(err) };
-        }
-      });
-      const shared = () =>
-        defaults.map((request) =>
-          isBuildFailure(request) ? request : { request, swaps: base.swaps }
-        );
-      const cap = gems.repairHitCap;
-      if (
-        !base.repaired ||
-        !cap ||
-        budgetSlot === undefined ||
-        baselineSimHit === undefined ||
-        versionBudgetsOff
-      ) {
-        return shared();
-      }
-      try {
-        const buildHit = gearHitRating(base.equipment, cap.stat);
-        const out: VersionResult[] = [];
-        for (let i = 0; i < copiesList.length; i++) {
-          const request = defaults[i]!;
-          if (isBuildFailure(request)) {
-            out.push(request);
-            continue;
-          }
-          const key = stableStringify(request);
-          let read = versionReads.get(key);
-          if (!read) {
-            read = readStats(deps.sim, request, deps.signal);
-            versionReads.set(key, read);
-          }
-          const { hitPercent } = await hitPercentOrSimFailed(read, budgetSlot);
-          const missed =
-            hitPercent * capProfile.ratingPerPercent -
-            baselineSimHit -
-            (buildHit - cap.baselineGearHit);
-          if (Math.abs(missed) < MISSED_HIT_TOLERANCE) {
-            out.push({ request, swaps: base.swaps });
-            continue;
-          }
-          let rebuilt: ChainBuild;
-          try {
-            rebuilt = rebuild({
-              ...gems,
-              repairHitCap: {
-                ...cap,
-                baselineRemaining: cap.baselineRemaining - missed,
-              },
-            });
-          } catch (err) {
-            if (!(err instanceof MetaRepairError)) throw err;
-            out.push({ repairError: err });
-            continue;
-          }
-          out.push({
-            request: applyCopies(composeFor(rebuilt.equipment), copiesList[i]!),
-            swaps: rebuilt.swaps,
-          });
-        }
-        return out;
-      } catch (err) {
-        if (!(err instanceof StopRefusedSim)) throw err;
-        versionBudgetsOff = true;
-        return shared();
-      }
-    };
+		/**
+		 * Each version of one set-phase build, with its own hit budget. A
+		 * version's missed hit is the hit the local budget cannot see, set-bonus
+		 * hit on the measured gear:
+		 * `sim hit(version) − sim hit(baseline) − (gear hit(build) − gear hit(baseline))`,
+		 * the gear hit taken on real item ids before the copies. A version whose
+		 * build made no repair is never read. One read per distinct default
+		 * request, raced against Stop. The first read Stop ended turns version
+		 * budgets off for the rest of the set phase: the whole call, and every
+		 * later one, gets the default builds, so no pair mixes a version budget
+		 * with the shared layout. A read that fails fails the run.
+		 */
+		const versionReads = new Map<string, Promise<PlayerStatsObservation>>();
+		let versionBudgetsOff = false;
+		const versionGears: VersionGears = async (rebuild, base, copiesList) => {
+			let plain: RaidSimRequest | BuildFailure;
+			try {
+				plain = composeFor(base.equipment);
+			} catch (err) {
+				plain = { buildError: errorText(err) };
+			}
+			const defaults = copiesList.map((copies): RaidSimRequest | BuildFailure => {
+				if (isBuildFailure(plain)) return plain;
+				try {
+					return applyCopies(plain, copies);
+				} catch (err) {
+					return { buildError: errorText(err) };
+				}
+			});
+			const shared = () => defaults.map(request => (isBuildFailure(request) ? request : { request, swaps: base.swaps }));
+			const cap = gems.repairHitCap;
+			if (!base.repaired || !cap || budgetSlot === undefined || baselineSimHit === undefined || versionBudgetsOff) {
+				return shared();
+			}
+			try {
+				const buildHit = gearHitRating(base.equipment, cap.stat);
+				const out: VersionResult[] = [];
+				for (let i = 0; i < copiesList.length; i++) {
+					const request = defaults[i]!;
+					if (isBuildFailure(request)) {
+						out.push(request);
+						continue;
+					}
+					const key = stableStringify(request);
+					let read = versionReads.get(key);
+					if (!read) {
+						read = readStats(deps.sim, request, deps.signal);
+						versionReads.set(key, read);
+					}
+					const { hitPercent } = await hitPercentOrSimFailed(read, budgetSlot);
+					const missed = hitPercent * capProfile.ratingPerPercent - baselineSimHit - (buildHit - cap.baselineGearHit);
+					if (Math.abs(missed) < MISSED_HIT_TOLERANCE) {
+						out.push({ request, swaps: base.swaps });
+						continue;
+					}
+					let rebuilt: ChainBuild;
+					try {
+						rebuilt = rebuild({
+							...gems,
+							repairHitCap: {
+								...cap,
+								baselineRemaining: cap.baselineRemaining - missed,
+							},
+						});
+					} catch (err) {
+						if (!(err instanceof MetaRepairError)) throw err;
+						out.push({ repairError: err });
+						continue;
+					}
+					out.push({
+						request: applyCopies(composeFor(rebuilt.equipment), copiesList[i]!),
+						swaps: rebuilt.swaps,
+					});
+				}
+				return out;
+			} catch (err) {
+				if (!(err instanceof StopRefusedSim)) throw err;
+				versionBudgetsOff = true;
+				return shared();
+			}
+		};
 
-    /**
-     * The gem context one candidate's repair runs with. The run's budget
-     * moves by the swap's gear hit change, which misses set-bonus hit the
-     * swap breaks or completes (a warlock's Mana-Etched head breaks a +35
-     * spell hit set). So when the swap turns the meta off,
-     * the candidate's own stats read corrects the budget by its missed hit,
-     * as each set version's read does above. The read runs on the same sim
-     * worker as the candidate's sim, so a failed read rejects with
-     * `CandidateHitReadFailed`, which `runCandidate` reports as that
-     * candidate's failed sim. A read Stop refused rejects with
-     * `StopRefusedSim`.
-     */
-    const candidateRepairGems = async (
-      slotIndex: number,
-      itemId: number
-    ): Promise<GemContext> => {
-      const cap = gems.repairHitCap;
-      if (
-        !cap ||
-        budgetSlot === undefined ||
-        baselineSimHit === undefined
-      ) {
-        return gems;
-      }
-      const pre = candidateSwapPreRepair(equipment, slotIndex, itemId, gems);
-      if (!inactiveMeta(pre.socketed)) return gems;
-      const request = composeFor(pre.swapped);
-      let hitPercent: number;
-      try {
-        hitPercent = hitPercentOf(
-          await readStats(deps.sim, request, deps.signal),
-          budgetSlot
-        );
-      } catch (err) {
-        if (err instanceof StopRefusedSim) throw err;
-        throw new CandidateHitReadFailed(err);
-      }
-      const missed =
-        hitPercent * capProfile.ratingPerPercent -
-        baselineSimHit -
-        (gearHitRating(pre.swapped, cap.stat) - cap.baselineGearHit);
-      if (Math.abs(missed) < MISSED_HIT_TOLERANCE) return gems;
-      return {
-        ...gems,
-        repairHitCap: {
-          ...cap,
-          baselineRemaining: cap.baselineRemaining - missed,
-        },
-      };
-    };
+		/**
+		 * The gem context one candidate's repair runs with. The run's budget
+		 * moves by the swap's gear hit change, which misses set-bonus hit the
+		 * swap breaks or completes (a warlock's Mana-Etched head breaks a +35
+		 * spell hit set). So when the swap turns the meta off,
+		 * the candidate's own stats read corrects the budget by its missed hit,
+		 * as each set version's read does above. The read runs on the same sim
+		 * worker as the candidate's sim, so a failed read rejects with
+		 * `CandidateHitReadFailed`, which `runCandidate` reports as that
+		 * candidate's failed sim. A read Stop refused rejects with
+		 * `StopRefusedSim`.
+		 */
+		const candidateRepairGems = async (slotIndex: number, itemId: number): Promise<GemContext> => {
+			const cap = gems.repairHitCap;
+			if (!cap || budgetSlot === undefined || baselineSimHit === undefined) {
+				return gems;
+			}
+			const pre = candidateSwapPreRepair(equipment, slotIndex, itemId, gems);
+			if (!inactiveMeta(pre.socketed)) return gems;
+			const request = composeFor(pre.swapped);
+			let hitPercent: number;
+			try {
+				hitPercent = hitPercentOf(await readStats(deps.sim, request, deps.signal), budgetSlot);
+			} catch (err) {
+				if (err instanceof StopRefusedSim) throw err;
+				throw new CandidateHitReadFailed(err);
+			}
+			const missed = hitPercent * capProfile.ratingPerPercent - baselineSimHit - (gearHitRating(pre.swapped, cap.stat) - cap.baselineGearHit);
+			if (Math.abs(missed) < MISSED_HIT_TOLERANCE) return gems;
+			return {
+				...gems,
+				repairHitCap: {
+					...cap,
+					baselineRemaining: cap.baselineRemaining - missed,
+				},
+			};
+		};
 
-    const baselineDps = observation.dps;
-    const ranked: RankedItem[] = [];
-    const winningRequests = new Map<number, RaidSimRequest>();
-    const candidateSkips: CandidateSkip[] = [];
-    const individualDeltasByItemId = new Map<number, IndividualDelta>();
+		const baselineDps = observation.dps;
+		const ranked: RankedItem[] = [];
+		const winningRequests = new Map<number, RaidSimRequest>();
+		const candidateSkips: CandidateSkip[] = [];
+		const individualDeltasByItemId = new Map<number, IndividualDelta>();
 
-    /**
-     * Which `(item, slot)` attempts are eligible to be priced at all.
-     *
-     * Returns *why* an attempt is ineligible rather than a boolean, because
-     * the loop treats the two outcomes differently: an unmappable slot is a
-     * bug assertion it throws on, while a skipped attempt is simply not priced.
-     */
-    const attemptEligibility = (
-      entry: PoolEntry,
-      slotName: SimSlotName
-    ):
-      | { kind: "ok"; slotIndex: number }
-      | { kind: "skip" }
-      | { kind: "unmapped" } => {
-      // A one-hander is only a legal off-hand candidate if the weapon already in
-      // the main hand is itself one-handed. `simSlotsForPoolSlot` filters the
-      // *candidate's* hand type and knows nothing about what is worn, so without
-      // this the ranker sims a one-hander into an empty off hand while a
-      // two-hander stays in the main hand — a pairing the game cannot equip,
-      // priced as an upgrade.
-      //
-      // Letting the off-hand pick displace the worn two-hander instead would
-      // price a two-item swap under a one-item row. With a two-hander worn, no
-      // one-hander reaches this guard (`oneHandBlockedEntries` holds them out
-      // before ordering); it stays as a backstop.
-      if (slotName === "offhand" && !mainHandIsOneHanded) return { kind: "skip" };
-      const slotIndex = SIM_ORDER.indexOf(slotName);
-      if (slotIndex < 0) return { kind: "unmapped" };
-      // A paired slot tries both placements and keeps the better one, so without
-      // this an item already worn in finger2 gets priced as an upgrade into
-      // finger1 as well — a second copy the player does not have. Skipping
-      // leaves the identity swap as the only outcome for a worn item, matching
-      // what every unpaired slot already does.
-      //
-      // Wearing a second copy of a non-unique ring or trinket is legal in TBC,
-      // and this guard blocks that row on purpose. The loop emits one row per
-      // item and keeps only the best swap across slots, so an unguarded second
-      // placement would overwrite the worn item's identity swap, turning "you
-      // already wear this" into "wear a second one" with nothing in the row
-      // saying so. The below-cutoff owned-row filter in
-      // `model/results_view.ts` rests on this guard too. Showing that row needs
-      // a per-placement row through the engine output, the view and the UI.
-      const wornAt = equipment.findIndex((spec) => spec.id === entry.itemId);
-      if (wornAt >= 0 && wornAt !== slotIndex) return { kind: "skip" };
-      return { kind: "ok", slotIndex };
-    };
+		/**
+		 * Which `(item, slot)` attempts are eligible to be priced at all.
+		 *
+		 * Returns *why* an attempt is ineligible rather than a boolean, because
+		 * the loop treats the two outcomes differently: an unmappable slot is a
+		 * bug assertion it throws on, while a skipped attempt is simply not priced.
+		 */
+		const attemptEligibility = (entry: PoolEntry, slotName: SimSlotName): { kind: 'ok'; slotIndex: number } | { kind: 'skip' } | { kind: 'unmapped' } => {
+			// A one-hander is only a legal off-hand candidate if the weapon already in
+			// the main hand is itself one-handed. `simSlotsForPoolSlot` filters the
+			// *candidate's* hand type and knows nothing about what is worn, so without
+			// this the ranker sims a one-hander into an empty off hand while a
+			// two-hander stays in the main hand — a pairing the game cannot equip,
+			// priced as an upgrade.
+			//
+			// Letting the off-hand pick displace the worn two-hander instead would
+			// price a two-item swap under a one-item row. With a two-hander worn, no
+			// one-hander reaches this guard (`oneHandBlockedEntries` holds them out
+			// before ordering); it stays as a backstop.
+			if (slotName === 'offhand' && !mainHandIsOneHanded) return { kind: 'skip' };
+			const slotIndex = SIM_ORDER.indexOf(slotName);
+			if (slotIndex < 0) return { kind: 'unmapped' };
+			// A paired slot tries both placements and keeps the better one, so without
+			// this an item already worn in finger2 gets priced as an upgrade into
+			// finger1 as well — a second copy the player does not have. Skipping
+			// leaves the identity swap as the only outcome for a worn item, matching
+			// what every unpaired slot already does.
+			//
+			// Wearing a second copy of a non-unique ring or trinket is legal in TBC,
+			// and this guard blocks that row on purpose. The loop emits one row per
+			// item and keeps only the best swap across slots, so an unguarded second
+			// placement would overwrite the worn item's identity swap, turning "you
+			// already wear this" into "wear a second one" with nothing in the row
+			// saying so. The below-cutoff owned-row filter in
+			// `model/results_view.ts` rests on this guard too. Showing that row needs
+			// a per-placement row through the engine output, the view and the UI.
+			const wornAt = equipment.findIndex(spec => spec.id === entry.itemId);
+			if (wornAt >= 0 && wornAt !== slotIndex) return { kind: 'skip' };
+			return { kind: 'ok', slotIndex };
+		};
 
-    /**
-     * The slot a Stop placeholder names. A simmed weapon, ring or trinket
-     * row names the slot its best swap went into; when only one placement
-     * passes `attemptEligibility` (a weapon one hand rules out, a ring or
-     * trinket already worn in its second slot), that slot is known without
-     * a sim, so the placeholder names it too and files in the same pane.
-     * With two legal placements only the sim could choose, so the row
-     * leaves it unset.
-     */
-    const placeholderSlotChoice = (
-      entry: PoolEntry
-    ): SimSlotName | undefined => {
-      const slotNames = simSlotsForPoolSlot(
-        entry.slot,
-        input.spec,
-        entry.itemId
-      );
-      if (slotNames.length < 2 && entry.slot !== "weapon") return undefined;
-      const legal = slotNames.filter(
-        (slotName) => attemptEligibility(entry, slotName).kind === "ok"
-      );
-      return legal.length === 1 ? legal[0] : undefined;
-    };
+		/**
+		 * The slot a Stop placeholder names. A simmed weapon, ring or trinket
+		 * row names the slot its best swap went into; when only one placement
+		 * passes `attemptEligibility` (a weapon one hand rules out, a ring or
+		 * trinket already worn in its second slot), that slot is known without
+		 * a sim, so the placeholder names it too and files in the same pane.
+		 * With two legal placements only the sim could choose, so the row
+		 * leaves it unset.
+		 */
+		const placeholderSlotChoice = (entry: PoolEntry): SimSlotName | undefined => {
+			const slotNames = simSlotsForPoolSlot(entry.slot, input.spec, entry.itemId);
+			if (slotNames.length < 2 && entry.slot !== 'weapon') return undefined;
+			const legal = slotNames.filter(slotName => attemptEligibility(entry, slotName).kind === 'ok');
+			return legal.length === 1 ? legal[0] : undefined;
+		};
 
-    /**
-     * One candidate's full slot-attempt loop, run as a `promisePool` task.
-     * Every mutation below writes to the shared `ranked`/`candidateSkips`/
-     * `individualDeltasByItemId`/`winningRequests` collections, which is
-     * safe because JS interleaves only at `await` points. Output never depends
-     * on which task finishes first: `ranked` is sorted by `deltaDps` after the
-     * pool drains and `candidateSkips` by item id before it feeds
-     * `substitutions`, so any `concurrency` gives byte-identical output.
-     */
-    async function runCandidate(entry: PoolEntry): Promise<void> {
-      const owned = equippedIds.has(entry.itemId);
-      const slotNames = simSlotsForPoolSlot(
-        entry.slot,
-        input.spec,
-        entry.itemId
-      );
-      let best: BestSwap | null = null;
+		/**
+		 * One candidate's full slot-attempt loop, run as a `promisePool` task.
+		 * Every mutation below writes to the shared `ranked`/`candidateSkips`/
+		 * `individualDeltasByItemId`/`winningRequests` collections, which is
+		 * safe because JS interleaves only at `await` points. Output never depends
+		 * on which task finishes first: `ranked` is sorted by `deltaDps` after the
+		 * pool drains and `candidateSkips` by item id before it feeds
+		 * `substitutions`, so any `concurrency` gives byte-identical output.
+		 */
+		async function runCandidate(entry: PoolEntry): Promise<void> {
+			const owned = equippedIds.has(entry.itemId);
+			const slotNames = simSlotsForPoolSlot(entry.slot, input.spec, entry.itemId);
+			let best: BestSwap | null = null;
 
-      for (let s = 0; s < slotNames.length; s++) {
-        const slotName = slotNames[s]!;
-        // See `attemptEligibility` for the reasoning behind each guard.
-        const eligibility = attemptEligibility(entry, slotName);
-        if (eligibility.kind === "unmapped") {
-          throw new Error(
-            `slot mapping bug: ${entry.slot} -> ${slotName} is not in SIM_ORDER ` +
-              `(item ${entry.itemId} ${entry.name})`
-          );
-        }
-        if (eligibility.kind === "skip") continue;
-        const { slotIndex } = eligibility;
-        let swapped: SimItemSpec[];
-        let repairSwaps: readonly MetaRepairSwap[];
-        let removed: readonly { slotIndex: number; itemId: number }[];
-        let repairGems: GemContext;
-        try {
-          repairGems = await candidateRepairGems(slotIndex, entry.itemId);
-        } catch (err) {
-          // Stop refused the read: the row is left to the Stop placeholder.
-          if (err instanceof StopRefusedSim) return;
-          if (!(err instanceof CandidateHitReadFailed)) throw err;
-          candidateSkips.push({
-            kind: "sim",
-            itemId: entry.itemId,
-            name: entry.name,
-            slot: slotName,
-            reason: err.message,
-          });
-          continue;
-        }
-        try {
-          const outcome = candidateSwapWithRepairs(
-            equipment,
-            slotIndex,
-            entry.itemId,
-            repairGems
-          );
-          swapped = outcome.equipment;
-          repairSwaps = outcome.swaps;
-          removed = outcome.removed;
-        } catch (err) {
-          if (!(err instanceof MetaRepairError)) throw err;
-          candidateSkips.push({
-            kind: "repair",
-            itemId: entry.itemId,
-            name: entry.name,
-            slot: slotName,
-            reason: err.message,
-          });
-          continue;
-        }
-        const candReq = composeFor(swapped);
-        let candObs = await readCachedSim(deps, candReq, simVersion, runOpts);
-        if (!candObs) {
-          try {
-            candObs = await deps.sim.run(candReq, runOpts);
-          } catch (err) {
-            candidateSkips.push({
-              kind: "sim",
-              itemId: entry.itemId,
-              name: entry.name,
-              slot: slotName,
-              reason: err instanceof Error ? err.message : String(err),
-            });
-            continue;
-          }
-          await cacheSimResult(deps, candReq, simVersion, runOpts, candObs);
-        }
-        const deltaDps = candObs.dps - baselineDps;
-        const note = setBreakNote(equipment, slotIndex, entry.itemId);
-        if (!best || deltaDps > best.deltaDps) {
-          const next: BestSwap = {
-            deltaDps,
-            stdev: candObs.stdev,
-            request: candReq,
-            slotIndex,
-            repairSwaps,
-            removed,
-            candidateGems: swapped[slotIndex]?.gems ?? [],
-          };
-          // Every weapon row names its hand: `"weapon"` alone cannot say
-          // whether a non-dual-wield spec's row is a main-hand or an off-hand
-          // item, and readers that fall back to the slot's first placement
-          // would label a shield "Main Hand".
-          if (slotNames.length > 1 || entry.slot === "weapon") {
-            next.slotChoice = slotName;
-          }
-          if (note) next.setBonusNote = note;
-          best = next;
-        }
-      }
+			for (let s = 0; s < slotNames.length; s++) {
+				const slotName = slotNames[s]!;
+				// See `attemptEligibility` for the reasoning behind each guard.
+				const eligibility = attemptEligibility(entry, slotName);
+				if (eligibility.kind === 'unmapped') {
+					throw new Error(`slot mapping bug: ${entry.slot} -> ${slotName} is not in SIM_ORDER ` + `(item ${entry.itemId} ${entry.name})`);
+				}
+				if (eligibility.kind === 'skip') continue;
+				const { slotIndex } = eligibility;
+				let swapped: SimItemSpec[];
+				let repairSwaps: readonly MetaRepairSwap[];
+				let removed: readonly { slotIndex: number; itemId: number }[];
+				let repairGems: GemContext;
+				try {
+					repairGems = await candidateRepairGems(slotIndex, entry.itemId);
+				} catch (err) {
+					// Stop refused the read: the row is left to the Stop placeholder.
+					if (err instanceof StopRefusedSim) return;
+					if (!(err instanceof CandidateHitReadFailed)) throw err;
+					candidateSkips.push({
+						kind: 'sim',
+						itemId: entry.itemId,
+						name: entry.name,
+						slot: slotName,
+						reason: err.message,
+					});
+					continue;
+				}
+				try {
+					const outcome = candidateSwapWithRepairs(equipment, slotIndex, entry.itemId, repairGems);
+					swapped = outcome.equipment;
+					repairSwaps = outcome.swaps;
+					removed = outcome.removed;
+				} catch (err) {
+					if (!(err instanceof MetaRepairError)) throw err;
+					candidateSkips.push({
+						kind: 'repair',
+						itemId: entry.itemId,
+						name: entry.name,
+						slot: slotName,
+						reason: err.message,
+					});
+					continue;
+				}
+				const candReq = composeFor(swapped);
+				let candObs = await readCachedSim(deps, candReq, simVersion, runOpts);
+				if (!candObs) {
+					try {
+						candObs = await deps.sim.run(candReq, runOpts);
+					} catch (err) {
+						candidateSkips.push({
+							kind: 'sim',
+							itemId: entry.itemId,
+							name: entry.name,
+							slot: slotName,
+							reason: err instanceof Error ? err.message : String(err),
+						});
+						continue;
+					}
+					await cacheSimResult(deps, candReq, simVersion, runOpts, candObs);
+				}
+				const deltaDps = candObs.dps - baselineDps;
+				const note = setBreakNote(equipment, slotIndex, entry.itemId);
+				if (!best || deltaDps > best.deltaDps) {
+					const next: BestSwap = {
+						deltaDps,
+						stdev: candObs.stdev,
+						request: candReq,
+						slotIndex,
+						repairSwaps,
+						removed,
+						candidateGems: swapped[slotIndex]?.gems ?? [],
+					};
+					// Every weapon row names its hand: `"weapon"` alone cannot say
+					// whether a non-dual-wield spec's row is a main-hand or an off-hand
+					// item, and readers that fall back to the slot's first placement
+					// would label a shield "Main Hand".
+					if (slotNames.length > 1 || entry.slot === 'weapon') {
+						next.slotChoice = slotName;
+					}
+					if (note) next.setBonusNote = note;
+					best = next;
+				}
+			}
 
-      simsDone += 1;
-      onProgress?.({ stage: "simming", done: simsDone, total: totalSims });
+			simsDone += 1;
+			onProgress?.({ stage: 'simming', done: simsDone, total: totalSims });
 
-      if (!best) return;
+			if (!best) return;
 
-      individualDeltasByItemId.set(entry.itemId, {
-        itemId: entry.itemId,
-        slotIndex: best.slotIndex,
-        deltaDps: best.deltaDps,
-        se: best.stdev / Math.sqrt(iterations),
-      });
+			individualDeltasByItemId.set(entry.itemId, {
+				itemId: entry.itemId,
+				slotIndex: best.slotIndex,
+				deltaDps: best.deltaDps,
+				se: best.stdev / Math.sqrt(iterations),
+			});
 
-      const deltaPct =
-        baselineDps === 0 ? 0 : (best.deltaDps / baselineDps) * 100;
-      const belowCutoff = !meetsCutoff(best.deltaDps, cutoff);
-      const item: RankedItem = {
-        rank: null,
-        itemId: entry.itemId,
-        name: entry.name,
-        slot: entry.slot,
-        source: entry.source,
-        deltaDps: best.deltaDps,
-        deltaPct,
-        se: best.stdev / Math.sqrt(iterations),
-        seMethod: "independent",
-        bisTags: entry.bisTags ?? [],
-        ...(entry.curatedSets ? { curatedSets: entry.curatedSets } : {}),
-        ...(entry.bisSets ? { bisSets: entry.bisSets } : {}),
-        belowCutoff,
-      };
-      if (entry.sources) item.sources = entry.sources;
-      if (best.slotChoice) item.slotChoice = best.slotChoice;
-      if (best.setBonusNote) item.setBonusNote = best.setBonusNote;
-      if (best.repairSwaps.length > 0) {
-        item.gemSubstitutions = best.repairSwaps.map((s) => ({
-          itemId: s.itemId,
-          socketIndex: s.socketIndex,
-          from: s.from,
-          to: s.to,
-        }));
-      }
-      if (best.removed.length > 0) {
-        item.removedItems = best.removed.map((r) => ({
-          itemId: r.itemId,
-          slot: SIM_ORDER[r.slotIndex] as SimSlotName,
-        }));
-      }
-      if (owned) item.owned = true;
-      if (metaSocketUnpriced(entry.itemId, best.candidateGems, gems.spec)) {
-        item.emptyMetaSocket = true;
-      }
-      ranked.push(item);
-      winningRequests.set(entry.itemId, best.request);
-      onProgress?.({ kind: "row", row: item });
-    }
+			const deltaPct = baselineDps === 0 ? 0 : (best.deltaDps / baselineDps) * 100;
+			const belowCutoff = !meetsCutoff(best.deltaDps, cutoff);
+			const item: RankedItem = {
+				rank: null,
+				itemId: entry.itemId,
+				name: entry.name,
+				slot: entry.slot,
+				source: entry.source,
+				deltaDps: best.deltaDps,
+				deltaPct,
+				se: best.stdev / Math.sqrt(iterations),
+				seMethod: 'independent',
+				bisTags: entry.bisTags ?? [],
+				...(entry.curatedSets ? { curatedSets: entry.curatedSets } : {}),
+				...(entry.bisSets ? { bisSets: entry.bisSets } : {}),
+				belowCutoff,
+			};
+			if (entry.sources) item.sources = entry.sources;
+			if (best.slotChoice) item.slotChoice = best.slotChoice;
+			if (best.setBonusNote) item.setBonusNote = best.setBonusNote;
+			if (best.repairSwaps.length > 0) {
+				item.gemSubstitutions = best.repairSwaps.map(s => ({
+					itemId: s.itemId,
+					socketIndex: s.socketIndex,
+					from: s.from,
+					to: s.to,
+				}));
+			}
+			if (best.removed.length > 0) {
+				item.removedItems = best.removed.map(r => ({
+					itemId: r.itemId,
+					slot: SIM_ORDER[r.slotIndex] as SimSlotName,
+				}));
+			}
+			if (owned) item.owned = true;
+			if (metaSocketUnpriced(entry.itemId, best.candidateGems, gems.spec)) {
+				item.emptyMetaSocket = true;
+			}
+			ranked.push(item);
+			winningRequests.set(entry.itemId, best.request);
+			onProgress?.({ kind: 'row', row: item });
+		}
 
-    // Every eligible candidate gets a full-iteration sim; the cap keeps the
-    // first N items of the EP order the player does not wear, plus every owned
-    // row. Owned rows are kept anyway and the list leaves them out,
-    // so one counted against N would leave the list a row short.
-    const cap = input.candidateCap ?? ordered.length;
-    const keptNotOwned = new Set(
-      ordered.filter((e) => !equippedIds.has(e.itemId)).slice(0, cap)
-    );
-    const simCandidates = ordered.filter(
-      (e) => keptNotOwned.has(e) || equippedIds.has(e.itemId)
-    );
+		// Every eligible candidate gets a full-iteration sim; the cap keeps the
+		// first N items of the EP order the player does not wear, plus every owned
+		// row. Owned rows are kept anyway and the list leaves them out,
+		// so one counted against N would leave the list a row short.
+		const cap = input.candidateCap ?? ordered.length;
+		const keptNotOwned = new Set(ordered.filter(e => !equippedIds.has(e.itemId)).slice(0, cap));
+		const simCandidates = ordered.filter(e => keptNotOwned.has(e) || equippedIds.has(e.itemId));
 
-    // Counted here, after the cap decides the full-iteration set. A budget
-    // until `replicateTopItems` restates it with the rows it re-sims.
-    const replicaSims = usesPairedReplication(seeds)
-      ? (seeds.length - 1) *
-        (1 + Math.min(PAIRED_REPLICATE_TOP_N, simCandidates.length))
-      : 0;
-    const totalSims = 1 + simCandidates.length + replicaSims;
-    totalSimsForProgress = totalSims;
-    onProgress?.({ stage: "simming", done: simsDone, total: totalSims });
+		// Counted here, after the cap decides the full-iteration set. A budget
+		// until `replicateTopItems` restates it with the rows it re-sims.
+		const replicaSims = usesPairedReplication(seeds) ? (seeds.length - 1) * (1 + Math.min(PAIRED_REPLICATE_TOP_N, simCandidates.length)) : 0;
+		const totalSims = 1 + simCandidates.length + replicaSims;
+		totalSimsForProgress = totalSims;
+		onProgress?.({ stage: 'simming', done: simsDone, total: totalSims });
 
-    // Stop: candidates not yet dispatched when `signal` aborts never start;
-    // sims already in flight run to the end.
-    const signal = deps.signal;
+		// Stop: candidates not yet dispatched when `signal` aborts never start;
+		// sims already in flight run to the end.
+		const signal = deps.signal;
 
-    const dispatchedCandidates = signal?.aborted ? [] : simCandidates;
-    const tasks = dispatchedCandidates.map(
-      (entry) => () => runCandidate(entry)
-    );
-    const concurrency = deps.concurrency ?? 1;
-    let aborted = signal?.aborted ?? false;
-    if (tasks.length > 0) {
-      if (signal !== undefined) {
-        // Checked as each task starts, so nothing in flight is torn down.
-        await promisePool(
-          tasks.map((task) => async () => {
-            if (signal.aborted) {
-              aborted = true;
-              return;
-            }
-            await task();
-          }),
-          concurrency
-        );
-      } else {
-        await promisePool(tasks, concurrency);
-      }
-    }
-    // Re-read after the pool drains: an abort raised while the last task was
-    // in flight skips nothing, so the loop above never sets the flag, yet the
-    // run must still stop before replication and set packages.
-    if (signal?.aborted) aborted = true;
-    // A skipped candidate (failed repair or sim) is already disclosed in
-    // `substitutions`, and never reaches `individualDeltasByItemId`, so
-    // filtering on that map alone would re-add it as a Stop placeholder.
-    const skippedIds = new Set(candidateSkips.map((s) => s.itemId));
-    const unsimmedCandidates = aborted
-      ? simCandidates.filter(
-          (c) =>
-            !individualDeltasByItemId.has(c.itemId) && !skippedIds.has(c.itemId)
-        )
-      : [];
-    for (const entry of unsimmedCandidates) {
-      const slotChoice = placeholderSlotChoice(entry);
-      // A row Stop never reached: placeholder numbers keep it a RankedItem,
-      // and `simmed: false` keeps the zeroed deltaDps out of cutoff
-      // classification and tie groups.
-      ranked.push({
-        rank: null,
-        itemId: entry.itemId,
-        name: entry.name,
-        slot: entry.slot,
-        ...(slotChoice ? { slotChoice } : {}),
-        source: entry.source,
-        deltaDps: 0,
-        deltaPct: 0,
-        se: 0,
-        seMethod: "independent",
-        simmed: false,
-        bisTags: entry.bisTags ?? [],
-        ...(entry.curatedSets ? { curatedSets: entry.curatedSets } : {}),
-        ...(entry.bisSets ? { bisSets: entry.bisSets } : {}),
-        belowCutoff: false,
-        ...(entry.sources ? { sources: entry.sources } : {}),
-        ...(equippedIds.has(entry.itemId) ? { owned: true } : {}),
-      });
-    }
-    // Deterministic regardless of completion order, so `substitutions`
-    // below reads the same on every run at every `concurrency`.
-    candidateSkips.sort((a, b) => a.itemId - b.itemId);
+		const dispatchedCandidates = signal?.aborted ? [] : simCandidates;
+		const tasks = dispatchedCandidates.map(entry => () => runCandidate(entry));
+		const concurrency = deps.concurrency ?? 1;
+		let aborted = signal?.aborted ?? false;
+		if (tasks.length > 0) {
+			if (signal !== undefined) {
+				// Checked as each task starts, so nothing in flight is torn down.
+				await promisePool(
+					tasks.map(task => async () => {
+						if (signal.aborted) {
+							aborted = true;
+							return;
+						}
+						await task();
+					}),
+					concurrency,
+				);
+			} else {
+				await promisePool(tasks, concurrency);
+			}
+		}
+		// Re-read after the pool drains: an abort raised while the last task was
+		// in flight skips nothing, so the loop above never sets the flag, yet the
+		// run must still stop before replication and set packages.
+		if (signal?.aborted) aborted = true;
+		// A skipped candidate (failed repair or sim) is already disclosed in
+		// `substitutions`, and never reaches `individualDeltasByItemId`, so
+		// filtering on that map alone would re-add it as a Stop placeholder.
+		const skippedIds = new Set(candidateSkips.map(s => s.itemId));
+		const unsimmedCandidates = aborted ? simCandidates.filter(c => !individualDeltasByItemId.has(c.itemId) && !skippedIds.has(c.itemId)) : [];
+		for (const entry of unsimmedCandidates) {
+			const slotChoice = placeholderSlotChoice(entry);
+			// A row Stop never reached: placeholder numbers keep it a RankedItem,
+			// and `simmed: false` keeps the zeroed deltaDps out of cutoff
+			// classification and tie groups.
+			ranked.push({
+				rank: null,
+				itemId: entry.itemId,
+				name: entry.name,
+				slot: entry.slot,
+				...(slotChoice ? { slotChoice } : {}),
+				source: entry.source,
+				deltaDps: 0,
+				deltaPct: 0,
+				se: 0,
+				seMethod: 'independent',
+				simmed: false,
+				bisTags: entry.bisTags ?? [],
+				...(entry.curatedSets ? { curatedSets: entry.curatedSets } : {}),
+				...(entry.bisSets ? { bisSets: entry.bisSets } : {}),
+				belowCutoff: false,
+				...(entry.sources ? { sources: entry.sources } : {}),
+				...(equippedIds.has(entry.itemId) ? { owned: true } : {}),
+			});
+		}
+		// Deterministic regardless of completion order, so `substitutions`
+		// below reads the same on every run at every `concurrency`.
+		candidateSkips.sort((a, b) => a.itemId - b.itemId);
 
-    // A line for every set bonus the set phase could not measure, and for
-    // every set screen or worn-set ladder sim that failed, most with the
-    // sim's error.
-    const setBonusLines: Substitution[] = [];
-    const setCheckLines: Substitution[] = [];
+		// A line for every set bonus the set phase could not measure, and for
+		// every set screen or worn-set ladder sim that failed, most with the
+		// sim's error.
+		const setBonusLines: Substitution[] = [];
+		const setCheckLines: Substitution[] = [];
 
-    // Set-bonus packages and paired replication only refine, so once Stop
-    // fires neither runs: what already simmed stands and the unsimmed rows
-    // stay unsimmed.
-    let setBonusResult = aborted
-      ? emptySetPhase()
-      : await buildSetBonuses(
-          guardedDeps,
-          simCandidates,
-          equipment,
-          gems,
-          race,
-          input,
-          composeFor,
-          individualDeltasByItemId,
-          { dps: baselineDps, se: observation.stdev / Math.sqrt(iterations) },
-          simVersion,
-          runOpts,
-          setBonusLines,
-          setCheckLines,
-          deps.measureBrokenSetValue ?? false,
-          cutoff,
-          observation.stdev,
-          versionGears
-        );
-    if (signal?.aborted) aborted = true;
-    // With the flag, a lost count is a break only when the ladder counted it,
-    // and no table is read. An aborted run has no ladder, so it charges none.
-    let counts: BonusCountPredicate | undefined = deps.measureBrokenSetValue
-      ? countedLadderBreaks(setBonusResult.wornSetLadder)
-      : undefined;
-    let setBonuses = setBonusResult.bonuses;
-    // With the flag, each set row is valued by the step rule.
-    const stepPath = (deps.measureBrokenSetValue ?? false) && !aborted;
-    const hasSetContext =
-      setBonuses.length > 0 || setBonusResult.markedSetIds.length > 0;
-    if (hasSetContext) {
-      applySetContext(
-        ranked,
-        setBonuses,
-        equipment,
-        setBonusResult.brokenSetValues,
-        setBonusResult.candidateSlotIndex,
-        individualDeltasByItemId,
-        counts,
-        stepPath ? { crossingGates: setBonusResult.crossingGates } : undefined,
-        setBonusResult.markedSetIds
-      );
-    }
-    // After the futures are complete and before replication rewrites the top
-    // rows' `deltaDps`: the step gears' sims, one per distinct gear.
-    let steps =
-      stepPath && hasSetContext && counts
-        ? await measureSetSteps({
-            deps: guardedDeps,
-            ranked,
-            setBonuses,
-            equipment,
-            gems,
-            composeFor,
-            individualDeltasByItemId,
-            brokenSetValues: setBonusResult.brokenSetValues,
-            candidateSlotIndex: setBonusResult.candidateSlotIndex,
-            counts,
-            baseline: {
-              dps: baselineDps,
-              se: observation.stdev / Math.sqrt(iterations),
-            },
-            simVersion,
-            runOpts,
-            cutoff,
-            versionGears,
-            bonusLines: setBonusLines,
-          })
-        : undefined;
-    if (signal?.aborted) aborted = true;
-    onProgress?.({ stage: "ranking" });
-    // Sorted here so replication can pick the contested top of the list, and
-    // again below, because replication rewrites the `deltaDps` this order is
-    // built from. Unsimmed rows sort last whatever their placeholder 0.
-    // The tiebreak matches view.ts's compareRows (bisTags richness, then
-    // itemId), so the stamped rank and the rendered order agree inside exact
-    // ties while the view sorts on raw deltaDps; with set potential on,
-    // compareRows adds rankableSetPotential and the two orders can differ.
-    const bySimmedThenDelta = (a: RankedItem, b: RankedItem): number => {
-      if (a.simmed === false && b.simmed !== false) return 1;
-      if (b.simmed === false && a.simmed !== false) return -1;
-      if (a.deltaDps !== b.deltaDps) return b.deltaDps - a.deltaDps;
-      const richness = b.bisTags.length - a.bisTags.length;
-      if (richness !== 0) return richness;
-      return a.itemId - b.itemId;
-    };
-    ranked.sort(bySimmedThenDelta);
-    let replicated: Array<{ item: RankedItem; deltas: number[] }> = [];
-    if (!aborted) {
-      try {
-        replicated = await replicateTopItems(ranked, winningRequests);
-      } catch (err) {
-        // The guard refused a replication sim, so Stop fired; the re-read
-        // below sees it. Any other error still fails the ranking.
-        if (!(err instanceof StopRefusedSim)) throw err;
-      }
-    }
-    if (signal?.aborted) aborted = true;
-    if (aborted) {
-      // A Stop after the candidate loop returns what a Stop during its last
-      // sim returns. A ladder cut short would charge breaks from
-      // counts it never measured, so no partial set figure is kept.
-      setBonusResult = emptySetPhase();
-      counts = deps.measureBrokenSetValue
-        ? countedLadderBreaks(setBonusResult.wornSetLadder)
-        : undefined;
-      setBonuses = setBonusResult.bonuses;
-      steps = undefined;
-      setBonusLines.length = 0;
-      setCheckLines.length = 0;
-      for (const item of ranked) delete item.setContext;
-    }
-    if (!aborted) {
-      for (const { item, deltas } of replicated) {
-        item.se = pairedReplicateSe(deltas);
-        item.seMethod = "paired-replicate";
-        item.deltaDps = deltas.reduce((sum, d) => sum + d, 0) / deltas.length;
-        item.deltaPct =
-          baselineDps === 0 ? 0 : (item.deltaDps / baselineDps) * 100;
-        item.belowCutoff = !meetsCutoff(item.deltaDps, cutoff);
-      }
-    }
-    ranked.sort(bySimmedThenDelta);
+		// Set-bonus packages and paired replication only refine, so once Stop
+		// fires neither runs: what already simmed stands and the unsimmed rows
+		// stay unsimmed.
+		let setBonusResult = aborted
+			? emptySetPhase()
+			: await buildSetBonuses(
+					guardedDeps,
+					simCandidates,
+					equipment,
+					gems,
+					race,
+					input,
+					composeFor,
+					individualDeltasByItemId,
+					{ dps: baselineDps, se: observation.stdev / Math.sqrt(iterations) },
+					simVersion,
+					runOpts,
+					setBonusLines,
+					setCheckLines,
+					deps.measureBrokenSetValue ?? false,
+					cutoff,
+					observation.stdev,
+					versionGears,
+				);
+		if (signal?.aborted) aborted = true;
+		// With the flag, a lost count is a break only when the ladder counted it,
+		// and no table is read. An aborted run has no ladder, so it charges none.
+		let counts: BonusCountPredicate | undefined = deps.measureBrokenSetValue ? countedLadderBreaks(setBonusResult.wornSetLadder) : undefined;
+		let setBonuses = setBonusResult.bonuses;
+		// With the flag, each set row is valued by the step rule.
+		const stepPath = (deps.measureBrokenSetValue ?? false) && !aborted;
+		const hasSetContext = setBonuses.length > 0 || setBonusResult.markedSetIds.length > 0;
+		if (hasSetContext) {
+			applySetContext(
+				ranked,
+				setBonuses,
+				equipment,
+				setBonusResult.brokenSetValues,
+				setBonusResult.candidateSlotIndex,
+				individualDeltasByItemId,
+				counts,
+				stepPath ? { crossingGates: setBonusResult.crossingGates } : undefined,
+				setBonusResult.markedSetIds,
+			);
+		}
+		// After the futures are complete and before replication rewrites the top
+		// rows' `deltaDps`: the step gears' sims, one per distinct gear.
+		let steps =
+			stepPath && hasSetContext && counts
+				? await measureSetSteps({
+						deps: guardedDeps,
+						ranked,
+						setBonuses,
+						equipment,
+						gems,
+						composeFor,
+						individualDeltasByItemId,
+						brokenSetValues: setBonusResult.brokenSetValues,
+						candidateSlotIndex: setBonusResult.candidateSlotIndex,
+						counts,
+						baseline: {
+							dps: baselineDps,
+							se: observation.stdev / Math.sqrt(iterations),
+						},
+						simVersion,
+						runOpts,
+						cutoff,
+						versionGears,
+						bonusLines: setBonusLines,
+					})
+				: undefined;
+		if (signal?.aborted) aborted = true;
+		onProgress?.({ stage: 'ranking' });
+		// Sorted here so replication can pick the contested top of the list, and
+		// again below, because replication rewrites the `deltaDps` this order is
+		// built from. Unsimmed rows sort last whatever their placeholder 0.
+		// The tiebreak matches view.ts's compareRows (bisTags richness, then
+		// itemId), so the stamped rank and the rendered order agree inside exact
+		// ties while the view sorts on raw deltaDps; with set potential on,
+		// compareRows adds rankableSetPotential and the two orders can differ.
+		const bySimmedThenDelta = (a: RankedItem, b: RankedItem): number => {
+			if (a.simmed === false && b.simmed !== false) return 1;
+			if (b.simmed === false && a.simmed !== false) return -1;
+			if (a.deltaDps !== b.deltaDps) return b.deltaDps - a.deltaDps;
+			const richness = b.bisTags.length - a.bisTags.length;
+			if (richness !== 0) return richness;
+			return a.itemId - b.itemId;
+		};
+		ranked.sort(bySimmedThenDelta);
+		let replicated: Array<{ item: RankedItem; deltas: number[] }> = [];
+		if (!aborted) {
+			try {
+				replicated = await replicateTopItems(ranked, winningRequests);
+			} catch (err) {
+				// The guard refused a replication sim, so Stop fired; the re-read
+				// below sees it. Any other error still fails the ranking.
+				if (!(err instanceof StopRefusedSim)) throw err;
+			}
+		}
+		if (signal?.aborted) aborted = true;
+		if (aborted) {
+			// A Stop after the candidate loop returns what a Stop during its last
+			// sim returns. A ladder cut short would charge breaks from
+			// counts it never measured, so no partial set figure is kept.
+			setBonusResult = emptySetPhase();
+			counts = deps.measureBrokenSetValue ? countedLadderBreaks(setBonusResult.wornSetLadder) : undefined;
+			setBonuses = setBonusResult.bonuses;
+			steps = undefined;
+			setBonusLines.length = 0;
+			setCheckLines.length = 0;
+			for (const item of ranked) delete item.setContext;
+		}
+		if (!aborted) {
+			for (const { item, deltas } of replicated) {
+				item.se = pairedReplicateSe(deltas);
+				item.seMethod = 'paired-replicate';
+				item.deltaDps = deltas.reduce((sum, d) => sum + d, 0) / deltas.length;
+				item.deltaPct = baselineDps === 0 ? 0 : (item.deltaDps / baselineDps) * 100;
+				item.belowCutoff = !meetsCutoff(item.deltaDps, cutoff);
+			}
+		}
+		ranked.sort(bySimmedThenDelta);
 
-    let rank = 1;
-    for (const item of ranked) {
-      // Stop left this row unsimmed: there is no measured delta to classify
-      // or group.
-      if (item.simmed === false) {
-        item.rank = null;
-        continue;
-      }
-      if (item.belowCutoff) {
-        item.rank = null;
-      } else {
-        item.rank = rank;
-        rank += 1;
-      }
-    }
+		let rank = 1;
+		for (const item of ranked) {
+			// Stop left this row unsimmed: there is no measured delta to classify
+			// or group.
+			if (item.simmed === false) {
+				item.rank = null;
+				continue;
+			}
+			if (item.belowCutoff) {
+				item.rank = null;
+			} else {
+				item.rank = rank;
+				rank += 1;
+			}
+		}
 
-    const warnings = plausibilityWarnings({
-      baselineDps: observation.dps,
-      setBonuses,
-      rows: ranked.map((i) => ({
-        itemId: i.itemId,
-        name: i.name,
-        slot: i.slot,
-        deltaDps: i.deltaDps,
-        ...(i.owned === true ? { owned: true } : {}),
-      })),
-      wornSetCounts: setCounts(equipment),
-      ...(counts ? { counts } : {}),
-    });
+		const warnings = plausibilityWarnings({
+			baselineDps: observation.dps,
+			setBonuses,
+			rows: ranked.map(i => ({
+				itemId: i.itemId,
+				name: i.name,
+				slot: i.slot,
+				deltaDps: i.deltaDps,
+				...(i.owned === true ? { owned: true } : {}),
+			})),
+			wornSetCounts: setCounts(equipment),
+			...(counts ? { counts } : {}),
+		});
 
-    const rankingBase = {
-      contentHash,
-      cutoff,
-      fight: resolved,
-      baseline: {
-        dps: observation.dps,
-        stdev: observation.stdev,
-        metaAdjusted,
-      },
-      assumptions: {
-        maxPhase: input.maxPhase,
-        seeds,
-        iterations,
-        race,
-        presetId: presetIdFor(input.spec),
-        standing: buildStandingAssumptions(race),
-      },
-      substitutions: [
-        ...substitutionsFromMetaRepair(metaSwaps),
-        ...hitCapNotes,
-        ...metaPreferenceDisclosure(gems.spec),
-        ...offHandBlockedDisclosure(blockedOffHand.length),
-        ...oneHandBlockedDisclosure(blockedOneHand.length),
-        ...candidateSkips.map(candidateSkipSubstitution),
-        ...uniqueSubstitutions([...setCheckLines, ...setBonusLines]),
-      ],
-      items: ranked,
-      ...(setBonuses.length > 0 ? { setBonuses } : {}),
-      ...(setBonusResult.brokenSetValues.length > 0
-        ? { brokenSetValues: setBonusResult.brokenSetValues }
-        : {}),
-      ...(setBonusResult.wornSetLadder.length > 0
-        ? { wornSetLadder: setBonusResult.wornSetLadder }
-        : {}),
-      ...(setBonusResult.crossingGates.length > 0
-        ? { crossingGates: setBonusResult.crossingGates }
-        : {}),
-      ...(steps ? { setStepSims: steps.setStepSims } : {}),
-      ...(steps ? { setBonusOffSims: steps.bonusOffSims } : {}),
-      ...(steps?.partnerAudit ? { partnerAudit: steps.partnerAudit } : {}),
-      ...(setBonusResult.setScreen
-        ? { setScreen: setBonusResult.setScreen }
-        : {}),
-      ...(warnings.length > 0 ? { plausibilityWarnings: warnings } : {}),
-    };
+		const rankingBase = {
+			contentHash,
+			cutoff,
+			fight: resolved,
+			baseline: {
+				dps: observation.dps,
+				stdev: observation.stdev,
+				metaAdjusted,
+			},
+			assumptions: {
+				maxPhase: input.maxPhase,
+				seeds,
+				iterations,
+				race,
+				presetId: presetIdFor(input.spec),
+				standing: buildStandingAssumptions(race),
+			},
+			substitutions: [
+				...substitutionsFromMetaRepair(metaSwaps),
+				...hitCapNotes,
+				...metaPreferenceDisclosure(gems.spec),
+				...offHandBlockedDisclosure(blockedOffHand.length),
+				...oneHandBlockedDisclosure(blockedOneHand.length),
+				...candidateSkips.map(candidateSkipSubstitution),
+				...uniqueSubstitutions([...setCheckLines, ...setBonusLines]),
+			],
+			items: ranked,
+			...(setBonuses.length > 0 ? { setBonuses } : {}),
+			...(setBonusResult.brokenSetValues.length > 0 ? { brokenSetValues: setBonusResult.brokenSetValues } : {}),
+			...(setBonusResult.wornSetLadder.length > 0 ? { wornSetLadder: setBonusResult.wornSetLadder } : {}),
+			...(setBonusResult.crossingGates.length > 0 ? { crossingGates: setBonusResult.crossingGates } : {}),
+			...(steps ? { setStepSims: steps.setStepSims } : {}),
+			...(steps ? { setBonusOffSims: steps.bonusOffSims } : {}),
+			...(steps?.partnerAudit ? { partnerAudit: steps.partnerAudit } : {}),
+			...(setBonusResult.setScreen ? { setScreen: setBonusResult.setScreen } : {}),
+			...(warnings.length > 0 ? { plausibilityWarnings: warnings } : {}),
+		};
 
-    if (aborted) {
-      // No ranking-cache row for a partial run; this branch is the only
-      // thing that enforces it (see `Ranking.complete`). Per-sim rows already
-      // landed via `cacheSimResult`, so a re-run still resumes cheaply.
-      const partial: PartialRanking = { ...rankingBase, complete: false };
-      await deps.store.job.update(job.id, {
-        status: "done",
-        result: partial,
-      });
-      return partial;
-    }
+		if (aborted) {
+			// No ranking-cache row for a partial run; this branch is the only
+			// thing that enforces it (see `Ranking.complete`). Per-sim rows already
+			// landed via `cacheSimResult`, so a re-run still resumes cheaply.
+			const partial: PartialRanking = { ...rankingBase, complete: false };
+			await deps.store.job.update(job.id, {
+				status: 'done',
+				result: partial,
+			});
+			return partial;
+		}
 
-    const ranking: Ranking = { ...rankingBase, complete: true };
-    await deps.store.put(rankingCacheKey(contentHash), ranking);
-    await deps.store.job.update(job.id, {
-      status: "done",
-      result: ranking,
-    });
-    return ranking;
-  }
+		const ranking: Ranking = { ...rankingBase, complete: true };
+		await deps.store.put(rankingCacheKey(contentHash), ranking);
+		await deps.store.job.update(job.id, {
+			status: 'done',
+			result: ranking,
+		});
+		return ranking;
+	}
 
-  /**
-   * The top rows' paired deltas, one per seed. It writes nothing to the rows,
-   * so a Stop part-way through leaves them as the candidate loop left them.
-   */
-  async function replicateTopItems(
-    ranked: RankedItem[],
-    winningRequests: ReadonlyMap<number, RaidSimRequest>
-  ): Promise<Array<{ item: RankedItem; deltas: number[] }>> {
-    const top = usesPairedReplication(seeds)
-      ? ranked
-          .filter((item) => !item.belowCutoff && item.simmed !== false)
-          .slice(0, PAIRED_REPLICATE_TOP_N)
-      : [];
-    // The total sent so far budgeted re-sims for up to top-N rows; only now is
-    // the number of rows known, so the total is restated as the sims done
-    // plus the sims this function will run.
-    totalSimsForProgress =
-      simsDone + (top.length === 0 ? 0 : (seeds.length - 1) * (1 + top.length));
-    onProgress?.({
-      stage: "simming",
-      done: simsDone,
-      total: totalSimsForProgress,
-    });
-    if (top.length === 0) return [];
-    const baselineBySeed = new Map<number, number>();
-    for (const s of seeds) {
-      baselineBySeed.set(s, (await simFor(request, s)).dps);
-      bumpProgress(s);
-    }
+	/**
+	 * The top rows' paired deltas, one per seed. It writes nothing to the rows,
+	 * so a Stop part-way through leaves them as the candidate loop left them.
+	 */
+	async function replicateTopItems(
+		ranked: RankedItem[],
+		winningRequests: ReadonlyMap<number, RaidSimRequest>,
+	): Promise<Array<{ item: RankedItem; deltas: number[] }>> {
+		const top = usesPairedReplication(seeds) ? ranked.filter(item => !item.belowCutoff && item.simmed !== false).slice(0, PAIRED_REPLICATE_TOP_N) : [];
+		// The total sent so far budgeted re-sims for up to top-N rows; only now is
+		// the number of rows known, so the total is restated as the sims done
+		// plus the sims this function will run.
+		totalSimsForProgress = simsDone + (top.length === 0 ? 0 : (seeds.length - 1) * (1 + top.length));
+		onProgress?.({
+			stage: 'simming',
+			done: simsDone,
+			total: totalSimsForProgress,
+		});
+		if (top.length === 0) return [];
+		const baselineBySeed = new Map<number, number>();
+		for (const s of seeds) {
+			baselineBySeed.set(s, (await simFor(request, s)).dps);
+			bumpProgress(s);
+		}
 
-    const replicated: Array<{ item: RankedItem; deltas: number[] }> = [];
-    for (const item of top) {
-      const candReq = winningRequests.get(item.itemId);
-      if (!candReq) {
-        throw new RankError(
-          "internal",
-          `no recorded request for ranked item ${item.itemId} (${item.name}); ` +
-            `paired replication cannot re-sim it`
-        );
-      }
-      const deltas: number[] = [];
-      for (const s of seeds) {
-        const obs = await simFor(candReq, s);
-        deltas.push(obs.dps - baselineBySeed.get(s)!);
-        bumpProgress(s);
-      }
-      replicated.push({ item, deltas });
-    }
-    return replicated;
-  }
+		const replicated: Array<{ item: RankedItem; deltas: number[] }> = [];
+		for (const item of top) {
+			const candReq = winningRequests.get(item.itemId);
+			if (!candReq) {
+				throw new RankError('internal', `no recorded request for ranked item ${item.itemId} (${item.name}); ` + `paired replication cannot re-sim it`);
+			}
+			const deltas: number[] = [];
+			for (const s of seeds) {
+				const obs = await simFor(candReq, s);
+				deltas.push(obs.dps - baselineBySeed.get(s)!);
+				bumpProgress(s);
+			}
+			replicated.push({ item, deltas });
+		}
+		return replicated;
+	}
 
-  function bumpProgress(seedForRun: number): void {
-    if (seedForRun === seeds[0]) return;
-    simsDone += 1;
-    onProgress?.({
-      stage: "simming",
-      done: simsDone,
-      total: totalSimsForProgress,
-    });
-  }
+	function bumpProgress(seedForRun: number): void {
+		if (seedForRun === seeds[0]) return;
+		simsDone += 1;
+		onProgress?.({
+			stage: 'simming',
+			done: simsDone,
+			total: totalSimsForProgress,
+		});
+	}
 
-  async function simFor(
-    req: RaidSimRequest,
-    seedForRun: number
-  ): Promise<SimObservation> {
-    const opts = { seed: seedForRun, iterations };
-    const cached = await readCachedSim(deps, req, simVersion, opts);
-    if (cached) return cached;
-    let obs: SimObservation;
-    try {
-      obs = await guardedDeps.sim.run(req, opts);
-    } catch (err) {
-      if (err instanceof StopRefusedSim) throw err;
-      throw new RankError(
-        "sim-failed",
-        err instanceof Error ? err.message : String(err)
-      );
-    }
-    await cacheSimResult(deps, req, simVersion, opts, obs);
-    return obs;
-  }
+	async function simFor(req: RaidSimRequest, seedForRun: number): Promise<SimObservation> {
+		const opts = { seed: seedForRun, iterations };
+		const cached = await readCachedSim(deps, req, simVersion, opts);
+		if (cached) return cached;
+		let obs: SimObservation;
+		try {
+			obs = await guardedDeps.sim.run(req, opts);
+		} catch (err) {
+			if (err instanceof StopRefusedSim) throw err;
+			throw new RankError('sim-failed', err instanceof Error ? err.message : String(err));
+		}
+		await cacheSimResult(deps, req, simVersion, opts, obs);
+		return obs;
+	}
 }
 
 async function buildSetBonuses(
-  deps: Deps,
-  candidates: readonly PoolEntry[],
-  equipment: readonly SimItemSpec[],
-  gems: GemContext,
-  race: Race,
-  input: RankInput,
-  /**
-   * `rankUpgrades`'s own compose helper, passed in rather than rebuilt here
-   * so the two cannot drift. Every composed request must carry the database
-   * its own equipment needs.
-   */
-  composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
-  individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>,
-  baseline: DpsSample,
-  simVersion: string,
-  runOpts: SimRunOpts,
-  setBonusLines: Substitution[],
-  setCheckLines: Substitution[],
-  /**
-   * When set, measure every worn set's bonuses with the ladder, charge only
-   * the counted ones as breaks, and gate each package's bonus.
-   */
-  measureBrokenSetValue: boolean,
-  /** The ranking's cutoff, for the noise floor of the ladder's gate. */
-  cutoff: Cutoff,
-  /**
-   * The baseline sim's per-iteration stdev (`Ranking.baseline.stdev`), for
-   * the on-mode screen's σ.
-   */
-  baselineStdev: number,
-  /** Every simmed version of a repaired gear comes from it. */
-  versionGears: VersionGears
+	deps: Deps,
+	candidates: readonly PoolEntry[],
+	equipment: readonly SimItemSpec[],
+	gems: GemContext,
+	race: Race,
+	input: RankInput,
+	/**
+	 * `rankUpgrades`'s own compose helper, passed in rather than rebuilt here
+	 * so the two cannot drift. Every composed request must carry the database
+	 * its own equipment needs.
+	 */
+	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
+	individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>,
+	baseline: DpsSample,
+	simVersion: string,
+	runOpts: SimRunOpts,
+	setBonusLines: Substitution[],
+	setCheckLines: Substitution[],
+	/**
+	 * When set, measure every worn set's bonuses with the ladder, charge only
+	 * the counted ones as breaks, and gate each package's bonus.
+	 */
+	measureBrokenSetValue: boolean,
+	/** The ranking's cutoff, for the noise floor of the ladder's gate. */
+	cutoff: Cutoff,
+	/**
+	 * The baseline sim's per-iteration stdev (`Ranking.baseline.stdev`), for
+	 * the on-mode screen's σ.
+	 */
+	baselineStdev: number,
+	/** Every simmed version of a repaired gear comes from it. */
+	versionGears: VersionGears,
 ): Promise<{
-  bonuses: SetBonusValue[];
-  brokenSetValues: BrokenSetValue[];
-  wornSetLadder: WornSetLadderEntry[];
-  crossingGates: CrossingGate[];
-  /** itemId -> best pool slotIndex, so `applySetContext` can compute per-row breaks. */
-  candidateSlotIndex: Map<number, number>;
-  /**
-   * Sets with candidates but no `bonuses` entry: no bonus in reach, or the
-   * set screen dropped them. Their rows still get a `setContext`.
-   */
-  markedSetIds: number[];
-  setScreen?: SetScreen;
+	bonuses: SetBonusValue[];
+	brokenSetValues: BrokenSetValue[];
+	wornSetLadder: WornSetLadderEntry[];
+	crossingGates: CrossingGate[];
+	/** itemId -> best pool slotIndex, so `applySetContext` can compute per-row breaks. */
+	candidateSlotIndex: Map<number, number>;
+	/**
+	 * Sets with candidates but no `bonuses` entry: no bonus in reach, or the
+	 * set screen dropped them. Their rows still get a `setContext`.
+	 */
+	markedSetIds: number[];
+	setScreen?: SetScreen;
 }> {
-  const bonusNotMeasured = (
-    setName: string,
-    threshold: SetThreshold,
-    reason: SkipReason
-  ) =>
-    setBonusLines.push(
-      setBonusSkipSubstitution({ setName, threshold, reason })
-    );
+	const bonusNotMeasured = (setName: string, threshold: SetThreshold, reason: SkipReason) =>
+		setBonusLines.push(setBonusSkipSubstitution({ setName, threshold, reason }));
 
-  // The set sims' own store-cached run. A gate or ladder request sends
-  // copies, so it is never a request the store already holds.
-  const cachedSampleRun =
-    (what: string) =>
-    async (request: RaidSimRequest): Promise<DpsSample> => {
-      let obs = await readCachedSim(deps, request, simVersion, runOpts);
-      if (!obs) {
-        try {
-          obs = await deps.sim.run(request, runOpts);
-        } catch (err) {
-          // After Stop the guard refused the sim, which is no sim failure,
-          // and the caller drops this run's set figures.
-          if (!deps.signal?.aborted) {
-            console.warn(`[upgrades] ${what} not measured: the sim failed`, err);
-          }
-          throw err;
-        }
-        await cacheSimResult(deps, request, simVersion, runOpts, obs);
-      }
-      return { dps: obs.dps, se: obs.stdev / Math.sqrt(runOpts.iterations) };
-    };
+	// The set sims' own store-cached run. A gate or ladder request sends
+	// copies, so it is never a request the store already holds.
+	const cachedSampleRun =
+		(what: string) =>
+		async (request: RaidSimRequest): Promise<DpsSample> => {
+			let obs = await readCachedSim(deps, request, simVersion, runOpts);
+			if (!obs) {
+				try {
+					obs = await deps.sim.run(request, runOpts);
+				} catch (err) {
+					// After Stop the guard refused the sim, which is no sim failure,
+					// and the caller drops this run's set figures.
+					if (!deps.signal?.aborted) {
+						console.warn(`[upgrades] ${what} not measured: the sim failed`, err);
+					}
+					throw err;
+				}
+				await cacheSimResult(deps, request, simVersion, runOpts, obs);
+			}
+			return { dps: obs.dps, se: obs.stdev / Math.sqrt(runOpts.iterations) };
+		};
 
-  // The value of every bonus each worn set has, on the player's
-  // own gear, before any package is built, so every break below reads the
-  // gated measurement instead of a table. It runs even when no set piece is a
-  // candidate, because the dead-slot check reads it too.
-  const wornSetLadder = measureBrokenSetValue
-    ? await measureWornSetLadders(
-        equipment,
-        composeFor,
-        cachedSampleRun,
-        cutoff,
-        setCheckLines,
-        deps.sim.activeSetBonuses
-          ? (request) => deps.sim.activeSetBonuses!(request)
-          : undefined
-      )
-    : [];
-  const counts: BonusCountPredicate = measureBrokenSetValue
-    ? countedLadderBreaks(wornSetLadder)
-    : isBonusImplemented;
-  const brokenSetValues: BrokenSetValue[] = wornSetLadder
-    .filter((e) => e.counted)
-    .sort((a, b) => (a.setId !== b.setId ? a.setId - b.setId : b.count - a.count))
-    .map((e) => ({
-      setId: e.setId,
-      setName: e.setName,
-      threshold: e.count,
-      ...(e.dps !== undefined ? { dps: e.dps } : {}),
-      ...(e.se !== undefined ? { se: e.se } : {}),
-      ...(e.unmeasured ? { unmeasured: e.unmeasured } : {}),
-    }));
+	// The value of every bonus each worn set has, on the player's
+	// own gear, before any package is built, so every break below reads the
+	// gated measurement instead of a table. It runs even when no set piece is a
+	// candidate, because the dead-slot check reads it too.
+	const wornSetLadder = measureBrokenSetValue
+		? await measureWornSetLadders(
+				equipment,
+				composeFor,
+				cachedSampleRun,
+				cutoff,
+				setCheckLines,
+				deps.sim.activeSetBonuses ? request => deps.sim.activeSetBonuses!(request) : undefined,
+			)
+		: [];
+	const counts: BonusCountPredicate = measureBrokenSetValue ? countedLadderBreaks(wornSetLadder) : isBonusImplemented;
+	const brokenSetValues: BrokenSetValue[] = wornSetLadder
+		.filter(e => e.counted)
+		.sort((a, b) => (a.setId !== b.setId ? a.setId - b.setId : b.count - a.count))
+		.map(e => ({
+			setId: e.setId,
+			setName: e.setName,
+			threshold: e.count,
+			...(e.dps !== undefined ? { dps: e.dps } : {}),
+			...(e.se !== undefined ? { se: e.se } : {}),
+			...(e.unmeasured ? { unmeasured: e.unmeasured } : {}),
+		}));
 
-  const setIdsWithCandidates = new Set<number>();
-  for (const entry of candidates) {
-    const setId = getItem(entry.itemId)?.setId;
-    if (setId != null) setIdsWithCandidates.add(setId);
-  }
+	const setIdsWithCandidates = new Set<number>();
+	for (const entry of candidates) {
+		const setId = getItem(entry.itemId)?.setId;
+		if (setId != null) setIdsWithCandidates.add(setId);
+	}
 
-  const wornCounts = setCounts(equipment);
-  const slotIndexForPoolEntry = (entry: PoolEntry): number | undefined => {
-    for (const slotName of simSlotsForPoolSlot(
-      entry.slot,
-      input.spec,
-      entry.itemId
-    )) {
-      const idx = SIM_ORDER.indexOf(slotName);
-      if (idx >= 0) return idx;
-    }
-    return undefined;
-  };
+	const wornCounts = setCounts(equipment);
+	const slotIndexForPoolEntry = (entry: PoolEntry): number | undefined => {
+		for (const slotName of simSlotsForPoolSlot(entry.slot, input.spec, entry.itemId)) {
+			const idx = SIM_ORDER.indexOf(slotName);
+			if (idx >= 0) return idx;
+		}
+		return undefined;
+	};
 
-  const selectFor = (setId: number, threshold: SetThreshold) =>
-    selectPackage(
-      setId,
-      threshold,
-      equipment,
-      candidates,
-      [...individualDeltasByItemId.values()],
-      slotIndexForPoolEntry
-    );
-  // Every count from one above the worn count up to the most pieces the pool
-  // can fill, each with the pieces its package adds.
-  const packagesInReach = (setId: number, piecesWorn: number) => {
-    const packages: Array<{ count: SetThreshold; pieces: PackagePiece[] }> = [];
-    for (let t = Math.max(2, piecesWorn + 1); ; t++) {
-      const selection = selectFor(setId, t);
-      if (!selection.ok) break;
-      packages.push({ count: t, pieces: selection.addedPieces });
-    }
-    return packages;
-  };
-  // Flag only: the counts each set has a bonus at, as the sim itself lists
-  // them, so the gain side never tries a count with no bonus (Thunderheart
-  // Harness at 5).
-  const bonusCounts = measureBrokenSetValue
-    ? await setBonusCountsInReach(
-        deps.sim,
-        setIdsWithCandidates,
-        (setId) => {
-          const packages = packagesInReach(setId, wornCounts.get(setId) ?? 0);
-          return packages[packages.length - 1]?.pieces;
-        },
-        equipment,
-        gems,
-        composeFor,
-        (setId, reason) =>
-          setCheckLines.push(
-            setBonusesSkipSubstitution({
-              setName: setLabel(
-                equipment,
-                setId,
-                candidates.map((entry) => entry.itemId)
-              ),
-              reason,
-            })
-          )
-      )
-    : new Map<number, ReadonlySet<number>>();
-  // Flag only: the counts in reach at which the set has a bonus.
-  // The same-gear gate below decides which bonuses are worth something here.
-  const reachableCounts = (setId: number, piecesWorn: number): SetThreshold[] => {
-    const known = bonusCounts.get(setId);
-    return packagesInReach(setId, piecesWorn)
-      .map((entry) => entry.count)
-      .filter((t) => !known || known.has(t));
-  };
+	const selectFor = (setId: number, threshold: SetThreshold) =>
+		selectPackage(setId, threshold, equipment, candidates, [...individualDeltasByItemId.values()], slotIndexForPoolEntry);
+	// Every count from one above the worn count up to the most pieces the pool
+	// can fill, each with the pieces its package adds.
+	const packagesInReach = (setId: number, piecesWorn: number) => {
+		const packages: Array<{ count: SetThreshold; pieces: PackagePiece[] }> = [];
+		for (let t = Math.max(2, piecesWorn + 1); ; t++) {
+			const selection = selectFor(setId, t);
+			if (!selection.ok) break;
+			packages.push({ count: t, pieces: selection.addedPieces });
+		}
+		return packages;
+	};
+	// Flag only: the counts each set has a bonus at, as the sim itself lists
+	// them, so the gain side never tries a count with no bonus (Thunderheart
+	// Harness at 5).
+	const bonusCounts = measureBrokenSetValue
+		? await setBonusCountsInReach(
+				deps.sim,
+				setIdsWithCandidates,
+				setId => {
+					const packages = packagesInReach(setId, wornCounts.get(setId) ?? 0);
+					return packages[packages.length - 1]?.pieces;
+				},
+				equipment,
+				gems,
+				composeFor,
+				(setId, reason) =>
+					setCheckLines.push(
+						setBonusesSkipSubstitution({
+							setName: setLabel(
+								equipment,
+								setId,
+								candidates.map(entry => entry.itemId),
+							),
+							reason,
+						}),
+					),
+			)
+		: new Map<number, ReadonlySet<number>>();
+	// Flag only: the counts in reach at which the set has a bonus.
+	// The same-gear gate below decides which bonuses are worth something here.
+	const reachableCounts = (setId: number, piecesWorn: number): SetThreshold[] => {
+		const known = bonusCounts.get(setId);
+		return packagesInReach(setId, piecesWorn)
+			.map(entry => entry.count)
+			.filter(t => !known || known.has(t));
+	};
 
-  // The screen runs after the worn-set ladder and before the package loop.
-  // Both modes get the same sets, packages and sim options, so an on-mode
-  // pair is the record mode's request at that N.
-  const screenMode = measureBrokenSetValue ? deps.setScreen : undefined;
-  const screenInput: SetScreenInput | undefined =
-    screenMode === "record" || screenMode === "on"
-      ? {
-          sets: [...setIdsWithCandidates]
-            .sort((a, b) => a - b)
-            .map((setId) => {
-              const worn = wornCounts.get(setId) ?? 0;
-              const reachable = reachableCounts(setId, worn);
-              return {
-                setId,
-                worn,
-                reach: reachable[reachable.length - 1] ?? worn,
-              };
-            }),
-          packageAt: (setId, count) => {
-            const selection = selectFor(setId, count);
-            if (!selection.ok) return undefined;
-            // The package loop's own swaps, so the screen sims the gear the
-            // loop would build for this count.
-            const pieces = selection.addedPieces;
-            let base: ChainBuild;
-            try {
-              base = chainSwapsWithRepairs(equipment, pieces, gems);
-            } catch (err) {
-              if (!(err instanceof MetaRepairError)) throw err;
-              return undefined;
-            }
-            return {
-              request: composeFor(base.equipment),
-              added: pieces,
-              // Each rung its own repair. A rung whose repair
-              // fails is not measured, as a package whose repair fails above.
-              requestsFor: async (copiesList) =>
-                (
-                  await versionGears(
-                    (g) => chainSwapsWithRepairs(equipment, pieces, g),
-                    base,
-                    copiesList
-                  )
-                ).map((entry) =>
-                  isRepairFailure(entry) ? undefined : requestOf(entry)
-                ),
-            };
-          },
-          runSimAt: (request, opts) => runSimAt(deps, request, simVersion, opts),
-          seed: runOpts.seed,
-          ...(deps.signal ? { signal: deps.signal } : {}),
-          onSimFailed: (setId, error) =>
-            setCheckLines.push(
-              setScreenSkipSubstitution({
-                setName: setLabel(
-                  equipment,
-                  setId,
-                  candidates.map((entry) => entry.itemId)
-                ),
-                error,
-              })
-            ),
-          onRequestNotBuilt: (setId, error) =>
-            setCheckLines.push(
-              setScreenSkipSubstitution({
-                setName: setLabel(
-                  equipment,
-                  setId,
-                  candidates.map((entry) => entry.itemId)
-                ),
-                error,
-                notBuilt: true,
-              })
-            ),
-        }
-      : undefined;
-  // The on mode's package estimate is the "sum-of-singles" rule's
-  // (`sumOfSinglesEstimate`), with the package's first added piece as the row.
-  const breakDpsBy = new Map(
-    brokenSetValues.map((v) => [bonusKey(v), v.dps] as const)
-  );
-  const statsAt = (setId: number, count: number): number | undefined => {
-    const selection = selectFor(setId, count);
-    if (!selection.ok) return undefined;
-    const pieces: PartnerPiece[] = [];
-    for (const piece of selection.addedPieces) {
-      const single = individualDeltasByItemId.get(piece.itemId)?.deltaDps;
-      if (single === undefined) return undefined;
-      pieces.push({
-        itemId: piece.itemId,
-        slotIndex: piece.slotIndex,
-        singleDeltaDps: single,
-      });
-    }
-    const [row, ...rest] = pieces;
-    if (!row) return undefined;
-    return sumOfSinglesEstimate(
-      {
-        row,
-        setId,
-        count,
-        needed: rest.length,
-        pool: [],
-        lostBy: (swaps) => brokenSetBonuses(equipment, swaps, setId, counts),
-        breakDps: (s, c) => breakDpsBy.get(`${s}:${c}`),
-      },
-      rest,
-      { withCombinationOnly: true }
-    );
-  };
-  const setScreen: SetScreen | undefined = !screenInput
-    ? undefined
-    : screenMode === "record"
-      ? await recordSetScreen(screenInput)
-      : await runSetScreenOn({ ...screenInput, statsAt, baselineStdev });
-  const screenedOut = new Set(
-    setScreen?.mode === "on"
-      ? setScreen.sets.filter((s) => !s.kept).map((s) => s.setId)
-      : []
-  );
+	// The screen runs after the worn-set ladder and before the package loop.
+	// Both modes get the same sets, packages and sim options, so an on-mode
+	// pair is the record mode's request at that N.
+	const screenMode = measureBrokenSetValue ? deps.setScreen : undefined;
+	const screenInput: SetScreenInput | undefined =
+		screenMode === 'record' || screenMode === 'on'
+			? {
+					sets: [...setIdsWithCandidates]
+						.sort((a, b) => a - b)
+						.map(setId => {
+							const worn = wornCounts.get(setId) ?? 0;
+							const reachable = reachableCounts(setId, worn);
+							return {
+								setId,
+								worn,
+								reach: reachable[reachable.length - 1] ?? worn,
+							};
+						}),
+					packageAt: (setId, count) => {
+						const selection = selectFor(setId, count);
+						if (!selection.ok) return undefined;
+						// The package loop's own swaps, so the screen sims the gear the
+						// loop would build for this count.
+						const pieces = selection.addedPieces;
+						let base: ChainBuild;
+						try {
+							base = chainSwapsWithRepairs(equipment, pieces, gems);
+						} catch (err) {
+							if (!(err instanceof MetaRepairError)) throw err;
+							return undefined;
+						}
+						return {
+							request: composeFor(base.equipment),
+							added: pieces,
+							// Each rung its own repair. A rung whose repair
+							// fails is not measured, as a package whose repair fails above.
+							requestsFor: async copiesList =>
+								(await versionGears(g => chainSwapsWithRepairs(equipment, pieces, g), base, copiesList)).map(entry =>
+									isRepairFailure(entry) ? undefined : requestOf(entry),
+								),
+						};
+					},
+					runSimAt: (request, opts) => runSimAt(deps, request, simVersion, opts),
+					seed: runOpts.seed,
+					...(deps.signal ? { signal: deps.signal } : {}),
+					onSimFailed: (setId, error) =>
+						setCheckLines.push(
+							setScreenSkipSubstitution({
+								setName: setLabel(
+									equipment,
+									setId,
+									candidates.map(entry => entry.itemId),
+								),
+								error,
+							}),
+						),
+					onRequestNotBuilt: (setId, error) =>
+						setCheckLines.push(
+							setScreenSkipSubstitution({
+								setName: setLabel(
+									equipment,
+									setId,
+									candidates.map(entry => entry.itemId),
+								),
+								error,
+								notBuilt: true,
+							}),
+						),
+				}
+			: undefined;
+	// The on mode's package estimate is the "sum-of-singles" rule's
+	// (`sumOfSinglesEstimate`), with the package's first added piece as the row.
+	const breakDpsBy = new Map(brokenSetValues.map(v => [bonusKey(v), v.dps] as const));
+	const statsAt = (setId: number, count: number): number | undefined => {
+		const selection = selectFor(setId, count);
+		if (!selection.ok) return undefined;
+		const pieces: PartnerPiece[] = [];
+		for (const piece of selection.addedPieces) {
+			const single = individualDeltasByItemId.get(piece.itemId)?.deltaDps;
+			if (single === undefined) return undefined;
+			pieces.push({
+				itemId: piece.itemId,
+				slotIndex: piece.slotIndex,
+				singleDeltaDps: single,
+			});
+		}
+		const [row, ...rest] = pieces;
+		if (!row) return undefined;
+		return sumOfSinglesEstimate(
+			{
+				row,
+				setId,
+				count,
+				needed: rest.length,
+				pool: [],
+				lostBy: swaps => brokenSetBonuses(equipment, swaps, setId, counts),
+				breakDps: (s, c) => breakDpsBy.get(`${s}:${c}`),
+			},
+			rest,
+			{ withCombinationOnly: true },
+		);
+	};
+	const setScreen: SetScreen | undefined = !screenInput
+		? undefined
+		: screenMode === 'record'
+			? await recordSetScreen(screenInput)
+			: await runSetScreenOn({ ...screenInput, statsAt, baselineStdev });
+	const screenedOut = new Set(setScreen?.mode === 'on' ? setScreen.sets.filter(s => !s.kept).map(s => s.setId) : []);
 
-  if (setIdsWithCandidates.size === 0) {
-    return {
-      bonuses: [],
-      brokenSetValues,
-      wornSetLadder,
-      crossingGates: [],
-      candidateSlotIndex: new Map(),
-      markedSetIds: [],
-      ...(setScreen ? { setScreen } : {}),
-    };
-  }
+	if (setIdsWithCandidates.size === 0) {
+		return {
+			bonuses: [],
+			brokenSetValues,
+			wornSetLadder,
+			crossingGates: [],
+			candidateSlotIndex: new Map(),
+			markedSetIds: [],
+			...(setScreen ? { setScreen } : {}),
+		};
+	}
 
-  const results: SetBonusValue[] = [];
-  const markedSetIds: number[] = [];
-  for (const setId of setIdsWithCandidates) {
-    const piecesWorn = wornCounts.get(setId) ?? 0;
-    const label = setLabel(
-      equipment,
-      setId,
-      candidates.map((entry) => entry.itemId)
-    );
-    let twoPieceBonus: number | undefined;
-    let twoPieceUnmeasurableAtThisWornCount = false;
-    // Flag only: a 4pc's raw value subtracts the 2pc's, so it is left
-    // unset when the 2pc package was attempted and failed.
-    let twoPieceFailed = false;
+	const results: SetBonusValue[] = [];
+	const markedSetIds: number[] = [];
+	for (const setId of setIdsWithCandidates) {
+		const piecesWorn = wornCounts.get(setId) ?? 0;
+		const label = setLabel(
+			equipment,
+			setId,
+			candidates.map(entry => entry.itemId),
+		);
+		let twoPieceBonus: number | undefined;
+		let twoPieceUnmeasurableAtThisWornCount = false;
+		// Flag only: a 4pc's raw value subtracts the 2pc's, so it is left
+		// unset when the 2pc package was attempted and failed.
+		let twoPieceFailed = false;
 
-    const thresholds = measureBrokenSetValue
-      ? reachableCounts(setId, piecesWorn)
-      : SET_THRESHOLDS.filter((t) => t > piecesWorn);
-    // No bonus is in reach, or the set screen dropped the set: no gate,
-    // package or step sims. The set is marked so its rows keep their single
-    // breaks and crossing in `setContext`. It gets no `setBonuses` entry: an
-    // entry names a piece count, and here none is a bonus the ranking
-    // measured.
-    if (
-      (measureBrokenSetValue && thresholds.length === 0) ||
-      screenedOut.has(setId)
-    ) {
-      markedSetIds.push(setId);
-      continue;
-    }
+		const thresholds = measureBrokenSetValue ? reachableCounts(setId, piecesWorn) : SET_THRESHOLDS.filter(t => t > piecesWorn);
+		// No bonus is in reach, or the set screen dropped the set: no gate,
+		// package or step sims. The set is marked so its rows keep their single
+		// breaks and crossing in `setContext`. It gets no `setBonuses` entry: an
+		// entry names a piece count, and here none is a bonus the ranking
+		// measured.
+		if ((measureBrokenSetValue && thresholds.length === 0) || screenedOut.has(setId)) {
+			markedSetIds.push(setId);
+			continue;
+		}
 
-    for (const threshold of thresholds) {
-      if (!measureBrokenSetValue && !isBonusImplemented(setId, threshold)) {
-        results.push({
-          setId,
-          setName: label,
-          threshold,
-          piecesWorn,
-          packageItemIds: [],
-          packageDeltaDps: 0,
-          unmeasured: "not-implemented-in-sim",
-        });
-        continue;
-      }
+		for (const threshold of thresholds) {
+			if (!measureBrokenSetValue && !isBonusImplemented(setId, threshold)) {
+				results.push({
+					setId,
+					setName: label,
+					threshold,
+					piecesWorn,
+					packageItemIds: [],
+					packageDeltaDps: 0,
+					unmeasured: 'not-implemented-in-sim',
+				});
+				continue;
+			}
 
-      const selection = selectFor(setId, threshold);
-      if (!selection.ok) {
-        results.push({
-          setId,
-          setName: label,
-          threshold,
-          piecesWorn,
-          packageItemIds: [],
-          packageDeltaDps: 0,
-          unmeasured: "insufficient-pieces",
-        });
-        continue;
-      }
+			const selection = selectFor(setId, threshold);
+			if (!selection.ok) {
+				results.push({
+					setId,
+					setName: label,
+					threshold,
+					piecesWorn,
+					packageItemIds: [],
+					packageDeltaDps: 0,
+					unmeasured: 'insufficient-pieces',
+				});
+				continue;
+			}
 
-      const addedPieces = selection.addedPieces;
-      if (addedPieces.length === 1) {
-        if (threshold === 2) twoPieceUnmeasurableAtThisWornCount = true;
-        results.push({
-          setId,
-          setName: label,
-          threshold,
-          piecesWorn,
-          packageItemIds: addedPieces.map((p) => p.itemId),
-          packageDeltaDps: 0,
-          unmeasured: "unmeasurable-at-this-worn-count",
-        });
-        continue;
-      }
-      /** A failed gem repair, on the package's build or on any of its versions, skips the package. */
-      const skipRepairFailed = (err: MetaRepairError) => {
-        console.warn(
-          `[upgrades] ${label} ${threshold}pc bonus package not measured: gem repair failed`,
-          err
-        );
-        bonusNotMeasured(
-          label,
-          threshold,
-          SET_BONUS_SKIP_REASONS.metaOff(err.message)
-        );
-        results.push({
-          setId,
-          setName: label,
-          threshold,
-          piecesWorn,
-          packageItemIds: addedPieces.map((p) => p.itemId),
-          packageDeltaDps: 0,
-          unmeasured: "repair-failed",
-        });
-        if (threshold === 2) twoPieceFailed = true;
-      };
-      let packageBuild: ChainBuild;
-      try {
-        packageBuild = chainSwapsWithRepairs(equipment, addedPieces, gems);
-      } catch (err) {
-        if (!(err instanceof MetaRepairError)) throw err;
-        skipRepairFailed(err);
-        continue;
-      }
-      const builtPackage = packageBuild;
-      const rebuildPackage = (g: GemContext) =>
-        chainSwapsWithRepairs(equipment, addedPieces, g);
-      // The package sim and its gate's "on" and "off" are one
-      // pair, so all three come from one `versionGears` call when the gate
-      // runs; the package's own version is kept for its sim.
-      // The package's plain version once built, or why it could not be.
-      const plainVersion: { entry?: VersionEntry | BuildFailure } = {};
-      // A version's failed repair skips the package with the repair's error,
-      // as on the package's own build; an undefined entry alone would show
-      // a failed sim, and none ran.
-      let versionRepairError: MetaRepairError | undefined;
-      const packageVersions = async (copiesList: readonly VersionCopies[]) => {
-        const entries = repairErrorOr(
-          await versionGears(rebuildPackage, builtPackage, [
-            {},
-            ...copiesList,
-          ])
-        );
-        if (entries instanceof MetaRepairError) {
-          versionRepairError ??= entries;
-          // Never read: the caller checks `versionRepairError` first.
-          const failed = { buildError: errorText(entries) };
-          return copiesList.map(() => failed);
-        }
-        plainVersion.entry = entries[0];
-        return entries.slice(1).map(requestOf);
-      };
+			const addedPieces = selection.addedPieces;
+			if (addedPieces.length === 1) {
+				if (threshold === 2) twoPieceUnmeasurableAtThisWornCount = true;
+				results.push({
+					setId,
+					setName: label,
+					threshold,
+					piecesWorn,
+					packageItemIds: addedPieces.map(p => p.itemId),
+					packageDeltaDps: 0,
+					unmeasured: 'unmeasurable-at-this-worn-count',
+				});
+				continue;
+			}
+			/** A failed gem repair, on the package's build or on any of its versions, skips the package. */
+			const skipRepairFailed = (err: MetaRepairError) => {
+				console.warn(`[upgrades] ${label} ${threshold}pc bonus package not measured: gem repair failed`, err);
+				bonusNotMeasured(label, threshold, SET_BONUS_SKIP_REASONS.metaOff(err.message));
+				results.push({
+					setId,
+					setName: label,
+					threshold,
+					piecesWorn,
+					packageItemIds: addedPieces.map(p => p.itemId),
+					packageDeltaDps: 0,
+					unmeasured: 'repair-failed',
+				});
+				if (threshold === 2) twoPieceFailed = true;
+			};
+			let packageBuild: ChainBuild;
+			try {
+				packageBuild = chainSwapsWithRepairs(equipment, addedPieces, gems);
+			} catch (err) {
+				if (!(err instanceof MetaRepairError)) throw err;
+				skipRepairFailed(err);
+				continue;
+			}
+			const builtPackage = packageBuild;
+			const rebuildPackage = (g: GemContext) => chainSwapsWithRepairs(equipment, addedPieces, g);
+			// The package sim and its gate's "on" and "off" are one
+			// pair, so all three come from one `versionGears` call when the gate
+			// runs; the package's own version is kept for its sim.
+			// The package's plain version once built, or why it could not be.
+			const plainVersion: { entry?: VersionEntry | BuildFailure } = {};
+			// A version's failed repair skips the package with the repair's error,
+			// as on the package's own build; an undefined entry alone would show
+			// a failed sim, and none ran.
+			let versionRepairError: MetaRepairError | undefined;
+			const packageVersions = async (copiesList: readonly VersionCopies[]) => {
+				const entries = repairErrorOr(await versionGears(rebuildPackage, builtPackage, [{}, ...copiesList]));
+				if (entries instanceof MetaRepairError) {
+					versionRepairError ??= entries;
+					// Never read: the caller checks `versionRepairError` first.
+					const failed = { buildError: errorText(entries) };
+					return copiesList.map(() => failed);
+				}
+				plainVersion.entry = entries[0];
+				return entries.slice(1).map(requestOf);
+			};
 
-      // Flag only: the gate runs before the package sim, so a
-      // count with no bonus on this gear costs its two gate sims and nothing
-      // else. It does not need the package's result.
-      let sameGear: DpsSample | undefined;
-      if (measureBrokenSetValue) {
-        const measured = await measureSameGearBonus(
-          cachedSampleRun(`${label} ${threshold}pc same-gear bonus`),
-          composeFor(builtPackage.equipment),
-          builtPackage.equipment.flatMap((spec, i) =>
-            spec.id && getItem(spec.id)?.setId === setId ? [i] : []
-          ),
-          threshold - 1,
-          packageVersions
-        );
-        if (versionRepairError) {
-          skipRepairFailed(versionRepairError);
-          continue;
-        }
-        if (!measured || isSimFailure(measured) || isBuildFailure(measured)) {
-          bonusNotMeasured(
-            label,
-            threshold,
-            !measured
-              ? SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt
-              : isSimFailure(measured)
-                ? SET_BONUS_SKIP_REASONS.simFailed(measured.simError)
-                : SET_BONUS_SKIP_REASONS.notBuilt(measured.buildError)
-          );
-          results.push({
-            setId,
-            setName: label,
-            threshold,
-            piecesWorn,
-            packageItemIds: addedPieces.map((p) => p.itemId),
-            packageDeltaDps: 0,
-            unmeasured: "sim-failed",
-          });
-          if (threshold === 2) twoPieceFailed = true;
-          continue;
-        }
-        sameGear = measured;
-        if (!clearsSameGearGate(sameGear.dps, sameGear.se, cutoff)) {
-          results.push({
-            setId,
-            setName: label,
-            threshold,
-            piecesWorn,
-            packageItemIds: addedPieces.map((p) => p.itemId),
-            packageDeltaDps: 0,
-            sameGearDps: sameGear.dps,
-            sameGearSe: sameGear.se,
-            belowGate: true,
-          });
-          continue;
-        }
-      }
-      const gateFields = sameGear
-        ? { sameGearDps: sameGear.dps, sameGearSe: sameGear.se }
-        : {};
-      const packageNotMeasured = (reason: SkipReason) => {
-        bonusNotMeasured(label, threshold, reason);
-        results.push({
-          setId,
-          setName: label,
-          threshold,
-          piecesWorn,
-          packageItemIds: addedPieces.map((p) => p.itemId),
-          packageDeltaDps: 0,
-          ...gateFields,
-          unmeasured: "sim-failed",
-        });
-        if (threshold === 2) twoPieceFailed = true;
-      };
+			// Flag only: the gate runs before the package sim, so a
+			// count with no bonus on this gear costs its two gate sims and nothing
+			// else. It does not need the package's result.
+			let sameGear: DpsSample | undefined;
+			if (measureBrokenSetValue) {
+				const measured = await measureSameGearBonus(
+					cachedSampleRun(`${label} ${threshold}pc same-gear bonus`),
+					composeFor(builtPackage.equipment),
+					builtPackage.equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])),
+					threshold - 1,
+					packageVersions,
+				);
+				if (versionRepairError) {
+					skipRepairFailed(versionRepairError);
+					continue;
+				}
+				if (!measured || isSimFailure(measured) || isBuildFailure(measured)) {
+					bonusNotMeasured(
+						label,
+						threshold,
+						!measured
+							? SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt
+							: isSimFailure(measured)
+								? SET_BONUS_SKIP_REASONS.simFailed(measured.simError)
+								: SET_BONUS_SKIP_REASONS.notBuilt(measured.buildError),
+					);
+					results.push({
+						setId,
+						setName: label,
+						threshold,
+						piecesWorn,
+						packageItemIds: addedPieces.map(p => p.itemId),
+						packageDeltaDps: 0,
+						unmeasured: 'sim-failed',
+					});
+					if (threshold === 2) twoPieceFailed = true;
+					continue;
+				}
+				sameGear = measured;
+				if (!clearsSameGearGate(sameGear.dps, sameGear.se, cutoff)) {
+					results.push({
+						setId,
+						setName: label,
+						threshold,
+						piecesWorn,
+						packageItemIds: addedPieces.map(p => p.itemId),
+						packageDeltaDps: 0,
+						sameGearDps: sameGear.dps,
+						sameGearSe: sameGear.se,
+						belowGate: true,
+					});
+					continue;
+				}
+			}
+			const gateFields = sameGear ? { sameGearDps: sameGear.dps, sameGearSe: sameGear.se } : {};
+			const packageNotMeasured = (reason: SkipReason) => {
+				bonusNotMeasured(label, threshold, reason);
+				results.push({
+					setId,
+					setName: label,
+					threshold,
+					piecesWorn,
+					packageItemIds: addedPieces.map(p => p.itemId),
+					packageDeltaDps: 0,
+					...gateFields,
+					unmeasured: 'sim-failed',
+				});
+				if (threshold === 2) twoPieceFailed = true;
+			};
 
-      if (!plainVersion.entry) {
-        const entries = repairErrorOr(
-          await versionGears(rebuildPackage, builtPackage, [{}])
-        );
-        if (entries instanceof MetaRepairError) {
-          skipRepairFailed(entries);
-          continue;
-        }
-        [plainVersion.entry] = entries;
-      }
-      // `versionGears` gives one entry per copies, so the entry is set here.
-      const packageEntry = plainVersion.entry!;
-      if (isBuildFailure(packageEntry)) {
-        packageNotMeasured(
-          SET_BONUS_SKIP_REASONS.notBuilt(packageEntry.buildError)
-        );
-        continue;
-      }
-      const packageRequest = packageEntry.request;
-      // The package entry's gem changes are the swaps of the build its sim
-      // wore, without the package's own slots.
-      const packageSlots = new Set(addedPieces.map((p) => p.slotIndex));
-      const packageRepairSwaps = packageEntry.swaps.filter(
-        (s) => !packageSlots.has(s.itemIndex)
-      );
-      let packageObs = await readCachedSim(
-        deps,
-        packageRequest,
-        simVersion,
-        runOpts
-      );
-      if (!packageObs) {
-        try {
-          packageObs = await deps.sim.run(packageRequest, runOpts);
-        } catch (err) {
-          // No warning for a sim the Stop guard refused.
-          if (!deps.signal?.aborted) {
-            console.warn(
-              `[upgrades] ${label} ${threshold}pc bonus package not measured: the sim failed`,
-              err
-            );
-          }
-          packageNotMeasured(
-            SET_BONUS_SKIP_REASONS.simFailed(errorText(err))
-          );
-          continue;
-        }
-        await cacheSimResult(
-          deps,
-          packageRequest,
-          simVersion,
-          runOpts,
-          packageObs
-        );
-      }
+			if (!plainVersion.entry) {
+				const entries = repairErrorOr(await versionGears(rebuildPackage, builtPackage, [{}]));
+				if (entries instanceof MetaRepairError) {
+					skipRepairFailed(entries);
+					continue;
+				}
+				[plainVersion.entry] = entries;
+			}
+			// `versionGears` gives one entry per copies, so the entry is set here.
+			const packageEntry = plainVersion.entry!;
+			if (isBuildFailure(packageEntry)) {
+				packageNotMeasured(SET_BONUS_SKIP_REASONS.notBuilt(packageEntry.buildError));
+				continue;
+			}
+			const packageRequest = packageEntry.request;
+			// The package entry's gem changes are the swaps of the build its sim
+			// wore, without the package's own slots.
+			const packageSlots = new Set(addedPieces.map(p => p.slotIndex));
+			const packageRepairSwaps = packageEntry.swaps.filter(s => !packageSlots.has(s.itemIndex));
+			let packageObs = await readCachedSim(deps, packageRequest, simVersion, runOpts);
+			if (!packageObs) {
+				try {
+					packageObs = await deps.sim.run(packageRequest, runOpts);
+				} catch (err) {
+					// No warning for a sim the Stop guard refused.
+					if (!deps.signal?.aborted) {
+						console.warn(`[upgrades] ${label} ${threshold}pc bonus package not measured: the sim failed`, err);
+					}
+					packageNotMeasured(SET_BONUS_SKIP_REASONS.simFailed(errorText(err)));
+					continue;
+				}
+				await cacheSimResult(deps, packageRequest, simVersion, runOpts, packageObs);
+			}
 
-      const addedPieceSamples = addedPieces.map((p) => {
-        const individual = individualDeltasByItemId.get(p.itemId);
-        return {
-          deltaDps: individual?.deltaDps ?? 0,
-          se: individual?.se ?? 0,
-        };
-      });
-      const packageSample: DpsSample = {
-        dps: packageObs.dps,
-        se: packageObs.stdev / Math.sqrt(runOpts.iterations),
-      };
-      const synergy = computeSynergy({
-        baseline,
-        packageSample,
-        addedPieceSamples,
-        ...(threshold === 4 && twoPieceBonus !== undefined
-          ? { twoPieceBonus }
-          : {}),
-      });
-      if (threshold === 2) twoPieceBonus = synergy.bonusDps;
+			const addedPieceSamples = addedPieces.map(p => {
+				const individual = individualDeltasByItemId.get(p.itemId);
+				return {
+					deltaDps: individual?.deltaDps ?? 0,
+					se: individual?.se ?? 0,
+				};
+			});
+			const packageSample: DpsSample = {
+				dps: packageObs.dps,
+				se: packageObs.stdev / Math.sqrt(runOpts.iterations),
+			};
+			const synergy = computeSynergy({
+				baseline,
+				packageSample,
+				addedPieceSamples,
+				...(threshold === 4 && twoPieceBonus !== undefined ? { twoPieceBonus } : {}),
+			});
+			if (threshold === 2) twoPieceBonus = synergy.bonusDps;
 
-      const breaks = brokenSetBonuses(equipment, addedPieces, setId, counts);
-      let selfConfound: SelfSetConfound | undefined =
-        threshold === 4 && twoPieceUnmeasurableAtThisWornCount
-          ? { threshold: 2 }
-          : undefined;
-      if (selfConfound) {
-        // At worn 1 the 2pc package is one piece, so the 2pc is
-        // never measured, and every single of the 4pc package crosses the
-        // 2pc: raw4 = B4 − (n−1)·B2 for n added pieces. Two added pieces
-        // simmed together end at 3 worn with only the 2pc active, so
-        // B2 = Σ(their singles) − their pair delta. A break of another worn
-        // set would sit in the singles and the pair unequally and bias B2, so
-        // each piece must be break-free alone and the two together: worn
-        // Malorne 3, two break-free singles still take it to 1 as a pair.
-        // With no such pair `bonusDpsNet` stays unset (see below).
-        const breakFree = addedPieces.filter(
-          (p) =>
-            brokenSetBonuses(equipment, [p], setId, counts).length === 0 &&
-            individualDeltasByItemId.has(p.itemId)
-        );
-        const pair = breakFree
-          .flatMap((a, i) => breakFree.slice(i + 1).map((b) => [a, b]))
-          .find(
-            (p) => brokenSetBonuses(equipment, p, setId, counts).length === 0
-          );
-        const pairB2 =
-          pair !== undefined
-            ? await measurePairTwoPiece(
-                `${label} ${threshold}pc`,
-                deps,
-                pair,
-                equipment,
-                gems,
-                composeFor,
-                individualDeltasByItemId,
-                baseline,
-                simVersion,
-                runOpts,
-                versionGears,
-                (reason) => bonusNotMeasured(label, 2, reason)
-              )
-            : undefined;
-        if (pairB2) {
-          const extra = addedPieces.length - 1;
-          synergy.bonusDps += extra * pairB2.dps;
-          synergy.se = Math.sqrt(synergy.se ** 2 + (extra * pairB2.se) ** 2);
-          selfConfound = { threshold: 2, dps: pairB2.dps };
-        }
-      }
-      const missingTwoPiece =
-        measureBrokenSetValue && threshold === 4 && twoPieceFailed;
-      results.push({
-        setId,
-        setName: label,
-        threshold,
-        piecesWorn,
-        packageItemIds: addedPieces.map((p) => p.itemId),
-        packageDeltaDps: synergy.packageDeltaDps,
-        ...(missingTwoPiece
-          ? {}
-          : { bonusDps: synergy.bonusDps, se: synergy.se }),
-        ...gateFields,
-        ...(breaks.length > 0 ? { breaks } : {}),
-        ...(selfConfound ? { selfConfound } : {}),
-        ...(packageRepairSwaps.length > 0
-          ? {
-              gemSubstitutions: packageRepairSwaps.map((s) => ({
-                itemId: s.itemId,
-                itemIndex: s.itemIndex,
-                socketIndex: s.socketIndex,
-                from: s.from,
-                to: s.to,
-              })),
-            }
-          : {}),
-      });
-    }
-  }
+			const breaks = brokenSetBonuses(equipment, addedPieces, setId, counts);
+			let selfConfound: SelfSetConfound | undefined = threshold === 4 && twoPieceUnmeasurableAtThisWornCount ? { threshold: 2 } : undefined;
+			if (selfConfound) {
+				// At worn 1 the 2pc package is one piece, so the 2pc is
+				// never measured, and every single of the 4pc package crosses the
+				// 2pc: raw4 = B4 − (n−1)·B2 for n added pieces. Two added pieces
+				// simmed together end at 3 worn with only the 2pc active, so
+				// B2 = Σ(their singles) − their pair delta. A break of another worn
+				// set would sit in the singles and the pair unequally and bias B2, so
+				// each piece must be break-free alone and the two together: worn
+				// Malorne 3, two break-free singles still take it to 1 as a pair.
+				// With no such pair `bonusDpsNet` stays unset (see below).
+				const breakFree = addedPieces.filter(
+					p => brokenSetBonuses(equipment, [p], setId, counts).length === 0 && individualDeltasByItemId.has(p.itemId),
+				);
+				const pair = breakFree
+					.flatMap((a, i) => breakFree.slice(i + 1).map(b => [a, b]))
+					.find(p => brokenSetBonuses(equipment, p, setId, counts).length === 0);
+				const pairB2 =
+					pair !== undefined
+						? await measurePairTwoPiece(
+								`${label} ${threshold}pc`,
+								deps,
+								pair,
+								equipment,
+								gems,
+								composeFor,
+								individualDeltasByItemId,
+								baseline,
+								simVersion,
+								runOpts,
+								versionGears,
+								reason => bonusNotMeasured(label, 2, reason),
+							)
+						: undefined;
+				if (pairB2) {
+					const extra = addedPieces.length - 1;
+					synergy.bonusDps += extra * pairB2.dps;
+					synergy.se = Math.sqrt(synergy.se ** 2 + (extra * pairB2.se) ** 2);
+					selfConfound = { threshold: 2, dps: pairB2.dps };
+				}
+			}
+			const missingTwoPiece = measureBrokenSetValue && threshold === 4 && twoPieceFailed;
+			results.push({
+				setId,
+				setName: label,
+				threshold,
+				piecesWorn,
+				packageItemIds: addedPieces.map(p => p.itemId),
+				packageDeltaDps: synergy.packageDeltaDps,
+				...(missingTwoPiece ? {} : { bonusDps: synergy.bonusDps, se: synergy.se }),
+				...gateFields,
+				...(breaks.length > 0 ? { breaks } : {}),
+				...(selfConfound ? { selfConfound } : {}),
+				...(packageRepairSwaps.length > 0
+					? {
+							gemSubstitutions: packageRepairSwaps.map(s => ({
+								itemId: s.itemId,
+								itemIndex: s.itemIndex,
+								socketIndex: s.socketIndex,
+								from: s.from,
+								to: s.to,
+							})),
+						}
+					: {}),
+			});
+		}
+	}
 
-  // Flag only: whether one more piece of a worn set reaches a
-  // bonus, measured on the gear a row actually makes. One gate per worn set
-  // with a candidate in a slot the set does not fill, on that set's best such
-  // candidate's own swap, so a row's "crosses" label reads a measurement
-  // rather than the six-set table.
-  const crossingGates: CrossingGate[] = [];
-  if (measureBrokenSetValue) {
-    for (const setId of [...setIdsWithCandidates].sort((a, b) => a - b)) {
-      const worn = wornCounts.get(setId) ?? 0;
-      if (worn < 1) continue;
-      // One more piece reaches no bonus the sim lists.
-      if (bonusCounts.get(setId)?.has(worn + 1) === false) continue;
-      const wornSlots = new Set(
-        equipment.flatMap((spec, i) =>
-          spec.id && getItem(spec.id)?.setId === setId ? [i] : []
-        )
-      );
-      let best: IndividualDelta | undefined;
-      for (const entry of candidates) {
-        if (getItem(entry.itemId)?.setId !== setId) continue;
-        const single = individualDeltasByItemId.get(entry.itemId);
-        if (!single || wornSlots.has(single.slotIndex)) continue;
-        if (
-          !best ||
-          single.deltaDps > best.deltaDps ||
-          (single.deltaDps === best.deltaDps && single.itemId < best.itemId)
-        ) {
-          best = single;
-        }
-      }
-      if (!best) continue;
-      const crossing = [{ slotIndex: best.slotIndex, itemId: best.itemId }];
-      let swapped: ChainBuild | undefined;
-      try {
-        swapped = chainSwapsWithRepairs(equipment, crossing, gems);
-      } catch (err) {
-        if (!(err instanceof MetaRepairError)) throw err;
-      }
-      const crossingBuild = swapped;
-      const crossingLabel = setLabel(equipment, setId);
-      // A version's failed repair leaves the gate unmeasured with no line,
-      // as a failed repair of the crossing build does above.
-      let versionRepairFailed = false;
-      const gateResult = crossingBuild
-        ? await measureSameGearBonus(
-            cachedSampleRun(`${crossingLabel} ${worn + 1}pc crossing gate`),
-            composeFor(crossingBuild.equipment),
-            crossingBuild.equipment.flatMap((spec, i) =>
-              spec.id && getItem(spec.id)?.setId === setId ? [i] : []
-            ),
-            worn,
-            // "On" and "off" are one pair: one call.
-            async (copiesList) => {
-              const entries = repairErrorOr(
-                await versionGears(
-                  (g) => chainSwapsWithRepairs(equipment, crossing, g),
-                  crossingBuild,
-                  copiesList
-                )
-              );
-              if (!(entries instanceof MetaRepairError)) {
-                return entries.map(requestOf);
-              }
-              versionRepairFailed = true;
-              // Never read: the gate's result is dropped below.
-              return copiesList.map(() => ({ buildError: errorText(entries) }));
-            }
-          )
-        : undefined;
-      const measured = versionRepairFailed ? undefined : gateResult;
-      if (isSimFailure(measured)) {
-        bonusNotMeasured(
-          crossingLabel,
-          worn + 1,
-          SET_BONUS_SKIP_REASONS.simFailed(measured.simError)
-        );
-      }
-      if (isBuildFailure(measured)) {
-        bonusNotMeasured(
-          crossingLabel,
-          worn + 1,
-          SET_BONUS_SKIP_REASONS.notBuilt(measured.buildError)
-        );
-      }
-      const value =
-        isSimFailure(measured) || isBuildFailure(measured) ? undefined : measured;
-      crossingGates.push({
-        setId,
-        count: worn + 1,
-        itemId: best.itemId,
-        ...(value ? { dps: value.dps, se: value.se } : {}),
-        cleared:
-          value !== undefined &&
-          clearsSameGearGate(value.dps, value.se, cutoff),
-      });
-    }
-  }
+	// Flag only: whether one more piece of a worn set reaches a
+	// bonus, measured on the gear a row actually makes. One gate per worn set
+	// with a candidate in a slot the set does not fill, on that set's best such
+	// candidate's own swap, so a row's "crosses" label reads a measurement
+	// rather than the six-set table.
+	const crossingGates: CrossingGate[] = [];
+	if (measureBrokenSetValue) {
+		for (const setId of [...setIdsWithCandidates].sort((a, b) => a - b)) {
+			const worn = wornCounts.get(setId) ?? 0;
+			if (worn < 1) continue;
+			// One more piece reaches no bonus the sim lists.
+			if (bonusCounts.get(setId)?.has(worn + 1) === false) continue;
+			const wornSlots = new Set(equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])));
+			let best: IndividualDelta | undefined;
+			for (const entry of candidates) {
+				if (getItem(entry.itemId)?.setId !== setId) continue;
+				const single = individualDeltasByItemId.get(entry.itemId);
+				if (!single || wornSlots.has(single.slotIndex)) continue;
+				if (!best || single.deltaDps > best.deltaDps || (single.deltaDps === best.deltaDps && single.itemId < best.itemId)) {
+					best = single;
+				}
+			}
+			if (!best) continue;
+			const crossing = [{ slotIndex: best.slotIndex, itemId: best.itemId }];
+			let swapped: ChainBuild | undefined;
+			try {
+				swapped = chainSwapsWithRepairs(equipment, crossing, gems);
+			} catch (err) {
+				if (!(err instanceof MetaRepairError)) throw err;
+			}
+			const crossingBuild = swapped;
+			const crossingLabel = setLabel(equipment, setId);
+			// A version's failed repair leaves the gate unmeasured with no line,
+			// as a failed repair of the crossing build does above.
+			let versionRepairFailed = false;
+			const gateResult = crossingBuild
+				? await measureSameGearBonus(
+						cachedSampleRun(`${crossingLabel} ${worn + 1}pc crossing gate`),
+						composeFor(crossingBuild.equipment),
+						crossingBuild.equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])),
+						worn,
+						// "On" and "off" are one pair: one call.
+						async copiesList => {
+							const entries = repairErrorOr(await versionGears(g => chainSwapsWithRepairs(equipment, crossing, g), crossingBuild, copiesList));
+							if (!(entries instanceof MetaRepairError)) {
+								return entries.map(requestOf);
+							}
+							versionRepairFailed = true;
+							// Never read: the gate's result is dropped below.
+							return copiesList.map(() => ({ buildError: errorText(entries) }));
+						},
+					)
+				: undefined;
+			const measured = versionRepairFailed ? undefined : gateResult;
+			if (isSimFailure(measured)) {
+				bonusNotMeasured(crossingLabel, worn + 1, SET_BONUS_SKIP_REASONS.simFailed(measured.simError));
+			}
+			if (isBuildFailure(measured)) {
+				bonusNotMeasured(crossingLabel, worn + 1, SET_BONUS_SKIP_REASONS.notBuilt(measured.buildError));
+			}
+			const value = isSimFailure(measured) || isBuildFailure(measured) ? undefined : measured;
+			crossingGates.push({
+				setId,
+				count: worn + 1,
+				itemId: best.itemId,
+				...(value ? { dps: value.dps, se: value.se } : {}),
+				cleared: value !== undefined && clearsSameGearGate(value.dps, value.se, cutoff),
+			});
+		}
+	}
 
-  const candidateSlotIndex = new Map<number, number>();
-  for (const entry of candidates) {
-    const idx = slotIndexForPoolEntry(entry);
-    if (idx === undefined) continue;
-    if (!candidateSlotIndex.has(entry.itemId)) {
-      candidateSlotIndex.set(entry.itemId, idx);
-    }
-  }
+	const candidateSlotIndex = new Map<number, number>();
+	for (const entry of candidates) {
+		const idx = slotIndexForPoolEntry(entry);
+		if (idx === undefined) continue;
+		if (!candidateSlotIndex.has(entry.itemId)) {
+			candidateSlotIndex.set(entry.itemId, idx);
+		}
+	}
 
-  // Correct `bonusDps` for the worn bonuses its package breaks, using the
-  // measured B: `bonusDpsNet = bonusDps − netInflation(keys)` (set-value.ts
-  // derives the formula). Reading each package's own `breaks` (its measured
-  // end state) keeps this right when the 2pc and 4pc packages pick different
-  // slots.
-  //
-  // The keys are the union of this package's breaks, the 2pc package's
-  // breaks, and every member single's breaks. The 2pc package is now a
-  // prefix of the 4pc and a member single never breaks what its package
-  // keeps, so the union equals this package's own `breaks`; it is kept so the
-  // formula stays whole if package selection changes.
-  const bBy = new Map<string, number | undefined>();
-  for (const v of brokenSetValues) bBy.set(bonusKey(v), v.dps);
-  const memberSingleBreaks = (pkg: SetBonusValue): BrokenSetBonus[] =>
-    pkg.packageItemIds.flatMap((itemId) => {
-      const slotIndex = candidateSlotIndex.get(itemId);
-      const memberSetId = getItem(itemId)?.setId;
-      if (slotIndex === undefined || memberSetId == null) return [];
-      return brokenSetBonuses(
-        equipment,
-        [{ itemId, slotIndex }],
-        memberSetId,
-        counts
-      );
-    });
-  for (const b of results) {
-    if (b.bonusDps === undefined) continue;
-    // A worn-1 4pc whose 2pc the pair sim did not measure still has
-    // `−(n−1)·B2`. Crediting it would rank rows on a confounded figure, so
-    // the net stays unset and the row shows as not counted.
-    if (b.selfConfound !== undefined && b.selfConfound.dps === undefined) {
-      continue;
-    }
-    // The 4pc subtracts a measured raw 2pc; only then do the 2pc terms apply.
-    const two =
-      b.threshold === 4
-        ? results.find(
-            (r) =>
-              r.setId === b.setId &&
-              r.threshold === 2 &&
-              r.unmeasured === undefined &&
-              r.bonusDps !== undefined
-          )
-        : undefined;
-    const union = new Map<string, BrokenSetBonus>();
-    for (const brk of [
-      ...(b.breaks ?? []),
-      ...(two?.breaks ?? []),
-      ...memberSingleBreaks(b),
-      ...(two ? memberSingleBreaks(two) : []),
-    ]) {
-      union.set(bonusKey(brk), brk);
-    }
-    const pkgEnd = new Set((b.breaks ?? []).map(bonusKey));
-    const twoPcEnd = new Set((two?.breaks ?? []).map(bonusKey));
-    const keys: InflationKey[] = [];
-    let allMeasured = true;
-    for (const [key, brk] of union) {
-      const B = bBy.get(key);
-      if (B === undefined) {
-        allMeasured = false;
-        break;
-      }
-      keys.push({
-        membersPkg: countMembersBreaking(
-          b,
-          brk,
-          equipment,
-          candidateSlotIndex,
-          counts
-        ),
-        members2pc: two
-          ? countMembersBreaking(two, brk, equipment, candidateSlotIndex, counts)
-          : 0,
-        pkgEnd: pkgEnd.has(key) ? 1 : 0,
-        twoPcEnd: twoPcEnd.has(key) ? 1 : 0,
-        B,
-      });
-    }
-    if (allMeasured) b.bonusDpsNet = b.bonusDps - netInflation(keys);
-  }
+	// Correct `bonusDps` for the worn bonuses its package breaks, using the
+	// measured B: `bonusDpsNet = bonusDps − netInflation(keys)` (set-value.ts
+	// derives the formula). Reading each package's own `breaks` (its measured
+	// end state) keeps this right when the 2pc and 4pc packages pick different
+	// slots.
+	//
+	// The keys are the union of this package's breaks, the 2pc package's
+	// breaks, and every member single's breaks. The 2pc package is now a
+	// prefix of the 4pc and a member single never breaks what its package
+	// keeps, so the union equals this package's own `breaks`; it is kept so the
+	// formula stays whole if package selection changes.
+	const bBy = new Map<string, number | undefined>();
+	for (const v of brokenSetValues) bBy.set(bonusKey(v), v.dps);
+	const memberSingleBreaks = (pkg: SetBonusValue): BrokenSetBonus[] =>
+		pkg.packageItemIds.flatMap(itemId => {
+			const slotIndex = candidateSlotIndex.get(itemId);
+			const memberSetId = getItem(itemId)?.setId;
+			if (slotIndex === undefined || memberSetId == null) return [];
+			return brokenSetBonuses(equipment, [{ itemId, slotIndex }], memberSetId, counts);
+		});
+	for (const b of results) {
+		if (b.bonusDps === undefined) continue;
+		// A worn-1 4pc whose 2pc the pair sim did not measure still has
+		// `−(n−1)·B2`. Crediting it would rank rows on a confounded figure, so
+		// the net stays unset and the row shows as not counted.
+		if (b.selfConfound !== undefined && b.selfConfound.dps === undefined) {
+			continue;
+		}
+		// The 4pc subtracts a measured raw 2pc; only then do the 2pc terms apply.
+		const two =
+			b.threshold === 4
+				? results.find(r => r.setId === b.setId && r.threshold === 2 && r.unmeasured === undefined && r.bonusDps !== undefined)
+				: undefined;
+		const union = new Map<string, BrokenSetBonus>();
+		for (const brk of [...(b.breaks ?? []), ...(two?.breaks ?? []), ...memberSingleBreaks(b), ...(two ? memberSingleBreaks(two) : [])]) {
+			union.set(bonusKey(brk), brk);
+		}
+		const pkgEnd = new Set((b.breaks ?? []).map(bonusKey));
+		const twoPcEnd = new Set((two?.breaks ?? []).map(bonusKey));
+		const keys: InflationKey[] = [];
+		let allMeasured = true;
+		for (const [key, brk] of union) {
+			const B = bBy.get(key);
+			if (B === undefined) {
+				allMeasured = false;
+				break;
+			}
+			keys.push({
+				membersPkg: countMembersBreaking(b, brk, equipment, candidateSlotIndex, counts),
+				members2pc: two ? countMembersBreaking(two, brk, equipment, candidateSlotIndex, counts) : 0,
+				pkgEnd: pkgEnd.has(key) ? 1 : 0,
+				twoPcEnd: twoPcEnd.has(key) ? 1 : 0,
+				B,
+			});
+		}
+		if (allMeasured) b.bonusDpsNet = b.bonusDps - netInflation(keys);
+	}
 
-  return {
-    bonuses: results,
-    brokenSetValues,
-    wornSetLadder,
-    crossingGates,
-    candidateSlotIndex,
-    markedSetIds,
-    ...(setScreen ? { setScreen } : {}),
-  };
+	return {
+		bonuses: results,
+		brokenSetValues,
+		wornSetLadder,
+		crossingGates,
+		candidateSlotIndex,
+		markedSetIds,
+		...(setScreen ? { setScreen } : {}),
+	};
 }
 
 /**
@@ -2756,553 +2381,460 @@ async function buildSetBonuses(
  * without it, which makes the row unmeasured; it never fails the ranking.
  */
 async function measureSetSteps(args: {
-  deps: Deps;
-  ranked: RankedItem[];
-  setBonuses: readonly SetBonusValue[];
-  equipment: readonly SimItemSpec[];
-  gems: GemContext;
-  composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest;
-  individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>;
-  brokenSetValues: readonly BrokenSetValue[];
-  candidateSlotIndex: ReadonlyMap<number, number>;
-  counts: BonusCountPredicate;
-  baseline: DpsSample;
-  simVersion: string;
-  runOpts: SimRunOpts;
-  cutoff: Cutoff;
-  /** Every step sim's request comes from it. */
-  versionGears: VersionGears;
-  /** A line for each set bonus whose step or bonus-off sim failed, with the sim's error. */
-  bonusLines: Substitution[];
+	deps: Deps;
+	ranked: RankedItem[];
+	setBonuses: readonly SetBonusValue[];
+	equipment: readonly SimItemSpec[];
+	gems: GemContext;
+	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest;
+	individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>;
+	brokenSetValues: readonly BrokenSetValue[];
+	candidateSlotIndex: ReadonlyMap<number, number>;
+	counts: BonusCountPredicate;
+	baseline: DpsSample;
+	simVersion: string;
+	runOpts: SimRunOpts;
+	cutoff: Cutoff;
+	/** Every step sim's request comes from it. */
+	versionGears: VersionGears;
+	/** A line for each set bonus whose step or bonus-off sim failed, with the sim's error. */
+	bonusLines: Substitution[];
 }): Promise<{
-  setStepSims: SetStepSims;
-  bonusOffSims: SetBonusOffSims;
-  partnerAudit?: PartnerAuditEntry[];
+	setStepSims: SetStepSims;
+	bonusOffSims: SetBonusOffSims;
+	partnerAudit?: PartnerAuditEntry[];
 }> {
-  const { deps, equipment, gems, composeFor, counts, baseline, runOpts } = args;
-  const rule = deps.partnerRule ?? PARTNER_RULE;
-  const bBy = new Map<string, number | undefined>();
-  for (const v of args.brokenSetValues) {
-    bBy.set(bonusKey(v), v.dps);
-  }
-  const nameOf = new Map(args.ranked.map((r) => [r.itemId, r.name]));
-  type SimCounter = { simmed: number; fromStore: number };
-  const stepCounter: SimCounter = { simmed: 0, fromStore: 0 };
-  const stepFailure = "[upgrades] set step gear not measured: the sim failed";
+	const { deps, equipment, gems, composeFor, counts, baseline, runOpts } = args;
+	const rule = deps.partnerRule ?? PARTNER_RULE;
+	const bBy = new Map<string, number | undefined>();
+	for (const v of args.brokenSetValues) {
+		bBy.set(bonusKey(v), v.dps);
+	}
+	const nameOf = new Map(args.ranked.map(r => [r.itemId, r.name]));
+	type SimCounter = { simmed: number; fromStore: number };
+	const stepCounter: SimCounter = { simmed: 0, fromStore: 0 };
+	const stepFailure = '[upgrades] set step gear not measured: the sim failed';
 
-  /** A store hit, else a sim; the sim's error when it fails. */
-  const runCounted = async (
-    request: RaidSimRequest,
-    counter: SimCounter,
-    failure: string
-  ): Promise<{ totalDps: number; se: number } | SimFailure> => {
-    let obs = await readCachedSim(deps, request, args.simVersion, runOpts);
-    if (obs) {
-      counter.fromStore += 1;
-    } else {
-      try {
-        obs = await deps.sim.run(request, runOpts);
-      } catch (err) {
-        // No warning for a sim the Stop guard refused.
-        if (!deps.signal?.aborted) console.warn(failure, err);
-        return { simError: errorText(err) };
-      }
-      counter.simmed += 1;
-      await cacheSimResult(deps, request, args.simVersion, runOpts, obs);
-    }
-    const se = obs.stdev / Math.sqrt(runOpts.iterations);
-    return {
-      totalDps: obs.dps - baseline.dps,
-      se: Math.sqrt(se ** 2 + baseline.se ** 2),
-    };
-  };
+	/** A store hit, else a sim; the sim's error when it fails. */
+	const runCounted = async (request: RaidSimRequest, counter: SimCounter, failure: string): Promise<{ totalDps: number; se: number } | SimFailure> => {
+		let obs = await readCachedSim(deps, request, args.simVersion, runOpts);
+		if (obs) {
+			counter.fromStore += 1;
+		} else {
+			try {
+				obs = await deps.sim.run(request, runOpts);
+			} catch (err) {
+				// No warning for a sim the Stop guard refused.
+				if (!deps.signal?.aborted) console.warn(failure, err);
+				return { simError: errorText(err) };
+			}
+			counter.simmed += 1;
+			await cacheSimResult(deps, request, args.simVersion, runOpts, obs);
+		}
+		const se = obs.stdev / Math.sqrt(runOpts.iterations);
+		return {
+			totalDps: obs.dps - baseline.dps,
+			se: Math.sqrt(se ** 2 + baseline.se ** 2),
+		};
+	};
 
-  /** A bonus some rows could not measure, and why. */
-  const skipOnSomeRows = (
-    setName: string,
-    threshold: SetThreshold,
-    reason: SkipReason
-  ) =>
-    args.bonusLines.push(
-      setBonusSkipSubstitution({ setName, threshold, reason, onSomeRows: true })
-    );
+	/** A bonus some rows could not measure, and why. */
+	const skipOnSomeRows = (setName: string, threshold: SetThreshold, reason: SkipReason) =>
+		args.bonusLines.push(setBonusSkipSubstitution({ setName, threshold, reason, onSomeRows: true }));
 
-  const inSlotOrder = (swaps: readonly PackagePiece[]) =>
-    [...swaps].sort((a, b) => a.slotIndex - b.slotIndex);
-  /** The step gear's chain, or the error of its failed gem repair. */
-  const stepChain = (
-    swaps: readonly PackagePiece[]
-  ): ChainBuild | MetaRepairError => {
-    try {
-      return chainSwapsWithRepairs(equipment, inSlotOrder(swaps), gems);
-    } catch (err) {
-      if (!(err instanceof MetaRepairError)) throw err;
-      return err;
-    }
-  };
-  /** The step gear's chain, or undefined when a gem repair fails. */
-  const stepBuild = (swaps: readonly PackagePiece[]): ChainBuild | undefined => {
-    const chain = stepChain(swaps);
-    return chain instanceof MetaRepairError ? undefined : chain;
-  };
-  const stepRebuild =
-    (swaps: readonly PackagePiece[]) => (g: GemContext) =>
-      chainSwapsWithRepairs(equipment, inSlotOrder(swaps), g);
+	const inSlotOrder = (swaps: readonly PackagePiece[]) => [...swaps].sort((a, b) => a.slotIndex - b.slotIndex);
+	/** The step gear's chain, or the error of its failed gem repair. */
+	const stepChain = (swaps: readonly PackagePiece[]): ChainBuild | MetaRepairError => {
+		try {
+			return chainSwapsWithRepairs(equipment, inSlotOrder(swaps), gems);
+		} catch (err) {
+			if (!(err instanceof MetaRepairError)) throw err;
+			return err;
+		}
+	};
+	/** The step gear's chain, or undefined when a gem repair fails. */
+	const stepBuild = (swaps: readonly PackagePiece[]): ChainBuild | undefined => {
+		const chain = stepChain(swaps);
+		return chain instanceof MetaRepairError ? undefined : chain;
+	};
+	const stepRebuild = (swaps: readonly PackagePiece[]) => (g: GemContext) => chainSwapsWithRepairs(equipment, inSlotOrder(swaps), g);
 
-  /**
-   * The step gear's request, its own version, or why it could not be built:
-   * a failed gem repair or a request build error.
-   */
-  const stepGear = async (
-    swaps: readonly PackagePiece[]
-  ): Promise<RaidSimRequest | SkipReason> => {
-    const build = stepChain(swaps);
-    if (build instanceof MetaRepairError) {
-      return SET_BONUS_SKIP_REASONS.metaOff(build.message);
-    }
-    // `versionGears` gives one entry per copies.
-    const entry = (await args.versionGears(stepRebuild(swaps), build, [{}]))[0]!;
-    if (isRepairFailure(entry)) {
-      return SET_BONUS_SKIP_REASONS.metaOff(entry.repairError.message);
-    }
-    return isBuildFailure(entry)
-      ? SET_BONUS_SKIP_REASONS.rowsNotBuilt(entry.buildError)
-      : entry.request;
-  };
-  const isSkipReason = (value: RaidSimRequest | SkipReason): value is SkipReason =>
-    "because" in value;
+	/**
+	 * The step gear's request, its own version, or why it could not be built:
+	 * a failed gem repair or a request build error.
+	 */
+	const stepGear = async (swaps: readonly PackagePiece[]): Promise<RaidSimRequest | SkipReason> => {
+		const build = stepChain(swaps);
+		if (build instanceof MetaRepairError) {
+			return SET_BONUS_SKIP_REASONS.metaOff(build.message);
+		}
+		// `versionGears` gives one entry per copies.
+		const entry = (await args.versionGears(stepRebuild(swaps), build, [{}]))[0]!;
+		if (isRepairFailure(entry)) {
+			return SET_BONUS_SKIP_REASONS.metaOff(entry.repairError.message);
+		}
+		return isBuildFailure(entry) ? SET_BONUS_SKIP_REASONS.rowsNotBuilt(entry.buildError) : entry.request;
+	};
+	const isSkipReason = (value: RaidSimRequest | SkipReason): value is SkipReason => 'because' in value;
 
-  type Future = NonNullable<SetContext["futureBonuses"]>[number];
-  const requests = new Map<string, RaidSimRequest>();
-  const pending: Array<{ future: Future; key: string; setName: string }> = [];
-  const audits: PartnerAuditEntry[] = [];
-  const rowSwapOf = new Map<RankedItem, PackagePiece>();
-  const partnersOf = new Map<Future, PackagePiece[]>();
+	type Future = NonNullable<SetContext['futureBonuses']>[number];
+	const requests = new Map<string, RaidSimRequest>();
+	const pending: Array<{ future: Future; key: string; setName: string }> = [];
+	const audits: PartnerAuditEntry[] = [];
+	const rowSwapOf = new Map<RankedItem, PackagePiece>();
+	const partnersOf = new Map<Future, PackagePiece[]>();
 
-  for (const item of args.ranked) {
-    const ctx = item.setContext;
-    if (!ctx) continue;
-    const single = args.individualDeltasByItemId.get(item.itemId);
-    if (!single) continue;
-    ctx.singleDeltaDps = single.deltaDps;
-    const eligible = (ctx.futureBonuses ?? []).filter(
-      (f) =>
-        !f.belowGate &&
-        f.sameGearDps !== undefined &&
-        clearsSameGearGate(f.sameGearDps, f.sameGearSe ?? 0, args.cutoff)
-    );
-    if (eligible.length === 0) continue;
+	for (const item of args.ranked) {
+		const ctx = item.setContext;
+		if (!ctx) continue;
+		const single = args.individualDeltasByItemId.get(item.itemId);
+		if (!single) continue;
+		ctx.singleDeltaDps = single.deltaDps;
+		const eligible = (ctx.futureBonuses ?? []).filter(
+			f => !f.belowGate && f.sameGearDps !== undefined && clearsSameGearGate(f.sameGearDps, f.sameGearSe ?? 0, args.cutoff),
+		);
+		if (eligible.length === 0) continue;
 
-    const setId = ctx.setId;
-    const wornSetSlots = new Set(
-      equipment.flatMap((spec, i) =>
-        spec.id && getItem(spec.id)?.setId === setId ? [i] : []
-      )
-    );
-    const pieces: PartnerPiece[] = [];
-    for (const [itemId, slotIndex] of args.candidateSlotIndex) {
-      if (itemId === item.itemId || getItem(itemId)?.setId !== setId) continue;
-      const delta = args.individualDeltasByItemId.get(itemId);
-      if (!delta) continue;
-      pieces.push({ itemId, slotIndex, singleDeltaDps: delta.deltaDps });
-    }
-    const pool = partnerPool({
-      pieces,
-      wornSetSlots,
-      rowSlotIndex: single.slotIndex,
-    });
-    const rowSwap: PackagePiece = {
-      itemId: item.itemId,
-      slotIndex: single.slotIndex,
-    };
-    rowSwapOf.set(item, rowSwap);
-    const lostBy = (swaps: readonly PackagePiece[]) =>
-      brokenSetBonuses(equipment, swaps, setId, counts);
+		const setId = ctx.setId;
+		const wornSetSlots = new Set(equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])));
+		const pieces: PartnerPiece[] = [];
+		for (const [itemId, slotIndex] of args.candidateSlotIndex) {
+			if (itemId === item.itemId || getItem(itemId)?.setId !== setId) continue;
+			const delta = args.individualDeltasByItemId.get(itemId);
+			if (!delta) continue;
+			pieces.push({ itemId, slotIndex, singleDeltaDps: delta.deltaDps });
+		}
+		const pool = partnerPool({
+			pieces,
+			wornSetSlots,
+			rowSlotIndex: single.slotIndex,
+		});
+		const rowSwap: PackagePiece = {
+			itemId: item.itemId,
+			slotIndex: single.slotIndex,
+		};
+		rowSwapOf.set(item, rowSwap);
+		const lostBy = (swaps: readonly PackagePiece[]) => brokenSetBonuses(equipment, swaps, setId, counts);
 
-    for (const f of eligible) {
-      const entry = args.setBonuses.find(
-        (b) => b.setId === setId && b.threshold === f.threshold
-      );
-      const pathSlot = args.candidateSlotIndex.get(item.itemId);
-      const todaysPieces =
-        entry && entry.packageItemIds.length > 0 && pathSlot !== undefined
-          ? pathToThreshold(
-              item.itemId,
-              pathSlot,
-              entry,
-              args.candidateSlotIndex,
-              args.individualDeltasByItemId
-            ).filter((p) => p.itemId !== item.itemId)
-          : undefined;
-      // A partner set whose comparison sim fails is skipped, and the chosen
-      // set's step gear is simmed below, so a failure is the row's only when
-      // no set is chosen.
-      let comparisonFailure: SkipReason | undefined;
-      const choice = await choosePartnerSet(
-        {
-          row: {
-            itemId: item.itemId,
-            slotIndex: single.slotIndex,
-            singleDeltaDps: single.deltaDps,
-          },
-          setId,
-          count: f.threshold,
-          needed: f.threshold - ctx.piecesAfterSwap,
-          pool,
-          lostBy,
-          breakDps: (s, c) => bBy.get(`${s}:${c}`),
-          ...(todaysPieces ? { todaysPieces } : {}),
-          simGear: async (partners) => {
-            const request = await stepGear([rowSwap, ...partners]);
-            if (isSkipReason(request)) {
-              comparisonFailure ??= request;
-              return undefined;
-            }
-            const total = await runCounted(request, stepCounter, stepFailure);
-            if (!isSimFailure(total)) return total;
-            comparisonFailure ??= SET_BONUS_SKIP_REASONS.rowSimsFailed(
-              total.simError
-            );
-            return undefined;
-          },
-        },
-        rule
-      );
-      // On a step ranking an eligible future's `pieces` and `breaks` are its
-      // partner choice's, so the `pathToThreshold` path's are dropped first.
-      delete f.pieces;
-      delete f.breaks;
-      if (choice === undefined) {
-        if (comparisonFailure !== undefined) {
-          skipOnSomeRows(ctx.setName, f.threshold, comparisonFailure);
-        }
-        continue;
-      }
-      if ("unmeasured" in choice) {
-        f.partnerUnmeasured = choice.unmeasured;
-        continue;
-      }
-      if (choice.audit) {
-        audits.push({
-          itemId: item.itemId,
-          setId,
-          count: f.threshold,
-          audit: choice.audit,
-        });
-      }
-      const slotOf = new Map<number, number>();
-      for (const p of [...pool, ...(todaysPieces ?? [])]) {
-        slotOf.set(p.itemId, p.slotIndex);
-      }
-      const partners: PackagePiece[] = choice.itemIds
-        .map((itemId) => ({ itemId, slotIndex: slotOf.get(itemId)! }))
-        .sort((a, b) => a.slotIndex - b.slotIndex);
-      partnersOf.set(f, partners);
-      f.partnerRule = rule;
-      f.pieces = partners.map((p) => ({
-        itemId: p.itemId,
-        name: nameOf.get(p.itemId) ?? String(p.itemId),
-      }));
-      // Every counted worn bonus the step gear loses against the current
-      // gear, the row's own break included: the popover line is a total over
-      // the current gear.
-      const lost = lostBy([rowSwap, ...partners]);
-      if (lost.length > 0) {
-        f.breaks = lost.map((brk) => {
-          const dps = bBy.get(bonusKey(brk));
-          return {
-            setId: brk.setId,
-            setName: brk.setName,
-            threshold: brk.threshold,
-            ...(dps !== undefined ? { dps } : {}),
-          };
-        });
-      }
-      const request = await stepGear([rowSwap, ...partners]);
-      if (isSkipReason(request)) {
-        skipOnSomeRows(ctx.setName, f.threshold, request);
-        continue;
-      }
-      const key = simCacheKey(request, args.simVersion, runOpts);
-      requests.set(key, request);
-      pending.push({ future: f, key, setName: ctx.setName });
-    }
-  }
+		for (const f of eligible) {
+			const entry = args.setBonuses.find(b => b.setId === setId && b.threshold === f.threshold);
+			const pathSlot = args.candidateSlotIndex.get(item.itemId);
+			const todaysPieces =
+				entry && entry.packageItemIds.length > 0 && pathSlot !== undefined
+					? pathToThreshold(item.itemId, pathSlot, entry, args.candidateSlotIndex, args.individualDeltasByItemId).filter(
+							p => p.itemId !== item.itemId,
+						)
+					: undefined;
+			// A partner set whose comparison sim fails is skipped, and the chosen
+			// set's step gear is simmed below, so a failure is the row's only when
+			// no set is chosen.
+			let comparisonFailure: SkipReason | undefined;
+			const choice = await choosePartnerSet(
+				{
+					row: {
+						itemId: item.itemId,
+						slotIndex: single.slotIndex,
+						singleDeltaDps: single.deltaDps,
+					},
+					setId,
+					count: f.threshold,
+					needed: f.threshold - ctx.piecesAfterSwap,
+					pool,
+					lostBy,
+					breakDps: (s, c) => bBy.get(`${s}:${c}`),
+					...(todaysPieces ? { todaysPieces } : {}),
+					simGear: async partners => {
+						const request = await stepGear([rowSwap, ...partners]);
+						if (isSkipReason(request)) {
+							comparisonFailure ??= request;
+							return undefined;
+						}
+						const total = await runCounted(request, stepCounter, stepFailure);
+						if (!isSimFailure(total)) return total;
+						comparisonFailure ??= SET_BONUS_SKIP_REASONS.rowSimsFailed(total.simError);
+						return undefined;
+					},
+				},
+				rule,
+			);
+			// On a step ranking an eligible future's `pieces` and `breaks` are its
+			// partner choice's, so the `pathToThreshold` path's are dropped first.
+			delete f.pieces;
+			delete f.breaks;
+			if (choice === undefined) {
+				if (comparisonFailure !== undefined) {
+					skipOnSomeRows(ctx.setName, f.threshold, comparisonFailure);
+				}
+				continue;
+			}
+			if ('unmeasured' in choice) {
+				f.partnerUnmeasured = choice.unmeasured;
+				continue;
+			}
+			if (choice.audit) {
+				audits.push({
+					itemId: item.itemId,
+					setId,
+					count: f.threshold,
+					audit: choice.audit,
+				});
+			}
+			const slotOf = new Map<number, number>();
+			for (const p of [...pool, ...(todaysPieces ?? [])]) {
+				slotOf.set(p.itemId, p.slotIndex);
+			}
+			const partners: PackagePiece[] = choice.itemIds
+				.map(itemId => ({ itemId, slotIndex: slotOf.get(itemId)! }))
+				.sort((a, b) => a.slotIndex - b.slotIndex);
+			partnersOf.set(f, partners);
+			f.partnerRule = rule;
+			f.pieces = partners.map(p => ({
+				itemId: p.itemId,
+				name: nameOf.get(p.itemId) ?? String(p.itemId),
+			}));
+			// Every counted worn bonus the step gear loses against the current
+			// gear, the row's own break included: the popover line is a total over
+			// the current gear.
+			const lost = lostBy([rowSwap, ...partners]);
+			if (lost.length > 0) {
+				f.breaks = lost.map(brk => {
+					const dps = bBy.get(bonusKey(brk));
+					return {
+						setId: brk.setId,
+						setName: brk.setName,
+						threshold: brk.threshold,
+						...(dps !== undefined ? { dps } : {}),
+					};
+				});
+			}
+			const request = await stepGear([rowSwap, ...partners]);
+			if (isSkipReason(request)) {
+				skipOnSomeRows(ctx.setName, f.threshold, request);
+				continue;
+			}
+			const key = simCacheKey(request, args.simVersion, runOpts);
+			requests.set(key, request);
+			pending.push({ future: f, key, setName: ctx.setName });
+		}
+	}
 
-  // Identical step gears are simmed once. Each task handles its own sim
-  // failure, so one failed sim leaves only its own futures unmeasured.
-  const totals = new Map<string, { totalDps: number; se: number }>();
-  const stepErrors = new Map<string, string>();
-  const keys = [...requests.keys()];
-  await promisePool(
-    keys.map((key) => async () => {
-      const total = await runCounted(
-        requests.get(key)!,
-        stepCounter,
-        stepFailure
-      );
-      if (isSimFailure(total)) stepErrors.set(key, total.simError);
-      else totals.set(key, total);
-    }),
-    deps.concurrency ?? 1
-  );
-  for (const { future, key, setName } of pending) {
-    const simError = stepErrors.get(key);
-    if (simError !== undefined) {
-      skipOnSomeRows(
-        setName,
-        future.threshold,
-        SET_BONUS_SKIP_REASONS.rowSimsFailed(simError)
-      );
-    }
-    const total = totals.get(key);
-    if (!total) continue;
-    future.stepGearDps = total.totalDps;
-    future.stepGearSe = total.se;
-  }
+	// Identical step gears are simmed once. Each task handles its own sim
+	// failure, so one failed sim leaves only its own futures unmeasured.
+	const totals = new Map<string, { totalDps: number; se: number }>();
+	const stepErrors = new Map<string, string>();
+	const keys = [...requests.keys()];
+	await promisePool(
+		keys.map(key => async () => {
+			const total = await runCounted(requests.get(key)!, stepCounter, stepFailure);
+			if (isSimFailure(total)) stepErrors.set(key, total.simError);
+			else totals.set(key, total);
+		}),
+		deps.concurrency ?? 1,
+	);
+	for (const { future, key, setName } of pending) {
+		const simError = stepErrors.get(key);
+		if (simError !== undefined) {
+			skipOnSomeRows(setName, future.threshold, SET_BONUS_SKIP_REASONS.rowSimsFailed(simError));
+		}
+		const total = totals.get(key);
+		if (!total) continue;
+		future.stepGearDps = total.totalDps;
+		future.stepGearSe = total.se;
+	}
 
-  // The bonus-off sims run for exactly the steps the popover shows, so this
-  // uses the view's one definition of those steps (`setPotentialSteps`).
-  const offCounter: SimCounter = { simmed: 0, fromStore: 0 };
-  const offRequests = new Map<
-    string,
-    { request: RaidSimRequest; plain: RaidSimRequest }
-  >();
-  const offPending: Array<{
-    future: Future;
-    key: string;
-    lost: Array<{ setId: number; threshold: SetThreshold }>;
-  }> = [];
-  let skippedSteps = 0;
-  const setIdAt = (
-    gear: readonly SimItemSpec[],
-    slot: number
-  ): number | undefined => {
-    const id = gear[slot]?.id;
-    return (id ? getItem(id)?.setId : undefined) ?? undefined;
-  };
-  const countOf = (gear: readonly SimItemSpec[], setId: number) =>
-    gear.filter((_, slot) => setIdAt(gear, slot) === setId).length;
+	// The bonus-off sims run for exactly the steps the popover shows, so this
+	// uses the view's one definition of those steps (`setPotentialSteps`).
+	const offCounter: SimCounter = { simmed: 0, fromStore: 0 };
+	const offRequests = new Map<string, { request: RaidSimRequest; plain: RaidSimRequest }>();
+	const offPending: Array<{
+		future: Future;
+		key: string;
+		lost: Array<{ setId: number; threshold: SetThreshold }>;
+	}> = [];
+	let skippedSteps = 0;
+	const setIdAt = (gear: readonly SimItemSpec[], slot: number): number | undefined => {
+		const id = gear[slot]?.id;
+		return (id ? getItem(id)?.setId : undefined) ?? undefined;
+	};
+	const countOf = (gear: readonly SimItemSpec[], setId: number) => gear.filter((_, slot) => setIdAt(gear, slot) === setId).length;
 
-  /** Queues the step's bonus-off request; false when none can be built. */
-  const queueBonusOff = async (
-    future: Future,
-    prevSwaps: readonly PackagePiece[],
-    swaps: readonly PackagePiece[],
-    lost: Array<{ setId: number; threshold: SetThreshold }>,
-    firstStep: boolean
-  ): Promise<boolean> => {
-    const beforeBuild = stepBuild(prevSwaps);
-    const before = beforeBuild?.equipment;
-    const after = stepBuild(swaps)?.equipment;
-    if (!beforeBuild || !before || !after) return false;
-    const lostSets = new Set(lost.map((b) => b.setId));
-    const prevIds = new Set(prevSwaps.map((p) => p.itemId));
-    const replaced = [
-      ...new Set(
-        swaps.filter((p) => !prevIds.has(p.itemId)).map((p) => p.slotIndex)
-      ),
-    ]
-      .filter((slot) => {
-        const setId = setIdAt(before, slot);
-        return setId !== undefined && lostSets.has(setId);
-      })
-      .sort((a, b) => a - b);
-    if (replaced.length === 0) return false;
-    // Copying the replaced pieces must leave each lost set at its count after
-    // the step; otherwise (a two-hander's off-hand, a repair) the bonus-off
-    // gear is not "before, minus exactly these bonuses".
-    for (const setId of lostSets) {
-      const copied = replaced.filter(
-        (slot) => setIdAt(before, slot) === setId
-      ).length;
-      if (countOf(before, setId) - copied !== countOf(after, setId)) {
-        return false;
-      }
-    }
-    // `plain` must be the request simmed for the gear before, and
-    // the bonus-off version its pair, so both come from one call. On later
-    // steps entry 0 is the previous step's own request (the build is
-    // deterministic and its read is cached).
-    const versions = repairErrorOr(
-      await args.versionGears(stepRebuild(prevSwaps), beforeBuild, [
-        {},
-        { setLess: replaced },
-      ])
-    );
-    // As when the gear before or after fails its repair above: the split is
-    // skipped, with no line, since no call failed.
-    if (versions instanceof MetaRepairError) {
-      console.warn(
-        "[upgrades] set step break not split: a version's gem repair failed",
-        versions
-      );
-      return false;
-    }
-    const [plainEntry, offEntry] = versions;
-    if (
-      !plainEntry ||
-      !offEntry ||
-      isBuildFailure(plainEntry) ||
-      isBuildFailure(offEntry)
-    ) {
-      const error = [plainEntry, offEntry].find(isBuildFailure)?.buildError;
-      console.warn(
-        "[upgrades] set step break not split: its request could not be built",
-        error
-      );
-      if (error !== undefined) {
-        for (const b of lost) {
-          args.bonusLines.push(
-            breakSplitSkipSubstitution({
-              setName: setLabel(equipment, b.setId),
-              threshold: b.threshold,
-              error,
-              notBuilt: true,
-            })
-          );
-        }
-      }
-      return false;
-    }
-    const plain = plainEntry.request;
-    const request = offEntry.request;
-    // On the first step the gear before is the row's single swap, built
-    // here on the run's budget. When entry 0 was rebuilt for set hit that
-    // budget misses, it differs from that build, so the split is skipped
-    // rather than paired with another layout. The candidate
-    // loop repairs on the row's own stats read, so it may have simmed entry
-    // 0; this check does not look for that sim.
-    if (
-      firstStep &&
-      stableStringify(plain) !== stableStringify(composeFor(before))
-    ) {
-      return false;
-    }
-    const key = simCacheKey(request, args.simVersion, runOpts);
-    if (!offRequests.has(key)) offRequests.set(key, { request, plain });
-    offPending.push({ future, key, lost });
-    return true;
-  };
+	/** Queues the step's bonus-off request; false when none can be built. */
+	const queueBonusOff = async (
+		future: Future,
+		prevSwaps: readonly PackagePiece[],
+		swaps: readonly PackagePiece[],
+		lost: Array<{ setId: number; threshold: SetThreshold }>,
+		firstStep: boolean,
+	): Promise<boolean> => {
+		const beforeBuild = stepBuild(prevSwaps);
+		const before = beforeBuild?.equipment;
+		const after = stepBuild(swaps)?.equipment;
+		if (!beforeBuild || !before || !after) return false;
+		const lostSets = new Set(lost.map(b => b.setId));
+		const prevIds = new Set(prevSwaps.map(p => p.itemId));
+		const replaced = [...new Set(swaps.filter(p => !prevIds.has(p.itemId)).map(p => p.slotIndex))]
+			.filter(slot => {
+				const setId = setIdAt(before, slot);
+				return setId !== undefined && lostSets.has(setId);
+			})
+			.sort((a, b) => a - b);
+		if (replaced.length === 0) return false;
+		// Copying the replaced pieces must leave each lost set at its count after
+		// the step; otherwise (a two-hander's off-hand, a repair) the bonus-off
+		// gear is not "before, minus exactly these bonuses".
+		for (const setId of lostSets) {
+			const copied = replaced.filter(slot => setIdAt(before, slot) === setId).length;
+			if (countOf(before, setId) - copied !== countOf(after, setId)) {
+				return false;
+			}
+		}
+		// `plain` must be the request simmed for the gear before, and
+		// the bonus-off version its pair, so both come from one call. On later
+		// steps entry 0 is the previous step's own request (the build is
+		// deterministic and its read is cached).
+		const versions = repairErrorOr(await args.versionGears(stepRebuild(prevSwaps), beforeBuild, [{}, { setLess: replaced }]));
+		// As when the gear before or after fails its repair above: the split is
+		// skipped, with no line, since no call failed.
+		if (versions instanceof MetaRepairError) {
+			console.warn("[upgrades] set step break not split: a version's gem repair failed", versions);
+			return false;
+		}
+		const [plainEntry, offEntry] = versions;
+		if (!plainEntry || !offEntry || isBuildFailure(plainEntry) || isBuildFailure(offEntry)) {
+			const error = [plainEntry, offEntry].find(isBuildFailure)?.buildError;
+			console.warn('[upgrades] set step break not split: its request could not be built', error);
+			if (error !== undefined) {
+				for (const b of lost) {
+					args.bonusLines.push(
+						breakSplitSkipSubstitution({
+							setName: setLabel(equipment, b.setId),
+							threshold: b.threshold,
+							error,
+							notBuilt: true,
+						}),
+					);
+				}
+			}
+			return false;
+		}
+		const plain = plainEntry.request;
+		const request = offEntry.request;
+		// On the first step the gear before is the row's single swap, built
+		// here on the run's budget. When entry 0 was rebuilt for set hit that
+		// budget misses, it differs from that build, so the split is skipped
+		// rather than paired with another layout. The candidate
+		// loop repairs on the row's own stats read, so it may have simmed entry
+		// 0; this check does not look for that sim.
+		if (firstStep && stableStringify(plain) !== stableStringify(composeFor(before))) {
+			return false;
+		}
+		const key = simCacheKey(request, args.simVersion, runOpts);
+		if (!offRequests.has(key)) offRequests.set(key, { request, plain });
+		offPending.push({ future, key, lost });
+		return true;
+	};
 
-  for (const item of args.ranked) {
-    const ctx = item.setContext;
-    const rowSwap = rowSwapOf.get(item);
-    if (!ctx?.stepRanking || !rowSwap || setCreditUnmeasured(ctx)) continue;
-    const steps = setPotentialSteps(ctx, args.cutoff);
-    if (!steps) continue;
-    let prevSwaps: PackagePiece[] | undefined = [rowSwap];
-    let firstStep = true;
-    for (const step of steps) {
-      const f = (ctx.futureBonuses ?? []).find(
-        (x) => x.threshold === step.threshold
-      );
-      const partners = f ? partnersOf.get(f) : undefined;
-      const swaps = partners ? [rowSwap, ...partners] : undefined;
-      if (step.broken.length > 0) {
-        const lost = step.broken.map((b) => ({
-          setId: b.setId,
-          threshold: b.threshold as SetThreshold,
-        }));
-        const queued =
-          f !== undefined &&
-          swaps !== undefined &&
-          prevSwaps !== undefined &&
-          (await queueBonusOff(f, prevSwaps, swaps, lost, firstStep));
-        if (!queued) skippedSteps += 1;
-      }
-      prevSwaps = swaps;
-      firstStep = false;
-    }
-  }
+	for (const item of args.ranked) {
+		const ctx = item.setContext;
+		const rowSwap = rowSwapOf.get(item);
+		if (!ctx?.stepRanking || !rowSwap || setCreditUnmeasured(ctx)) continue;
+		const steps = setPotentialSteps(ctx, args.cutoff);
+		if (!steps) continue;
+		let prevSwaps: PackagePiece[] | undefined = [rowSwap];
+		let firstStep = true;
+		for (const step of steps) {
+			const f = (ctx.futureBonuses ?? []).find(x => x.threshold === step.threshold);
+			const partners = f ? partnersOf.get(f) : undefined;
+			const swaps = partners ? [rowSwap, ...partners] : undefined;
+			if (step.broken.length > 0) {
+				const lost = step.broken.map(b => ({
+					setId: b.setId,
+					threshold: b.threshold as SetThreshold,
+				}));
+				const queued = f !== undefined && swaps !== undefined && prevSwaps !== undefined && (await queueBonusOff(f, prevSwaps, swaps, lost, firstStep));
+				if (!queued) skippedSteps += 1;
+			}
+			prevSwaps = swaps;
+			firstStep = false;
+		}
+	}
 
-  // A Breaks line pairs the bonus-off sim with the plain gear before's sim
-  // (the previous step's total, or the row's single swap). Only a gear before
-  // that this run already holds makes that a paired difference, so a request
-  // whose plain gear before is missing is not simmed.
-  const paired = new Set<string>();
-  for (const [key, { plain }] of offRequests) {
-    if (await readCachedSim(deps, plain, args.simVersion, runOpts)) {
-      paired.add(key);
-    }
-  }
-  const offTotals = new Map<string, { totalDps: number; se: number }>();
-  const offErrors = new Map<string, string>();
-  let failedGears = 0;
-  await promisePool(
-    [...paired].map((key) => async () => {
-      const total = await runCounted(
-        offRequests.get(key)!.request,
-        offCounter,
-        "[upgrades] set step break not split: the sim failed"
-      );
-      if (isSimFailure(total)) {
-        offErrors.set(key, total.simError);
-        failedGears += 1;
-      } else offTotals.set(key, total);
-    }),
-    deps.concurrency ?? 1
-  );
-  for (const { future, key, lost } of offPending) {
-    if (!paired.has(key)) {
-      skippedSteps += 1;
-      continue;
-    }
-    const simError = offErrors.get(key);
-    if (simError !== undefined) {
-      for (const b of lost) {
-        args.bonusLines.push(
-          breakSplitSkipSubstitution({
-            setName: setLabel(equipment, b.setId),
-            threshold: b.threshold,
-            error: simError,
-          })
-        );
-      }
-    }
-    const total = offTotals.get(key);
-    if (!total) continue;
-    future.bonusOffDps = total.totalDps;
-    future.bonusOffSe = total.se;
-    future.bonusOff = lost;
-  }
+	// A Breaks line pairs the bonus-off sim with the plain gear before's sim
+	// (the previous step's total, or the row's single swap). Only a gear before
+	// that this run already holds makes that a paired difference, so a request
+	// whose plain gear before is missing is not simmed.
+	const paired = new Set<string>();
+	for (const [key, { plain }] of offRequests) {
+		if (await readCachedSim(deps, plain, args.simVersion, runOpts)) {
+			paired.add(key);
+		}
+	}
+	const offTotals = new Map<string, { totalDps: number; se: number }>();
+	const offErrors = new Map<string, string>();
+	let failedGears = 0;
+	await promisePool(
+		[...paired].map(key => async () => {
+			const total = await runCounted(offRequests.get(key)!.request, offCounter, '[upgrades] set step break not split: the sim failed');
+			if (isSimFailure(total)) {
+				offErrors.set(key, total.simError);
+				failedGears += 1;
+			} else offTotals.set(key, total);
+		}),
+		deps.concurrency ?? 1,
+	);
+	for (const { future, key, lost } of offPending) {
+		if (!paired.has(key)) {
+			skippedSteps += 1;
+			continue;
+		}
+		const simError = offErrors.get(key);
+		if (simError !== undefined) {
+			for (const b of lost) {
+				args.bonusLines.push(
+					breakSplitSkipSubstitution({
+						setName: setLabel(equipment, b.setId),
+						threshold: b.threshold,
+						error: simError,
+					}),
+				);
+			}
+		}
+		const total = offTotals.get(key);
+		if (!total) continue;
+		future.bonusOffDps = total.totalDps;
+		future.bonusOffSe = total.se;
+		future.bonusOff = lost;
+	}
 
-  return {
-    setStepSims: {
-      partnerRule: rule,
-      gears: keys.length,
-      simmed: stepCounter.simmed,
-      fromStore: stepCounter.fromStore,
-    },
-    bonusOffSims: {
-      gears: offRequests.size,
-      simmed: offCounter.simmed,
-      fromStore: offCounter.fromStore,
-      failedGears,
-      skippedSteps,
-      beforeInStore: paired.size,
-    },
-    ...(rule === "every-combination" ? { partnerAudit: audits } : {}),
-  };
+	return {
+		setStepSims: {
+			partnerRule: rule,
+			gears: keys.length,
+			simmed: stepCounter.simmed,
+			fromStore: stepCounter.fromStore,
+		},
+		bonusOffSims: {
+			gears: offRequests.size,
+			simmed: offCounter.simmed,
+			fromStore: offCounter.fromStore,
+			failedGears,
+			skippedSteps,
+			beforeInStore: paired.size,
+		},
+		...(rule === 'every-combination' ? { partnerAudit: audits } : {}),
+	};
 }
 
 /**
  * The highest measured, non-empty package of one set: the package a row's
  * `commitBreaks` completes, and a source of measurement targets.
  */
-function topMeasuredPackage(
-  bonusesForSet: readonly SetBonusValue[]
-): SetBonusValue | undefined {
-  // A below-gate entry has package ids but no package sim, so it is never a
-  // measured package.
-  return [...bonusesForSet]
-    .filter(
-      (b) =>
-        b.unmeasured === undefined &&
-        !b.belowGate &&
-        b.packageItemIds.length > 0
-    )
-    .sort((a, b) => b.threshold - a.threshold)[0];
+function topMeasuredPackage(bonusesForSet: readonly SetBonusValue[]): SetBonusValue | undefined {
+	// A below-gate entry has package ids but no package sim, so it is never a
+	// measured package.
+	return [...bonusesForSet]
+		.filter(b => b.unmeasured === undefined && !b.belowGate && b.packageItemIds.length > 0)
+		.sort((a, b) => b.threshold - a.threshold)[0];
 }
 
 /**
@@ -3312,25 +2844,22 @@ function topMeasuredPackage(
  * break a row shows is one the engine tried to measure.
  */
 function substitutedPackageBreaks(
-  itemId: number,
-  setId: number,
-  slotIndex: number,
-  topPackage: SetBonusValue,
-  candidateSlotIndex: ReadonlyMap<number, number>,
-  equipment: readonly SimItemSpec[],
-  counts: BonusCountPredicate
+	itemId: number,
+	setId: number,
+	slotIndex: number,
+	topPackage: SetBonusValue,
+	candidateSlotIndex: ReadonlyMap<number, number>,
+	equipment: readonly SimItemSpec[],
+	counts: BonusCountPredicate,
 ): BrokenSetBonus[] {
-  const substituted: PackagePiece[] = topPackage.packageItemIds
-    .map((pieceItemId) => ({
-      itemId: pieceItemId,
-      slotIndex: candidateSlotIndex.get(pieceItemId),
-    }))
-    .filter(
-      (p): p is PackagePiece =>
-        p.slotIndex !== undefined && p.slotIndex !== slotIndex
-    );
-  substituted.push({ itemId, slotIndex });
-  return brokenSetBonuses(equipment, substituted, setId, counts);
+	const substituted: PackagePiece[] = topPackage.packageItemIds
+		.map(pieceItemId => ({
+			itemId: pieceItemId,
+			slotIndex: candidateSlotIndex.get(pieceItemId),
+		}))
+		.filter((p): p is PackagePiece => p.slotIndex !== undefined && p.slotIndex !== slotIndex);
+	substituted.push({ itemId, slotIndex });
+	return brokenSetBonuses(equipment, substituted, setId, counts);
 }
 
 /**
@@ -3341,85 +2870,66 @@ function substitutedPackageBreaks(
  * the error, except a sim Stop refused.
  */
 async function measurePairTwoPiece(
-  bonusLabel: string,
-  deps: Deps,
-  pair: readonly PackagePiece[],
-  equipment: readonly SimItemSpec[],
-  gems: GemContext,
-  composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
-  individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>,
-  baseline: DpsSample,
-  simVersion: string,
-  runOpts: SimRunOpts,
-  versionGears: VersionGears,
-  onNotMeasured: (reason: SkipReason) => void
+	bonusLabel: string,
+	deps: Deps,
+	pair: readonly PackagePiece[],
+	equipment: readonly SimItemSpec[],
+	gems: GemContext,
+	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
+	individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>,
+	baseline: DpsSample,
+	simVersion: string,
+	runOpts: SimRunOpts,
+	versionGears: VersionGears,
+	onNotMeasured: (reason: SkipReason) => void,
 ): Promise<{ dps: number; se: number } | undefined> {
-  let pairBuild: ChainBuild;
-  try {
-    pairBuild = chainSwapsWithRepairs(equipment, pair, gems);
-  } catch (err) {
-    if (!(err instanceof MetaRepairError)) throw err;
-    console.warn(
-      `[upgrades] ${bonusLabel} net value not measured: gem repair failed for the worn-1 pair that measures the 2pc`,
-      err
-    );
-    onNotMeasured(SET_BONUS_SKIP_REASONS.metaOff(err.message));
-    return undefined;
-  }
-  const [entry] = await versionGears(
-    (g) => chainSwapsWithRepairs(equipment, pair, g),
-    pairBuild,
-    [{}]
-  );
-  if (isRepairFailure(entry)) {
-    console.warn(
-      `[upgrades] ${bonusLabel} net value not measured: gem repair failed for the worn-1 pair that measures the 2pc`,
-      entry.repairError
-    );
-    onNotMeasured(SET_BONUS_SKIP_REASONS.metaOff(entry.repairError.message));
-    return undefined;
-  }
-  if (!entry || isBuildFailure(entry)) {
-    console.warn(
-      `[upgrades] ${bonusLabel} net value not measured: the request for the worn-1 pair that measures the 2pc could not be built`,
-      entry?.buildError
-    );
-    if (entry) onNotMeasured(SET_BONUS_SKIP_REASONS.notBuilt(entry.buildError));
-    return undefined;
-  }
-  const request = entry.request;
-  let obs = await readCachedSim(deps, request, simVersion, runOpts);
-  if (!obs) {
-    try {
-      obs = await deps.sim.run(request, runOpts);
-    } catch (err) {
-      // No warning for a sim the Stop guard refused.
-      if (!deps.signal?.aborted) {
-        console.warn(
-          `[upgrades] ${bonusLabel} net value not measured: the sim failed for the worn-1 pair that measures the 2pc`,
-          err
-        );
-        onNotMeasured(SET_BONUS_SKIP_REASONS.simFailed(errorText(err)));
-      }
-      return undefined;
-    }
-    await cacheSimResult(deps, request, simVersion, runOpts, obs);
-  }
-  const singles = pair.map((p) => individualDeltasByItemId.get(p.itemId)!);
-  const pairSample: DpsSample = {
-    dps: obs.dps,
-    se: obs.stdev / Math.sqrt(runOpts.iterations),
-  };
-  return {
-    dps:
-      singles.reduce((sum, s) => sum + s.deltaDps, 0) -
-      (pairSample.dps - baseline.dps),
-    se: combineSe([
-      baseline,
-      pairSample,
-      ...singles.map((s) => ({ dps: 0, se: s.se })),
-    ]),
-  };
+	let pairBuild: ChainBuild;
+	try {
+		pairBuild = chainSwapsWithRepairs(equipment, pair, gems);
+	} catch (err) {
+		if (!(err instanceof MetaRepairError)) throw err;
+		console.warn(`[upgrades] ${bonusLabel} net value not measured: gem repair failed for the worn-1 pair that measures the 2pc`, err);
+		onNotMeasured(SET_BONUS_SKIP_REASONS.metaOff(err.message));
+		return undefined;
+	}
+	const [entry] = await versionGears(g => chainSwapsWithRepairs(equipment, pair, g), pairBuild, [{}]);
+	if (isRepairFailure(entry)) {
+		console.warn(`[upgrades] ${bonusLabel} net value not measured: gem repair failed for the worn-1 pair that measures the 2pc`, entry.repairError);
+		onNotMeasured(SET_BONUS_SKIP_REASONS.metaOff(entry.repairError.message));
+		return undefined;
+	}
+	if (!entry || isBuildFailure(entry)) {
+		console.warn(
+			`[upgrades] ${bonusLabel} net value not measured: the request for the worn-1 pair that measures the 2pc could not be built`,
+			entry?.buildError,
+		);
+		if (entry) onNotMeasured(SET_BONUS_SKIP_REASONS.notBuilt(entry.buildError));
+		return undefined;
+	}
+	const request = entry.request;
+	let obs = await readCachedSim(deps, request, simVersion, runOpts);
+	if (!obs) {
+		try {
+			obs = await deps.sim.run(request, runOpts);
+		} catch (err) {
+			// No warning for a sim the Stop guard refused.
+			if (!deps.signal?.aborted) {
+				console.warn(`[upgrades] ${bonusLabel} net value not measured: the sim failed for the worn-1 pair that measures the 2pc`, err);
+				onNotMeasured(SET_BONUS_SKIP_REASONS.simFailed(errorText(err)));
+			}
+			return undefined;
+		}
+		await cacheSimResult(deps, request, simVersion, runOpts, obs);
+	}
+	const singles = pair.map(p => individualDeltasByItemId.get(p.itemId)!);
+	const pairSample: DpsSample = {
+		dps: obs.dps,
+		se: obs.stdev / Math.sqrt(runOpts.iterations),
+	};
+	return {
+		dps: singles.reduce((sum, s) => sum + s.deltaDps, 0) - (pairSample.dps - baseline.dps),
+		se: combineSe([baseline, pairSample, ...singles.map(s => ({ dps: 0, se: s.se }))]),
+	};
 }
 
 /**
@@ -3430,30 +2940,25 @@ async function measurePairTwoPiece(
  * id). A candidate outside the package keeps what the package would not need.
  */
 function pathToThreshold(
-  itemId: number,
-  slotIndex: number,
-  pkg: SetBonusValue,
-  candidateSlotIndex: ReadonlyMap<number, number>,
-  individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>
+	itemId: number,
+	slotIndex: number,
+	pkg: SetBonusValue,
+	candidateSlotIndex: ReadonlyMap<number, number>,
+	individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>,
 ): PackagePiece[] {
-  const members = pkg.packageItemIds
-    .map((pieceItemId) => ({
-      itemId: pieceItemId,
-      slotIndex: candidateSlotIndex.get(pieceItemId),
-    }))
-    .filter((p): p is PackagePiece => p.slotIndex !== undefined);
-  if (pkg.packageItemIds.includes(itemId)) return members;
-  const deltaOf = (id: number) =>
-    individualDeltasByItemId.get(id)?.deltaDps ?? -Infinity;
-  const rest = members
-    .filter((p) => p.slotIndex !== slotIndex)
-    .sort((a, b) =>
-      deltaOf(b.itemId) !== deltaOf(a.itemId)
-        ? deltaOf(b.itemId) - deltaOf(a.itemId)
-        : a.itemId - b.itemId
-    )
-    .slice(0, pkg.packageItemIds.length - 1);
-  return [...rest, { itemId, slotIndex }];
+	const members = pkg.packageItemIds
+		.map(pieceItemId => ({
+			itemId: pieceItemId,
+			slotIndex: candidateSlotIndex.get(pieceItemId),
+		}))
+		.filter((p): p is PackagePiece => p.slotIndex !== undefined);
+	if (pkg.packageItemIds.includes(itemId)) return members;
+	const deltaOf = (id: number) => individualDeltasByItemId.get(id)?.deltaDps ?? -Infinity;
+	const rest = members
+		.filter(p => p.slotIndex !== slotIndex)
+		.sort((a, b) => (deltaOf(b.itemId) !== deltaOf(a.itemId) ? deltaOf(b.itemId) - deltaOf(a.itemId) : a.itemId - b.itemId))
+		.slice(0, pkg.packageItemIds.length - 1);
+	return [...rest, { itemId, slotIndex }];
 }
 
 /**
@@ -3462,34 +2967,24 @@ function pathToThreshold(
  * swapping that one piece into its slot drops the worn (X, t) below threshold.
  */
 function countMembersBreaking(
-  pkg: SetBonusValue,
-  target: Pick<BrokenSetBonus, "setId" | "threshold">,
-  equipment: readonly SimItemSpec[],
-  candidateSlotIndex: ReadonlyMap<number, number>,
-  counts: BonusCountPredicate
+	pkg: SetBonusValue,
+	target: Pick<BrokenSetBonus, 'setId' | 'threshold'>,
+	equipment: readonly SimItemSpec[],
+	candidateSlotIndex: ReadonlyMap<number, number>,
+	counts: BonusCountPredicate,
 ): number {
-  let k = 0;
-  for (const itemId of pkg.packageItemIds) {
-    const slotIndex = candidateSlotIndex.get(itemId);
-    if (slotIndex === undefined) continue;
-    const memberSetId = getItem(itemId)?.setId;
-    if (memberSetId == null) continue;
-    const breaks = brokenSetBonuses(
-      equipment,
-      [{ itemId, slotIndex }],
-      memberSetId,
-      counts
-    );
-    if (
-      breaks.some(
-        (brk) =>
-          brk.setId === target.setId && brk.threshold === target.threshold
-      )
-    ) {
-      k += 1;
-    }
-  }
-  return k;
+	let k = 0;
+	for (const itemId of pkg.packageItemIds) {
+		const slotIndex = candidateSlotIndex.get(itemId);
+		if (slotIndex === undefined) continue;
+		const memberSetId = getItem(itemId)?.setId;
+		if (memberSetId == null) continue;
+		const breaks = brokenSetBonuses(equipment, [{ itemId, slotIndex }], memberSetId, counts);
+		if (breaks.some(brk => brk.setId === target.setId && brk.threshold === target.threshold)) {
+			k += 1;
+		}
+	}
+	return k;
 }
 
 /**
@@ -3505,54 +3000,45 @@ function countMembersBreaking(
  * list gives no such line, so there a failed count is counted.
  */
 async function measureWornSetLadders(
-  equipment: readonly SimItemSpec[],
-  composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
-  cachedSampleRun: (
-    what: string
-  ) => (request: RaidSimRequest) => Promise<DpsSample>,
-  cutoff: Cutoff,
-  lines: Substitution[],
-  readBonuses?: (request: RaidSimRequest) => Promise<readonly string[]>
+	equipment: readonly SimItemSpec[],
+	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
+	cachedSampleRun: (what: string) => (request: RaidSimRequest) => Promise<DpsSample>,
+	cutoff: Cutoff,
+	lines: Substitution[],
+	readBonuses?: (request: RaidSimRequest) => Promise<readonly string[]>,
 ): Promise<WornSetLadderEntry[]> {
-  const worn = [...setCounts(equipment)]
-    .filter(([, count]) => count >= 2)
-    .map(([setId]) => setId)
-    .sort((a, b) => a - b);
-  if (worn.length === 0) return [];
-  const request = composeFor(equipment);
-  const entries: WornSetLadderEntry[] = [];
-  for (const setId of worn) {
-    const setName = setLabel(equipment, setId);
-    const slots = equipment.flatMap((spec, i) =>
-      spec.id && getItem(spec.id)?.setId === setId ? [i] : []
-    );
-    const rungs = await measureWornSetLadder(
-      cachedSampleRun(`${setName} worn-set ladder`),
-      request,
-      slots,
-      (error, notBuilt) =>
-        lines.push(
-          wornSetSkipSubstitution({
-            setName,
-            error,
-            ...(notBuilt ? { notBuilt } : {}),
-          })
-        )
-    );
-    const bonusCounts =
-      readBonuses && rungs.some((rung) => rung.unmeasured !== undefined)
-        ? await wornSetBonusCounts(readBonuses, request, slots, setName, lines)
-        : undefined;
-    for (const rung of rungs) {
-      const counted =
-        rung.unmeasured !== undefined
-          ? (bonusCounts?.has(rung.count) ?? true)
-          : rung.dps !== undefined &&
-            clearsSameGearGate(rung.dps, rung.se ?? 0, cutoff);
-      entries.push({ setId, setName, ...rung, counted });
-    }
-  }
-  return entries;
+	const worn = [...setCounts(equipment)]
+		.filter(([, count]) => count >= 2)
+		.map(([setId]) => setId)
+		.sort((a, b) => a - b);
+	if (worn.length === 0) return [];
+	const request = composeFor(equipment);
+	const entries: WornSetLadderEntry[] = [];
+	for (const setId of worn) {
+		const setName = setLabel(equipment, setId);
+		const slots = equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : []));
+		const rungs = await measureWornSetLadder(cachedSampleRun(`${setName} worn-set ladder`), request, slots, (error, notBuilt) =>
+			lines.push(
+				wornSetSkipSubstitution({
+					setName,
+					error,
+					...(notBuilt ? { notBuilt } : {}),
+				}),
+			),
+		);
+		const bonusCounts =
+			readBonuses && rungs.some(rung => rung.unmeasured !== undefined)
+				? await wornSetBonusCounts(readBonuses, request, slots, setName, lines)
+				: undefined;
+		for (const rung of rungs) {
+			const counted =
+				rung.unmeasured !== undefined
+					? (bonusCounts?.has(rung.count) ?? true)
+					: rung.dps !== undefined && clearsSameGearGate(rung.dps, rung.se ?? 0, cutoff);
+			entries.push({ setId, setName, ...rung, counted });
+		}
+	}
+	return entries;
 }
 
 /**
@@ -3562,56 +3048,52 @@ async function measureWornSetLadders(
  * its error; undefined when Stop refused the read.
  */
 async function wornSetBonusCounts(
-  readBonuses: (request: RaidSimRequest) => Promise<readonly string[]>,
-  request: RaidSimRequest,
-  slots: readonly number[],
-  setName: string,
-  lines: Substitution[]
+	readBonuses: (request: RaidSimRequest) => Promise<readonly string[]>,
+	request: RaidSimRequest,
+	slots: readonly number[],
+	setName: string,
+	lines: Substitution[],
 ): Promise<ReadonlySet<number> | undefined> {
-  let setLess: RaidSimRequest;
-  try {
-    setLess = applySetLessCopies(request, slots);
-  } catch (err) {
-    console.warn(`[upgrades] ${setName}: its bonus counts were not read`, err);
-    lines.push(
-      setBonusesSkipSubstitution({
-        setName,
-        reason: SET_BONUS_SKIP_REASONS.bonusListNotBuilt(errorText(err)),
-      })
-    );
-    return new Set();
-  }
-  try {
-    const worn = await readBonuses(request);
-    const left = new Set(await readBonuses(setLess));
-    const counts = new Set<number>();
-    for (const name of worn) {
-      if (left.has(name)) continue;
-      const match = / \((\d+)pc\)$/.exec(name);
-      if (match) counts.add(Number(match[1]));
-    }
-    return counts;
-  } catch (err) {
-    if (err instanceof StopRefusedSim) return undefined;
-    console.warn(`[upgrades] ${setName}: its bonus counts were not read`, err);
-    lines.push(
-      setBonusesSkipSubstitution({
-        setName,
-        reason: SET_BONUS_SKIP_REASONS.bonusListFailed(errorText(err)),
-      })
-    );
-    return new Set();
-  }
+	let setLess: RaidSimRequest;
+	try {
+		setLess = applySetLessCopies(request, slots);
+	} catch (err) {
+		console.warn(`[upgrades] ${setName}: its bonus counts were not read`, err);
+		lines.push(
+			setBonusesSkipSubstitution({
+				setName,
+				reason: SET_BONUS_SKIP_REASONS.bonusListNotBuilt(errorText(err)),
+			}),
+		);
+		return new Set();
+	}
+	try {
+		const worn = await readBonuses(request);
+		const left = new Set(await readBonuses(setLess));
+		const counts = new Set<number>();
+		for (const name of worn) {
+			if (left.has(name)) continue;
+			const match = / \((\d+)pc\)$/.exec(name);
+			if (match) counts.add(Number(match[1]));
+		}
+		return counts;
+	} catch (err) {
+		if (err instanceof StopRefusedSim) return undefined;
+		console.warn(`[upgrades] ${setName}: its bonus counts were not read`, err);
+		lines.push(
+			setBonusesSkipSubstitution({
+				setName,
+				reason: SET_BONUS_SKIP_REASONS.bonusListFailed(errorText(err)),
+			}),
+		);
+		return new Set();
+	}
 }
 
 /** The break predicate the flag path uses: a count the ladder counted. */
-function countedLadderBreaks(
-  ladder: readonly WornSetLadderEntry[]
-): BonusCountPredicate {
-  const counted = new Set(
-    ladder.filter((e) => e.counted).map((e) => `${e.setId}:${e.count}`)
-  );
-  return (setId, count) => counted.has(`${setId}:${count}`);
+function countedLadderBreaks(ladder: readonly WornSetLadderEntry[]): BonusCountPredicate {
+	const counted = new Set(ladder.filter(e => e.counted).map(e => `${e.setId}:${e.count}`));
+	return (setId, count) => counted.has(`${setId}:${count}`);
 }
 
 /**
@@ -3619,358 +3101,261 @@ function countedLadderBreaks(
  * null. An entry has `sameGearDps` without `belowGate`
  * exactly when its gate cleared.
  */
-function nextClearedThreshold(
-  bonusesForSet: readonly SetBonusValue[],
-  after: number
-): SetThreshold | null {
-  const counts = bonusesForSet
-    .filter(
-      (b) => b.threshold > after && b.sameGearDps !== undefined && !b.belowGate
-    )
-    .map((b) => b.threshold);
-  return counts.length > 0 ? Math.min(...counts) : null;
+function nextClearedThreshold(bonusesForSet: readonly SetBonusValue[], after: number): SetThreshold | null {
+	const counts = bonusesForSet.filter(b => b.threshold > after && b.sameGearDps !== undefined && !b.belowGate).map(b => b.threshold);
+	return counts.length > 0 ? Math.min(...counts) : null;
 }
 
-export function memberPackages(
-  itemId: number,
-  bonusesForSet: readonly SetBonusValue[]
-): SetPackageContext[] | undefined {
-  // A below-gate entry's package was never simmed, so its `packageDeltaDps`
-  // of 0 is not a measurement.
-  const measured = bonusesForSet.filter(
-    (b) => b.unmeasured === undefined && !b.belowGate
-  );
-  if (!measured.some((b) => b.packageItemIds.includes(itemId))) {
-    return undefined;
-  }
-  return measured
-    .slice()
-    .sort((a, b) => a.threshold - b.threshold)
-    .map((b) => ({
-      threshold: b.threshold,
-      deltaDps: b.packageDeltaDps,
-      itemIds: b.packageItemIds,
-      piecesNeeded: b.packageItemIds.length,
-    }));
+export function memberPackages(itemId: number, bonusesForSet: readonly SetBonusValue[]): SetPackageContext[] | undefined {
+	// A below-gate entry's package was never simmed, so its `packageDeltaDps`
+	// of 0 is not a measurement.
+	const measured = bonusesForSet.filter(b => b.unmeasured === undefined && !b.belowGate);
+	if (!measured.some(b => b.packageItemIds.includes(itemId))) {
+		return undefined;
+	}
+	return measured
+		.slice()
+		.sort((a, b) => a.threshold - b.threshold)
+		.map(b => ({
+			threshold: b.threshold,
+			deltaDps: b.packageDeltaDps,
+			itemIds: b.packageItemIds,
+			piecesNeeded: b.packageItemIds.length,
+		}));
 }
 
 function applySetContext(
-  ranked: RankedItem[],
-  setBonuses: readonly SetBonusValue[],
-  equipment: readonly SimItemSpec[],
-  brokenSetValues: readonly BrokenSetValue[] = [],
-  candidateSlotIndex: ReadonlyMap<number, number> = new Map(),
-  individualDeltasByItemId: ReadonlyMap<number, IndividualDelta> = new Map(),
-  counts: BonusCountPredicate = isBonusImplemented,
-  /**
-   * Present exactly on the flag path: the crossing gates, so the
-   * crossing and next-bonus counts read measurements instead of the six-set
-   * table, and every entry above the swap's count becomes a future.
-   */
-  stepPath?: { crossingGates: readonly CrossingGate[] },
-  /** Sets whose rows get a `setContext` though they have no entry. */
-  markedSetIds: readonly number[] = []
+	ranked: RankedItem[],
+	setBonuses: readonly SetBonusValue[],
+	equipment: readonly SimItemSpec[],
+	brokenSetValues: readonly BrokenSetValue[] = [],
+	candidateSlotIndex: ReadonlyMap<number, number> = new Map(),
+	individualDeltasByItemId: ReadonlyMap<number, IndividualDelta> = new Map(),
+	counts: BonusCountPredicate = isBonusImplemented,
+	/**
+	 * Present exactly on the flag path: the crossing gates, so the
+	 * crossing and next-bonus counts read measurements instead of the six-set
+	 * table, and every entry above the swap's count becomes a future.
+	 */
+	stepPath?: { crossingGates: readonly CrossingGate[] },
+	/** Sets whose rows get a `setContext` though they have no entry. */
+	markedSetIds: readonly number[] = [],
 ): void {
-  const wornCounts = setCounts(equipment);
-  const bonusesBySet = new Map<number, SetBonusValue[]>();
-  for (const b of setBonuses) {
-    const list = bonusesBySet.get(b.setId) ?? [];
-    list.push(b);
-    bonusesBySet.set(b.setId, list);
-  }
-  for (const setId of markedSetIds) {
-    if (!bonusesBySet.has(setId)) bonusesBySet.set(setId, []);
-  }
-  const bBy = new Map<string, number | undefined>();
-  for (const v of brokenSetValues) bBy.set(bonusKey(v), v.dps);
-  const dpsForBreak = (brk: BrokenSetBonus): number | undefined =>
-    bBy.get(bonusKey(brk));
-  const rankedById = new Map(ranked.map((r) => [r.itemId, r]));
+	const wornCounts = setCounts(equipment);
+	const bonusesBySet = new Map<number, SetBonusValue[]>();
+	for (const b of setBonuses) {
+		const list = bonusesBySet.get(b.setId) ?? [];
+		list.push(b);
+		bonusesBySet.set(b.setId, list);
+	}
+	for (const setId of markedSetIds) {
+		if (!bonusesBySet.has(setId)) bonusesBySet.set(setId, []);
+	}
+	const bBy = new Map<string, number | undefined>();
+	for (const v of brokenSetValues) bBy.set(bonusKey(v), v.dps);
+	const dpsForBreak = (brk: BrokenSetBonus): number | undefined => bBy.get(bonusKey(brk));
+	const rankedById = new Map(ranked.map(r => [r.itemId, r]));
 
-  for (const item of ranked) {
-    const setId = getItem(item.itemId)?.setId;
-    if (setId == null) continue;
-    const bonusesForSet = bonusesBySet.get(setId);
-    if (!bonusesForSet) continue;
+	for (const item of ranked) {
+		const setId = getItem(item.itemId)?.setId;
+		if (setId == null) continue;
+		const bonusesForSet = bonusesBySet.get(setId);
+		if (!bonusesForSet) continue;
 
-    const piecesWornBefore = wornCounts.get(setId) ?? 0;
-    const piecesAfterSwap = item.owned
-      ? piecesWornBefore
-      : piecesWornBefore + 1;
-    // Flag path: one more piece crosses a bonus only when that
-    // count's crossing gate cleared, and the next bonus is the next count
-    // whose gate cleared. No table is read.
-    const crossingCleared =
-      stepPath?.crossingGates.some(
-        (g) =>
-          g.setId === setId && g.count === piecesWornBefore + 1 && g.cleared
-      ) ?? false;
-    const thresholdBeforeSwap = stepPath
-      ? crossingCleared
-        ? piecesWornBefore + 1
-        : nextClearedThreshold(bonusesForSet, piecesWornBefore)
-      : nextMeasurableThreshold(setId, piecesWornBefore);
-    const crossesThreshold = stepPath
-      ? !item.owned && piecesAfterSwap === piecesWornBefore + 1 && crossingCleared
-      : thresholdBeforeSwap !== null && piecesAfterSwap >= thresholdBeforeSwap;
-    const nextThreshold = stepPath
-      ? nextClearedThreshold(bonusesForSet, piecesAfterSwap)
-      : nextMeasurableThreshold(setId, piecesAfterSwap);
+		const piecesWornBefore = wornCounts.get(setId) ?? 0;
+		const piecesAfterSwap = item.owned ? piecesWornBefore : piecesWornBefore + 1;
+		// Flag path: one more piece crosses a bonus only when that
+		// count's crossing gate cleared, and the next bonus is the next count
+		// whose gate cleared. No table is read.
+		const crossingCleared = stepPath?.crossingGates.some(g => g.setId === setId && g.count === piecesWornBefore + 1 && g.cleared) ?? false;
+		const thresholdBeforeSwap = stepPath
+			? crossingCleared
+				? piecesWornBefore + 1
+				: nextClearedThreshold(bonusesForSet, piecesWornBefore)
+			: nextMeasurableThreshold(setId, piecesWornBefore);
+		const crossesThreshold = stepPath
+			? !item.owned && piecesAfterSwap === piecesWornBefore + 1 && crossingCleared
+			: thresholdBeforeSwap !== null && piecesAfterSwap >= thresholdBeforeSwap;
+		const nextThreshold = stepPath ? nextClearedThreshold(bonusesForSet, piecesAfterSwap) : nextMeasurableThreshold(setId, piecesAfterSwap);
 
-    const setContext: SetContext = {
-      setId,
-      setName:
-        bonusesForSet[0]?.setName ?? setLabel(equipment, setId, [item.itemId]),
-      piecesWornBefore,
-      piecesAfterSwap,
-      nextThreshold,
-      crossesThreshold,
-      ...(stepPath ? { stepRanking: true as const } : {}),
-    };
+		const setContext: SetContext = {
+			setId,
+			setName: bonusesForSet[0]?.setName ?? setLabel(equipment, setId, [item.itemId]),
+			piecesWornBefore,
+			piecesAfterSwap,
+			nextThreshold,
+			crossesThreshold,
+			...(stepPath ? { stepRanking: true as const } : {}),
+		};
 
-    const slotIndex = candidateSlotIndex.get(item.itemId);
+		const slotIndex = candidateSlotIndex.get(item.itemId);
 
-    // singleBreaks: worn bonuses this one piece breaks by itself. Inside
-    // deltaDps already; dps is the measured B when available.
-    if (slotIndex !== undefined) {
-      const single = brokenSetBonuses(
-        equipment,
-        [{ itemId: item.itemId, slotIndex }],
-        setId,
-        counts
-      );
-      if (single.length > 0) {
-        setContext.singleBreaks = single.map((brk) => {
-          const dps = dpsForBreak(brk);
-          return {
-            setId: brk.setId,
-            setName: brk.setName,
-            threshold: brk.threshold,
-            ...(dps !== undefined ? { dps } : {}),
-          };
-        });
-      }
-    }
+		// singleBreaks: worn bonuses this one piece breaks by itself. Inside
+		// deltaDps already; dps is the measured B when available.
+		if (slotIndex !== undefined) {
+			const single = brokenSetBonuses(equipment, [{ itemId: item.itemId, slotIndex }], setId, counts);
+			if (single.length > 0) {
+				setContext.singleBreaks = single.map(brk => {
+					const dps = dpsForBreak(brk);
+					return {
+						setId: brk.setId,
+						setName: brk.setName,
+						threshold: brk.threshold,
+						...(dps !== undefined ? { dps } : {}),
+					};
+				});
+			}
+		}
 
-    // futureBonuses: every implemented threshold above the post-swap count, its
-    // corrected net value. dps absent when the correction could not be measured.
-    // Only for a swap that adds a set piece: an owned row's swap changes nothing,
-    // so crediting it a future bonus would rank "keep what you wear" on value
-    // the swap cannot bring.
-    const advancesPieceCount = piecesAfterSwap > piecesWornBefore;
-    // Flag path: every entry above the swap's count that has a
-    // package or is below the gate, with no list. A below-gate future is
-    // never a stop, but it is shown so the row can say the count was tried.
-    const T = stepPath
-      ? bonusesForSet
-          .filter(
-            (b) =>
-              advancesPieceCount &&
-              b.threshold > piecesAfterSwap &&
-              (b.packageItemIds.length > 0 || b.belowGate === true)
-          )
-          .map((b) => b.threshold)
-          .sort((a, b) => a - b)
-      : [...SET_THRESHOLDS].filter(
-          (t) =>
-            advancesPieceCount &&
-            t > piecesAfterSwap &&
-            isBonusImplemented(setId, t)
-        );
-    const singleKeys = new Set((setContext.singleBreaks ?? []).map(bonusKey));
-    const withDps = (brk: BrokenSetBonus) => {
-      const dps = dpsForBreak(brk);
-      return {
-        setId: brk.setId,
-        setName: brk.setName,
-        threshold: brk.threshold,
-        ...(dps !== undefined ? { dps } : {}),
-      };
-    };
-    // A path piece's own stats: its single from the individual
-    // deltas, read here before replication rewrites the top rows'
-    // `deltaDps`, so a row inside a measured package sums to that package's
-    // delta. The worn bonuses it breaks alone are added back because the path
-    // charges each break once; the 2pc it crosses alone at worn 1 is taken
-    // out because the row's own delta already holds it. Undefined when any
-    // input was unmeasured.
-    const ownStats = (p: PackagePiece): number | undefined => {
-      const single = individualDeltasByItemId.get(p.itemId)?.deltaDps;
-      if (single === undefined) return undefined;
-      let own = single;
-      for (const brk of brokenSetBonuses(equipment, [p], setId, counts)) {
-        const dps = dpsForBreak(brk);
-        if (dps === undefined) return undefined;
-        own += dps;
-      }
-      const pieceAfterSwap = rankedById.get(p.itemId)?.owned
-        ? piecesWornBefore
-        : piecesWornBefore + 1;
-      if (
-        thresholdBeforeSwap !== null &&
-        pieceAfterSwap >= thresholdBeforeSwap
-      ) {
-        const crossed = bonusesForSet.find(
-          (b) => b.selfConfound?.threshold === thresholdBeforeSwap
-        )?.selfConfound?.dps;
-        if (crossed === undefined) return undefined;
-        own -= crossed;
-      }
-      return own;
-    };
-    const futureBonuses = T.map((t) => {
-      const bonus = bonusesForSet.find((b) => b.threshold === t);
-      const net = bonus?.bonusDpsNet;
-      // No path through a below-gate package: it was never simmed.
-      const path =
-        bonus &&
-        bonus.unmeasured === undefined &&
-        !bonus.belowGate &&
-        bonus.packageItemIds.length > 0 &&
-        slotIndex !== undefined
-          ? pathToThreshold(
-              item.itemId,
-              slotIndex,
-              bonus,
-              candidateSlotIndex,
-              individualDeltasByItemId
-            )
-          : undefined;
-      // The worn bonuses this future's own path breaks beyond the single's
-      // own break. Keys a lower future already lists stay here
-      // too; the view charges each key once.
-      const pathBreaks = path
-        ? brokenSetBonuses(equipment, path, setId, counts).filter(
-            (brk) => !singleKeys.has(bonusKey(brk))
-          )
-        : [];
-      // The path's other members. Pieces a lower future already
-      // lists stay here too; the view counts each piece once.
-      const pieces = path
-        ?.filter((p) => p.itemId !== item.itemId)
-        .map((p) => {
-          const dps = ownStats(p);
-          return {
-            itemId: p.itemId,
-            name: rankedById.get(p.itemId)?.name ?? String(p.itemId),
-            ...(dps !== undefined ? { dps } : {}),
-          };
-        });
-      // Pieces the player still needs from their current worn count to
-      // activate this threshold, counting this candidate as one of them (at
-      // worn 1 the 4pc needs 3 more).
-      return {
-        threshold: t,
-        piecesNeeded: t - piecesWornBefore,
-        ...(net !== undefined ? { dps: net } : {}),
-        ...(bonus?.sameGearDps !== undefined && bonus.sameGearSe !== undefined
-          ? { sameGearDps: bonus.sameGearDps, sameGearSe: bonus.sameGearSe }
-          : {}),
-        ...(bonus?.belowGate ? { belowGate: true as const } : {}),
-        ...(pathBreaks.length > 0 ? { breaks: pathBreaks.map(withDps) } : {}),
-        ...(pieces ? { pieces } : {}),
-      };
-    });
-    if (futureBonuses.length > 0) setContext.futureBonuses = futureBonuses;
+		// futureBonuses: every implemented threshold above the post-swap count, its
+		// corrected net value. dps absent when the correction could not be measured.
+		// Only for a swap that adds a set piece: an owned row's swap changes nothing,
+		// so crediting it a future bonus would rank "keep what you wear" on value
+		// the swap cannot bring.
+		const advancesPieceCount = piecesAfterSwap > piecesWornBefore;
+		// Flag path: every entry above the swap's count that has a
+		// package or is below the gate, with no list. A below-gate future is
+		// never a stop, but it is shown so the row can say the count was tried.
+		const T = stepPath
+			? bonusesForSet
+					.filter(b => advancesPieceCount && b.threshold > piecesAfterSwap && (b.packageItemIds.length > 0 || b.belowGate === true))
+					.map(b => b.threshold)
+					.sort((a, b) => a - b)
+			: [...SET_THRESHOLDS].filter(t => advancesPieceCount && t > piecesAfterSwap && isBonusImplemented(setId, t));
+		const singleKeys = new Set((setContext.singleBreaks ?? []).map(bonusKey));
+		const withDps = (brk: BrokenSetBonus) => {
+			const dps = dpsForBreak(brk);
+			return {
+				setId: brk.setId,
+				setName: brk.setName,
+				threshold: brk.threshold,
+				...(dps !== undefined ? { dps } : {}),
+			};
+		};
+		// A path piece's own stats: its single from the individual
+		// deltas, read here before replication rewrites the top rows'
+		// `deltaDps`, so a row inside a measured package sums to that package's
+		// delta. The worn bonuses it breaks alone are added back because the path
+		// charges each break once; the 2pc it crosses alone at worn 1 is taken
+		// out because the row's own delta already holds it. Undefined when any
+		// input was unmeasured.
+		const ownStats = (p: PackagePiece): number | undefined => {
+			const single = individualDeltasByItemId.get(p.itemId)?.deltaDps;
+			if (single === undefined) return undefined;
+			let own = single;
+			for (const brk of brokenSetBonuses(equipment, [p], setId, counts)) {
+				const dps = dpsForBreak(brk);
+				if (dps === undefined) return undefined;
+				own += dps;
+			}
+			const pieceAfterSwap = rankedById.get(p.itemId)?.owned ? piecesWornBefore : piecesWornBefore + 1;
+			if (thresholdBeforeSwap !== null && pieceAfterSwap >= thresholdBeforeSwap) {
+				const crossed = bonusesForSet.find(b => b.selfConfound?.threshold === thresholdBeforeSwap)?.selfConfound?.dps;
+				if (crossed === undefined) return undefined;
+				own -= crossed;
+			}
+			return own;
+		};
+		const futureBonuses = T.map(t => {
+			const bonus = bonusesForSet.find(b => b.threshold === t);
+			const net = bonus?.bonusDpsNet;
+			// No path through a below-gate package: it was never simmed.
+			const path =
+				bonus && bonus.unmeasured === undefined && !bonus.belowGate && bonus.packageItemIds.length > 0 && slotIndex !== undefined
+					? pathToThreshold(item.itemId, slotIndex, bonus, candidateSlotIndex, individualDeltasByItemId)
+					: undefined;
+			// The worn bonuses this future's own path breaks beyond the single's
+			// own break. Keys a lower future already lists stay here
+			// too; the view charges each key once.
+			const pathBreaks = path ? brokenSetBonuses(equipment, path, setId, counts).filter(brk => !singleKeys.has(bonusKey(brk))) : [];
+			// The path's other members. Pieces a lower future already
+			// lists stay here too; the view counts each piece once.
+			const pieces = path
+				?.filter(p => p.itemId !== item.itemId)
+				.map(p => {
+					const dps = ownStats(p);
+					return {
+						itemId: p.itemId,
+						name: rankedById.get(p.itemId)?.name ?? String(p.itemId),
+						...(dps !== undefined ? { dps } : {}),
+					};
+				});
+			// Pieces the player still needs from their current worn count to
+			// activate this threshold, counting this candidate as one of them (at
+			// worn 1 the 4pc needs 3 more).
+			return {
+				threshold: t,
+				piecesNeeded: t - piecesWornBefore,
+				...(net !== undefined ? { dps: net } : {}),
+				...(bonus?.sameGearDps !== undefined && bonus.sameGearSe !== undefined ? { sameGearDps: bonus.sameGearDps, sameGearSe: bonus.sameGearSe } : {}),
+				...(bonus?.belowGate ? { belowGate: true as const } : {}),
+				...(pathBreaks.length > 0 ? { breaks: pathBreaks.map(withDps) } : {}),
+				...(pieces ? { pieces } : {}),
+			};
+		});
+		if (futureBonuses.length > 0) setContext.futureBonuses = futureBonuses;
 
-    // commitBreaks: the worn bonuses broken by completing the top implemented
-    // threshold package with this item in its slot, beyond the row's own single
-    // break. commitPackageDeltaDps: that package's end-state value (disclosure).
-    const topPackage = topMeasuredPackage(bonusesForSet);
-    if (topPackage && slotIndex !== undefined) {
-      const commitAll = substitutedPackageBreaks(
-        item.itemId,
-        setId,
-        slotIndex,
-        topPackage,
-        candidateSlotIndex,
-        equipment,
-        counts
-      );
-      const commitOnly = commitAll.filter(
-        (brk) => !singleKeys.has(bonusKey(brk))
-      );
-      if (commitOnly.length > 0) {
-        setContext.commitBreaks = commitOnly.map(withDps);
-      }
-      setContext.commitPackageDeltaDps = topPackage.packageDeltaDps;
-    }
+		// commitBreaks: the worn bonuses broken by completing the top implemented
+		// threshold package with this item in its slot, beyond the row's own single
+		// break. commitPackageDeltaDps: that package's end-state value (disclosure).
+		const topPackage = topMeasuredPackage(bonusesForSet);
+		if (topPackage && slotIndex !== undefined) {
+			const commitAll = substitutedPackageBreaks(item.itemId, setId, slotIndex, topPackage, candidateSlotIndex, equipment, counts);
+			const commitOnly = commitAll.filter(brk => !singleKeys.has(bonusKey(brk)));
+			if (commitOnly.length > 0) {
+				setContext.commitBreaks = commitOnly.map(withDps);
+			}
+			setContext.commitPackageDeltaDps = topPackage.packageDeltaDps;
+		}
 
-    const pkgs = memberPackages(item.itemId, bonusesForSet);
-    if (pkgs) setContext.packages = pkgs;
-    item.setContext = setContext;
-  }
+		const pkgs = memberPackages(item.itemId, bonusesForSet);
+		if (pkgs) setContext.packages = pkgs;
+		item.setContext = setContext;
+	}
 }
 
-export function resolveFight(
-  fights: readonly FightSummary[],
-  requested?: FightRef
-): ResolvedFight | undefined {
-  if (requested) {
-    const match = fights.find(
-      (f) =>
-        f.reportCode === requested.reportCode && f.fightId === requested.fightId
-    );
-    return match
-      ? summaryToResolved(match)
-      : {
-          ...requested,
-          route: "report-events",
-        };
-  }
-  const ranked = fights.find((f) => f.route === "ranked");
-  const chosen = ranked ?? fights[0];
-  return chosen ? summaryToResolved(chosen) : undefined;
+export function resolveFight(fights: readonly FightSummary[], requested?: FightRef): ResolvedFight | undefined {
+	if (requested) {
+		const match = fights.find(f => f.reportCode === requested.reportCode && f.fightId === requested.fightId);
+		return match
+			? summaryToResolved(match)
+			: {
+					...requested,
+					route: 'report-events',
+				};
+	}
+	const ranked = fights.find(f => f.route === 'ranked');
+	const chosen = ranked ?? fights[0];
+	return chosen ? summaryToResolved(chosen) : undefined;
 }
 
 function summaryToResolved(f: FightSummary): ResolvedFight {
-  return {
-    reportCode: f.reportCode,
-    fightId: f.fightId,
-    ...(f.encounterName ? { encounterName: f.encounterName } : {}),
-    ...(f.killedAt ? { killedAt: f.killedAt } : {}),
-    route: f.route,
-    confidence: f.confidence,
-    ...(f.salvationUptime === undefined
-      ? {}
-      : { salvationUptime: f.salvationUptime }),
-  };
+	return {
+		reportCode: f.reportCode,
+		fightId: f.fightId,
+		...(f.encounterName ? { encounterName: f.encounterName } : {}),
+		...(f.killedAt ? { killedAt: f.killedAt } : {}),
+		route: f.route,
+		confidence: f.confidence,
+		...(f.salvationUptime === undefined ? {} : { salvationUptime: f.salvationUptime }),
+	};
 }
 
 /** Namespaced so a ranking blob cannot collide with another content-addressed value. */
 function rankingCacheKey(contentHash: string): string {
-  return `ranking:${contentHash}`;
+	return `ranking:${contentHash}`;
 }
 
-async function readCachedSim(
-  deps: Deps,
-  req: RaidSimRequest,
-  simVersion: string,
-  opts: SimRunOpts
-): Promise<SimObservation | undefined> {
-  return asInternal(() =>
-    deps.store.get<SimObservation>(simStoreKey(req, simVersion, opts))
-  );
+async function readCachedSim(deps: Deps, req: RaidSimRequest, simVersion: string, opts: SimRunOpts): Promise<SimObservation | undefined> {
+	return asInternal(() => deps.store.get<SimObservation>(simStoreKey(req, simVersion, opts)));
 }
 
-function simStoreKey(
-  req: RaidSimRequest,
-  simVersion: string,
-  opts: SimRunOpts
-): string {
-  return `sim:${simCacheKey(req, simVersion, opts)}`;
+function simStoreKey(req: RaidSimRequest, simVersion: string, opts: SimRunOpts): string {
+	return `sim:${simCacheKey(req, simVersion, opts)}`;
 }
 
-async function cacheSimResult(
-  deps: Deps,
-  req: RaidSimRequest,
-  simVersion: string,
-  opts: SimRunOpts,
-  observation: SimObservation
-): Promise<void> {
-  await asInternal(() =>
-    deps.store.put(simStoreKey(req, simVersion, opts), observation)
-  );
+async function cacheSimResult(deps: Deps, req: RaidSimRequest, simVersion: string, opts: SimRunOpts, observation: SimObservation): Promise<void> {
+	await asInternal(() => deps.store.put(simStoreKey(req, simVersion, opts), observation));
 }
 
 /**
@@ -3979,17 +3364,12 @@ async function cacheSimResult(
  * The store key holds every option (`simCacheKey`), so it never answers one
  * question with another's reading. Throws when the sim fails.
  */
-async function runSimAt(
-  deps: Deps,
-  req: RaidSimRequest,
-  simVersion: string,
-  opts: SimRunOpts
-): Promise<{ observation: SimObservation; fromStore: boolean }> {
-  const cached = await readCachedSim(deps, req, simVersion, opts);
-  if (cached) return { observation: cached, fromStore: true };
-  const observation = await deps.sim.run(req, opts);
-  await cacheSimResult(deps, req, simVersion, opts, observation);
-  return { observation, fromStore: false };
+async function runSimAt(deps: Deps, req: RaidSimRequest, simVersion: string, opts: SimRunOpts): Promise<{ observation: SimObservation; fromStore: boolean }> {
+	const cached = await readCachedSim(deps, req, simVersion, opts);
+	if (cached) return { observation: cached, fromStore: true };
+	const observation = await deps.sim.run(req, opts);
+	await cacheSimResult(deps, req, simVersion, opts, observation);
+	return { observation, fromStore: false };
 }
 
 /**
@@ -3998,11 +3378,11 @@ async function runSimAt(
  * failure, which fails the ranking.
  */
 class StopRefusedSim extends Error {
-  override readonly name = "StopRefusedSim";
+	override readonly name = 'StopRefusedSim';
 
-  constructor() {
-    super("sim not started: Stop was pressed");
-  }
+	constructor() {
+		super('sim not started: Stop was pressed');
+	}
 }
 
 /**
@@ -4011,12 +3391,12 @@ class StopRefusedSim extends Error {
  * and still fail the run on a code error around it.
  */
 class CandidateHitReadFailed extends Error {
-  override readonly name = "CandidateHitReadFailed";
+	override readonly name = 'CandidateHitReadFailed';
 
-  // `cause` as a field: the TS lib is es2021, which has no Error options.
-  constructor(readonly cause: unknown) {
-    super(cause instanceof Error ? cause.message : String(cause));
-  }
+	// `cause` as a field: the TS lib is es2021, which has no Error options.
+	constructor(readonly cause: unknown) {
+		super(cause instanceof Error ? cause.message : String(cause));
+	}
 }
 
 /**
@@ -4025,15 +3405,12 @@ class CandidateHitReadFailed extends Error {
  * internal error, and `candidateRepairGems` reports it as the candidate's
  * failed sim.
  */
-function hitPercentOf(
-  observed: PlayerStatsObservation,
-  pseudoStat: number
-): number {
-  const hitPercent = observed.pseudoStats[pseudoStat];
-  if (typeof hitPercent !== "number" || !Number.isFinite(hitPercent)) {
-    throw new Error(`hit percent read as ${String(hitPercent)}`);
-  }
-  return hitPercent;
+function hitPercentOf(observed: PlayerStatsObservation, pseudoStat: number): number {
+	const hitPercent = observed.pseudoStats[pseudoStat];
+	if (typeof hitPercent !== 'number' || !Number.isFinite(hitPercent)) {
+		throw new Error(`hit percent read as ${String(hitPercent)}`);
+	}
+	return hitPercent;
 }
 
 /**
@@ -4044,17 +3421,17 @@ function hitPercentOf(
  * `hitPercentOf`'s error fails the run as an internal error.
  */
 async function hitPercentOrSimFailed(
-  read: Promise<PlayerStatsObservation>,
-  pseudoStat: number
+	read: Promise<PlayerStatsObservation>,
+	pseudoStat: number,
 ): Promise<{ observed: PlayerStatsObservation; hitPercent: number }> {
-  let observed: PlayerStatsObservation;
-  try {
-    observed = await read;
-  } catch (err) {
-    if (err instanceof StopRefusedSim) throw err;
-    throw new RankError("sim-failed", errorText(err));
-  }
-  return { observed, hitPercent: hitPercentOf(observed, pseudoStat) };
+	let observed: PlayerStatsObservation;
+	try {
+		observed = await read;
+	} catch (err) {
+		if (err instanceof StopRefusedSim) throw err;
+		throw new RankError('sim-failed', errorText(err));
+	}
+	return { observed, hitPercent: hitPercentOf(observed, pseudoStat) };
 }
 
 /**
@@ -4067,34 +3444,30 @@ async function hitPercentOrSimFailed(
  * that worker, because least-busy routing sends that worker a sim once
  * every healthy worker is busy.
  */
-async function readStats(
-  sim: Deps["sim"],
-  req: RaidSimRequest,
-  signal: AbortSignal | undefined
-): Promise<PlayerStatsObservation> {
-  if (signal?.aborted) throw new StopRefusedSim();
-  const started = performance.now();
-  if (!signal) {
-    const observed = await sim.computeStats(req);
-    logStatsRead(started);
-    return observed;
-  }
-  let onAbort: (() => void) | undefined;
-  const stopped = new Promise<never>((_, reject) => {
-    onAbort = () => reject(new StopRefusedSim());
-    signal.addEventListener("abort", onAbort, { once: true });
-  });
-  try {
-    const read = sim.computeStats(req);
-    // After Stop wins the race nobody awaits the read, so its late failure
-    // must not become an unhandled rejection.
-    read.catch(() => {});
-    const observed = await Promise.race([read, stopped]);
-    logStatsRead(started);
-    return observed;
-  } finally {
-    signal.removeEventListener("abort", onAbort!);
-  }
+async function readStats(sim: Deps['sim'], req: RaidSimRequest, signal: AbortSignal | undefined): Promise<PlayerStatsObservation> {
+	if (signal?.aborted) throw new StopRefusedSim();
+	const started = performance.now();
+	if (!signal) {
+		const observed = await sim.computeStats(req);
+		logStatsRead(started);
+		return observed;
+	}
+	let onAbort: (() => void) | undefined;
+	const stopped = new Promise<never>((_, reject) => {
+		onAbort = () => reject(new StopRefusedSim());
+		signal.addEventListener('abort', onAbort, { once: true });
+	});
+	try {
+		const read = sim.computeStats(req);
+		// After Stop wins the race nobody awaits the read, so its late failure
+		// must not become an unhandled rejection.
+		read.catch(() => {});
+		const observed = await Promise.race([read, stopped]);
+		logStatsRead(started);
+		return observed;
+	} finally {
+		signal.removeEventListener('abort', onAbort!);
+	}
 }
 
 /**
@@ -4102,9 +3475,7 @@ async function readStats(
  * reads on either sim transport.
  */
 function logStatsRead(started: number): void {
-  console.debug(
-    `[upgrades] stats read ${Math.round(performance.now() - started)} ms`
-  );
+	console.debug(`[upgrades] stats read ${Math.round(performance.now() - started)} ms`);
 }
 
 /**
@@ -4114,30 +3485,30 @@ function logStatsRead(started: number): void {
  * own Stop check.
  */
 function stopGuardedDeps(deps: Deps): Deps {
-  const { signal, sim } = deps;
-  if (!signal) return deps;
-  return {
-    ...deps,
-    sim: {
-      version: () => sim.version(),
-      run: async (req, opts) => {
-        if (signal.aborted) throw new StopRefusedSim();
-        return sim.run(req, opts);
-      },
-      computeStats: async (req) => {
-        if (signal.aborted) throw new StopRefusedSim();
-        return sim.computeStats(req);
-      },
-      ...(sim.activeSetBonuses
-        ? {
-            activeSetBonuses: async (req: RaidSimRequest) => {
-              if (signal.aborted) throw new StopRefusedSim();
-              return sim.activeSetBonuses!(req);
-            },
-          }
-        : {}),
-    },
-  };
+	const { signal, sim } = deps;
+	if (!signal) return deps;
+	return {
+		...deps,
+		sim: {
+			version: () => sim.version(),
+			run: async (req, opts) => {
+				if (signal.aborted) throw new StopRefusedSim();
+				return sim.run(req, opts);
+			},
+			computeStats: async req => {
+				if (signal.aborted) throw new StopRefusedSim();
+				return sim.computeStats(req);
+			},
+			...(sim.activeSetBonuses
+				? {
+						activeSetBonuses: async (req: RaidSimRequest) => {
+							if (signal.aborted) throw new StopRefusedSim();
+							return sim.activeSetBonuses!(req);
+						},
+					}
+				: {}),
+		},
+	};
 }
 
 /**
@@ -4158,125 +3529,110 @@ function stopGuardedDeps(deps: Deps): Deps {
  * the bonuses gives an empty map: the gain side then tries every count.
  */
 async function setBonusCountsInReach(
-  sim: SimRunner,
-  setIds: ReadonlySet<number>,
-  largestPackage: (setId: number) => PackagePiece[] | undefined,
-  equipment: readonly SimItemSpec[],
-  gems: GemContext,
-  composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
-  onNotRead: (setId: number, reason: SkipReason) => void
+	sim: SimRunner,
+	setIds: ReadonlySet<number>,
+	largestPackage: (setId: number) => PackagePiece[] | undefined,
+	equipment: readonly SimItemSpec[],
+	gems: GemContext,
+	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
+	onNotRead: (setId: number, reason: SkipReason) => void,
 ): Promise<Map<number, ReadonlySet<number>>> {
-  const out = new Map<number, ReadonlySet<number>>();
-  if (!sim.activeSetBonuses) return out;
-  const read = (eq: readonly SimItemSpec[]) =>
-    sim.activeSetBonuses!(composeFor(eq));
-  let wornNames: ReadonlySet<string> | undefined;
-  for (const setId of [...setIds].sort((a, b) => a - b)) {
-    const top = largestPackage(setId);
-    if (!top) continue;
-    let build: ChainBuild;
-    try {
-      build = chainSwapsWithRepairs(equipment, top, gems);
-    } catch (err) {
-      if (!(err instanceof MetaRepairError)) throw err;
-      console.warn(
-        `[upgrades] set ${setId}: its bonus counts were not read, the package's gem repair failed`,
-        err
-      );
-      onNotRead(setId, SET_BONUS_SKIP_REASONS.metaOff(err.message));
-      out.set(setId, new Set());
-      continue;
-    }
-    try {
-      wornNames ??= new Set(await read(equipment));
-      const counts = new Set<number>();
-      for (const name of await read(build.equipment)) {
-        if (wornNames.has(name)) continue;
-        const match = / \((\d+)pc\)$/.exec(name);
-        if (match) counts.add(Number(match[1]));
-      }
-      out.set(setId, counts);
-    } catch (err) {
-      // A read the Stop guard refused is no failure to report.
-      if (!(err instanceof StopRefusedSim)) {
-        console.warn(
-          `[upgrades] set ${setId}: its bonus counts were not read`,
-          err
-        );
-        onNotRead(setId, SET_BONUS_SKIP_REASONS.bonusListFailed(errorText(err)));
-      }
-      out.set(setId, new Set());
-    }
-  }
-  return out;
+	const out = new Map<number, ReadonlySet<number>>();
+	if (!sim.activeSetBonuses) return out;
+	const read = (eq: readonly SimItemSpec[]) => sim.activeSetBonuses!(composeFor(eq));
+	let wornNames: ReadonlySet<string> | undefined;
+	for (const setId of [...setIds].sort((a, b) => a - b)) {
+		const top = largestPackage(setId);
+		if (!top) continue;
+		let build: ChainBuild;
+		try {
+			build = chainSwapsWithRepairs(equipment, top, gems);
+		} catch (err) {
+			if (!(err instanceof MetaRepairError)) throw err;
+			console.warn(`[upgrades] set ${setId}: its bonus counts were not read, the package's gem repair failed`, err);
+			onNotRead(setId, SET_BONUS_SKIP_REASONS.metaOff(err.message));
+			out.set(setId, new Set());
+			continue;
+		}
+		try {
+			wornNames ??= new Set(await read(equipment));
+			const counts = new Set<number>();
+			for (const name of await read(build.equipment)) {
+				if (wornNames.has(name)) continue;
+				const match = / \((\d+)pc\)$/.exec(name);
+				if (match) counts.add(Number(match[1]));
+			}
+			out.set(setId, counts);
+		} catch (err) {
+			// A read the Stop guard refused is no failure to report.
+			if (!(err instanceof StopRefusedSim)) {
+				console.warn(`[upgrades] set ${setId}: its bonus counts were not read`, err);
+				onNotRead(setId, SET_BONUS_SKIP_REASONS.bonusListFailed(errorText(err)));
+			}
+			out.set(setId, new Set());
+		}
+	}
+	return out;
 }
 
 /** What the set phase gives when it does not run, or when Stop drops it. */
 function emptySetPhase(): Awaited<ReturnType<typeof buildSetBonuses>> {
-  return {
-    bonuses: [],
-    brokenSetValues: [],
-    wornSetLadder: [],
-    crossingGates: [],
-    candidateSlotIndex: new Map(),
-    markedSetIds: [],
-  };
+	return {
+		bonuses: [],
+		brokenSetValues: [],
+		wornSetLadder: [],
+		crossingGates: [],
+		candidateSlotIndex: new Map(),
+		markedSetIds: [],
+	};
 }
 
 async function asInternal<T>(op: () => Promise<T>): Promise<T> {
-  try {
-    return await op();
-  } catch (err) {
-    throw new RankError(
-      "internal",
-      err instanceof Error ? err.message : String(err)
-    );
-  }
+	try {
+		return await op();
+	} catch (err) {
+		throw new RankError('internal', err instanceof Error ? err.message : String(err));
+	}
 }
 
 function raceFromSkeleton(skeleton: RaidSimRequest): Race {
-  const raw = (
-    skeleton as {
-      raid?: { parties?: Array<{ players?: Array<{ race?: string }> }> };
-    }
-  ).raid?.parties?.[0]?.players?.[0]?.race;
-  if (raw && isRace(raw)) return raw;
-  return "RaceHuman";
+	const raw = (
+		skeleton as {
+			raid?: { parties?: Array<{ players?: Array<{ race?: string }> }> };
+		}
+	).raid?.parties?.[0]?.players?.[0]?.race;
+	if (raw && isRace(raw)) return raw;
+	return 'RaceHuman';
 }
 
 function talentsStringFromRequest(request: RaidSimRequest): string | undefined {
-  const raw = (
-    request as {
-      raid?: {
-        parties?: Array<{ players?: Array<{ talentsString?: string }> }>;
-      };
-    }
-  ).raid?.parties?.[0]?.players?.[0]?.talentsString;
-  return typeof raw === "string" ? raw : undefined;
+	const raw = (
+		request as {
+			raid?: {
+				parties?: Array<{ players?: Array<{ talentsString?: string }> }>;
+			};
+		}
+	).raid?.parties?.[0]?.players?.[0]?.talentsString;
+	return typeof raw === 'string' ? raw : undefined;
 }
 
 function isRace(value: string): value is Race {
-  return (
-    value === "RaceHuman" ||
-    value === "RaceDwarf" ||
-    value === "RaceNightElf" ||
-    value === "RaceGnome" ||
-    value === "RaceDraenei" ||
-    value === "RaceOrc" ||
-    value === "RaceUndead" ||
-    value === "RaceTauren" ||
-    value === "RaceTroll" ||
-    value === "RaceBloodElf"
-  );
+	return (
+		value === 'RaceHuman' ||
+		value === 'RaceDwarf' ||
+		value === 'RaceNightElf' ||
+		value === 'RaceGnome' ||
+		value === 'RaceDraenei' ||
+		value === 'RaceOrc' ||
+		value === 'RaceUndead' ||
+		value === 'RaceTauren' ||
+		value === 'RaceTroll' ||
+		value === 'RaceBloodElf'
+	);
 }
 
-export function equipmentForCandidateSwap(
-  equipment: readonly SimItemSpec[],
-  slotIndex: number,
-  itemId: number,
-  gems: GemContext
-): SimItemSpec[] {
-  return candidateSwapWithRepairs(equipment, slotIndex, itemId, gems).equipment;
+export function equipmentForCandidateSwap(equipment: readonly SimItemSpec[], slotIndex: number, itemId: number, gems: GemContext): SimItemSpec[] {
+	return candidateSwapWithRepairs(equipment, slotIndex, itemId, gems).equipment;
 }
 
 /**
@@ -4285,73 +3641,62 @@ export function equipmentForCandidateSwap(
  * repair's input.
  */
 export function candidateSwapPreRepair(
-  equipment: readonly SimItemSpec[],
-  slotIndex: number,
-  itemId: number,
-  gems: GemContext
+	equipment: readonly SimItemSpec[],
+	slotIndex: number,
+	itemId: number,
+	gems: GemContext,
 ): {
-  swapped: SimItemSpec[];
-  socketed: SocketedItem[];
-  removed: readonly { slotIndex: number; itemId: number }[];
+	swapped: SimItemSpec[];
+	socketed: SocketedItem[];
+	removed: readonly { slotIndex: number; itemId: number }[];
 } {
-  // Before the swap, and `swapItemAt` takes the cleared array: `swapItemAt`
-  // computes `fillOptsForSwap` from whatever array it is handed, so clearing
-  // afterwards would leave a unique gem on the removed off-hand item still
-  // counted in `usedUnique` and still blocking the candidate's own socket.
-  const { equipment: cleared, removed } = clearOffHandForTwoHander(
-    equipment,
-    slotIndex,
-    itemId
-  );
-  const swapped = swapItemAt(cleared, slotIndex, itemId, gems);
-  const socketed: SocketedItem[] = swapped.map((spec) => ({
-    itemId: spec.id ?? 0,
-    gems: [...spec.gems],
-  }));
-  return { swapped, socketed, removed };
+	// Before the swap, and `swapItemAt` takes the cleared array: `swapItemAt`
+	// computes `fillOptsForSwap` from whatever array it is handed, so clearing
+	// afterwards would leave a unique gem on the removed off-hand item still
+	// counted in `usedUnique` and still blocking the candidate's own socket.
+	const { equipment: cleared, removed } = clearOffHandForTwoHander(equipment, slotIndex, itemId);
+	const swapped = swapItemAt(cleared, slotIndex, itemId, gems);
+	const socketed: SocketedItem[] = swapped.map(spec => ({
+		itemId: spec.id ?? 0,
+		gems: [...spec.gems],
+	}));
+	return { swapped, socketed, removed };
 }
 
 export function candidateSwapWithRepairs(
-  equipment: readonly SimItemSpec[],
-  slotIndex: number,
-  itemId: number,
-  gems: GemContext
+	equipment: readonly SimItemSpec[],
+	slotIndex: number,
+	itemId: number,
+	gems: GemContext,
 ): {
-  equipment: SimItemSpec[];
-  swaps: readonly MetaRepairSwap[];
-  repaired: boolean;
-  removed: readonly { slotIndex: number; itemId: number }[];
+	equipment: SimItemSpec[];
+	swaps: readonly MetaRepairSwap[];
+	repaired: boolean;
+	removed: readonly { slotIndex: number; itemId: number }[];
 } {
-  const { swapped, socketed, removed } = candidateSwapPreRepair(
-    equipment,
-    slotIndex,
-    itemId,
-    gems
-  );
-  const cap = gems.repairHitCap;
-  const minimized = repairAndMinimize({
-    items: socketed,
-    epWeights: gems.weights,
-    palette: gems.fillPalette,
-    ...(cap
-      ? {
-          hitCap: {
-            stat: cap.stat,
-            remaining:
-              cap.baselineRemaining -
-              (gearHitRating(swapped, cap.stat) - cap.baselineGearHit),
-            ...(cap.groups ? { groups: cap.groups } : {}),
-          },
-        }
-      : {}),
-  });
-  return {
-    equipment: applyRepairedGems(swapped, minimized.items),
-    swaps: minimized.swaps.filter((s) => s.itemIndex !== slotIndex),
-    // The swapped slot included, which `swaps` filters out.
-    repaired: minimized.swaps.length > 0,
-    removed,
-  };
+	const { swapped, socketed, removed } = candidateSwapPreRepair(equipment, slotIndex, itemId, gems);
+	const cap = gems.repairHitCap;
+	const minimized = repairAndMinimize({
+		items: socketed,
+		epWeights: gems.weights,
+		palette: gems.fillPalette,
+		...(cap
+			? {
+					hitCap: {
+						stat: cap.stat,
+						remaining: cap.baselineRemaining - (gearHitRating(swapped, cap.stat) - cap.baselineGearHit),
+						...(cap.groups ? { groups: cap.groups } : {}),
+					},
+				}
+			: {}),
+	});
+	return {
+		equipment: applyRepairedGems(swapped, minimized.items),
+		swaps: minimized.swaps.filter(s => s.itemIndex !== slotIndex),
+		// The swapped slot included, which `swaps` filters out.
+		repaired: minimized.swaps.length > 0,
+		removed,
+	};
 }
 
 /**
@@ -4361,21 +3706,21 @@ export function candidateSwapWithRepairs(
  * call's repair swaps in call order.
  */
 type ChainBuild = {
-  equipment: SimItemSpec[];
-  repaired: boolean;
-  swaps: MetaRepairSwap[];
+	equipment: SimItemSpec[];
+	repaired: boolean;
+	swaps: MetaRepairSwap[];
 };
 
 /** A version's copies; `{}` is the build's plain request. */
 type VersionCopies = {
-  setKept?: readonly number[];
-  setLess?: readonly number[];
+	setKept?: readonly number[];
+	setLess?: readonly number[];
 };
 
 /** A version's request and the repair swaps of the build it wears. */
 type VersionEntry = {
-  request: RaidSimRequest;
-  swaps: readonly MetaRepairSwap[];
+	request: RaidSimRequest;
+	swaps: readonly MetaRepairSwap[];
 };
 
 /**
@@ -4388,18 +3733,11 @@ type RepairFailure = { repairError: MetaRepairError };
 
 type VersionResult = VersionEntry | BuildFailure | RepairFailure;
 
-const isRepairFailure = (
-  entry: VersionResult | undefined
-): entry is RepairFailure => entry !== undefined && "repairError" in entry;
+const isRepairFailure = (entry: VersionResult | undefined): entry is RepairFailure => entry !== undefined && 'repairError' in entry;
 
 /** The first version's failed repair, or every entry when none failed. */
-const repairErrorOr = (
-  entries: readonly VersionResult[]
-): MetaRepairError | Array<VersionEntry | BuildFailure> =>
-  entries.find(isRepairFailure)?.repairError ??
-  entries.filter(
-    (entry): entry is VersionEntry | BuildFailure => !isRepairFailure(entry)
-  );
+const repairErrorOr = (entries: readonly VersionResult[]): MetaRepairError | Array<VersionEntry | BuildFailure> =>
+	entries.find(isRepairFailure)?.repairError ?? entries.filter((entry): entry is VersionEntry | BuildFailure => !isRepairFailure(entry));
 
 /**
  * Each version of one set-phase build, a pair's versions in one call
@@ -4409,17 +3747,10 @@ const repairErrorOr = (
  * be composed, and, unless Stop ends a later read in the same
  * call, a `RepairFailure` when rebuilding it fails its gem repair.
  */
-type VersionGears = (
-  rebuild: (gems: GemContext) => ChainBuild,
-  base: ChainBuild,
-  copiesList: readonly VersionCopies[]
-) => Promise<VersionResult[]>;
+type VersionGears = (rebuild: (gems: GemContext) => ChainBuild, base: ChainBuild, copiesList: readonly VersionCopies[]) => Promise<VersionResult[]>;
 
 /** A version's request, or why it could not be built. */
-const requestOf = (
-  entry: VersionEntry | BuildFailure
-): RaidSimRequest | BuildFailure =>
-  isBuildFailure(entry) ? entry : entry.request;
+const requestOf = (entry: VersionEntry | BuildFailure): RaidSimRequest | BuildFailure => (isBuildFailure(entry) ? entry : entry.request);
 
 /**
  * Missed hit below this many rating keeps a version on the run's budget. On
@@ -4429,26 +3760,17 @@ const requestOf = (
  */
 const MISSED_HIT_TOLERANCE = 0.5;
 
-function chainSwapsWithRepairs(
-  equipment: readonly SimItemSpec[],
-  pieces: readonly { slotIndex: number; itemId: number }[],
-  gems: GemContext
-): ChainBuild {
-  let gear: SimItemSpec[] = [...equipment];
-  let repaired = false;
-  const swaps: MetaRepairSwap[] = [];
-  for (const piece of pieces) {
-    const outcome = candidateSwapWithRepairs(
-      gear,
-      piece.slotIndex,
-      piece.itemId,
-      gems
-    );
-    gear = outcome.equipment;
-    repaired ||= outcome.repaired;
-    swaps.push(...outcome.swaps);
-  }
-  return { equipment: gear, repaired, swaps };
+function chainSwapsWithRepairs(equipment: readonly SimItemSpec[], pieces: readonly { slotIndex: number; itemId: number }[], gems: GemContext): ChainBuild {
+	let gear: SimItemSpec[] = [...equipment];
+	let repaired = false;
+	const swaps: MetaRepairSwap[] = [];
+	for (const piece of pieces) {
+		const outcome = candidateSwapWithRepairs(gear, piece.slotIndex, piece.itemId, gems);
+		gear = outcome.equipment;
+		repaired ||= outcome.repaired;
+		swaps.push(...outcome.swaps);
+	}
+	return { equipment: gear, repaired, swaps };
 }
 
 /**
@@ -4468,65 +3790,58 @@ function chainSwapsWithRepairs(
  * Returns the input array untouched, with no removals, in every other case.
  */
 function clearOffHandForTwoHander(
-  equipment: readonly SimItemSpec[],
-  slotIndex: number,
-  itemId: number
+	equipment: readonly SimItemSpec[],
+	slotIndex: number,
+	itemId: number,
 ): {
-  equipment: readonly SimItemSpec[];
-  removed: readonly { slotIndex: number; itemId: number }[];
+	equipment: readonly SimItemSpec[];
+	removed: readonly { slotIndex: number; itemId: number }[];
 } {
-  if (slotIndex !== SIM_ORDER.indexOf("mainhand")) {
-    return { equipment, removed: [] };
-  }
-  if (getItem(itemId)?.handType !== HandType.HandTypeTwoHand) {
-    return { equipment, removed: [] };
-  }
-  const offHandIndex = SIM_ORDER.indexOf("offhand");
-  const wornOffHandId = equipment[offHandIndex]?.id;
-  if (!wornOffHandId) return { equipment, removed: [] };
+	if (slotIndex !== SIM_ORDER.indexOf('mainhand')) {
+		return { equipment, removed: [] };
+	}
+	if (getItem(itemId)?.handType !== HandType.HandTypeTwoHand) {
+		return { equipment, removed: [] };
+	}
+	const offHandIndex = SIM_ORDER.indexOf('offhand');
+	const wornOffHandId = equipment[offHandIndex]?.id;
+	if (!wornOffHandId) return { equipment, removed: [] };
 
-  const cleared = equipment.map((spec, i) =>
-    // The bare-slot value `equipmentFromLoggedGear` writes for an empty slot,
-    // so a cleared off hand looks like one the player never filled.
-    i === offHandIndex ? { gems: [] } : spec
-  );
-  return {
-    equipment: cleared,
-    removed: [{ slotIndex: offHandIndex, itemId: wornOffHandId }],
-  };
+	const cleared = equipment.map((spec, i) =>
+		// The bare-slot value `equipmentFromLoggedGear` writes for an empty slot,
+		// so a cleared off hand looks like one the player never filled.
+		i === offHandIndex ? { gems: [] } : spec,
+	);
+	return {
+		equipment: cleared,
+		removed: [{ slotIndex: offHandIndex, itemId: wornOffHandId }],
+	};
 }
 
-function swapItemAt(
-  equipment: readonly SimItemSpec[],
-  slotIndex: number,
-  itemId: number,
-  gemCtx: GemContext
-): SimItemSpec[] {
-  return equipment.map((spec, i) => {
-    if (i !== slotIndex) return spec;
-    const sameItem = spec.id === itemId;
-    const gems = sameItem
-      ? [...(spec.gems ?? [])]
-      : fillEmptyCandidateGems(
-          itemId,
-          migrateGemsToItem(spec.gems ?? [], spec.id ?? 0, itemId),
-          gemCtx.fillPalette,
-          gemCtx.weightRecord,
-          fillOptsForSwap(equipment, slotIndex, gemCtx.spec)
-        );
-    const out: SimItemSpec = { id: itemId, gems };
-    if (spec.enchant && enchantAppliesToItem(spec.enchant, itemId)) {
-      out.enchant = spec.enchant;
-    }
-    return out;
-  });
+function swapItemAt(equipment: readonly SimItemSpec[], slotIndex: number, itemId: number, gemCtx: GemContext): SimItemSpec[] {
+	return equipment.map((spec, i) => {
+		if (i !== slotIndex) return spec;
+		const sameItem = spec.id === itemId;
+		const gems = sameItem
+			? [...(spec.gems ?? [])]
+			: fillEmptyCandidateGems(
+					itemId,
+					migrateGemsToItem(spec.gems ?? [], spec.id ?? 0, itemId),
+					gemCtx.fillPalette,
+					gemCtx.weightRecord,
+					fillOptsForSwap(equipment, slotIndex, gemCtx.spec),
+				);
+		const out: SimItemSpec = { id: itemId, gems };
+		if (spec.enchant && enchantAppliesToItem(spec.enchant, itemId)) {
+			out.enchant = spec.enchant;
+		}
+		return out;
+	});
 }
 
-export function metaPreferenceDisclosure(
-  spec: DetectedSpecId | undefined
-): Substitution[] {
-  const note = missingMetaPreferenceNote(spec);
-  return note ? [{ field: "Meta gem for your spec", detail: note }] : [];
+export function metaPreferenceDisclosure(spec: DetectedSpecId | undefined): Substitution[] {
+	const note = missingMetaPreferenceNote(spec);
+	return note ? [{ field: 'Meta gem for your spec', detail: note }] : [];
 }
 
 /**
@@ -4534,39 +3849,39 @@ export function metaPreferenceDisclosure(
  * run (`oneHandBlockedEntries`).
  */
 export function oneHandBlockedDisclosure(count: number): Substitution[] {
-  if (count === 0) return [];
-  return [
-    {
-      field: "One-handed weapons",
-      detail:
-        count === 1
-          ? "1 one-handed weapon was not ranked, because you wear a two-handed weapon."
-          : `${count} one-handed weapons were not ranked, because you wear a two-handed weapon.`,
-    },
-  ];
+	if (count === 0) return [];
+	return [
+		{
+			field: 'One-handed weapons',
+			detail:
+				count === 1
+					? '1 one-handed weapon was not ranked, because you wear a two-handed weapon.'
+					: `${count} one-handed weapons were not ranked, because you wear a two-handed weapon.`,
+		},
+	];
 }
 
 /** One line for every off-hand item the worn two-hander kept out of the run. */
 export function offHandBlockedDisclosure(count: number): Substitution[] {
-  if (count === 0) return [];
-  return [
-    {
-      field: "Off-hand items",
-      detail:
-        count === 1
-          ? "1 off-hand item was not ranked, because you wear a two-handed weapon."
-          : `${count} off-hand items were not ranked, because you wear a two-handed weapon.`,
-    },
-  ];
+	if (count === 0) return [];
+	return [
+		{
+			field: 'Off-hand items',
+			detail:
+				count === 1
+					? '1 off-hand item was not ranked, because you wear a two-handed weapon.'
+					: `${count} off-hand items were not ranked, because you wear a two-handed weapon.`,
+		},
+	];
 }
 
 /** One item in one slot that the run could not price. */
 export type CandidateSkip = {
-  kind: "sim" | "repair";
-  itemId: number;
-  name: string;
-  slot: SimSlotName;
-  reason: string;
+	kind: 'sim' | 'repair';
+	itemId: number;
+	name: string;
+	slot: SimSlotName;
+	reason: string;
 };
 
 /**
@@ -4575,21 +3890,21 @@ export type CandidateSkip = {
  * same item can still rank from its other slot.
  */
 export function candidateSkipSubstitution(skip: CandidateSkip): Substitution {
-  // After the sentence, so for the console only: the page shows a line's
-  // first line, and names the item and slot.
-  const where = `item ${skip.itemId}, slot ${skip.slot}`;
-  const line = { field: skip.name, slot: skip.slot };
-  return skip.kind === "sim"
-    ? {
-        ...line,
-        detail: `This item was not ranked in this slot, because its sim failed.\n${where}`,
-        error: skip.reason,
-      }
-    : {
-        ...line,
-        // A gem repair that finds no swap is no failed call (`metaOff`).
-        detail: `This item was not ranked in this slot, because no gem swap could turn your meta gem on with it equipped.\n${where}: ${skip.reason}`,
-      };
+	// After the sentence, so for the console only: the page shows a line's
+	// first line, and names the item and slot.
+	const where = `item ${skip.itemId}, slot ${skip.slot}`;
+	const line = { field: skip.name, slot: skip.slot };
+	return skip.kind === 'sim'
+		? {
+				...line,
+				detail: `This item was not ranked in this slot, because its sim failed.\n${where}`,
+				error: skip.reason,
+			}
+		: {
+				...line,
+				// A gem repair that finds no swap is no failed call (`metaOff`).
+				detail: `This item was not ranked in this slot, because no gem swap could turn your meta gem on with it equipped.\n${where}: ${skip.reason}`,
+			};
 }
 
 /**
@@ -4599,69 +3914,66 @@ export function candidateSkipSubstitution(skip: CandidateSkip): Substitution {
 export type SkipReason = { because: string; error?: string };
 
 export const SET_BONUS_SKIP_REASONS = {
-  simFailed: (error: string): SkipReason => ({
-    because: "its sim failed.",
-    error,
-  }),
-  /** For a skip `onSomeRows`: the sims of those rows' gear failed. */
-  rowSimsFailed: (error: string): SkipReason => ({
-    because: "their sim failed.",
-    error,
-  }),
-  /**
-   * A gem repair that finds no swap is no failed call, so its rule follows
-   * the sentence, for the console: `error` holds only a failed call's error,
-   * which the run's error toast shows.
-   */
-  metaOff: (rule: string): SkipReason => ({
-    because: `no gem swap could turn your meta gem on.\n${rule}`,
-  }),
-  measuringSimsNotBuilt: {
-    because: "the sims that measure it could not be built.",
-  } as SkipReason,
-  notBuilt: (error: string): SkipReason => ({
-    because: "the sims that measure it could not be built.",
-    error,
-  }),
-  /** For a skip `onSomeRows`: those rows' requests could not be built. */
-  rowsNotBuilt: (error: string): SkipReason => ({
-    because: "their sims could not be built.",
-    error,
-  }),
-  /** The request for the set's bonus list could not be built. */
-  bonusListNotBuilt: (error: string): SkipReason => ({
-    because: "the check that lists the set's bonuses could not be built.",
-    error,
-  }),
-  /** The sim's list of a set's active bonuses failed. */
-  bonusListFailed: (error: string): SkipReason => ({
-    because: "the sim could not list the set's bonuses.",
-    error,
-  }),
+	simFailed: (error: string): SkipReason => ({
+		because: 'its sim failed.',
+		error,
+	}),
+	/** For a skip `onSomeRows`: the sims of those rows' gear failed. */
+	rowSimsFailed: (error: string): SkipReason => ({
+		because: 'their sim failed.',
+		error,
+	}),
+	/**
+	 * A gem repair that finds no swap is no failed call, so its rule follows
+	 * the sentence, for the console: `error` holds only a failed call's error,
+	 * which the run's error toast shows.
+	 */
+	metaOff: (rule: string): SkipReason => ({
+		because: `no gem swap could turn your meta gem on.\n${rule}`,
+	}),
+	measuringSimsNotBuilt: {
+		because: 'the sims that measure it could not be built.',
+	} as SkipReason,
+	notBuilt: (error: string): SkipReason => ({
+		because: 'the sims that measure it could not be built.',
+		error,
+	}),
+	/** For a skip `onSomeRows`: those rows' requests could not be built. */
+	rowsNotBuilt: (error: string): SkipReason => ({
+		because: 'their sims could not be built.',
+		error,
+	}),
+	/** The request for the set's bonus list could not be built. */
+	bonusListNotBuilt: (error: string): SkipReason => ({
+		because: "the check that lists the set's bonuses could not be built.",
+		error,
+	}),
+	/** The sim's list of a set's active bonuses failed. */
+	bonusListFailed: (error: string): SkipReason => ({
+		because: "the sim could not list the set's bonuses.",
+		error,
+	}),
 } as const;
 
 /** A line whose sentence is `detail` and whose call failed with `error`. */
-const withError = (
-  line: { field: string; detail: string },
-  error: string | undefined
-): Substitution => (error === undefined ? line : { ...line, error });
+const withError = (line: { field: string; detail: string }, error: string | undefined): Substitution => (error === undefined ? line : { ...line, error });
 
 /** One set bonus the set phase could not measure, for the run or `onSomeRows` only. */
 export type SetBonusSkip = {
-  setName: string;
-  threshold: SetThreshold;
-  reason: SkipReason;
-  onSomeRows?: true;
+	setName: string;
+	threshold: SetThreshold;
+	reason: SkipReason;
+	onSomeRows?: true;
 };
 
 export function setBonusSkipSubstitution(skip: SetBonusSkip): Substitution {
-  return withError(
-    {
-      field: `${skip.setName} ${skip.threshold}-piece set bonus`,
-      detail: `The ${skip.setName} ${skip.threshold}-piece set bonus was not measured${skip.onSomeRows ? " on some rows" : ""}, because ${skip.reason.because}`,
-    },
-    skip.reason.error
-  );
+	return withError(
+		{
+			field: `${skip.setName} ${skip.threshold}-piece set bonus`,
+			detail: `The ${skip.setName} ${skip.threshold}-piece set bonus was not measured${skip.onSomeRows ? ' on some rows' : ''}, because ${skip.reason.because}`,
+		},
+		skip.reason.error,
+	);
 }
 
 /**
@@ -4669,17 +3981,14 @@ export function setBonusSkipSubstitution(skip: SetBonusSkip): Substitution {
  * one is tried for it, so its bonuses in reach get no figure; its worn bonuses
  * are measured apart, by the worn-set ladder.
  */
-export function setBonusesSkipSubstitution(skip: {
-  setName: string;
-  reason: SkipReason;
-}): Substitution {
-  return withError(
-    {
-      field: `${skip.setName} set`,
-      detail: `The ${skip.setName} set bonuses were not all measured, because ${skip.reason.because}`,
-    },
-    skip.reason.error
-  );
+export function setBonusesSkipSubstitution(skip: { setName: string; reason: SkipReason }): Substitution {
+	return withError(
+		{
+			field: `${skip.setName} set`,
+			detail: `The ${skip.setName} set bonuses were not all measured, because ${skip.reason.because}`,
+		},
+		skip.reason.error,
+	);
 }
 
 /**
@@ -4687,17 +3996,17 @@ export function setBonusesSkipSubstitution(skip: {
  * as one line; only the split of its break from its pieces is lost.
  */
 export function breakSplitSkipSubstitution(skip: {
-  setName: string;
-  threshold: SetThreshold;
-  error: string;
-  /** The bonus-off request could not be built, so no sim ran. */
-  notBuilt?: true;
+	setName: string;
+	threshold: SetThreshold;
+	error: string;
+	/** The bonus-off request could not be built, so no sim ran. */
+	notBuilt?: true;
 }): Substitution {
-  return {
-    field: `${skip.setName} ${skip.threshold}-piece set bonus`,
-    detail: `On some rows, the cost of breaking the ${skip.setName} ${skip.threshold}-piece set bonus was not measured apart from the pieces that break it, because their sim ${skip.notBuilt ? "could not be built" : "failed"}.`,
-    error: skip.error,
-  };
+	return {
+		field: `${skip.setName} ${skip.threshold}-piece set bonus`,
+		detail: `On some rows, the cost of breaking the ${skip.setName} ${skip.threshold}-piece set bonus was not measured apart from the pieces that break it, because their sim ${skip.notBuilt ? 'could not be built' : 'failed'}.`,
+		error: skip.error,
+	};
 }
 
 /**
@@ -4705,18 +4014,18 @@ export function breakSplitSkipSubstitution(skip: {
  * a set's bonuses are measured at all, and a set it could not read is kept.
  */
 export type SetScreenSkip = {
-  setName: string;
-  error: string;
-  /** The check's request could not be built, so no sim ran. */
-  notBuilt?: true;
+	setName: string;
+	error: string;
+	/** The check's request could not be built, so no sim ran. */
+	notBuilt?: true;
 };
 
 export function setScreenSkipSubstitution(skip: SetScreenSkip): Substitution {
-  return {
-    field: `${skip.setName} set`,
-    detail: `The ${skip.setName} set was kept without the quick check that can skip it, because the check's sim ${skip.notBuilt ? "could not be built" : "failed"}.`,
-    error: skip.error,
-  };
+	return {
+		field: `${skip.setName} set`,
+		detail: `The ${skip.setName} set was kept without the quick check that can skip it, because the check's sim ${skip.notBuilt ? 'could not be built' : 'failed'}.`,
+		error: skip.error,
+	};
 }
 
 /**
@@ -4725,16 +4034,16 @@ export function setScreenSkipSubstitution(skip: SetScreenSkip): Substitution {
  * count (1 for the first) is no count the player wears.
  */
 export function wornSetSkipSubstitution(skip: {
-  setName: string;
-  error: string;
-  /** The rung's request could not be built, so no sim ran. */
-  notBuilt?: true;
+	setName: string;
+	error: string;
+	/** The rung's request could not be built, so no sim ran. */
+	notBuilt?: true;
 }): Substitution {
-  return {
-    field: `${skip.setName} set`,
-    detail: `The value of the ${skip.setName} set on your gear was not fully measured, because its sim ${skip.notBuilt ? "could not be built" : "failed"}.`,
-    error: skip.error,
-  };
+	return {
+		field: `${skip.setName} set`,
+		detail: `The value of the ${skip.setName} set on your gear was not fully measured, because its sim ${skip.notBuilt ? 'could not be built' : 'failed'}.`,
+		error: skip.error,
+	};
 }
 
 /**
@@ -4747,22 +4056,20 @@ export function wornSetSkipSubstitution(skip: {
  * takes the place, so the console and the run's error toast keep the failed
  * call's error.
  */
-export function uniqueSubstitutions(
-  substitutions: readonly Substitution[]
-): Substitution[] {
-  const placeOf = new Map<string, number>();
-  const out: Substitution[] = [];
-  for (const s of substitutions) {
-    const key = `${s.field}|${s.slot ?? ""}|${s.detail.split("\n", 1)[0]}`;
-    const at = placeOf.get(key);
-    if (at === undefined) {
-      placeOf.set(key, out.length);
-      out.push(s);
-    } else if (out[at]!.error === undefined && s.error !== undefined) {
-      out[at] = s;
-    }
-  }
-  return out;
+export function uniqueSubstitutions(substitutions: readonly Substitution[]): Substitution[] {
+	const placeOf = new Map<string, number>();
+	const out: Substitution[] = [];
+	for (const s of substitutions) {
+		const key = `${s.field}|${s.slot ?? ''}|${s.detail.split('\n', 1)[0]}`;
+		const at = placeOf.get(key);
+		if (at === undefined) {
+			placeOf.set(key, out.length);
+			out.push(s);
+		} else if (out[at]!.error === undefined && s.error !== undefined) {
+			out[at] = s;
+		}
+	}
+	return out;
 }
 
 /**
@@ -4770,13 +4077,13 @@ export function uniqueSubstitutions(
  * "If gems were swapped": a run whose meta gem stays on swaps nothing.
  */
 export function hitCapUnknownNote(): Substitution {
-  return {
-    field: "Meta gem swaps and the hit cap",
-    detail:
-      "If gems were swapped to turn your meta gem on, hit rating was " +
-      "treated as always useful, because this tab works out the hit cap " +
-      "only when every target is level 73.",
-  };
+	return {
+		field: 'Meta gem swaps and the hit cap',
+		detail:
+			'If gems were swapped to turn your meta gem on, hit rating was ' +
+			'treated as always useful, because this tab works out the hit cap ' +
+			'only when every target is level 73.',
+	};
 }
 
 /**
@@ -4786,12 +4093,10 @@ export function hitCapUnknownNote(): Substitution {
  * elemental), and the warrior page serves Arms and Fury under one spec id.
  */
 export function hitCapFullWeightNote(): Substitution {
-  return {
-    field: "Meta gem swaps and the hit cap",
-    detail:
-      "If gems were swapped to turn your meta gem on, hit rating was " +
-      "counted at full value, with no hit cap applied for this spec.",
-  };
+	return {
+		field: 'Meta gem swaps and the hit cap',
+		detail: 'If gems were swapped to turn your meta gem on, hit rating was ' + 'counted at full value, with no hit cap applied for this spec.',
+	};
 }
 
 /**
@@ -4800,45 +4105,37 @@ export function hitCapFullWeightNote(): Substitution {
  * spells it covers reach the cap sooner than the budget counts.
  */
 export function hitCapPerSpellTalentNote(talent: string): Substitution {
-  return {
-    field: "Meta gem swaps and the hit cap",
-    detail:
-      "If gems were swapped to turn your meta gem on, hit rating was valued " +
-      `as if your ${talent} talent added no hit, so it may be valued too high.`,
-  };
+	return {
+		field: 'Meta gem swaps and the hit cap',
+		detail:
+			'If gems were swapped to turn your meta gem on, hit rating was valued ' + `as if your ${talent} talent added no hit, so it may be valued too high.`,
+	};
 }
 
-function fillOptsForSwap(
-  equipment: readonly SimItemSpec[],
-  slotIndex: number,
-  spec: DetectedSpecId | undefined
-): FillEmptyOpts {
-  const usedUnique = new Set<number>();
-  const otherGemIds: number[] = [];
-  for (let i = 0; i < equipment.length; i++) {
-    if (i === slotIndex) continue;
-    for (const id of equipment[i]?.gems ?? []) {
-      if (!(id > 0)) continue;
-      otherGemIds.push(id);
-      if (getGem(id)?.unique) usedUnique.add(id);
-    }
-  }
-  const wornGems = (equipment[slotIndex]?.gems ?? []).filter((id) => id > 0);
-  const metaId = findMetaGemId([...otherGemIds, ...wornGems]);
-  return {
-    usedUnique,
-    ...(metaId !== undefined ? { meta: { metaId, otherGemIds } } : {}),
-    ...(spec !== undefined ? { spec } : {}),
-  };
+function fillOptsForSwap(equipment: readonly SimItemSpec[], slotIndex: number, spec: DetectedSpecId | undefined): FillEmptyOpts {
+	const usedUnique = new Set<number>();
+	const otherGemIds: number[] = [];
+	for (let i = 0; i < equipment.length; i++) {
+		if (i === slotIndex) continue;
+		for (const id of equipment[i]?.gems ?? []) {
+			if (!(id > 0)) continue;
+			otherGemIds.push(id);
+			if (getGem(id)?.unique) usedUnique.add(id);
+		}
+	}
+	const wornGems = (equipment[slotIndex]?.gems ?? []).filter(id => id > 0);
+	const metaId = findMetaGemId([...otherGemIds, ...wornGems]);
+	return {
+		usedUnique,
+		...(metaId !== undefined ? { meta: { metaId, otherGemIds } } : {}),
+		...(spec !== undefined ? { spec } : {}),
+	};
 }
 
-function applyRepairedGems(
-  equipment: readonly SimItemSpec[],
-  socketed: SocketedItem[]
-): SimItemSpec[] {
-  return equipment.map((spec, i) => {
-    const repaired = socketed[i];
-    if (!repaired || !spec.id) return spec;
-    return { ...spec, gems: [...repaired.gems] };
-  });
+function applyRepairedGems(equipment: readonly SimItemSpec[], socketed: SocketedItem[]): SimItemSpec[] {
+	return equipment.map((spec, i) => {
+		const repaired = socketed[i];
+		if (!repaired || !spec.id) return spec;
+		return { ...spec, gems: [...repaired.gems] };
+	});
 }
