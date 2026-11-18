@@ -8,13 +8,10 @@
  */
 
 import type { Progress } from './engine/rank';
-import { PAIRED_REPLICATE_TOP_N } from './engine/se';
+import { DEFAULT_SEED_COUNT, isReplicable, PAIRED_REPLICATE_TOP_N } from './engine/se';
 
-/**
- * The tab passes no `seeds`, so `rank.ts` uses `defaultSeedsFor`, whose count is
- * the module-private `DEFAULT_SEED_COUNT`. Keep the two equal.
- */
-export const TAB_REPLICATE_SEED_COUNT = 5;
+/** The tab passes no `seeds`, so the run uses the engine's default count. */
+export const TAB_REPLICATE_SEED_COUNT = DEFAULT_SEED_COUNT;
 
 export type RunPhase = 'preparing' | 'candidates' | 'set-bonuses' | 'replication' | 'ranking';
 
@@ -253,12 +250,8 @@ export class RunProgressTracker {
 		};
 	}
 
-	/**
-	 * Mirrors rank.ts `replicateTopItems`' filter (`!belowCutoff && simmed !==
-	 * false`, at most `PAIRED_REPLICATE_TOP_N`); keep the two in step.
-	 */
 	private observeRow(row: { readonly belowCutoff: boolean; readonly simmed?: false }): void {
-		if (this.rankingAt !== undefined || row.belowCutoff !== false || row.simmed === false) return;
+		if (this.rankingAt !== undefined || !isReplicable(row)) return;
 		this.qualifyingRows += 1;
 		const last = this.sims[this.sims.length - 1];
 		if (last) this.recompute(last.t);

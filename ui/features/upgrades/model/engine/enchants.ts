@@ -7,6 +7,7 @@ import { Database } from '@sim/proto/database';
 import { enchantAppliesToItem as upstreamEnchantAppliesToItem } from '@sim/proto/items';
 
 import { getItem } from './items';
+import { SIM_ORDER } from './slots';
 
 /** A straight scan by `enchant.effectId`: a few hundred enchants, once per slot attempt. */
 export function enchantAppliesToItem(effectId: number, itemId: number): boolean {
@@ -35,5 +36,4 @@ export function enchantStats(effectId: number): readonly number[] {
 	return [];
 }
 
-// ItemSlot values 0..16 (proto/common.proto).
-const ALL_ITEM_SLOTS = Array.from({ length: 17 }, (_, i) => i);
+const ALL_ITEM_SLOTS = SIM_ORDER.map((_, slot) => slot);

@@ -316,8 +316,8 @@ type SearchState = {
 type ChangeList = { head: Change[]; tail: ChangeList | null };
 type Change = { itemIndex: number; socketIndex: number; from: number; to: number };
 
-/** The `kind` of a change that moves no colour count: (0+1) × 9 + (0+1) × 3 + (0+1). */
-const NO_COLOUR_CHANGE = 13;
+const colourChangeKind = (dRed: number, dYellow: number, dBlue: number): number => (dRed + 1) * 9 + (dYellow + 1) * 3 + (dBlue + 1);
+const NO_COLOUR_CHANGE = colourChangeKind(0, 0, 0);
 
 /**
  * The best smallest set of recolours that switches the meta on; undefined when there is
@@ -418,7 +418,7 @@ export function bestMinimalRepair(opts: {
 					dH += model.gemHit(to) - model.gemHit(from);
 					const a = colourOf(from);
 					const b = colourOf(to);
-					const kind = (b.red - a.red + 1) * 9 + (b.yellow - a.yellow + 1) * 3 + (b.blue - a.blue + 1);
+					const kind = colourChangeKind(b.red - a.red, b.yellow - a.yellow, b.blue - a.blue);
 					if (kind === NO_COLOUR_CHANGE) return;
 					dRed += b.red - a.red;
 					dYellow += b.yellow - a.yellow;

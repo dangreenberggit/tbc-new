@@ -7,6 +7,13 @@
 /** Only the top 8 items are rerun on more seeds, not the whole list. */
 export const PAIRED_REPLICATE_TOP_N = 8;
 
+/** Five seeds for paired replication; `PAIRED_REPLICATE_TOP_N` sets how many rows. */
+export const DEFAULT_SEED_COUNT = 5;
+
+export function isReplicable(row: { readonly belowCutoff: boolean; readonly simmed?: false }): boolean {
+	return !row.belowCutoff && row.simmed !== false;
+}
+
 /**
  * Seeds that cannot produce a spread. Its own class so `rank.ts` maps it to `RankError`
  * kind `internal` (bad caller input) without matching strings.

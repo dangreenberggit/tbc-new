@@ -9,11 +9,11 @@ import type { ProgressTrackerProgress } from '@ui-kit/ProgressTrackerDialog';
 import { substitutionFirstLine } from '../model/assumptions';
 import type { Substitution } from '../model/engine/disclosure';
 import type { ItemSource } from '../model/engine/pool';
-import { simSlotsForPoolSlot } from '../model/engine/pool';
 import { type RankedItem, RankError } from '../model/engine/rank';
 import type { SimOrderName } from '../model/engine/slots';
 import { SOURCE_LABELS } from '../model/engine/view';
 import type { SortLabels } from '../model/results_columns';
+import { effectiveSlot } from '../model/results_view';
 import type { RunPhase, RunProgressView } from '../model/run_progress';
 import { bucketKeyOf, type SourcedEntry, sourcesOf } from '../model/settings_pool';
 import { shownTenths } from '../model/shown_figure';
@@ -54,8 +54,7 @@ const ITEM_SLOT_BY_SIM_SLOT: Record<SimOrderName, ItemSlot> = {
 
 export const simSlotLabel = (slot: SimOrderName): string => translateSlotName(ITEM_SLOT_BY_SIM_SLOT[slot]);
 
-/** `slotChoice` is set on every weapon row and wherever a pool slot maps to two sim slots; otherwise the first mapping is the slot. */
-export const slotLabel = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): string => simSlotLabel(row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0]);
+export const slotLabel = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): string => simSlotLabel(effectiveSlot(row));
 
 /**
  * A source kind's translated name. The English `SOURCE_LABELS` stay as the pool's source keys

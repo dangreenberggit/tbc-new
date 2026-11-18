@@ -78,15 +78,19 @@ function toWeightRecord(weights: EpWeights): EpWeightRecord {
 /** EP margin within which the meta's colour needs may pick a lower-EP gem. */
 const META_NEAR_EP = 1.0;
 
+const RELENTLESS_EARTHSTORM_DIAMOND = 32409;
+const CHAOTIC_SKYFIRE_DIAMOND = 34220;
+const MYSTICAL_SKYFIRE_DIAMOND = 25893;
+
 /**
- * Relentless Earthstorm Diamond, the meta in every wowsims ret gear preset
+ * The meta in every wowsims ret gear preset
  * (ui/specs/paladin/retribution/gear_sets/). Stat EP cannot rank metas: nine of
  * the eighteen score 0 against ret weights, and Relentless's +3% crit damage is
  * a multiplier (`sim/core/item_effects.go`) that EP scores below Swift
  * Skyfire's +24 AP. Whether the meta is active is not checked: a player who
  * slots a meta arranges their other gems to turn it on.
  */
-const PREFERRED_META_IDS: readonly number[] = [32409];
+const PREFERRED_META_IDS: readonly number[] = [RELENTLESS_EARTHSTORM_DIAMOND];
 
 /**
  * The meta gem each detected spec wears in its wowsims gear presets
@@ -108,21 +112,19 @@ export const SPEC_PREFERRED_METAS: Readonly<Record<SpecId, readonly number[]> & 
 	feral: PREFERRED_META_IDS,
 	'feral-tank': PREFERRED_META_IDS,
 
-	// Chaotic Skyfire Diamond — the caster crit meta.
 	// ui/specs/druid/balance/gear_sets/p5.gear.json, head 34403.
-	balance: [34220],
+	balance: [CHAOTIC_SKYFIRE_DIAMOND],
 	// ui/specs/mage/dps/gear_sets/p2Arcane.gear.json, head 30206.
-	mage: [34220],
+	mage: [CHAOTIC_SKYFIRE_DIAMOND],
 	// ui/specs/shaman/elemental/gear_sets/p5.gear.json, head 34332 (meta second).
-	ele: [34220],
+	ele: [CHAOTIC_SKYFIRE_DIAMOND],
 	// ui/specs/warlock/dps/gear_sets/swp.gear.json, head 34340.
-	warlock: [34220],
+	warlock: [CHAOTIC_SKYFIRE_DIAMOND],
 
-	// Mystical Skyfire Diamond. Shadow is the one caster here not on 34220:
-	// ui/specs/priest/dps/gear_sets/p3.gear.json, head 31064, has 25893.
-	shadow: [25893],
+	// Shadow is the one caster here not on Chaotic:
+	// ui/specs/priest/dps/gear_sets/p3.gear.json, head 31064.
+	shadow: [MYSTICAL_SKYFIRE_DIAMOND],
 
-	// Relentless Earthstorm Diamond — the same melee meta ret and feral use.
 	// ui/specs/hunter/dps/gear_sets/phase_4/bm/2h_6p.gear.json, head 32235.
 	hunter: PREFERRED_META_IDS,
 	// ui/specs/rogue/dps/gear_sets/p3.gear.json, head 32235.

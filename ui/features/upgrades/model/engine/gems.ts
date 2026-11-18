@@ -1,6 +1,6 @@
 /** The gems the engine may place, read live from `Database.getSync().getGems()`. */
 
-import { GemColor } from '@generated/proto/common';
+import { GemColor, ItemQuality } from '@generated/proto/common';
 import { Database } from '@sim/proto/database';
 
 export type GemColour = number;
@@ -10,8 +10,7 @@ export type GemEntry = {
 	colour: GemColour;
 	stats: number[];
 	phase: number;
-	/** wowsims ItemQuality: 2 uncommon, 3 rare, 4 epic. */
-	quality: number;
+	quality: ItemQuality;
 	unique: boolean;
 };
 
@@ -48,8 +47,7 @@ export function gemsForQuality(palette: readonly GemEntry[], maxQuality: number)
 	});
 }
 
-/** The highest gem quality `fillEligibleGems` allows: rare. */
-export const FILL_MAX_QUALITY = 3;
+export const FILL_MAX_QUALITY = ItemQuality.ItemQualityRare;
 
 export function fillEligibleGems(palette: readonly GemEntry[]): readonly GemEntry[] {
 	return gemsForQuality(palette, FILL_MAX_QUALITY);

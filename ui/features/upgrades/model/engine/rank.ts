@@ -38,7 +38,16 @@ import {
 	simSlotsForPoolSlot,
 } from './pool';
 import { promisePool } from './promise-pool';
-import { assertUsableSeeds, DegenerateSeedsError, PAIRED_REPLICATE_TOP_N, pairedReplicateSe, replicateSeeds, usesPairedReplication } from './se';
+import {
+	assertUsableSeeds,
+	DEFAULT_SEED_COUNT,
+	DegenerateSeedsError,
+	isReplicable,
+	PAIRED_REPLICATE_TOP_N,
+	pairedReplicateSe,
+	replicateSeeds,
+	usesPairedReplication,
+} from './se';
 import type { FightSummary, GearSource } from './seams/gear-source';
 import {
 	type PlayerStatsObservation,
@@ -574,8 +583,6 @@ const DEFAULT_ITERATIONS = 5000;
  * small.
  */
 const DEFAULT_SEED_BASE = 11;
-/** Five seeds for paired replication; `PAIRED_REPLICATE_TOP_N` sets how many rows. */
-const DEFAULT_SEED_COUNT = 5;
 
 /**
  * Derived from the run's resolved iteration count, not `DEFAULT_ITERATIONS`:
@@ -1507,7 +1514,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		ranked: RankedItem[],
 		winningRequests: ReadonlyMap<number, RaidSimRequest>,
 	): Promise<Array<{ item: RankedItem; deltas: number[] }>> {
-		const top = usesPairedReplication(seeds) ? ranked.filter(item => !item.belowCutoff && item.simmed !== false).slice(0, PAIRED_REPLICATE_TOP_N) : [];
+		const top = usesPairedReplication(seeds) ? ranked.filter(isReplicable).slice(0, PAIRED_REPLICATE_TOP_N) : [];
 		// The total sent so far budgeted re-sims for up to top-N rows; only now is
 		// the number of rows known, so the total is restated as the sims done
 		// plus the sims this function will run.

@@ -8,7 +8,7 @@ import type { PagePreset } from './data/data';
 import { isKaelTempLegendary } from './engine/kael-temp';
 import { filterPoolByPhase, type ItemSource, offHandBlockedEntries, oneHandBlockedEntries, type PoolEntry } from './engine/pool';
 import type { SpecId } from './engine/types';
-import { SOURCE_LABELS } from './engine/view';
+import { SOURCE_LABELS, zoneKeyOf } from './engine/view';
 import { HEROIC_FIVE_MAN } from './pool_source';
 import type { RunSettings } from './run_state';
 import { type SettingsState, toRunSettings } from './settings_state';
@@ -60,16 +60,8 @@ export const sourcesOf = (entry: SourcedEntry): readonly ItemSource[] => entry.s
 /** The key of a source with no zone, such as "Heroic dungeon". It falls back to the raw kind, as the engine's label does. */
 export const bucketKeyOf = (kind: string): string => SOURCE_LABELS[kind] ?? kind;
 
-/**
- * The key an entry is listed under: its first zone, else its source kind. A copy
- * of the engine's private `zoneKeyOf` (`view.ts`); change both together.
- */
-export function sourceKeyOf(entry: SourcedEntry): string {
-	for (const s of sourcesOf(entry)) {
-		if ('zone' in s) return s.zone;
-	}
-	return bucketKeyOf(entry.source.kind);
-}
+/** Its first zone, else its source kind. */
+export const sourceKeyOf: (entry: SourcedEntry) => string = zoneKeyOf;
 
 /** A zone key matches any entry that drops there; a key with no zone matches only entries with no zone. */
 export function sourceMatches(entry: SourcedEntry, key: string): boolean {

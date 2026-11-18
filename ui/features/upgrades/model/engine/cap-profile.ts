@@ -9,6 +9,8 @@
  * percentages live here.
  */
 
+import { PseudoStat } from '@generated/proto/common';
+
 import type { SpellDamageBySchool } from './seams/sim-runner';
 import { Stat } from './stats';
 import type { SpecId } from './types';
@@ -94,34 +96,25 @@ export type HitCapBudget = {
 /** See `HitCapBudget.groups`. */
 export type HitCapGroup = { readonly offset: number; readonly share: number };
 
-/** `PseudoStatMeleeHitPercent` in `ui/generated/proto/common.ts`. */
-const PSEUDO_STAT_MELEE_HIT_PERCENT = 12;
-/** `PseudoStatSpellHitPercent` in `ui/generated/proto/common.ts`. */
-const PSEUDO_STAT_SPELL_HIT_PERCENT = 13;
-/**
- * The school hit pseudo-stat (`PseudoStatSchoolHitPercentArcane` to
- * `...Shadow`, `ui/generated/proto/common.ts`) of each single magic
- * school, keyed by the sim's `SpellSchool` bit (`sim/core/flags.go`),
- * the value `ActionMetrics.spell_school` carries.
- */
+/** Keyed by the sim's `SpellSchool` bit (`sim/core/flags.go`), the value `ActionMetrics.spell_school` carries. */
 const SCHOOL_HIT_PSEUDO_STAT: Readonly<Record<number, number>> = {
-	64: 6, // Arcane
-	4: 7, // Fire
-	16: 8, // Frost
-	2: 9, // Holy
-	8: 10, // Nature
-	32: 11, // Shadow
+	64: PseudoStat.PseudoStatSchoolHitPercentArcane,
+	4: PseudoStat.PseudoStatSchoolHitPercentFire,
+	16: PseudoStat.PseudoStatSchoolHitPercentFrost,
+	2: PseudoStat.PseudoStatSchoolHitPercentHoly,
+	8: PseudoStat.PseudoStatSchoolHitPercentNature,
+	32: PseudoStat.PseudoStatSchoolHitPercentShadow,
 };
 /** `SpellSchoolPhysical`, which uses melee hit, not spell hit. */
 const SPELL_SCHOOL_PHYSICAL = 1;
 
 const MELEE_HIT_BUDGET: RepairPolicy = {
 	kind: 'budget',
-	hitPercentPseudoStat: PSEUDO_STAT_MELEE_HIT_PERCENT,
+	hitPercentPseudoStat: PseudoStat.PseudoStatMeleeHitPercent,
 };
 const SPELL_HIT_BUDGET: RepairPolicy = {
 	kind: 'budget',
-	hitPercentPseudoStat: PSEUDO_STAT_SPELL_HIT_PERCENT,
+	hitPercentPseudoStat: PseudoStat.PseudoStatSpellHitPercent,
 };
 /**
  * The two `SpellMod_BonusHit_Percent` talents in `sim/mage`, `sim/priest` and
@@ -292,7 +285,7 @@ export function capProfileFor(spec: SpecId | undefined): CapProfile {
  * or when the hit percent is not a finite number.
  *
  * For spell hit, `groups` come from `spellDamageBySchool`: a spell's hit is
- * pseudo-stat 13 plus its school's bonus in pseudo-stats 6-11
+ * `PseudoStatSpellHitPercent` plus its school's `PseudoStatSchoolHitPercent*` bonus
  * (`sim/core/character_sheet.go`), a spell with two schools gets no school
  * bonus (`sim/core/flags.go`), and physical damage is left out. It throws when
  * spell damage by school is missing, so no caster is valued without it.
@@ -342,7 +335,7 @@ export function targetsAtCapLevel(request: unknown): boolean {
  * by the spells a sim result shows cast.
  */
 export function pricesHitBySpells(profile: CapProfile): boolean {
-	return profile.repair.kind === 'budget' && profile.repair.hitPercentPseudoStat === PSEUDO_STAT_SPELL_HIT_PERCENT;
+	return profile.repair.kind === 'budget' && profile.repair.hitPercentPseudoStat === PseudoStat.PseudoStatSpellHitPercent;
 }
 
 function spellHitGroups(

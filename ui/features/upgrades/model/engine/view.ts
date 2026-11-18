@@ -95,7 +95,7 @@ export type ViewResult = {
 	groups?: Array<{ key: string; rows: ViewRow[] }>;
 };
 
-function sourcesOf(item: RankedItem): ItemSource[] {
+function sourcesOf(item: Pick<RankedItem, 'source' | 'sources'>): ItemSource[] {
 	return item.sources ?? [item.source];
 }
 
@@ -122,7 +122,7 @@ export const SOURCE_LABELS: Record<string, string> = {
 	unknown: 'Source not recorded',
 };
 
-function zoneKeyOf(item: RankedItem): string {
+export function zoneKeyOf(item: Pick<RankedItem, 'source' | 'sources'>): string {
 	for (const s of sourcesOf(item)) {
 		if ('zone' in s) return s.zone;
 	}

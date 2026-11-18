@@ -8,8 +8,8 @@ import { Database } from '@sim/proto/database';
 
 export type ItemEntry = {
 	name: string;
-	/** Socket colours, one entry per socket (`UIItem.gemSockets`). */
-	sockets: number[];
+	/** One per socket (`UIItem.gemSockets`). */
+	sockets: GemColor[];
 	/** Dense stat array indexed by proto.Stat — item's own stats only. */
 	stats: number[];
 	/** Stat array granted only when every socket is colour-matched. */
@@ -17,8 +17,7 @@ export type ItemEntry = {
 	setId: number | null;
 	setName: string | null;
 	unique: boolean;
-	/** wowsims ItemType — same enum `enchants.ts`'s eligibility check reads. */
-	itemType: number;
+	itemType: ItemType;
 	handType: number | null;
 	weaponType: number | null;
 	rangedWeaponType: number | null;
