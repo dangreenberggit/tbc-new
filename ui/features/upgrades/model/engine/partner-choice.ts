@@ -1,42 +1,16 @@
 /**
- * The partner pieces a set row is valued with, for one bonus.
+ * The partner pieces a set row is valued with, for one bonus: the other pieces of its set
+ * that reach the bonus, simmed with the current gear and the row's item. One set is chosen
+ * per bonus, only in `choosePartnerSet`; `PARTNER_RULE` names the tab's rule.
  *
- * A set row with Set potential on is valued as a sim of gear the player could
- * wear: the current gear plus the row's item plus the other pieces of its set
- * that reach the bonus. Those other pieces are the "partner set". One partner
- * set is chosen per bonus and shown alone, with no player control over the
- * choice: the player picks gear in the game, not the sim setup.
- *
- * `choosePartnerSet` is the only place a partner set is chosen, so the rule
- * can be replaced without touching anything else. `PARTNER_RULE` names the
- * rule the tab uses.
- *
- * The rules, for row r with single-swap figure d_r and a candidate partner
- * set P, where d_p is piece p's single-swap figure:
- *
- * - "close-calls" (the tab's rule): sims every set whose Z estimate is
- *   within `CLOSE_CALL_MARGIN_DPS` of the best Z estimate and takes the
- *   highest total, ties going to Z's order. A set whose sim fails is
- *   skipped; when every sim fails, Z's choice stands. When Z's estimate is
- *   undefined, the result is Z's: "break-unmeasured".
- * - "sum-of-singles" (Z): the set with the highest estimate
- *   est(P) = d_r + Σ_{p∈P} d_p + Σ_b v_b · (m_b − L_b).
- *   b runs over the worn bonuses the worn-set ladder counted, v_b is b's
- *   measured value, m_b is how many swaps in {r} ∪ P lose b alone, and L_b
- *   is 1 when the gear with every swap loses b. Each single already holds
- *   −v_b for a bonus it loses alone, so m_b − 1 of those are added back when
- *   several share one loss, and a bonus only the combination loses
- *   (m_b = 0, L_b = 1) is subtracted. Ties go to the set whose sorted item
- *   ids compare lowest.
- * - "sum-of-singles-plain" (Z0): Z without the combination-only term. Kept
- *   for scoring only.
- * - "single-swap" (T): the pieces today's `pathToThreshold` picks. Kept for
- *   scoring only.
- * - "every-combination": sims every partner set and takes the highest
- *   total, ties going to Z's order. It is the reference answer the other
- *   rules are scored against and writes an audit; players never run it.
- *
- * Neither this file nor its caller holds a table of set ids or piece counts.
+ * "sum-of-singles" (Z) maximises est(P) = d_r + Σ_{p∈P} d_p + Σ_b v_b · (m_b − L_b),
+ * with d a single-swap figure, b a worn bonus the ladder counted, v_b its value, m_b the
+ * swaps in {r} ∪ P that lose b alone (each single already holds −v_b) and L_b 1 when all
+ * together lose it; ties go to the lowest sorted item ids. "close-calls" (the tab's) sims
+ * every set within `CLOSE_CALL_MARGIN_DPS` of Z's best and keeps the highest total.
+ * "every-combination" sims every set, the reference the rest are scored against.
+ * "sum-of-singles-plain" (Z0, no combination-only term) and "single-swap" (T) are for
+ * scoring only.
  */
 
 import { bonusKey, type BrokenSetBonus, type PackagePiece } from './set-value';
@@ -44,18 +18,15 @@ import { bonusKey, type BrokenSetBonus, type PackagePiece } from './set-value';
 export type PartnerRule = 'close-calls' | 'sum-of-singles' | 'sum-of-singles-plain' | 'single-swap' | 'every-combination';
 
 /**
- * The rule the tab uses. On eight test characters, with live sims at 10,000
- * iterations, no zero-sim rule chose a set within noise of the best simmed set
- * on every row, so the tab sims the close calls. That adds 0 to 4.2% more sims
- * to a full-pool run.
+ * The rule the tab uses: on eight test characters no zero-sim rule picked a set within
+ * noise of the best simmed set on every row.
  */
 export const PARTNER_RULE: PartnerRule = 'close-calls';
 
 /**
- * How far below the best Z estimate a partner set may be and still be simmed
- * by "close-calls". It is 2·M, where M = 15.9334 DPS is the largest gap
- * measured between the best Z estimate and the estimate of the set the sims
- * found best, over every decided (row, bonus) of the eight test characters.
+ * How far below the best Z estimate a set may be and still be simmed by "close-calls":
+ * twice the largest gap measured between the best Z estimate and the sims' best set on
+ * the eight test characters.
  */
 export const CLOSE_CALL_MARGIN_DPS = 31.866872635956497;
 
@@ -67,11 +38,9 @@ export type PartnerPiece = {
 };
 
 /**
- * The pieces a partner set is drawn from: the set's candidates that were
- * simmed as singles, outside the row's slot and the slots the set already
- * fills, keeping the best single per slot (the lower id wins a tie), in slot
- * order. Ring, trinket and one-hand pieces are keyed to their first slot, as
- * `selectPackage` keys them.
+ * The set's simmed singles outside the row's slot and the set's worn slots, best per slot
+ * (lower id on a tie), in slot order. Paired-slot pieces are keyed to their first slot, as
+ * in `selectPackage`.
  */
 export function partnerPool(args: { pieces: readonly PartnerPiece[]; wornSetSlots: ReadonlySet<number>; rowSlotIndex: number }): PartnerPiece[] {
 	const bestPerSlot = new Map<number, PartnerPiece>();
@@ -100,11 +69,7 @@ export type PartnerQuery = {
 	breakDps: (setId: number, count: number) => number | undefined;
 	/** The partner pieces today's single-swap path picks, if it has one. */
 	todaysPieces?: readonly PackagePiece[];
-	/**
-	 * Sims the current gear plus the row plus `partners`, returning the total
-	 * over the current gear. Only "every-combination" and "close-calls" call
-	 * it.
-	 */
+	/** Sims current gear plus the row plus `partners`; the total is over current gear. */
 	simGear?: (partners: readonly PackagePiece[]) => Promise<{ totalDps: number; se: number } | undefined>;
 };
 
@@ -129,9 +94,8 @@ export function partnerSets(query: PartnerQuery): PartnerPiece[][] {
 }
 
 /**
- * Rule Z's estimate of one partner set (or Z0's without the combination-only
- * term). Undefined when a worn bonus whose term is not 0 has no measured
- * value.
+ * Z's estimate of one set (Z0's without combination-only terms); undefined when a
+ * nonzero term has no measured value.
  */
 export function sumOfSinglesEstimate(query: PartnerQuery, set: readonly PartnerPiece[], opts: { withCombinationOnly: boolean }): number | undefined {
 	const rowSwap: PackagePiece = {
@@ -202,11 +166,9 @@ function compareIds(a: readonly { itemId: number }[], b: readonly { itemId: numb
 }
 
 /**
- * The partner set for one row and one bonus under `rule`. Undefined when no
- * set of `needed` pieces exists, or every sim of "every-combination" failed.
- * `{ unmeasured: "break-unmeasured" }` when a zero-sim rule's estimate is
- * undefined for any candidate set: the row is then unmeasured rather than
- * valued on a set chosen without that bonus.
+ * The partner set for one row and bonus under `rule`. Undefined when no set of `needed`
+ * pieces exists or every "every-combination" sim failed. "break-unmeasured" when any set's
+ * estimate is undefined, so the row is not valued on a set chosen without that bonus.
  */
 export async function choosePartnerSet(query: PartnerQuery, rule: PartnerRule): Promise<PartnerChoice | undefined> {
 	if (rule === 'single-swap') {

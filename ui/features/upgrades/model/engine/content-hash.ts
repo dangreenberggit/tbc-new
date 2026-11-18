@@ -1,8 +1,7 @@
 /**
- * canonicalJson: the deterministic sorted-key serializer that builds the
- * ranking cache key. Key order is pinned by test rather than left to
- * `JSON.stringify`'s insertion order. The string is the key itself, not
- * hashed: the cache needs uniqueness, not compression.
+ * canonicalJson: the sorted-key serializer that builds the ranking cache key, so key order
+ * does not follow insertion order. The string is the key itself, not hashed: the cache
+ * needs uniqueness, not compression.
  */
 
 export function canonicalJson(value: unknown): string {
@@ -28,10 +27,7 @@ function canonicalize(value: unknown): unknown {
 	return value;
 }
 
-/**
- * Bump when a ranking-logic change should invalidate every cached result.
- * The cache lives only in memory for one mounted tab.
- */
+/** Bump when a ranking-logic change should invalidate every cached result. */
 export const ENGINE_VERSION = 8;
 
 export type HashedGearItem = {

@@ -1,9 +1,7 @@
 /**
- * promisePool: bounded concurrency over a fixed batch of tasks, for the
- * candidate loop in rank.ts. wowsims' ui/sim/wasm/bulk_sim/batch.ts bounds its
- * candidate fan-out with `async`'s `queue`; this exists because results land at
- * their task's index regardless of finish order, and on failure the
- * lowest-index error is reported, so the outcome does not depend on
+ * Bounded concurrency for rank.ts's candidate loop. ui/sim/wasm/bulk_sim/batch.ts uses
+ * `async`'s `queue` instead; this pool puts each result at its task's index whatever the
+ * finish order and reports the lowest-index error, so the outcome does not depend on
  * concurrency.
  */
 
@@ -11,13 +9,9 @@
 export type PoolTask<T> = () => Promise<T>;
 
 /**
- * Runs `tasks` with at most `n` in flight at once. Results land at their
- * task's index, so callers can key state (candidate cap, ordering) on array
- * position.
- *
- * On a rejection the returned promise rejects with the lowest-index error.
- * In-flight tasks are not cancelled (Stop uses an `AbortSignal` at the
- * `rankUpgrades` level), but no further tasks are dispatched.
+ * Runs `tasks` with at most `n` in flight. On a rejection it rejects with the
+ * lowest-index error and dispatches nothing more; in-flight tasks are not cancelled
+ * (Stop aborts through `rankUpgrades`' `AbortSignal`).
  */
 export async function promisePool<T>(tasks: readonly PoolTask<T>[], n: number): Promise<T[]> {
 	const results: T[] = new Array(tasks.length);
@@ -36,8 +30,8 @@ export async function promisePool<T>(tasks: readonly PoolTask<T>[], n: number): 
 			try {
 				results[index] = await task();
 			} catch (err) {
-				// Lowest index wins, not the first to reject in wall-clock order, so
-				// the reported error does not depend on pool size or sim latency.
+				// Lowest index wins, not the first to reject, so the error does not
+				// depend on pool size or sim latency.
 				if (index < firstErrorIndex) {
 					firstErrorIndex = index;
 					firstError = err;
@@ -48,9 +42,8 @@ export async function promisePool<T>(tasks: readonly PoolTask<T>[], n: number): 
 		}
 	}
 
-	// `Math.min(NaN, len)` is NaN and `Array.from({length: NaN})` is empty, so
-	// a non-finite `n` would spawn zero workers, run nothing, and return a
-	// sparse array as if it had succeeded.
+	// A non-finite `n` would make the length NaN: zero workers, and a sparse array
+	// returned as success.
 	const requested = Number.isFinite(n) ? Math.trunc(n) : 1;
 	const workerCount = Math.max(1, Math.min(requested, tasks.length));
 	await Promise.all(Array.from({ length: workerCount }, () => worker()));

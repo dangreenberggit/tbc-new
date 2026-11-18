@@ -1,17 +1,13 @@
-/**
- * Set-bonus prospective value: completion-package synergy. Pure functions
- * only: no sim calls, no seams.
- */
+/** Set-bonus prospective value (completion-package synergy). Pure functions, no sims. */
 
 import { getItem } from './items';
 import type { PoolEntry } from './pool';
 import type { SimItemSpec } from './slots';
 
 /**
- * A piece count of 2 or more at which a set may have a bonus. A plain number,
- * not a union of known counts: the Go sim keys set bonuses at whatever counts a
- * set defines (3 for the crafted 3-piece sets, 6 and 8 for Cryptstalker), and
- * the break side measures every count a swap loses.
+ * A piece count of 2 or more at which a set may have a bonus. A plain number, not a union:
+ * the Go sim keys bonuses at whatever counts a set defines (3, 6, 8), and the break side
+ * measures every count a swap loses.
  */
 export type SetThreshold = number;
 
@@ -22,10 +18,8 @@ export type SetThreshold = number;
 export const SET_THRESHOLDS: readonly SetThreshold[] = [2, 4];
 
 /**
- * Whether losing `count` pieces' bonus of `setId` counts as a break. The
- * default, `isBonusImplemented`, reads the six-set table below; with
- * `measureBrokenSetValue` the ranking passes the worn-set ladder's gated
- * measurement instead (`rank.ts`).
+ * Whether losing `setId`'s `count`-piece bonus counts as a break: `isBonusImplemented` by
+ * default, or the worn-set ladder's gated measurement with `measureBrokenSetValue`.
  */
 export type BonusCountPredicate = (setId: number, count: number) => boolean;
 
@@ -36,23 +30,19 @@ export type UnmeasuredReason =
 	| 'repair-failed'
 	| 'unmeasurable-at-this-worn-count'
 	/**
-	 * The set screen dropped the set (`set-screen.ts`). Only rankings from an
-	 * older engine version carry this marker entry; now a dropped set has no
-	 * entry and `ranking.setScreen` records it.
+	 * The set screen dropped the set. Kept for saved rankings that carry it; a dropped set
+	 * now has no entry and `ranking.setScreen` records it.
 	 */
 	| 'screened-out';
 
 /**
- * Which (setId, threshold) bonuses a ranking without `measureBrokenSetValue`
- * measures. With the flag the ranking does not gate on it: the worn-set ladder
- * measures every lost count and the noise gate decides. The tab keeps no list
- * of implemented set bonuses, so do not extend this table.
+ * Which (setId, threshold) bonuses a ranking without `measureBrokenSetValue` measures; with
+ * it, the worn-set ladder measures every lost count. Do not extend this table: the tab
+ * keeps no list of implemented set bonuses.
  */
 const IMPLEMENTED_IN_SIM: Record<number, Partial<Record<SetThreshold, boolean>>> = {
-	// Justicar 2pc is `false` although it has an effect body: its item_sets.go
-	// closure is empty, but sim/paladin/seals.go scales the Judgement of the
-	// Crusader bonus by 1.15. The default ret APL judges Crusader only in its
-	// prepull actions, so the effect is expected near 0 DPS (not measured).
+	// Justicar 2pc only scales Judgement of the Crusader (sim/paladin/seals.go), which the
+	// default ret APL casts only before the pull, so it is treated as near 0 DPS.
 	626: { 2: false, 4: true }, // Justicar Battlegear
 	629: { 2: true, 4: true }, // Crystalforge Battlegear
 	680: { 2: true, 4: true }, // Lightbringer Battlegear
@@ -108,19 +98,10 @@ export type PackagePiece = {
 export type PackageSelectionResult = { ok: true; piecesWorn: number; addedPieces: PackagePiece[] } | { ok: false; reason: 'insufficient-pieces' };
 
 /**
- * One item's own DPS delta, used both to pick a set package's pieces and to
- * subtract the pieces' individual value out of a package's measured gain.
- *
- * `deltaDps` must estimate the item's true DPS effect — candidate minus
- * baseline, both read by the SAME engine on the same run. That is the invariant
- * `computeSynergy` depends on: it subtracts these deltas from
- * `packageSample.dps - baseline.dps`, so each one has to be an effect estimate
- * rather than an absolute reading tied to a particular engine's scale.
- *
- * A same-run difference satisfies this automatically: an offset the run puts on
- * both readings, such as its seed's, cancels inside the subtraction. Re-basing
- * such a delta onto some other baseline would BREAK the invariant rather than
- * restore it, by reintroducing the very offset the subtraction removed.
+ * One item's own DPS delta, used to pick a set package's pieces and to subtract their
+ * value from the package's gain. `deltaDps` must be candidate minus baseline from the same
+ * run, so `computeSynergy`'s subtraction cancels the run's offset; re-basing it onto
+ * another baseline would bring that offset back.
  */
 export type IndividualDelta = {
 	itemId: number;
@@ -200,9 +181,8 @@ export type BrokenSetBonus = {
 export const bonusKey = (b: { setId: number; threshold: number }): string => `${b.setId}:${b.threshold}`;
 
 /**
- * The counts of `setId` lost when its worn count drops from `before` to
- * `after` (`before ≥ t > after`, t ≥ 2) that `counts` accepts, highest first.
- * Every count in that range is tried; no list decides which exist.
+ * The counts t of `setId` with `before ≥ t > after` and t ≥ 2 that `counts` accepts,
+ * highest first. Every count in the range is tried; no list decides which exist.
  */
 export function lostThresholds(setId: number, before: number, after: number, counts: BonusCountPredicate = isBonusImplemented): SetThreshold[] {
 	const lost: SetThreshold[] = [];
@@ -213,10 +193,9 @@ export function lostThresholds(setId: number, before: number, after: number, cou
 }
 
 /**
- * Every worn bonus the added pieces break, one entry per lost count that
- * `counts` accepts, sorted by `setId` then descending threshold. A package
- * that takes Malorne from 4 to 0 loses the 4pc AND the 2pc, so both are
- * reported and both count in the net.
+ * Every worn bonus the added pieces break, one entry per lost count `counts` accepts,
+ * sorted by `setId` then descending threshold. Taking a set from 4 to 0 loses both the
+ * 4pc and the 2pc, and both count in the net.
  */
 export function brokenSetBonuses(
 	equipment: readonly SimItemSpec[],
@@ -272,15 +251,10 @@ export type InflationKey = {
 };
 
 /**
- * How much a package's raw `bonusDps` overstates its bonus because of worn
- * bonuses it breaks: `Σ (membersPkg − members2pc − pkgEnd + twoPcEnd)·B`.
- *
- * `computeSynergy` gives `pkgΔ − Σsingles − raw2pc`. A broken bonus puts a −B
- * in `pkgΔ` once if the package's end state breaks it, in each member single
- * that breaks it (subtracted, so +B each), and in the raw 2pc it subtracts
- * (whose own inflation is `(members2pc − twoPcEnd)·B`, subtracted again). At
- * worn 4, `members2pc − twoPcEnd = 1 = twoPcEnd`, so the wrong sign on
- * `twoPcEnd` gives the same answer there and shows only at other worn counts.
+ * How much a package's raw `bonusDps` overstates its bonus because of worn bonuses it
+ * breaks: `Σ (membersPkg − members2pc − pkgEnd + twoPcEnd)·B`, the −B each broken bonus
+ * puts in `pkgΔ`, the singles and the raw 2pc that `computeSynergy` subtracts. At worn 4
+ * a wrong sign on `twoPcEnd` gives the same answer; it shows only at other worn counts.
  */
 export function netInflation(keys: readonly InflationKey[]): number {
 	return keys.reduce((sum, k) => sum + (k.membersPkg - k.members2pc - k.pkgEnd + k.twoPcEnd) * k.B, 0);
@@ -313,11 +287,10 @@ export type SynergyResult = {
 export type SelfSetConfound = {
 	threshold: SetThreshold;
 	/**
-	 * The confounding threshold's own value, measured by one pair sim and
-	 * already added back into the 4pc `bonusDps`. Absent when no
-	 * two package pieces were break-free alone and together, or that sim or its
-	 * gem repair failed: the 4pc `bonusDps` then still has the `−(n−1)·B2`
-	 * confound, and `rank.ts` leaves its `bonusDpsNet` unset.
+	 * The confounding threshold's own value, measured by one pair sim and already added
+	 * back into the 4pc `bonusDps`. Absent when no two package pieces were break-free alone
+	 * and together, or that sim or its repair failed; the 4pc `bonusDps` then keeps the
+	 * `−(n−1)·B2` confound and `rank.ts` leaves its `bonusDpsNet` unset.
 	 */
 	dps?: number;
 };

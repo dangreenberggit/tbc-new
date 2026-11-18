@@ -1,8 +1,7 @@
 /**
- * Meta repair: the recolours that switch an inactive meta gem back on. An
- * exact search over minimal recolour sets that counts socket bonuses both
- * ways, values hit up to an optional budget, and falls back to greedy with
- * the same value past a work limit.
+ * Meta repair: the recolours that switch an inactive meta gem back on. An exact search
+ * over minimal recolour sets that counts socket bonuses both ways and values hit up to an
+ * optional budget, falling back to greedy with the same value past a work limit.
  */
 
 import { GemColor } from '@generated/proto/common';
@@ -50,22 +49,18 @@ export class MetaStepBudgetExceededError extends MetaRepairError {
 }
 
 /**
- * The most (partial layout, item option) pairs the exact search examines
- * before it stops and repair falls back to greedy. The engine runs on the
- * page's main thread, so the search needs a bound; the largest count measured
- * on the tab fixtures was 1,343,593. The limit decides which
- * repair a gear gets, so a change to it requires changing the `metaRepair`
+ * The most (partial layout, item option) pairs the exact search examines before repair
+ * falls back to greedy; the engine runs on the page's main thread, so the search needs a
+ * bound. The limit decides which repair a gear gets, so it is part of the `metaRepair`
  * content-hash key in `rank.ts`.
  */
 export const REPAIR_SEARCH_WORK_LIMIT = 5_000_000;
 
 /**
- * How a repair values a layout. With a budget, gems and bonuses
- * are priced without the hit stat, and hit is priced separately, capped at
- * the budget over the layout's total: `w × (min(ΔH, r) − min(0, r))`. The
- * `− min(0, r)` makes the term 0 when the hit does not change, even on gear
- * already over the cap. Without a budget, hit is priced at full weight with
- * the rest.
+ * How a repair values a layout. Without a budget, hit is priced at full weight with the
+ * rest. With one, gems and bonuses are priced without hit, and hit is capped at the
+ * budget over the layout's total: `w × (min(ΔH, r) − min(0, r))`, where `− min(0, r)`
+ * keeps the term 0 for no hit change even on gear already over the cap.
  */
 type ValueModel = {
 	gem: (gemId: number) => number;
@@ -185,9 +180,9 @@ export function repairMeta(opts: {
 }
 
 /**
- * The head's meta status when its meta gem is off, else undefined. It is the
- * test `repairAndMinimize` makes before it swaps anything; the ranking uses it
- * to skip the worn-gear stats read when the repair would swap nothing.
+ * The head's meta status when its meta gem is off, else undefined: the test
+ * `repairAndMinimize` makes first, which the ranking uses to skip a stats read when
+ * repair would swap nothing.
  */
 export function inactiveMeta(items: readonly SocketedItem[]): Extract<MetaStatus, { kind: 'inactive' }> | undefined {
 	const head = items[0];
@@ -251,10 +246,9 @@ export function minimizeRegems(opts: {
 }
 
 /**
- * Switches an inactive meta back on with the best minimal recolour set of at
- * most `d + 1` changes, `d` being the meta's colour deficit.
- * Past the work limit it writes one warning and runs greedy with the same
- * value, which always finishes.
+ * Switches an inactive meta back on with the best minimal recolour set of at most `d + 1`
+ * changes, `d` being its colour deficit. Past the work limit it warns once and runs
+ * greedy with the same value, which always finishes.
  */
 export function repairAndMinimize(opts: {
 	items: readonly SocketedItem[];
@@ -325,27 +319,17 @@ type Change = { itemIndex: number; socketIndex: number; from: number; to: number
 const NO_COLOUR_CHANGE = 13;
 
 /**
- * The best minimal recolour set that switches the meta on.
+ * The best minimal recolour set that switches the meta on; undefined when none qualifies.
+ * Minimal: each change places a non-meta palette gem of another colour, undoing any one
+ * leaves the meta off, no unique gem repeats or duplicates a worn one, and there are at
+ * most `maxChanges`. V is the gems' EP change, plus bonuses switched on, minus bonuses
+ * switched off, plus `valueModel`'s hit term. Ties go to the first layout in SIM_ORDER,
+ * socket and palette order.
  *
- * A minimal set: every change places a non-meta palette gem of another
- * colour, the meta is active, undoing any one change leaves it inactive, no
- * unique gem the gear already holds is placed and no placed unique gem
- * repeats, and there are at most `maxChanges` changes. Its value V is the
- * changed gems' EP change, minus each socket bonus switched off, plus each
- * one switched on, plus the hit term of `valueModel`. On a tie the first
- * layout found in SIM_ORDER, socket and palette order wins, so the result is
- * deterministic.
- *
- * The search is a dynamic program over the items. Per gem colour and hit
- * amount only the best non-unique gem can be in an optimum (plus any unique
- * gem that beats it), because the meta and the bonuses read colour alone and
- * the hit term reads total hit alone. A partial layout's state is its multiset
- * of change kinds, its hit change and its placed unique gems, and only the
- * best value per state is kept; that merge is exact because V is a sum over
- * items plus a term of the hit change. `work` counts the (partial layout,
- * item option) pairs the merges examine, skipped ones included; once it
- * passes `workLimit` the search stops and returns `overLimit`. Undefined when
- * no layout qualifies.
+ * A dynamic program over the items that keeps the best value per state (change-kind
+ * multiset, hit change, placed uniques); exact because V is a sum over items plus a term
+ * of the hit change. `work` counts examined pairs, skipped ones included; past
+ * `workLimit` it returns `overLimit`.
  */
 export function bestMinimalRepair(opts: {
 	items: readonly SocketedItem[];
@@ -567,8 +551,9 @@ export function bestMinimalRepair(opts: {
 }
 
 /**
- * The search's gems: per (colour, hit amount), the non-unique palette gem with
- * the highest value (the first on a tie), plus each unique gem that beats it.
+ * The search's gems: per (colour, hit amount), the non-unique palette gem with the highest
+ * value (the first on a tie), plus each unique gem that beats it. No other gem can be in an
+ * optimum, as the meta and bonuses read colour alone and the hit term reads total hit.
  */
 function candidatePool(palette: readonly GemEntry[], model: ValueModel): GemEntry[] {
 	const groups = new Map<string, { best?: GemEntry; uniques: GemEntry[] }>();

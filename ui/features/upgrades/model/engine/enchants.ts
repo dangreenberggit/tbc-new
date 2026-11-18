@@ -1,7 +1,6 @@
 /**
- * Enchant applicability by `(effectId, itemId)`: a thin bridge to the live
- * `Database` and `enchantAppliesToItem(enchant, item)` in
- * ui/sim/proto/items.ts, not a second implementation.
+ * Enchant applicability by `(effectId, itemId)`: a bridge to the live `Database` and
+ * `enchantAppliesToItem(enchant, item)` in ui/sim/proto/items.ts, not a second copy.
  */
 
 import { Database } from '@sim/proto/database';
@@ -9,19 +8,14 @@ import { enchantAppliesToItem as upstreamEnchantAppliesToItem } from '@sim/proto
 
 import { getItem } from './items';
 
-/**
- * `effectId` is `enchant.effectId`, so the lookup is a straight scan of the
- * enchant lists: small (TBC has a few hundred enchants) and run at most once
- * per candidate slot attempt.
- */
+/** A straight scan by `enchant.effectId`: a few hundred enchants, once per slot attempt. */
 export function enchantAppliesToItem(effectId: number, itemId: number): boolean {
 	const item = Database.getSync().getItemById(itemId);
 	if (!item) return false;
 	const itemEntry = getItem(itemId);
 	if (!itemEntry) return false;
 
-	// Database.getEnchants(slot) is keyed by ItemSlot, which callers do not
-	// carry (they have the item's ItemType), so every slot's list is scanned.
+	// getEnchants is keyed by ItemSlot, which callers do not carry, so scan every slot.
 	for (const slot of ALL_ITEM_SLOTS) {
 		for (const enchant of Database.getSync().getEnchants(slot)) {
 			if (enchant.effectId !== effectId) continue;
@@ -31,11 +25,7 @@ export function enchantAppliesToItem(effectId: number, itemId: number): boolean 
 	return false;
 }
 
-/**
- * The stats of the enchant with this `effectId`, found the way
- * `enchantAppliesToItem` finds it, or `[]` when the database has none. An
- * enchant's hit counts toward the gem-repair hit budget.
- */
+/** The stats of the enchant with this `effectId`, or `[]`, for the hit budget. */
 export function enchantStats(effectId: number): readonly number[] {
 	for (const slot of ALL_ITEM_SLOTS) {
 		for (const enchant of Database.getSync().getEnchants(slot)) {
@@ -45,6 +35,5 @@ export function enchantStats(effectId: number): readonly number[] {
 	return [];
 }
 
-// ItemSlot values 0..16 (proto/common.proto). Database.getEnchants files an
-// enchant under every slot it fits, so the cheapest correct scan is every slot.
+// ItemSlot values 0..16 (proto/common.proto).
 const ALL_ITEM_SLOTS = Array.from({ length: 17 }, (_, i) => i);

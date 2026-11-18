@@ -12,41 +12,29 @@ import { epScore, type EpWeights, Stat } from './stats';
 import type { DetectedSpecId, SpecId } from './types';
 
 /**
- * Narrow a detected spec to one the cap table knows.
- *
- * `feral-tank` is detectable but not rankable, so it has no cap profile. It
- * reaches gem code only via `SPEC_PREFERRED_METAS`, and dropping it here yields
- * the undefined-spec default — the melee profile, which is the right school for
- * a bear regardless.
+ * Narrow a detected spec to one the cap table knows. `feral-tank` is detectable
+ * but not rankable, so it has no cap profile and gets the default melee
+ * profile, the right school for a bear.
  */
 function rankableSpec(spec: DetectedSpecId | undefined): SpecId | undefined {
 	return spec === undefined || spec === 'feral-tank' ? undefined : spec;
 }
 
-/**
- * Record-only weights. Narrower than `stats.ts`'s `EpWeights` union — this
- * module never receives the dense-array form, so keep the record type
- * explicit here rather than importing the wider union.
- */
+/** Record-only weights: the gem fillers never take `EpWeights`' dense-array form. */
 type EpWeightRecord = Readonly<Record<string, number>>;
 
 /**
  * The values every gem decision needs, passed together through the
- * candidate-swap chain.
- *
- * `weights` and `weightRecord` are the *same* weights in the two forms the
- * code below needs: `epScore` in `stats.ts` accepts the dense-array form, the
- * gem fillers only ever want the record. Deriving the record once at
- * construction means callers cannot pass two forms that disagree.
+ * candidate-swap chain. `weights` and `weightRecord` are the same weights in two
+ * forms, the record derived once in `gemContext` so callers cannot pass two that
+ * disagree.
  */
 export type GemContext = {
 	readonly palette: readonly GemEntry[];
 	/**
-	 * The palette both auto-fill and meta repair may draw from: `palette`
-	 * capped at rare. Repair only touches coloured sockets (never the meta
-	 * socket), and on the full palette it would hand out epic gems the fill
-	 * deliberately avoids. Every colour exists at rare and all 18 TBC meta gems
-	 * are quality 3, so nothing becomes unsolvable under the cap.
+	 * The palette both auto-fill and meta repair draw from: `palette` capped at
+	 * rare, so repair hands out no epic gems the fill avoids. Every colour exists
+	 * at rare and every TBC meta gem is quality 3, so nothing becomes unsolvable.
 	 */
 	readonly fillPalette: readonly GemEntry[];
 	readonly weights: EpWeights;
@@ -57,12 +45,11 @@ export type GemContext = {
 	 */
 	readonly spec?: DetectedSpecId;
 	/**
-	 * Meta repair's hit budget, set once the sim has read the
-	 * baseline's hit: the rating still useful on the baseline, and the hit the
-	 * baseline's equipment has by `gearHitRating`. Each swap's budget is
-	 * `baselineRemaining − (gearHitRating(swapped) − baselineGearHit)`. Absent
-	 * means repair values hit at full weight. `groups` are the baseline
-	 * budget's (`HitCapBudget.groups`); every swap keeps them.
+	 * Meta repair's hit budget, set once the sim has read the baseline's hit: the
+	 * rating still useful on the baseline, and the baseline equipment's hit by
+	 * `gearHitRating`. Each swap's budget is
+	 * `baselineRemaining − (gearHitRating(swapped) − baselineGearHit)`, with the
+	 * baseline's `groups`. Absent means repair values hit at full weight.
 	 */
 	readonly repairHitCap?: {
 		readonly stat: Stat;
@@ -94,59 +81,29 @@ function toWeightRecord(weights: EpWeights): EpWeightRecord {
 const META_NEAR_EP = 1.0;
 
 /**
- * Stat EP cannot rank meta gems: their headline effects are not stats. Nine of
- * the eighteen TBC metas score exactly 0.00 against ret weights, and the two
- * that matter here invert — Swift Skyfire's flat +24 AP scores 9.84 while
- * Relentless scores 9.00 on +12 Agi alone, because its +3% critical damage is
- * a multiplier (`CritDamageMultiplier *= 1.03` in wowsims
- * `sim/core/item_effects.go`) and additive EP cannot see it.
- *
- * The effect enters average damage as `crit * (critDmgMult - 1)`
- * (`sim/core/spell_outcome.go`), so its absolute value scales with crit and is
- * **not** a constant — roughly 0.6% of damage at 10% crit up to 2.4% at 40%.
- * The *ordering* is what is durable: against Swift Skyfire's +24 AP,
- * Relentless leads by ~7x at 10% crit and ~28x at 40%, so it never flips in
- * any realistic ret range.
- *
- * Ret's meta is Relentless Earthstorm Diamond in every wowsims ret gear preset
- * (ui/specs/paladin/retribution/gear_sets/), which carry no other meta.
- *
- * Activation is deliberately not checked. Relentless requires 2 red / 2 yellow
- * / 2 blue elsewhere, and a player who slots a meta arranges their other gems
- * to switch it on. Gating on the colours they happen to wear today would
- * understate a genuine upgrade.
+ * Relentless Earthstorm Diamond, the meta in every wowsims ret gear preset
+ * (ui/specs/paladin/retribution/gear_sets/). Stat EP cannot rank metas: nine of
+ * the eighteen score 0 against ret weights, and Relentless's +3% crit damage is
+ * a multiplier (`sim/core/item_effects.go`) that additive EP scores below Swift
+ * Skyfire's +24 AP. Activation is not checked: a player who slots a meta
+ * arranges their other gems to switch it on.
  */
 const PREFERRED_META_IDS: readonly number[] = [32409];
 
 /**
  * Preferred meta gem per detected spec, read from the meta socketed in that
- * spec's wowsims gear presets (ui/specs/<class>/<spec>/gear_sets/). It is not
- * an EP ranking, because stat EP cannot rank metas at all.
+ * spec's wowsims gear presets (ui/specs/<class>/<spec>/gear_sets/), not ranked
+ * by EP. Read presets by gem colour, not position: `gems` follows the head's own
+ * socket order, so the meta is not always `gems[0]`.
  *
- * Presets are read by gem colour rather than array position: `gems` follows
- * the head item's own socket order, so the meta is not always `gems[0]` (Cowl
- * of Gul'dan, id 34332, sockets `[4,1]`, holds its meta second). No spec
- * changes meta between phases. Some presets wear a socketless head: feral
- * cat's 15 lower sets wear Wolfshead Helm (8345) and only p5 seats 32409;
- * priest's pre-raid and p1 sets wear Spellstrike Hood (24266) and only p2/p3
- * seat 25893.
- *
- * A feral row matters even though most feral presets wear no meta: without
- * one, a Wolfshead baseline has no socket to be missing anything from and
- * prices at full value, while every meta-socket candidate head prices with an
- * empty socket against it.
- *
- * The `feral-tank` row is read from the bear presets
- * (ui/specs/druid/feralbear/gear_sets/). Seven of the eleven sets socket 32409,
- * three wear socketless Wolfshead, and p5 uses Powerful Earthstorm Diamond
- * 25896; the row follows the majority. `feral-tank` is identified but never
- * ranked (it is not a `SpecId`), so its row only keeps
+ * Feral needs a row although most feral presets wear the socketless Wolfshead
+ * Helm: without one, every meta-socket candidate head prices with an empty
+ * socket against a baseline that is missing nothing. `feral-tank` (the bear
+ * presets' majority meta) is never ranked; its row only keeps
  * `missingMetaPreferenceNote` and `metaSocketUnpriced` quiet for it.
  *
- * The type is total over `SpecId` and optional only for the
- * identify-but-not-rank remainder of `DetectedSpecId`, so a new rankable spec
- * cannot reach the empty-socket branch by omission. On adding one, read its
- * meta from its presets; do not inherit another spec's row.
+ * The type is total over `SpecId`, so a new rankable spec cannot reach the
+ * empty-socket branch by omission; read its meta from its own presets.
  */
 export const SPEC_PREFERRED_METAS: Readonly<Record<SpecId, readonly number[]> & Partial<Record<DetectedSpecId, readonly number[]>>> = {
 	ret: PREFERRED_META_IDS,
@@ -181,13 +138,9 @@ export const SPEC_PREFERRED_METAS: Readonly<Record<SpecId, readonly number[]> & 
 
 /**
  * The disclosure for a spec whose meta preference is not recorded, or
- * `undefined` when there is nothing to disclose.
- *
- * Fail loud: silently leaving the socket empty looks identical to a palette
- * that had no meta gem, and silently seating ret's would be wrong. Naming the
- * spec is what lets a reader tell the two apart. The note names the lost
- * socket bonus too, because the sim pays no socket bonus while a socket is
- * empty.
+ * `undefined` when there is nothing to disclose. It names the spec, since a
+ * silently empty socket looks like a palette with no meta gem, and the lost
+ * socket bonus, since the sim pays none while a socket is empty.
  */
 export function missingMetaPreferenceNote(spec: DetectedSpecId | undefined): string | undefined {
 	if (spec === undefined || SPEC_PREFERRED_METAS[spec]) return undefined;
@@ -195,16 +148,10 @@ export function missingMetaPreferenceNote(spec: DetectedSpecId | undefined): str
 }
 
 /**
- * Whether this candidate's price omits a meta gem. The per-row half of the
- * disclosure above — the run-level note cannot tell a reader which rows it
- * moved.
- *
- * Reads `gems` — the array the candidate was actually priced with — rather
- * than deciding from socket colours and the spec table alone. `swapItemAt`
- * fills from `migrateGemsToItem`, which brings a worn meta onto the
- * candidate, so a spec with no recorded preference can still end up with a
- * full socket, and a colour-only test would report an empty meta socket over
- * a seated gem.
+ * Whether this candidate's price omits a meta gem: the per-row half of the
+ * disclosure above. It reads `gems`, the array the candidate was priced with,
+ * because `migrateGemsToItem` can bring a worn meta onto the candidate, so a
+ * spec with no recorded preference can still have a full meta socket.
  */
 export function metaSocketUnpriced(itemId: number, gems: readonly number[], spec: DetectedSpecId | undefined): boolean {
 	if (spec === undefined || SPEC_PREFERRED_METAS[spec]) return false;
@@ -217,9 +164,9 @@ export type FillEmptyOpts = {
 	/** Unique gem ids already socketed elsewhere on the set. */
 	usedUnique?: ReadonlySet<number>;
 	/**
-	 * Meta gem + gems on **other slots only**. Gems kept on the piece under fill
-	 * are contributed by the fill itself — listing them here double-counts their
-	 * colour and can zero the deficit before any candidate is scored.
+	 * Meta gem + gems on **other slots only**. The fill adds the piece's own kept
+	 * gems; listing them here double-counts their colour and can zero the
+	 * deficit before any candidate is scored.
 	 */
 	meta?: { metaId: number; otherGemIds: readonly number[] };
 	/**
@@ -232,12 +179,8 @@ export type FillEmptyOpts = {
 
 /**
  * Keep already-placed gems; EP-fill only empty sockets (after UI-style migrate).
- *
- * Deliberate simplification, not a mirror of wowsims' suggest-gems button:
- * the button re-gems existing body gems and skips meta sockets, whereas this
- * keeps every worn gem and fills only what migration left empty. Do not "fix"
- * this toward the button: silently re-gemming worn slots hides which gems the
- * ranking used.
+ * Unlike wowsims' suggest-gems button, this never re-gems worn sockets, which
+ * would hide which gems the ranking used.
  */
 export function fillEmptyCandidateGems(
 	itemId: number,
@@ -257,18 +200,10 @@ export function fillEmptyCandidateGems(
 }
 
 /**
- * Softcaps: hit / expertise EP overstates gems on capped raid sets.
- * Used only for candidate socket fills. Meta repair does not use these
- * weights: on the budget specs (`CAP_PROFILE_BY_SPEC`, cap-profile.ts) it
- * values hit up to a budget the sim reads (`GemContext.repairHitCap`),
- * elsewhere at full weight.
- *
- * Which stats are softcapped is the spec's own question, and getting it wrong
- * is silent in both directions: zeroing melee hit for a caster leaves spell hit
- * gems overvalued *and* discards nothing, while zeroing expertise for a hunter
- * suppresses a stat the spec was never going to gem anyway. The profile answers
- * both — `hitStat` names the one hit stat that softcaps, and `trackExpertise`
- * says whether expertise is a cap this spec has at all.
+ * Candidate socket fill weights with the spec's softcapped stats zeroed, since
+ * hit and expertise EP overstate gems on capped raid sets. The cap profile names
+ * them: `hitStat`, and expertise when `trackExpertise`. Meta repair does not use
+ * these weights; it values hit by `GemContext.repairHitCap` or at full weight.
  */
 export function gemFillWeights(epWeights: EpWeightRecord, spec?: DetectedSpecId): Record<string, number> {
 	const profile = capProfileFor(rankableSpec(spec));
@@ -350,10 +285,8 @@ function bestGemForSocket(
 
 	if (socket === GemColor.GemColorMeta) {
 		const preferredIds = spec === undefined ? PREFERRED_META_IDS : SPEC_PREFERRED_METAS[spec];
-		// No recorded preference: leave the socket empty rather than fall through
-		// to the EP pick below. EP cannot rank metas — nine of eighteen score
-		// 0.00 — so "best by EP" would be an arbitrary gem wearing the authority
-		// of a measurement, and inheriting another spec's meta would be worse.
+		// No recorded preference: leave the socket empty. EP cannot rank metas, so
+		// the EP pick below would seat an arbitrary gem.
 		if (!preferredIds) return undefined;
 		for (const preferred of preferredIds) {
 			const hit = eligible.find(e => e.gem.id === preferred);

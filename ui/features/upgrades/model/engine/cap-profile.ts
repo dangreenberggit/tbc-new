@@ -1,21 +1,12 @@
 /**
- * Per-spec hit-cap descriptor: the numbers gem fill (`gemFillWeights`) and
- * meta repair (`hitCapBudgetFrom`) need to value hit and expertise gems.
+ * Per-spec hit-cap numbers that gem fill (`gemFillWeights`) and meta repair
+ * (`hitCapBudgetFrom`) use to value hit and expertise gems, so neither branches
+ * on the spec.
  *
- * A caster cannot share a melee spec's numbers: it needs a different stat key,
- * a different rating-per-percent conversion, a different cap percentage, and
- * no expertise. Rather than branch on the spec inside every function, each
- * spec names its numbers here once and those readers use them.
- *
- * The `Record<SpecId, CapProfile>` is deliberately **total**: a spec added to
- * `SpecId` without a cap profile is a compile error, which is the only thing
- * that stops a new spec silently inheriting ret's melee cap: a *right* number
- * for the wrong school, quieter than a wrong number.
- *
- * The cap percentages are game-rule constants. The sim hardcodes neither (it
- * derives miss chance from level difference), so they live here as
- * engine-owned facts with the reasoning attached rather than being read out of
- * the sim at runtime.
+ * `CAP_PROFILE_BY_SPEC` is total over `SpecId` on purpose: a new spec without a
+ * profile is a compile error rather than silently inheriting ret's melee cap.
+ * The sim derives miss chance from level difference and hardcodes no cap, so
+ * the cap percentages live here.
  */
 
 import type { SpellDamageBySchool } from './seams/sim-runner';
@@ -23,14 +14,11 @@ import { Stat } from './stats';
 import type { SpecId } from './types';
 
 /**
- * Talent-string position of a talent.
- *
- * `treeSegment` indexes `talentsString.split("-")`; `talentIndex` indexes the
- * characters within that segment. Both follow the UI tree order that
- * wowsims-tbc-new's talent-string encoder writes, which is the tree json's
- * order — *not* necessarily the proto declaration order. Do not add an entry
- * without reading that spec's tree json; where the two orders agree, it is a
- * coincidence rather than a rule.
+ * Where a talent sits in a talent string: `treeSegment` indexes
+ * `talentsString.split("-")`, `talentIndex` the characters in that segment.
+ * Both follow the tree json order the talent-string encoder writes
+ * (`ui/sim/talents/trees/<class>.json`), which can differ from the proto order,
+ * so read that json before adding an entry.
  */
 export type TalentPosition = {
 	readonly treeSegment: number;
@@ -39,13 +27,9 @@ export type TalentPosition = {
 };
 
 /**
- * What gem fill and meta repair need to know about one spec's hit and
- * expertise caps.
- *
- * `hitStat` is a real `Stat` for both schools — casters carry
- * `StatSpellHitRating` on gear, so the pseudo-stat vocabulary the tab uses for
- * EP *display* (`PseudoStatSchoolHitPercentShadow` and neighbours) never enters
- * here.
+ * What gem fill and meta repair need to know about one spec's hit and expertise
+ * caps. `hitStat` is a gear `Stat` for both schools (casters carry
+ * `StatSpellHitRating`), not a pseudo-stat.
  */
 export type CapProfile = {
 	/** The rating stat the spec's gear uses for hit. */
@@ -61,87 +45,21 @@ export type CapProfile = {
 	 */
 	readonly trackExpertise: boolean;
 	/**
-	 * How meta repair values hit gems. Required, so a new
-	 * spec must choose: a `budget` charges hit gems against
-	 * `hitCapPercent − (pseudo-stat hit %)`, read from `computeStats`; a
-	 * `fullWeight` spec counts hit at full value and the ranking says so in one
-	 * note. A spec gets a budget only when one pseudo-stat gives a number that
-	 * never undervalues hit the sim still rewards for the spells the page's
-	 * default rotation casts.
+	 * How meta repair values hit gems. Required, so a new spec must choose: a
+	 * `budget` charges hit gems against `hitCapPercent − (pseudo-stat hit %)`
+	 * from `computeStats`; `fullWeight` counts hit at full value and the ranking
+	 * says so in one note. A spec gets a budget only when one pseudo-stat never
+	 * undervalues hit the sim still rewards for the default rotation's spells.
 	 *
-	 * Ret and feral: budget on `PseudoStatMeleeHitPercent` (12), cap 9.
-	 * Yellow and two-hand white attacks miss 8% minus (hit % − 1% suppression)
-	 * against level 73, nothing past 9% (`sim/core/target.go`,
-	 * `sim/core/spell_result.go`). Improved Faerie Fire is a
-	 * target-side `ReducedPhysicalHitTakenChance` of 3 that the read does not
-	 * hold (`sim/core/debuffs.go`), so `hitCapBudgetFrom`
-	 * subtracts it. One known limit for feral: a druid with Improved Faerie Fire
-	 * applies it through its own Faerie Fire (Feral) aura
-	 * (`sim/druid/faerie_fire.go`), which `raid.debuffs` does not show,
-	 * so with the raid debuff off the budget wants 3% more hit than the sim
-	 * needs.
-	 *
-	 * Rogue, enhancement and warrior: full weight. White swings add 19% miss
-	 * when the off hand has a swing speed (`sim/core/spell_outcome.go`,
-	 * `sim/core/attack.go`), and every rogue, Fury and enhancement gear
-	 * preset has an off hand, so a 9% budget undervalues hit for each of them and
-	 * a 27% budget is never reached by real gear. Arms (two-hander, no penalty)
-	 * shares the warrior spec id, and this table is per spec, so Arms gets the
-	 * note too.
-	 *
-	 * Hunter: full weight. Ranged shots skip the dual-wield penalty
-	 * (`sim/core/spell_outcome.go`), but the hunter also swings in
-	 * melee with its off hand from gear (`sim/hunter/hunter.go`), the
-	 * page's default rotation melee-weaves (`ui/specs/hunter/dps/spec.ts`,
-	 * `presets.ts`), and every `dw_*` gear preset has an off hand. With a
-	 * dual-wield set hit past 9% still cuts melee misses; with a `2h_*` set it
-	 * does not; one budget cannot be right for both.
-	 *
-	 * Mage, shadow and warlock: budget on `PseudoStatSpellHitPercent` (13), cap
-	 * 16, no Faerie Fire term (it is physical only), priced by the spells the
-	 * baseline sim cast (`HitCapBudget.groups`). Spell hit is
-	 * `SpellHitPercent` + the spell's own bonus + the school bonus when the
-	 * spell has a class mask (`sim/core/spell_result.go`), with miss
-	 * floored at 1%. The target adds a term only to binary spells,
-	 * whose base hit its resistance scales (`SPELL_HIT_CAP_PERCENT`
-	 * below); no default target has resistances. Slot
-	 * 13 is the term every spell shares; the per-school slots 6-11 add the
-	 * school bonus (`sim/core/character_sheet.go`), which comes from
-	 * talents (`sim/mage/talents.go`, `sim/priest/talents.go`;
-	 * none for the warlock) or bonus stats. So hit is worth, for each school
-	 * the sim cast spells of, that school's share of the spell damage until
-	 * its own slot reaches 16: the page's default shadow priest, a Troll with
-	 * no Starshards (`sim/priest/priest.go`), casts only Shadow spells
-	 * and values no hit past its Shadow cap. Three estimates remain. A spell
-	 * with no class mask (an item proc) gets no school bonus but is priced at
-	 * its school's slot, which undervalues hit for its share. An explosive
-	 * gets 100% bonus hit (`sim/core/consumes.go`), so the player's
-	 * hit never changes it, but its Fire damage is priced as if it did, which
-	 * overvalues hit for its share; the sim result does not mark it
-	 * (`proto/api.proto`). A per-spell talent (`perSpellHitTalents`:
-	 * Suppression, Focused Power) shows in no slot and no metric, so the
-	 * spells it covers are priced as if it gave nothing, and the ranking says
-	 * so in one note.
-	 *
-	 * Elemental: full weight. Totem of Wrath, when talented, adds +3
-	 * `SpellHitPercent` through a buffs-phase aura
-	 * (`sim/shaman/talents_elemental.go`) that the stats read turns on
-	 * (`sim/core/character.go`), but in combat only while the totem is down:
-	 * a Fire Elemental cancels it (`sim/shaman/fire_totems.go`) for 120 s
-	 * (`sim/shaman/fire_elemental_totem.go`). So the read can hold 3% hit
-	 * the sim does not give, and a budget from it would undervalue hit, as for
-	 * balance below. Nature's Guidance also adds `SpellHitPercent`
-	 * (`sim/shaman/talent_restoration.go`), but permanently, so it alone
-	 * would not have mattered.
-	 *
-	 * Balance: full weight. Balance of Power is a per-spell bonus on Wrath,
-	 * Starfire and Moonfire, and while stats are measured it adds a flat +4
-	 * `SpellHitPercent` (`sim/druid/talents.go`); `FillPlayerStats`
-	 * turns on build-phase auras before it reads the pseudo-stats
-	 * (`sim/core/character.go`), so every spell-hit slot of a
-	 * Balance of Power druid holds that +4 and none gives the plain
-	 * "cap − hit %". Faerie Fire and Insect Swarm, which the default APL can
-	 * cast, are outside its mask (`ui/specs/druid/balance/apls/default.apl.json`).
+	 * Ret and feral budget on melee hit; mage, shadow and warlock on spell hit,
+	 * by the schools the baseline sim cast (`HitCapBudget.groups`). Rogue,
+	 * enhancement, warrior (Arms shares the spec id) and melee-weaving hunter
+	 * presets dual-wield, which adds 19% white miss (`sim/core/spell_outcome.go`),
+	 * and elemental's and balance's stats read holds hit from Totem of Wrath or
+	 * Balance of Power that combat does not give every spell, so those get full
+	 * weight. Known gaps: a feral's own Improved Faerie Fire is not in
+	 * `raid.debuffs`, and item procs and explosives are priced at their school's
+	 * slot although their hit differs.
 	 */
 	readonly repair: RepairPolicy;
 };
@@ -152,9 +70,8 @@ export type RepairPolicy =
 			readonly kind: 'budget';
 			readonly hitPercentPseudoStat: number;
 			/**
-			 * Talents that add hit to some spells only, which neither the stats
-			 * read nor the sim's action metrics show. See
-			 * `perSpellHitTalentTaken`.
+			 * Talents that add hit to some spells only, which neither the stats read
+			 * nor the sim's action metrics show. See `perSpellHitTalentTaken`.
 			 */
 			readonly perSpellHitTalents?: readonly TalentPosition[];
 	  }
@@ -163,11 +80,11 @@ export type RepairPolicy =
 /**
  * The hit rating still useful against the cap, negative when the gear is over
  * it. `remaining` is for the hit every attack or spell shares, the budget's
- * pseudo-stat. A spell-hit budget also has `groups`: the spells the baseline
- * sim cast, grouped by how much more hit than that they get (`offset`,
- * rating), each with its share of their damage.
- * Hit is worth a group's share until `remaining − offset` is used up.
- * Absent means one group with offset 0 and share 1.
+ * pseudo-stat. A spell-hit budget also has `groups`: the spells the baseline sim
+ * cast, grouped by how much more hit than that they get (`offset`, rating), each
+ * with its share of their damage. Hit is worth a group's share until
+ * `remaining − offset` is used up. Absent means one group with offset 0 and
+ * share 1.
  */
 export type HitCapBudget = {
 	readonly stat: Stat;
@@ -243,28 +160,14 @@ export const RAID_BOSS_LEVEL = 73;
 export const PHYSICAL_HIT_RATING_PER_HIT_PERCENT = 15.769233;
 export const SPELL_HIT_RATING_PER_HIT_PERCENT = 12.615385;
 
-/**
- * Yellow-attack hit cap vs a level-73 boss: 9% missing. A special (yellow)
- * attack against a target three levels above the attacker misses 9% of the
- * time before hit rating.
- */
+/** A yellow attack misses a level-73 boss 9% of the time before hit rating. */
 export const PHYSICAL_HIT_CAP_PERCENT = 9;
 
 /**
- * Spell hit cap vs a level-73 boss: 16%.
- *
- * The sim models 17% base spell miss against a +3-level target
- * (`sim/core/target.go`, `BaseSpellMissChance` = 0.17 for level 73+ via
- * `UnitLevelFloat64`), but clamps the result to a 1% floor —
- * `math.Max(0.01, 1-hitChance)` in `sim/core/spell_result.go`. So the
- * 17th percent buys nothing and the reachable cap is 16, which is why 16 is the
- * number quoted for TBC casters. Unlike physical, there is no `HitSuppression`
- * term on spells; the 0.01 in `target.go` is physical-only.
- *
- * One exception the descriptor deliberately does not model: for
- * `SpellFlagBinary` spells, hit past the cap still counteracts partial resists
- * (`spell_result.go`). That is a per-spell property, not a per-spec one,
- * and this table is per-spec.
+ * Spell hit cap vs a level-73 boss: 17% base miss (`sim/core/target.go`), but
+ * miss is floored at 1% (`sim/core/spell_result.go`), so the 17th percent buys
+ * nothing. Binary spells still gain from hit past the cap against partial
+ * resists; that is per spell, and this table is per spec.
  */
 export const SPELL_HIT_CAP_PERCENT = 16;
 
@@ -297,15 +200,11 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
 	},
 
 	/**
-	 * Hunters read **melee** hit rating, not a ranged one: this sim has no
-	 * `StatRangedHitRating`, and `sim/core/unit.go` declares only two
-	 * hit-rating dependencies — `MeleeHitRating → PhysicalHitPercent` and
-	 * `SpellHitRating → SpellHitPercent`. Ranged attacks read
-	 * `PhysicalHitPercent` and add a flat `RangedHitPercent` on top
-	 * (`sim/core/spell_result.go`), which is a percent-only channel with
-	 * no rating behind it.
-	 *
-	 * No expertise: nothing a hunter fires can be dodged or parried.
+	 * Hunters read melee hit rating: the sim has no ranged hit rating
+	 * (`sim/core/unit.go`), and ranged attacks add a percent-only
+	 * `RangedHitPercent` on top of `PhysicalHitPercent`
+	 * (`sim/core/spell_result.go`). No expertise: nothing a hunter fires can be
+	 * dodged or parried.
 	 */
 	hunter: {
 		hitStat: Stat.StatMeleeHitRating,
@@ -373,19 +272,15 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
 };
 
 /**
- * The profile a caller with no spec in hand gets.
- *
- * Ret's, deliberately: a caller with no spec reads the melee cap rather than a
- * made-up neutral profile.
+ * The profile a caller with no spec gets: ret's, so it reads the melee cap
+ * rather than a made-up neutral profile.
  */
 export const DEFAULT_CAP_PROFILE: CapProfile = CAP_PROFILE_BY_SPEC.ret;
 
 /**
- * The Record is total, so a *typed* `SpecId` always hits a row and the
- * compiler still forces new specs to be filled. The `?? DEFAULT_CAP_PROFILE`
- * covers the untyped path only: `DetectedSpecId` values that are not rankable,
- * and strings that reach here through a cast at a module boundary, because gem
- * fill must degrade rather than throw on a spec it does not recognise.
+ * A typed `SpecId` always hits a row. The `?? DEFAULT_CAP_PROFILE` covers
+ * untyped values that reach here through a cast, because gem fill must degrade
+ * rather than throw on a spec it does not recognise.
  */
 export function capProfileFor(spec: SpecId | undefined): CapProfile {
 	if (spec === undefined) return DEFAULT_CAP_PROFILE;
@@ -396,23 +291,16 @@ export function capProfileFor(spec: SpecId | undefined): CapProfile {
  * The repair hit budget of a character the sim read:
  * `(cap − Improved Faerie Fire − sim hit %) × rating per %`. `pseudoStats` is
  * the first player's `finalStats.pseudoStats` from `computeStats`, whose hit
- * percent holds every player-side source (gear, gems, bonuses, enchants, set
- * bonuses, talents, buffs). Undefined when the spec's repair is not a
- * budget, when any target is not at the level the cap holds for, or when the
- * read is not a finite number.
+ * percent holds every player-side source. Improved Faerie Fire is target-side
+ * and physical only (`sim/core/debuffs.go`), so it counts for melee-hit specs
+ * only. Undefined when the repair is not a budget, a target is not at the cap
+ * level, or the read is not finite.
  *
- * Improved Faerie Fire counts only for melee-hit specs: it lowers the
- * target's `ReducedPhysicalHitTakenChance`, which spell hit never reads
- * (`sim/core/debuffs.go`, `sim/core/spell_result.go`).
- *
- * A spell-hit budget also takes `spellDamageBySchool`, a sim result's damage
- * by school (`SimObservation.spellDamageBySchool`), and gets `groups` from it:
- * a spell's hit is slot 13 plus its school's bonus (`sim/core/spell_result.go`),
- * which the read gives as the school's slot 6-11
- * (`sim/core/character_sheet.go`). A two-school spell gets no school bonus
- * (`SchoolIndex`, `sim/core/flags.go`). Physical
- * damage takes no share: it uses melee hit. It throws when a spell budget has
- * no damage by school, so no caster is priced without it.
+ * A spell-hit budget gets `groups` from `spellDamageBySchool`: a spell's hit is
+ * slot 13 plus its school's slot 6-11 bonus (`sim/core/character_sheet.go`), a
+ * two-school spell gets no school bonus (`sim/core/flags.go`), and physical
+ * damage takes no share. It throws when a spell budget has no damage by school,
+ * so no caster is priced without it.
  */
 export function hitCapBudgetFrom(
 	profile: CapProfile,
@@ -495,10 +383,9 @@ export function talentPoints(talentsString: string | undefined, entry: TalentPos
 }
 
 /**
- * The first per-spell hit talent the player has points in, whose
- * hit the budget leaves out: neither the stats read nor the sim's action
- * metrics show it, so the spells it covers reach the cap sooner than the
- * budget counts.
+ * The first per-spell hit talent the player has points in. The budget leaves its
+ * hit out, since neither the stats read nor the sim's action metrics show it, so
+ * the spells it covers reach the cap sooner than the budget counts.
  */
 export function perSpellHitTalentTaken(profile: CapProfile, talentsString: string | undefined): string | undefined {
 	const { repair } = profile;

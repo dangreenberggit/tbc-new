@@ -1,6 +1,4 @@
-/**
- * Gear hit rating for the gem-repair hit budget.
- */
+/** Gear hit rating for the gem-repair hit budget. */
 import { enchantStats } from './enchants';
 import { getItem } from './items';
 import { layoutHitRating } from './meta-repair';
@@ -8,11 +6,9 @@ import type { SimItemSpec } from './slots';
 import { type Stat, statAt } from './stats';
 
 /**
- * The hit `stat` the equipment has: item stats, enchants, gems and active
- * socket bonuses. It leaves out set bonuses, which live in the
- * sim's Go code and are in no database row, so the set phase reads them from
- * the sim instead. Enchants count because a swap can drop one that does not
- * fit the new item, and ret's head enchant has 16 hit.
+ * The hit `stat` from item stats, enchants, gems and active socket bonuses. Set bonuses
+ * live in Go code, in no database row, so the set phase reads them from the sim. Enchants
+ * count because a swap can drop one that does not fit the new item.
  */
 export function gearHitRating(equipment: readonly SimItemSpec[], stat: Stat): number {
 	let hit = 0;

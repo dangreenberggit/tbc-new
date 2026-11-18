@@ -1,7 +1,6 @@
 /**
- * Item metadata from the page's own `Database` (ui/sim/proto/database.ts),
- * which is loaded before any tab runs. `ItemEntry` is a narrowed projection
- * of the `UIItem` proto, so engine modules read only the fields below.
+ * Item metadata from the page's `Database` (ui/sim/proto/database.ts), loaded before any
+ * tab runs. `ItemEntry` narrows the `UIItem` proto to the fields the engine reads.
  */
 
 import { GemColor, ItemType } from '@generated/proto/common';
@@ -37,9 +36,7 @@ export function getItem(itemId: number): ItemEntry | undefined {
 		setName: item.setName || null,
 		unique: item.unique,
 		itemType: item.type,
-		// 0 is `HandTypeUnknown` / `WeaponTypeUnknown` / `RangedWeaponTypeUnknown`
-		// (proto/common.proto). It becomes null, "does not apply", which is what
-		// callers' `!= null` / `??` checks test for.
+		// 0 is the `*Unknown` value; callers test for null ("does not apply").
 		handType: item.handType || null,
 		weaponType: item.weaponType || null,
 		rangedWeaponType: item.rangedWeaponType || null,
@@ -51,9 +48,8 @@ export function socketsFor(itemId: number): number[] {
 }
 
 /**
- * Whether TBC allows a permanent enchant on this slot at all. An approximate
- * slot-level answer: callers gate on `enchantAppliesToItem` (enchants.ts),
- * not on this flag.
+ * Whether the slot takes a permanent enchant at all. Approximate: callers gate on
+ * `enchantAppliesToItem` (enchants.ts), not on this.
  */
 export function isEnchantable(itemId: number): boolean {
 	const item = Database.getSync().getItemById(itemId);

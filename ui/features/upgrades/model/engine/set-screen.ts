@@ -1,30 +1,20 @@
 /**
- * The set screen: a cheap first pass over every set the gain side covers. It
- * decides which sets get the exact per-bonus measurement, because that
- * measurement costs most of a run's set sims and most sets a player is offered
- * are not worth collecting.
+ * The set screen: a cheap first pass over every set the gain side covers that
+ * picks which sets get the exact per-bonus measurement, which costs most of a
+ * run's set sims.
  *
- * Per set S worn at w, with R the highest count the pool can reach and R − w
- * at least 2: on the gear of S's package at R, rung k (k = 0 … R − w) sends
- * the package's first k added pieces, in slot order, as set-kept copies and
- * the rest as set-less copies, so Go counts w + k pieces of S (the gate's
- * copies-in-both form, `set-less-copies.ts`). The pair is rungs 0 and R − w.
- * Every sim asks for per-iteration values, and the rungs share a seed, so a
- * difference of two rungs has a paired standard error. A rung's gems can
- * differ from rung 0's where meta repair chose them for that rung's own hit
- * (`ScreenPackage.requestsFor`).
+ * Per set S worn at w, with R the highest count the pool can reach and R − w at
+ * least 2: on the gear of S's package at R, rung k (k = 0 … R − w) sends the
+ * package's first k added pieces, in slot order, as set-kept copies and the rest
+ * as set-less copies (`set-less-copies.ts`), so Go counts w + k pieces of S. The
+ * pair is rungs 0 and R − w. The rungs share a seed and return per-iteration
+ * values, so a difference of two rungs has a paired standard error.
  *
- * Record mode runs the pair at four iteration counts and the whole ladder,
- * and records them, so candidate rules can be scored offline. It filters
- * nothing.
- *
- * On mode, the tab's default, runs only the pair at the rule's iteration
- * count and applies `SCREEN_ON_RULE`. A set it drops gets no gate, package
- * or step sims, and no `setBonuses` entry. A set whose readings failed is
- * kept, so a sim failure never hides a set (off-class Cryptstalker sims fail,
- * for one).
- *
- * Neither mode holds a table of set ids or piece counts.
+ * Record mode runs the pair at several iteration counts and the whole ladder,
+ * for scoring rules offline, and filters nothing. On mode, which the tab runs,
+ * sims only the pair and applies `SCREEN_ON_RULE`: a dropped set gets no gate,
+ * package or step sims and no `setBonuses` entry, and a set whose readings
+ * failed is kept, so a sim failure never hides a set.
  */
 
 import type { RaidSimRequest, SimObservation, SimRunOpts } from './seams/sim-runner';
@@ -51,11 +41,9 @@ export type ScreenOnRule = {
 };
 
 /**
- * The on mode's rule. Scored offline against record-mode readings, it kept
- * every set worth collecting on all eleven test characters under σ, 1.5 × σ
- * and each reading's own paired error. A cheaper rule was passed over because
- * it kept three needed sets only through its band. Changing any constant needs
- * a new scoring of the test characters.
+ * The on mode's rule, chosen by scoring candidate rules offline against
+ * record-mode readings: it kept every set worth collecting. Changing any
+ * constant needs a new scoring.
  */
 export const SCREEN_ON_RULE = {
 	measure: 'M2',
@@ -205,10 +193,9 @@ function screenPackage(input: Pick<SetScreenInput, 'packageAt'>, setId: number, 
 
 /**
  * One set's rung sim, shared by both modes so an on-mode pair is the same
- * request, with the same options, as a record-mode pair at that N. Each
- * reading catches its own failure, so one failed sim loses only that
- * reading. `rungs` are the rungs the mode sims; with `pkg.requestsFor`,
- * the first reading asks for all of them in one call.
+ * request, with the same options, as a record-mode pair at that N. Each reading
+ * catches its own failure, so one failed sim loses only that reading. With
+ * `pkg.requestsFor`, the first reading asks for all of `rungs` in one call.
  */
 function rungSimmer(
 	input: Pick<SetScreenInput, 'runSimAt' | 'seed' | 'signal' | 'onSimFailed' | 'onRequestNotBuilt'>,
