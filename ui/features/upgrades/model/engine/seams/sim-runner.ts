@@ -1,5 +1,5 @@
 /**
- * SimRunner seam: drive the browser's own WASM sim, or replay fixtures.
+ * SimRunner: runs the browser's own WASM sim, or replays recorded results.
  *
  * `RaidSimRequest` is plain protojson, as `compose()` emits, not the typed proto of the
  * same name; `WorkerPoolSimRunner` (model/adapters/worker_pool_sim_runner.ts) converts
@@ -11,7 +11,7 @@ export type RaidSimRequest = Readonly<Record<string, unknown>>;
 export type SimRunOpts = {
 	seed: number;
 	iterations: number;
-	/** Each iteration's DPS, for the set screen's record mode; a runner may ignore it. */
+	/** Ask for each iteration's DPS (set screen `'record'` mode); a runner may ignore it. */
 	saveAllValues?: boolean;
 };
 
@@ -23,7 +23,7 @@ export type SimObservation = {
 	/** Each iteration's DPS, only when the run asked with `saveAllValues`. */
 	allValues?: readonly number[];
 	/**
-	 * The first player's own spell damage over the run. A spell-hit budget prices hit by
+	 * The first player's own spell damage over the run. A spell hit budget weighs hit by
 	 * it, so a caster ranked on a runner that leaves it out fails at the budget.
 	 */
 	spellDamageBySchool?: SpellDamageBySchool;
@@ -63,7 +63,7 @@ export interface SimRunner {
 	/**
 	 * The first player's final stats for the request's gear, with no sim. Meta repair
 	 * reads hit with it so hit counts only up to the cap. Required: a runner without it
-	 * would repair a hit-budget spec at full weight and say nothing.
+	 * would price hit at full weight for a spec with a hit budget, and say nothing.
 	 */
 	computeStats(req: RaidSimRequest): Promise<PlayerStatsObservation>;
 	/**
@@ -84,9 +84,9 @@ export type PlayerStatsObservation = {
 };
 
 /**
- * Canonical-JSON(request) + version + seed + iterations, kept as a string rather than a
- * hash since a `Map` key need only be stable and unique. A `saveAllValues` run gets its
- * own `:all` key, so a stored observation without the values never answers it.
+ * The request as sorted-key JSON, plus version, seed and iterations, kept as a string
+ * rather than a hash since a `Map` key need only be stable and unique. A `saveAllValues`
+ * run gets its own `:all` key, so a stored observation without the values never answers it.
  */
 export function simCacheKey(req: RaidSimRequest, simVersion: string, opts: SimRunOpts): string {
 	const key = `${stableStringify(req)}:${simVersion}:${opts.seed}:${opts.iterations}`;
@@ -94,8 +94,8 @@ export function simCacheKey(req: RaidSimRequest, simVersion: string, opts: SimRu
 }
 
 /**
- * Canonical JSON with keys sorted, so equal requests give one string. Also keys the set
- * phase's stats-read cache.
+ * JSON with object keys sorted, so equal requests give one string. rank.ts also keys its
+ * stats reads by it.
  */
 export function stableStringify(value: unknown): string {
 	return JSON.stringify(sortKeys(value));
@@ -133,7 +133,7 @@ export class RecordedSimRunner implements SimRunner {
 		return hit;
 	}
 
-	/** Recordings hold sims only, so a hit-budget spec's read fails its run. */
+	/** Recordings hold sim results only, so a spec with a hit budget fails here. */
 	async computeStats(): Promise<PlayerStatsObservation> {
 		throw new Error('RecordedSimRunner has no recorded stats reads');
 	}

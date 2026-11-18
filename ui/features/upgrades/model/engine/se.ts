@@ -1,10 +1,10 @@
 /**
- * Paired-replicate standard error: replicate a delta across distinct seeds and report
- * `sd(deltas) / sqrt(n)`. It sharpens how finely the top of the list is ordered; it does
- * not correct any number.
+ * Standard error by paired replication (`'paired-replicate'`): rerun a delta on distinct
+ * seeds and report `sd(deltas) / sqrt(n)`. It orders the top of the list more finely; it
+ * does not correct any number.
  */
 
-/** Only the top 8 items are replicated, not the whole list. */
+/** Only the top 8 items are rerun on more seeds, not the whole list. */
 export const PAIRED_REPLICATE_TOP_N = 8;
 
 /**
@@ -47,8 +47,8 @@ export function assertDistinctSeeds(seeds: readonly number[]): void {
 
 /**
  * Seeds must be distinct and at least `iterations` apart to be independent. `iterations`
- * is required so the spacing check cannot be skipped by omission; `assertDistinctSeeds`
- * alone is the visible weaker choice.
+ * is required so the spacing check cannot be skipped by leaving it out; a caller that
+ * wants only distinct seeds calls `assertDistinctSeeds` by name.
  */
 export function assertUsableSeeds(seeds: readonly number[], iterations: number): void {
 	assertDistinctSeeds(seeds);

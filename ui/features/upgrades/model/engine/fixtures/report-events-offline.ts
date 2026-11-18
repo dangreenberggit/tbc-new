@@ -32,9 +32,9 @@ export const REPORT_EVENTS_REF: CharacterRef = {
 };
 
 /**
- * WCL's 19-slot gear order. The page's `Gear` is already sim-native; only a
- * raw WCL capture needs mapping to the 17-slot `SimItemSpec[]` that
- * production code consumes, so the mapping lives with the fixture loader.
+ * WCL's 19-slot gear order. The page's `Gear` is already in sim slot order; only a raw
+ * WCL capture needs mapping to the 17-slot `SimItemSpec[]`, so the mapping lives here
+ * with the fixture loader.
  */
 const WCL_ORDER = [
 	'head',

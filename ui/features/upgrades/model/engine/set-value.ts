@@ -1,4 +1,7 @@
-/** Set-bonus prospective value (completion-package synergy). Pure functions, no sims. */
+/**
+ * The value of completing a set bonus: which pieces to add, and the bonus left after their
+ * own value is taken out. Pure functions, no sims.
+ */
 
 import { getItem } from './items';
 import type { PoolEntry } from './pool';
@@ -6,20 +9,21 @@ import type { SimItemSpec } from './slots';
 
 /**
  * A piece count of 2 or more at which a set may have a bonus. A plain number, not a union:
- * the Go sim keys bonuses at whatever counts a set defines (3, 6, 8), and the break side
- * measures every count a swap loses.
+ * the Go sim keys bonuses at whatever counts a set defines (3, 6, 8), and every count a
+ * swap loses is measured.
  */
 export type SetThreshold = number;
 
 /**
- * The counts the gain side tries, and the counts the break side reads with
+ * The counts tried when completing a set, and the counts checked for a lost bonus with
  * `isBonusImplemented` when `measureBrokenSetValue` is off.
  */
 export const SET_THRESHOLDS: readonly SetThreshold[] = [2, 4];
 
 /**
  * Whether losing `setId`'s `count`-piece bonus counts as a break: `isBonusImplemented` by
- * default, or the worn-set ladder's gated measurement with `measureBrokenSetValue`.
+ * default, or with `measureBrokenSetValue`, whether `measureWornSetLadder` measured that
+ * bonus above noise.
  */
 export type BonusCountPredicate = (setId: number, count: number) => boolean;
 
@@ -37,8 +41,8 @@ export type UnmeasuredReason =
 
 /**
  * Which (setId, threshold) bonuses a ranking without `measureBrokenSetValue` measures; with
- * it, the worn-set ladder measures every lost count. Do not extend this table: the tab
- * keeps no list of implemented set bonuses.
+ * it, every lost count is measured by `measureWornSetLadder`. Do not extend this table:
+ * the tab keeps no list of implemented set bonuses.
  */
 const IMPLEMENTED_IN_SIM: Record<number, Partial<Record<SetThreshold, boolean>>> = {
 	// Justicar 2pc only scales Judgement of the Crusader (sim/paladin/seals.go), which the
@@ -98,10 +102,10 @@ export type PackagePiece = {
 export type PackageSelectionResult = { ok: true; piecesWorn: number; addedPieces: PackagePiece[] } | { ok: false; reason: 'insufficient-pieces' };
 
 /**
- * One item's own DPS delta, used to pick a set package's pieces and to subtract their
- * value from the package's gain. `deltaDps` must be candidate minus baseline from the same
- * run, so `computeSynergy`'s subtraction cancels the run's offset; re-basing it onto
- * another baseline would bring that offset back.
+ * One item's own DPS change, used to pick the pieces that complete a set and to take their
+ * value out of the gain of wearing them together. `deltaDps` must be candidate minus
+ * baseline from the same run, so the offset both readings share cancels in
+ * `computeSynergy`; moving it onto another baseline would bring the offset back.
  */
 export type IndividualDelta = {
 	itemId: number;
@@ -177,13 +181,9 @@ export type BrokenSetBonus = {
 	piecesAfter: number;
 };
 
-/** The map key of one worn bonus: its set and its count. */
 export const bonusKey = (b: { setId: number; threshold: number }): string => `${b.setId}:${b.threshold}`;
 
-/**
- * The counts t of `setId` with `before ≥ t > after` and t ≥ 2 that `counts` accepts,
- * highest first. Every count in the range is tried; no list decides which exist.
- */
+/** Lost bonus counts that `counts` accepts, highest first; no list decides which exist. */
 export function lostThresholds(setId: number, before: number, after: number, counts: BonusCountPredicate = isBonusImplemented): SetThreshold[] {
 	const lost: SetThreshold[] = [];
 	for (let t = before; t > after && t >= 2; t--) {
@@ -195,7 +195,7 @@ export function lostThresholds(setId: number, before: number, after: number, cou
 /**
  * Every worn bonus the added pieces break, one entry per lost count `counts` accepts,
  * sorted by `setId` then descending threshold. Taking a set from 4 to 0 loses both the
- * 4pc and the 2pc, and both count in the net.
+ * 4pc and the 2pc, and both are charged.
  */
 export function brokenSetBonuses(
 	equipment: readonly SimItemSpec[],
@@ -236,11 +236,11 @@ export function brokenSetBonuses(
 }
 
 /**
- * One broken worn bonus's counts inside a package's raw synergy, for
- * `netInflation`. `membersPkg` / `members2pc`: how many members of this package
- * / of the same set's 2pc package break it by their own single swap.
- * `pkgEnd` / `twoPcEnd`: 1 if this package's / the 2pc package's end state
- * breaks it. The 2pc fields are 0 when the package is itself the 2pc.
+ * How one broken worn bonus shows up in a raw `bonusDps`, for `netInflation`.
+ * `membersPkg` / `members2pc`: how many of the added pieces, or of the same set's 2pc
+ * pieces, break it when swapped in alone. `pkgEnd` / `twoPcEnd`: 1 if wearing all the
+ * added pieces, or all the 2pc pieces, breaks it. The 2pc fields are 0 when the added
+ * pieces are the 2pc. `B` is the bonus's value.
  */
 export type InflationKey = {
 	membersPkg: number;
@@ -251,10 +251,11 @@ export type InflationKey = {
 };
 
 /**
- * How much a package's raw `bonusDps` overstates its bonus because of worn bonuses it
- * breaks: `Σ (membersPkg − members2pc − pkgEnd + twoPcEnd)·B`, the −B each broken bonus
- * puts in `pkgΔ`, the singles and the raw 2pc that `computeSynergy` subtracts. At worn 4
- * a wrong sign on `twoPcEnd` gives the same answer; it shows only at other worn counts.
+ * How much a raw `bonusDps` overstates the bonus because of worn bonuses the added pieces
+ * break: the sum of `(membersPkg − members2pc − pkgEnd + twoPcEnd) × B`. Each broken bonus
+ * costs `B` in the gain of the added pieces, in each single swap and in the raw 2pc value,
+ * and `computeSynergy` subtracts the last two. At worn 4 a wrong sign on `twoPcEnd` gives
+ * the same answer, so it shows only at other worn counts.
  */
 export function netInflation(keys: readonly InflationKey[]): number {
 	return keys.reduce((sum, k) => sum + (k.membersPkg - k.members2pc - k.pkgEnd + k.twoPcEnd) * k.B, 0);
@@ -287,10 +288,11 @@ export type SynergyResult = {
 export type SelfSetConfound = {
 	threshold: SetThreshold;
 	/**
-	 * The confounding threshold's own value, measured by one pair sim and already added
-	 * back into the 4pc `bonusDps`. Absent when no two package pieces were break-free alone
-	 * and together, or that sim or its repair failed; the 4pc `bonusDps` then keeps the
-	 * `−(n−1)·B2` confound and `rank.ts` leaves its `bonusDpsNet` unset.
+	 * The value of the bonus at `threshold`, measured by simming two added pieces
+	 * together, and already added back into the 4pc `bonusDps`. Absent when no two added
+	 * pieces broke nothing alone and together, or that sim or its repair failed. The 4pc
+	 * `bonusDps` then still has the 2pc charged once per added piece past the first, and
+	 * `rank.ts` leaves its `bonusDpsNet` unset.
 	 */
 	dps?: number;
 };

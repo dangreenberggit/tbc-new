@@ -1,13 +1,14 @@
 /**
- * The view layer: a pure re-render of an existing `Ranking`, with no seam, I/O
- * or sim, and nothing here reaches `contentHash`.
+ * Sorts, filters and groups an existing `Ranking` for display. It runs no sims,
+ * and nothing here changes `contentHash`.
  *
- * The Set-potential credit is a true net: each future's bonus (`futureBonuses`,
- * already net of package inflation) plus the other pieces' own stats on its
- * path, minus the measured breaks on that path. A row with an unmeasured figure
- * drops to disclosure-only (`rankableSetPotential`). On a step ranking
- * (`setContext.stepRanking`) the credit comes instead from sims of the gear the
- * row would be worn in (`walkSteps`).
+ * With `withSetPotential` on, a set piece's row also gets the DPS of the higher
+ * set bonuses it leads to (`futureBonuses`, whose values the engine has already
+ * corrected): each bonus, plus the stats of the other pieces needed to reach it,
+ * minus the worn bonuses those swaps break. If any of those figures was not
+ * measured the row gets nothing extra (`rankableSetPotential`). With
+ * `setContext.stepRanking`, the credit comes instead from sims of the full gear
+ * the row would be worn in (`walkSteps`).
  */
 import { type Cutoff, meetsCutoff, setBonusNoiseFloorDps } from './cutoff';
 import { getItem } from './items';
@@ -21,12 +22,11 @@ import type { SpecId } from './types';
 export type SetCreditView = 'full' | 'split';
 
 /**
- * How far the ON credit assumes a player commits.
- * "best-stop": to the threshold where committing pays best on full values,
- * or not at all; only a threshold whose bonus clears the noise floor can be
- * the stop. "full-path": to every credited threshold, counting every piece and
- * charging every break on the way. Which a player does is a preference, not a
- * game fact; the default is best-stop.
+ * How far the set-potential credit assumes a player collects a set.
+ * `'best-stop'`: up to the bonus where collecting pays most, or not at all; only
+ * a bonus above the noise floor can be that point. `'full-path'`: every counted
+ * bonus, with every piece and break on the way. This is a player's choice, not a
+ * game rule; the default is `'best-stop'`.
  */
 export type SetCreditRule = 'best-stop' | 'full-path';
 export const DEFAULT_SET_CREDIT_RULE: SetCreditRule = 'best-stop';
@@ -38,8 +38,8 @@ type SetContextLike = Partial<
 type FutureLike = NonNullable<SetContext['futureBonuses']>[number];
 
 /**
- * One itemised line of the ON credit, in the order the walk counts it. `dps`
- * is the signed contribution: a break is negative.
+ * One line of the credit's breakdown, in the order `walkCredit` counts it. `dps`
+ * is signed: a break is negative.
  */
 export type SetPotentialTerm =
 	| {
@@ -52,10 +52,10 @@ export type SetPotentialTerm =
 	| { kind: 'piece'; itemId: number; name: string; dps: number }
 	| { kind: 'break'; setName: string; threshold: number; dps: number }
 	/**
-	 * One eligible bonus of a step ranking: its step gear's total over the
+	 * One eligible bonus with `stepRanking`: the DPS of its full gear over the
 	 * current gear, the partner pieces it adds (in sim slot order) and the worn
-	 * bonuses it loses. These lines are totals, not parts of the credit; `isStop`
-	 * marks the one the credit stops at.
+	 * bonuses it loses. These are totals, not parts of the credit; `isStop` marks
+	 * the bonus the credit counts up to.
 	 */
 	| {
 			kind: 'stop';
@@ -195,15 +195,15 @@ function belowCutoffUnderView(item: RankedItem, withSetPotential: boolean, cutof
 }
 
 /**
- * True when a row has future bonuses but some figure its ON credit depends on
- * was not measured: a future's own value, a break or a piece on a future's path,
- * or a commit break of the top package. The credit is then 0 and the tab says
- * "not counted". False without futures, since nothing is credited.
+ * True when a row has `futureBonuses` but a figure its set-potential credit needs
+ * was not measured: a bonus's own value, a piece or break on the way to it, or
+ * one of `commitBreaks`. The credit is then 0 and the tab says "not counted".
+ * False without `futureBonuses`, since nothing is credited.
  */
 export function setCreditUnmeasured(ctx: SetContextLike | undefined): boolean {
 	const future = ctx?.futureBonuses ?? [];
 	if (future.length === 0) return false;
-	// `commitBreaks` are not read on a step ranking.
+	// `commitBreaks` are not read with `stepRanking`.
 	if (ctx?.stepRanking) return future.some(stepFutureUnmeasured);
 	return (
 		future.some(f => f.dps === undefined || (f.breaks ?? []).some(b => b.dps === undefined) || (f.pieces ?? []).some(p => p.dps === undefined)) ||
@@ -212,10 +212,10 @@ export function setCreditUnmeasured(ctx: SetContextLike | undefined): boolean {
 }
 
 /**
- * On a step ranking, whether one future zeroes the row's ON credit: it lacks its
- * same-gear value and is not below the gate, or its gate cleared and it lacks
- * its step gear's sim or its partner choice. Exported so the tab's popover names
- * the same futures.
+ * With `stepRanking`, whether one bonus makes the row's credit 0: it has no
+ * `sameGearDps` and is not `belowGate`, or it has one but lacks `stepGearDps` or
+ * its partner pieces (`partnerUnmeasured`). Exported so the tab's popover lists
+ * the same bonuses.
  */
 export function stepFutureUnmeasured(
 	f: Pick<NonNullable<SetContext['futureBonuses']>[number], 'belowGate' | 'sameGearDps' | 'stepGearDps' | 'partnerUnmeasured'>,
@@ -226,9 +226,9 @@ export function stepFutureUnmeasured(
 }
 
 /**
- * Which DPS-cell sub-line a set row shows: none when there is nothing to
- * disclose, "not counted" when an unmeasured figure zeroes the ON credit, else
- * the hover hint. The choice lives here so it cannot drift from
+ * Which line a set row shows under its DPS: none when there is nothing to
+ * explain, "not counted" when an unmeasured figure makes the credit 0, else the
+ * hover hint. It is chosen here so it cannot disagree with
  * `rankableSetPotential`.
  */
 export function setBonusSubLine(ctx: SetContextLike | undefined, on: boolean): 'not_counted' | 'hover_hint' | null {
@@ -250,11 +250,11 @@ export type SwapBreak = {
 };
 
 /**
- * The worn bonuses one row's own swap breaks, for a row with no `setContext`
- * (only set pieces get one), so a non-set item that breaks a worn bonus does not
- * show a low figure with no reason. It applies the engine's `brokenSetBonuses`
- * to the counts the ranking measured in `brokenSetValues`, at render time, so a
- * recorded ranking shows the breaks too.
+ * The worn set bonuses a row's own swap breaks, for a row with no `setContext`
+ * (only set pieces have one). Without it, a non-set item that breaks a worn
+ * bonus would show a low DPS with no reason given. It runs the engine's
+ * `brokenSetBonuses` on the values in `brokenSetValues` at render time, so a
+ * stored ranking shows the breaks too.
  */
 export function singleSwapBreaks(
 	row: Pick<RankedItem, 'itemId' | 'slot' | 'slotChoice' | 'removedItems' | 'owned' | 'simmed' | 'setContext'>,
@@ -296,21 +296,21 @@ type CreditWalk = {
 };
 
 /**
- * The credit arithmetic, once every figure is measured. Futures are walked in
- * threshold order; each step adds its floored bonus and the own stats of each
- * path piece no lower step counted, and subtracts each path break no lower step
- * charged. Breaks are not floored: each piece's own stats add the same value
- * back, so a row inside a measured package sums to the package's delta.
+ * Adds up the credit, once every figure is known to be measured. Bonuses are
+ * taken by piece count. Each adds its floored value and the stats of each of its
+ * pieces not yet counted, and subtracts each break not yet charged. Breaks are
+ * not floored: each piece's stats add the same amount back, so a row inside a
+ * fully measured set of pieces sums to the gain of swapping them all.
  *
- * best-stop stops where the running total is largest, or nowhere when none is
- * positive; full-path stops at the last step. Only a step whose bonus clears the
- * floor (`setBonusNoiseFloorDps`, as each bonus folds four sims) can be a stop,
- * or a row would be credited with another item's stats and no bonus; a step that
- * cannot be one still counts its pieces and breaks toward a later stop. The split
- * view takes each bonus at its per-piece share minus floored breaks, at the full
- * view's stop, unclamped since the stop is the player's. The top package's
- * `commitBreaks` are not charged: a row whose own path keeps another set's bonus
- * should not pay for a slot only the top package vacates.
+ * `'best-stop'` stops where the running total is highest, or nowhere when no
+ * total is positive; `'full-path'` stops at the last bonus. Only a bonus above
+ * the floor (`setBonusNoiseFloorDps`, as each bonus comes from four sims) can be
+ * the stopping point, or a row would be credited with another item's stats and
+ * no bonus. The pieces and breaks of a bonus below it still count toward a later
+ * one. The `'split'` view takes each bonus per piece, minus floored breaks, at
+ * the same point, and may go negative, since where to stop is the player's
+ * choice. `commitBreaks` are not charged: they belong to the best combination
+ * of pieces, and a row whose own pieces keep that bonus should not pay for them.
  */
 function walkCredit(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: SetCreditRule): CreditWalk {
 	if (ctx?.stepRanking) return walkSteps(ctx, cutoff, rule);
@@ -382,8 +382,8 @@ function walkCredit(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: SetCr
 }
 
 /**
- * Whether a step ranking's future can be a stop: it has a same-gear value and
- * that value clears the noise gate.
+ * With `stepRanking`, whether a bonus can be the stopping point: it has a
+ * `sameGearDps` that passes `clearsSameGearGate`.
  */
 export function stepEligible(future: Pick<FutureLike, 'belowGate' | 'sameGearDps' | 'sameGearSe'>, cutoff: Cutoff): boolean {
 	if (future.belowGate || future.sameGearDps === undefined) return false;
@@ -391,17 +391,16 @@ export function stepEligible(future: Pick<FutureLike, 'belowGate' | 'sameGearDps
 }
 
 /**
- * The step rule. Walk the eligible futures in count order with
- * c = `stepGearDps` − d_r, d_r the row's single-swap figure before replication.
- * best-stop: the stop is the future whose c is strictly greater than the best
- * so far, which starts at 0; the credit is that c, or 0. full-path: the stop is
- * the last eligible future. So a credited row's `deltaDps` + credit is the sim
- * of its stop gear whenever replication did not rewrite it.
+ * The credit with `stepRanking`. For each eligible bonus by piece count,
+ * c = `stepGearDps` − `singleDeltaDps`. `'best-stop'` stops at the first bonus
+ * with the highest c above 0 and credits that c; `'full-path'` stops at the last
+ * eligible bonus. So a credited row's `deltaDps` + credit is the sim of its full
+ * gear, unless paired replication rewrote `deltaDps`.
  *
- * The split view uses `sameGearDps` per piece in place of the bonus, minus each
- * newly lost worn bonus beyond the row's own break, floored, taken at the stop.
- * Each value is one sim minus another, so the floor is the item bar
- * (`cutoff.absDps`), not the four-sim floor.
+ * The `'split'` view uses `sameGearDps` per piece instead, minus each newly lost
+ * worn bonus beyond the row's own breaks, floored, up to the stopping point.
+ * Each value is one sim minus another, so the floor is `cutoff.absDps`, not the
+ * four-sim floor.
  */
 function walkSteps(ctx: SetContextLike, cutoff: Cutoff, rule: SetCreditRule): CreditWalk {
 	const singleDeltaDps = ctx.singleDeltaDps;
@@ -447,10 +446,10 @@ function walkSteps(ctx: SetContextLike, cutoff: Cutoff, rule: SetCreditRule): Cr
 }
 
 /**
- * The count a crossing row's "Item stats + {set} {n}pc" label names. On a step
- * ranking it is the row's count after the swap, which the crossing gate
- * measured; elsewhere it is the next bonus above the worn count. Null when the
- * row crosses nothing.
+ * The piece count in the "Item stats + {set} {n}pc" label of a row that reaches
+ * a new bonus (`crossesThreshold`). With `stepRanking` it is the count after the
+ * swap, which is the count that was measured; otherwise the next bonus above
+ * the worn count. Null when the row reaches no new bonus.
  */
 export function crossingLabelCount(
 	ctx: Pick<SetContext, 'setId' | 'piecesWornBefore' | 'piecesAfterSwap' | 'crossesThreshold' | 'stepRanking'> | undefined,
@@ -462,11 +461,11 @@ export function crossingLabelCount(
 }
 
 /**
- * The full-view credit and its itemised terms up to the stop, for the tab's
- * popover: each counted step's bonus (none when it floors to 0), then the pieces
- * it adds, then the breaks it charges; the terms add up to `credit`. On a step
- * ranking the terms are one `"stop"` total per eligible bonus instead, which do
- * not add up to `credit`. Call it only when `setCreditUnmeasured` is false.
+ * The full-view credit and its breakdown up to the stopping point, for the tab's
+ * popover: each counted bonus (none when floored to 0), then the pieces it adds,
+ * then the breaks it charges; the lines add up to `credit`. With `stepRanking`
+ * there is one `"stop"` total per eligible bonus instead, and those do not add
+ * up to `credit`. Call it only when `setCreditUnmeasured` is false.
  */
 export function setPotentialTerms(
 	ctx: SetContextLike | undefined,
@@ -478,10 +477,10 @@ export function setPotentialTerms(
 }
 
 /**
- * One step of a step ranking's row: the partner pieces this step adds to the
- * previous step's gear, the bonus it reaches, the worn bonuses it newly loses,
- * and `dps`, its total minus the previous step's total (the first step's minus
- * the row's single swap).
+ * One step of a `stepRanking` row: the partner pieces it adds to the previous
+ * step's gear, the bonus it reaches, the worn bonuses it newly loses, and `dps`,
+ * its total minus the previous step's (for the first step, minus the row's own
+ * swap).
  */
 export type SetPotentialStep = {
 	kind: 'step';
@@ -497,24 +496,22 @@ export type SetPotentialStep = {
 	dps: number;
 	isStop: boolean;
 	/**
-	 * The values of the two lines a step that newly loses a worn bonus splits
-	 * into: the Breaks line, the bonus-off gear's sim minus the previous
-	 * total (−Y), and the pieces line, the step's total minus the bonus-off
-	 * gear's sim (X). Both are present or both are absent, and they add up to
-	 * `dps`.
+	 * A step that newly loses a worn bonus shows as two lines: Breaks, the sim
+	 * with that bonus turned off minus the previous total, and pieces, the step's
+	 * total minus that sim. Both are set or neither is, and they add up to `dps`.
 	 */
 	breaksLineDps?: number;
 	piecesLineDps?: number;
 };
 
 /**
- * The step ranking's `"stop"` totals up to the stop, turned into steps whose
- * `dps` add up to the credit. Null when the row has no stop, or when a step's
- * partner pieces do not include the previous step's, because then no step is a
- * purchase on top of the one before. The first step leaves out the row's own
- * breaks, which the popover lists above the steps. A step that newly loses a
- * worn bonus gets its two line values only when its future's bonus-off sim
- * turned off exactly those bonuses; otherwise it stays one line.
+ * Turns a `stepRanking` row's `"stop"` totals, up to the stopping point, into
+ * steps whose `dps` add up to the credit. Null when there is no stopping point,
+ * or when a step's partner pieces do not include the previous step's, because
+ * then no step builds on the one before. The first step leaves out the row's own
+ * breaks, which the popover lists above the steps. A step gets its two line
+ * values only when its `bonusOff` sim turned off exactly the bonuses it newly
+ * loses; otherwise it stays one line.
  */
 export function setPotentialSteps(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE): SetPotentialStep[] | null {
 	if (!ctx?.stepRanking || ctx.singleDeltaDps === undefined) return null;
@@ -555,7 +552,7 @@ export function setPotentialSteps(ctx: SetContextLike | undefined, cutoff: Cutof
 	return steps;
 }
 
-/** The credit of `walkCredit` in the full or the split view. */
+/** `walkCredit`'s credit for the full or the `'split'` view. */
 export function setPotentialCredit(
 	ctx: SetContextLike | undefined,
 	cutoff: Cutoff,
@@ -567,14 +564,13 @@ export function setPotentialCredit(
 }
 
 /**
- * The ON-view set-potential credit for a row, in the full view or the split view
- * (each future divided by its full piece count). Each bonus is floored, strictly
- * (`>`) like the display gate, at a noise floor from the ranking's own `Cutoff`,
- * so no row sorts on a bonus the display hides (`walkCredit` and `walkSteps` say
- * which floor). When any figure the credit depends on is unmeasured
- * (`setCreditUnmeasured`), the whole credit is 0 and the row is disclosure-only,
- * gain and loss alike; an unmeasured commit break zeroes it too, although a
- * measured one is not charged.
+ * The set-potential credit for a row, for the full or the `'split'` view (each
+ * bonus divided by its full piece count). A bonus counts only when it is above
+ * (`>`, as the display checks) a noise floor from the ranking's own `Cutoff`, so
+ * no row sorts on a bonus the display hides; `walkCredit` and `walkSteps` say
+ * which floor. When any figure the credit needs was not measured
+ * (`setCreditUnmeasured`), the credit is 0, gains and losses alike. An
+ * unmeasured commit break also makes it 0, though a measured one is not charged.
  */
 export function rankableSetPotential(item: Pick<RankedItem, 'setContext'>, cutoff: Cutoff, setCredit: SetCreditView = 'full'): number {
 	if ((item.setContext?.futureBonuses ?? []).length === 0) return 0;

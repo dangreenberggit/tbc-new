@@ -1,7 +1,4 @@
-/**
- * GearSource seam: hides the gear-reading transport behind findFights /
- * readGear.
- */
+/** GearSource: reads gear through `findFights` / `readGear`, whatever the transport. */
 
 import type { CharacterRef, FightRef, SpecId } from '../types';
 import type { Store } from './store';

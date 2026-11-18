@@ -1,7 +1,4 @@
-/**
- * Gem palette: a projection over the live `Database.getSync().getGems()`, not
- * a second copy of the data.
- */
+/** The gems the engine may place, read live from `Database.getSync().getGems()`. */
 
 import { GemColor } from '@generated/proto/common';
 import { Database } from '@sim/proto/database';
@@ -51,7 +48,7 @@ export function gemsForQuality(palette: readonly GemEntry[], maxQuality: number)
 	});
 }
 
-/** The highest gem quality the gem fill uses: rare. */
+/** The highest gem quality `fillEligibleGems` allows: rare. */
 export const FILL_MAX_QUALITY = 3;
 
 export function fillEligibleGems(palette: readonly GemEntry[]): readonly GemEntry[] {

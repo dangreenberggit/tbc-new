@@ -1,16 +1,16 @@
 /**
- * The partner pieces a set row is valued with, for one bonus: the other pieces of its set
- * that reach the bonus, simmed with the current gear and the row's item. One set is chosen
- * per bonus, only in `choosePartnerSet`; `PARTNER_RULE` names the tab's rule.
+ * Picks the other pieces of a set (the partners) that a set row is simmed with to reach
+ * one bonus. `choosePartnerSet` is the only place they are picked, so the rule can be
+ * swapped here alone.
  *
- * "sum-of-singles" (Z) maximises est(P) = d_r + Σ_{p∈P} d_p + Σ_b v_b · (m_b − L_b),
- * with d a single-swap figure, b a worn bonus the ladder counted, v_b its value, m_b the
- * swaps in {r} ∪ P that lose b alone (each single already holds −v_b) and L_b 1 when all
- * together lose it; ties go to the lowest sorted item ids. "close-calls" (the tab's) sims
- * every set within `CLOSE_CALL_MARGIN_DPS` of Z's best and keeps the highest total.
- * "every-combination" sims every set, the reference the rest are scored against.
- * "sum-of-singles-plain" (Z0, no combination-only term) and "single-swap" (T) are for
- * scoring only.
+ * 'sum-of-singles' adds up each piece's DPS change when swapped in alone. A worn bonus
+ * that several pieces each break alone is then charged more than once, and one that only
+ * the full swap breaks is not charged at all, so the estimate corrects both. Ties go to
+ * the lowest sorted item ids. 'close-calls', the tab's rule, sims every set whose estimate
+ * is within `CLOSE_CALL_MARGIN_DPS` of the best and keeps the highest total.
+ * 'every-combination' sims every set and is the reference the others are scored against.
+ * 'sum-of-singles-plain' (without the second correction) and 'single-swap' (the pieces
+ * `pathToThreshold` picks) are kept only for that scoring.
  */
 
 import { bonusKey, type BrokenSetBonus, type PackagePiece } from './set-value';
@@ -18,15 +18,15 @@ import { bonusKey, type BrokenSetBonus, type PackagePiece } from './set-value';
 export type PartnerRule = 'close-calls' | 'sum-of-singles' | 'sum-of-singles-plain' | 'single-swap' | 'every-combination';
 
 /**
- * The rule the tab uses: on eight test characters no zero-sim rule picked a set within
- * noise of the best simmed set on every row.
+ * The tab's rule. On eight test characters, no rule that picks without simming chose a
+ * set within noise of the best simmed set on every row.
  */
 export const PARTNER_RULE: PartnerRule = 'close-calls';
 
 /**
- * How far below the best Z estimate a set may be and still be simmed by "close-calls":
- * twice the largest gap measured between the best Z estimate and the sims' best set on
- * the eight test characters.
+ * How far below the best 'sum-of-singles' estimate a set may be and still be simmed by
+ * 'close-calls': twice the largest gap seen on the eight test characters between the
+ * best estimate and the estimate of the set the sims found best.
  */
 export const CLOSE_CALL_MARGIN_DPS = 31.866872635956497;
 
@@ -38,9 +38,9 @@ export type PartnerPiece = {
 };
 
 /**
- * The set's simmed singles outside the row's slot and the set's worn slots, best per slot
- * (lower id on a tie), in slot order. Paired-slot pieces are keyed to their first slot, as
- * in `selectPackage`.
+ * The set's pieces that were simmed alone, outside the row's slot and the slots the set
+ * already fills, best per slot (lower id on a tie), in slot order. Rings, trinkets and
+ * one-handers are keyed to their first slot, as in `selectPackage`.
  */
 export function partnerPool(args: { pieces: readonly PartnerPiece[]; wornSetSlots: ReadonlySet<number>; rowSlotIndex: number }): PartnerPiece[] {
 	const bestPerSlot = new Map<number, PartnerPiece>();
@@ -63,11 +63,11 @@ export type PartnerQuery = {
 	/** How many partner pieces reach `count` with the row worn. */
 	needed: number;
 	pool: readonly PartnerPiece[];
-	/** The counted worn bonuses lost when every listed swap is made. */
+	/** The worn bonuses that count as lost when every listed swap is made. */
 	lostBy: (swaps: readonly PackagePiece[]) => readonly Pick<BrokenSetBonus, 'setId' | 'threshold'>[];
-	/** A counted worn bonus's measured value; undefined when unmeasured. */
+	/** A worn bonus's measured value; undefined when unmeasured. */
 	breakDps: (setId: number, count: number) => number | undefined;
-	/** The partner pieces today's single-swap path picks, if it has one. */
+	/** The partner pieces `pathToThreshold` picks, if any; used by 'single-swap'. */
 	todaysPieces?: readonly PackagePiece[];
 	/** Sims current gear plus the row plus `partners`; the total is over current gear. */
 	simGear?: (partners: readonly PackagePiece[]) => Promise<{ totalDps: number; se: number } | undefined>;
@@ -94,8 +94,8 @@ export function partnerSets(query: PartnerQuery): PartnerPiece[][] {
 }
 
 /**
- * Z's estimate of one set (Z0's without combination-only terms); undefined when a
- * nonzero term has no measured value.
+ * The 'sum-of-singles' estimate of one set, or 'sum-of-singles-plain' without
+ * `withCombinationOnly`. Undefined when a bonus that changes the estimate is unmeasured.
  */
 export function sumOfSinglesEstimate(query: PartnerQuery, set: readonly PartnerPiece[], opts: { withCombinationOnly: boolean }): number | undefined {
 	const rowSwap: PackagePiece = {
@@ -225,7 +225,7 @@ export async function choosePartnerSet(query: PartnerQuery, rule: PartnerRule): 
 		if (est === undefined) return { unmeasured: 'break-unmeasured' };
 		ranked.push({ set, est });
 	}
-	// Z's order: the highest estimate first, ties to the lowest sorted ids.
+	// Highest estimate first, ties to the lowest sorted ids.
 	ranked.sort((a, b) => b.est - a.est || compareIds(a.set, b.set));
 	const top = ranked[0]!;
 	if (rule !== 'close-calls') {
@@ -237,7 +237,7 @@ export async function choosePartnerSet(query: PartnerQuery, rule: PartnerRule): 
 	}
 
 	const close = ranked.filter(c => c.est >= top.est - CLOSE_CALL_MARGIN_DPS);
-	// One candidate needs no comparison; its step gear is simmed later anyway.
+	// One candidate needs no comparison; its gear is simmed later anyway.
 	if (close.length === 1 || !query.simGear) {
 		return {
 			itemIds: top.set.map(p => p.itemId),
@@ -249,7 +249,7 @@ export async function choosePartnerSet(query: PartnerQuery, rule: PartnerRule): 
 	for (const c of close) {
 		const sim = await query.simGear(c.set);
 		if (!sim) continue;
-		// Strictly greater, so a tie keeps the earlier set in Z's order.
+		// Strictly greater, so a tie keeps the set with the higher estimate.
 		if (!best || sim.totalDps > best.totalDps) {
 			best = { ...c, totalDps: sim.totalDps };
 		}

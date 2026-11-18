@@ -1,7 +1,8 @@
 /**
- * Meta repair: the recolours that switch an inactive meta gem back on. An exact search
- * over minimal recolour sets that counts socket bonuses both ways and values hit up to an
- * optional budget, falling back to greedy with the same value past a work limit.
+ * Meta repair: the gem recolours that switch an inactive meta gem back on. An exact search
+ * over the smallest sets of recolours, counting socket bonuses gained and lost and, with a
+ * hit budget, valuing hit only up to the cap. Past a work limit it falls back to a greedy
+ * search that values layouts the same way.
  */
 
 import { GemColor } from '@generated/proto/common';
@@ -49,18 +50,18 @@ export class MetaStepBudgetExceededError extends MetaRepairError {
 }
 
 /**
- * The most (partial layout, item option) pairs the exact search examines before repair
- * falls back to greedy; the engine runs on the page's main thread, so the search needs a
- * bound. The limit decides which repair a gear gets, so it is part of the `metaRepair`
- * content-hash key in `rank.ts`.
+ * The most work (`work`) the exact search may do before repair falls back to greedy; the
+ * engine runs on the page's main thread, so the search needs a bound. The limit decides
+ * which repair a gear gets, so it is part of the `metaRepair` cache key in `rank.ts`.
  */
 export const REPAIR_SEARCH_WORK_LIMIT = 5_000_000;
 
 /**
- * How a repair values a layout. Without a budget, hit is priced at full weight with the
- * rest. With one, gems and bonuses are priced without hit, and hit is capped at the
- * budget over the layout's total: `w × (min(ΔH, r) − min(0, r))`, where `− min(0, r)`
- * keeps the term 0 for no hit change even on gear already over the cap.
+ * How a repair values a layout. Without a hit budget, hit is priced at full weight with
+ * the other stats. With one, gems and bonuses are priced without hit, and a hit change
+ * `dH` is priced at weight `w` only up to the hit still needed (`r`):
+ * `w × (min(dH, r) − min(0, r))`. The `− min(0, r)` keeps the term at 0 when hit does not
+ * change, even on gear already over the cap.
  */
 type ValueModel = {
 	gem: (gemId: number) => number;
@@ -293,7 +294,7 @@ export function repairAndMinimize(opts: {
 export type MinimalRepair = {
 	items: SocketedItem[];
 	changes: MetaRepairSwap[];
-	/** V of the layout relative to `items`, with no constant added. */
+	/** The layout's value relative to `items`. */
 	value: number;
 	work: number;
 };
@@ -315,21 +316,20 @@ type SearchState = {
 type ChangeList = { head: Change[]; tail: ChangeList | null };
 type Change = { itemIndex: number; socketIndex: number; from: number; to: number };
 
-/** No change of colour: (0 + 1) × 9 + (0 + 1) × 3 + (0 + 1). */
+/** The `kind` of a change that moves no colour count: (0+1) × 9 + (0+1) × 3 + (0+1). */
 const NO_COLOUR_CHANGE = 13;
 
 /**
- * The best minimal recolour set that switches the meta on; undefined when none qualifies.
- * Minimal: each change places a non-meta palette gem of another colour, undoing any one
- * leaves the meta off, no unique gem repeats or duplicates a worn one, and there are at
- * most `maxChanges`. V is the gems' EP change, plus bonuses switched on, minus bonuses
- * switched off, plus `valueModel`'s hit term. Ties go to the first layout in SIM_ORDER,
- * socket and palette order.
+ * The best smallest set of recolours that switches the meta on; undefined when there is
+ * none. Smallest: each change places a non-meta palette gem of another colour, undoing
+ * any one leaves the meta off, no unique gem repeats or duplicates a worn one, and there
+ * are at most `maxChanges`. The value is the gems' EP change, plus bonuses switched on,
+ * minus bonuses switched off, plus the hit term of `valueModel`. Ties go to the first
+ * layout in SIM_ORDER, socket and palette order.
  *
- * A dynamic program over the items that keeps the best value per state (change-kind
- * multiset, hit change, placed uniques); exact because V is a sum over items plus a term
- * of the hit change. `work` counts examined pairs, skipped ones included; past
- * `workLimit` it returns `overLimit`.
+ * A dynamic program over the items that keeps the best value per state (which colour
+ * changes, hit change, unique gems placed). This is exact because the value is a sum
+ * over items plus a term of the hit change. Past `workLimit` it returns `overLimit`.
  */
 export function bestMinimalRepair(opts: {
 	items: readonly SocketedItem[];
@@ -551,9 +551,10 @@ export function bestMinimalRepair(opts: {
 }
 
 /**
- * The search's gems: per (colour, hit amount), the non-unique palette gem with the highest
- * value (the first on a tie), plus each unique gem that beats it. No other gem can be in an
- * optimum, as the meta and bonuses read colour alone and the hit term reads total hit.
+ * The search's gems: per (colour, hit amount), the non-unique palette gem with the
+ * highest value (the first on a tie), plus each unique gem that beats it. No other gem can
+ * be in the best layout, as the meta and bonuses read colour alone and the hit term reads
+ * total hit.
  */
 function candidatePool(palette: readonly GemEntry[], model: ValueModel): GemEntry[] {
 	const groups = new Map<string, { best?: GemEntry; uniques: GemEntry[] }>();
@@ -625,10 +626,9 @@ type Move = {
 };
 
 /**
- * The cheapest recolour that lowers the deficit. Its cost is the drop in V it
- * causes: the gem's value change, plus the bonus it switches off, minus the
- * bonus it switches on, plus the hit change priced against the budget the
- * earlier moves left.
+ * The cheapest recolour that lowers the deficit. Its cost is the drop in value it causes:
+ * the gem's value change, plus the bonus it switches off, minus the bonus it switches on,
+ * plus the hit change priced against the budget the earlier moves left.
  */
 function bestRepairMove(
 	items: SocketedItem[],

@@ -1,5 +1,5 @@
 /**
- * Enchant applicability by `(effectId, itemId)`: a bridge to the live `Database` and
+ * Whether an enchant fits an item, by `(effectId, itemId)`: calls the live `Database` and
  * `enchantAppliesToItem(enchant, item)` in ui/sim/proto/items.ts, not a second copy.
  */
 

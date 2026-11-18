@@ -1,20 +1,21 @@
 /**
- * The set screen: a cheap first pass over every set the gain side covers that
- * picks which sets get the exact per-bonus measurement, which costs most of a
+ * A cheap first pass over the sets whose bonuses a candidate could gain. It
+ * picks which sets get the full per-bonus measurement, which costs most of a
  * run's set sims.
  *
- * Per set S worn at w, with R the highest count the pool can reach and R − w at
- * least 2: on the gear of S's package at R, rung k (k = 0 … R − w) sends the
- * package's first k added pieces, in slot order, as set-kept copies and the rest
- * as set-less copies (`set-less-copies.ts`), so Go counts w + k pieces of S. The
- * pair is rungs 0 and R − w. The rungs share a seed and return per-iteration
- * values, so a difference of two rungs has a paired standard error.
+ * For a set with `worn` pieces worn whose pool pieces can reach `reach`, at
+ * least 2 more: it sims the gear with all those pieces, sending the first k
+ * added pieces (in slot order) as normal copies and the rest as copies with no
+ * set (`applyCopies`), so the sim counts `worn` + k pieces. Each k is one of
+ * `rungs`, and a `pairs` entry is k = 0 against k = `reach` − `worn`. They all
+ * share a seed and return per-iteration values, so the difference of two has a
+ * paired standard error.
  *
- * Record mode runs the pair at several iteration counts and the whole ladder,
- * for scoring rules offline, and filters nothing. On mode, which the tab runs,
- * sims only the pair and applies `SCREEN_ON_RULE`: a dropped set gets no gate,
- * package or step sims and no `setBonuses` entry, and a set whose readings
- * failed is kept, so a sim failure never hides a set.
+ * `'record'` mode runs the pair at several iteration counts and every k, for
+ * scoring rules offline, and drops nothing. `'on'` mode, which the tab uses,
+ * sims only the pair and applies `SCREEN_ON_RULE`. A dropped set gets no later
+ * set sims and no `setBonuses` entry. A set whose sims failed is kept, so a
+ * failure never hides a set.
  */
 
 import type { RaidSimRequest, SimObservation, SimRunOpts } from './seams/sim-runner';
@@ -22,28 +23,28 @@ import { applyCopies, type BuildFailure, errorText, isBuildFailure } from './set
 
 export type SetScreenMode = 'off' | 'record' | 'on';
 
-/** Iteration counts of the pair, and of the ladder. */
+/** Iteration counts for `pairs`, and for `rungs`, in `'record'` mode. */
 export const SCREEN_PAIR_ITERATIONS: readonly number[] = [10, 100, 300, 1000];
 export const SCREEN_LADDER_ITERATIONS: readonly number[] = [100, 300, 1000];
 
 export type ScreenOnRule = {
-	/** M2: the best count's package estimate plus the pair. */
+	/** `'M2'`: `bestStats` plus the pair's DPS. */
 	measure: 'M2';
 	iterations: number;
-	/** K: the sets with the highest measures that are always kept. */
+	/** How many sets with the highest `measure` are always kept. */
 	keep: number;
-	/** c: the band below the K-th measure is c·√2·σ wide. */
+	/** Also keep sets within `bandC` · √2 · `sigma` of the `keep`-th `measure`. */
 	bandC: number;
-	/** Rule 1: drop a set whose pair reads exactly 0. */
+	/** Drop a set whose pair differs by exactly 0 DPS. */
 	dropExactZero: boolean;
-	/** σ = sigmaBoundScale · √2 · baseline stdev / √iterations. */
+	/** `sigma` = `sigmaBoundScale` · √2 · baseline stdev / √`iterations`. */
 	sigmaBoundScale: number;
 };
 
 /**
- * The on mode's rule, chosen by scoring candidate rules offline against
- * record-mode readings: it kept every set worth collecting. Changing any
- * constant needs a new scoring.
+ * The `'on'` mode's rule, chosen by scoring rules offline against `'record'`
+ * results: it kept every set worth collecting. Changing any value means scoring
+ * it again.
  */
 export const SCREEN_ON_RULE = {
 	measure: 'M2',
@@ -58,7 +59,7 @@ export type ScreenReason = 'exact-zero' | 'readings-absent' | 'below-zero' | 'to
 
 export type SetScreenPair = {
 	iterations: number;
-	/** Rung R − w minus rung 0. Absent when either sim failed. */
+	/** DPS with all added pieces counted minus with none; absent if a sim failed. */
 	dps?: number;
 	/** sd(a_i − b_i)/√N over the two sims' per-iteration values. */
 	pairedSe?: number;
@@ -66,12 +67,12 @@ export type SetScreenPair = {
 
 export type SetScreenRung = {
 	iterations: number;
-	/** The pieces of the set Go counts on this rung. */
+	/** How many of the set's pieces the sim counts. */
 	count: number;
-	/** The rung's own DPS reading. Absent when its sim failed. */
+	/** This sim's DPS. Absent when it failed. */
 	dps?: number;
 	se?: number;
-	/** The paired error of this rung minus the rung one count below. */
+	/** The paired standard error of this sim minus the one a count below. */
 	pairedSeToPrev?: number;
 };
 
@@ -79,7 +80,7 @@ export type SetScreenSet = {
 	setId: number;
 	worn: number;
 	reach: number;
-	/** The package's added pieces at `reach`, in slot order. */
+	/** The pieces added up to `reach`, in slot order. */
 	packageItemIds: number[];
 	pairs: SetScreenPair[];
 	/** Grouped by iteration count, then in count order. */
@@ -102,13 +103,13 @@ export type SetScreenOnSet = {
 	setId: number;
 	worn: number;
 	reach: number;
-	/** The package's added pieces at `reach`, in slot order. */
+	/** The pieces added up to `reach`, in slot order. */
 	packageItemIds: number[];
-	/** Rung R − w minus rung 0, absent when either sim failed. */
+	/** DPS with all added pieces counted minus with none; absent if a sim failed. */
 	pair: { dps?: number; pairedSe?: number };
-	/** The highest package estimate over the counts in reach, if any. */
+	/** The highest `statsAt` estimate over the reachable counts, if any. */
 	bestStats?: number;
-	/** `bestStats + pair.dps` (M2), absent when either is. */
+	/** `bestStats + pair.dps`, absent when either is. */
 	measure?: number;
 	kept: boolean;
 	reason: ScreenReason;
@@ -130,42 +131,41 @@ export type SetScreenOn = {
 
 export type SetScreen = SetScreenRecord | SetScreenOn;
 
-/** A set's package at its reach: the composed request and its added pieces. */
+/** The gear with a set's pieces up to `reach` swapped in, and the pieces added. */
 export type ScreenPackage = {
 	request: RaidSimRequest;
 	/** The added pieces' slot indices and item ids, in slot order. */
 	added: ReadonlyArray<{ slotIndex: number; itemId: number }>;
 	/**
-	 * Each rung's request with its own repair-chosen gems, one entry per
-	 * copies, a `BuildFailure` when that request cannot be built, and undefined
-	 * when that rung's gem repair fails: that rung is not measured, with no
-	 * line, as when `packageAt` gives no package. Absent means every rung is
-	 * `request` with its copies applied.
+	 * Each sim's request with meta repair run for that sim's own hit, one per
+	 * entry of `copiesList`: a `BuildFailure` when the request cannot be built,
+	 * or undefined when meta repair fails, in which case that sim is skipped
+	 * without a warning, as when `packageAt` returns nothing. Absent means every
+	 * sim is `request` with its copies applied.
 	 */
 	requestsFor?: (copiesList: Array<{ setKept: number[]; setLess: number[] }>) => Promise<Array<RaidSimRequest | BuildFailure | undefined>>;
 };
 
 export type SetScreenInput = {
-	/** The gain-side sets: each set's worn count and its reach R. */
+	/** Each set's pieces worn and the count the pool can reach. */
 	sets: ReadonlyArray<{ setId: number; worn: number; reach: number }>;
 	/**
-	 * The package of `setId` at `count`, built as the package loop builds it
-	 * (selected pieces swapped in with gem repair, then composed). Undefined
-	 * when it cannot be built.
+	 * The gear with `setId`'s chosen pieces swapped in up to `count`, built the
+	 * same way as the later set sims (pieces swapped in with meta repair, then
+	 * the request composed). Undefined when it cannot be built.
 	 */
 	packageAt: (setId: number, count: number) => ScreenPackage | undefined;
 	/** A store-cached sim with explicit options. Throws when the sim fails. */
 	runSimAt: (request: RaidSimRequest, opts: SimRunOpts) => Promise<{ observation: SimObservation; fromStore: boolean }>;
 	seed: number;
 	/**
-	 * The caller's Stop. Once it has aborted, a failed reading is the runner
-	 * refusing the sim and the caller drops the screen, so the reading writes
-	 * no warning.
+	 * The caller's Stop. Once it has aborted, a failed sim is the runner refusing
+	 * it and the caller throws the results away, so no warning is written.
 	 */
 	signal?: AbortSignal;
 	/** Each failed sim's error, except a sim Stop refused. */
 	onSimFailed?: (setId: number, error: string) => void;
-	/** The error of each rung request that could not be built. */
+	/** The error of each sim request that could not be built. */
 	onRequestNotBuilt?: (setId: number, error: string) => void;
 	pairIterations?: readonly number[];
 	ladderIterations?: readonly number[];
@@ -173,9 +173,10 @@ export type SetScreenInput = {
 
 export type SetScreenOnInput = Omit<SetScreenInput, 'pairIterations' | 'ladderIterations'> & {
 	/**
-	 * The package estimate of `setId` at `count`: the sum of its pieces'
-	 * single-swap figures plus rule Z's add-back for the worn bonuses they
-	 * share (`partner-choice.ts`). Undefined when an input is missing.
+	 * An estimate for `setId`'s pieces at `count` with no extra sim: the sum of
+	 * each piece's own swap gain, corrected for worn bonuses they break together,
+	 * as the `'sum-of-singles'` partner rule does. Undefined when an input is
+	 * missing.
 	 */
 	statsAt: (setId: number, count: number) => number | undefined;
 	/** The baseline sim's per-iteration standard deviation. */
@@ -184,7 +185,7 @@ export type SetScreenOnInput = Omit<SetScreenInput, 'pairIterations' | 'ladderIt
 
 type ScreenCounter = { simmed: number; fromStore: number };
 
-/** The package at `reach` and its added pieces' slots, in slot order. */
+/** The gear at `reach` and the slots of its added pieces, in slot order. */
 function screenPackage(input: Pick<SetScreenInput, 'packageAt'>, setId: number, reach: number) {
 	const pkg = input.packageAt(setId, reach);
 	const added = pkg ? [...pkg.added].sort((a, b) => a.slotIndex - b.slotIndex) : [];
@@ -192,10 +193,11 @@ function screenPackage(input: Pick<SetScreenInput, 'packageAt'>, setId: number, 
 }
 
 /**
- * One set's rung sim, shared by both modes so an on-mode pair is the same
- * request, with the same options, as a record-mode pair at that N. Each reading
- * catches its own failure, so one failed sim loses only that reading. With
- * `pkg.requestsFor`, the first reading asks for all of `rungs` in one call.
+ * Runs one of a set's sims for a given k, shared by both modes so an `'on'` pair
+ * is the same request, with the same options, as a `'record'` pair at that
+ * iteration count. Each sim catches its own failure, so one failure loses only
+ * that sim. With `pkg.requestsFor`, the first sim builds all of `rungs` in one
+ * call.
  */
 function rungSimmer(
 	input: Pick<SetScreenInput, 'runSimAt' | 'seed' | 'signal' | 'onSimFailed' | 'onRequestNotBuilt'>,
@@ -326,9 +328,9 @@ export async function recordSetScreen(input: SetScreenInput): Promise<SetScreenR
 }
 
 /**
- * The on mode: the pair at `SCREEN_ON_RULE.iterations` for each set with
- * R − w ≥ 2, in set id order, then `applyScreenRule`. Sets with R − w < 2
- * are not screened, so the caller keeps them.
+ * The `'on'` mode: the pair at `SCREEN_ON_RULE.iterations` for each set that can
+ * gain 2 or more pieces, in set id order, then `applyScreenRule`. The caller
+ * keeps every other set.
  */
 export async function runSetScreenOn(input: SetScreenOnInput): Promise<SetScreenOn> {
 	const rule = SCREEN_ON_RULE;
@@ -391,15 +393,16 @@ export async function runSetScreenOn(input: SetScreenOnInput): Promise<SetScreen
 }
 
 /**
- * Which screened sets the on mode keeps, and why. It is the rule the offline
- * scoring applied, so the scoring's verdict holds only while the two match.
- * In ascending set id:
+ * Which sets the `'on'` mode keeps, and why. It must match the rule the offline
+ * scoring applied, or that scoring no longer holds. In set id order:
  *
- * 1. a pair of exactly 0 is dropped, before the absence check;
- * 2. an absent measure or σ keeps the set, outside the ranking;
- * 3. measure + 2σ < 0 is dropped;
- * 4. the rest are ranked by (−measure, set id), the first K kept;
- * 5. another set within c·√2·σ of the K-th measure (inclusive) is kept;
+ * 1. a pair of exactly 0 DPS is dropped, before the next check;
+ * 2. a missing `measure` or `sigma` keeps the set, without ranking it;
+ * 3. `measure` + 2 · `sigma` < 0 is dropped;
+ * 4. the rest are sorted by `measure` (highest first, then set id), and the
+ *    first `keep` are kept;
+ * 5. another set within `bandC` · √2 · `sigma` of the `keep`-th `measure`
+ *    (inclusive) is kept;
  * 6. the rest are dropped.
  */
 export function applyScreenRule(

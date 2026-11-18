@@ -1,7 +1,4 @@
-/**
- * Build RecordedGearSourceData from the slamaltman raw fixture, via the
- * ranked route.
- */
+/** Builds RecordedGearSourceData from the slamaltman raw fixture, as a `'ranked'` route. */
 
 import type { RecordedGearSourceData } from '../seams/gear-source';
 import type { CharacterRef } from '../types';

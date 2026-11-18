@@ -1,7 +1,7 @@
 /**
- * Orders candidates before any sim by committed-EP delta against the worn item, from raw
- * item data with no gem repair, so it cannot fail on a candidate the sim would reject. The
- * order changes only when a row fills and what a candidate cap keeps, never a number shown.
+ * Orders candidates by EP gain over the worn item before any sim, from raw item data with
+ * no gem changes, so it cannot fail on a candidate the sim would reject. The order only
+ * changes when a row fills and what a candidate cap keeps, never a number shown.
  */
 import { HandType } from '@generated/proto/common';
 
@@ -19,10 +19,10 @@ export type ItemEp = (itemId: number, slot: SimSlotName) => number;
 const OFFHAND_INDEX = SIM_ORDER.indexOf('offhand');
 
 /**
- * The best committed-EP delta over every sim slot the candidate's pool slot maps to, as the
- * candidate loop tries each paired-slot placement and keeps the best. A two-hander in the
- * main hand is also charged the worn off hand, which its sim clears. No usable slot gives
- * 0, not a throw: this runs before any sim, so no result could explain a skip.
+ * The best EP gain over every sim slot the candidate can go in, as the candidate loop
+ * tries both ring, trinket or hand slots and keeps the best. A two-hander in the main
+ * hand is also charged the worn off hand, which its sim clears. No usable slot gives 0,
+ * not a throw: this runs before any sim, so no result could explain a skip.
  */
 function bestEpDelta(entry: PoolEntry, equipment: readonly SimItemSpec[], itemEp: ItemEp, spec?: SpecId): number {
 	const wornEp = (slotName: SimSlotName, slotIndex: number): number => {

@@ -1,6 +1,6 @@
 /**
- * Patches a golden RaidSimRequest skeleton with the player's name, race and equipment,
- * in protojson form (see seams/sim-runner.ts).
+ * Fills a template RaidSimRequest (`skeleton`) with the player's name, race and
+ * equipment, in protojson form (see seams/sim-runner.ts).
  */
 
 import type { RaidSimRequest } from './seams/sim-runner';

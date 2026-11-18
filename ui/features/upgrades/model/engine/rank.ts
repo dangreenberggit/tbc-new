@@ -136,25 +136,26 @@ export type Deps = {
 	 */
 	concurrency?: number;
 	/**
-	 * When set, `buildSetBonuses` measures every bonus of every worn set on the
-	 * player's own gear with the worn-set ladder, and charges a break only where
-	 * that value clears the noise gate; it also measures each package's bonus on
-	 * the package's own gear. The tab passes it. Absent, none of those sims run.
+	 * When set, `buildSetBonuses` sims the value of every bonus of every worn
+	 * set on the player's own gear, and counts a lost bonus only where that
+	 * value is above noise. It also measures each bonus a row could reach on
+	 * the gear that reaches it. The tab passes it. Absent, none of those sims
+	 * run.
 	 */
 	measureBrokenSetValue?: boolean;
 	/**
-	 * The rule that picks a set row's partner pieces (`partner-choice.ts`).
-	 * Absent means `PARTNER_RULE`. The tab never sets it; tests set it to score
-	 * the rules against each other. Hashed only when set, so a ranking cached
-	 * under one rule is never served for another.
+	 * The rule that picks the other set pieces a set row is simmed with
+	 * (`partner-choice.ts`). Absent means `PARTNER_RULE`. The tab never sets
+	 * it; tests set it to score the rules against each other. Hashed only when
+	 * set, so a ranking cached under one rule is never served for another.
 	 */
 	partnerRule?: PartnerRule;
 	/**
 	 * The set screen (`set-screen.ts`), run only with `measureBrokenSetValue`.
-	 * "on" filters the gain side to the sets the screen keeps; the tab passes
-	 * it. "record" runs the screen's sims and filters nothing; the tab never
-	 * sets it, only tests do. Both write `Ranking.setScreen`. Absent means
-	 * "off". Hashed only when set.
+	 * "on" values the bonuses rows could reach only for the sets the screen
+	 * keeps; the tab passes it. "record" runs the screen's sims and filters
+	 * nothing; the tab never sets it, only tests do. Both write
+	 * `Ranking.setScreen`. Absent means "off". Hashed only when set.
 	 */
 	setScreen?: SetScreenMode;
 	/**
@@ -173,7 +174,7 @@ export type Progress =
 	| { stage: 'building-pool' }
 	/**
 	 * `total` counts sims (baseline, candidates, paired replicas). The first
-	 * total is a budget: it counts replicas for up to `PAIRED_REPLICATE_TOP_N`
+	 * total is an upper bound: it counts replicas for up to `PAIRED_REPLICATE_TOP_N`
 	 * rows before the run knows how many rows clear the cutoff. The first
 	 * `simming` after `ranking` repeats `done` with the exact total, and the run
 	 * ends on `done === total`.
@@ -181,8 +182,8 @@ export type Progress =
 	| { stage: 'simming'; done: number; total: number }
 	/**
 	 * One candidate's row finished, fired as each sim finishes so a caller can
-	 * fill rows before the "ranking" stage. No `stage` field: this is a side
-	 * channel beside the stage sequence, not a replacement for "simming".
+	 * fill rows before the "ranking" stage. No `stage` field, because it is
+	 * sent alongside the "simming" stage, not in place of it.
 	 */
 	| { kind: 'row'; row: RankedItem }
 	| { stage: 'ranking' };
@@ -243,20 +244,20 @@ export type RankedItem = {
 };
 
 /**
- * One set piece's set-bonus consequences. `singleBreaks` are already inside
- * `deltaDps`; `futureBonuses` are the ON-view terms added on top. A break's
- * `dps` is the measured `B`; absent means unmeasured, and the row falls back
- * to disclosure-only.
+ * What one set piece's row does to set bonuses. `singleBreaks`, the worn
+ * bonuses this swap loses, are already in `deltaDps`. `futureBonuses`, the
+ * bonuses more pieces would reach, are what the view adds with set potential
+ * on. A lost bonus's `dps` is its measured value; absent means unmeasured,
+ * and the row then shows the bonus with no value added.
  *
- * A future's `breaks` and `pieces` come from its own path to the threshold
- * (`pathToThreshold`): the worn bonuses it breaks beyond the row's single
- * break, and its other members with their own stats as `dps`, since the bonus
- * means wearing them too. `pieces` is present, possibly empty, exactly when
- * the future has a path. Only path breaks are charged, so a Malorne chest row
- * never pays for the Thunderheart 2pc that only the Malorne 4pc's hands piece
- * breaks. On a step ranking a future whose gate cleared takes both from its
- * partner choice (`measureSetSteps`). `commitBreaks` use the top package with
- * this candidate substituted: disclosed, never charged.
+ * A future bonus's `breaks` and `pieces` come from the pieces this row needs
+ * to reach it (`pathToThreshold`): the worn bonuses they lose beyond the
+ * row's own, and the other pieces with their own gains, since reaching the
+ * bonus means wearing them. `pieces` is present exactly when there is such a
+ * path. Only these losses are charged: a Malorne chest row must not pay for
+ * the Thunderheart 2pc that only the Malorne 4pc's hands piece breaks. With
+ * `stepRanking`, `measureSetSteps` replaces both for each bonus above noise.
+ * `commitBreaks` (losses of `topMeasuredPackage`) are shown, never charged.
  */
 export type SetContext = {
 	setId: number;
@@ -266,15 +267,15 @@ export type SetContext = {
 	nextThreshold: SetThreshold | null;
 	crossesThreshold: boolean;
 	/**
-	 * Set on every row of a step ranking: the engine valued each future as a
-	 * sim of the row's step gear. The view's helpers that see only this context
-	 * read it to apply the step rule instead of summing `pieces`. Absent on
-	 * rankings made without `measureBrokenSetValue`.
+	 * Set on every row of a ranking made with `measureBrokenSetValue`: each
+	 * future bonus was valued by one sim of the row plus its partner pieces
+	 * (`stepGearDps`). View helpers that see only this context read it to use
+	 * that sim instead of summing `pieces`.
 	 */
 	stepRanking?: true;
 	/**
-	 * The row's single-swap figure d_r, taken before paired replication
-	 * rewrites `deltaDps`. A step's credit is its `stepGearDps` minus this.
+	 * The row's own swap gain, taken before paired replication rewrites
+	 * `deltaDps`. A future bonus's value is its `stepGearDps` minus this.
 	 */
 	singleDeltaDps?: number;
 	singleBreaks?: Array<{
@@ -290,31 +291,30 @@ export type SetContext = {
 		/** The entry's `sameGearDps` and `sameGearSe`, copied. */
 		sameGearDps?: number;
 		sameGearSe?: number;
-		/** The entry's gate did not clear: no package or step sim ran. */
+		/** Not above noise on its own gear, so no other sim ran for it. */
 		belowGate?: true;
 		/**
 		 * The sim of the current gear plus this row plus its partner pieces, minus
 		 * the sim of the current gear, and that difference's standard error.
-		 * Present only on a step ranking, for a future whose gate cleared, when
-		 * the partner choice and the sim succeeded.
+		 * Present only with `stepRanking`, for a bonus above noise, when the
+		 * partner choice and the sim succeeded.
 		 */
 		stepGearDps?: number;
 		stepGearSe?: number;
 		/**
-		 * The sim of the gear just before this step with the bonuses the step
-		 * newly loses turned off (their replaced pieces sent as set-less copies),
-		 * minus the current gear's sim; its standard error; and the bonuses
-		 * turned off. The popover splits the step into a Breaks line and a pieces
-		 * line with it. Present only on a step ranking, for a shown step that
-		 * newly loses a worn bonus, when the plain gear before was in the store
-		 * and the sim succeeded.
+		 * The sim of the gear before this bonus with the worn bonuses it newly
+		 * loses turned off (their pieces sent as set-less copies), minus the
+		 * current gear's sim; its standard error; and the bonuses turned off. The
+		 * popover uses it to show those losses on their own line. Present only
+		 * with `stepRanking`, for a shown bonus that newly loses a worn bonus,
+		 * when that gear without copies was in the store and the sim succeeded.
 		 */
 		bonusOffDps?: number;
 		bonusOffSe?: number;
 		bonusOff?: Array<{ setId: number; threshold: SetThreshold }>;
 		/** The partner choice needed a worn bonus whose value is unmeasured. */
 		partnerUnmeasured?: 'break-unmeasured';
-		/** The rule that chose `pieces` on a step ranking. */
+		/** The rule that chose `pieces`, with `stepRanking`. */
 		partnerRule?: PartnerRule;
 		breaks?: Array<{
 			setId: number;
@@ -342,11 +342,10 @@ export type SetPackageContext = {
 };
 
 /**
- * Standalone value `B` of one worn set bonus (X, t) that a swap can break: the
- * worn-set ladder's value at count t on the player's own gear, for a count
- * whose value clears the noise gate or could not be measured. `dps` is `B`;
- * absent with `unmeasured` when a ladder sim failed. Only `sim-failed` is
- * produced; the other members keep saved rankings readable.
+ * The measured value of one worn set bonus a swap can lose: that count's
+ * `wornSetLadder` entry, for a count above noise or not measured. `dps` is
+ * absent with `unmeasured` when a sim failed. Only `sim-failed` is produced;
+ * the other members keep saved rankings readable.
  */
 export type BrokenSetValue = {
 	setId: number;
@@ -358,11 +357,10 @@ export type BrokenSetValue = {
 };
 
 /**
- * One count of one worn set's ladder: its measured value on the player's own
- * gear, and whether it is `counted` as a break: a value that clears the noise
- * gate, or a failed sim at a count that may hold a bonus
- * (`measureWornSetLadders`), which the row shows as unmeasured. Counts at
- * which the set has no bonus read about 0 and are not counted.
+ * The value of one piece count of one worn set on the player's own gear
+ * (`measureWornSetLadder`), and whether it is `counted` as a bonus a swap can
+ * lose: a value above noise, or a failed sim at a count that may hold a
+ * bonus (`measureWornSetLadders`). Counts with no bonus read about 0.
  */
 export type WornSetLadderEntry = {
 	setId: number;
@@ -374,12 +372,11 @@ export type WornSetLadderEntry = {
 	counted: boolean;
 };
 
-/** One crossing gate of `Ranking.crossingGates`. */
 export type CrossingGate = {
 	setId: number;
-	/** One more than the worn count: the count a single swap reaches. */
+	/** One more than the worn count: the count a one-item swap reaches. */
 	count: number;
-	/** The candidate whose single-swap gear the gate was measured on. */
+	/** The candidate whose swap the bonus was measured on. */
 	itemId: number;
 	dps?: number;
 	se?: number;
@@ -388,20 +385,20 @@ export type CrossingGate = {
 
 export type SetStepSims = {
 	partnerRule: PartnerRule;
-	/** Distinct step gears across every row and future. */
+	/** Distinct gears simmed, across every row and future bonus. */
 	gears: number;
 	simmed: number;
 	fromStore: number;
 };
 
 /**
- * The bonus-off sims of a step ranking (see `bonusOffDps`), one per distinct
- * request. `gears` counts the requests and `failedGears` those whose sim
- * failed. `beforeInStore` counts the requests whose plain gear before was in
- * the store; the rest are never simmed, because their Breaks line would not
- * be a paired difference. `skippedSteps` counts shown steps that newly lose a
- * bonus but got no value: no request could be built, or the plain gear
- * before was not in the store.
+ * The bonus-off sims (see `bonusOffDps`), one per distinct request. `gears`
+ * counts the requests and `failedGears` those whose sim failed.
+ * `beforeInStore` counts requests whose gear before, without copies, was in
+ * the store; the rest are never simmed, since their loss would not be a
+ * paired difference. `skippedSteps` counts shown bonuses that newly lose a
+ * worn bonus but got no value: no request could be built, or that gear was
+ * not in the store.
  */
 export type SetBonusOffSims = {
 	gears: number;
@@ -427,33 +424,33 @@ export type SetBonusValue = {
 	packageItemIds: number[];
 	packageDeltaDps: number;
 	/**
-	 * The package synergy `pkgΔ − Σsingles − raw2pc`, before any broken-bonus
-	 * correction. One exception: at worn 1 a 4pc also adds back `(n−1)·B2` from
-	 * the pair sim (`selfConfound`).
+	 * The bonus's value before correcting for lost worn bonuses: the added
+	 * pieces' sim gain minus each piece's own swap gain, and minus the 2pc's
+	 * value for a 4pc. At worn 1 each piece's own gain includes the 2pc, so a
+	 * 4pc adds it back once per piece after the first (`selfConfound`).
 	 */
 	bonusDps?: number;
 	/**
-	 * `bonusDps` corrected for the worn bonuses the package breaks
-	 * (`netInflation`), using the measured `B`; the value the ON credit and
-	 * sort key use. Absent when any needed `B` is unmeasured, or when a worn-1
-	 * 4pc's `selfConfound` has no `dps` (no usable pair, or its sim or gem
-	 * repair failed). Absent reverts the row to disclosure-only.
+	 * `bonusDps` corrected for the worn bonuses the added pieces lose
+	 * (`netInflation`), using their measured values; set potential and the sort
+	 * use it. Absent when a needed value is unmeasured, or when a worn-1 4pc's
+	 * `selfConfound` has no `dps` (no usable pair, or its sim or gem repair
+	 * failed). Absent, the row shows the bonus with no value added.
 	 */
 	bonusDpsNet?: number;
 	se?: number;
 	/**
-	 * The bonus measured on its package's own gear (`measureSameGearBonus`):
-	 * that gear simmed with the set kept and set-less, enough pieces sent as
-	 * copies to leave `threshold − 1`. The set step's noise gate reads it.
-	 * Present only under `deps.measureBrokenSetValue`; absent when a sim
+	 * The bonus measured on its added pieces' own gear (`measureSameGearBonus`):
+	 * that gear simmed with the bonus on and off, by sending enough pieces as
+	 * copies to leave `threshold − 1`. It decides whether the bonus is above
+	 * noise. Present only with `deps.measureBrokenSetValue`; absent when a sim
 	 * failed. `sameGearSe` is the two sims' combined standard error.
 	 */
 	sameGearDps?: number;
 	sameGearSe?: number;
 	/**
-	 * The same-gear value is at or below the noise gate, so this count is not a
-	 * bonus here and no package, pair or step sim ran: `packageDeltaDps` is 0
-	 * and `bonusDps` is absent.
+	 * `sameGearDps` is not above noise, so this count is no bonus here and no
+	 * other sim ran for it: `packageDeltaDps` is 0 and `bonusDps` is absent.
 	 */
 	belowGate?: true;
 	unmeasured?: UnmeasuredReason;
@@ -488,44 +485,46 @@ export type Ranking = {
 	items: RankedItem[];
 	setBonuses?: SetBonusValue[];
 	/**
-	 * Standalone value `B` of each worn set bonus a swap can break: one entry
-	 * per counted ladder count. Present only with `deps.measureBrokenSetValue`.
+	 * The measured value of each worn set bonus a swap can lose: one per
+	 * `counted` entry of `wornSetLadder`. Present only with
+	 * `deps.measureBrokenSetValue`.
 	 */
 	brokenSetValues?: BrokenSetValue[];
 	/**
-	 * Every ladder count from 2 to the worn count of every worn set, counted or
-	 * not. Present only with `deps.measureBrokenSetValue` and a set worn at 2+.
+	 * The value of every piece count from 2 to the worn count of every worn
+	 * set, counted or not. Present only with `deps.measureBrokenSetValue` and a
+	 * set worn at 2+.
 	 */
 	wornSetLadder?: WornSetLadderEntry[];
 	/**
-	 * One gate per worn set with a pool piece in a slot the set does not fill:
+	 * One check per worn set with a pool piece in a slot the set does not fill:
 	 * the bonus at one piece more than worn, measured on that set's best such
-	 * candidate's own swap. A row crosses a bonus only when its count's gate
-	 * cleared. Present only with `measureBrokenSetValue`.
+	 * candidate's own swap. A row reaches a bonus only when its count's check
+	 * `cleared`. Present only with `measureBrokenSetValue`.
 	 */
 	crossingGates?: CrossingGate[];
 	/**
-	 * The step-gear sims of a step ranking: the partner rule, the number of
-	 * distinct step gears, and how many sims ran or came from the store. Its
-	 * presence marks a ranking whose set rows are valued by the step rule.
+	 * The sims of each set row plus its partner pieces: the partner rule, the
+	 * number of distinct gears, and how many sims ran or came from the store.
+	 * Its presence marks a ranking whose set rows are valued by those sims.
 	 */
 	setStepSims?: SetStepSims;
 	/**
-	 * The bonus-off sims that split a shown step's broken-set loss onto its own
-	 * popover line. Present whenever `setStepSims` is.
+	 * The bonus-off sims that put a shown bonus's worn-bonus losses on their
+	 * own popover line. Present whenever `setStepSims` is.
 	 */
 	setBonusOffSims?: SetBonusOffSims;
 	/**
-	 * Every partner set simmed for every eligible future, written only under the
-	 * "every-combination" rule, which tests set to score the zero-sim rules.
-	 * Players never get it.
+	 * Every partner set simmed for every future bonus above noise, written only
+	 * under the "every-combination" rule, which tests set to score the rules
+	 * that choose without a sim. Players never get it.
 	 */
 	partnerAudit?: PartnerAuditEntry[];
 	/**
 	 * The set screen's readings, written only when `deps.setScreen` is "record"
 	 * or "on"; in "on" mode it also holds each set's verdict and reason. Nothing
-	 * in the engine or the view reads it: the gain side filters on the screen's
-	 * own result, and record mode's readings are scored offline.
+	 * in the engine or the view reads it: the set-bonus sims filter on the
+	 * screen's own result, and record mode's readings are scored offline.
 	 */
 	setScreen?: SetScreen;
 	plausibilityWarnings?: PlausibilityWarning[];
@@ -570,11 +569,12 @@ const DEFAULT_ITERATIONS = 5000;
  * First of the default seeds, which are distinct because
  * `usesPairedReplication` (`se.ts`) needs more than one, and spaced by the
  * iteration count: the sim seeds iteration `i` from `RandomSeed + i`
- * (`reseedRands` in `sim/core/sim.go`), so seeds closer than `N` share most of
- * their streams and their SE comes out far too small.
+ * (`reseedRands` in `sim/core/sim.go`), so seeds closer than the iteration
+ * count share most of their random streams and their SE comes out far too
+ * small.
  */
 const DEFAULT_SEED_BASE = 11;
-/** Five seeds for paired replication; `PAIRED_REPLICATE_TOP_N` sets who. */
+/** Five seeds for paired replication; `PAIRED_REPLICATE_TOP_N` sets how many rows. */
 const DEFAULT_SEED_COUNT = 5;
 
 /**
@@ -639,8 +639,8 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			...(database !== undefined ? { database } : {}),
 		});
 	};
-	// Set when repair values hit only up to the cap: the spec's repair is a
-	// budget, read through `computeStats`, which every runner has.
+	// Set when the gem repair values hit only up to the hit cap, read through
+	// `computeStats`, which every runner has.
 	const capProfile = capProfileFor(input.spec);
 	const budgetSlot = capProfile.repair.kind === 'budget' ? capProfile.repair.hitPercentPseudoStat : undefined;
 	/**
@@ -650,7 +650,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 	 */
 	const hitCapNotes: Substitution[] = [];
 	/**
-	 * One stats read of `request` as a hit percent and the repair budget it
+	 * One stats read of `request`: its hit percent and the `HitCapBudget` it
 	 * gives. A spell-hit budget also needs a sim result's spell damage by
 	 * school.
 	 */
@@ -737,7 +737,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 	 * Off-hand-only items that cannot sit beside the worn two-hander without a
 	 * two-item swap, which `attemptEligibility` rejects. They leave before
 	 * ordering, not at that guard: the EP order would price them against an
-	 * empty off hand, they would take candidate-cap places, and a Stop would
+	 * empty off hand, they would use up `candidateCap` places, and a Stop would
 	 * bring them back as unsimmed placeholders. One substitution line counts them.
 	 */
 	const blockedOffHand = offHandBlockedEntries(phaseEligible, input.spec, wornMainHandId);
@@ -889,14 +889,15 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		}
 
 		/**
-		 * Each version of one set-phase build, with its own hit budget. A
-		 * version's missed hit is the set-bonus hit the local budget cannot see:
-		 * `sim hit(version) − sim hit(baseline) − (gear hit(build) − gear hit(baseline))`,
-		 * with gear hit taken on real item ids before the copies. A version whose
-		 * build made no repair is never read. One read per distinct request,
-		 * raced against Stop. The first read Stop ends turns version budgets off
-		 * for this call and every later one, so no pair mixes a version budget
-		 * with the shared layout. A read that fails fails the run.
+		 * The requests for one set-phase gear and its copies, each with gems
+		 * repaired on its own hit budget. A request's missed hit is the set-bonus
+		 * hit that counting gear hit alone cannot see:
+		 * `sim hit(request) − sim hit(baseline) − (gear hit(build) − gear hit(baseline))`,
+		 * with gear hit taken on real item ids before the copies. A gear whose
+		 * repair changed nothing is never read. One read per distinct request,
+		 * raced against Stop. The first read Stop ends turns this off for this
+		 * call and every later one, so the two sims of a pair never use different
+		 * gem layouts. A read that fails fails the run.
 		 */
 		const versionReads = new Map<string, Promise<PlayerStatsObservation>>();
 		let versionBudgetsOff = false;
@@ -969,12 +970,12 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		};
 
 		/**
-		 * The gem context one candidate's repair runs with. The run's budget moves
-		 * by the swap's gear hit, which misses set-bonus hit the swap breaks or
-		 * completes (a warlock's Mana-Etched head breaks a +35 spell hit set). So
-		 * when the swap turns the meta off, the candidate's own stats read
-		 * corrects the budget, as each set version's read does above. The read
-		 * runs on the candidate sim's worker, so a failed read rejects with
+		 * The gem context one candidate's repair runs with. The run's hit budget
+		 * moves by the swap's gear hit, which misses set-bonus hit the swap breaks
+		 * or completes (a warlock's Mana-Etched head breaks a +35 spell hit set).
+		 * So when the swap turns the meta off, the candidate's own stats read
+		 * corrects the budget, as `versionGears` does above. The read runs on the
+		 * candidate sim's worker, so a failed read rejects with
 		 * `CandidateHitReadFailed`, reported as that candidate's failed sim; a
 		 * read Stop refused rejects with `StopRefusedSim`.
 		 */
@@ -1029,8 +1030,8 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			// keeps the better of its two placements, so a second placement would
 			// turn the worn item's "you already wear this" row into "wear a second
 			// copy": legal for a non-unique ring or trinket, but nothing in the row
-			// would say so. The below-cutoff owned-row filter in
-			// `model/results_view.ts` rests on this guard.
+			// would say so. `paneRows` in `model/results_view.ts` relies on this to
+			// keep owned rows out of the below-cutoff group.
 			const wornAt = equipment.findIndex(spec => spec.id === entry.itemId);
 			if (wornAt >= 0 && wornAt !== slotIndex) return { kind: 'skip' };
 			return { kind: 'ok', slotIndex };
@@ -1064,7 +1065,6 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 
 			for (let s = 0; s < slotNames.length; s++) {
 				const slotName = slotNames[s]!;
-				// See `attemptEligibility` for the reasoning behind each guard.
 				const eligibility = attemptEligibility(entry, slotName);
 				if (eligibility.kind === 'unmapped') {
 					throw new Error(`slot mapping bug: ${entry.slot} -> ${slotName} is not in SIM_ORDER ` + `(item ${entry.itemId} ${entry.name})`);
@@ -1210,8 +1210,8 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		const keptNotOwned = new Set(ordered.filter(e => !equippedIds.has(e.itemId)).slice(0, cap));
 		const simCandidates = ordered.filter(e => keptNotOwned.has(e) || equippedIds.has(e.itemId));
 
-		// Counted here, after the cap decides the full-iteration set. A budget
-		// until `replicateTopItems` restates it with the rows it re-sims.
+		// Counted here, after the cap decides the full-iteration set. An upper
+		// bound until `replicateTopItems` restates it with the rows it re-sims.
 		const replicaSims = usesPairedReplication(seeds) ? (seeds.length - 1) * (1 + Math.min(PAIRED_REPLICATE_TOP_N, simCandidates.length)) : 0;
 		const totalSims = 1 + simCandidates.length + replicaSims;
 		totalSimsForProgress = totalSims;
@@ -1244,7 +1244,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		}
 		// Re-read after the pool drains: an abort raised while the last task was
 		// in flight skips nothing, so the loop above never sets the flag, yet the
-		// run must still stop before replication and set packages.
+		// run must still stop before replication and the set-bonus sims.
 		if (signal?.aborted) aborted = true;
 		// A skipped candidate (failed repair or sim) is already disclosed in
 		// `substitutions`, and never reaches `individualDeltasByItemId`, so
@@ -1281,14 +1281,14 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		candidateSkips.sort((a, b) => a.itemId - b.itemId);
 
 		// A line for every set bonus the set phase could not measure, and for
-		// every set screen or worn-set ladder sim that failed, most with the
-		// sim's error.
+		// every set screen or worn-set value sim that failed, most with the sim's
+		// error.
 		const setBonusLines: Substitution[] = [];
 		const setCheckLines: Substitution[] = [];
 
-		// Set-bonus packages and paired replication only refine, so once Stop
-		// fires neither runs: what already simmed stands and the unsimmed rows
-		// stay unsimmed.
+		// The set-bonus sims and paired replication only refine the ranking, so
+		// once Stop fires neither runs: what already simmed stands and the
+		// unsimmed rows stay unsimmed.
 		let setBonusResult = aborted
 			? emptySetPhase()
 			: await buildSetBonuses(
@@ -1311,11 +1311,13 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 					versionGears,
 				);
 		if (signal?.aborted) aborted = true;
-		// With the flag, a lost count is a break only when the ladder counted it,
-		// and no table is read. An aborted run has no ladder, so it charges none.
+		// With `measureBrokenSetValue`, a swap loses a worn bonus only at a count
+		// `wornSetLadder` counted, and no table is read. An aborted run has none,
+		// so it charges no loss.
 		let counts: BonusCountPredicate | undefined = deps.measureBrokenSetValue ? countedLadderBreaks(setBonusResult.wornSetLadder) : undefined;
 		let setBonuses = setBonusResult.bonuses;
-		// With the flag, each set row is valued by the step rule.
+		// With `measureBrokenSetValue`, a set row's future bonuses are valued by
+		// one sim of the row plus its partner pieces.
 		const stepPath = (deps.measureBrokenSetValue ?? false) && !aborted;
 		const hasSetContext = setBonuses.length > 0 || setBonusResult.markedSetIds.length > 0;
 		if (hasSetContext) {
@@ -1331,8 +1333,9 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				setBonusResult.markedSetIds,
 			);
 		}
-		// After the futures are complete and before replication rewrites the top
-		// rows' `deltaDps`: the step gears' sims, one per distinct gear.
+		// After the future bonuses are filled in and before replication rewrites
+		// the top rows' `deltaDps`: one sim per distinct gear of a row plus its
+		// partner pieces.
 		let steps =
 			stepPath && hasSetContext && counts
 				? await measureSetSteps({
@@ -1386,7 +1389,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		if (signal?.aborted) aborted = true;
 		if (aborted) {
 			// A Stop after the candidate loop returns what a Stop during its last
-			// sim returns. A ladder cut short would charge breaks from counts it
+			// sim returns. Worn-set values cut short would charge losses at counts
 			// never measured, so no partial set figure is kept.
 			setBonusResult = emptySetPhase();
 			counts = deps.measureBrokenSetValue ? countedLadderBreaks(setBonusResult.wornSetLadder) : undefined;
@@ -1584,25 +1587,26 @@ async function buildSetBonuses(
 	setBonusLines: Substitution[],
 	setCheckLines: Substitution[],
 	/**
-	 * When set, measure every worn set's bonuses with the ladder, charge only
-	 * the counted ones as breaks, and gate each package's bonus.
+	 * When set, measure every worn set's bonuses on the player's gear, charge
+	 * only the counted ones as losses, and check each reachable bonus against
+	 * noise.
 	 */
 	measureBrokenSetValue: boolean,
-	/** The ranking's cutoff, for the noise floor of the ladder's gate. */
+	/** The ranking's cutoff, for the noise check on measured bonuses. */
 	cutoff: Cutoff,
 	/**
 	 * The baseline sim's per-iteration stdev (`Ranking.baseline.stdev`), for
-	 * the on-mode screen's σ.
+	 * the "on" screen's noise estimate.
 	 */
 	baselineStdev: number,
-	/** Every simmed version of a repaired gear comes from it. */
+	/** Every set-phase request with repaired gems comes from it. */
 	versionGears: VersionGears,
 ): Promise<{
 	bonuses: SetBonusValue[];
 	brokenSetValues: BrokenSetValue[];
 	wornSetLadder: WornSetLadderEntry[];
 	crossingGates: CrossingGate[];
-	/** itemId -> best pool slotIndex, so `applySetContext` can compute per-row breaks. */
+	/** itemId -> best pool slotIndex, so `applySetContext` can find each row's losses. */
 	candidateSlotIndex: Map<number, number>;
 	/**
 	 * Sets with candidates but no `bonuses` entry: no bonus in reach, or the
@@ -1614,8 +1618,8 @@ async function buildSetBonuses(
 	const bonusNotMeasured = (setName: string, threshold: SetThreshold, reason: SkipReason) =>
 		setBonusLines.push(setBonusSkipSubstitution({ setName, threshold, reason }));
 
-	// The set sims' own store-cached run. A gate or ladder request sends
-	// copies, so it is never a request the store already holds.
+	// The set sims' store-cached run; the caller decides what a failed sim
+	// costs.
 	const cachedSampleRun =
 		(what: string) =>
 		async (request: RaidSimRequest): Promise<DpsSample> => {
@@ -1637,9 +1641,10 @@ async function buildSetBonuses(
 		};
 
 	// The value of every bonus each worn set has, on the player's own gear,
-	// before any package is built, so every break below reads the gated
-	// measurement instead of a table. It runs even when no set piece is a
-	// candidate, because the dead-slot check reads it too.
+	// before any reachable bonus is simmed, so every loss below reads a
+	// measured value instead of a table. It runs even when no set piece is a
+	// candidate, because `classifyDeadSlots` (in `plausibilityWarnings`) reads
+	// it too.
 	const wornSetLadder = measureBrokenSetValue
 		? await measureWornSetLadders(
 				equipment,
@@ -1681,7 +1686,7 @@ async function buildSetBonuses(
 	const selectFor = (setId: number, threshold: SetThreshold) =>
 		selectPackage(setId, threshold, equipment, candidates, [...individualDeltasByItemId.values()], slotIndexForPoolEntry);
 	// Every count from one above the worn count up to the most pieces the pool
-	// can fill, each with the pieces its package adds.
+	// can fill, each with the pieces added to reach it.
 	const packagesInReach = (setId: number, piecesWorn: number) => {
 		const packages: Array<{ count: SetThreshold; pieces: PackagePiece[] }> = [];
 		for (let t = Math.max(2, piecesWorn + 1); ; t++) {
@@ -1691,9 +1696,9 @@ async function buildSetBonuses(
 		}
 		return packages;
 	};
-	// Flag only: the counts each set has a bonus at, as the sim itself lists
-	// them, so the gain side never tries a count with no bonus (Thunderheart
-	// Harness at 5).
+	// With `measureBrokenSetValue`: the counts at which each set has a bonus,
+	// as the sim lists them, so no count without a bonus is simmed
+	// (Thunderheart Harness at 5).
 	const bonusCounts = measureBrokenSetValue
 		? await setBonusCountsInReach(
 				deps.sim,
@@ -1718,8 +1723,8 @@ async function buildSetBonuses(
 					),
 			)
 		: new Map<number, ReadonlySet<number>>();
-	// Flag only: the counts in reach at which the set has a bonus. The
-	// same-gear gate below decides which are worth something here.
+	// With `measureBrokenSetValue`: the counts in reach at which the set has a
+	// bonus. The noise check below decides which are worth something here.
 	const reachableCounts = (setId: number, piecesWorn: number): SetThreshold[] => {
 		const known = bonusCounts.get(setId);
 		return packagesInReach(setId, piecesWorn)
@@ -1727,9 +1732,10 @@ async function buildSetBonuses(
 			.filter(t => !known || known.has(t));
 	};
 
-	// The screen runs after the worn-set ladder and before the package loop.
-	// Both modes get the same sets, packages and sim options, so an on-mode
-	// pair is the record mode's request at that N.
+	// The screen runs after the worn-set values and before the loop over
+	// reachable bonuses. Both modes get the same sets, added pieces and sim
+	// options, so an "on" pair is the request "record" sims at that iteration
+	// count.
 	const screenMode = measureBrokenSetValue ? deps.setScreen : undefined;
 	const screenInput: SetScreenInput | undefined =
 		screenMode === 'record' || screenMode === 'on'
@@ -1748,8 +1754,8 @@ async function buildSetBonuses(
 					packageAt: (setId, count) => {
 						const selection = selectFor(setId, count);
 						if (!selection.ok) return undefined;
-						// The package loop's own swaps, so the screen sims the gear the
-						// loop would build for this count.
+						// The same swaps as the loop below, so the screen sims the gear
+						// that loop would build for this count.
 						const pieces = selection.addedPieces;
 						let base: ChainBuild;
 						try {
@@ -1761,8 +1767,8 @@ async function buildSetBonuses(
 						return {
 							request: composeFor(base.equipment),
 							added: pieces,
-							// Each rung gets its own repair; a rung whose repair fails is
-							// not measured, as with a package.
+							// Each copy layout gets its own gem repair; one whose repair
+							// fails is not measured, as in the loop below.
 							requestsFor: async copiesList =>
 								(await versionGears(g => chainSwapsWithRepairs(equipment, pieces, g), base, copiesList)).map(entry =>
 									isRepairFailure(entry) ? undefined : requestOf(entry),
@@ -1797,8 +1803,8 @@ async function buildSetBonuses(
 						),
 				}
 			: undefined;
-	// The on mode's package estimate is the "sum-of-singles" rule's
-	// (`sumOfSinglesEstimate`), with the package's first added piece as the row.
+	// The "on" screen estimates a count's value with `sumOfSinglesEstimate`,
+	// taking the first added piece as the row.
 	const breakDpsBy = new Map(brokenSetValues.map(v => [bonusKey(v), v.dps] as const));
 	const statsAt = (setId: number, count: number): number | undefined => {
 		const selection = selectFor(setId, count);
@@ -1859,15 +1865,15 @@ async function buildSetBonuses(
 		);
 		let twoPieceBonus: number | undefined;
 		let twoPieceUnmeasurableAtThisWornCount = false;
-		// Flag only: a 4pc's raw value subtracts the 2pc's, so it is left
-		// unset when the 2pc package was attempted and failed.
+		// With `measureBrokenSetValue`: a 4pc's value subtracts the 2pc's, so it
+		// stays unset when the 2pc's sims were tried and failed.
 		let twoPieceFailed = false;
 
 		const thresholds = measureBrokenSetValue ? reachableCounts(setId, piecesWorn) : SET_THRESHOLDS.filter(t => t > piecesWorn);
-		// No bonus in reach, or the set screen dropped the set: no gate, package
-		// or step sims. The set is marked so its rows keep their single breaks
-		// and crossing in `setContext`, but it gets no `setBonuses` entry, since
-		// none of its counts is a bonus the ranking measured.
+		// No bonus in reach, or the set screen dropped the set: no bonus sims at
+		// all. The set goes in `markedSetIds`, so its rows keep their own losses
+		// and `crossesThreshold` in `setContext`, but it gets no `setBonuses`
+		// entry, since none of its counts is a bonus the ranking measured.
 		if ((measureBrokenSetValue && thresholds.length === 0) || screenedOut.has(setId)) {
 			markedSetIds.push(setId);
 			continue;
@@ -1915,7 +1921,7 @@ async function buildSetBonuses(
 				});
 				continue;
 			}
-			/** A failed gem repair, on the package's build or on any of its versions, skips the package. */
+			/** A failed gem repair on this gear or any copy of it skips this bonus. */
 			const skipRepairFailed = (err: MetaRepairError) => {
 				console.warn(`[upgrades] ${label} ${threshold}pc bonus package not measured: gem repair failed`, err);
 				bonusNotMeasured(label, threshold, SET_BONUS_SKIP_REASONS.metaOff(err.message));
@@ -1940,14 +1946,14 @@ async function buildSetBonuses(
 			}
 			const builtPackage = packageBuild;
 			const rebuildPackage = (g: GemContext) => chainSwapsWithRepairs(equipment, addedPieces, g);
-			// The package sim and its gate's "on" and "off" are one pair, so all
-			// three come from one `versionGears` call when the gate runs.
-			// `plainVersion` keeps the package's own version for its sim, or why it
-			// could not be built.
+			// The added pieces' sim and the noise check's "on" and "off" sims must
+			// share one gem layout, so all three come from one `versionGears` call
+			// when the check runs. `plainVersion` keeps the request without copies,
+			// or why it could not be built.
 			const plainVersion: { entry?: VersionEntry | BuildFailure } = {};
-			// A version's failed repair skips the package with the repair's error,
-			// as on the package's own build; an undefined entry alone would show
-			// a failed sim, and none ran.
+			// A copy's failed gem repair skips this bonus with the repair's error, as
+			// on the gear without copies; an undefined entry alone would show a
+			// failed sim, and none ran.
 			let versionRepairError: MetaRepairError | undefined;
 			const packageVersions = async (copiesList: readonly VersionCopies[]) => {
 				const entries = repairErrorOr(await versionGears(rebuildPackage, builtPackage, [{}, ...copiesList]));
@@ -1961,8 +1967,9 @@ async function buildSetBonuses(
 				return entries.slice(1).map(requestOf);
 			};
 
-			// Flag only: the gate runs before the package sim, so a count with no
-			// bonus on this gear costs only its two gate sims.
+			// With `measureBrokenSetValue`, the noise check runs before the added
+			// pieces' sim, so a count with no bonus here costs only the check's two
+			// sims.
 			let sameGear: DpsSample | undefined;
 			if (measureBrokenSetValue) {
 				const measured = await measureSameGearBonus(
@@ -2038,15 +2045,15 @@ async function buildSetBonuses(
 				}
 				[plainVersion.entry] = entries;
 			}
-			// `versionGears` gives one entry per copies, so the entry is set here.
+			// `versionGears` gives one entry per copy layout, so the entry is set here.
 			const packageEntry = plainVersion.entry!;
 			if (isBuildFailure(packageEntry)) {
 				packageNotMeasured(SET_BONUS_SKIP_REASONS.notBuilt(packageEntry.buildError));
 				continue;
 			}
 			const packageRequest = packageEntry.request;
-			// The package entry's gem changes are the swaps of the build its sim
-			// wore, without the package's own slots.
+			// The gem changes to list: the repair swaps of the gear this sim wore,
+			// outside the added pieces' own slots.
 			const packageSlots = new Set(addedPieces.map(p => p.slotIndex));
 			const packageRepairSwaps = packageEntry.swaps.filter(s => !packageSlots.has(s.itemIndex));
 			let packageObs = await readCachedSim(deps, packageRequest, simVersion, runOpts);
@@ -2086,14 +2093,14 @@ async function buildSetBonuses(
 			const breaks = brokenSetBonuses(equipment, addedPieces, setId, counts);
 			let selfConfound: SelfSetConfound | undefined = threshold === 4 && twoPieceUnmeasurableAtThisWornCount ? { threshold: 2 } : undefined;
 			if (selfConfound) {
-				// At worn 1 the 2pc package is one piece, so the 2pc is never
-				// measured, and every single of the 4pc package crosses it:
-				// raw4 = B4 − (n−1)·B2 for n added pieces. Two added pieces simmed
-				// together reach only the 2pc, so B2 = Σ(their singles) − their pair
-				// delta. Another worn set's break would bias B2, so the pieces must be
-				// break-free alone and as a pair: two singles that each keep worn
-				// Malorne 3 at 2 take it to 1 together. With no such pair
-				// `bonusDpsNet` stays unset.
+				// At worn 1 the 2pc takes one added piece, so it is never measured on
+				// its own, and each piece's own gain includes it: the raw 4pc value is
+				// short by the 2pc once per piece after the first. Two of the pieces
+				// simmed together reach only the 2pc, so the 2pc is their own gains
+				// minus the pair's gain. A lost bonus of another worn set would bias
+				// that, so the pieces must lose none alone or as a pair: two pieces
+				// that each keep worn Malorne 3 at 2 take it to 1 together. With no
+				// such pair `bonusDpsNet` stays unset.
 				const breakFree = addedPieces.filter(
 					p => brokenSetBonuses(equipment, [p], setId, counts).length === 0 && individualDeltasByItemId.has(p.itemId),
 				);
@@ -2151,10 +2158,11 @@ async function buildSetBonuses(
 		}
 	}
 
-	// Flag only: whether one more piece of a worn set reaches a bonus, measured
-	// on the gear a row makes. One gate per worn set with a candidate in a slot
-	// the set does not fill, on that set's best such candidate's own swap, so a
-	// row's "crosses" label reads a measurement rather than the six-set table.
+	// With `measureBrokenSetValue`: whether one more piece of a worn set reaches
+	// a bonus, measured on the gear a row makes. One check per worn set with a
+	// candidate in a slot the set does not fill, on that set's best such
+	// candidate's own swap, so `crossesThreshold` reads a measurement rather
+	// than the fixed table in `isBonusImplemented`.
 	const crossingGates: CrossingGate[] = [];
 	if (measureBrokenSetValue) {
 		for (const setId of [...setIdsWithCandidates].sort((a, b) => a - b)) {
@@ -2182,8 +2190,8 @@ async function buildSetBonuses(
 			}
 			const crossingBuild = swapped;
 			const crossingLabel = setLabel(equipment, setId);
-			// A version's failed repair leaves the gate unmeasured with no line,
-			// as a failed repair of the crossing build does above.
+			// A copy's failed gem repair leaves this check unmeasured with no line,
+			// as a failed repair of the swap itself does above.
 			let versionRepairFailed = false;
 			const gateResult = crossingBuild
 				? await measureSameGearBonus(
@@ -2191,14 +2199,15 @@ async function buildSetBonuses(
 						composeFor(crossingBuild.equipment),
 						crossingBuild.equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])),
 						worn,
-						// "On" and "off" are one pair: one call.
+						// "On" and "off" are compared as a pair, so they come from
+						// one call.
 						async copiesList => {
 							const entries = repairErrorOr(await versionGears(g => chainSwapsWithRepairs(equipment, crossing, g), crossingBuild, copiesList));
 							if (!(entries instanceof MetaRepairError)) {
 								return entries.map(requestOf);
 							}
 							versionRepairFailed = true;
-							// Never read: the gate's result is dropped below.
+							// Never read: the check's result is dropped below.
 							return copiesList.map(() => ({ buildError: errorText(entries) }));
 						},
 					)
@@ -2230,13 +2239,13 @@ async function buildSetBonuses(
 		}
 	}
 
-	// Correct `bonusDps` for the worn bonuses its package breaks, using the
-	// measured B: `bonusDpsNet = bonusDps − netInflation(keys)` (set-value.ts
-	// derives it). Each package's own `breaks` keep this right when the 2pc and
-	// 4pc packages pick different slots. The keys are the union of this
-	// package's, the 2pc package's and every member single's breaks. While the
-	// 2pc package is a prefix of the 4pc, that union is this package's own
-	// `breaks`; the union keeps the formula whole if package selection changes.
+	// Correct `bonusDps` for the worn bonuses its added pieces lose, using their
+	// measured values: `bonusDpsNet = bonusDps − netInflation(keys)`
+	// (set-value.ts derives it). Each entry's own `breaks` keep this right when
+	// the 2pc and 4pc pick different slots. The keys are the union of this
+	// entry's, the 2pc entry's and every added piece's own losses. While the
+	// 2pc's pieces are a prefix of the 4pc's, that union is this entry's own
+	// `breaks`; the union keeps the formula whole if `selectPackage` changes.
 	const bBy = new Map<string, number | undefined>();
 	for (const v of brokenSetValues) bBy.set(bonusKey(v), v.dps);
 	const memberSingleBreaks = (pkg: SetBonusValue): BrokenSetBonus[] =>
@@ -2248,13 +2257,13 @@ async function buildSetBonuses(
 		});
 	for (const b of results) {
 		if (b.bonusDps === undefined) continue;
-		// A worn-1 4pc whose 2pc the pair sim did not measure still has
-		// `−(n−1)·B2`. Crediting it would rank rows on a confounded figure, so
-		// the net stays unset and the row shows as not counted.
+		// A worn-1 4pc whose 2pc the pair sim did not measure is still short by
+		// the 2pc once per piece after the first. Crediting it would rank rows on
+		// a wrong figure, so the net stays unset and the row shows as not counted.
 		if (b.selfConfound !== undefined && b.selfConfound.dps === undefined) {
 			continue;
 		}
-		// The 4pc subtracts a measured raw 2pc; only then do the 2pc terms apply.
+		// The 2pc's terms apply only when the 4pc subtracted a measured 2pc value.
 		const two =
 			b.threshold === 4
 				? results.find(r => r.setId === b.setId && r.threshold === 2 && r.unmeasured === undefined && r.bonusDps !== undefined)
@@ -2296,13 +2305,13 @@ async function buildSetBonuses(
 }
 
 /**
- * The step-sim phase of a step ranking. For each set row and each future
- * whose same-gear gate cleared, `choosePartnerSet` picks the partner pieces,
- * and the step gear (current gear plus the row plus those pieces, folded in
- * slot order with the usual gem repairs) is simmed once per distinct gear. A
- * future's `stepGearDps` is that sim minus the baseline. A failed choice,
- * repair or sim leaves the row unmeasured; it never fails the ranking. Then
- * the bonus-off sims run for the steps the popover shows.
+ * With `measureBrokenSetValue`, values each set row's future bonuses by sim.
+ * For each bonus above noise, `choosePartnerSet` picks the other set pieces,
+ * and the current gear plus the row plus those pieces (swapped in slot order,
+ * with the usual gem repairs) is simmed once per distinct gear; its
+ * `stepGearDps` is that sim minus the baseline. A failed choice, repair or
+ * sim leaves the row unmeasured and never fails the ranking. Then the
+ * bonus-off sims run for the bonuses the popover shows.
  */
 async function measureSetSteps(args: {
 	deps: Deps;
@@ -2319,9 +2328,9 @@ async function measureSetSteps(args: {
 	simVersion: string;
 	runOpts: SimRunOpts;
 	cutoff: Cutoff;
-	/** Every step sim's request comes from it. */
+	/** Every request here comes from it. */
 	versionGears: VersionGears;
-	/** A line for each set bonus whose step or bonus-off sim failed, with the sim's error. */
+	/** A line, with the sim's error, for each bonus whose partner or bonus-off sim failed. */
 	bonusLines: Substitution[];
 }): Promise<{
 	setStepSims: SetStepSims;
@@ -2339,7 +2348,6 @@ async function measureSetSteps(args: {
 	const stepCounter: SimCounter = { simmed: 0, fromStore: 0 };
 	const stepFailure = '[upgrades] set step gear not measured: the sim failed';
 
-	/** A store hit, else a sim; the sim's error when it fails. */
 	const runCounted = async (request: RaidSimRequest, counter: SimCounter, failure: string): Promise<{ totalDps: number; se: number } | SimFailure> => {
 		let obs = await readCachedSim(deps, request, args.simVersion, runOpts);
 		if (obs) {
@@ -2367,7 +2375,7 @@ async function measureSetSteps(args: {
 		args.bonusLines.push(setBonusSkipSubstitution({ setName, threshold, reason, onSomeRows: true }));
 
 	const inSlotOrder = (swaps: readonly PackagePiece[]) => [...swaps].sort((a, b) => a.slotIndex - b.slotIndex);
-	/** The step gear's chain, or the error of its failed gem repair. */
+	/** The row-and-partners gear, or the error of its failed gem repair. */
 	const stepChain = (swaps: readonly PackagePiece[]): ChainBuild | MetaRepairError => {
 		try {
 			return chainSwapsWithRepairs(equipment, inSlotOrder(swaps), gems);
@@ -2376,7 +2384,7 @@ async function measureSetSteps(args: {
 			return err;
 		}
 	};
-	/** The step gear's chain, or undefined when a gem repair fails. */
+	/** The row-and-partners gear, or undefined when a gem repair fails. */
 	const stepBuild = (swaps: readonly PackagePiece[]): ChainBuild | undefined => {
 		const chain = stepChain(swaps);
 		return chain instanceof MetaRepairError ? undefined : chain;
@@ -2384,15 +2392,15 @@ async function measureSetSteps(args: {
 	const stepRebuild = (swaps: readonly PackagePiece[]) => (g: GemContext) => chainSwapsWithRepairs(equipment, inSlotOrder(swaps), g);
 
 	/**
-	 * The step gear's request, its own version, or why it could not be built:
-	 * a failed gem repair or a request build error.
+	 * The request for the row and its partner pieces, with its own gem repair, or
+	 * why it could not be built: a failed gem repair or a request build error.
 	 */
 	const stepGear = async (swaps: readonly PackagePiece[]): Promise<RaidSimRequest | SkipReason> => {
 		const build = stepChain(swaps);
 		if (build instanceof MetaRepairError) {
 			return SET_BONUS_SKIP_REASONS.metaOff(build.message);
 		}
-		// `versionGears` gives one entry per copies.
+		// `versionGears` gives one entry per copy layout.
 		const entry = (await args.versionGears(stepRebuild(swaps), build, [{}]))[0]!;
 		if (isRepairFailure(entry)) {
 			return SET_BONUS_SKIP_REASONS.metaOff(entry.repairError.message);
@@ -2449,9 +2457,9 @@ async function measureSetSteps(args: {
 							p => p.itemId !== item.itemId,
 						)
 					: undefined;
-			// A partner set whose comparison sim fails is skipped, and the chosen
-			// set's step gear is simmed below, so a failure is the row's only when
-			// no set is chosen.
+			// A partner set whose sim fails is skipped, and the chosen set's gear is
+			// simmed below, so a failure counts for the row only when no set is
+			// chosen.
 			let comparisonFailure: SkipReason | undefined;
 			const choice = await choosePartnerSet(
 				{
@@ -2481,8 +2489,8 @@ async function measureSetSteps(args: {
 				},
 				rule,
 			);
-			// On a step ranking an eligible future's `pieces` and `breaks` are its
-			// partner choice's, so the `pathToThreshold` path's are dropped first.
+			// Here a future bonus's `pieces` and `breaks` come from the partner
+			// choice, so the `pathToThreshold` ones are dropped first.
 			delete f.pieces;
 			delete f.breaks;
 			if (choice === undefined) {
@@ -2516,9 +2524,9 @@ async function measureSetSteps(args: {
 				itemId: p.itemId,
 				name: nameOf.get(p.itemId) ?? String(p.itemId),
 			}));
-			// Every counted worn bonus the step gear loses against the current
-			// gear, the row's own break included: the popover line is a total over
-			// the current gear.
+			// Every counted worn bonus this gear loses against the current gear,
+			// the row's own loss included, because the popover line is a total
+			// against the current gear.
 			const lost = lostBy([rowSwap, ...partners]);
 			if (lost.length > 0) {
 				f.breaks = lost.map(brk => {
@@ -2542,8 +2550,8 @@ async function measureSetSteps(args: {
 		}
 	}
 
-	// Identical step gears are simmed once. Each task handles its own sim
-	// failure, so one failed sim leaves only its own futures unmeasured.
+	// Identical gears are simmed once. Each task handles its own sim failure,
+	// so one failed sim leaves only its own future bonuses unmeasured.
 	const totals = new Map<string, { totalDps: number; se: number }>();
 	const stepErrors = new Map<string, string>();
 	const keys = [...requests.keys()];
@@ -2566,8 +2574,8 @@ async function measureSetSteps(args: {
 		future.stepGearSe = total.se;
 	}
 
-	// The bonus-off sims run for exactly the steps the popover shows, so this
-	// uses the view's one definition of those steps (`setPotentialSteps`).
+	// The bonus-off sims run for exactly the bonuses the popover shows, so this
+	// uses the view's own list of them (`setPotentialSteps`).
 	const offCounter: SimCounter = { simmed: 0, fromStore: 0 };
 	const offRequests = new Map<string, { request: RaidSimRequest; plain: RaidSimRequest }>();
 	const offPending: Array<{
@@ -2582,7 +2590,7 @@ async function measureSetSteps(args: {
 	};
 	const countOf = (gear: readonly SimItemSpec[], setId: number) => gear.filter((_, slot) => setIdAt(gear, slot) === setId).length;
 
-	/** Queues the step's bonus-off request; false when none can be built. */
+	/** Queues one shown bonus's bonus-off request; false when none can be built. */
 	const queueBonusOff = async (
 		future: Future,
 		prevSwaps: readonly PackagePiece[],
@@ -2604,8 +2612,8 @@ async function measureSetSteps(args: {
 			.sort((a, b) => a - b);
 		if (replaced.length === 0) return false;
 		// Copying the replaced pieces must leave each lost set at its count after
-		// the step; otherwise (a two-hander's off-hand, a repair) the bonus-off
-		// gear is not "before, minus exactly these bonuses".
+		// this bonus's swaps; otherwise (a two-hander's off-hand, a repair) the
+		// bonus-off gear is not the gear before minus exactly these bonuses.
 		for (const setId of lostSets) {
 			const copied = replaced.filter(slot => setIdAt(before, slot) === setId).length;
 			if (countOf(before, setId) - copied !== countOf(after, setId)) {
@@ -2613,9 +2621,9 @@ async function measureSetSteps(args: {
 			}
 		}
 		// `plain` must be the request simmed for the gear before and the bonus-off
-		// version its pair, so both come from one call. On later steps entry 0 is
-		// the previous step's own request (the build is deterministic and its
-		// read is cached).
+		// request its pair, so both come from one call. For later bonuses entry 0
+		// is the previous bonus's own request (the gear build is deterministic and
+		// its read is cached).
 		const versions = repairErrorOr(await args.versionGears(stepRebuild(prevSwaps), beforeBuild, [{}, { setLess: replaced }]));
 		// As when the gear before or after fails its repair above: the split is
 		// skipped, with no line, since no call failed.
@@ -2643,12 +2651,12 @@ async function measureSetSteps(args: {
 		}
 		const plain = plainEntry.request;
 		const request = offEntry.request;
-		// On the first step the gear before is the row's single swap, built here
-		// on the run's budget. If entry 0 was rebuilt for set hit that budget
-		// misses, it differs from that build, so the split is skipped rather than
-		// paired with another layout. The candidate loop repairs on the row's own
-		// stats read, so it may have simmed entry 0; this check does not look for
-		// that sim.
+		// For the first bonus the gear before is the row's own swap, built here on
+		// the run's hit budget. If entry 0 was repaired again for set-bonus hit
+		// that budget misses, it differs from that build, so the split is skipped
+		// rather than paired with another gem layout. The candidate loop repairs
+		// on the row's own stats read, so it may have simmed entry 0; this check
+		// does not look for that sim.
 		if (firstStep && stableStringify(plain) !== stableStringify(composeFor(before))) {
 			return false;
 		}
@@ -2683,10 +2691,10 @@ async function measureSetSteps(args: {
 		}
 	}
 
-	// A Breaks line pairs the bonus-off sim with the plain gear before's sim
-	// (the previous step's total, or the row's single swap). Only a gear before
-	// that this run already holds makes that a paired difference, so a request
-	// whose plain gear before is missing is not simmed.
+	// The popover's loss line is the bonus-off sim minus the sim of the gear
+	// before without copies (the previous bonus's gear, or the row's own swap).
+	// Only a gear-before sim this run already holds makes that a paired
+	// difference, so a request whose gear-before sim is missing is not simmed.
 	const paired = new Set<string>();
 	for (const [key, { plain }] of offRequests) {
 		if (await readCachedSim(deps, plain, args.simVersion, runOpts)) {
@@ -2749,19 +2757,18 @@ async function measureSetSteps(args: {
 	};
 }
 
-/** The highest measured, non-empty package of one set, for `commitBreaks`. */
+/** The highest-count measured entry with added pieces, for `commitBreaks`. */
 function topMeasuredPackage(bonusesForSet: readonly SetBonusValue[]): SetBonusValue | undefined {
-	// A below-gate entry has package ids but no package sim, so it is never a
-	// measured package.
+	// A `belowGate` entry lists added pieces but never simmed them.
 	return [...bonusesForSet]
 		.filter(b => b.unmeasured === undefined && !b.belowGate && b.packageItemIds.length > 0)
 		.sort((a, b) => b.threshold - a.threshold)[0];
 }
 
 /**
- * The worn bonuses broken by the top package with `itemId` substituted into
- * its own slot (the package's piece in that slot, if any, is dropped): a
- * row's `commitBreaks` before its single breaks are taken out.
+ * The worn bonuses lost by the top entry's added pieces with `itemId` in its
+ * own slot (the entry's piece in that slot, if any, is dropped): a row's
+ * `commitBreaks` before its own losses are taken out.
  */
 function substitutedPackageBreaks(
 	itemId: number,
@@ -2783,10 +2790,11 @@ function substitutedPackageBreaks(
 }
 
 /**
- * One sim of two break-free set pieces added together at worn 1, giving the
- * 2pc value `B2 = Σ singles − pair delta`. Undefined when the gem repair or
- * the sim fails; the caller then leaves the 4pc's `bonusDpsNet` unset. Why
- * goes to `onNotMeasured` with the error, except for a sim Stop refused.
+ * One sim of two set pieces that lose no worn bonus, added together at worn
+ * 1: the 2pc's value is their own gains minus the pair's gain. Undefined when
+ * the gem repair or the sim fails; the caller then leaves the 4pc's
+ * `bonusDpsNet` unset. Why goes to `onNotMeasured` with the error, except for
+ * a sim Stop refused.
  */
 async function measurePairTwoPiece(
 	bonusLabel: string,
@@ -2853,9 +2861,9 @@ async function measurePairTwoPiece(
 
 /**
  * The pieces a player adds to reach `pkg`'s threshold with this candidate as
- * one of them: the whole package if the candidate is in it, else the
- * candidate plus the best `pkg.length − 1` package pieces outside its slot,
- * ranked as `selectPackage` ranks them (single delta, then lowest id).
+ * one of them: all of `pkg`'s added pieces if the candidate is one, else the
+ * candidate plus the best of them outside its slot, one fewer than `pkg`
+ * adds, ranked as `selectPackage` ranks them (own gain, then lowest id).
  */
 function pathToThreshold(
 	itemId: number,
@@ -2880,9 +2888,8 @@ function pathToThreshold(
 }
 
 /**
- * How many of a package's members break (X, t) by their own single swap — the
- * `memberSingleBreaks` count in the inflation correction. A member breaks it iff
- * swapping that one piece into its slot drops the worn (X, t) below threshold.
+ * How many of `pkg`'s added pieces lose the worn bonus `target` by their own
+ * swap, for `netInflation`.
  */
 function countMembersBreaking(
 	pkg: SetBonusValue,
@@ -2906,13 +2913,13 @@ function countMembersBreaking(
 }
 
 /**
- * The worn-set ladder of every set worn at 2 or more pieces, in set-id order.
- * A count is `counted` when its value clears the same noise gate as a set
- * bonus. A failed rung's count is `counted` only when the sim's list of the
- * set's bonuses (`readBonuses`) has it, so no count without a bonus becomes a
- * break. When that list fails too, no failed count is counted, and the
- * ladder's and the read's lines say what was not measured. A runner with no
- * list gives no such line, so there a failed count is counted.
+ * The value of each piece count of every set worn at 2 or more pieces
+ * (`measureWornSetLadder`), in set-id order. A count is `counted` when its
+ * value is above noise. A count whose sim failed is `counted` only when the
+ * sim's list of the set's bonuses (`readBonuses`) has it, so no count without
+ * a bonus becomes a loss. When that list fails too, no failed count is
+ * counted, and the lines say what was not measured. A runner with no list
+ * gives no such line, so there a failed count is counted.
  */
 async function measureWornSetLadders(
 	equipment: readonly SimItemSpec[],
@@ -3005,16 +3012,16 @@ async function wornSetBonusCounts(
 	}
 }
 
-/** The break predicate the flag path uses: a count the ladder counted. */
+/** With `measureBrokenSetValue`, a swap loses only counts `wornSetLadder` counted. */
 function countedLadderBreaks(ladder: readonly WornSetLadderEntry[]): BonusCountPredicate {
 	const counted = new Set(ladder.filter(e => e.counted).map(e => `${e.setId}:${e.count}`));
 	return (setId, count) => counted.has(`${setId}:${count}`);
 }
 
 /**
- * The smallest entry count above `after` whose same-gear gate cleared, or
- * null. An entry has `sameGearDps` without `belowGate` exactly when its gate
- * cleared.
+ * The smallest entry count above `after` whose bonus was above noise on its
+ * own gear, or null. An entry has `sameGearDps` without `belowGate` exactly
+ * when it was.
  */
 function nextClearedThreshold(bonusesForSet: readonly SetBonusValue[], after: number): SetThreshold | null {
 	const counts = bonusesForSet.filter(b => b.threshold > after && b.sameGearDps !== undefined && !b.belowGate).map(b => b.threshold);
@@ -3022,7 +3029,7 @@ function nextClearedThreshold(bonusesForSet: readonly SetBonusValue[], after: nu
 }
 
 export function memberPackages(itemId: number, bonusesForSet: readonly SetBonusValue[]): SetPackageContext[] | undefined {
-	// A below-gate entry's package was never simmed, so its `packageDeltaDps`
+	// A `belowGate` entry's pieces were never simmed, so its `packageDeltaDps`
 	// of 0 is not a measurement.
 	const measured = bonusesForSet.filter(b => b.unmeasured === undefined && !b.belowGate);
 	if (!measured.some(b => b.packageItemIds.includes(itemId))) {
@@ -3048,9 +3055,10 @@ function applySetContext(
 	individualDeltasByItemId: ReadonlyMap<number, IndividualDelta> = new Map(),
 	counts: BonusCountPredicate = isBonusImplemented,
 	/**
-	 * Present exactly on the flag path: the crossing gates, so the crossing and
-	 * next-bonus counts read measurements instead of the six-set table, and
-	 * every entry above the swap's count becomes a future.
+	 * Present exactly with `measureBrokenSetValue`: the `crossingGates`, so the
+	 * reached and next counts read measurements instead of the
+	 * `isBonusImplemented` table, and every entry above the swap's count
+	 * becomes a future bonus.
 	 */
 	stepPath?: { crossingGates: readonly CrossingGate[] },
 	/** Sets whose rows get a `setContext` though they have no entry. */
@@ -3079,9 +3087,9 @@ function applySetContext(
 
 		const piecesWornBefore = wornCounts.get(setId) ?? 0;
 		const piecesAfterSwap = item.owned ? piecesWornBefore : piecesWornBefore + 1;
-		// Flag path: one more piece crosses a bonus only when that
-		// count's crossing gate cleared, and the next bonus is the next count
-		// whose gate cleared. No table is read.
+		// With `measureBrokenSetValue`, one more piece reaches a bonus only when
+		// that count's `crossingGates` entry cleared, and the next bonus is the
+		// next count above noise. No table is read.
 		const crossingCleared = stepPath?.crossingGates.some(g => g.setId === setId && g.count === piecesWornBefore + 1 && g.cleared) ?? false;
 		const thresholdBeforeSwap = stepPath
 			? crossingCleared
@@ -3105,8 +3113,8 @@ function applySetContext(
 
 		const slotIndex = candidateSlotIndex.get(item.itemId);
 
-		// singleBreaks: worn bonuses this one piece breaks by itself. Inside
-		// deltaDps already; dps is the measured B when available.
+		// singleBreaks: worn bonuses this piece loses by itself, already inside
+		// deltaDps; dps is their measured value when there is one.
 		if (slotIndex !== undefined) {
 			const single = brokenSetBonuses(equipment, [{ itemId: item.itemId, slotIndex }], setId, counts);
 			if (single.length > 0) {
@@ -3127,9 +3135,10 @@ function applySetContext(
 		// adds a set piece: an owned row's swap changes nothing, so a future bonus
 		// would rank "keep what you wear" on value the swap cannot bring.
 		const advancesPieceCount = piecesAfterSwap > piecesWornBefore;
-		// Flag path: every entry above the swap's count that has a package or is
-		// below the gate. A below-gate future is never a stop, but it is shown so
-		// the row can say the count was tried.
+		// With `measureBrokenSetValue`: every entry above the swap's count that
+		// has added pieces or is `belowGate`. The view never adds a `belowGate`
+		// bonus (`stepEligible`), but it is shown so the row can say the count
+		// was tried.
 		const T = stepPath
 			? bonusesForSet
 					.filter(b => advancesPieceCount && b.threshold > piecesAfterSwap && (b.packageItemIds.length > 0 || b.belowGate === true))
@@ -3146,12 +3155,12 @@ function applySetContext(
 				...(dps !== undefined ? { dps } : {}),
 			};
 		};
-		// A path piece's own stats: its single from the individual deltas, read
-		// before replication rewrites the top rows' `deltaDps`, so a row inside a
-		// measured package sums to that package's delta. The worn bonuses it
-		// breaks alone are added back because the path charges each break once;
-		// the 2pc it crosses alone at worn 1 is taken out because the row's own
-		// delta already holds it. Undefined when any input was unmeasured.
+		// A path piece's own gain: its swap gain, read before replication
+		// rewrites the top rows' `deltaDps`, so a row among measured added pieces
+		// sums to their gain. The worn bonuses it loses alone are added back
+		// because the path charges each loss once; the 2pc it reaches alone at
+		// worn 1 is taken out because the row's own gain already holds it.
+		// Undefined when any input was unmeasured.
 		const ownStats = (p: PackagePiece): number | undefined => {
 			const single = individualDeltasByItemId.get(p.itemId)?.deltaDps;
 			if (single === undefined) return undefined;
@@ -3172,17 +3181,16 @@ function applySetContext(
 		const futureBonuses = T.map(t => {
 			const bonus = bonusesForSet.find(b => b.threshold === t);
 			const net = bonus?.bonusDpsNet;
-			// No path through a below-gate package: it was never simmed.
+			// No path through a `belowGate` entry: its pieces were never simmed.
 			const path =
 				bonus && bonus.unmeasured === undefined && !bonus.belowGate && bonus.packageItemIds.length > 0 && slotIndex !== undefined
 					? pathToThreshold(item.itemId, slotIndex, bonus, candidateSlotIndex, individualDeltasByItemId)
 					: undefined;
-			// The worn bonuses this future's path breaks beyond the single's own
-			// break. Keys a lower future already lists stay; the view charges each
-			// key once.
+			// The worn bonuses this path loses beyond the row's own loss. Ones a
+			// lower future bonus already lists stay; the view charges each once.
 			const pathBreaks = path ? brokenSetBonuses(equipment, path, setId, counts).filter(brk => !singleKeys.has(bonusKey(brk))) : [];
-			// The path's other members. Pieces a lower future already lists stay;
-			// the view counts each piece once.
+			// The path's other pieces. Ones a lower future bonus already lists stay;
+			// the view counts each once.
 			const pieces = path
 				?.filter(p => p.itemId !== item.itemId)
 				.map(p => {
@@ -3208,9 +3216,9 @@ function applySetContext(
 		});
 		if (futureBonuses.length > 0) setContext.futureBonuses = futureBonuses;
 
-		// commitBreaks: the worn bonuses broken by completing the top implemented
-		// threshold package with this item in its slot, beyond the row's own single
-		// break. commitPackageDeltaDps: that package's end-state value (disclosure).
+		// commitBreaks: the worn bonuses lost by the top entry's added pieces with
+		// this item in its slot, beyond the row's own loss. commitPackageDeltaDps:
+		// those pieces' sim gain, shown only.
 		const topPackage = topMeasuredPackage(bonusesForSet);
 		if (topPackage && slotIndex !== undefined) {
 			const commitAll = substitutedPackageBreaks(item.itemId, setId, slotIndex, topPackage, candidateSlotIndex, equipment, counts);
@@ -3327,7 +3335,7 @@ function hitPercentOf(observed: PlayerStatsObservation, pseudoStat: number): num
 }
 
 /**
- * The hit percent of a worn-gear, baseline or set-version stats read. A read
+ * The hit percent of a worn-gear, baseline or set-phase stats read. A read
  * that fails fails the run with the sim's error, as a failed baseline sim
  * does; a read Stop ended rejects with `StopRefusedSim`. A read with no hit
  * number is no sim failure: `hitPercentOf`'s error fails the run as internal.
@@ -3427,11 +3435,11 @@ function stopGuardedDeps(deps: Deps): Deps {
  * gear, so no set name has to match one the tab keeps.
  *
  * When those pieces fail gem repair or a read fails, the set gets no counts:
- * the gain side and the crossing gate try none for it, a console warning
- * names the set, and `onNotRead` gets the reason. When Stop refuses a read
- * the set gets no counts and no warning, and `rankUpgrades` drops the whole
- * set phase. A runner that cannot read bonuses gives an empty map, and the
- * gain side then tries every count.
+ * no reachable bonus or `crossingGates` check is simmed for it, a console
+ * warning names the set, and `onNotRead` gets the reason. When Stop refuses a
+ * read the set gets no counts and no warning, and `rankUpgrades` drops the
+ * whole set phase. A runner that cannot read bonuses gives an empty map, and
+ * every count is then tried.
  */
 async function setBonusCountsInReach(
 	sim: SimRunner,
@@ -3604,10 +3612,10 @@ export function candidateSwapWithRepairs(
 }
 
 /**
- * A site's fixed chain of `candidateSwapWithRepairs` calls from the gear it
- * starts on, as built: the set phase's package, step and pair gears.
- * `repaired` is whether any call changed a socket; `swaps` is every call's
- * repair swaps in call order.
+ * The gear from one fixed series of `candidateSwapWithRepairs` calls, as
+ * built: the set phase's added-pieces, partner and pair gears. `repaired` is
+ * whether any call changed a socket; `swaps` is every call's repair swaps in
+ * call order.
  */
 type ChainBuild = {
 	equipment: SimItemSpec[];
@@ -3615,23 +3623,24 @@ type ChainBuild = {
 	swaps: MetaRepairSwap[];
 };
 
-/** A version's copies; `{}` is the build's plain request. */
+/** Which slots to send as copies; `{}` is the gear's request with no copies. */
 type VersionCopies = {
 	setKept?: readonly number[];
 	setLess?: readonly number[];
 };
 
-/** A version's request and the repair swaps of the build it wears. */
+/** One request and the gem repair swaps of the gear it wears. */
 type VersionEntry = {
 	request: RaidSimRequest;
 	swaps: readonly MetaRepairSwap[];
 };
 
 /**
- * A version whose rebuild failed its gem repair. It is no failed call, so a
- * caller handles it as the same failure on its own build, never as a request
- * that could not be built: a build error's line carries `Substitution.error`,
- * which the run's error toast shows.
+ * An entry whose gear, repaired again on its own hit budget, failed the gem
+ * repair. It is no failed call, so a caller treats it like the same failure
+ * on the first build, never as a request that could not be built: a build
+ * error's line carries `Substitution.error`, which the run's error toast
+ * shows.
  */
 type RepairFailure = { repairError: MetaRepairError };
 
@@ -3639,25 +3648,24 @@ type VersionResult = VersionEntry | BuildFailure | RepairFailure;
 
 const isRepairFailure = (entry: VersionResult | undefined): entry is RepairFailure => entry !== undefined && 'repairError' in entry;
 
-/** The first version's failed repair, or every entry when none failed. */
+/** The first failed repair, or every entry when none failed. */
 const repairErrorOr = (entries: readonly VersionResult[]): MetaRepairError | Array<VersionEntry | BuildFailure> =>
 	entries.find(isRepairFailure)?.repairError ?? entries.filter((entry): entry is VersionEntry | BuildFailure => !isRepairFailure(entry));
 
 /**
- * Each version of one set-phase build, a pair's versions in one call
- * (`rankUpgrades` defines it). `base` is the build on the run's budget;
- * `rebuild` builds the same chain on another. An entry is a `BuildFailure`
- * when that version's default request cannot be composed, and a
- * `RepairFailure` when its rebuild fails gem repair, unless Stop ends a later
- * read in the same call.
+ * The requests for one set-phase gear, one per copy layout, each with gems
+ * repaired on its own hit budget; both sims of a pair come from one call
+ * (`rankUpgrades` defines it). `base` is the gear on the run's budget;
+ * `rebuild` builds the same gear on another. An entry is a `BuildFailure`
+ * when its request cannot be composed, and a `RepairFailure` when its rebuild
+ * fails gem repair, unless Stop ends a later read in the same call.
  */
 type VersionGears = (rebuild: (gems: GemContext) => ChainBuild, base: ChainBuild, copiesList: readonly VersionCopies[]) => Promise<VersionResult[]>;
 
-/** A version's request, or why it could not be built. */
 const requestOf = (entry: VersionEntry | BuildFailure): RaidSimRequest | BuildFailure => (isBuildFailure(entry) ? entry : entry.request);
 
 /**
- * Missed hit below this many rating keeps a version on the run's budget. On
+ * Missed hit below this many rating keeps a request on the run's budget. On
  * the measured gear, gem, item and enchant hit cancel inside `missed`, so
  * what is left is set-bonus hit, a whole number of rating (20 on Burning
  * Rage's 2pc); the tolerance only absorbs the percent round trip.
@@ -3852,7 +3860,6 @@ export const SET_BONUS_SKIP_REASONS = {
 	}),
 } as const;
 
-/** A line whose sentence is `detail` and whose call failed with `error`. */
 const withError = (line: { field: string; detail: string }, error: string | undefined): Substitution => (error === undefined ? line : { ...line, error });
 
 /** One set bonus the set phase could not measure, for the run or `onSomeRows` only. */
@@ -3876,7 +3883,7 @@ export function setBonusSkipSubstitution(skip: SetBonusSkip): Substitution {
 /**
  * A set whose bonus counts were not read. No count above the worn one is tried
  * for it, so its bonuses in reach get no figure; its worn bonuses are measured
- * apart, by the worn-set ladder.
+ * separately, on the player's own gear (`wornSetLadder`).
  */
 export function setBonusesSkipSubstitution(skip: { setName: string; reason: SkipReason }): Substitution {
 	return withError(
@@ -3889,8 +3896,8 @@ export function setBonusesSkipSubstitution(skip: { setName: string; reason: Skip
 }
 
 /**
- * A step's bonus-off sim that failed or could not be built. The step is still
- * measured as one line; only the split of its break from its pieces is lost.
+ * A shown bonus's bonus-off sim that failed or could not be built. The bonus
+ * is still shown as one line; only its worn-bonus loss is not split out.
  */
 export function breakSplitSkipSubstitution(skip: {
 	setName: string;
@@ -3926,14 +3933,14 @@ export function setScreenSkipSubstitution(skip: SetScreenSkip): Substitution {
 }
 
 /**
- * A worn-set ladder sim that failed. The line names the set and no count: the
- * ladder does not know which counts hold a bonus, and a rung's count (1 for
- * the first) is no count the player wears.
+ * A worn-set value sim that failed. The line names the set and no count:
+ * those sims do not know which counts hold a bonus, and a sim's piece count
+ * (1 for the first) is not a count the player wears.
  */
 export function wornSetSkipSubstitution(skip: {
 	setName: string;
 	error: string;
-	/** The rung's request could not be built, so no sim ran. */
+	/** The sim's request could not be built, so no sim ran. */
 	notBuilt?: true;
 }): Substitution {
 	return {

@@ -1,5 +1,6 @@
 /**
- * Standing assumptions vs this-run substitutions.
+ * What every ranking assumes (`StandingAssumption`) and what one run had to change
+ * (`Substitution`).
  */
 
 import type { MetaRepairSwap } from './meta-repair';
@@ -31,7 +32,7 @@ export type Substitution = {
 	 */
 	slot?: SimOrderName;
 	/**
-	 * The error that a failed sim, read or request build gave, word for word,
+	 * The error that a failed sim, stats read or request build gave, word for word,
 	 * apart from the tab's one-sentence `detail`.
 	 */
 	error?: string;

@@ -1,6 +1,4 @@
-/**
- * Domain refs shared by RankInput and the GearSource seam.
- */
+/** Types shared by `RankInput` and `GearSource`. */
 
 export type Region = 'US' | 'EU' | 'KR' | 'TW' | 'CN';
 
@@ -11,7 +9,7 @@ export type CharacterRef = {
 };
 
 /**
- * A spec this engine can rank: one with a preset and a universe.
+ * A spec this engine can rank: one with a preset and a candidate item list.
  *
  * Every per-spec engine table (`CAP_PROFILE_BY_SPEC`, `SPEC_PREFERRED_METAS`,
  * `PRESET_ID_BY_SPEC`) is a total `Record<SpecId, …>` holding a game fact with

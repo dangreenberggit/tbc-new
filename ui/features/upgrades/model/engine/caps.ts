@@ -7,7 +7,7 @@ import { type Stat, statAt } from './stats';
 
 /**
  * The hit `stat` from item stats, enchants, gems and active socket bonuses. Set bonuses
- * live in Go code, in no database row, so the set phase reads them from the sim. Enchants
+ * live in Go code, in no database row, so set-bonus code reads them from the sim. Enchants
  * count because a swap can drop one that does not fit the new item.
  */
 export function gearHitRating(equipment: readonly SimItemSpec[], stat: Stat): number {

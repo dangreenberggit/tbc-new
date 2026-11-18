@@ -1,6 +1,6 @@
 /**
- * Store seam: content-addressed blob cache plus job rows. `MemoryStore` keeps
- * them for the page session only.
+ * Store: a cache of blobs keyed by their content, plus job rows. `MemoryStore` keeps them
+ * for the page session only.
  */
 
 export type JobStatus = 'queued' | 'running' | 'done' | 'error';
