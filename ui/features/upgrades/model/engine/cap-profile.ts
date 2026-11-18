@@ -41,11 +41,11 @@ export type CapProfile = {
 	/** Rating per one percent of hit, for this school. */
 	readonly ratingPerPercent: number;
 	/**
-	 * Whether this spec has an expertise cap; when true, `gemFillWeights` gives
-	 * expertise no weight. False for casters, whose spells cannot be dodged or
-	 * parried, and for hunters, whose ranged shots cannot be.
+	 * When true, `gemFillWeights` gives expertise no weight. False for casters,
+	 * whose spells cannot be dodged or parried, and for hunters, whose ranged
+	 * shots cannot be.
 	 */
-	readonly trackExpertise: boolean;
+	readonly hasExpertiseCap: boolean;
 	/**
 	 * How meta repair values hit gems; every spec must pick one. `budget` values
 	 * hit only up to the cap, from the hit percent `computeStats` reports.
@@ -168,14 +168,14 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
 		hitStat: Stat.StatMeleeHitRating,
 		hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
 		ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
-		trackExpertise: true,
+		hasExpertiseCap: true,
 		repair: MELEE_HIT_BUDGET,
 	},
 	feral: {
 		hitStat: Stat.StatMeleeHitRating,
 		hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
 		ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
-		trackExpertise: true,
+		hasExpertiseCap: true,
 		repair: MELEE_HIT_BUDGET,
 	},
 
@@ -183,7 +183,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
 		hitStat: Stat.StatSpellHitRating,
 		hitCapPercent: SPELL_HIT_CAP_PERCENT,
 		ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
-		trackExpertise: false,
+		hasExpertiseCap: false,
 		repair: FULL_WEIGHT,
 	},
 
@@ -198,7 +198,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
 		hitStat: Stat.StatMeleeHitRating,
 		hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
 		ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
-		trackExpertise: false,
+		hasExpertiseCap: false,
 		repair: FULL_WEIGHT,
 	},
 
@@ -206,7 +206,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
 		hitStat: Stat.StatSpellHitRating,
 		hitCapPercent: SPELL_HIT_CAP_PERCENT,
 		ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
-		trackExpertise: false,
+		hasExpertiseCap: false,
 		repair: SPELL_HIT_BUDGET,
 	},
 
@@ -214,7 +214,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
 		hitStat: Stat.StatSpellHitRating,
 		hitCapPercent: SPELL_HIT_CAP_PERCENT,
 		ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
-		trackExpertise: false,
+		hasExpertiseCap: false,
 		repair: SHADOW_SPELL_HIT_BUDGET,
 	},
 
@@ -222,7 +222,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
 		hitStat: Stat.StatMeleeHitRating,
 		hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
 		ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
-		trackExpertise: true,
+		hasExpertiseCap: true,
 		repair: FULL_WEIGHT,
 	},
 
@@ -230,7 +230,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
 		hitStat: Stat.StatSpellHitRating,
 		hitCapPercent: SPELL_HIT_CAP_PERCENT,
 		ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
-		trackExpertise: false,
+		hasExpertiseCap: false,
 		repair: FULL_WEIGHT,
 	},
 
@@ -238,7 +238,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
 		hitStat: Stat.StatMeleeHitRating,
 		hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
 		ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
-		trackExpertise: true,
+		hasExpertiseCap: true,
 		repair: FULL_WEIGHT,
 	},
 
@@ -246,7 +246,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
 		hitStat: Stat.StatSpellHitRating,
 		hitCapPercent: SPELL_HIT_CAP_PERCENT,
 		ratingPerPercent: SPELL_HIT_RATING_PER_HIT_PERCENT,
-		trackExpertise: false,
+		hasExpertiseCap: false,
 		repair: WARLOCK_SPELL_HIT_BUDGET,
 	},
 
@@ -254,7 +254,7 @@ export const CAP_PROFILE_BY_SPEC: Readonly<Record<SpecId, CapProfile>> = {
 		hitStat: Stat.StatMeleeHitRating,
 		hitCapPercent: PHYSICAL_HIT_CAP_PERCENT,
 		ratingPerPercent: PHYSICAL_HIT_RATING_PER_HIT_PERCENT,
-		trackExpertise: true,
+		hasExpertiseCap: true,
 		repair: FULL_WEIGHT,
 	},
 };
@@ -308,7 +308,7 @@ export function hitCapBudgetFrom(
 	const improved = faerieFire === 'TristateEffectImproved' || faerieFire === 2;
 	const fire = improved && profile.hitStat === Stat.StatMeleeHitRating ? IMPROVED_FAERIE_FIRE_HIT_PERCENT : 0;
 	const remaining = (profile.hitCapPercent - fire - hitPercent) * profile.ratingPerPercent;
-	if (!pricesHitBySpells(profile)) {
+	if (!usesSpellHitBudget(profile)) {
 		return { stat: profile.hitStat, remaining };
 	}
 	if (spellDamageBySchool === undefined) {
@@ -330,11 +330,8 @@ export function targetsAtCapLevel(request: unknown): boolean {
 	return targets.length > 0 && targets.every(t => t.level === RAID_BOSS_LEVEL);
 }
 
-/**
- * Whether the spec uses `budget` on spell hit, which `hitCapBudgetFrom` splits
- * by the spells a sim result shows cast.
- */
-export function pricesHitBySpells(profile: CapProfile): boolean {
+/** `hitCapBudgetFrom` splits it by the spells a sim result shows cast. */
+export function usesSpellHitBudget(profile: CapProfile): boolean {
 	return profile.repair.kind === 'budget' && profile.repair.hitPercentPseudoStat === PseudoStat.PseudoStatSpellHitPercent;
 }
 

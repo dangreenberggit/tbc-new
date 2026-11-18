@@ -23,7 +23,7 @@ const OPTIONS: ViewSourceOptions = {
 const Harness = ({ initial = [] }: { initial?: readonly string[] }) => {
 	const [hidden, setHidden] = useState<readonly string[]>(initial);
 	const onToggle = (key: string) => setHidden(keys => (keys.includes(key) ? keys.filter(k => k !== key) : [...keys, key]));
-	return <ViewSourcesButton options={OPTIONS} hidden={hidden} onToggle={onToggle} onSetAll={setHidden} />;
+	return <ViewSourcesButton options={OPTIONS} hidden={hidden} onToggle={onToggle} onSetHidden={setHidden} />;
 };
 
 const summary = () => screen.getByTestId('upgrades-view-sources-summary').textContent;
@@ -69,20 +69,20 @@ describe('ViewSourcesButton', () => {
 
 	it('reports the toggled source', () => {
 		const onToggle = vi.fn();
-		render(<ViewSourcesButton options={OPTIONS} hidden={[]} onToggle={onToggle} onSetAll={vi.fn()} />);
+		render(<ViewSourcesButton options={OPTIONS} hidden={[]} onToggle={onToggle} onSetHidden={vi.fn()} />);
 		open();
 		fireEvent.click(box('Badge vendor'));
 		expect(onToggle).toHaveBeenCalledWith('Badge vendor');
 	});
 
 	it('hides every offered source with Hide all and shows them again with Show all', () => {
-		const onSetAll = vi.fn();
-		render(<ViewSourcesButton options={OPTIONS} hidden={['Karazhan']} onToggle={vi.fn()} onSetAll={onSetAll} />);
+		const onSetHidden = vi.fn();
+		render(<ViewSourcesButton options={OPTIONS} hidden={['Karazhan']} onToggle={vi.fn()} onSetHidden={onSetHidden} />);
 		open();
 		fireEvent.click(screen.getByTestId('upgrades-view-sources-hide-all'));
-		expect(onSetAll).toHaveBeenLastCalledWith(['Karazhan', 'Black Temple', 'Hyjal Summit', 'Badge vendor', 'Crafted']);
+		expect(onSetHidden).toHaveBeenLastCalledWith(['Karazhan', 'Black Temple', 'Hyjal Summit', 'Badge vendor', 'Crafted']);
 		fireEvent.click(screen.getByTestId('upgrades-view-sources-show-all'));
-		expect(onSetAll).toHaveBeenLastCalledWith([]);
+		expect(onSetHidden).toHaveBeenLastCalledWith([]);
 	});
 
 	it('counts only the hidden sources the table offers', () => {

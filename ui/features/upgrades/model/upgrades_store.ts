@@ -80,13 +80,12 @@ export type UpgradesActions = {
 	setIterations: (iterations: number, scope: SettingsScope | undefined) => void;
 	setCandidateCap: (cap: number | undefined, scope: SettingsScope | undefined) => void;
 	/** The page's changes: a phase change, and the pool the page's phase offers once it has loaded (`follow_phase.ts`). */
-	changeScope: (validSourceKeys: readonly string[]) => void;
-	dropUnofferedSources: (validSourceKeys: readonly string[]) => void;
+	changeScope: (poolSourceKeys: readonly string[]) => void;
+	dropUnofferedSources: (poolSourceKeys: readonly string[]) => void;
 	setSort: (sort: ResultsSort) => void;
 	setViewToggle: (toggle: keyof ViewToggles, on: boolean) => void;
 	toggleViewSource: (key: string) => void;
-	/** Show all passes `[]`; Hide all passes `withOfferedSourcesHidden` of the list. */
-	setViewSources: (keys: readonly string[]) => void;
+	setHiddenSources: (keys: readonly string[]) => void;
 	setExportFlavour: (flavour: ExportFlavour) => void;
 };
 
@@ -145,13 +144,13 @@ export function createUpgradesStore(seed: SettingsSeed, restored: RestoredTab = 
 				setPrune: (prune, scope) => changeInScope(scope, settings => withPrune(settings, prune)),
 				setIterations: (iterations, scope) => changeInScope(scope, settings => withIterations(settings, iterations)),
 				setCandidateCap: (cap, scope) => changeInScope(scope, settings => withCandidateCap(settings, cap)),
-				changeScope: validSourceKeys => setSettings(settings => afterScopeChange(settings, validSourceKeys)),
-				dropUnofferedSources: validSourceKeys => setSettings(settings => withoutUnofferedSources(settings, validSourceKeys)),
+				changeScope: poolSourceKeys => setSettings(settings => afterScopeChange(settings, poolSourceKeys)),
+				dropUnofferedSources: poolSourceKeys => setSettings(settings => withoutUnofferedSources(settings, poolSourceKeys)),
 
 				setSort: sort => set(state => (sort === state.sort ? state : { sort })),
 				setViewToggle: (toggle, on) => set(state => (state.view[toggle] === on ? state : { view: { ...state.view, [toggle]: on } })),
 				toggleViewSource: key => set(state => ({ hiddenSources: withViewSourceToggled(state.hiddenSources, key) })),
-				setViewSources: keys =>
+				setHiddenSources: keys =>
 					set(state =>
 						keys.length === state.hiddenSources.length && keys.every((key, i) => key === state.hiddenSources[i])
 							? state

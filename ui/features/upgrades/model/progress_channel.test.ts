@@ -9,7 +9,7 @@ const view = (done: number): RunProgressView => ({
 	stage: 'simming',
 	done,
 	total: 10,
-	boundary: 9,
+	lastCandidateDone: 9,
 	concurrency: 4,
 	qualifyingRows: 0,
 });

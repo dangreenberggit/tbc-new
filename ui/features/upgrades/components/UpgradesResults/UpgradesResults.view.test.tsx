@@ -251,7 +251,7 @@ describe('UpgradesResults Filter by source', () => {
 		expect(sourceCells(unfiltered.container)[rowIds(unfiltered.container).indexOf(badgeOrRaidSword.itemId)]).toBe('Badge vendor');
 		unfiltered.unmount();
 
-		upgradesStoreFor(host).getState().setViewSources(['Badge vendor']);
+		upgradesStoreFor(host).getState().setHiddenSources(['Badge vendor']);
 		const { container } = show(done(ranking));
 		expect(sourceCells(container)).toEqual(before);
 	});

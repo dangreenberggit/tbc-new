@@ -34,8 +34,8 @@ const COLUMN_WIDTH: Record<Column, string | undefined> = {
 	batch: 'w-9',
 };
 
-/** The shared widths; `ResultsTable` renders it first in every results table. Static, so built once. */
-export const RESULTS_COLUMNS = (
+/** Static, so built once. */
+export const RESULTS_COLGROUP = (
 	<colgroup>
 		{COLUMNS.map(column => (
 			<col key={column} className={COLUMN_WIDTH[column]} />

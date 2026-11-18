@@ -7,7 +7,7 @@ import { createUpgradesStore, selectHiddenSources, selectRunStatus, selectSettle
 
 const [rowA] = RANKING_FIXTURE.items;
 const SEED = { iterations: 1000 };
-const SCOPE = { key: 'ret:3', selectedSetKeys: ['preset:P3'], validSourceKeys: ['raid:hyjal'] };
+const SCOPE = { specPhase: 'ret:3', defaultSetKeys: ['preset:P3'], poolSourceKeys: ['raid:hyjal'] };
 const MEASURED = { inputsSignature: 'sig-at-click' };
 
 describe('createUpgradesStore', () => {
@@ -51,7 +51,7 @@ describe('the run actions', () => {
 		const store = createUpgradesStore(SEED);
 		store.getState().startRun(1, 1000);
 		store.getState().settleRun(1, RANKING_FIXTURE);
-		store.getState().setViewSources(['Black Temple', 'PvP vendor']);
+		store.getState().setHiddenSources(['Black Temple', 'PvP vendor']);
 
 		store.getState().startRun(2, 2000);
 		expect(selectHiddenSources(store.getState())).toEqual(['Black Temple', 'PvP vendor']);
@@ -224,9 +224,9 @@ describe('the source filter actions', () => {
 		store.getState().toggleViewSource('Black Temple');
 		expect(selectHiddenSources(store.getState())).toEqual(['Karazhan']);
 
-		store.getState().setViewSources(['Crafted', 'PvP vendor']);
+		store.getState().setHiddenSources(['Crafted', 'PvP vendor']);
 		expect(selectHiddenSources(store.getState())).toEqual(['Crafted', 'PvP vendor']);
-		store.getState().setViewSources([]);
+		store.getState().setHiddenSources([]);
 		expect(selectHiddenSources(store.getState())).toEqual([]);
 	});
 
@@ -234,7 +234,7 @@ describe('the source filter actions', () => {
 		const store = createUpgradesStore(SEED, { hiddenSources: ['Karazhan'] });
 		const listener = vi.fn();
 		store.subscribe(listener);
-		store.getState().setViewSources(['Karazhan']);
+		store.getState().setHiddenSources(['Karazhan']);
 		expect(listener).not.toHaveBeenCalled();
 	});
 

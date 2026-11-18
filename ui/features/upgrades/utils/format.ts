@@ -11,11 +11,11 @@ import type { Substitution } from '../model/engine/disclosure';
 import type { ItemSource } from '../model/engine/pool';
 import { type RankedItem, RankError } from '../model/engine/rank';
 import type { SimOrderName } from '../model/engine/slots';
-import { SOURCE_LABELS } from '../model/engine/view';
+import { ZONELESS_SOURCE_LABELS } from '../model/engine/view';
 import type { SortLabels } from '../model/results_columns';
 import { effectiveSlot } from '../model/results_view';
 import type { RunPhase, RunProgressView } from '../model/run_progress';
-import { bucketKeyOf, type SourcedEntry, sourcesOf } from '../model/settings_pool';
+import { type SourcedEntry, sourcesOf, zonelessSourceKey } from '../model/settings_pool';
 import { shownTenths } from '../model/shown_figure';
 import { FIXTURE_NOT_JSON, type FixtureLoadResult } from './fixture';
 
@@ -57,12 +57,12 @@ export const simSlotLabel = (slot: SimOrderName): string => translateSlotName(IT
 export const slotLabel = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): string => simSlotLabel(effectiveSlot(row));
 
 /**
- * A source kind's translated name. The English `SOURCE_LABELS` stay as the pool's source keys
+ * A source kind's translated name. The English `ZONELESS_SOURCE_LABELS` stay as the pool's source keys
  * (`settings_pool.ts`), so only the shown text is translated; an unknown kind keeps its raw name.
  */
-const kindLabel = (kind: string): string => (kind in SOURCE_LABELS ? i18n.t(`upgrades_tab.sources.${kind}`, { ns: 'upgrades' }) : kind);
+const kindLabel = (kind: string): string => (kind in ZONELESS_SOURCE_LABELS ? i18n.t(`upgrades_tab.sources.${kind}`, { ns: 'upgrades' }) : kind);
 
-const KIND_BY_SOURCE_KEY = new Map(Object.entries(SOURCE_LABELS).map(([kind, key]) => [key, kind]));
+const KIND_BY_SOURCE_KEY = new Map(Object.entries(ZONELESS_SOURCE_LABELS).map(([kind, key]) => [key, kind]));
 
 /** A Sources dialog key's shown name: a zone keeps its own name, any other key shows its source kind's name. */
 export const sourceKeyLabel = (key: string): string => {
@@ -119,11 +119,11 @@ export const zoneWithMark = (zone: string, difficulty: DungeonDifficulty): strin
 	keepMarkWithZone(`${zone} (${difficultyNames.get(difficulty) ?? 'Unknown'})`);
 
 /**
- * The key "Filter by source" would hide one source by: a drop's zone, else its kind's key (`bucketKeyOf`).
+ * The key "Filter by source" would hide one source by: a drop's zone, else its kind's key (`zonelessSourceKey`).
  * The filter judges a row that has a zone by its zones alone (`sourceMatches`), so the cell checks each
  * source on its own and never names one the user hid.
  */
-const ownSourceKey = (source: ItemSource): string => ('zone' in source ? source.zone : bucketKeyOf(source.kind));
+const ownSourceKey = (source: ItemSource): string => ('zone' in source ? source.zone : zonelessSourceKey(source.kind));
 
 /** Whether any source of the row, first or not, is one `hidden` hides. */
 export const rowNamesHiddenSource = (row: SourcedEntry, hidden: readonly string[]): boolean =>

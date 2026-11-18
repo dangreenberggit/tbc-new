@@ -10,7 +10,7 @@ export const CUTOFF: Cutoff = { absDps: 3 };
 
 /**
  * Noise floor for a set-bonus figure that combines four sims (a ranking made without
- * `measureBrokenSetValue`): √2 × `absDps`, as four sims' combined SE (`combineSe`) is about
+ * `measureSetBonuses`): √2 × `absDps`, as four sims' combined SE (`combineSe`) is about
  * √2 times one delta's. A 4pc bonus combines six but keeps this lower floor on purpose, so
  * a bonus gets through rather than hidden. Only a figure strictly above it counts.
  *

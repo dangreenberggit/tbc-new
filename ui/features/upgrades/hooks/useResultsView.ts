@@ -30,7 +30,7 @@ export type ResultsView = {
 	/** The hidden sources as stored, which may name one this view does not offer. */
 	hiddenSources: readonly string[];
 	toggleViewSource: (key: string) => void;
-	setViewSources: (keys: readonly string[]) => void;
+	setHiddenSources: (keys: readonly string[]) => void;
 	rowContext: RowContext;
 	/** Undefined before a run settles. */
 	view: ResultsViewResult | undefined;
@@ -47,7 +47,7 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 	const setToggle = useUpgradesStore(state => state.setViewToggle);
 	const hiddenSources = useUpgradesStore(selectHiddenSources);
 	const toggleViewSource = useUpgradesStore(state => state.toggleViewSource);
-	const setViewSources = useUpgradesStore(state => state.setViewSources);
+	const setHiddenSources = useUpgradesStore(state => state.setHiddenSources);
 	const offered = offeredToggles(run);
 	const { withSetPotential, onlyBis } = appliedToggles(offered, toggles);
 	const ranking = run.status === 'done' || run.status === 'stopped' ? run.result : undefined;
@@ -77,5 +77,5 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 		[sim, ranking, measuredOn, withSetPotential, tagsOf, bisHeadingsOf, actingHidden],
 	);
 
-	return { toggles, offered, setToggle, sourceOptions: offeredSources, hiddenSources, toggleViewSource, setViewSources, rowContext, view };
+	return { toggles, offered, setToggle, sourceOptions: offeredSources, hiddenSources, toggleViewSource, setHiddenSources, rowContext, view };
 }

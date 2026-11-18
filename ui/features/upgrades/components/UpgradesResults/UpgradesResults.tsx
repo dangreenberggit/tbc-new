@@ -27,7 +27,7 @@ export interface UpgradesResultsProps {
  * with the same props, and the panes and export would re-sort the results.
  */
 export const UpgradesResults = memo(({ run, bisHeadingsOf, specId }: UpgradesResultsProps) => {
-	const { toggles, offered, setToggle, sourceOptions, hiddenSources, toggleViewSource, setViewSources, rowContext, view } = useResultsView(
+	const { toggles, offered, setToggle, sourceOptions, hiddenSources, toggleViewSource, setHiddenSources, rowContext, view } = useResultsView(
 		run,
 		bisHeadingsOf,
 	);
@@ -59,10 +59,10 @@ export const UpgradesResults = memo(({ run, bisHeadingsOf, specId }: UpgradesRes
 				<ViewToggles
 					offered={offered}
 					toggles={toggles}
-					maxPhase={maxPhase}
+					rankedPhase={maxPhase}
 					bisTagPhase={bisTagPhase}
 					onChange={setToggle}
-					sources={{ options: sourceOptions, hidden: hiddenSources, onToggle: toggleViewSource, onSetAll: setViewSources }}
+					sources={{ options: sourceOptions, hidden: hiddenSources, onToggle: toggleViewSource, onSetHidden: setHiddenSources }}
 				/>
 			);
 			// Checked before any other empty state: with no candidate list at this phase, "No items to show" would not say why.

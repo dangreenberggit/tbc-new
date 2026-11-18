@@ -5,7 +5,7 @@ import { useVirtualRows } from '../../hooks/useVirtualRows';
 import type { RankedItem } from '../../model/engine/rank';
 import { landedRows as bestFirst } from '../../model/results_view';
 import { ResultRow, type RowContext } from './ResultRow';
-import { PlainResultsHead, RESULTS_COLUMN_COUNT, RESULTS_COLUMNS } from './ResultsTableHead';
+import { PlainResultsHead, RESULTS_COLGROUP, RESULTS_COLUMN_COUNT } from './ResultsTableHead';
 
 /** Table attributes pass through, so a variant can mark itself; the testid is set after them so it cannot be overridden. */
 export type ResultsTableProps = Omit<ComponentPropsWithoutRef<'table'>, 'className'>;
@@ -21,7 +21,7 @@ export type ResultsTableProps = Omit<ComponentPropsWithoutRef<'table'>, 'classNa
 export const ResultsTable = ({ children, ...attributes }: ResultsTableProps) => (
 	<div data-testid="upgrades-table-scroll" className="relative overflow-x-auto">
 		<table {...attributes} className="w-full min-w-172 table-fixed" data-testid="upgrades-results-table">
-			{RESULTS_COLUMNS}
+			{RESULTS_COLGROUP}
 			{children}
 		</table>
 	</div>

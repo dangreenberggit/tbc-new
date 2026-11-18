@@ -9,15 +9,14 @@ import { emitProgress } from './progress_channel';
 import type { RunFn } from './run';
 
 export type ReplayPacing = {
-	/** Rows landed per step. */
-	batchSize?: number;
-	/** Wait between steps; the default lands a 467-row ranking in about 4 s. */
-	delayMs?: number;
+	rowsPerStep?: number;
+	/** The default lands a 467-row ranking in about 4 s. */
+	stepDelayMs?: number;
 };
 
 const wait = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, ms));
 
-export function replayRows(ranking: Ranking, { batchSize = 3, delayMs = 25 }: ReplayPacing = {}): RunFn {
+export function replayRows(ranking: Ranking, { rowsPerStep = 3, stepDelayMs = 25 }: ReplayPacing = {}): RunFn {
 	return async (host, _settings, deps) => {
 		const startedAt = Date.now();
 		const rows = ranking.items;
@@ -28,20 +27,20 @@ export function replayRows(ranking: Ranking, { batchSize = 3, delayMs = 25 }: Re
 				stage: 'simming',
 				done: landed,
 				total: rows.length,
-				boundary: null,
+				lastCandidateDone: null,
 				concurrency: 1,
 				qualifyingRows: 0,
 			});
 
 		while (landed < rows.length && !deps.signal.aborted) {
-			for (const row of rows.slice(landed, landed + batchSize)) {
+			for (const row of rows.slice(landed, landed + rowsPerStep)) {
 				deps.onLanded(row);
 				landed += 1;
 				// Stop can land inside a batch; the rows after it were never "simmed".
 				if (deps.signal.aborted) break;
 			}
 			tick();
-			if (landed < rows.length && !deps.signal.aborted) await wait(delayMs);
+			if (landed < rows.length && !deps.signal.aborted) await wait(stepDelayMs);
 		}
 
 		const durationMs = Date.now() - startedAt;

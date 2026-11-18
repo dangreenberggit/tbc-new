@@ -12,6 +12,7 @@ import {
 	effectivePool,
 	eligibleCount,
 	eligibleCountOf,
+	poolSourceKeysOf,
 	rowTagIndex,
 	rowTags,
 	runSettingsOf,
@@ -23,7 +24,6 @@ import {
 	sourceKeyOf,
 	sourceOptions,
 	splitSetChips,
-	validSourceKeysOf,
 } from './settings_pool';
 import { afterScopeChange, initialSettings, withPrune, withSetToggled, withSourceToggled } from './settings_state';
 
@@ -90,16 +90,16 @@ describe('sourceOptions', () => {
 	});
 });
 
-describe('validSourceKeysOf', () => {
+describe('poolSourceKeysOf', () => {
 	it('lists raid zones first, then zoneless buckets, which are the keys the Sources dialog lists', () => {
-		expect(validSourceKeysOf(POOL)).toEqual(['Black Temple', 'Hyjal Summit', 'Tempest Keep', 'Badge vendor', 'Crafted']);
+		expect(poolSourceKeysOf(POOL)).toEqual(['Black Temple', 'Hyjal Summit', 'Tempest Keep', 'Badge vendor', 'Crafted']);
 		const { raids, other } = sourceOptions(POOL);
-		expect([...raids, ...other].map(o => o.key)).toEqual(validSourceKeysOf(POOL));
+		expect([...raids, ...other].map(o => o.key)).toEqual(poolSourceKeysOf(POOL));
 	});
 
 	// An entry's second zone is offered though no entry has it first, after the first zones.
 	it('offers every zone an entry matches, each zone that is some entry’s first in its old place', () => {
-		expect(validSourceKeysOf(TWO_ZONE_POOL)).toEqual(['Hyjal Summit', 'Tempest Keep', "Zul'Aman", 'Badge vendor']);
+		expect(poolSourceKeysOf(TWO_ZONE_POOL)).toEqual(['Hyjal Summit', 'Tempest Keep', "Zul'Aman", 'Badge vendor']);
 		expect(sourceOptions(TWO_ZONE_POOL).raids).toEqual([
 			{ key: 'Hyjal Summit', count: 1 },
 			{ key: 'Tempest Keep', count: 1 },

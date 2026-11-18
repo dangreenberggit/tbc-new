@@ -10,8 +10,7 @@ export interface ViewSourcesButtonProps {
 	/** The hidden sources as stored, which may name a source this table does not offer. */
 	hidden: readonly string[];
 	onToggle: (key: string) => void;
-	/** Sets the whole hidden list: Show all and Hide all. */
-	onSetAll: (keys: readonly string[]) => void;
+	onSetHidden: (keys: readonly string[]) => void;
 }
 
 /**
@@ -19,7 +18,7 @@ export interface ViewSourcesButtonProps {
  * The count reads only the sources this table offers, so a source hidden in an
  * earlier run that this one does not offer, which hides nothing here, is not counted.
  */
-export const ViewSourcesButton = ({ options, hidden, onToggle, onSetAll }: ViewSourcesButtonProps) => {
+export const ViewSourcesButton = ({ options, hidden, onToggle, onSetHidden }: ViewSourcesButtonProps) => {
 	const [open, setOpen] = useState(false);
 	const summaryId = useId();
 	const offered = offeredSourceKeys(options);
@@ -40,8 +39,8 @@ export const ViewSourcesButton = ({ options, hidden, onToggle, onSetAll }: ViewS
 				options={options}
 				hidden={hidden}
 				onToggle={onToggle}
-				onShowAll={() => onSetAll([])}
-				onHideAll={() => onSetAll(withOfferedSourcesHidden(hidden, offered))}
+				onShowAll={() => onSetHidden([])}
+				onHideAll={() => onSetHidden(withOfferedSourcesHidden(hidden, offered))}
 			/>
 		</div>
 	);

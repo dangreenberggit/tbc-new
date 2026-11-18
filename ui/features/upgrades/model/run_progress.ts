@@ -3,7 +3,7 @@
  * phase, so it is read from the order of `Progress` events (`rank.ts`): setup
  * stages, a `simming` event for the baseline and each candidate, a set-bonus stage
  * that sends nothing and is not in `total`, `ranking`, then the replication sims.
- * Only the candidate count, which `replicationBoundary` solves from the first
+ * Only the candidate count, which `lastCandidateDoneFor` solves from the first
  * `total`, tells the last candidate from the set-bonus stage.
  */
 
@@ -27,11 +27,11 @@ export const RUN_PROGRESS_SHOW_FROM_FRACTION = 0.35;
 export const RUN_PROGRESS_MIN_CANDIDATES_DONE = 10;
 
 /**
- * The `done` of the last candidate, solved from `totalSims` in `rank.ts`:
+ * Solved from `totalSims` in `rank.ts`:
  * `total = 1 + candidates + (seedCount - 1) * (1 + min(topN, candidates))`.
  * `null` when no whole candidate count fits.
  */
-export function replicationBoundary(total: number, seedCount: number, topN: number): number | null {
+export function lastCandidateDoneFor(total: number, seedCount: number, topN: number): number | null {
 	if (seedCount <= 1) return total;
 	const extra = seedCount - 1;
 	// At most topN candidates: total = seedCount * (1 + candidates).
@@ -54,8 +54,8 @@ export type RunTimeline = {
 	readonly sims: ReadonlyArray<{ readonly t: number; readonly done: number; readonly afterRanking: boolean }>;
 	readonly rankingAt: number | undefined;
 	readonly total: number;
-	/** The last candidate's `done`; null when unknown or contradicted. */
-	readonly boundary: number | null;
+	/** null when unknown or contradicted. */
+	readonly lastCandidateDone: number | null;
 	readonly concurrency: number;
 	readonly now: number;
 	/** Rows received before `ranking` that replication can re-sim. */
@@ -76,16 +76,16 @@ export type RunTimeline = {
  */
 export function expectedFinalDone(run: RunTimeline): number {
 	if (run.finalTotal !== undefined) return run.finalTotal;
-	const boundary = run.boundary;
-	if (boundary === null) return run.total;
-	const c = boundary - 1;
+	const lastCandidateDone = run.lastCandidateDone;
+	if (lastCandidateDone === null) return run.total;
+	const c = lastCandidateDone - 1;
 	const before = run.sims.filter(s => !s.afterRanking);
 	const lastBefore = before[before.length - 1];
 	const n = lastBefore ? Math.min(lastBefore.done - 1, c) : 0;
 	const q = run.qualifyingRows;
 	const projected = n >= c ? q : n > 0 ? (q * c) / n : 0;
 	const rows = Math.min(run.topN, projected);
-	const expected = boundary + (rows === 0 ? 0 : (run.seedCount - 1) * (1 + rows));
+	const expected = lastCandidateDone + (rows === 0 ? 0 : (run.seedCount - 1) * (1 + rows));
 	const after = run.sims.filter(s => s.afterRanking);
 	const lastAfter = after[after.length - 1];
 	return lastAfter && lastAfter.done > expected ? run.total : expected;
@@ -114,17 +114,17 @@ export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): 
 		estimate = linear();
 	} else {
 		const k = config.kappa * run.concurrency;
-		const boundary = run.boundary;
+		const lastCandidateDone = run.lastCandidateDone;
 		const finalDone = expectedFinalDone(run);
-		const boundaryEvent = boundary === null ? undefined : run.sims.find(s => !s.afterRanking && s.done === boundary);
+		const lastCandidateEvent = lastCandidateDone === null ? undefined : run.sims.find(s => !s.afterRanking && s.done === lastCandidateDone);
 		if (!atRanking) {
-			if (boundary === null) {
+			if (lastCandidateDone === null) {
 				estimate = linear();
 			} else {
-				const left = finalDone - boundary;
-				if (done < boundary) {
+				const left = finalDone - lastCandidateDone;
+				if (done < lastCandidateDone) {
 					const n = done - 1;
-					const c = boundary - 1;
+					const c = lastCandidateDone - 1;
 					if (n >= 1) {
 						const tau = run.now - t1;
 						const beta = config.slowdown;
@@ -134,8 +134,8 @@ export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): 
 						const meanPerCandidate = (tau + candidatesLeft) / c;
 						estimate = candidatesLeft + meanPerCandidate * (config.psi + k * left);
 					}
-				} else if (boundaryEvent && boundary > 1) {
-					estimate = ((boundaryEvent.t - t1) / (boundary - 1)) * (config.psi + k * left);
+				} else if (lastCandidateEvent && lastCandidateDone > 1) {
+					estimate = ((lastCandidateEvent.t - t1) / (lastCandidateDone - 1)) * (config.psi + k * left);
 				}
 			}
 		} else {
@@ -143,8 +143,8 @@ export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): 
 			const lastBefore = beforeRanking[beforeRanking.length - 1];
 			const b = lastBefore?.done;
 			let rB: number | undefined;
-			if (boundaryEvent && boundary !== null && boundary > 1) {
-				rB = (boundaryEvent.t - t1) / (boundary - 1);
+			if (lastCandidateEvent && lastCandidateDone !== null && lastCandidateDone > 1) {
+				rB = (lastCandidateEvent.t - t1) / (lastCandidateDone - 1);
 			} else if (lastBefore && b !== undefined && b > 1) {
 				rB = (lastBefore.t - t1) / (b - 1);
 			}
@@ -165,7 +165,7 @@ export type RunProgressView = {
 	stage: Exclude<Progress, { kind: 'row' }>['stage'];
 	done?: number;
 	total?: number;
-	boundary: number | null;
+	lastCandidateDone: number | null;
 	remainingMs?: number;
 	concurrency: number;
 	qualifyingRows: number;
@@ -189,7 +189,7 @@ export class RunProgressTracker {
 	private stage: RunProgressView['stage'] = 'resolving';
 	private total: number | undefined;
 	private finalTotal: number | undefined;
-	private boundary: number | null = null;
+	private lastCandidateDone: number | null = null;
 	private readonly sims: Array<{ t: number; done: number; afterRanking: boolean }> = [];
 	private rankingAt: number | undefined;
 	private concurrency = 1;
@@ -243,7 +243,7 @@ export class RunProgressTracker {
 			phase: this.phase,
 			stage: this.stage,
 			...(this.total === undefined ? {} : { done: this.lastDone(), total: this.total }),
-			boundary: this.boundary,
+			lastCandidateDone: this.lastCandidateDone,
 			...(this.shown && !this.stopped && this.estimate !== undefined ? { remainingMs: this.estimate } : {}),
 			concurrency: this.concurrency,
 			qualifyingRows: this.qualifyingRows,
@@ -259,7 +259,7 @@ export class RunProgressTracker {
 
 	private observeSimming(done: number, total: number, nowMs: number): void {
 		if (this.total === undefined) {
-			this.boundary = replicationBoundary(total, this.options.seedCount, this.options.topN);
+			this.lastCandidateDone = lastCandidateDoneFor(total, this.options.seedCount, this.options.topN);
 		}
 		this.total = total;
 		const afterRanking = this.rankingAt !== undefined;
@@ -270,8 +270,8 @@ export class RunProgressTracker {
 			return;
 		}
 		// The seed count does not match this run, so the set-bonus stage cannot be told apart.
-		if (this.boundary !== null && done > this.boundary) this.boundary = null;
-		this.phase = this.boundary !== null && done === this.boundary ? 'set-bonuses' : 'candidates';
+		if (this.lastCandidateDone !== null && done > this.lastCandidateDone) this.lastCandidateDone = null;
+		this.phase = this.lastCandidateDone !== null && done === this.lastCandidateDone ? 'set-bonuses' : 'candidates';
 	}
 
 	private lastDone(): number | undefined {
@@ -284,7 +284,7 @@ export class RunProgressTracker {
 			sims: this.sims,
 			rankingAt: this.rankingAt,
 			total: this.total,
-			boundary: this.boundary,
+			lastCandidateDone: this.lastCandidateDone,
 			concurrency: this.concurrency,
 			now: nowMs,
 			qualifyingRows: this.qualifyingRows,

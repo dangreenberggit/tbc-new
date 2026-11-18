@@ -67,8 +67,8 @@ export type PartnerQuery = {
 	lostBy: (swaps: readonly PackagePiece[]) => readonly Pick<BrokenSetBonus, 'setId' | 'threshold'>[];
 	/** A worn bonus's measured value; undefined when unmeasured. */
 	breakDps: (setId: number, count: number) => number | undefined;
-	/** The partner pieces `pathToThreshold` picks, if any; used by 'single-swap'. */
-	todaysPieces?: readonly PackagePiece[];
+	/** Used by 'single-swap'. */
+	pathPieces?: readonly PackagePiece[];
 	/** Sims current gear plus the row plus `partners`; the total is over current gear. */
 	simGear?: (partners: readonly PackagePiece[]) => Promise<{ totalDps: number; se: number } | undefined>;
 };
@@ -172,7 +172,7 @@ function compareIds(a: readonly { itemId: number }[], b: readonly { itemId: numb
  */
 export async function choosePartnerSet(query: PartnerQuery, rule: PartnerRule): Promise<PartnerChoice | undefined> {
 	if (rule === 'single-swap') {
-		const pieces = query.todaysPieces;
+		const pieces = query.pathPieces;
 		if (!pieces || pieces.length !== query.needed) return undefined;
 		return {
 			itemIds: [...pieces].sort((a, b) => a.slotIndex - b.slotIndex).map(p => p.itemId),

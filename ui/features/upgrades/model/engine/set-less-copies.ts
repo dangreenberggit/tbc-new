@@ -145,8 +145,7 @@ export async function measureSameGearBonus(
 
 export const isSimFailure = <T extends object>(value: T | SimFailure | undefined): value is SimFailure => value !== undefined && 'simError' in value;
 
-/** The measured value of a worn set's bonus at one piece count. */
-export type WornSetRung = {
+export type WornSetCountValue = {
 	count: number;
 	dps?: number;
 	se?: number;
@@ -167,7 +166,7 @@ export async function measureWornSetLadder(
 	composedRequest: RaidSimRequest,
 	wornSetSlots: readonly number[],
 	onFailed?: (error: string, notBuilt?: true) => void,
-): Promise<WornSetRung[]> {
+): Promise<WornSetCountValue[]> {
 	const slots = [...wornSetSlots].sort((a, b) => a - b);
 	if (slots.length < 2) return [];
 	const rungs: Array<DpsSample | undefined> = [];
@@ -190,7 +189,7 @@ export async function measureWornSetLadder(
 			onFailed?.(errorText(err));
 		}
 	}
-	const out: WornSetRung[] = [];
+	const out: WornSetCountValue[] = [];
 	for (let c = 2; c <= slots.length; c++) {
 		const upper = rungs[c];
 		const lower = rungs[c - 1];

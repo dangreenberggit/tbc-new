@@ -17,20 +17,17 @@ export type SettingsState = {
 	defaultsFor?: string;
 };
 
-/**
- * The `spec:phase` the tab is on, with the sets it selects before the user picks any and the sources its pool
- * offers. Undefined where it is taken means a spec with no ranking data, which has no defaults.
- */
-export type SettingsScope = { key: string; selectedSetKeys: readonly string[]; validSourceKeys: readonly string[] };
+/** Undefined means a spec with no ranking data, which has no defaults. */
+export type SettingsScope = { specPhase: string; defaultSetKeys: readonly string[]; poolSourceKeys: readonly string[] };
 
 /** A cap of 0 means "no cap". */
 const normaliseCap = (cap: number | undefined): number | undefined => (cap !== undefined && cap > 0 ? cap : undefined);
 
 const toggled = (keys: readonly string[], key: string): readonly string[] => (keys.includes(key) ? keys.filter(k => k !== key) : [...keys, key]);
 
-/** The exclusions a pool offering `validSourceKeys` still offers; an exclusion it does not offer would narrow it invisibly. */
-const offeredExclusions = (excluded: readonly string[], validSourceKeys: readonly string[]): readonly string[] => {
-	const valid = new Set(validSourceKeys);
+/** The exclusions a pool offering `poolSourceKeys` still offers; an exclusion it does not offer would narrow it invisibly. */
+const offeredExclusions = (excluded: readonly string[], poolSourceKeys: readonly string[]): readonly string[] => {
+	const valid = new Set(poolSourceKeys);
 	return excluded.filter(key => valid.has(key));
 };
 
@@ -63,12 +60,12 @@ export const withIterations = (state: SettingsState, iterations: number): Settin
  */
 export function appliedSettings(state: SettingsState, scope: SettingsScope | undefined): SettingsState {
 	// Once per spec:phase, so a set the user deselects stays deselected through the re-renders a gear change causes.
-	if (!scope || state.defaultsFor === scope.key) return state;
+	if (!scope || state.defaultsFor === scope.specPhase) return state;
 	return {
 		...state,
-		selectedSetKeys: scope.selectedSetKeys,
-		excludedSources: offeredExclusions(state.excludedSources, scope.validSourceKeys),
-		defaultsFor: scope.key,
+		selectedSetKeys: scope.defaultSetKeys,
+		excludedSources: offeredExclusions(state.excludedSources, scope.poolSourceKeys),
+		defaultsFor: scope.specPhase,
 	};
 }
 
@@ -76,15 +73,15 @@ export function appliedSettings(state: SettingsState, scope: SettingsScope | und
  * The page moved to another spec:phase, which gets its own default sets when next applied. An exclusion the new pool
  * does not offer is dropped now, so it stays dropped on the way back. With nothing to forget or drop, returns `state`.
  */
-export function afterScopeChange(state: SettingsState, validSourceKeys: readonly string[]): SettingsState {
-	const excludedSources = offeredExclusions(state.excludedSources, validSourceKeys);
+export function afterScopeChange(state: SettingsState, poolSourceKeys: readonly string[]): SettingsState {
+	const excludedSources = offeredExclusions(state.excludedSources, poolSourceKeys);
 	const unchanged = state.selectedSetKeys.length === 0 && state.defaultsFor === undefined && excludedSources.length === state.excludedSources.length;
 	return unchanged ? state : { ...state, selectedSetKeys: [], excludedSources, defaultsFor: undefined };
 }
 
 /** A saved exclusion that a data update removed from the pool excludes nothing, but the Sources summary would count it. */
-export function withoutUnofferedSources(state: SettingsState, validSourceKeys: readonly string[]): SettingsState {
-	const kept = offeredExclusions(state.excludedSources, validSourceKeys);
+export function withoutUnofferedSources(state: SettingsState, poolSourceKeys: readonly string[]): SettingsState {
+	const kept = offeredExclusions(state.excludedSources, poolSourceKeys);
 	return kept.length === state.excludedSources.length ? state : { ...state, excludedSources: kept };
 }
 

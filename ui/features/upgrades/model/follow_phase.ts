@@ -5,7 +5,7 @@ import { poolFor } from './data/data';
 import type { ContentPhase } from './engine/types';
 import { followPhaseChanges } from './phase_changes';
 import { specIdFor } from './run';
-import { validSourceKeysOf } from './settings_pool';
+import { poolSourceKeysOf } from './settings_pool';
 import type { UpgradesStore } from './upgrades_store';
 
 /**
@@ -18,7 +18,7 @@ export function followPhase(store: UpgradesStore, host: IndividualSimHost<Spec>)
 	const { sim, player } = host;
 	const specId = specIdFor(player.getSpec());
 	if (!specId) return;
-	const sourcesAt = (phase: number) => validSourceKeysOf(poolFor(host, host.individualConfig.presets.gear, phase as ContentPhase));
+	const sourcesAt = (phase: number) => poolSourceKeysOf(poolFor(host, host.individualConfig.presets.gear, phase as ContentPhase));
 	followPhaseChanges(host, phase => store.getState().changeScope(sourcesAt(phase)));
 	void sim.waitForInit().then(() => store.getState().dropUnofferedSources(sourcesAt(sim.getPhase())));
 }

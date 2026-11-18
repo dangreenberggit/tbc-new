@@ -5,7 +5,7 @@ import { memoryStorage } from '../testing/fake_tab_host';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import { SAVED_VERSION } from './saved_entry';
 import { openSavedUpgradesStore } from './saved_settings';
-import { bucketKeyOf, effectiveExcludedSources } from './settings_pool';
+import { effectiveExcludedSources, zonelessSourceKey } from './settings_pool';
 
 const KEY = '__tbc_new_feral_druid__upgradesSettings__';
 const SEED = { iterations: 1000 };
@@ -17,7 +17,7 @@ describe('openSavedUpgradesStore', () => {
 		first.getState().setIterations(5000, undefined);
 		first.getState().toggleSource('raid:hyjal', undefined);
 		// A write with a scope is what stores that scope's defaults, as in production.
-		first.getState().setPrune(true, { key: 'feral:3', selectedSetKeys: ['preset:P3'], validSourceKeys: ['raid:hyjal'] });
+		first.getState().setPrune(true, { specPhase: 'feral:3', defaultSetKeys: ['preset:P3'], poolSourceKeys: ['raid:hyjal'] });
 		first.getState().setSort([{ id: 'slot', desc: false }]);
 
 		const reloaded = openSavedUpgradesStore(SEED, storage, KEY);
@@ -60,7 +60,7 @@ describe('openSavedUpgradesStore', () => {
 
 	// In version 1 a stored source key meant "excluded"; a stored default-off key now means "ticked".
 	it('reads a version-1 entry that unticked "Heroic dungeon" as nothing saved, so the run still excludes it', () => {
-		const heroic = bucketKeyOf('heroic');
+		const heroic = zonelessSourceKey('heroic');
 		const raw = JSON.stringify({ version: 1, settings: { excludedSources: [heroic] } });
 		const { excludedSources } = openSavedUpgradesStore(SEED, memoryStorage({ [KEY]: raw }), KEY).getState().settings;
 		expect(effectiveExcludedSources(excludedSources, ['Black Temple', heroic])).toContain(heroic);

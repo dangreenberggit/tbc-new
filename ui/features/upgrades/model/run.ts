@@ -124,8 +124,8 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 			simDatabaseFor: simDatabaseResolverFor(host.player, skeleton),
 			concurrency: simRunner.concurrency,
 			signal: deps.signal,
-			// Measures the worn set bonuses a swap breaks, and turns on `set-screen.ts`.
-			measureBrokenSetValue: true,
+			// Also turns on `set-screen.ts`.
+			measureSetBonuses: true,
 			setScreen: 'on',
 		},
 		onProgress,

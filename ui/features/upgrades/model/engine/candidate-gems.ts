@@ -203,14 +203,14 @@ export function fillEmptyCandidateGems(
  * Weights for filling candidate sockets, with the spec's capped stats set to 0,
  * because hit and expertise EP overstate gems on raid gear that is already
  * capped. The cap profile names them: `hitStat`, and expertise when
- * `trackExpertise`. Meta repair does not use these weights; it values hit with
+ * `hasExpertiseCap`. Meta repair does not use these weights; it values hit with
  * `GemContext.repairHitCap`, or at full weight.
  */
 export function gemFillWeights(epWeights: EpWeightRecord, spec?: DetectedSpecId): Record<string, number> {
 	const profile = capProfileFor(rankableSpec(spec));
 	const out: Record<string, number> = { ...epWeights };
 	out[String(profile.hitStat)] = 0;
-	if (profile.trackExpertise) out[String(Stat.StatExpertiseRating)] = 0;
+	if (profile.hasExpertiseCap) out[String(Stat.StatExpertiseRating)] = 0;
 	return out;
 }
 

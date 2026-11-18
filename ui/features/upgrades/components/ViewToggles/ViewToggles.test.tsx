@@ -8,20 +8,20 @@ import { ViewToggles, type ViewTogglesProps } from './ViewToggles';
 loadEnglishBundles();
 
 const BOTH = { withSetPotential: true, onlyBis: true };
-const NO_SOURCES: ViewTogglesProps['sources'] = { options: { raids: [], other: [] }, hidden: [], onToggle: vi.fn(), onSetAll: vi.fn() };
+const NO_SOURCES: ViewTogglesProps['sources'] = { options: { raids: [], other: [] }, hidden: [], onToggle: vi.fn(), onSetHidden: vi.fn() };
 const BLACK_TEMPLE: ViewSourceOptions = { raids: [{ key: 'Black Temple', count: 2 }], other: [] };
 
 describe('ViewToggles', () => {
 	it('renders nothing when the run offers no toggle', () => {
 		expect(
-			render(<ViewToggles offered={NO_VIEW_TOGGLES} toggles={NO_VIEW_TOGGLES} maxPhase={3} onChange={vi.fn()} sources={NO_SOURCES} />).container
+			render(<ViewToggles offered={NO_VIEW_TOGGLES} toggles={NO_VIEW_TOGGLES} rankedPhase={3} onChange={vi.fn()} sources={NO_SOURCES} />).container
 				.innerHTML,
 		).toBe('');
 	});
 
 	it('shows only the toggles on offer, each checked as set', () => {
 		const { getByTestId, queryByTestId } = render(
-			<ViewToggles offered={{ withSetPotential: true, onlyBis: false }} toggles={BOTH} maxPhase={3} onChange={vi.fn()} sources={NO_SOURCES} />,
+			<ViewToggles offered={{ withSetPotential: true, onlyBis: false }} toggles={BOTH} rankedPhase={3} onChange={vi.fn()} sources={NO_SOURCES} />,
 		);
 		expect(within(getByTestId('upgrades-view-set-potential')).getByRole('checkbox').getAttribute('aria-checked')).toBe('true');
 		expect(queryByTestId('upgrades-view-only-bis')).toBeNull();
@@ -29,14 +29,14 @@ describe('ViewToggles', () => {
 
 	it('reports which toggle changed', () => {
 		const onChange = vi.fn();
-		const { getByTestId } = render(<ViewToggles offered={BOTH} toggles={NO_VIEW_TOGGLES} maxPhase={3} onChange={onChange} sources={NO_SOURCES} />);
+		const { getByTestId } = render(<ViewToggles offered={BOTH} toggles={NO_VIEW_TOGGLES} rankedPhase={3} onChange={onChange} sources={NO_SOURCES} />);
 		fireEvent.click(within(getByTestId('upgrades-view-only-bis')).getByRole('checkbox'));
 		expect(onChange).toHaveBeenCalledWith('onlyBis', true);
 	});
 
 	it('offers Filter by source after the toggles when the table has a source to filter', () => {
 		const { getByTestId, queryByTestId } = render(
-			<ViewToggles offered={BOTH} toggles={NO_VIEW_TOGGLES} maxPhase={3} onChange={vi.fn()} sources={{ ...NO_SOURCES, options: BLACK_TEMPLE }} />,
+			<ViewToggles offered={BOTH} toggles={NO_VIEW_TOGGLES} rankedPhase={3} onChange={vi.fn()} sources={{ ...NO_SOURCES, options: BLACK_TEMPLE }} />,
 		);
 		const controls = [...getByTestId('upgrades-view-toggles').querySelectorAll('[data-testid]')].map(element => element.getAttribute('data-testid'));
 		expect(controls.filter(id => id?.startsWith('upgrades-view-'))).toEqual([
@@ -53,7 +53,7 @@ describe('ViewToggles', () => {
 			<ViewToggles
 				offered={NO_VIEW_TOGGLES}
 				toggles={NO_VIEW_TOGGLES}
-				maxPhase={3}
+				rankedPhase={3}
 				onChange={vi.fn()}
 				sources={{ ...NO_SOURCES, options: BLACK_TEMPLE }}
 			/>,
@@ -64,14 +64,21 @@ describe('ViewToggles', () => {
 	});
 
 	it('leaves Filter by source out when the table has no source to filter', () => {
-		const { queryByTestId } = render(<ViewToggles offered={BOTH} toggles={NO_VIEW_TOGGLES} maxPhase={3} onChange={vi.fn()} sources={NO_SOURCES} />);
+		const { queryByTestId } = render(<ViewToggles offered={BOTH} toggles={NO_VIEW_TOGGLES} rankedPhase={3} onChange={vi.fn()} sources={NO_SOURCES} />);
 		expect(queryByTestId('upgrades-view-sources-button')).toBeNull();
 	});
 
 	describe('the phase the BiS tags come from (ticket 699)', () => {
 		const showAt = (maxPhase: number, bisTagPhase: number | undefined) =>
 			render(
-				<ViewToggles offered={BOTH} toggles={NO_VIEW_TOGGLES} maxPhase={maxPhase} bisTagPhase={bisTagPhase} onChange={vi.fn()} sources={NO_SOURCES} />,
+				<ViewToggles
+					offered={BOTH}
+					toggles={NO_VIEW_TOGGLES}
+					rankedPhase={maxPhase}
+					bisTagPhase={bisTagPhase}
+					onChange={vi.fn()}
+					sources={NO_SOURCES}
+				/>,
 			);
 
 		it('names the tags’ phase in the BiS only tooltip, not the ranked phase', async () => {

@@ -352,7 +352,7 @@ export function bestMinimalRepair(opts: {
 	const limit = opts.workLimit ?? REPAIR_SEARCH_WORK_LIMIT;
 	const maxChanges = opts.maxChanges;
 	const model = valueModel(opts.weights, opts.hitCap);
-	const pool = candidatePool(opts.palette, model);
+	const pool = repairGemPool(opts.palette, model);
 	const poolUnique = new Set(pool.filter(g => g.unique).map(g => g.id));
 	const held = new Set(allGemIds(original));
 	const base = gemColorCounts(allGemIds(original));
@@ -551,12 +551,12 @@ export function bestMinimalRepair(opts: {
 }
 
 /**
- * The search's gems: per (colour, hit amount), the non-unique palette gem with the
+ * Per (colour, hit amount), the non-unique palette gem with the
  * highest value (the first on a tie), plus each unique gem that beats it. No other gem can
  * be in the best layout, as the meta and bonuses read colour alone and the hit term reads
  * total hit.
  */
-function candidatePool(palette: readonly GemEntry[], model: ValueModel): GemEntry[] {
+function repairGemPool(palette: readonly GemEntry[], model: ValueModel): GemEntry[] {
 	const groups = new Map<string, { best?: GemEntry; uniques: GemEntry[] }>();
 	for (const g of palette) {
 		if (g.colour === GemColor.GemColorMeta || g.colour === GemColor.GemColorUnknown) {

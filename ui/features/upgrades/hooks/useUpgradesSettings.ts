@@ -89,7 +89,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 	);
 	const scope = useMemo(
 		(): SettingsScope | undefined =>
-			specId ? { key: `${specId}:${phase}`, selectedSetKeys: offer.defaultKeys, validSourceKeys: offer.sourceKeys } : undefined,
+			specId ? { specPhase: `${specId}:${phase}`, defaultSetKeys: offer.defaultKeys, poolSourceKeys: offer.sourceKeys } : undefined,
 		[specId, phase, offer],
 	);
 	// Until a write stores the defaults, `appliedSettings` builds a new state on each call, and the selection and

@@ -119,7 +119,7 @@ describe('rankForPlayer', () => {
 		expect(simDatabaseResolverFor).toHaveBeenCalledWith(host.player, PAGE_SKELETON);
 		expect(deps.simDatabaseFor).toBe(pageDatabase);
 		expect(deps.epWeights).toBe(epWeightsFor('ret'));
-		expect(deps.measureBrokenSetValue).toBe(true);
+		expect(deps.measureSetBonuses).toBe(true);
 		expect(deps.setScreen).toBe('on');
 	});
 

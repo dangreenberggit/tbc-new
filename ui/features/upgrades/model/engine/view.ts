@@ -107,12 +107,8 @@ function matchesBoss(item: RankedItem, zone: string | undefined, boss: string) {
 	return sourcesOf(item).some(s => sourceMatchesBoss(s, boss, zone));
 }
 
-/**
- * Display label for every zoneless source kind; the raid filter groups
- * zoneless items under it. Its keys are also the kinds
- * ui/features/upgrades/utils/format.ts translates for the tab.
- */
-export const SOURCE_LABELS: Record<string, string> = {
+/** The raid filter groups zoneless items under these; `utils/format.ts` translates the keys. */
+export const ZONELESS_SOURCE_LABELS: Record<string, string> = {
 	badge: 'Badge vendor',
 	crafted: 'Crafted',
 	rep: 'Reputation vendor',
@@ -126,7 +122,7 @@ export function zoneKeyOf(item: Pick<RankedItem, 'source' | 'sources'>): string 
 	for (const s of sourcesOf(item)) {
 		if ('zone' in s) return s.zone;
 	}
-	return SOURCE_LABELS[item.source.kind] ?? item.source.kind;
+	return ZONELESS_SOURCE_LABELS[item.source.kind] ?? item.source.kind;
 }
 
 export type RaidFilterGroup = { key: string; options: string[] };
@@ -136,7 +132,7 @@ export type RaidFilterGroup = { key: string; options: string[] };
  * `groups.flatMap(g => g.options)` gives the same options as one flat list.
  */
 export function raidFilterGroups(items: readonly RankedItem[]): RaidFilterGroup[] {
-	const zoneless = new Set(Object.values(SOURCE_LABELS));
+	const zoneless = new Set(Object.values(ZONELESS_SOURCE_LABELS));
 	const zones: string[] = [];
 	const buckets: string[] = [];
 	const seen = new Set<string>();

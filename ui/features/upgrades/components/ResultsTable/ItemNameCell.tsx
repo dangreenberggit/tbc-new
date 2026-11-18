@@ -24,10 +24,10 @@ export interface ItemNameCellProps {
 }
 
 /**
- * A row in no selected set shows the pool's BiS tag instead (`pool_source.ts` gives only 'BiS'), once per heading of
- * the BiS sets that hold it, so on warrior's page it reads "BiS (Fury)" or "BiS (Arms)".
+ * For a row in no selected set: one per heading of the BiS sets that hold it, so warrior's page reads "BiS (Fury)"
+ * or "BiS (Arms)".
  */
-const listBadge = (bisTags: RankedItem['bisTags'], headings: readonly string[]): RowTag[] => {
+const poolBisBadges = (bisTags: RankedItem['bisTags'], headings: readonly string[]): RowTag[] => {
 	if (!bisTags.includes('BiS')) return [];
 	const label = i18n.t('upgrades_tab.results.bis_badge', { ns: 'upgrades' });
 	return headings.length > 0 ? headings.map(heading => ({ key: `BiS:${heading}`, label: withHeading(label, heading) })) : [{ key: 'BiS', label }];
@@ -36,7 +36,7 @@ const listBadge = (bisTags: RankedItem['bisTags'], headings: readonly string[]):
 /** The item: its icon, its name as a wowhead link in its quality colour, and its tags beneath. Memoised: see `ResultRow`. */
 export const ItemNameCell = memo(({ row, quality, tags, bisHeadings, notUpgrade = false, ilvl }: ItemNameCellProps) => {
 	const { iconUrl, href } = useActionId(ActionId.fromItemId(row.itemId));
-	const badges = tags.length > 0 ? tags : listBadge(row.bisTags, bisHeadings);
+	const badges = tags.length > 0 ? tags : poolBisBadges(row.bisTags, bisHeadings);
 
 	return (
 		<td className="py-1 pr-3">

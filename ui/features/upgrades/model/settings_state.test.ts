@@ -68,7 +68,7 @@ describe('the settings changes', () => {
 	});
 
 	it('applies the default sets once per spec and phase, so a later deselect survives', () => {
-		const scope = { key: 'ret:3', selectedSetKeys: ['preset:3:P3'], validSourceKeys: [] };
+		const scope = { specPhase: 'ret:3', defaultSetKeys: ['preset:3:P3'], poolSourceKeys: [] };
 		const first = appliedSettings(seeded(), scope);
 		expect(first).toMatchObject({ selectedSetKeys: ['preset:3:P3'], defaultsFor: 'ret:3' });
 
@@ -78,19 +78,19 @@ describe('the settings changes', () => {
 	});
 
 	it('re-applies the defaults when the spec or phase changes', () => {
-		const p3 = appliedSettings(seeded(), { key: 'ret:3', selectedSetKeys: ['preset:3:P3'], validSourceKeys: [] });
-		const p4 = appliedSettings(p3, { key: 'ret:4', selectedSetKeys: [], validSourceKeys: [] });
+		const p3 = appliedSettings(seeded(), { specPhase: 'ret:3', defaultSetKeys: ['preset:3:P3'], poolSourceKeys: [] });
+		const p4 = appliedSettings(p3, { specPhase: 'ret:4', defaultSetKeys: [], poolSourceKeys: [] });
 		expect(p4).toMatchObject({ selectedSetKeys: [], defaultsFor: 'ret:4' });
 	});
 
 	it('drops an exclusion whose source the new pool no longer offers', () => {
 		const excluded = withSourceToggled(withSourceToggled(seeded(), 'Black Temple'), 'Crafted');
-		const next = appliedSettings(excluded, { key: 'ret:2', selectedSetKeys: [], validSourceKeys: ['Crafted', 'Badge vendor'] });
+		const next = appliedSettings(excluded, { specPhase: 'ret:2', defaultSetKeys: [], poolSourceKeys: ['Crafted', 'Badge vendor'] });
 		expect(next.excludedSources).toEqual(['Crafted']);
 	});
 
 	it('forgets the applied defaults and the picked sets when the scope changes, so the new scope’s defaults apply even after a deselect', () => {
-		const scope = { key: 'ret:3', selectedSetKeys: ['preset:3:P3'], validSourceKeys: [] };
+		const scope = { specPhase: 'ret:3', defaultSetKeys: ['preset:3:P3'], poolSourceKeys: [] };
 		const deselected = withSetToggled(appliedSettings(seeded(), scope), 'preset:3:P3');
 		const changed = afterScopeChange(deselected, []);
 		expect(changed).toMatchObject({ selectedSetKeys: [], defaultsFor: undefined });

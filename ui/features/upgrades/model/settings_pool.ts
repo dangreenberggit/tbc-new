@@ -8,7 +8,7 @@ import type { PagePreset } from './data/data';
 import { isKaelTempLegendary } from './engine/kael-temp';
 import { filterPoolByPhase, type ItemSource, offHandBlockedEntries, oneHandBlockedEntries, type PoolEntry } from './engine/pool';
 import type { SpecId } from './engine/types';
-import { SOURCE_LABELS, zoneKeyOf } from './engine/view';
+import { zoneKeyOf, ZONELESS_SOURCE_LABELS } from './engine/view';
 import { HEROIC_FIVE_MAN } from './pool_source';
 import type { RunSettings } from './run_state';
 import { type SettingsState, toRunSettings } from './settings_state';
@@ -33,16 +33,13 @@ export type SetOption = {
 	heading?: string;
 	kind: 'preset' | 'saved';
 	itemIds: readonly number[];
-	/**
-	 * Other ids that db.json describes exactly like one in `itemIds` (`twinIdsOf`). The pool offers only one id of
-	 * such an item, and it may not be the one the set names.
-	 */
-	sameItemIds?: readonly number[];
+	/** The pool offers only one id of an item with twins (`twinIdsOf`), and it may not be the one the set names. */
+	twinIds?: readonly number[];
 	/** Counts an item as in the pool under any of its ids. */
 	inPool: number;
 };
 
-const heldIds = (o: Pick<SetOption, 'itemIds' | 'sameItemIds'>): readonly number[] => (o.sameItemIds ? [...o.itemIds, ...o.sameItemIds] : o.itemIds);
+const heldIds = (o: Pick<SetOption, 'itemIds' | 'twinIds'>): readonly number[] => (o.twinIds ? [...o.itemIds, ...o.twinIds] : o.itemIds);
 
 const NO_TWINS: ReadonlyMap<number, readonly number[]> = new Map();
 
@@ -57,8 +54,8 @@ export type SourcedEntry = Pick<PoolEntry, 'source' | 'sources'>;
 
 export const sourcesOf = (entry: SourcedEntry): readonly ItemSource[] => entry.sources ?? [entry.source];
 
-/** The key of a source with no zone, such as "Heroic dungeon". It falls back to the raw kind, as the engine's label does. */
-export const bucketKeyOf = (kind: string): string => SOURCE_LABELS[kind] ?? kind;
+/** Falls back to the raw kind, as the engine's label does. */
+export const zonelessSourceKey = (kind: string): string => ZONELESS_SOURCE_LABELS[kind] ?? kind;
 
 /** Its first zone, else its source kind. */
 export const sourceKeyOf: (entry: SourcedEntry) => string = zoneKeyOf;
@@ -75,10 +72,10 @@ export function sourceKeysMatching(entry: SourcedEntry): string[] {
 	return zones.length > 0 ? [...new Set(zones)] : [sourceKeyOf(entry)];
 }
 
-const ZONELESS_KEYS = new Set(Object.values(SOURCE_LABELS));
+const ZONELESS_KEYS = new Set(Object.values(ZONELESS_SOURCE_LABELS));
 
 /** "Heroic dungeon" starts unticked under the `include-unticked` policy (`HEROIC_FIVE_MAN` in `pool_source.ts`). */
-export const DEFAULT_OFF_SOURCE_KEYS: readonly string[] = HEROIC_FIVE_MAN === 'include-unticked' ? [bucketKeyOf('heroic')] : [];
+export const DEFAULT_OFF_SOURCE_KEYS: readonly string[] = HEROIC_FIVE_MAN === 'include-unticked' ? [zonelessSourceKey('heroic')] : [];
 
 /**
  * For a key that starts unticked, a stored entry means the user ticked it. The stored list keeps a key only while
@@ -98,13 +95,13 @@ export function effectiveExcludedSources(
  * this list, so they agree. Every key an entry matches is offered, so Hide all hides
  * every row.
  */
-export function validSourceKeysOf(pool: readonly SourcedEntry[]): string[] {
+export function poolSourceKeysOf(pool: readonly SourcedEntry[]): string[] {
 	const keys = [...new Set([...pool.map(sourceKeyOf), ...pool.flatMap(sourceKeysMatching)])];
 	return [...keys.filter(k => !ZONELESS_KEYS.has(k)), ...keys.filter(k => ZONELESS_KEYS.has(k))];
 }
 
 export function sourceOptions(pool: readonly SourcedEntry[]): { raids: SourceOption[]; other: SourceOption[] } {
-	const options = validSourceKeysOf(pool).map(key => ({ key, count: pool.filter(e => sourceMatches(e, key)).length }));
+	const options = poolSourceKeysOf(pool).map(key => ({ key, count: pool.filter(e => sourceMatches(e, key)).length }));
 	return { raids: options.filter(o => !ZONELESS_KEYS.has(o.key)), other: options.filter(o => ZONELESS_KEYS.has(o.key)) };
 }
 
@@ -134,9 +131,9 @@ export function setOptions({
 }): SetOption[] {
 	const poolIds = new Set(pool.map(e => e.itemId));
 	const inPool = (itemIds: readonly number[]) => itemIds.filter(id => (twins.get(id) ?? [id]).some(t => poolIds.has(t))).length;
-	const withSameItemIds = (itemIds: readonly number[]) => {
+	const withTwinIds = (itemIds: readonly number[]) => {
 		const same = [...new Set(itemIds.flatMap(id => twins.get(id) ?? []))].filter(id => !itemIds.includes(id));
-		return same.length > 0 ? { itemIds, sameItemIds: same } : { itemIds };
+		return same.length > 0 ? { itemIds, twinIds: same } : { itemIds };
 	};
 	const headed = new Set(presets.flatMap(p => (p.group ? [p.group] : []))).size > 1;
 	// The group enters the key only where wowsims gives one, so the saved picks of ungrouped presets still match.
@@ -150,14 +147,14 @@ export function setOptions({
 			...(group ? { group } : {}),
 			...(group && headed ? { heading: group } : {}),
 			kind: 'preset',
-			...withSameItemIds(itemIds),
+			...withTwinIds(itemIds),
 			inPool: inPool(itemIds),
 		};
 	});
 	const fromPresets = presetOptions.map(o => (sharesPhaseAndName(o, presetOptions) ? { ...o, label: `${o.label} (${o.group})` } : o));
 	const fromSaved = savedSets.map(({ name, gear }): SetOption => {
 		const itemIds = itemIdsOf(gear);
-		return { key: `saved:${name}`, name, label: name, kind: 'saved', ...withSameItemIds(itemIds), inPool: inPool(itemIds) };
+		return { key: `saved:${name}`, name, label: name, kind: 'saved', ...withTwinIds(itemIds), inPool: inPool(itemIds) };
 	});
 	return [...fromPresets, ...fromSaved];
 }
@@ -197,7 +194,7 @@ export const selectedSetItemIds = (options: readonly SetOption[], selectedKeys: 
  */
 export function effectivePool(pool: readonly PoolEntry[], { excludedSources, selectedSetItemIds, prune }: PoolFilter): PoolEntry[] {
 	const excluded = new Set(excludedSources);
-	const ticked = validSourceKeysOf(pool).filter(key => !excluded.has(key));
+	const ticked = poolSourceKeysOf(pool).filter(key => !excluded.has(key));
 	const inSets = new Set(selectedSetItemIds);
 	return pool.filter(e => ticked.some(key => sourceMatches(e, key)) && (!prune || inSets.has(e.itemId)));
 }
@@ -292,7 +289,7 @@ export function settingsOffer({
 	return {
 		pool,
 		sources: sourceOptions(pool),
-		sourceKeys: validSourceKeysOf(pool),
+		sourceKeys: poolSourceKeysOf(pool),
 		options,
 		defaultKeys: defaultSetKeys(options, pool, bisTagPhase),
 	};

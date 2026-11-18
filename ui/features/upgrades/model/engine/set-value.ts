@@ -16,13 +16,13 @@ export type SetThreshold = number;
 
 /**
  * The counts tried when completing a set, and the counts checked for a lost bonus with
- * `isBonusImplemented` when `measureBrokenSetValue` is off.
+ * `isBonusImplemented` when `measureSetBonuses` is off.
  */
 export const SET_THRESHOLDS: readonly SetThreshold[] = [2, 4];
 
 /**
  * Whether losing `setId`'s `count`-piece bonus counts as a break: `isBonusImplemented` by
- * default, or with `measureBrokenSetValue`, whether `measureWornSetLadder` measured that
+ * default, or with `measureSetBonuses`, whether `measureWornSetLadder` measured that
  * bonus above noise.
  */
 export type BonusCountPredicate = (setId: number, count: number) => boolean;
@@ -40,7 +40,7 @@ export type UnmeasuredReason =
 	| 'screened-out';
 
 /**
- * Which (setId, threshold) bonuses a ranking without `measureBrokenSetValue` measures; with
+ * Which (setId, threshold) bonuses a ranking without `measureSetBonuses` measures; with
  * it, every lost count is measured by `measureWornSetLadder`. Do not extend this table:
  * the tab keeps no list of implemented set bonuses.
  */
@@ -236,29 +236,26 @@ export function brokenSetBonuses(
 }
 
 /**
- * How one broken worn bonus shows up in a raw `bonusDps`, for `netInflation`.
- * `membersPkg` / `members2pc`: how many of the added pieces, or of the same set's 2pc
- * pieces, break it when swapped in alone. `pkgEnd` / `twoPcEnd`: 1 if wearing all the
- * added pieces, or all the 2pc pieces, breaks it. The 2pc fields are 0 when the added
- * pieces are the 2pc. `B` is the bonus's value.
+ * How one broken worn bonus shows up in a raw `bonusDps`, for `netInflation`. The 2pc
+ * fields are 0 when the added pieces are the 2pc.
  */
 export type InflationKey = {
-	membersPkg: number;
-	members2pc: number;
-	pkgEnd: number;
-	twoPcEnd: number;
-	B: number;
+	piecesBreakingAlone: number;
+	twoPcPiecesBreakingAlone: number;
+	allPiecesBreak: number;
+	allTwoPcPiecesBreak: number;
+	brokenBonusDps: number;
 };
 
 /**
  * How much a raw `bonusDps` overstates the bonus because of worn bonuses the added pieces
- * break: the sum of `(membersPkg − members2pc − pkgEnd + twoPcEnd) × B`. Each broken bonus
- * costs `B` in the gain of the added pieces, in each single swap and in the raw 2pc value,
- * and `computeSynergy` subtracts the last two. At worn 4 a wrong sign on `twoPcEnd` gives
- * the same answer, so it shows only at other worn counts.
+ * break. Each broken bonus costs `brokenBonusDps` in the gain of the added pieces, in each
+ * single swap and in the raw 2pc value, and `computeSynergy` subtracts the last two. At
+ * worn 4 a wrong sign on `allTwoPcPiecesBreak` gives the same answer, so it shows only at
+ * other worn counts.
  */
 export function netInflation(keys: readonly InflationKey[]): number {
-	return keys.reduce((sum, k) => sum + (k.membersPkg - k.members2pc - k.pkgEnd + k.twoPcEnd) * k.B, 0);
+	return keys.reduce((sum, k) => sum + (k.piecesBreakingAlone - k.twoPcPiecesBreakingAlone - k.allPiecesBreak + k.allTwoPcPiecesBreak) * k.brokenBonusDps, 0);
 }
 
 export type DpsSample = { dps: number; se: number };

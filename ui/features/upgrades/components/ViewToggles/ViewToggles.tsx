@@ -26,10 +26,9 @@ export interface ViewTogglesProps {
 	/** The toggles the run offers; nothing renders when it offers none. */
 	offered: Toggles;
 	toggles: Toggles;
-	/** The phase the run ranked. */
-	maxPhase: number;
+	rankedPhase: number;
 	/**
-	 * The phase the BiS tags come from, earlier than `maxPhase` when wowsims
+	 * The phase the BiS tags come from, earlier than `rankedPhase` when wowsims
 	 * has no set for the ranked phase; `undefined` when no set is a BiS set.
 	 */
 	bisTagPhase?: number;
@@ -43,9 +42,9 @@ export interface ViewTogglesProps {
  * measured, so they cannot be read as more run settings. "Filter by source" also
  * shows over a stopped run's settled table; the toggles do not.
  */
-export const ViewToggles = ({ offered, toggles, maxPhase, bisTagPhase, onChange, sources }: ViewTogglesProps) => {
+export const ViewToggles = ({ offered, toggles, rankedPhase, bisTagPhase, onChange, sources }: ViewTogglesProps) => {
 	const offersSources = offeredSourceKeys(sources.options).length > 0;
-	const tagsFromOlderPhase = bisTagPhase !== undefined && bisTagPhase < maxPhase;
+	const tagsFromOlderPhase = bisTagPhase !== undefined && bisTagPhase < rankedPhase;
 	const offersControls = offered.withSetPotential || offered.onlyBis || offersSources;
 	if (!offersControls && !tagsFromOlderPhase) return null;
 	return (
@@ -71,7 +70,7 @@ export const ViewToggles = ({ offered, toggles, maxPhase, bisTagPhase, onChange,
 								label={i18n.t('upgrades_tab.view.only_bis', { ns: 'upgrades' })}
 								tooltip={i18n.t('upgrades_tab.view.only_bis_tooltip', {
 									ns: 'upgrades',
-									phase: i18n.t(`common.phases.${bisTagPhase ?? maxPhase}`),
+									phase: i18n.t(`common.phases.${bisTagPhase ?? rankedPhase}`),
 								})}
 								checked={toggles.onlyBis}
 								onChange={on => onChange('onlyBis', on)}
@@ -86,7 +85,7 @@ export const ViewToggles = ({ offered, toggles, maxPhase, bisTagPhase, onChange,
 					{i18n.t('upgrades_tab.view.bis_phase_notice', {
 						ns: 'upgrades',
 						tagsPhase: i18n.t(`common.phases.${bisTagPhase}`),
-						rankedPhase: i18n.t(`common.phases.${maxPhase}`),
+						rankedPhase: i18n.t(`common.phases.${rankedPhase}`),
 					})}
 				</p>
 			)}

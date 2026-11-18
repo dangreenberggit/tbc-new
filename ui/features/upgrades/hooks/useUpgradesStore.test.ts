@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { poolFor } from '../model/data/data';
 import { SAVED_VERSION, UPGRADES_SETTINGS_STORAGE_KEY } from '../model/saved_entry';
-import { validSourceKeysOf } from '../model/settings_pool';
+import { poolSourceKeysOf } from '../model/settings_pool';
 import { createUpgradesStore } from '../model/upgrades_store';
 import { fakeTabHost, memoryStorage, settled } from '../testing/fake_tab_host';
 import { numberSettingSource, upgradesStoreFor } from './useUpgradesStore';
@@ -81,7 +81,7 @@ describe('upgradesStoreFor and the page’s phase (ticket 587)', () => {
 		const store = upgradesStoreFor(first.host);
 		await first.finishInit();
 		// A write with a scope is what stores that scope's defaults, as in production.
-		store.getState().setPrune(true, { key: 'ret:3', selectedSetKeys: ['preset:3:P3'], validSourceKeys: [] });
+		store.getState().setPrune(true, { specPhase: 'ret:3', defaultSetKeys: ['preset:3:P3'], poolSourceKeys: [] });
 		first.setPhase(4);
 
 		const reloaded = retPage(storage, 4);
@@ -91,7 +91,7 @@ describe('upgradesStoreFor and the page’s phase (ticket 587)', () => {
 	});
 
 	it('drops a saved exclusion the page’s pool no longer offers once the page has loaded (D2)', async () => {
-		const offered = validSourceKeysOf(poolFor(retPage(memoryStorage(), 3).host, [], 3))[0]!;
+		const offered = poolSourceKeysOf(poolFor(retPage(memoryStorage(), 3).host, [], 3))[0]!;
 		const storage = memoryStorage(savedSettings({ excludedSources: [offered, 'A zone a data update removed'], defaultsFor: 'ret:3' }));
 		const page = retPage(storage, 3);
 		const store = upgradesStoreFor(page.host);
