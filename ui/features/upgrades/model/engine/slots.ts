@@ -1,7 +1,7 @@
 /**
  * 17-slot sim equipment order, matching the ItemSlot enum order in
- * proto/common.proto. A hand-kept copy of the ranking engine's own list,
- * which a drift check compares.
+ * proto/common.proto. Copied by hand from the engine this file was ported
+ * from, and a drift check compares the two.
  */
 
 export const SIM_ORDER = [

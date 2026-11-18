@@ -1,8 +1,8 @@
 /**
  * Candidate pool types and filters.
  *
- * `ItemSlot` and `ITEM_SOURCE_KINDS` are hand-kept copies of the ranking
- * engine's own unions, and a drift check compares them member by member.
+ * `ItemSlot` and `ITEM_SOURCE_KINDS` are copied by hand from the engine this
+ * file was ported from, and a drift check compares them member by member.
  */
 
 import { HandType } from '@generated/proto/common';
@@ -34,7 +34,7 @@ export type ItemSourceKindName = (typeof ITEM_SOURCE_KINDS)[number];
  * The tab reads its sources from wowsims' item data
  * (ui/features/upgrades/utils/item_sources.ts), which states no origin, recipe,
  * cost, faction id or arena season. The tab builds neither the `badge` nor the
- * `world` variant; they stay because `ITEM_SOURCE_KINDS` must match the
+ * `world` variant; they stay because `ITEM_SOURCE_KINDS` must match that
  * engine's list.
  */
 export type ItemSource =
