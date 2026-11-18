@@ -529,9 +529,10 @@ export type Ranking = {
 	partnerAudit?: PartnerAuditEntry[];
 	/**
 	 * The set screen's readings, written only when `deps.setScreen` is "record"
-	 * or "on"; in "on" mode it also holds each set's verdict and reason. Nothing
-	 * in the engine or the view reads it: the set-bonus sims filter on the
-	 * screen's own result, and record mode's readings are scored offline.
+	 * or "on"; in "on" mode it also holds each set's verdict and reason. Only
+	 * the set-bonus popover reads it, to say why a set was not measured; the
+	 * set-bonus sims filter on the screen's own result, and record mode's
+	 * readings are scored offline.
 	 */
 	setScreen?: SetScreen;
 	plausibilityWarnings?: PlausibilityWarning[];
@@ -1597,7 +1598,7 @@ async function buildSetBonuses(
 	 * noise.
 	 */
 	measureSetBonuses: boolean,
-	/** The ranking's cutoff, for the noise check on measured bonuses. */
+	/** The ranking's cutoff, for the same-gear check on measured bonuses. */
 	cutoff: Cutoff,
 	/**
 	 * The baseline sim's per-iteration stdev (`Ranking.baseline.stdev`), for
@@ -1729,7 +1730,7 @@ async function buildSetBonuses(
 			)
 		: new Map<number, ReadonlySet<number>>();
 	// With `measureSetBonuses`: the counts in reach at which the set has a
-	// bonus. The noise check below decides which are worth something here.
+	// bonus. The same-gear check below decides which are worth something here.
 	const reachableCounts = (setId: number, piecesWorn: number): SetThreshold[] => {
 		const known = bonusCounts.get(setId);
 		return packagesInReach(setId, piecesWorn)
@@ -1951,10 +1952,11 @@ async function buildSetBonuses(
 			}
 			const builtPackage = packageBuild;
 			const rebuildPackage = (g: GemContext) => chainSwapsWithRepairs(equipment, addedPieces, g);
-			// The added pieces' sim and the noise check's "on" and "off" sims must
-			// share one gem layout, so all three come from one `requestsPerLayout` call
-			// when the check runs. `plainLayout` keeps the request without copies,
-			// or why it could not be built.
+			// The added pieces' sim and the same-gear check's two sims, bonus on
+			// and bonus off (`measureSameGearBonus`), must share one gem layout, so
+			// all three come from one `requestsPerLayout` call when the check runs.
+			// `plainLayout` keeps the request without copies, or why it could not
+			// be built.
 			const plainLayout: { entry?: LayoutRequest | BuildFailure } = {};
 			// A copy's failed gem repair skips this bonus with the repair's error, as
 			// on the gear without copies; an undefined entry alone would show a
@@ -1972,7 +1974,7 @@ async function buildSetBonuses(
 				return entries.slice(1).map(requestOf);
 			};
 
-			// With `measureSetBonuses`, the noise check runs before the added
+			// With `measureSetBonuses`, the same-gear check runs before the added
 			// pieces' sim, so a count with no bonus here costs only the check's two
 			// sims.
 			let sameGear: DpsSample | undefined;
@@ -2246,12 +2248,12 @@ async function buildSetBonuses(
 	}
 
 	// Correct `bonusDps` for the worn bonuses its added pieces lose, using their
-	// measured values: `bonusDpsNet = bonusDps − netInflation(keys)`
-	// (set-value.ts derives it). Each entry's own `breaks` keep this right when
-	// the 2pc and 4pc pick different slots. The keys are the union of this
-	// entry's, the 2pc entry's and every added piece's own losses. While the
-	// 2pc's pieces are a prefix of the 4pc's, that union is this entry's own
-	// `breaks`; the union keeps the formula whole if `selectPackage` changes.
+	// measured values: `bonusDpsNet = bonusDps − netInflation(keys)`. Each
+	// entry's own `breaks` keep this right when the 2pc and 4pc pick different
+	// slots. The keys are the union of this entry's, the 2pc entry's and every
+	// added piece's own losses. While the 2pc's pieces are a prefix of the
+	// 4pc's, that union is this entry's own `breaks`; the union keeps the
+	// formula whole if `selectPackage` changes.
 	const bBy = new Map<string, number | undefined>();
 	for (const v of brokenSetValues) bBy.set(bonusKey(v), v.dps);
 	const memberSingleBreaks = (pkg: SetBonusValue): BrokenSetBonus[] =>
@@ -3157,12 +3159,12 @@ function applySetContext(
 				...(dps !== undefined ? { dps } : {}),
 			};
 		};
-		// Its swap gain, read before replication
-		// rewrites the top rows' `deltaDps`, so a row among measured added pieces
-		// sums to their gain. The worn bonuses it loses alone are added back
-		// because the path charges each loss once; the 2pc it reaches alone at
-		// worn 1 is taken out because the row's own gain already holds it.
-		// Undefined when any input was unmeasured.
+		// A path piece's swap gain, read before replication rewrites the top
+		// rows' `deltaDps`, so a row among measured added pieces sums to their
+		// gain. The worn bonuses it loses alone are added back because the path
+		// charges each loss once; the 2pc it reaches alone at worn 1 is taken out
+		// because the row's own gain already holds it. Undefined when any input
+		// was unmeasured.
 		const ownGain = (p: PackagePiece): number | undefined => {
 			const single = individualDeltasByItemId.get(p.itemId)?.deltaDps;
 			if (single === undefined) return undefined;
@@ -3631,7 +3633,6 @@ type CopyLayout = {
 	setLess?: readonly number[];
 };
 
-/** One request and the gem repair swaps of the gear it wears. */
 type LayoutRequest = {
 	request: RaidSimRequest;
 	swaps: readonly MetaRepairSwap[];

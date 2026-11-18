@@ -28,7 +28,6 @@ const byValue: SortFn<ResultsTableFeatures, RankedItem> = (rowA, rowB, columnId)
 
 const column = createColumnHelper<ResultsTableFeatures, RankedItem>();
 
-/** The four sortable columns, each sorting on `sortValue`. */
 const resultsColumns = (labels: SortLabels<RankedItem>, dpsKey: DpsSortKey | undefined) =>
 	column.columns(SORT_COLUMN_IDS.map(id => column.accessor(row => sortValue(id, row, labels, dpsKey), { id, sortFn: byValue })));
 

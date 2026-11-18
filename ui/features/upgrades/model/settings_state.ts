@@ -17,7 +17,7 @@ export type SettingsState = {
 	defaultsFor?: string;
 };
 
-/** Undefined means a spec with no ranking data, which has no defaults. */
+/** Passed as undefined for a spec with no ranking data, which has no defaults. */
 export type SettingsScope = { specPhase: string; defaultSetKeys: readonly string[]; poolSourceKeys: readonly string[] };
 
 /** A cap of 0 means "no cap". */

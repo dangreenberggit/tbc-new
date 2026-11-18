@@ -305,8 +305,9 @@ type CreditWalk = {
  * no bonus. The pieces and breaks of a bonus below it still count toward a later
  * one. The `'split'` view takes each bonus per piece, minus floored breaks, at
  * the same point, and may go negative, since where to stop is the player's
- * choice. `commitBreaks` are not charged: they belong to the best combination
- * of pieces, and a row whose own pieces keep that bonus should not pay for them.
+ * choice. `commitBreaks` are not charged: they belong to the pieces of the
+ * largest measured bonus, and a row whose own pieces keep that bonus should not
+ * pay for them.
  */
 function walkCredit(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: SetCreditRule): CreditWalk {
 	if (ctx?.stepRanking) return walkSteps(ctx, cutoff, rule);
