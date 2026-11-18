@@ -13,10 +13,10 @@ import { HEROIC_FIVE_MAN } from './pool_source';
 import type { RunSettings } from './run_state';
 import { type SettingsState, toRunSettings } from './settings_state';
 
-/** A source the Sources dialog lists. The page names it from its key (`utils/format.ts` `sourceKeyLabel`). */
+/** The page turns the key into a label with `sourceKeyLabel` (`utils/format.ts`). */
 export type SourceOption = { key: string; count: number };
 
-/** A gear set as the settings need it: anything with item ids, which a preset's `gear` and a saved set's `gear` both are. */
+/** Both a preset's `gear` and a saved set's `gear` fit this. */
 type GearItems = { items: readonly { id: number }[] };
 
 export type SetOption = {
@@ -27,22 +27,21 @@ export type SetOption = {
 	/** wowsims' preset `group`, which tells apart two presets of one phase that share a name. */
 	group?: string;
 	/**
-	 * The heading wowsims' gear tab shows over the set (its `group`), set only on a page whose sets sit under more
-	 * than one heading, as warrior's Fury and Arms do: there every badge for the set names it.
+	 * The heading wowsims' gear tab shows over the set (its `group`). Set only on a page with more than one heading,
+	 * such as warrior's Fury and Arms, where every badge for the set names it.
 	 */
 	heading?: string;
 	kind: 'preset' | 'saved';
 	itemIds: readonly number[];
 	/**
-	 * Other ids db.json describes the same as one in `itemIds` (`twinIdsOf`), set only where there are any: the
-	 * pool offers one id of such an item, maybe not the set's, and the set holds it under any.
+	 * Other ids that db.json describes exactly like one in `itemIds` (`twinIdsOf`). The pool offers only one id of
+	 * such an item, and it may not be the one the set names.
 	 */
 	sameItemIds?: readonly number[];
-	/** How many of `itemIds` are in this spec and phase's pool, under their own id or another in `sameItemIds`. */
+	/** Counts an item as in the pool under any of its ids. */
 	inPool: number;
 };
 
-/** Every id under which the set holds an item: its own and `sameItemIds`. */
 const heldIds = (o: Pick<SetOption, 'itemIds' | 'sameItemIds'>): readonly number[] => (o.sameItemIds ? [...o.itemIds, ...o.sameItemIds] : o.itemIds);
 
 const NO_TWINS: ReadonlyMap<number, readonly number[]> = new Map();
@@ -53,18 +52,17 @@ export type PoolFilter = {
 	prune: boolean;
 };
 
-/** What the source rules read of an entry; a ranked row has the same two fields, so the results view's source filter shares them. */
+/** A ranked row has these two fields too, so the results view's source filter uses the same rules. */
 export type SourcedEntry = Pick<PoolEntry, 'source' | 'sources'>;
 
-/** Every source of an entry: its `sources` list when it has one, else its one `source`. */
 export const sourcesOf = (entry: SourcedEntry): readonly ItemSource[] => entry.sources ?? [entry.source];
 
-/** The key of a zoneless source bucket: the engine's label for the kind, else the raw kind, as the engine's label falls back. */
+/** The key of a source with no zone, such as "Heroic dungeon". It falls back to the raw kind, as the engine's label does. */
 export const bucketKeyOf = (kind: string): string => SOURCE_LABELS[kind] ?? kind;
 
 /**
- * The source key an entry files under: its first zone, else its source bucket.
- * A copy of the engine's module-private `zoneKeyOf` (`view.ts`); change both together.
+ * The key an entry is listed under: its first zone, else its source kind. A copy
+ * of the engine's private `zoneKeyOf` (`view.ts`); change both together.
  */
 export function sourceKeyOf(entry: SourcedEntry): string {
 	for (const s of sourcesOf(entry)) {
@@ -73,14 +71,13 @@ export function sourceKeyOf(entry: SourcedEntry): string {
 	return bucketKeyOf(entry.source.kind);
 }
 
-/** A zone matches any entry that drops there; a zoneless bucket matches only entries with no zone. */
+/** A zone key matches any entry that drops there; a key with no zone matches only entries with no zone. */
 export function sourceMatches(entry: SourcedEntry, key: string): boolean {
 	const sources = sourcesOf(entry);
 	if (sources.some(s => 'zone' in s && s.zone === key)) return true;
 	return sourceKeyOf(entry) === key && !sources.some(s => 'zone' in s);
 }
 
-/** Every key `sourceMatches` matches an entry by: each of its zones, else its source bucket. */
 export function sourceKeysMatching(entry: SourcedEntry): string[] {
 	const zones = sourcesOf(entry).flatMap(s => ('zone' in s ? [s.zone] : []));
 	return zones.length > 0 ? [...new Set(zones)] : [sourceKeyOf(entry)];
@@ -88,16 +85,12 @@ export function sourceKeysMatching(entry: SourcedEntry): string[] {
 
 const ZONELESS_KEYS = new Set(Object.values(SOURCE_LABELS));
 
-/**
- * Source keys that start unticked wherever a pool offers them: the "Heroic dungeon" bucket under the
- * `include-unticked` policy (`pool_source.ts` `HEROIC_FIVE_MAN`).
- */
+/** "Heroic dungeon" starts unticked under the `include-unticked` policy (`HEROIC_FIVE_MAN` in `pool_source.ts`). */
 export const DEFAULT_OFF_SOURCE_KEYS: readonly string[] = HEROIC_FIVE_MAN === 'include-unticked' ? [bucketKeyOf('heroic')] : [];
 
 /**
- * The sources a run excludes. For a key that starts unticked, a stored entry is the user's tick, so the key is
- * excluded unless stored. The stored list keeps a key only while the pool offers it (`settings_state.ts`), so a
- * key that comes back after a phase without it starts unticked again.
+ * For a key that starts unticked, a stored entry means the user ticked it. The stored list keeps a key only while
+ * the pool offers it (`settings_state.ts`), so a key that returns after a phase without it starts unticked again.
  */
 export function effectiveExcludedSources(
 	stored: readonly string[],
@@ -109,9 +102,9 @@ export function effectiveExcludedSources(
 }
 
 /**
- * Every source key the pool offers: zones, then zoneless buckets, in first-seen
- * order. The Sources dialog and the phase reset both read these, so they agree, and
- * every key an entry matches is offered, so Hide all hides every row.
+ * Zones first, then other sources. The Sources dialog and the phase reset both read
+ * this list, so they agree. Every key an entry matches is offered, so Hide all hides
+ * every row.
  */
 export function validSourceKeysOf(pool: readonly SourcedEntry[]): string[] {
 	const keys = [...new Set([...pool.map(sourceKeyOf), ...pool.flatMap(sourceKeysMatching)])];
@@ -125,17 +118,13 @@ export function sourceOptions(pool: readonly SourcedEntry[]): { raids: SourceOpt
 
 const itemIdsOf = (gear: GearItems | undefined): number[] => [...new Set((gear?.items ?? []).map(i => i.id).filter(id => id > 0))];
 
-/**
- * A preset's label leads with "P{phase} - " unless its name already starts
- * with that P-token (ret's presets are named "P2", "P3"), so ret shows "P2"
- * and "P3 - Bulwark", not "P2 - P2".
- */
+/** Adds "P{phase} - " unless the name already starts with the phase, so ret's preset "P2" reads "P2", not "P2 - P2". */
 function presetLabel(name: string, phase: number | undefined): string {
 	if (phase === undefined || new RegExp(`^p${phase}($|[^0-9])`, 'i').test(name)) return name;
 	return `P${phase} - ${name}`;
 }
 
-/** A grouped option that another option of the same phase and name would read the same as, so its group is shown. */
+/** True when another option has the same phase and name, so this one needs its group to tell them apart. */
 const sharesPhaseAndName = (o: SetOption, options: readonly SetOption[]): boolean =>
 	o.group !== undefined && options.some(other => other !== o && other.phase === o.phase && other.name === o.name);
 
@@ -182,9 +171,9 @@ export function setOptions({
 }
 
 /**
- * The sets selected by default: BiS-tag phase presets whose in-pool items, at least
- * one, are all BiS-tagged. The phase test is needed: the ids alone over-select
- * (feral P3's ids also satisfy the P4 BiS pair).
+ * The sets selected by default: presets of `bisTagPhase` with at least one item in
+ * the pool and every such item tagged BiS. The phase check is needed: by ids alone,
+ * feral's P3 set would also pass against the P4 BiS tags.
  */
 export function defaultSetKeys(options: readonly SetOption[], pool: readonly PoolEntry[], bisTagPhase: number | undefined): string[] {
 	if (bisTagPhase === undefined) return [];
@@ -210,9 +199,9 @@ export const selectedSetItemIds = (options: readonly SetOption[], selectedKeys: 
 ];
 
 /**
- * The pool a run sims. An entry stays while some source it matches is ticked, so
- * an item from two raids survives one being excluded. Prune keeps only the
- * selected sets' items; the sets never add an item back past the Sources filter.
+ * An entry stays while any of its sources is ticked, so an item from two raids
+ * survives one being excluded. `prune` keeps only the selected sets' items; the
+ * sets never add back an item the Sources filter removed.
  */
 export function effectivePool(pool: readonly PoolEntry[], { excludedSources, selectedSetItemIds, prune }: PoolFilter): PoolEntry[] {
 	const excluded = new Set(excludedSources);
@@ -221,12 +210,11 @@ export function effectivePool(pool: readonly PoolEntry[], { excludedSources, sel
 	return pool.filter(e => ticked.some(key => sourceMatches(e, key)) && (!prune || inSets.has(e.itemId)));
 }
 
-/** What the engine's off-hand rule reads of the page: the spec, and the id of the worn main hand (undefined when empty). */
 export type MainHandContext = { spec: SpecId | undefined; wornMainHandId: number | undefined };
 
 /**
- * The candidates an uncapped run sims: the engine's own phase filter and Kael exclusion, applied to the effective
- * pool, less the off-hand-only items and one-handed weapons a worn two-hander holds out.
+ * The candidates an uncapped run sims. It uses the engine's own filters so the count matches the run: phase, Kael's
+ * temporary legendaries, and the off-hand and one-hand items a worn two-hander rules out.
  */
 export const eligibleCount = (pool: readonly PoolEntry[], maxPhase: number, { spec, wornMainHandId }: MainHandContext): number => {
 	const phaseEligible = filterPoolByPhase(pool, maxPhase).filter(e => !isKaelTempLegendary(e.itemId));
@@ -237,16 +225,15 @@ export const eligibleCount = (pool: readonly PoolEntry[], maxPhase: number, { sp
 	);
 };
 
-/** A row's badge for a selected set: the set's key, and its name as the gear tab names it. */
 export type RowTag = { key: string; label: string };
 
-/** A badge label that names the gear-set heading it belongs to, such as "BIS (Fury)". */
 export const withHeading = (label: string, heading: string): string => `${label} (${heading})`;
 
 /**
- * One badge per selected set that holds the item, with the set's heading if any, so
- * a Fury-only item reads "BIS (Fury)". Badges that would read the same get their
- * phase in front; without a heading, those that share the phase too get their group.
+ * One badge per selected set that holds the item. The heading is added so a
+ * Fury-only item reads "BIS (Fury)", not a "BIS" that Arms could take for its own.
+ * Badges that would still read the same get their phase in front; without a
+ * heading, those that share the phase too get their group.
  */
 export function rowTags(itemId: number, selectedOptions: readonly SetOption[]): RowTag[] {
 	const holding = selectedOptions.filter(o => heldIds(o).includes(itemId));
@@ -260,11 +247,7 @@ export function rowTags(itemId: number, selectedOptions: readonly SetOption[]): 
 
 const NO_HEADINGS: readonly string[] = [];
 
-/**
- * The headings of the BiS-tag phase's presets that hold each item, on a page with
- * more than one heading (none elsewhere), so the pool's "BiS" badge on a row in no
- * selected set can name the build it is BiS for.
- */
+/** Lets the pool's "BiS" badge on a row in no selected set name the build it is BiS for, on a page with headings. */
 export function bisHeadingIndex(options: readonly SetOption[], bisTagPhase: number | undefined): (itemId: number) => readonly string[] {
 	const byItem = new Map<number, string[]>();
 	if (bisTagPhase === undefined) return () => NO_HEADINGS;
@@ -281,10 +264,7 @@ export function bisHeadingIndex(options: readonly SetOption[], bisTagPhase: numb
 
 const NO_TAGS: readonly RowTag[] = [];
 
-/**
- * `rowTags` for every item at once. Each item keeps one array while the selection
- * stands, so a memoised name cell does not re-render when only its row moves.
- */
+/** Each item keeps one array while the selection stands, so a memoised name cell does not re-render when its row moves. */
 export function rowTagIndex(selectedOptions: readonly SetOption[]): (itemId: number) => readonly RowTag[] {
 	const byItem = new Map<number, readonly RowTag[]>();
 	for (const itemId of new Set(selectedOptions.flatMap(heldIds))) byItem.set(itemId, rowTags(itemId, selectedOptions));
@@ -293,7 +273,7 @@ export function rowTagIndex(selectedOptions: readonly SetOption[]): (itemId: num
 
 type SavedSet = { name: string; gear?: GearItems };
 
-/** What a spec and phase offer the settings: everything that does not depend on what the user picked. */
+/** Everything a spec and phase offer that does not depend on what the user picked. */
 export type SettingsOffer = {
 	pool: readonly PoolEntry[];
 	sources: { raids: SourceOption[]; other: SourceOption[] };
@@ -326,7 +306,7 @@ export function settingsOffer({
 	};
 }
 
-/** The sets the user picked, as the offer has them, and their chips. Apart from the other settings so it can outlive changes to them. */
+/** Kept apart from the other settings so it can outlive changes to them. */
 export type SetSelection = {
 	selectedOptions: readonly SetOption[];
 	selectedKeys: readonly string[];
@@ -346,10 +326,9 @@ export function setSelection(offer: SettingsOffer, selectedSetKeys: readonly str
 	};
 }
 
-/** What one click of Run asks for, with the selection as the offer has it. */
 export const runSettingsOf = (selection: SetSelection, state: SettingsState): RunSettings =>
 	toRunSettings({ ...state, selectedSetKeys: selection.selectedKeys }, selection.selectedItemIds);
 
-/** The candidates an uncapped run would sim under the pool filters; apart from `runSettingsOf`, so an iterations edit does not refilter the pool. */
+/** Separate from `runSettingsOf`, so an iterations edit does not filter the pool again. */
 export const eligibleCountOf = (offer: SettingsOffer, filter: PoolFilter, maxPhase: number, mainHand: MainHandContext): number =>
 	eligibleCount(effectivePool(offer.pool, filter), maxPhase, mainHand);

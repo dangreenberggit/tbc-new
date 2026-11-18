@@ -58,12 +58,11 @@ export type UpgradesData = {
 };
 
 /**
- * An action whose pure function returns the state it was given writes nothing and notifies nobody: a superseded run's
- * late row, a setting set to the value it holds once the scope's defaults are stored, a scope change with nothing to
- * forget. A toggle always changes its list.
+ * An action whose pure function returns the state it was given writes nothing and notifies nobody, as for a late row
+ * from an older run.
  */
 export type UpgradesActions = {
-	/** The run's id comes from the run session (`run_session.ts`), which tells a superseded run's callbacks apart by it. */
+	/** The run's id comes from `run_session.ts`, which uses it to tell an older run's callbacks apart. */
 	startRun: (runId: number, startedAt: number, measuredOn?: MeasuredOn) => void;
 	loadFixture: (runId: number, ranking: Ranking, measuredOn?: MeasuredOn) => void;
 	landRow: (runId: number, row: RankedItem) => void;
@@ -71,9 +70,9 @@ export type UpgradesActions = {
 	settleRun: (runId: number, outcome: RunOutcome) => void;
 	failRun: (runId: number, message: string) => void;
 	/**
-	 * The user's settings changes. Each applies the scope's default sets first, so the stored state matches what the
-	 * tab showed (`appliedSettings`), and writes both in one notification. The scope is required, though it may be
-	 * undefined, so a caller cannot forget it and store a change the next render's defaults would overwrite.
+	 * The user's settings changes. Each applies the default sets for `scope` first, so the stored state matches what the
+	 * tab showed (`appliedSettings`), in one notification. `scope` is required, though it may be undefined, so a caller
+	 * cannot forget it and store a change the next render's defaults would overwrite.
 	 */
 	toggleSource: (key: string, scope: SettingsScope | undefined) => void;
 	toggleSet: (key: string, scope: SettingsScope | undefined) => void;
@@ -86,7 +85,7 @@ export type UpgradesActions = {
 	setSort: (sort: ResultsSort) => void;
 	setViewToggle: (toggle: keyof ViewToggles, on: boolean) => void;
 	toggleViewSource: (key: string) => void;
-	/** Show all sets `[]`; Hide all sets `withOfferedSourcesHidden` of the list. */
+	/** Show all passes `[]`; Hide all passes `withOfferedSourcesHidden` of the list. */
 	setViewSources: (keys: readonly string[]) => void;
 	setExportFlavour: (flavour: ExportFlavour) => void;
 };

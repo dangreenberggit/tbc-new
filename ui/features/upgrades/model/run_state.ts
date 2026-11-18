@@ -9,7 +9,6 @@ import type { PartialRanking, RankedItem, Ranking } from './engine/rank';
 import type { SpecId } from './engine/types';
 import type { SetOption } from './settings_pool';
 
-/** What one click of Run asks for. */
 export type RunSettings = {
 	iterations: number;
 	/** Keep the first N candidates of the EP ordering that the player does not wear; undefined is no cap. */
@@ -47,10 +46,10 @@ export type RunnerName = 'WorkerPoolSimRunner';
 export type RunOutcome = RunResult & { runner?: RunnerName; epWeightsSet?: EpWeightsSet };
 
 /**
- * What a ranking was measured against: it holds no gear, and a row's own set breaks
- * come from the gear it was measured on. The result is stale once an
- * `inputsSignature` built now differs (`run_inputs.ts`). `selectedSets` is a
- * snapshot because a later phase change picks other sets.
+ * The ranking holds no gear, and the set bonuses a row's swap breaks are worked out
+ * from the gear it was measured on. The result is stale once an `inputsSignature`
+ * built now differs (`run_inputs.ts`). `selectedSets` is a copy because a later
+ * phase change picks other sets.
  */
 export type MeasuredOn = {
 	wornItemIds?: readonly number[];
@@ -79,12 +78,11 @@ const withRunner = (measuredOn: MeasuredOn | undefined, runner: RunnerName | und
 	runner ? { ...measuredOn, runner } : measuredOn;
 
 /**
- * A superseded run's rows, Stop and result can still arrive after a new run started or a fixture loaded. Every
- * function below that takes the current state returns it unchanged for such a call, so the store writes nothing.
+ * An older run's rows, Stop and result can still arrive after a new run started or a fixture loaded. Every function
+ * below returns the state unchanged for such a call, so the store writes nothing.
  */
 const isCurrentRun = (state: RunState, runId: number): state is RunningState => state.status === 'running' && state.runId === runId;
 
-/** A new run replaces whatever was on screen, finished or still in flight. */
 export const runStarted = (runId: number, startedAt: number, measuredOn?: MeasuredOn): RunState => ({
 	status: 'running',
 	runId,
@@ -94,7 +92,7 @@ export const runStarted = (runId: number, startedAt: number, measuredOn?: Measur
 	measuredOn,
 });
 
-/** A recorded ranking shows as a finished run, replacing a run in flight, whose late rows are then dropped. */
+/** Replaces a run in flight, whose late rows are then dropped. */
 export const fixtureLoaded = (runId: number, ranking: Ranking, measuredOn?: MeasuredOn): RunState => ({
 	status: 'done',
 	runId,
@@ -121,7 +119,7 @@ export function runSettled(state: RunState, runId: number, outcome: RunOutcome):
 export const runFailed = (state: RunState, runId: number, message: string): RunState =>
 	isCurrentRun(state, runId) ? { status: 'error', runId, message } : state;
 
-/** The rows the table shows for `run`. A stopped ranking also lists the candidates Stop never reached; they are left out. */
+/** A stopped ranking also lists the candidates Stop never reached; they are left out. */
 export function visibleRows(run: RunState): readonly RankedItem[] {
 	switch (run.status) {
 		case 'running':
@@ -135,7 +133,6 @@ export function visibleRows(run: RunState): readonly RankedItem[] {
 	}
 }
 
-/** What the run in flight or the result on screen was measured on. */
 export const measuredOnOf = (run: RunState): MeasuredOn | undefined =>
 	run.status === 'running' || run.status === 'done' || run.status === 'stopped' ? run.measuredOn : undefined;
 

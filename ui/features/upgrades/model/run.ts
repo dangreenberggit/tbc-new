@@ -30,7 +30,7 @@ export type RunContext = {
 export type RunDeps = {
 	signal: AbortSignal;
 	onLanded: (row: RankedItem) => void;
-	/** Builds the run context on first call and returns the same one after. */
+	/** Builds the `RunContext` on first call and returns the same one after. */
 	runContext: () => RunContext;
 };
 
@@ -57,8 +57,8 @@ const SPEC_ID_BY_PROTO_SPEC: Partial<Record<Spec, SpecId>> = {
 export const specIdFor = (spec: Spec): SpecId | undefined => SPEC_ID_BY_PROTO_SPEC[spec];
 
 /**
- * One runner and one store per mounted tab, not per run: the store's job is to
- * reuse identical sims across runs. Every runner on the page shares one worker
+ * One runner and one `store` per mounted tab, not per run, because the store
+ * reuses identical sims across runs. Every runner on the page shares one worker
  * pool (`worker_pool_sim_runner.ts`).
  */
 export function createRunContext(env: RunnerEnv): RunContext {
@@ -94,8 +94,8 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 	};
 
 	const input: RankInput = {
-		// The gear source ignores everything on this ref but its shape: this
-		// surface has no logged character, only the page.
+		// The gear source ignores everything on this ref but its shape: the page has no
+		// logged character.
 		character: { region: 'US', realm: 'current-page', name: host.player.getName() || 'player' },
 		spec: specId,
 		maxPhase,
@@ -124,7 +124,7 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 			simDatabaseFor: simDatabaseResolverFor(host.player, skeleton),
 			concurrency: simRunner.concurrency,
 			signal: deps.signal,
-			// A worn set bonus a swap breaks is measured, and the set screen is on.
+			// Measures the worn set bonuses a swap breaks, and turns on `set-screen.ts`.
 			measureBrokenSetValue: true,
 			setScreen: 'on',
 		},

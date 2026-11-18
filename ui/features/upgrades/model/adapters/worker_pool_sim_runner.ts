@@ -1,7 +1,7 @@
 /**
- * SimRunner over its own WorkerPool, since `Sim`'s is private. Not `runConcurrentSim`:
- * that shards one request's seed across workers (`sim/core/sim_concurrent.go`), so
- * the result would change with the worker count; each candidate runs unsharded.
+ * Runs sims on its own WorkerPool, since `Sim`'s is private. It does not use
+ * `runConcurrentSim`, which splits one request's iterations across workers by seed
+ * (`sim/core/sim_concurrent.go`), so results would change with the worker count.
  */
 
 import { ComputeStatsRequest, RaidSimRequest as RaidSimRequestProto } from '@generated/proto/api';
@@ -24,16 +24,15 @@ import {
 export const DEFAULT_WORKER_COUNT = 4;
 
 /**
- * Peak RSS of one `wowsimcli` process running 5,000 iterations. It stands in for a
- * WASM worker, which runs the same Go sim but has no in-browser figure yet.
+ * Peak memory of one `wowsimcli` process running 5,000 iterations. It stands in for
+ * a WASM worker, which runs the same Go sim but has not been measured in a browser.
  */
 const MEASURED_MB_PER_SIM_PROCESS = 183.8;
 
 /**
- * How many sims fit in memory, from `navigator.deviceMemory` in GiB: half the RAM
- * is left for the OS, the page and other tabs, the rest divided by the figure above.
- * Without the API (Firefox, Safari) it returns `DEFAULT_WORKER_COUNT`, so those
- * users are not capped to 1.
+ * Half the RAM is left for the OS, the page and other tabs. Without
+ * `navigator.deviceMemory` (Firefox, Safari) it returns `DEFAULT_WORKER_COUNT`, so
+ * those users are not capped to 1.
  */
 export function memoryCapFromDeviceMemory(deviceMemoryGiB: number | undefined): number {
 	if (deviceMemoryGiB === undefined) return DEFAULT_WORKER_COUNT;
@@ -71,10 +70,9 @@ function readWasmConcurrency(storageRead: RunnerEnv['storageRead']): number | un
 }
 
 /**
- * How many workers the tab's pool gets. A choice above one, or no choice (the
- * default), is capped by the cores and `memoryCapFromDeviceMemory`, with a floor of
- * two. Off (`0`) and `1` get one worker, as the tab cannot rank with none. An unreadable
- * setting gets the default, uncapped.
+ * Off (`0`) and `1` get one worker, as the tab cannot rank with none. A choice above one,
+ * or no choice, is capped by the cores and the memory cap, with a floor of two. An
+ * unreadable setting gets the default, uncapped.
  */
 export function workerCountFor(env: RunnerEnv): number {
 	const setting = readWasmConcurrency(env.storageRead);
@@ -85,9 +83,9 @@ export function workerCountFor(env: RunnerEnv): number {
 }
 
 /**
- * The tab's one pool, kept for the page's life as `Sim` keeps its own. `WorkerPool`
- * has no public way to end its workers, so a later runner on the page must reuse
- * this one; a new pool would leave the old workers running unreachable.
+ * Kept for the page's life, as `Sim` keeps its own. `WorkerPool` has no public way
+ * to end its workers, so a later runner must reuse this one; a new pool would leave
+ * the old workers running with nothing to reach them.
  */
 let sharedPool: WorkerPool | undefined;
 
@@ -109,10 +107,7 @@ export class WorkerPoolSimRunner implements SimRunner {
 	private readonly pool: WorkerPool;
 	private readonly signalManager = new SimSignalManager();
 
-	/**
-	 * How many candidate sims `rankUpgrades` may dispatch at once: `min(numWorkers,
-	 * memoryCap)`, so the requests in flight stay under the memory cap.
-	 */
+	/** Also capped by memory, so the sims in flight at once fit in RAM. */
 	readonly concurrency: number;
 
 	constructor(numWorkers: number = DEFAULT_WORKER_COUNT, deviceMemoryGiB?: number) {
@@ -125,7 +120,7 @@ export class WorkerPoolSimRunner implements SimRunner {
 	}
 
 	async run(req: RaidSimRequest, opts: SimRunOpts): Promise<SimObservation> {
-		// Only the set screen asks for per-iteration values.
+		// Only `set-screen.ts` needs per-iteration values.
 		const saveAllValues = opts.saveAllValues === true;
 		const withOptions = {
 			...req,
@@ -167,11 +162,7 @@ export class WorkerPoolSimRunner implements SimRunner {
 		}
 	}
 
-	/**
-	 * The first player's final stats for the request's gear, the call the page's
-	 * stats panel makes (`getCharacterStatsForGear`, `ui/sim/sim.ts`). Meta repair
-	 * reads hit from it.
-	 */
+	/** The same call the page's stats panel makes (`getCharacterStatsForGear`, `ui/sim/sim.ts`). */
 	async computeStats(req: RaidSimRequest): Promise<PlayerStatsObservation> {
 		const proto = ComputeStatsRequest.fromJson({ raid: req.raid, encounter: req.encounter } as JsonValue, { ignoreUnknownFields: true });
 		const result = await this.pool.computeStats(proto);
@@ -185,7 +176,6 @@ export class WorkerPoolSimRunner implements SimRunner {
 		return { stats: [...finalStats.stats], pseudoStats: [...finalStats.pseudoStats] };
 	}
 
-	/** The first player's active set bonuses from the same stats call. */
 	async activeSetBonuses(req: RaidSimRequest): Promise<readonly string[]> {
 		const proto = ComputeStatsRequest.fromJson({ raid: req.raid, encounter: req.encounter } as JsonValue, { ignoreUnknownFields: true });
 		const result = await this.pool.computeStats(proto);

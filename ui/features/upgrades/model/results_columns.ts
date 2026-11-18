@@ -13,12 +13,11 @@ export type SortLabels<T> = { slot: (row: T) => string; source: (row: T) => stri
 /** What the ΔDPS column sorts on, when it is more than the row's own ΔDPS (`results_view.ts` `dpsSortKeyFor`). */
 export type DpsSortKey = (row: RankedItem) => number;
 
-/** The sortable columns in head order; each id is also the `upgrades-sort-<id>` test id. */
+/** In header order; each id is also the `upgrades-sort-<id>` test id. */
 export const SORT_COLUMN_IDS = ['item', 'delta_dps', 'slot', 'source'] as const;
 
 export type ResultsSortKey = (typeof SORT_COLUMN_IDS)[number];
 
-/** A row's value in a sortable column: names, slots and sources sort on their lower-cased text, ΔDPS on `dpsKey` when the view gives one. */
 export const sortValue = (key: ResultsSortKey, row: RankedItem, labels: SortLabels<RankedItem>, dpsKey: DpsSortKey | undefined): string | number => {
 	switch (key) {
 		case 'item':

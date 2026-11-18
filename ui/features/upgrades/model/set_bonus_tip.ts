@@ -1,8 +1,8 @@
 /**
- * The set-bonus popover of a result row, as data: a receipt whose lines add up to
- * the figure the cell shows (after the below-bar clamp, `shownTenths`), or, for a
- * step ranking row whose partner sets do not nest, separate outcomes that are not a
- * sum. `utils/set_bonus_labels.ts` turns it into text.
+ * The set-bonus popover of a result row, as data. Usually its lines add up to the
+ * figure the cell shows (`kind: 'receipt'`). When a row's bonuses need pieces that
+ * do not build on each other, each line is a separate result (`kind: 'outcomes'`).
+ * `utils/set_bonus_labels.ts` turns it into text.
  */
 
 import type { Cutoff } from './engine/cutoff';
@@ -29,19 +29,19 @@ import { shownTenths, tenthsOf } from './shown_figure';
 export type BonusRef = { setName: string; threshold: number };
 
 export type TipLabel =
-	/** The row's own stats; names the bonus it crosses and the worn bonuses it breaks unmeasured, whose value it then includes. */
+	/** The row's own stats. Names the bonus it completes, and any worn bonus it breaks that was not measured, as that loss is then inside this line. */
 	| { kind: 'item_stats'; bonus?: BonusRef; unmeasuredBreaks: BonusRef[] }
 	| { kind: 'breaks'; broken: BonusRef[] }
 	| { kind: 'bonus'; set: string; threshold: number; have: number }
 	| { kind: 'piece_stats'; name: string }
-	/** A step ranking line: the partner pieces, the bonus they reach and the worn bonuses lost. */
+	/** One step toward a bonus: the other pieces needed, the bonus they reach and the worn bonuses lost. */
 	| { kind: 'pieces'; form: 'stop' | 'step'; pieces: string[]; threshold: number; broken: BonusRef[] }
 	| { kind: 'item_alone'; name: string; broken: BonusRef[] }
-	/** A bonus the row can reach that its figure does not count: the partner pieces and the worn bonuses the step breaks beyond the row's own. */
+	/** A bonus the row can reach that its figure does not count, with the other pieces needed and the extra worn bonuses lost. */
 	| { kind: 'reachable'; set: string; threshold: number; have: number; pieces: string[]; broken: BonusRef[] }
-	/** A set the set screen dropped, so no bonus of it was measured for the row. */
+	/** A set that `set-screen.ts` dropped, so none of its bonuses was measured for the row. */
 	| { kind: 'screened'; set: string; reason: ScreenedReason }
-	/** A bonus whose measured value is within the noise gate, so it has no figure. */
+	/** A bonus whose measured value is too small to tell from sim noise, so it has no figure. */
 	| { kind: 'noise'; set: string; threshold: number }
 	| { kind: 'total' };
 
@@ -49,9 +49,9 @@ const SCREENED_REASONS = ['outside-band', 'exact-zero', 'below-zero'] as const s
 export type ScreenedReason = (typeof SCREENED_REASONS)[number];
 
 /**
- * `dps` undefined is a figure not measured; lines above a receipt's total are
- * pre-rounded to tenths so they add up to it. `marker` is the outcome the row's
- * figure uses; `outcome` a line after the total, compared rather than added.
+ * `dps` undefined means not measured. Lines above the total are already rounded
+ * to tenths so they add up to it. `marker` flags the result the row's figure uses;
+ * `outcome` flags a line after the total that is compared, not added.
  */
 export type TipEntry =
 	| { type: 'heading'; heading: 'set_potential' | 'set_potential_totals' | 'not_counted_off' | 'not_counted_no_gain' | 'not_counted' }
@@ -60,18 +60,17 @@ export type TipEntry =
 export type SetBonusTip = { subLine: 'hover_hint' | 'not_counted'; kind: 'receipt' | 'outcomes'; entries: TipEntry[] };
 
 export type SetBonusTipContext = {
-	/** Absent while a run is in flight: no cutoff yet, so no set potential and no own-swap breaks. */
+	/** Absent while a run is in flight: there is no cutoff yet, so no set potential and no bonuses lost to the row's own swap. */
 	ranking?: Pick<Ranking, 'cutoff' | 'brokenSetValues' | 'setBonuses' | 'setScreen'>;
 	/** The gear the ranking was measured on, in sim slot order. */
 	wornItemIds?: readonly number[];
 	specId?: SpecId;
-	/** The Set potential toggle. */
 	withSetPotential?: boolean;
 };
 
 type Line = { label: TipLabel; dps: number | undefined; figure?: boolean };
 
-/** `v` as the row's figure shows it: raw unless the below-bar clamp changed it, so a figure the clamp leaves alone keeps its full value. */
+/** Raw unless `shownTenths` moved it below the cutoff, so a figure it leaves alone keeps its full precision. */
 const shownValue = (v: number, bar: number | undefined): number => (shownTenths(v, bar) === tenthsOf(v) ? v : shownTenths(v, bar) / 10);
 
 /**
@@ -109,11 +108,10 @@ type Potential = { lines: Line[]; kind: 'unmeasured' | 'none' | 'itemised' | 'st
 const NO_POTENTIAL: Potential = { lines: [], kind: 'none' };
 
 /**
- * The Set potential section of a row with future bonuses, with the toggle on:
- * `unmeasured` names each figure the credit lacks; `none` when the credit is
- * 0; `itemised` the credit's terms; `steps` a step ranking's steps up to the
- * stop, which add up to the credit; `outcomes` a step ranking whose partner
- * sets do not nest, one total per bonus.
+ * The Set potential lines, with the toggle on. `unmeasured` lists each figure
+ * missing from `credit`; `none` when `credit` is 0; `itemised` its parts; `steps`
+ * each step up to `stopThreshold`, adding up to `credit`; `outcomes` one total per
+ * bonus when the bonuses' pieces do not build on each other.
  */
 function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): Potential {
 	const futures = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
@@ -171,12 +169,11 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): Potent
 }
 
 /**
- * The bonuses a step ranking row can reach, as separate outcomes: the partner pieces
- * and the worn bonuses broken beyond the row's own swap. Each figure is the change
- * to the row's figure if it counted that step instead, against the row alone, or
- * against the stop's gear past the stop, where a difference within the noise gate
- * gets no figure. Outside a step ranking a future's figure is the bonus's own value,
- * which these labels would misstate.
+ * The bonuses a `stepRanking` row can reach that its figure does not count. Each
+ * figure is how much the row's figure would change if it counted that step instead:
+ * against the row alone, or for steps past `stopThreshold`, against the gear at
+ * `stopThreshold`. A difference too small to tell from noise gets no figure. Without `stepRanking` a
+ * future bonus's figure is the bonus alone, which these labels would misstate.
  */
 function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopThreshold?: number): TipEntry[] {
 	if (!ctx.stepRanking) return [];
@@ -189,9 +186,9 @@ function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopTh
 		.filter(f => f.threshold > (stopThreshold ?? 0) && stepEligible(f, cutoff))
 		.map((f): TipEntry => {
 			const dps = f.stepGearDps === undefined ? undefined : f.stepGearDps - reference;
-			// Both step gears are differences from the same baseline sim, so adding
-			// their errors in quadrature counts the baseline's error twice: the gate
-			// errs toward "too small to measure".
+			// Both `stepGearDps` values are measured against the same baseline sim, so
+			// `Math.hypot` of their errors counts the baseline's error twice. The test
+			// leans toward "too small to measure".
 			const belowNoise =
 				stop !== undefined && dps !== undefined && !clearsSameGearGate(Math.abs(dps), Math.hypot(f.stepGearSe ?? 0, stop.stepGearSe ?? 0), cutoff);
 			return {
@@ -213,9 +210,8 @@ function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopTh
 }
 
 /**
- * A step ranking row whose every bonus was measured within the noise gate lists
- * them with no figure, so the row says its set was tried. A row with a bonus that
- * clears the gate lists that one instead (`reachableLines`).
+ * When every bonus of a `stepRanking` row is too small to tell from noise, they are
+ * listed with no figure, so the row still says its set was tried.
  */
 function noiseLines(ctx: SetContext, cutoff: Cutoff): TipEntry[] {
 	const futures = ctx.futureBonuses ?? [];
@@ -226,16 +222,15 @@ function noiseLines(ctx: SetContext, cutoff: Cutoff): TipEntry[] {
 		.map(f => line({ kind: 'noise', set: ctx.setName, threshold: f.threshold }, undefined));
 }
 
-/** The toggle is never why a screened set is not counted, so a section with no reachable line names no reason. */
+/** The toggle is never why a set `set-screen.ts` dropped is not counted, so a section with no reachable line names no reason. */
 function notCountedHeading(hasReachable: boolean, on: boolean): Extract<TipEntry, { type: 'heading' }>['heading'] {
 	if (!hasReachable) return 'not_counted';
 	return on ? 'not_counted_no_gain' : 'not_counted_off';
 }
 
 /**
- * The line for a row whose set the set screen dropped, or null. It carries no
- * figure: a `below-zero` measure is the pieces and the bonus together, so
- * printing it as the bonus would credit the pieces' loss to it.
+ * No figure on purpose: a `below-zero` measure is the pieces and the bonus
+ * together, so printing it as the bonus would blame the bonus for the pieces' loss.
  */
 function screenedLine(ctx: SetContext, ranking: SetBonusTipContext['ranking']): TipEntry | null {
 	const screen = ranking?.setScreen?.mode === 'on' ? ranking.setScreen.sets.find(s => s.setId === ctx.setId) : undefined;
@@ -248,10 +243,10 @@ function screenedLine(ctx: SetContext, ranking: SetBonusTipContext['ranking']): 
 }
 
 /**
- * Each line is a separate outcome against the current gear: no Item stats addend,
- * no total. Every total moves by as much as paired replication moved the row's
- * single swap, so the item-alone and marked lines equal the cell's figure with the
- * toggle off and on, and get the cell's below-bar clamp; the others stay raw.
+ * Each line is a separate result against the current gear, so there is no Item
+ * stats line and no total. Every total shifts by as much as the re-sim with more
+ * seeds moved the row's own figure. The item-alone and `marker` lines then match the
+ * cell with the toggle off and on, so they are rounded as the cell is.
  */
 function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Line[], bar: number | undefined): TipEntry[] {
 	const shift = row.deltaDps - (ctx.singleDeltaDps ?? row.deltaDps);
@@ -264,7 +259,7 @@ function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Li
 
 /**
  * The popover of `row`, or null when it has nothing to say. The first "Item stats"
- * line balances the toggle-off receipt and keeps its value across the toggle, so the
+ * line balances the toggle-off lines and keeps its value across the toggle, so the
  * toggle's rounding goes into the Set potential lines.
  */
 export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = {}): SetBonusTip | null {
@@ -273,7 +268,7 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 	const bar = cutoff?.absDps;
 	const on = (context.withSetPotential ?? false) && cutoff !== undefined;
 	const credit = on ? rankableSetPotential(row, cutoff, 'full') : 0;
-	// A row with no set context gets the same receipt for the worn bonuses its own swap breaks.
+	// A row with no `setContext` still lists the worn bonuses its own swap breaks.
 	const ownBreaks =
 		ctx || !context.ranking || !context.specId ? [] : singleSwapBreaks(row, context.ranking.brokenSetValues, context.wornItemIds, context.specId);
 	if (!ctx && ownBreaks.length === 0) return null;
@@ -295,7 +290,7 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 	const firstTenths = shownTenths(row.deltaDps, bar) - breakTenths.reduce((a, b) => a + b, 0);
 
 	const entries: TipEntry[] = [];
-	// A folded label is kept even when it equals the total: it is the only place that bonus is named.
+	// Kept even when it equals the total if it names a bonus or a loss, as no other line names them.
 	if (bonus !== undefined || unmeasuredBreaks.length > 0 || firstTenths !== shownTenths(total, bar)) {
 		entries.push(line({ kind: 'item_stats', ...(bonus ? { bonus } : {}), unmeasuredBreaks }, firstTenths / 10));
 	}
@@ -313,13 +308,13 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 		potential.lines.forEach((l, i) => entries.push(line(l.label, shown[i]! / 10)));
 	}
 
-	// What the figure does not count, after the total, so the toggle never decides whether the popover exists.
+	// What the figure does not count goes after the total, so the toggle never decides whether the popover exists.
 	const notCounted: TipEntry[] = [];
 	if (ctx && cutoff !== undefined) {
 		const pastStop = on && potential.stopThreshold !== undefined;
 		const reachable = !on || potential.kind === 'none' || pastStop ? reachableLines(row, ctx, cutoff, potential.stopThreshold) : [];
 		const section = [...reachable, ...(screened ? [screened] : []), ...noiseLines(ctx, cutoff)];
-		// "No gain over the item alone" would misstate a step past the stop, which is measured against the stop.
+		// "No gain over the item alone" would misstate a step past `stopThreshold`, which is measured against that step.
 		if (section.length > 0) notCounted.push({ type: 'heading', heading: notCountedHeading(reachable.length > 0 && !pastStop, on) }, ...section);
 	}
 	if (entries.length === 0 && notCounted.length === 0) return null;

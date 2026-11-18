@@ -1,7 +1,7 @@
 /**
  * The bundled per-spec EP weights (copies of wowsims presets; each file names its
- * source) and the page's candidate pool. EP only prefilters candidates and fills
- * gems, so weights from another phase are disclosed, not wrong.
+ * source) and the page's candidate pool. EP only orders candidates and picks gems,
+ * so weights written for another phase are reported, not treated as wrong.
  */
 
 import type { PoolEntry } from '../engine/pool';
@@ -25,16 +25,17 @@ import warriorEpWeights from './warrior-fallback.ep-weights.json';
 export type EpWeightsSet = SpecId | 'hunter-sv' | 'warrior-arms';
 
 /**
- * The build whose set replaces the spec's on its page, marked by a talent tree with
- * strictly more points than each other, not by gear (so Arms - Kebab takes Arms).
- * Tree indexes follow the talents string: hunter BM, MM, SV; warrior Arms, Fury, Prot.
+ * The talent tree that switches a page to its second build's weights. Talents
+ * decide, not gear: the tree needs strictly more points than each other tree, so
+ * an Arms build with two one-handers still takes Arms. Tree indexes follow the
+ * talents string: hunter Beast Mastery, Marksmanship, Survival; warrior Arms, Fury,
+ * Protection.
  */
 const TALENT_VARIANT_BY_SPEC: Partial<Record<SpecId, { set: EpWeightsSet; tree: number }>> = {
 	hunter: { set: 'hunter-sv', tree: 2 },
 	warrior: { set: 'warrior-arms', tree: 0 },
 };
 
-/** The set a run on `spec`'s page takes, given the page's `player.getTalentTreePoints()`. */
 export function epWeightsSetFor(spec: SpecId, talentPointsByTree: readonly number[]): EpWeightsSet {
 	const variant = TALENT_VARIANT_BY_SPEC[spec];
 	if (!variant) return spec;
@@ -43,7 +44,6 @@ export function epWeightsSetFor(spec: SpecId, talentPointsByTree: readonly numbe
 	return leads ? variant.set : spec;
 }
 
-/** One EP-weights set per spec, and per talent variant. */
 // The files' shape is stated here, never derived from the JSON import.
 export type EpWeightsFile = {
 	weights: Record<string, number>;
@@ -70,10 +70,7 @@ const EP_WEIGHTS_BY_SET: Record<EpWeightsSet, EpWeightsFile> = {
 	'warrior-arms': warriorArmsEpWeights as EpWeightsFile,
 };
 
-/**
- * The phase each bundled EP set was written for; `undefined` when the preset names
- * none (elemental's "Default"), which is still disclosed, as an unphased default.
- */
+/** `undefined` where the preset names no phase (elemental's "Default"); a run still reports it. */
 const EP_WEIGHTS_PHASE_BY_SET: Record<EpWeightsSet, number | undefined> = {
 	ret: 2,
 	feral: 1,
@@ -91,9 +88,8 @@ const EP_WEIGHTS_PHASE_BY_SET: Record<EpWeightsSet, number | undefined> = {
 };
 
 /**
- * The EP-weights disclosure for `set`, or `undefined` when the weights match the
- * ranked phase. A mismatch degrades the shortlist but falsifies no DPS figure, so
- * it is disclosed, not blocked.
+ * A phase mismatch makes the candidate order worse but changes no DPS figure, so
+ * it is reported, not blocked.
  */
 export function epWeightsDisclosureFor(set: EpWeightsSet, maxPhase: ContentPhase): { from: string; requested: string } | undefined {
 	const phase = EP_WEIGHTS_PHASE_BY_SET[set];
@@ -107,28 +103,21 @@ export function epWeightsDisclosureFor(set: EpWeightsSet, maxPhase: ContentPhase
 /** A wowsims preset gear set as the page holds it (`individualConfig.presets.gear`). */
 export type PagePreset = { name: string; phase?: number; group?: string; gear: { items: readonly { id: number }[] } };
 
-/** The page parts the pool reads: its database and spec, and its spec's preset gear sets. */
 export type PagePoolHost = PoolHost & { individualConfig: { presets: { gear: readonly PagePreset[] } } };
 
-/** The page's candidate pool at `maxPhase` over `presets` (the page's `individualConfig.presets.gear`); empty until the sim's database has loaded. */
 export function poolFor(host: PoolHost, presets: readonly PagePreset[], maxPhase: ContentPhase): readonly PoolEntry[] {
 	if (!host.sim.db) return [];
 	return buildPool(host, presets.map(presetSetOf), maxPhase);
 }
 
-/** `twinIdsOf` over the page's database, for the settings' set matching; empty until the database has loaded. */
 export const twinIdsFor = (host: PoolHost): ReadonlyMap<number, readonly number[]> => (host.sim.db ? twinIdsOf(host.sim.db.getAllItems()) : new Map());
 
-/**
- * Where a run's pool came from and how many entries it has, for the
- * assumptions line; `undefined` for an empty pool, which is a phase with
- * nothing to rank rather than a ranking with no upgrades.
- */
+/** `undefined` for an empty pool: a phase with nothing to rank, not a ranking with no upgrades. */
 export function poolSourceFor(pool: readonly PoolEntry[]): { name: string; entries: number } | undefined {
 	return pool.length > 0 ? { name: 'wowsims db', entries: pool.length } : undefined;
 }
 
-/** Each preset with its phase as the pool reads it: declared, else its newest item's (`presetPhase`). */
+/** Gives each preset the phase the pool uses for it (`presetPhase`). */
 export function presetsWithPhase<P extends PagePreset>(host: PoolHost, presets: readonly P[]): P[] {
 	const itemPhaseOf = itemPhaseLookup(host);
 	return presets.map(preset => {
@@ -138,9 +127,8 @@ export function presetsWithPhase<P extends PagePreset>(host: PoolHost, presets: 
 }
 
 /**
- * The phase the pool's BiS tags speak for, or `undefined` when no preset is a BiS
- * set at or below `maxPhase`. It is earlier than `maxPhase` where the spec's
- * presets stop short, and the assumptions line then says so.
+ * The phase the pool's BiS tags come from. It is earlier than `maxPhase` where the
+ * spec's presets stop short, and the assumptions line then says so.
  */
 export function bisTagPhaseFor(
 	host: PoolHost,
@@ -151,17 +139,14 @@ export function bisTagPhaseFor(
 	return bis ? { tagsFromPhase: bis.phase, requestedPhase: maxPhase } : undefined;
 }
 
-/** How many pool entries have no recorded source. */
 export function unsourcedCountFor(pool: readonly PoolEntry[]): number {
 	return pool.filter(e => (e.sources ?? [e.source]).every(s => s.kind === 'unknown')).length;
 }
 
-/** A bundled set (`epWeightsSetFor`): its EP weights and its pseudo-stat weights. */
 export function epWeightsFileFor(set: EpWeightsSet): Readonly<EpWeightsFile> {
 	return EP_WEIGHTS_BY_SET[set];
 }
 
-/** The EP weights of a bundled set (`epWeightsSetFor`). */
 export function epWeightsFor(set: EpWeightsSet): Readonly<Record<string, number>> {
 	return EP_WEIGHTS_BY_SET[set].weights;
 }

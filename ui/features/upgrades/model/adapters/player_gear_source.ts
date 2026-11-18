@@ -1,7 +1,7 @@
 /**
- * GearSource over the page's current gear and talents, as one synthetic fight.
- * `Gear.getEquippedItems()` is `Object.values` over integer `ItemSlot` keys, which
- * iterate in `SIM_ORDER`'s order, so index `i` is `SIM_ORDER[i]`.
+ * GearSource over the page's current gear and talents. `Gear.getEquippedItems()`
+ * is `Object.values` over integer `ItemSlot` keys, which iterate in `SIM_ORDER`'s
+ * order, so index `i` is `SIM_ORDER[i]`.
  */
 
 import type { Spec } from '@generated/proto/common';
@@ -11,7 +11,7 @@ import type { FightSummary, GearSource, LoggedGear, LoggedItem } from '../engine
 import { SIM_ORDER } from '../engine/slots';
 import type { CharacterRef, FightRef, SpecId } from '../engine/types';
 
-/** The one synthetic fight this surface ever has: "current gear on this page". */
+/** The page has no logged fights, only its current gear, so this one stands for it. */
 export const CURRENT_PAGE_FIGHT: FightRef = {
 	reportCode: 'current-page',
 	fightId: 0,
@@ -25,7 +25,6 @@ const CURRENT_PAGE_FIGHT_SUMMARY: FightSummary = {
 	confidence: 1,
 };
 
-/** The item id in each `SIM_ORDER` slot of the page's gear, 0 for an empty slot. */
 export function equippedItemIds(player: IndividualSimHost<Spec>['player']): number[] {
 	const equipped = player.getGear().getEquippedItems();
 	return SIM_ORDER.map((_, i) => equipped[i]?.id ?? 0);
@@ -33,8 +32,8 @@ export function equippedItemIds(player: IndividualSimHost<Spec>['player']): numb
 
 export class PlayerGearSource implements GearSource {
 	/**
-	 * The ids the last `readGear` gave the engine. The ranking holds no gear, so
-	 * the tab keeps these to work out a row's own set breaks.
+	 * The ids the last `readGear` gave the engine. The ranking holds no gear, so the
+	 * tab keeps these to work out which set bonuses a row's swap breaks.
 	 */
 	lastItemIds: readonly number[] | undefined;
 

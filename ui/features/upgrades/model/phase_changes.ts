@@ -1,7 +1,7 @@
 /**
- * The page's phase changes once its saved settings load, which reset the tab to that phase's default sets whether
- * or not it is on screen. Free of the tab's code and data on purpose: the eager `UpgradesTabBody` starts the watch
- * at page start, and a page whose tab never opens must download neither.
+ * Watches the page's phase once its saved settings load, so a phase change resets the tab to that phase's default
+ * sets whether or not the tab is on screen. Free of the tab's code and data on purpose: `UpgradesTabBody` starts the
+ * watch at page start, and a page whose tab never opens must download neither.
  */
 
 import type { Spec } from '@generated/proto/common';

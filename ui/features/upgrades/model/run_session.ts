@@ -1,7 +1,7 @@
 /**
- * The tab's one run, outside React: the run in flight, the id that tells its
- * callbacks from a superseded run's, and the run context. It writes the run state to
- * the tab's store; the hook that owns it only creates it and disposes it on unmount.
+ * The tab's one run, kept outside React: the run in flight, the id that tells its
+ * callbacks from an older run's, and the `RunContext`. It writes run state to the
+ * store; the hook that owns it only creates it and disposes it on unmount.
  */
 
 import type { Spec } from '@generated/proto/common';
@@ -29,8 +29,8 @@ export type RunSessionEnv = {
 
 export type RunSession = {
 	/**
-	 * A click handler: a run starts only from the user's Run. The settings live with
-	 * the caller, so it passes the inputs signature (`run_inputs.ts`) and the sets picked.
+	 * A run starts only from the user's Run click. The settings live with the caller,
+	 * so it passes the inputs signature (`run_inputs.ts`) and the sets picked.
 	 */
 	start: (settings: RunSettings, inputsSignature: string, selectedSets: readonly SetOption[]) => void;
 	stop: () => void;
@@ -39,9 +39,8 @@ export type RunSession = {
 };
 
 /**
- * The page's gear and spec now, read at the click (the progress dialog blocks gear
- * edits until the run settles, so this is the gear the engine reads) or when a
- * fixture loads, which sets the page gear first.
+ * Read at the click: the progress dialog blocks gear edits until the run settles,
+ * so this is the gear the engine reads. A fixture sets the page gear before this.
  */
 const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string, selectedSets: readonly SetOption[]): MeasuredOn => ({
 	wornItemIds: equippedItemIds(host.player),
@@ -51,9 +50,8 @@ const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string, 
 });
 
 /**
- * The run's assumptions, for diagnosing a bad ranking, with the full text of each
- * notes-list reason the page cuts to one line and each failed call's error. Logged
- * once when a ranking arrives, never from a render.
+ * For diagnosing a bad ranking: the full text of each reason the page shortens to
+ * one line, and each failed call's error. Logged once per ranking, never from a render.
  */
 const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'cutoff' | 'substitutions'>, context: AssumptionsContext) => {
 	console.info(assumptionsLine(result, context));
@@ -70,14 +68,11 @@ const toastErrorMessage = (error: unknown) => {
 	if (errorMessage) toastManager.add({ variant: 'error', body: errorMessage });
 };
 
-/**
- * The run context is built on the first run that asks for it and kept for the
- * session's lifetime: the store inside it reuses sims across runs.
- */
+/** The `RunContext` is built on first use and kept for the session, as its cache reuses sims across runs. */
 export function createRunSession(store: UpgradesStore, host: IndividualSimHost<Spec>, runFn: RunFn, env: RunSessionEnv): RunSession {
 	let controller: AbortController | null = null;
 	// From the store, which outlives a session: a remount mid-run builds a new session, and the old run's late
-	// callbacks must still read as superseded.
+	// callbacks must still be ignored.
 	const stored = store.getState().run;
 	let runId = stored.status === 'idle' ? 0 : stored.runId;
 	let context: RunContext | null = null;
@@ -98,7 +93,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		}).then(
 			result => {
 				store.getState().settleRun(id, result);
-				// The store drops a superseded run's result, so it is not logged either.
+				// The store drops an older run's result, so it is not logged either.
 				if (id !== runId) return;
 				// The set the run says it ranked with; a replay names none, as it ranked nothing.
 				logAssumptions(result, { epWeightsSet: result.epWeightsSet, settings, host });
@@ -135,7 +130,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 	/**
 	 * Aborts the run and nothing more: StrictMode's dev remount runs this before the
 	 * first Run, so the session must stay usable, and the run id keeps counting so the
-	 * aborted run's callbacks still read as superseded.
+	 * aborted run's callbacks are still ignored.
 	 */
 	const dispose = () => {
 		controller?.abort();

@@ -20,10 +20,11 @@ export const UPGRADES_SETTINGS_STORAGE_KEY = '__upgradesSettings__';
 export const SAVED_VERSION = 2;
 
 /**
- * A phase change made while no tab store follows: the saved entry forgets its sets and their scope, as `changeScope`
- * would, so the tab applies the new phase's defaults when it next opens. Unlike `changeScope` it cannot drop an
- * exclusion the new pool does not offer, as that needs the tab's data; the store does that when it opens
- * (`dropUnofferedSources`). An entry missing, unreadable or of another version is left alone: it reads as nothing saved.
+ * A phase change made while no tab store follows: the saved entry forgets its sets and the `spec:phase` they were
+ * for, as `changeScope` would, so the tab applies the new phase's defaults when it next opens. Unlike `changeScope`
+ * it cannot drop an exclusion the new pool does not offer, as that needs the tab's data; the store does that when it
+ * opens (`dropUnofferedSources`). An entry missing, unreadable or of another version is left alone, as it reads back
+ * as nothing saved.
  */
 export function forgetSavedSets(storage: Env['storage'], key: string): void {
 	try {

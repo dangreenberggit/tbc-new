@@ -1,7 +1,8 @@
 /**
  * The candidate order's item score: `Player.computeItemEP`'s `calcStats(slot)` and
  * `computeEP` (`ui/sim/player/player.ts`), but with the tab's bundled weights, not
- * the page's. `calcStats(slot)` adds weapon DPS as a pseudo-stat `pseudoWeights` price.
+ * the page's. `calcStats(slot)` counts weapon DPS as a pseudo-stat, which
+ * `pseudoWeights` prices.
  */
 
 import type { UIItem } from '@generated/proto/ui';

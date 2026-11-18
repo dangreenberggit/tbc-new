@@ -16,9 +16,8 @@ export const SHOPPING_LIST_TAB = 'shopping-list';
 export type ResultsTabId = typeof SHOPPING_LIST_TAB | SimSlotName;
 
 /**
- * `slotChoice` is set on every weapon row and wherever a pool slot maps to
- * two sim slots. Casting `row.slot` instead is unsound: `weapon`, `finger`
- * and `trinket` are pool slots, not sim slots.
+ * Do not cast `row.slot`: `weapon`, `finger` and `trinket` each cover two sim
+ * slots, and `slotChoice` says which one the row is for.
  */
 export const effectiveSlot = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): SimSlotName => row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0]!;
 
@@ -26,9 +25,9 @@ export const effectiveSlot = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): Sim
 export const rowKey = (row: Pick<RankedItem, 'itemId' | 'slot'>): string => `${row.itemId}:${row.slot}`;
 
 /**
- * A view as the results area renders it. `tabSlots` keeps the slots from before a
- * display filter, so a filter never removes a pane. The source-cut fields record
- * what "Filter by source" removed, for `paneRows`' empty text.
+ * `tabSlots` keeps the slots from before a display filter, so a filter never
+ * removes a pane. The `...BeforeSourceCut` fields let `paneRows` tell when
+ * "Filter by source" emptied a pane.
  */
 export type ResultsViewResult = ViewResult & {
 	tabSlots?: readonly SimSlotName[];
@@ -37,11 +36,7 @@ export type ResultsViewResult = ViewResult & {
 	panesWithMainBeforeSourceCut?: readonly ResultsTabId[];
 };
 
-/**
- * The slot tabs: every slot with a row, in sim order, counted by its above-cutoff
- * rows. A slot with none, or one a display filter emptied, keeps its tab at 0 so
- * the user can open it and see why.
- */
+/** A slot with no row above the cutoff keeps its tab at 0, so the user can open it and see why it is empty. */
 export function slotTabs(view: ResultsViewResult): Array<{ id: SimSlotName; count: number }> {
 	const counts = new Map<SimSlotName, number>(view.tabSlots?.map(slot => [slot, 0]));
 	for (const row of view.rows) {
@@ -57,7 +52,6 @@ export function slotTabs(view: ResultsViewResult): Array<{ id: SimSlotName; coun
 /** On some phase's BiS list: a BiS or an Alt tag. */
 const onBisList = (row: Pick<RankedItem, 'bisTags'>): boolean => row.bisTags.length > 0;
 
-/** A row a pane's main table shows: one that meets the cutoff, or a BiS-list row that misses it and is not owned (`paneRows`). */
 const inMainTable = (row: ViewRow): boolean => !row.belowCutoffInView || (!row.owned && onBisList(row));
 
 export type PaneRows = {
@@ -67,15 +61,14 @@ export type PaneRows = {
 	emptyReason: PaneEmptyReason;
 };
 
-/** What a pane says when it shows no row: beside a below-cutoff group with rows, any such text would be false (`paneRows`). */
+/** The text of an empty pane. It shows only when the below-cutoff group is empty too, as next to rows it would be false. */
 export type PaneEmptyReason = 'no-source-row' | 'no-upgrades';
 
 /**
- * One pane's rows. The main table holds the rows that meet the cutoff plus the
- * BiS-list rows that miss it (`notUpgrades`); owned rows that miss it are dropped,
- * as a re-simmed owned item's delta is about 0 by construction. `emptyReason` is
- * `no-source-row` only when "Filter by source" emptied the pane. No reason says a
- * slot has no BiS-list item: the run cuts candidates before the sim.
+ * The main table also shows BiS-list rows below the cutoff, listed in
+ * `notUpgrades`. Owned rows below the cutoff are dropped: the player already
+ * wears the item, so its gain is about 0. There is no empty text for "no BiS-list
+ * item", because the run may have left such an item out before simming.
  */
 export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 	const rows = tab === SHOPPING_LIST_TAB ? view.rows : view.rows.filter(row => effectiveSlot(row) === tab);
@@ -93,46 +86,32 @@ export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 	};
 }
 
-/** The rows a running table shows: only measured rows, best first. */
 export const landedRows = (rows: readonly RankedItem[]): RankedItem[] => rows.filter(row => row.simmed !== false).sort((a, b) => b.deltaDps - a.deltaDps);
 
-/**
- * A stopped run's rows as a view. `applyView` takes only a complete ranking
- * (`Ranking.complete`), so a partial lists its simmed rows in engine order, split
- * on the engine's own cutoff verdict.
- */
+/** `applyView` takes only a complete ranking, so a stopped run builds its view here. */
 export function stoppedView(result: StoppedRanking): ViewResult {
 	const rows: ViewRow[] = result.items.filter(row => row.simmed !== false).map(row => ({ ...row, belowCutoffInView: row.belowCutoff }));
 	const shortlist = rows.filter(row => !row.belowCutoffInView);
 	return { rows, shortlist, belowCutoffCount: rows.length - shortlist.length, pinBisAvailable: false };
 }
 
-/** A finished run's view toggles. They reshape a measured ranking, so they are not run settings and never mark a result stale. */
+/** These only reshape a measured ranking, so changing one never marks a result stale. */
 export type ViewToggles = { withSetPotential: boolean; onlyBis: boolean };
 
 export const NO_VIEW_TOGGLES: ViewToggles = { withSetPotential: false, onlyBis: false };
 
-/** Whether BiS only has anything to keep. */
 export const hasBisRows = (ranking: Pick<Ranking, 'items'>): boolean => ranking.items.some(onBisList);
 
-/**
- * The toggles the tab shows for `run`: both on a finished run only, and BiS
- * only only when some row is on a BiS list.
- */
 export const offeredToggles = (run: RunState): ViewToggles =>
 	run.status === 'done' ? { withSetPotential: true, onlyBis: hasBisRows(run.result) } : NO_VIEW_TOGGLES;
 
-/** The toggles that act, given the ones offered: one the tab does not show changes nothing, so a hidden control never filters rows. */
+/** A toggle the tab does not show changes nothing, so a hidden control never filters rows. */
 export const appliedToggles = (offered: ViewToggles, toggles: ViewToggles): ViewToggles => ({
 	withSetPotential: offered.withSetPotential && toggles.withSetPotential,
 	onlyBis: offered.onlyBis && toggles.onlyBis,
 });
 
-/**
- * A view cut to its BiS-list rows. Each row's cutoff verdict depends on that
- * row alone, so dropping rows changes only the count below the cutoff. Every
- * slot of the whole view keeps its tab.
- */
+/** Whether a row meets the cutoff depends on that row alone, so dropping rows only changes the below-cutoff count. */
 function bisOnlyView(view: ViewResult): ResultsViewResult {
 	const rows = view.rows.filter(onBisList);
 	const shortlist = view.shortlist.filter(onBisList);
@@ -140,35 +119,24 @@ function bisOnlyView(view: ViewResult): ResultsViewResult {
 	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length, tabSlots };
 }
 
-/**
- * The sources "Filter by source" lists: `sourceOptions` of the view's rows before
- * the source cut, keyed and counted as the pre-run Sources dialog does.
- */
+/** Built by `sourceOptions`, so "Filter by source" uses the same keys and counts as the pre-run Sources dialog. */
 export type ViewSourceOptions = { raids: SourceOption[]; other: SourceOption[] };
 
-/** The keys of the sources a view offers, raids first. */
 export const offeredSourceKeys = (options: ViewSourceOptions): string[] => [...options.raids, ...options.other].map(option => option.key);
 
-/** The hidden sources that act on a view offering `options`: a hidden source the view does not offer hides nothing there. */
 export const offeredHidden = (options: ViewSourceOptions, hidden: readonly string[]): string[] =>
 	offeredSourceKeys(options).filter(key => hidden.includes(key));
 
-/** The hidden sources with `key` hidden if it was shown, and shown if it was hidden. */
 export const withViewSourceToggled = (hidden: readonly string[], key: string): string[] =>
 	hidden.includes(key) ? hidden.filter(k => k !== key) : [...hidden, key];
 
 /**
- * The hidden sources after Hide all: every source the view offers now. A
- * hidden source the view does not offer stays hidden; one that only a later
- * run offers is shown then until the user hides it.
+ * Hide all keeps hidden the sources this view does not offer. A source that only
+ * a later run offers is shown until the user hides it.
  */
 export const withOfferedSourcesHidden = (hidden: readonly string[], offered: readonly string[]): string[] => [...new Set([...hidden, ...offered])];
 
-/**
- * A view cut to the rows of the sources not in `hidden`. A row stays while any
- * source key it matches is shown, so an item from two raids stays while either is.
- * As with `bisOnlyView`, only the below-cutoff count changes and every slot keeps its tab.
- */
+/** A row stays while any of its sources is shown, so an item from two raids stays while either is. */
 export function sourcesView(view: ResultsViewResult, hidden: readonly string[]): ResultsViewResult {
 	const acting = offeredHidden(sourceOptions(view.rows), hidden);
 	const kept = (row: ViewRow) => sourceKeysMatching(row).some(key => !acting.includes(key));
@@ -191,11 +159,7 @@ export function sourcesView(view: ResultsViewResult, hidden: readonly string[]):
 	};
 }
 
-/**
- * The view a settled run renders under `applied` (from `appliedToggles`),
- * before "Filter by source" cuts it (`sourcesView`); nothing before a run
- * settles.
- */
+/** Takes the toggles from `appliedToggles`. "Filter by source" applies after this, in `sourcesView`. */
 export function resultsViewFor(run: RunState, { withSetPotential, onlyBis }: ViewToggles): ResultsViewResult | undefined {
 	switch (run.status) {
 		case 'done': {
@@ -210,9 +174,9 @@ export function resultsViewFor(run: RunState, { withSetPotential, onlyBis }: Vie
 }
 
 /**
- * What the ΔDPS column sorts on: with Set potential, the same ΔDPS plus set
- * credit `applyView` ranked on (`view.ts` `sortKeyFor`), so a column sort
- * cannot disagree with the view's own order; else the bare ΔDPS (undefined).
+ * With Set potential on, the ΔDPS column sorts on the same value the view ranked
+ * by (`sortKeyFor` in `view.ts`), so a column sort cannot disagree with the view's
+ * own order.
  */
 export function dpsSortKeyFor(ranking: Pick<Ranking, 'cutoff'> | undefined, withSetPotential: boolean): DpsSortKey | undefined {
 	if (!ranking || !withSetPotential) return undefined;

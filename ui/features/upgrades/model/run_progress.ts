@@ -1,10 +1,10 @@
 /**
- * What the progress component shows while a run is in flight. The engine sends no
- * phase, so it comes from the `Progress` event order (`rank.ts`): pre-sim stages,
- * one `simming` for the baseline and each candidate, a silent set phase not in
- * `total`, `ranking`, a `simming` repeating `done` with the exact total, then one per
- * replication sim. Only the candidate count solved from the first `total`
- * (`replicationBoundary`) tells the last candidate from the set phase.
+ * What the progress dialog shows while a run is in flight. The engine sends no
+ * phase, so it is read from the order of `Progress` events (`rank.ts`): setup
+ * stages, a `simming` event for the baseline and each candidate, a set-bonus stage
+ * that sends nothing and is not in `total`, `ranking`, then the replication sims.
+ * Only the candidate count, which `replicationBoundary` solves from the first
+ * `total`, tells the last candidate from the set-bonus stage.
  */
 
 import type { Progress } from './engine/rank';
@@ -21,32 +21,31 @@ export type RunPhase = 'preparing' | 'candidates' | 'set-bonuses' | 'replication
 export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; kappa: number; psi: number; slowdown: number };
 
 /**
- * The estimator and when to show it. Fitted on one recorded feral run (364
- * candidates, concurrency 4), where later candidates slowed, likely from render
- * work per landed row: refit `slowdown`, `kappa` and `psi` when that cost changes.
+ * Fitted on one recorded feral run (364 candidates, concurrency 4). Later
+ * candidates slowed there, likely from rendering each new row, so refit
+ * `slowdown`, `kappa` and `psi` when that cost changes.
  */
 export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', kappa: 0.3221, psi: 50.993, slowdown: 0.003064 };
 export const RUN_PROGRESS_SHOW_FROM_FRACTION = 0.35;
 export const RUN_PROGRESS_MIN_CANDIDATES_DONE = 10;
 
 /**
- * The `done` of the last candidate's `simming` event: `1 + c`, for the
- * candidate count c with `total = 1 + c + (seedCount - 1)(1 + min(topN, c))`
- * (`rank.ts`, `totalSims`). `null` when no whole c gives `total`.
+ * The `done` of the last candidate, solved from `totalSims` in `rank.ts`:
+ * `total = 1 + candidates + (seedCount - 1) * (1 + min(topN, candidates))`.
+ * `null` when no whole candidate count fits.
  */
 export function replicationBoundary(total: number, seedCount: number, topN: number): number | null {
 	if (seedCount <= 1) return total;
 	const extra = seedCount - 1;
-	// c <= topN: total = seedCount * (1 + c).
+	// At most topN candidates: total = seedCount * (1 + candidates).
 	const small = (total - seedCount) / seedCount;
 	if (Number.isInteger(small) && small >= 0 && small <= topN) return 1 + small;
-	// c > topN: total = 1 + c + extra * (1 + topN).
+	// More than topN: total = 1 + candidates + extra * (1 + topN).
 	const large = total - 1 - extra * (1 + topN);
 	if (Number.isInteger(large) && large > topN) return 1 + large;
 	return null;
 }
 
-/** Elapsed time as `12.3s` under a minute, else as `2m 5s`. */
 export function formatElapsed(ms: number): string {
 	const elapsed = ms / 1000;
 	if (elapsed < 60) return `${elapsed.toFixed(1)}s`;
@@ -55,16 +54,12 @@ export function formatElapsed(ms: number): string {
 
 /** Everything a run has said so far, with times in ms since Run. */
 export type RunTimeline = {
-	/** Every `simming` event, in order. */
 	readonly sims: ReadonlyArray<{ readonly t: number; readonly done: number; readonly afterRanking: boolean }>;
-	/** The `ranking` event's time; undefined before it. */
 	readonly rankingAt: number | undefined;
 	readonly total: number;
 	/** The last candidate's `done`; null when unknown or contradicted. */
 	readonly boundary: number | null;
-	/** Candidate sims in flight at once (`sim.concurrency`). */
 	readonly concurrency: number;
-	/** The time of the event the estimate is made at. */
 	readonly now: number;
 	/** Rows received before `ranking` that replication can re-sim. */
 	readonly qualifyingRows: number;
@@ -77,10 +72,10 @@ export type RunTimeline = {
 };
 
 /**
- * The `done` the run ends on: `finalTotal` once sent, else a projection from the
- * rows that cleared the cutoff (at most `topN`, scaled up to the pool before the
- * last candidate), as the first `total` is only an upper bound. Falls back to
- * `total` when the boundary is unknown or an event passes the projection.
+ * The `done` the run ends on. The first `total` is only an upper bound, so until
+ * `finalTotal` arrives this projects replication from the rows that cleared the
+ * cutoff so far, scaled up to the whole pool. Falls back to `total` when the
+ * projection is unknown or a later event passes it.
  */
 export function expectedFinalDone(run: RunTimeline): number {
 	if (run.finalTotal !== undefined) return run.finalTotal;
@@ -100,10 +95,11 @@ export function expectedFinalDone(run: RunTimeline): number {
 }
 
 /**
- * The time left, in ms, at the latest event; undefined when the run has not said
- * enough. Linear: time per counted sim times the sims left. Phased: in
- * candidate-times, the set phase costs psi and each serial replication sim
- * kappa * concurrency, and the i-th candidate costs a * (1 + slowdown * i).
+ * The time left, in ms; undefined until the run has said enough. `linear` scales
+ * the time per sim so far. `phased` assumes candidates run `concurrency` at a
+ * time, each a little slower than the last (`slowdown`); the set-bonus stage takes
+ * `psi` candidates' time; each replication sim runs alone and takes
+ * `kappa * concurrency`.
  */
 export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): number | undefined {
 	const first = run.sims[0];
@@ -168,7 +164,7 @@ export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): 
 
 export type RunProgressView = {
 	phase: RunPhase;
-	/** The last stage event's `stage`; the preparing label reads it. */
+	/** The label shown while preparing reads it. */
 	stage: Exclude<Progress, { kind: 'row' }>['stage'];
 	done?: number;
 	total?: number;
@@ -187,9 +183,8 @@ type TrackerOptions = {
 };
 
 /**
- * Follows one run's `Progress` events. The estimate is recomputed at `simming` and
- * `ranking` events and at a row that adds to the qualifying count (timed at the
- * last `simming` event), and held in between, as the Bulk tab's is.
+ * The estimate is recomputed at `simming` and `ranking` events and at a row that
+ * replication can re-sim, and held in between, as the Bulk tab's is.
  */
 export class RunProgressTracker {
 	private readonly options: Required<TrackerOptions>;
@@ -281,7 +276,7 @@ export class RunProgressTracker {
 			this.phase = this.stopped || done >= expectedFinalDone(this.timeline(nowMs)!) ? 'ranking' : 'replication';
 			return;
 		}
-		// The seed-count mirror is wrong for this run: stop naming a set phase.
+		// The seed count does not match this run, so the set-bonus stage cannot be told apart.
 		if (this.boundary !== null && done > this.boundary) this.boundary = null;
 		this.phase = this.boundary !== null && done === this.boundary ? 'set-bonuses' : 'candidates';
 	}

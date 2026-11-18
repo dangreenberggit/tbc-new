@@ -17,10 +17,10 @@ export type LiveInputsSource = {
 };
 
 /**
- * Every player slice a run reads (gear, talents, rotation, consumables, buffs),
- * the raid, the encounter and the phase. The export form on purpose: the
- * simming form embeds the worn gear's item database and regenerates the
- * rotation, and this runs on every store notification.
+ * Every player setting a run reads (gear, talents, rotation, consumables, buffs),
+ * the raid, the encounter and the phase. `toProto(true)` on purpose: without it the
+ * proto embeds the worn gear's item database and rebuilds the rotation, and this
+ * runs on every store notification.
  */
 export const liveInputsKey = (sim: LiveInputsSource): string =>
 	JSON.stringify({

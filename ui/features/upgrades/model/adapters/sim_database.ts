@@ -17,16 +17,14 @@ import type { RaidSimRequest } from '../engine/seams/sim-runner';
 import type { SimItemSpec } from '../engine/slots';
 
 /**
- * Builds the resolver `rankUpgrades` calls for every composed request
- * (`Deps.simDatabaseFor`), returning protojson the engine never inspects. It closes
- * over the page's `Player` and the run's skeleton, as the engine passes only the
- * equipment.
+ * `rankUpgrades` calls this for every request it builds (`Deps.simDatabaseFor`) and
+ * passes only the equipment, so it holds on to the page's `Player` and `skeleton`.
  */
 export function simDatabaseResolverFor(
 	player: Player<any>,
 	skeleton: RaidSimRequest,
 ): (equipment: readonly SimItemSpec[]) => Readonly<Record<string, unknown>> | undefined {
-	// The seam keeps the request opaque, so the path to the player is typed here.
+	// The engine treats the request as opaque, so the path to the player is typed here.
 	const skeletonPlayer = (skeleton as { raid?: { parties?: Array<{ players?: Array<{ database?: unknown }> }> } }).raid?.parties?.[0]?.players?.[0];
 	const skeletonDb = SimDatabase.fromJson((skeletonPlayer?.database ?? {}) as Record<string, never>, { ignoreUnknownFields: true });
 	// A skeleton with no player database gives empty rows, which is what the

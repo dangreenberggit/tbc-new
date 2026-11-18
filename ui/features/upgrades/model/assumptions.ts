@@ -10,11 +10,11 @@ import type { Ranking } from './engine/rank';
 import type { RunSettings } from './run_state';
 
 export type AssumptionsContext = {
-	/** The EP-weights set the run took (`epWeightsSetFor`); absent for a replay or a loaded fixture, the EP-weights lines are left out. */
+	/** Absent for a replay or a loaded fixture, which leaves out the EP-weights lines. */
 	epWeightsSet?: EpWeightsSet;
-	/** The settings the run used; absent for a loaded fixture, whose run settings are not recorded. */
+	/** Absent for a loaded fixture, which does not record its run settings. */
 	settings?: RunSettings;
-	/** The page the run drew its pool from; absent, or before its database has loaded, the lines about the pool are left out. */
+	/** Without it, or before the page's database loads, the pool lines are left out. */
 	host?: PagePoolHost;
 };
 
@@ -48,7 +48,7 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
 
 /**
  * A sim crash's substitution carries the whole Go stack trace, whose first line
- * says what went wrong. Its breaks arrive as real newlines and as written-out
+ * says what went wrong. Its line breaks arrive as real newlines and as written-out
  * backslash-n pairs, because the sim's error object is stringified into the detail.
  */
 export function substitutionFirstLine(detail: string): { line: string; truncated: boolean } {

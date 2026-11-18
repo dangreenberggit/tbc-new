@@ -57,9 +57,9 @@ export function withCandidateCap(state: SettingsState, cap: number | undefined):
 export const withIterations = (state: SettingsState, iterations: number): SettingsState => (state.iterations === iterations ? state : { ...state, iterations });
 
 /**
- * The settings the tab shows and runs with: the stored state with the scope's default sets applied. Pure, so render
- * can compute it; the settings actions apply it before the user's change, so the stored state matches what was
- * shown. Returns the given state once the defaults are stored, or when there is no scope.
+ * The settings the tab shows and runs with: the stored state with the default sets for `scope` applied. Pure, so
+ * render can compute it; the settings actions apply it before the user's change, so the stored state matches what
+ * was shown. Returns the given state once the defaults are stored, or when there is no `scope`.
  */
 export function appliedSettings(state: SettingsState, scope: SettingsScope | undefined): SettingsState {
 	// Once per spec:phase, so a set the user deselects stays deselected through the re-renders a gear change causes.

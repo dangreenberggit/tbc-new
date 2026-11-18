@@ -1,7 +1,7 @@
 /**
  * The candidate pool, built at run time from wowsims' item database and the spec's
- * presets. `pool_source.cells.fixture.json` pins the per-cell sizes; its `_comment`
- * says how to re-pin them.
+ * presets, so no item list is bundled. `pool_source.cells.fixture.json` pins the
+ * pool size for each spec and phase.
  */
 
 import { ItemQuality, ItemType, type Spec } from '@generated/proto/common';
@@ -23,19 +23,15 @@ import type { ItemSlot, ItemSource, PoolEntry } from './engine/pool';
  */
 export type HeroicFiveManPolicy = 'exclude' | 'include' | 'include-unticked';
 
-/** Heroic five-man drops are in the pool, with their Sources entry unticked. */
 export const HEROIC_FIVE_MAN: HeroicFiveManPolicy = 'include-unticked';
 
-/**
- * A preset gear set as the pool reads it: its name, its declared phase if any, its wowsims `group` if any (hunter's
- * Beast Mastery/Survival, warrior's Fury/Arms, which reuse a name within a phase), and its item ids.
- */
+/** `group` tells apart presets that reuse a name within a phase, such as hunter's Beast Mastery and Survival. */
 export type PresetSet = { name: string; phase?: number; group?: string; itemIds: readonly number[] };
 
 /**
- * The floor every non-preset candidate meets: epic or better, and item level 100
- * or more unless wowsims records an effect for it. It bounds run cost, since the
- * tab sims every candidate.
+ * The minimum every non-preset candidate meets: epic or better, and item level 100
+ * or more unless wowsims records an effect for it. It bounds run time, as the tab
+ * sims every candidate.
  */
 const MIN_QUALITY = ItemQuality.ItemQualityEpic;
 const MIN_ILVL = 100;
@@ -62,7 +58,7 @@ export const poolSlotOf = (item: Pick<UIItem, 'type'>): ItemSlot | undefined => 
 /** An item's phase, or undefined where db.json leaves `phase` out (the proto then reads 0). */
 const knownPhase = (item: Pick<UIItem, 'phase'>): number | undefined => item.phase || undefined;
 
-/** For the floor: an item with no phase is in no phase, so it never meets one. */
+/** For the minimum above: an item with no phase never meets a phase limit. */
 const phaseOf = (item: Pick<UIItem, 'phase'>): number => knownPhase(item) ?? Infinity;
 
 /** The base item level, as the gear picker and db.json's `scalingOptions` key 0 give it. */
@@ -76,15 +72,13 @@ export const ilvlOf = (item: Pick<UIItem, 'scalingOptions' | 'ilvl'>): number =>
 export const hasEffectRecord = (item: Pick<UIItem, 'id' | 'itemEffects'>, missingIds: ReadonlySet<number>): boolean =>
 	item.itemEffects.length > 0 && !missingIds.has(item.id);
 
-/** Every source is a heroic five-man drop outside Magisters' Terrace. An item with no sources is not. */
 export function isHeroicFiveManOnly(item: Pick<UIItem, 'sources'>): boolean {
 	return item.sources.length > 0 && item.sources.every(s => s.source.oneofKind === 'drop' && isHeroicFiveManDrop(s.source.drop));
 }
 
 /**
- * A preset's phase: its declared `phase`, else the highest phase among its
- * items that the database knows. A set with no known item has no phase and is
- * never a phase's set.
+ * Its declared `phase`, else the highest known phase among its items. A set with
+ * no known item has no phase, so it is never a phase's BiS set.
  */
 export function presetPhase(preset: Pick<PresetSet, 'phase' | 'itemIds'>, itemPhaseOf: (id: number) => number | undefined): number | undefined {
 	if (preset.phase !== undefined) return preset.phase;
@@ -93,10 +87,9 @@ export function presetPhase(preset: Pick<PresetSet, 'phase' | 'itemIds'>, itemPh
 }
 
 /**
- * The BiS sets at `maxPhase`: every preset whose phase is the newest preset
- * phase at or below `maxPhase`, with that phase. wowsims' `PresetGear` has no
- * BiS field, and a pre-raid or alternative set ("Bulwark", "Alt 6%") counts like
- * any other preset, so no preset is told apart by its name.
+ * The BiS sets are every preset of the newest preset phase at or below `maxPhase`.
+ * wowsims' `PresetGear` has no BiS field, and an alternative set ("Bulwark",
+ * "Alt 6%") counts like any other, so names are not checked.
  */
 export function bisSetsFor(
 	presets: readonly PresetSet[],
@@ -112,9 +105,9 @@ export function bisSetsFor(
 }
 
 /**
- * The pool for one spec at `maxPhase`: every item the spec can equip in a pool slot
- * that meets the floor or is in a preset of that phase or earlier, less Kael's
- * temporary legendaries, items missing an effect and, per `policy`, heroic five-mans.
+ * Every item the spec can equip that meets the minimum or is in a preset of
+ * `maxPhase` or earlier, less Kael's temporary legendaries, items wowsims lists as
+ * missing an effect and, per `policy`, heroic five-man drops.
  */
 export function selectPool(
 	items: readonly UIItem[],
@@ -161,10 +154,9 @@ export function selectPool(
 	return offerTwinsOnce(pool, byId, wornIds);
 }
 
-/** db.json describes `a` and `b` the same in every field but the id. */
 const sameButId = (a: UIItem, b: UIItem): boolean => UIItem.equals(a, { ...b, id: a.id });
 
-/** `entries` grouped by `sameButId` over their items, groups in first-seen order. Equal records share a name, so only same-name entries are compared. */
+/** Equal records share a name, so only entries with the same name are compared. */
 function groupTwins<T>(entries: readonly T[], itemOf: (entry: T) => UIItem): T[][] {
 	const groups: T[][] = [];
 	const groupsByName = new Map<string, T[][]>();
@@ -184,9 +176,9 @@ function groupTwins<T>(entries: readonly T[], itemOf: (entry: T) => UIItem): T[]
 }
 
 /**
- * One entry per group of items db.json describes the same but the id (Sergeant's
- * Heavy Cape 28378 and 28379), which would show as identical rows. It keeps the
- * worn id, else one a preset holds, else the lowest, with every member's tags.
+ * Items db.json describes exactly alike except the id (Sergeant's Heavy Cape 28378
+ * and 28379) would show as identical rows, so each group is offered once. It keeps
+ * the worn id, else one a preset holds, else the lowest, with every member's tags.
  */
 function offerTwinsOnce(pool: readonly PoolEntry[], byId: ReadonlyMap<number, UIItem>, wornIds: ReadonlySet<number>): PoolEntry[] {
 	const groups = groupTwins(pool, entry => byId.get(entry.itemId)!);
@@ -194,9 +186,8 @@ function offerTwinsOnce(pool: readonly PoolEntry[], byId: ReadonlyMap<number, UI
 }
 
 /**
- * Each id `offerTwinsOnce` would group, with every id of its group. The pool offers
- * one of them, so the settings match set items through this (`settings_pool.ts`)
- * and a set naming another id still holds the item.
+ * The pool offers one id per group (`offerTwinsOnce`), so the settings match set
+ * items through this map and a set naming another id still holds the item.
  */
 export function twinIdsOf(items: readonly UIItem[]): ReadonlyMap<number, readonly number[]> {
 	const twins = new Map<number, readonly number[]>();
@@ -229,7 +220,6 @@ const missingIds = (): ReadonlySet<number> => (missingIdsCache ??= new Set(MISSI
 let exchangeCache: ExchangeIndex | undefined;
 const exchange = () => (exchangeCache ??= indexExchange(tierExchange as TierExchange));
 
-/** A wowsims preset as the page holds it, read down to what the pool needs. */
 export const presetSetOf = ({
 	name,
 	phase,
@@ -249,7 +239,7 @@ export const presetSetOf = ({
 
 export type PoolHost = Pick<IndividualSimHost<Spec>, 'player' | 'sim'>;
 
-/** The phase of an item as the page's database gives it, for `presetPhase`; undefined before the database has loaded. */
+/** Undefined before the database has loaded. */
 export const itemPhaseLookup =
 	(host: PoolHost) =>
 	(id: number): number | undefined => {
@@ -257,7 +247,7 @@ export const itemPhaseLookup =
 		return item === undefined ? undefined : knownPhase(item);
 	};
 
-/** The page's pool: its database, its spec's equip rule and its presets. Empty until the sim's database has loaded. */
+/** Empty until the sim's database has loaded. */
 export function buildPool(host: PoolHost, presets: readonly PresetSet[], maxPhase: number): PoolEntry[] {
 	const db = host.sim.db;
 	if (!db) return [];
