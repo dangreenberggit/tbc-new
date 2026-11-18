@@ -14,11 +14,10 @@ export interface DeltaCellProps {
 }
 
 /**
- * The DPS change, with at most two short notes under it: that the row has set-bonus detail, and
- * which worn item a two-item swap removes. A figure with set-bonus detail opens the popover that
- * itemises it. The figure is the one the column sorts on, so with Set potential it is ΔDPS plus the
- * set credit, the popover's total. A figure below the cutoff bar never rounds up to read as the bar.
- * Memoised: see `ResultRow`.
+ * The DPS change, with up to two notes under it: that the row has set-bonus detail (the figure then
+ * opens the popover itemising it), and which worn item a two-item swap removes. The figure is what
+ * the column sorts on, so with Set potential it is ΔDPS plus the set credit. A figure below the
+ * cutoff bar never rounds up to the bar. Memoised: see `ResultRow`.
  */
 export const DeltaCell = memo(({ row, context }: DeltaCellProps) => {
 	const tip = setBonusTipLines(row, context.tip);

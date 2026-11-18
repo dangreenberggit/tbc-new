@@ -6,10 +6,9 @@ import { FIXTURE_NOT_JSON, type FixtureLoadResult } from '../../utils/fixture';
 import { fixtureOutcomeText } from '../../utils/format';
 
 /**
- * Loads a recorded fixture file from disk, for a developer with a file the
- * dev server does not serve. It hands the file to the page's own fixture
- * hook (`useFixtureAutoload`), so a file and a `?upgrades-fixture` link take
- * one path and get the same staleness signature.
+ * Loads a recorded fixture file from disk, for a file the dev server does not
+ * serve. It goes through the page's fixture hook (`useFixtureAutoload`), so a file
+ * and a `?upgrades-fixture` link take one path and get the same staleness signature.
  */
 export const FixtureFileInput = () => {
 	const inputId = useId();

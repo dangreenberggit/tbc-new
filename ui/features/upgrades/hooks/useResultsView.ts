@@ -37,10 +37,9 @@ export type ResultsView = {
 };
 
 /**
- * What the results area renders from a run: the view a settled run shows
- * under the view toggles, and the context its rows share. The toggles are
- * view state of the area: they reshape a ranking already measured and are not
- * run settings. They live in the tab store, which saves them with the settings.
+ * What the results area renders from a run: the view a settled run shows under the
+ * view toggles, and the context its rows share. The toggles reshape a ranking
+ * already measured, not the run; the tab store saves them with the settings.
  */
 export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) => readonly string[]): ResultsView {
 	const { sim } = useSimHost();
@@ -54,8 +53,7 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 	const ranking = run.status === 'done' || run.status === 'stopped' ? run.result : undefined;
 	const measuredOn = run.status === 'running' || run.status === 'done' || run.status === 'stopped' ? run.measuredOn : undefined;
 	// The sets the run was ranked with, not the sets selected now: a phase change after the run selects the new
-	// phase's sets. Memoised on them alone, so a row's tags keep their identity and its memoised name
-	// cell holds.
+	// phase's sets. Memoised on them alone, so a row's tags keep their identity and its memoised name cell holds.
 	const rankedSets = measuredOn?.selectedSets ?? NO_SETS;
 	const tagsOf = useMemo(() => rowTagIndex(rankedSets), [rankedSets]);
 	// Memoised for the same rows: `applyView` builds new row objects on every call. The source cut runs on this view

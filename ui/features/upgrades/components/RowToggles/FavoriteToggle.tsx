@@ -6,11 +6,10 @@ import clsx from 'clsx';
 import { useStore } from 'zustand';
 
 /**
- * The gear picker's favourite star for one result row: it writes the sim's
- * own favourites, so the item is starred in the picker too. It subscribes on
- * its own, so a memoised row does not render again when favourites change.
- * Read through zustand, not `useStoreSubscribe`: the answer is keyed by a
- * prop, which that hook answers one notification late (its own comment).
+ * The gear picker's favourite star for one result row, writing the sim's own
+ * favourites. It subscribes on its own, so a memoised row does not render again
+ * when favourites change, and through zustand, not `useStoreSubscribe`, which
+ * answers a prop-keyed read one notification late.
  */
 export const FavoriteToggle = ({ itemId }: { itemId: number }) => {
 	const { sim } = useSimHost();

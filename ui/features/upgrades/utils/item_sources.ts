@@ -1,10 +1,8 @@
 /**
- * A candidate's sources from the item's `sources` in db.json, named through
- * `sim.db.getZone`/`getNpc` and the name tables, plus `isPVPItem` and one
- * exchange file (`model/data/tier-exchange.json`: tier piece to token, Sunmote
- * upgrade to base item), because db.json states no token or Sunmote exchange.
- * `ItemSource` builds its text inside JSX and exports no helper, so the tab
- * names the facts itself.
+ * A candidate's sources from its db.json `sources`, named through `sim.db` and the
+ * name tables, plus `isPVPItem` and `model/data/tier-exchange.json`, since db.json
+ * states no token or Sunmote exchange. `ItemSource` builds its text inside JSX and
+ * exports no helper, so the tab names the facts itself.
  */
 
 import { DungeonDifficulty, type UIItem } from '@generated/proto/ui';

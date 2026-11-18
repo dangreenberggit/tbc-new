@@ -40,10 +40,9 @@ export interface ViewTogglesProps {
 }
 
 /**
- * The view toggles over a finished ranking, titled for what they do to rows
- * already measured, so they cannot be read as more run settings.
- * "Filter by source" also shows over a stopped run's table, which is settled
- * too; the toggles do not.
+ * The view toggles over a finished ranking, titled for what they do to rows already
+ * measured, so they cannot be read as more run settings. "Filter by source" also
+ * shows over a stopped run's settled table; the toggles do not.
  */
 export const ViewToggles = ({ offered, toggles, maxPhase, bisTagPhase, onChange, sources }: ViewTogglesProps) => {
 	const offersSources = offeredSourceKeys(sources.options).length > 0;

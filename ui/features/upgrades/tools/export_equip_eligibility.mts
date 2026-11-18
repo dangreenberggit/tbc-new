@@ -1,12 +1,7 @@
-// Export per-spec equip eligibility by running canEquipItem
-// (ui/sim/proto/items.ts) over assets/database/db.json, parsed with
-// UIDatabase.fromJson, for an external consumer that would otherwise have to
-// re-implement the equip rules.
-//
-// Nothing here decides equip legality. Every answer comes from canEquipItem,
-// and keys are the PlayerSpecs names.
-//
-// Run from the repo root (see README.md in this folder for the command).
+// Exports per-spec equip eligibility, keyed by PlayerSpecs name, by running canEquipItem
+// (ui/sim/proto/items.ts) over assets/database/db.json, so an external consumer need not
+// re-implement the equip rules. Nothing here decides equip legality itself.
+// Run from the repo root (README.md in this folder has the command).
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -30,9 +25,8 @@ function readForkCommit(): string {
 	return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: FORK_ROOT, encoding: 'utf8' }).trim();
 }
 
-// PlayerSpecs mixes spec classes with helper functions. The specs carry specID
-// and canDualWield as static properties -- the two fields canEquipItem reads --
-// so testing for them separates specs from helpers without naming any spec here.
+// PlayerSpecs mixes spec classes with helpers. Only specs carry specID and canDualWield,
+// the two fields canEquipItem reads, so this tells them apart without naming a spec.
 function isPlayerSpec(value: unknown): boolean {
 	const v = value as { specID?: unknown; canDualWield?: unknown } | null;
 	return v != null && typeof v.specID === 'number' && typeof v.canDualWield === 'boolean';
@@ -40,8 +34,7 @@ function isPlayerSpec(value: unknown): boolean {
 
 /**
  * JSON with each spec's id array on one line. `JSON.stringify(payload, null, 2)`
- * puts every id on its own line, which for ~79k ids is a megabyte of file and
- * dominates the diff of any commit that touches it.
+ * puts every id on its own line, which bloats the file and every diff of it.
  */
 function serialize(payload: { _comment: string; generatedFrom: Record<string, string>; itemCount: number; specs: Record<string, number[]> }): string {
 	const lines = [
@@ -80,9 +73,8 @@ async function main(): Promise<void> {
 		const spec = value as Parameters<typeof canEquipItem>[1];
 		const ids: number[] = [];
 		for (const item of db.items) {
-			// slot undefined: "equippable in at least one slot", which is the
-			// question pool membership asks. Slot-specific legality (off-hand
-			// rules) is the consumer's business, not the pool's.
+			// slot undefined: "equippable in at least one slot". Slot-specific
+			// legality (off-hand rules) is left to the consumer.
 			if (canEquipItem(item, spec, undefined)) ids.push(item.id);
 		}
 		ids.sort((a, b) => a - b);

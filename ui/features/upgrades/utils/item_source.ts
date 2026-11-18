@@ -4,10 +4,8 @@ import type { Sim } from '@sim/sim';
 
 /**
  * Whether the gear selector's `ItemSource` (`ui/features/gear/components/SelectorModal/ItemSource.tsx`)
- * renders anything for `item`. A component cannot tell its parent that it
- * rendered nothing, so this follows its branches in its order;
- * `item_source.test.tsx` renders `ItemSource` for each branch and fails when
- * the two disagree.
+ * renders anything for `item`. A component cannot tell its parent it rendered nothing, so this
+ * follows its branches in order; `item_source.test.tsx` fails when the two disagree.
  */
 export function itemSourceShows(item: UIItem, sim: Sim): boolean {
 	const pvpShows = () => isPVPItem(item) && Boolean(getPVPSeasonFromItem(item));
@@ -23,13 +21,10 @@ export function itemSourceShows(item: UIItem, sim: Sim): boolean {
 }
 
 /**
- * The boss an npc name holds when the database generator overran its AtlasLoot
- * key, else undefined. The lazy `AL(?:IL)?\["(.*?)"\]` in
- * `tools/database/atlasloot.go` runs past the `AL["…"]` key on five Tier 0.5
- * boss lines, so the database names npc 16097
- * `Isalien"].." - "..format(AL["Tier %s Sets`. The key's closing `"]` inside a
- * name marks the overrun, and the boss is the text before it;
- * `Eric "The Swift"` has quotes in a real name and no `"]`.
+ * The boss an npc name holds when `tools/database/atlasloot.go` overran its AtlasLoot
+ * key, else undefined: on some Tier 0.5 boss lines its lazy pattern runs past the
+ * key, naming npc 16097 `Isalien"].." - "..format(AL["Tier %s Sets`. The key's
+ * closing `"]` marks the overrun; a real name with quotes (`Eric "The Swift"`) has none.
  */
 export function overrunNpcKey(name: string): string | undefined {
 	const end = name.indexOf('"]');

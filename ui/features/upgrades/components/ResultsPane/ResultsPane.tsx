@@ -20,15 +20,11 @@ export interface ResultsPaneProps {
 }
 
 /**
- * One sub-tab's results: its main table, then the rows below the cutoff behind
- * an expand. Under a main table the group's head is for screen readers only,
- * because the main table's head names the columns on screen; with no main
- * table the group gets the sortable head. Both tables follow the tab store's
- * one sort, so a click on either head orders both.
- *
- * An empty-state message shows only when the pane shows no row at all: beside
- * the group, "No items to show" or "No rows from the shown sources." would be
- * false. The group's own label says what its rows gained.
+ * One sub-tab's results: its main table, then the rows below the cutoff behind an
+ * expand. Under a main table the group's head is for screen readers only; with no
+ * main table the group gets the sortable head. Both follow the store's one sort. The
+ * empty state shows only when the pane shows no row at all, since beside the group
+ * it would be false.
  */
 export const ResultsPane = ({ rows, rowContext, groupOpen, onGroupOpenChange }: ResultsPaneProps) => {
 	const { main, notUpgrades, belowCutoff, emptyReason } = rows;

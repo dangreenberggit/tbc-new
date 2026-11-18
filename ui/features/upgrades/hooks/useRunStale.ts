@@ -8,14 +8,13 @@ import { selectSettledSignature, useUpgradesStore } from './useUpgradesStore';
 
 /**
  * Whether the result on screen was measured on other inputs than the page and
- * `settings` hold now. Sim settings the run does not read, such
- * as a fixed seed, never mark it stale, and a run in flight is never stale.
+ * `settings` hold now. Sim settings the run does not read, such as a fixed seed,
+ * never mark it stale, and a run in flight is never stale.
  */
 export function useRunStale(settings: RunSettings): boolean {
 	const sim = useSim();
-	// Always subscribed, so the key is current the moment a result appears; a
-	// subscription that started with the result would compare one paint against
-	// the key read at mount. The key costs about 1 ms per page edit.
+	// Always subscribed, so the key is current the moment a result appears; one that
+	// started with the result would compare one paint against the key read at mount.
 	const liveKey = useStoreSubscribe(subscribeSimChange(sim), () => liveInputsKey(sim));
 	const measured = useUpgradesStore(selectSettledSignature);
 	return measured !== undefined && inputsSignature({ liveKey, settings }) !== measured;

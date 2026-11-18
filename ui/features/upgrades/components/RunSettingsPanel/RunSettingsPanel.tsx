@@ -22,10 +22,9 @@ export interface RunSettingsPanelProps {
 }
 
 /**
- * The run card. Below `xl` the settings sit behind a summary button, so a
- * phone does not scroll past them to reach the results; the eligible count
- * and Run stay outside it and never collapse. Memoised: the tab
- * renders again for every row a run lands, which changes none of its props.
+ * The run card. Below `xl` the settings sit behind a summary button, so a phone
+ * does not scroll past them to reach the results; the eligible count and Run never
+ * collapse. Memoised: every row a run lands renders the tab but changes no prop.
  */
 export const RunSettingsPanel = memo(({ settings, ready, running, devVisible, onStart }: RunSettingsPanelProps) => {
 	const [open, setOpen] = useState(false);

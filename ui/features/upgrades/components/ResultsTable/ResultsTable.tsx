@@ -11,13 +11,12 @@ import { PlainResultsHead, RESULTS_COLUMN_COUNT, RESULTS_COLUMNS } from './Resul
 export type ResultsTableProps = Omit<ComponentPropsWithoutRef<'table'>, 'className'>;
 
 /**
- * The frame every results table shares: the scroll box, the table and its column widths. The caller
- * puts its head, if any, and `ResultRows` inside. Every table is full width, so with the shared
- * widths each column lines up across tables. The floor (602 px) leaves 139 px for item-name text,
- * wider than the widest unbroken word in any item name ("Shadowmaster's", 125.5 px in Chromium), so
- * a name breaks only between words; below the floor the box scrolls. The box is `relative` so it
- * contains the head's `sr-only` labels, which are absolutely positioned and would otherwise widen
- * the page at 375 px.
+ * The frame every results table shares: the scroll box, the table and its column widths, with the
+ * caller's head and `ResultRows` inside. Every table is full width, so columns line up across
+ * tables. The floor (602 px) leaves the item name wider than its widest unbroken word
+ * ("Shadowmaster's"), so a name breaks only between words; below it the box scrolls. The box is
+ * `relative` to contain the head's absolutely positioned `sr-only` labels, which would otherwise
+ * widen a phone-width page.
  */
 export const ResultsTable = ({ children, ...attributes }: ResultsTableProps) => (
 	<div data-testid="upgrades-table-scroll" className="relative overflow-x-auto">

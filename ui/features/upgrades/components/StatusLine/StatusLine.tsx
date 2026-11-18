@@ -49,9 +49,9 @@ const RunStatusText = ({ run }: StatusLineProps) => {
 };
 
 /**
- * The run's status in two live regions, both always in the page so that a
- * screen reader hears each change: the polite region carries every
- * state but a failure, and the alert region carries only the failure.
+ * The run's status in two live regions, both always in the page so a screen reader
+ * hears each change: the polite one carries every state but a failure, the alert
+ * region only the failure.
  */
 export const StatusLine = ({ run }: StatusLineProps) => (
 	<div data-testid="upgrades-status">

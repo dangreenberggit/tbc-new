@@ -1,11 +1,8 @@
 /**
- * The Upgrades tab's dev-only URL flags, read in this one file so `model/`
- * never sees `location` and no component reads the query itself.
- *
- * `?upgrades-runner=replay:<name>` streams a saved ranking through the real
- * run path; `?upgrades-dev&cap=N&iterations=M` seeds a short live run. The
- * fixture link `?upgrades-fixture=<name>` is read by the script the dev-server
- * fixture plugin injects, not here.
+ * The Upgrades tab's dev-only URL flags, read in this one file so `model/` never
+ * sees `location`. `?upgrades-runner=replay:<name>` streams a saved ranking through
+ * the real run path; `?upgrades-dev&cap=N&iterations=M` seeds a short live run.
+ * `?upgrades-fixture=<name>` is read by the dev-server fixture plugin's script.
  */
 
 export type DevFlags = {
@@ -17,12 +14,10 @@ export type DevFlags = {
 };
 
 /**
- * The fixture switch, for every reader but `FixtureFileInput`, which reads it
- * at its own branch so a production build drops its body whatever the bundler
- * does across modules. On by default on the dev server; a test build
- * turns it on with `VITE_TBC_TAB_FIXTURES=1`. A production build without
- * that variable replaces both reads with `false`, so each branch on this
- * value is dropped as dead code.
+ * The fixture switch: on on the dev server, or with `VITE_TBC_TAB_FIXTURES=1`. A
+ * production build without it replaces the reads with `false` and drops each branch
+ * as dead code. `FixtureFileInput` reads the env itself, so its body is dropped
+ * whatever the bundler does across modules.
  */
 export const FIXTURES_ENABLED: boolean = import.meta.env.DEV || import.meta.env.VITE_TBC_TAB_FIXTURES === '1';
 
@@ -43,8 +38,7 @@ export function readDevFlags(search: string): DevFlags {
 		flags.replay = runner.slice(REPLAY_PREFIX.length);
 	}
 
-	// A stray `cap` or `iterations` on a shared link must not change a run, so
-	// both need the explicit `upgrades-dev` switch.
+	// A stray `cap` or `iterations` on a shared link must not change a run.
 	if (params.has('upgrades-dev')) {
 		flags.dev = true;
 		const cap = positiveInteger(params.get('cap'));

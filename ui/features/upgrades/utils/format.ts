@@ -121,10 +121,9 @@ export const zoneWithMark = (zone: string, difficulty: DungeonDifficulty): strin
 	keepMarkWithZone(`${zone} (${difficultyNames.get(difficulty) ?? 'Unknown'})`);
 
 /**
- * The key "Filter by source" would hide one source by: a drop's zone, else its
- * bucket. The filter keeps or drops a row by its zones alone when it has one
- * (`sourceMatches`), but the Source cell keys each source by its own bucket,
- * so a kept row's cell does not name a bucket the user hid.
+ * The key "Filter by source" would hide one source by: a drop's zone, else its bucket.
+ * The filter judges a row with a zone by its zones alone (`sourceMatches`), so the cell
+ * keys each source by its own bucket and never names a bucket the user hid.
  */
 const ownSourceKey = (source: ItemSource): string => ('zone' in source ? source.zone : bucketKeyOf(source.kind));
 

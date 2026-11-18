@@ -44,11 +44,10 @@ export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
 };
 
 /**
- * The tab's effective run settings over the page's spec, phase, gear presets
- * and saved gear sets, for any component on the page. The default
- * sets of the page's spec and phase are a derivation over the stored settings,
- * so every caller shows them from the first render and right after a phase
- * change; the first write stores them along with the user's change.
+ * The tab's effective run settings over the page's spec, phase, gear presets and
+ * saved gear sets. The default sets are derived over the stored settings, so every
+ * caller shows them from the first render and right after a phase change; the
+ * first write stores them along with the user's change.
  */
 export function useUpgradesSettings(): UpgradesSettings {
 	const host = useSimHost();
@@ -93,24 +92,23 @@ export function useUpgradesSettings(): UpgradesSettings {
 			specId ? { key: `${specId}:${phase}`, selectedSetKeys: offer.defaultKeys, validSourceKeys: offer.sourceKeys } : undefined,
 		[specId, phase, offer],
 	);
-	// Memoised for the same renders: until a write stores the defaults, the derivation builds a new state on each
-	// call, and the selection and eligible count below key on its fields.
+	// Until a write stores the defaults, the derivation builds a new state on each call, and the selection and
+	// eligible count below key on its fields.
 	const applied = useMemo(() => appliedSettings(stored, scope), [stored, scope]);
 	// The exclusions as shown and run: the stored toggles read against the sources that start unticked.
 	const state = useMemo(
 		() => ({ ...applied, excludedSources: effectiveExcludedSources(applied.excludedSources, offer.sourceKeys) }),
 		[applied, offer.sourceKeys],
 	);
-	// Memoised on the picked sets alone, so it keeps its identity while other settings change: the run settings
-	// and the eligible count key on it.
+	// On the picked sets alone, so it keeps its identity while other settings change: the run settings and the
+	// eligible count key on it.
 	const selection = useMemo(() => setSelection(offer, state.selectedSetKeys, phase), [offer, state.selectedSetKeys, phase]);
-	// Memoised, as is the result below, so a render that changes no setting (a row a run lands) hands the run card
-	// the same settings and its `memo` skips the render.
+	// As is the result below, so a render that changes no setting hands the run card the same settings and its
+	// `memo` skips the render.
 	const runSettings = useMemo(() => runSettingsOf(selection, state), [selection, state]);
 	const { excludedSources } = state;
 	const effectivePrune = runSettings.prune ?? false;
-	// Memoised for the same renders, on the pool filters alone: the effective pool is a filter over the whole pool,
-	// which an iterations or cap keystroke must not run again.
+	// On the pool filters alone: filtering the whole pool must not rerun on an iterations or cap keystroke.
 	const eligibleCount = useMemo(
 		() =>
 			eligibleCountOf(offer, { excludedSources, selectedSetItemIds: selection.selectedItemIds, prune: effectivePrune }, phase, {

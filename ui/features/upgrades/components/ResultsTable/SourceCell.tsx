@@ -40,7 +40,6 @@ const dropSource = (item: UIItem, sim: Sim): ReactNode | undefined => {
 
 export interface SourceCellProps {
 	row: RankedItem;
-	/** The sim database's item; undefined when it has none. */
 	item: UIItem | undefined;
 	sim: Sim;
 	/** The sources "Filter by source" hides; undefined hides none. */
@@ -49,12 +48,9 @@ export interface SourceCellProps {
 
 /**
  * Where the item comes from, as the gear picker shows it, or the engine's plain label when the site
- * has no source to show. Memoised so a landing row renders only its Rank cell again.
- *
- * A row kept by "Filter by source" can also come from a hidden source (an item from two raids
- * stays while either is shown). `ItemSource` names only the first source, which may be the hidden
- * one, so while any of the row's sources is hidden the cell names its first shown source in plain
- * text instead.
+ * has no source to show. Memoised so a landing row renders only its Rank cell again. A row "Filter
+ * by source" keeps can also come from a hidden source, and `ItemSource` names only the first, so
+ * while any of the row's sources is hidden the cell names its first shown source in plain text.
  */
 export const SourceCell = memo(({ row, item, sim, hiddenSources = [] }: SourceCellProps) => {
 	const namesHidden = rowNamesHiddenSource(row, hiddenSources);

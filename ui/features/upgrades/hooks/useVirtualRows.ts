@@ -2,27 +2,24 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { type RefObject, useCallback, useLayoutEffect, useState } from 'react';
 
 /**
- * A row's height until it is measured: the median measured row height of a full
- * Upgrades list (10th and 90th percentiles 29 and 77.5 px). The median, not the
- * largest likely height TanStack Virtual suggests: at 78 px, scrolling up into
- * unmeasured rows moved the rows on screen by up to 35 px, against 1 px at 43.
+ * A row's height until it is measured: the median measured height, not the largest
+ * likely height TanStack Virtual suggests, which shifts the rows on screen when
+ * scrolling up into unmeasured rows.
  */
 const ESTIMATED_ROW_HEIGHT = 43;
 
 const OVERSCAN = 10;
 
 /**
- * Firefox measures a table row's collapsed border differently, so it keeps
- * virtual-core's default (rounded) measure, as TanStack Table's virtualized-rows
- * example does.
+ * Firefox measures a table row's collapsed border differently, so it keeps the
+ * default (rounded) measure, as TanStack Table's virtualized-rows example does.
  */
 const IS_FIREFOX = typeof navigator !== 'undefined' && navigator.userAgent.includes('Firefox');
 
 /**
- * The page's scroll box (`SimShell`). Found by test id, not by `findScrollParent`:
- * the table's own scroll box is `overflow-x: auto`, which computes its
- * `overflow-y` to `auto` too, so the nearest scrolling parent is the table's box,
- * which never scrolls vertically.
+ * The page's scroll box (`SimShell`), found by test id: `findScrollParent` would
+ * return the table's own `overflow-x: auto` box, whose `overflow-y` computes to
+ * `auto` too but which never scrolls vertically.
  */
 const SCROLL_BOX = '[data-testid="sim-ui"]';
 const PANE = '[data-testid="tab-pane"]';
@@ -40,12 +37,10 @@ export interface VirtualRows {
 }
 
 /**
- * Which of a table's rows to render: only those in or near the page's view.
- * `keys` are the rows' ids in the table's order, so a row's
- * measured height follows the row when a sort moves it. The rows' offset in
- * the scroll box is measured after every render and whenever the page's content
- * or the pane changes size, because the below-cutoff table moves when the
- * shortlist above it changes height.
+ * Which of a table's rows to render: only those in or near the page's view. `keys`
+ * are the rows' ids in table order, so a measured height follows its row when a
+ * sort moves it. The table's offset in the scroll box is re-measured after every
+ * render and on resize, because content above it can change height.
  */
 export const useVirtualRows = (keys: readonly string[], tbodyRef: RefObject<HTMLTableSectionElement | null>): VirtualRows => {
 	const [scrollMargin, setScrollMargin] = useState(0);
@@ -60,9 +55,8 @@ export const useVirtualRows = (keys: readonly string[], tbodyRef: RefObject<HTML
 		setScrollMargin(current => (Math.abs(current - next) < 1 ? current : next));
 	}, [tbodyRef]);
 
-	// After every render as well as on resize: this covers a move that resizes neither watched element, such as
-	// content above the table changing while the page is shorter than the screen. Two rect reads; the state holds
-	// within 1 px, so it cannot loop.
+	// After every render too, for a move that resizes neither watched element. The state holds within 1 px, so it
+	// cannot loop.
 	useLayoutEffect(measureMargin);
 
 	useLayoutEffect(() => {
@@ -92,9 +86,8 @@ export const useVirtualRows = (keys: readonly string[], tbodyRef: RefObject<HTML
 		measureElement: IS_FIREFOX ? undefined : row => row.getBoundingClientRect().height,
 		// Until the scroll box is measured, as `VirtualList` does: with no height the first render has no rows.
 		initialRect: { width: 0, height: 900 },
-		// The default flushes from a row's ref callback, which React 19 warns about, and scrolling up into rows not
-		// yet measured moved the rows on screen by up to 262 px. The cost: the first frame after a scroll can show
-		// the spacer before the rows.
+		// The default flushes from a row's ref callback, which React 19 warns about, and shifts the rows when scrolling
+		// up into unmeasured ones. The cost: the first frame after a scroll can show the spacer before the rows.
 		useFlushSync: false,
 	});
 

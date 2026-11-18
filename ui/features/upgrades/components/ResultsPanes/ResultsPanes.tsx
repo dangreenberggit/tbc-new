@@ -19,13 +19,10 @@ export interface ResultsPanesProps {
 const paneId = (tab: ResultsTabId) => `upgrades-pane-${tab}`;
 
 /**
- * A settled ranking as sub-tabs: the Upgrades list, then one pane per slot that `slotTabs` names,
- * then the export. The open tab lives here and is not stored; the one column sort shared by every
- * pane and the export lives in the tab store.
- *
- * Only the shown pane is mounted: a hidden pane has no size, so its rows could not be windowed.
- * For that reason the open below-cutoff groups are kept here, so a group stays open across a pane
- * switch, and only the shown pane's tab names a pane it controls.
+ * A settled ranking as sub-tabs: the Upgrades list, one pane per slot `slotTabs` names, then the
+ * export. The open tab lives here, unstored; the column sort every pane shares is in the tab store.
+ * Only the shown pane is mounted, since a hidden pane has no size to window its rows by, so the
+ * open below-cutoff groups are kept here to survive a pane switch.
  */
 type Pane = { id: ResultsTabId; label: string; badge?: string; className?: string };
 /** A pane's rows, and its slot for every pane but the Upgrades list. */
@@ -44,8 +41,8 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 			return next;
 		});
 	const exportTable = useResultsTable(view.shortlist, rowContext);
-	// Memoised on the view: `paneRows` filters new arrays on every call, and a new array rebuilds that pane's
-	// tables, so without it every sort click would rebuild every pane's tables, not just re-sort them.
+	// Memoised on the view: `paneRows` returns new arrays on every call, and a new array rebuilds that pane's
+	// tables, so a sort click would rebuild every pane's tables instead of re-sorting them.
 	const contents = useMemo(
 		(): PaneContent[] => [
 			{ id: SHOPPING_LIST_TAB, rows: paneRows(view, SHOPPING_LIST_TAB) },

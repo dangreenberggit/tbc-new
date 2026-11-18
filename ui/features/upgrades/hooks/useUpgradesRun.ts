@@ -14,8 +14,8 @@ const SESSION_ENV: RunSessionEnv = { runner: RUNNER_ENV, describeError: describe
 /**
  * The tab's one run, written to the page's tab store; read it with
  * `useUpgradesStore(selectRun)`. The session is created once, from the first
- * render's host, store and run function, which are fixed for the page's
- * lifetime, and it is disposed on unmount (abort the run).
+ * render's host, store and run function, which are fixed for the page's lifetime,
+ * and disposed (aborting the run) on unmount.
  */
 export function useUpgradesRun(runFn: RunFn): UpgradesRun {
 	const host = useSimHost();

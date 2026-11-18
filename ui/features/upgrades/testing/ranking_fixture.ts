@@ -2,17 +2,11 @@ import { candidateSkipSubstitution, type RankedItem, type Ranking } from '../mod
 import type { StoppedRanking } from '../model/run_state';
 
 /**
- * A small finished ranking for the tab's unit tests. Rows 0-5 are trimmed
- * from a recorded Retribution run: four ranked rows, one set row (Lightbringer
- * Breastplate, renumbered from rank 16 to 5) and one row below the cutoff,
- * with the recording's numbers so a format test reads real magnitudes. Tests
- * read those six by index.
- *
- * Rows 6-10 are appended so that each results feature has a row to show, and
- * the one substitution is there for the same reason. No recorded fixture has
- * a removed-worn line, an owned row above the cutoff or a substitution, so
- * those figures and flags are made up; the appended rows are therefore not in
- * engine order, which `applyView` does not need.
+ * A small finished ranking for the tab's unit tests. Rows 0-5, which tests read by
+ * index, are trimmed from a recorded Retribution run with its real numbers: four
+ * ranked rows, one set row (renumbered to 5) and one row below the cutoff. Rows
+ * 6-10 and the substitution are made up so each results feature has a row to show;
+ * they are not in engine order, which `applyView` does not need.
  */
 export const RANKING_FIXTURE: Ranking = {
 	contentHash: 'fixture:ret-p3-p2-trimmed',

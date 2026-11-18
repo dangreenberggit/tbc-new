@@ -16,10 +16,9 @@ export interface ViewSourcesButtonProps {
 }
 
 /**
- * The "Filter by source" button, a one-line count of the sources it hides,
- * and the dialog it opens. The count reads only the sources this table
- * offers, so a source hidden in an earlier run that this one does not offer
- * is not counted (it hides nothing here).
+ * The "Filter by source" button, a count of the sources it hides, and its dialog.
+ * The count reads only the sources this table offers, so a source hidden in an
+ * earlier run that this one does not offer, which hides nothing here, is not counted.
  */
 export const ViewSourcesButton = ({ options, hidden, onToggle, onSetAll }: ViewSourcesButtonProps) => {
 	const [open, setOpen] = useState(false);

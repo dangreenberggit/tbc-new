@@ -65,9 +65,8 @@ const SortIndicator = ({ dir }: { dir: SortDir }) => (
 );
 
 /**
- * The columns every head shares around the four data columns: Rank first, and
- * the two toggle columns last, named for screen readers only because they
- * hold icon buttons.
+ * The columns every head shares around the four data columns: Rank first, and the
+ * two toggle columns last, named for screen readers only because they hold icons.
  */
 const HeadRow = ({ children }: { children: ReactNode }) => (
 	<thead>
@@ -98,11 +97,10 @@ export const PlainResultsHead = () => (
 const isSortColumn = (column: Column): column is ResultsSortKey => (SORT_COLUMNS as readonly Column[]).includes(column);
 
 /**
- * A head only screen readers get, for a table under another table's visible
- * head (the below-cutoff group under the shortlist): every column named and
- * the sort said, the names visually hidden and the cells unpadded (the
- * browser's default cell padding would leave a 2 px row), so the row takes no
- * height and the shared widths still place each column under the visible head.
+ * A head only screen readers get, for a table under another table's visible head
+ * (the below-cutoff group under the shortlist). The cells are unpadded, since the
+ * default padding would leave a 2 px row, so the row takes no height and the shared
+ * widths still place each column under the visible head.
  */
 export const ScreenReaderResultsHead = ({ table }: { table: ResultsTableModel }) => (
 	<thead>

@@ -3,9 +3,8 @@ import i18n from '@i18n/config';
 import type { BonusRef, ScreenedReason, SetBonusTip, TipEntry, TipLabel } from '../model/set_bonus_tip';
 
 /**
- * One printed popover row. `id` names what the row is about, for a list key;
- * `total` marks the receipt's last line; `muted` marks a line the figure does
- * not count.
+ * One printed popover row. `id` names what the row is about, for a list key; `total`
+ * marks the receipt's last line; `muted` marks a line the figure does not count.
  */
 export type TipTextRow =
 	| { type: 'heading'; id: string; text: string }
@@ -100,10 +99,9 @@ const screenedValueText = (reason: ScreenedReason): string => {
 };
 
 /**
- * A receipt figure is signed, with no unit (the column says DPS). So is a
- * step past the stop, which shows the piece's own amount even when negative.
- * Any other outcome is "N DPS more" or "N DPS less" with no sign, because
- * outcomes are not added to anything.
+ * A receipt figure is signed, with no unit (the column says DPS), as is a step past
+ * the stop, which shows the piece's own amount even when negative. Any other outcome
+ * is "N DPS more" or "N DPS less" with no sign, since outcomes are not added up.
  */
 const valueText = (kind: SetBonusTip['kind'], entry: Extract<TipEntry, { type: 'line' }>): string => {
 	const { dps } = entry;

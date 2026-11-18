@@ -16,12 +16,10 @@ export const memoryStorage = (initial: Record<string, string> = {}): Env['storag
 export const settled = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
 
 /**
- * `fakeHost` plus what the tab's store reads when it is made: the page's
- * storage key, its preset gear sets (none), `sim.env.storage`, and
- * `sim.waitForInit`, after which the store follows the phase. Each host's
- * storage starts empty, so no test sees another test's saved settings, and its
- * sim has already started up. A `sim` passed in keeps its identity, because the
- * tab's store is keyed by it.
+ * `fakeHost` plus what the tab's store reads when it is made: the storage key, no
+ * preset gear sets, `sim.env.storage` and an already resolved `sim.waitForInit`.
+ * Each host's storage starts empty, so no test sees another's saved settings. A
+ * `sim` passed in keeps its identity, because the tab's store is keyed by it.
  */
 export const fakeTabHost = (parts: FakeHostParts = {}) => {
 	const sim = (parts.sim ?? {}) as { env?: Partial<Env>; waitForInit?: () => Promise<void> };
