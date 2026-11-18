@@ -12,16 +12,17 @@ import { selectExportFlavour } from '../../model/upgrades_store';
 
 export interface ExportPanelProps {
 	/**
-	 * The rows that meet the cutoff (`view.shortlist`) in the sort on screen, so the payload keeps the cross-slot
-	 * ranked order. The Upgrades pane's main table also shows BiS-list rows that miss the cutoff; those
-	 * are marked as not upgrades, so they stay out of the export.
+	 * The rows that meet the cutoff (`view.shortlist`) in the sort on screen, so the payload keeps the ranked
+	 * order across slots. The Upgrades pane's main table also shows BiS-list rows that miss the cutoff;
+	 * those are marked as not upgrades, so they stay out of the export.
 	 */
 	rows: readonly RankedItem[];
 }
 
 /**
- * The shortlist as JSON for a loot-priority tool such as ThatsMyBis. The token or gear choice lives
- * in the tab's store, which saves it with the tab's settings. Hidden when there is nothing to export.
+ * The rows above the cutoff as JSON for a loot-priority tool such as ThatsMyBis. The token or gear
+ * choice lives in the tab's store, which saves it with the tab's settings. Hidden when there is
+ * nothing to export.
  */
 export const ExportPanel = ({ rows }: ExportPanelProps) => {
 	const flavour = useUpgradesStore(selectExportFlavour);

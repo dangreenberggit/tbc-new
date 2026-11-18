@@ -1,7 +1,7 @@
 import type { Env } from '@sim/state/env';
 import { fakeHost, type FakeHostParts } from '@sim/testing';
 
-/** In-memory `Env['storage']`, as the test harnesses `Env`'s comment names pass in; `entries` is what it holds. */
+/** In-memory `Env['storage']` for tests; `entries` holds what was written. */
 export const memoryStorage = (initial: Record<string, string> = {}): Env['storage'] & { entries: Map<string, string> } => {
 	const entries = new Map(Object.entries(initial));
 	return {

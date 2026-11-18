@@ -9,7 +9,7 @@ import { useStore } from 'zustand';
  * The gear picker's favourite star for one result row, writing the sim's own
  * favourites. It subscribes on its own, so a memoised row does not render again
  * when favourites change, and through zustand, not `useStoreSubscribe`, which
- * answers a prop-keyed read one notification late.
+ * answers a read keyed by a prop one notification late.
  */
 export const FavoriteToggle = ({ itemId }: { itemId: number }) => {
 	const { sim } = useSimHost();

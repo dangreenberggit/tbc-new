@@ -133,7 +133,7 @@ export const RANKING_FIXTURE: Ranking = {
 			belowCutoff: true,
 		},
 		{
-			// Recorded figures: 3.32 DPS clears the flat 3 DPS bar.
+			// Recorded figures: 3.32 DPS clears the 3 DPS cutoff.
 			rank: 6,
 			itemId: 30905,
 			name: 'Midnight Chestguard',

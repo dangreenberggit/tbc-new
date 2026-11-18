@@ -34,7 +34,7 @@ export const TEST_MISSING_IDS: ReadonlySet<number> = new Set(MISSING_ITEM_EFFECT
 
 const zonesById = new Map(TEST_DB.zones.map(zone => [zone.id, zone]));
 const npcsById = new Map(TEST_DB.npcs.map(npc => [npc.id, npc]));
-/** The parts of `sim.db` the source facts read, over the test database. */
+/** The parts of `sim.db` that `sourcesOf` reads, backed by the test database. */
 export const TEST_SOURCE_DB: SourceDb = {
 	getZone: id => zonesById.get(id) ?? null,
 	getNpc: id => npcsById.get(id) ?? null,
@@ -47,7 +47,7 @@ export const testSourcesOf = (item: UIItem) => sourcesOf(item, TEST_SOURCE_DB, T
 // JSON values only: the fixture's shape is asserted here, never derived from the import.
 export const TEST_PRESETS = (presetsFixture as { specs: Record<string, PresetSet[]> }).specs;
 
-/** `run.ts`'s spec map read backwards through `specIdFor`, so the two cannot drift; `pool_source.test.ts` checks it covers every preset spec. */
+/** Built by inverting `specIdFor` from `run.ts`, so the two cannot drift; `pool_source.test.ts` checks it covers every preset spec. */
 export const PROTO_SPEC = Object.fromEntries(
 	Object.values(Spec)
 		.filter((spec): spec is Spec => typeof spec === 'number')
@@ -65,7 +65,7 @@ const canEquipFor = (spec: SpecId) => {
 export const dbPoolFor = (spec: SpecId, phase: number, policy: HeroicFiveManPolicy = HEROIC_FIVE_MAN): PoolEntry[] =>
 	selectPool(TEST_DB.items, canEquipFor(spec), TEST_PRESETS[spec]!, TEST_MISSING_IDS, phase, policy, testSourcesOf);
 
-/** The page parts `poolFor` reads, over the test database and the spec's presets: a live page's pool, without a `Sim`. */
+/** The parts of the page that `poolFor` reads, backed by the test database and the spec's presets, so tests get a live page's pool without a `Sim`. */
 export const dbPoolHost = (spec: SpecId) =>
 	({
 		sim: { db: { getAllItems: () => TEST_DB.items, ...TEST_SOURCE_DB } },

@@ -25,7 +25,7 @@ export type ResultsView = {
 	toggles: ViewToggles;
 	offered: ViewToggles;
 	setToggle: (toggle: keyof ViewToggles, on: boolean) => void;
-	/** The sources "Filter by source" offers: those of the settled view's rows before the source cut; none before a run settles. */
+	/** The sources "Filter by source" offers: those of the settled view's rows before that filter applies; none before a run settles. */
 	sourceOptions: ViewSourceOptions;
 	/** The hidden sources as stored, which may name one this view does not offer. */
 	hiddenSources: readonly string[];
@@ -56,14 +56,14 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 	// phase's sets. Memoised on them alone, so a row's tags keep their identity and its memoised name cell holds.
 	const rankedSets = measuredOn?.selectedSets ?? NO_SETS;
 	const tagsOf = useMemo(() => rowTagIndex(rankedSets), [rankedSets]);
-	// Memoised for the same rows: `applyView` builds new row objects on every call. The source cut runs on this view
-	// in a memo of its own, so ticking a source does not run `applyView` again.
+	// Memoised for the same rows: `applyView` builds new row objects on every call. The source filter runs on this
+	// view in a memo of its own, so ticking a source does not run `applyView` again.
 	const preCutView = useMemo(() => resultsViewFor(run, { withSetPotential, onlyBis }), [run, withSetPotential, onlyBis]);
 	const offeredSources = useMemo(() => sourceOptions(preCutView?.rows ?? []), [preCutView]);
 	const view = useMemo(() => (preCutView && hiddenSources.length > 0 ? sourcesView(preCutView, hiddenSources) : preCutView), [preCutView, hiddenSources]);
 	// Only the hidden sources this view offers act, so a source hidden in an earlier run hides nothing here, in a row or a cell.
 	const actingHidden = useMemo(() => offeredHidden(offeredSources, hiddenSources), [offeredSources, hiddenSources]);
-	// Memoised because every `ResultRow` is: a new context on each landing row would render every row again.
+	// Memoised because every `ResultRow` is: a new context on each new row would render every row again.
 	const rowContext = useMemo<RowContext>(
 		() => ({
 			itemOf: itemId => sim.db.getItemById(itemId),

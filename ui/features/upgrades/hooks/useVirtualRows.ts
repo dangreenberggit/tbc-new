@@ -64,8 +64,8 @@ export const useVirtualRows = (keys: readonly string[], tbodyRef: RefObject<HTML
 		const scrollBox = scrollBoxOf(tbody);
 		if (!tbody || !scrollBox) return;
 		const observer = new ResizeObserver(measureMargin);
-		// The scroll box's content grows when anything above the table does; the pane, when the shortlist above the
-		// below-cutoff table does. The in-flight table sits outside any pane, so it has only the first.
+		// The scroll box's content grows when anything above the table does; the pane, when the main table above the
+		// below-cutoff table does. The table of a run in flight sits outside any pane, so it has only the first.
 		for (const watched of [scrollBox.firstElementChild, tbody.closest(PANE)]) {
 			if (watched) observer.observe(watched);
 		}

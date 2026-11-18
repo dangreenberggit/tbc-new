@@ -13,8 +13,8 @@ export interface RunProgressDialogProps {
 }
 
 /**
- * Mounted only while a run is in flight, as the Bulk dialog is. A tick goes to
- * the bar through its handle, so only a change of stage renders the dialog.
+ * Mounted only while a run is in flight, as the Bulk dialog is. Progress updates go
+ * to the bar through its ref handle, so only a change of stage renders the dialog.
  */
 export const RunProgressDialog = ({ onStop, stopping }: RunProgressDialogProps) => {
 	const player = usePlayer();
@@ -22,7 +22,7 @@ export const RunProgressDialog = ({ onStop, stopping }: RunProgressDialogProps) 
 	const barRef = useRef<ProgressTrackerHandle>(null);
 
 	useEffect(() => {
-		// Ticks sent between this render and the effect are not lost: both start from the latest one.
+		// Updates sent between this render and the effect are not lost: both start from the latest one.
 		const latest = progressOf(player);
 		if (latest) {
 			setStage(progressStageOf(latest));

@@ -43,7 +43,7 @@ export interface ProvisionalResultsTableProps {
 
 /** The table of a run in flight: the rows so far, best first, under a head with nothing to click, so the stored sort does not apply. */
 export const ProvisionalResultsTable = ({ landedRows, rowContext }: ProvisionalResultsTableProps) => {
-	// Memoised on the run's array, which changes only when a row lands: TanStack rebuilds every row on new data.
+	// Memoised on the run's array, which changes only when a row finishes: TanStack rebuilds every row on new data.
 	const rows = useMemo(() => bestFirst(landedRows), [landedRows]);
 	const table = useResultsTable(rows, rowContext, { sortable: false });
 	return (

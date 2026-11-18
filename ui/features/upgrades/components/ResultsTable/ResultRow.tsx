@@ -22,7 +22,7 @@ export type RowContext = {
 	itemOf: (itemId: number) => UIItem | undefined;
 	/** The page's sim, whose database the Source cell's links read. */
 	sim: Sim;
-	/** What the set-bonus hint and the %-rule note are measured against; it has no ranking while a run is in flight. */
+	/** What the set-bonus popover and the below-cutoff rounding read; it has no ranking while a run is in flight. */
 	tip: SetBonusTipContext;
 	/** The names of the selected sets that hold an item; one array per item, so the name cell's memo holds. */
 	tagsOf: (itemId: number) => readonly RowTag[];
@@ -36,18 +36,17 @@ export type RowContext = {
 
 export interface ResultRowProps {
 	row: RankedItem;
-	/** The row's place in its own table, which is what the Rank column shows */
+	/** The row's place in its own table, shown in the Rank column. */
 	position: number;
 	context: RowContext;
 	/** A BiS-list row the main table shows although it misses the cutoff. */
 	notUpgrade?: boolean;
-	/** The virtualiser's measuring ref (`useVirtualRows`). */
 	ref?: Ref<HTMLTableRowElement>;
 }
 
 /**
  * One ranked item. DPS comes before Slot so a phone shows the figure without scrolling sideways.
- * Memoised because each row a run lands renders the table again. A landing row or a sort still moves
+ * Memoised because each row a run finishes renders the table again. A new row or a sort still moves
  * `position` for the rows below it, so the costly cells are memoised on their own and only the Rank
  * cell changes. The virtualiser reads `data-index` when it measures the row.
  */

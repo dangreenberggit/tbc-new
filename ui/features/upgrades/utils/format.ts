@@ -52,21 +52,20 @@ const ITEM_SLOT_BY_SIM_SLOT: Record<SimOrderName, ItemSlot> = {
 	ranged: ItemSlot.ItemSlotRanged,
 };
 
-/** A sim slot in the page's own words. */
 export const simSlotLabel = (slot: SimOrderName): string => translateSlotName(ITEM_SLOT_BY_SIM_SLOT[slot]);
 
 /** `slotChoice` is set on every weapon row and wherever a pool slot maps to two sim slots; otherwise the first mapping is the slot. */
 export const slotLabel = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): string => simSlotLabel(row.slotChoice ?? simSlotsForPoolSlot(row.slot)[0]);
 
 /**
- * A source kind in the page's words. The engine's English `SOURCE_LABELS` stay the pool's source keys
- * (`settings_pool.ts`); a kind the map does not know keeps its raw name, as the engine's label does.
+ * A source kind's translated name. The English `SOURCE_LABELS` stay as the pool's source keys
+ * (`settings_pool.ts`), so only the shown text is translated; an unknown kind keeps its raw name.
  */
 const kindLabel = (kind: string): string => (kind in SOURCE_LABELS ? i18n.t(`upgrades_tab.sources.${kind}`, { ns: 'upgrades' }) : kind);
 
 const KIND_BY_SOURCE_KEY = new Map(Object.entries(SOURCE_LABELS).map(([kind, key]) => [key, kind]));
 
-/** A Sources dialog key in the page's words: a zone is its own name, a source bucket key is its kind's. */
+/** A Sources dialog key's shown name: a zone keeps its own name, any other key shows its source kind's name. */
 export const sourceKeyLabel = (key: string): string => {
 	const kind = KIND_BY_SOURCE_KEY.get(key);
 	return kind === undefined ? key : kindLabel(kind);
@@ -79,14 +78,14 @@ const DETAIL_SEPARATOR = ' · ';
 
 const joinDetail = (...parts: (string | undefined)[]): string => parts.filter(part => part !== undefined).join(DETAIL_SEPARATOR);
 
-/** Every phase-raid drop in `db.json` is Normal and a token's zone is always a phase raid, so a token row carries the Normal mark as a drop row does. */
+/** Every raid drop in `db.json` is Normal and a token's zone is always a raid, so a token row shows the Normal mark as a drop row does. */
 const TOKEN_DIFFICULTY = difficultyNames.get(DungeonDifficulty.DifficultyNormal);
 
-/** A Magisters' Terrace heroic drop keys under the zone's row, so its text carries the Heroic mark as `ItemSource` does. */
+/** A Magisters' Terrace heroic drop is grouped under the zone's own row, so its text shows the Heroic mark as `ItemSource` does. */
 const HEROIC_DIFFICULTY = difficultyNames.get(DungeonDifficulty.DifficultyHeroic);
 
 /**
- * A source as the Source cell's plain text shows it: what the row holds beyond its zone or bucket — a drop's boss, a
+ * A source as the Source cell's plain text shows it: what the row adds to its zone or source kind — a drop's boss, a
  * token's difficulty and boss, a reputation's faction and standing, a PvP item's currency.
  */
 export const sourceDetail = (source: ItemSource): string => {
@@ -121,9 +120,9 @@ export const zoneWithMark = (zone: string, difficulty: DungeonDifficulty): strin
 	keepMarkWithZone(`${zone} (${difficultyNames.get(difficulty) ?? 'Unknown'})`);
 
 /**
- * The key "Filter by source" would hide one source by: a drop's zone, else its bucket.
- * The filter judges a row with a zone by its zones alone (`sourceMatches`), so the cell
- * keys each source by its own bucket and never names a bucket the user hid.
+ * The key "Filter by source" would hide one source by: a drop's zone, else its kind's key (`bucketKeyOf`).
+ * The filter judges a row that has a zone by its zones alone (`sourceMatches`), so the cell checks each
+ * source on its own and never names one the user hid.
  */
 const ownSourceKey = (source: ItemSource): string => ('zone' in source ? source.zone : bucketKeyOf(source.kind));
 
@@ -153,20 +152,19 @@ export const sortLabelsFor = (hiddenSources: readonly string[]): SortLabels<Pick
 	source: row => rowSourceDetail(row, hiddenSources),
 });
 
-/** What loading a fixture file did, in the page's words. */
 export const fixtureOutcomeText = (outcome: FixtureLoadResult): string => {
 	if (outcome.ok) return i18n.t('upgrades_tab.settings.fixture_loaded', { ns: 'upgrades', rows: outcome.rows });
 	if (outcome.reason === FIXTURE_NOT_JSON) return i18n.t('upgrades_tab.settings.fixture_not_json', { ns: 'upgrades' });
 	return i18n.t('upgrades_tab.settings.fixture_rejected', { ns: 'upgrades', reason: outcome.detail ?? outcome.reason });
 };
 
-/** A left-out list label. An item line adds the slot it was tried in, because its text says only "this slot". */
+/** A label in the list of left-out items. An item line adds the slot it was tried in, because its text says only "this slot". */
 export const substitutionLabel = (substitution: Substitution): string =>
 	substitution.slot
 		? i18n.t('upgrades_tab.assumptions.substitution_in_slot', { ns: 'upgrades', field: substitution.field, slot: simSlotLabel(substitution.slot) })
 		: substitution.field;
 
-/** A notes-list reason as the page shows it: its first line. The run logs the whole text to the console. */
+/** A reason in the run's notes, as shown: its first line. The run logs the whole text to the console. */
 export const substitutionText = (detail: string): string => substitutionFirstLine(detail).line;
 
 /** The status line names no error: `run_session.ts` shows the error's own message in a toast. */

@@ -68,7 +68,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 	const setCandidateCap = useStore(store, state => state.setCandidateCap);
 
 	const phasedPresets = useMemo(() => (ready ? presetsWithPhase(host, presets) : presets), [ready, host, presets]);
-	// Memoised: `poolFor` builds a new pool on each call, and the tab renders again on every row a run lands.
+	// Memoised: `poolFor` builds a new pool on each call, and the tab renders again on every row a run finishes.
 	const offer = useMemo(
 		() =>
 			settingsOffer({
@@ -92,7 +92,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 			specId ? { key: `${specId}:${phase}`, selectedSetKeys: offer.defaultKeys, validSourceKeys: offer.sourceKeys } : undefined,
 		[specId, phase, offer],
 	);
-	// Until a write stores the defaults, the derivation builds a new state on each call, and the selection and
+	// Until a write stores the defaults, `appliedSettings` builds a new state on each call, and the selection and
 	// eligible count below key on its fields.
 	const applied = useMemo(() => appliedSettings(stored, scope), [stored, scope]);
 	// The exclusions as shown and run: the stored toggles read against the sources that start unticked.
@@ -103,8 +103,8 @@ export function useUpgradesSettings(): UpgradesSettings {
 	// On the picked sets alone, so it keeps its identity while other settings change: the run settings and the
 	// eligible count key on it.
 	const selection = useMemo(() => setSelection(offer, state.selectedSetKeys, phase), [offer, state.selectedSetKeys, phase]);
-	// As is the result below, so a render that changes no setting hands the run card the same settings and its
-	// `memo` skips the render.
+	// As is the result below, so a render that changes no setting hands `RunSettingsPanel` the same settings and
+	// its `memo` skips the render.
 	const runSettings = useMemo(() => runSettingsOf(selection, state), [selection, state]);
 	const { excludedSources } = state;
 	const effectivePrune = runSettings.prune ?? false;

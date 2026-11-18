@@ -20,7 +20,7 @@ export const RESULTS_COLUMN_COUNT = COLUMNS.length;
 
 /**
  * One width per column, shared by every results table (fixed layout) so the below-cutoff group's
- * columns sit under the shortlist's head. Each width is a little over the widest cell seen at
+ * columns sit under the main table's head. Each width is a little over the widest cell seen at
  * 1280 px (rank 50, slot 90, ΔDPS 76, toggles 30); item, slot and source text wraps. The item
  * column takes the rest of the table, down to the floor `ResultsTable` sets.
  */
@@ -98,9 +98,9 @@ const isSortColumn = (column: Column): column is ResultsSortKey => (SORT_COLUMNS
 
 /**
  * A head only screen readers get, for a table under another table's visible head
- * (the below-cutoff group under the shortlist). The cells are unpadded, since the
- * default padding would leave a 2 px row, so the row takes no height and the shared
- * widths still place each column under the visible head.
+ * (the rows below the cutoff, under the main table). The cells are unpadded, since
+ * the default padding would leave a 2 px row, so the row takes no height and the
+ * shared widths still place each column under the visible head.
  */
 export const ScreenReaderResultsHead = ({ table }: { table: ResultsTableModel }) => (
 	<thead>

@@ -19,9 +19,9 @@ export interface BelowCutoffGroupProps {
 const GROUP = 'below-cutoff';
 
 /**
- * The rows the cutoff left out, behind one expand; its table is not mounted until opened. The
- * shared sort orders it too, so the order does not stop at the fold. Its title takes the bar from
- * the rows' own ranking, so a recorded fixture names the bar its rows were judged against.
+ * The rows the cutoff left out, behind one button that expands them; the table is not mounted until
+ * opened. The shared sort orders it too, so the order carries on past the fold. Its title reads the
+ * cutoff from the rows' own ranking, so a recorded fixture names the cutoff its rows were judged by.
  */
 export const BelowCutoffGroup = ({ head, table, rowContext, open, onOpenChange }: BelowCutoffGroupProps) => {
 	const count = table.options.data.length;

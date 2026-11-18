@@ -12,7 +12,7 @@ import { professionNames, REP_FACTION_NAMES, REP_LEVEL_NAMES } from '@sim/proto/
 import type { ItemSource } from '../model/engine/pool';
 import { overrunNpcKey } from './item_source';
 
-/** What the source facts read of the page's database (`sim.db`). */
+/** The parts of the page's database (`sim.db`) that `sourcesOf` reads. */
 export type SourceDb = {
 	getZone(zoneId: number): { name: string } | null;
 	getNpc(npcId: number): { name: string } | null;
@@ -25,7 +25,7 @@ export type TierExchange = {
 	sunmote: readonly { baseId: number; upgradeId: number }[];
 };
 
-/** The exchange file indexed by the item id a row gives a source to. */
+/** The exchange file keyed by the item each row adds a source to. */
 export type ExchangeIndex = {
 	tokenByPiece: ReadonlyMap<number, TierExchange['tokens'][number]>;
 	baseByUpgrade: ReadonlyMap<number, number>;
@@ -36,10 +36,10 @@ export const indexExchange = (exchange: TierExchange): ExchangeIndex => ({
 	baseByUpgrade: new Map(exchange.sunmote.map(row => [row.upgradeId, row.baseId])),
 });
 
-/** Magisters' Terrace drops of either difficulty file under its zone row, which starts ticked, so its heroic epics stay in a default run. */
+/** Magisters' Terrace drops of either difficulty are grouped under the zone's own row, which is on by default, so its heroic epics stay in a default run. */
 export const MAGISTERS_TERRACE_ZONE_ID = 4131;
 
-/** A heroic five-man drop: heroic, and not Magisters' Terrace. The pool's heroic policy and the "Heroic dungeon" bucket both read it. */
+/** A heroic five-man drop: heroic, and not Magisters' Terrace. The pool's heroic filter and the "Heroic dungeon" source group both use it. */
 export const isHeroicFiveManDrop = (drop: { zoneId: number; difficulty: DungeonDifficulty }): boolean =>
 	drop.difficulty === DungeonDifficulty.DifficultyHeroic && drop.zoneId !== MAGISTERS_TERRACE_ZONE_ID;
 
@@ -87,7 +87,7 @@ function sunmoteSource(baseId: number, db: SourceDb): ItemSource | undefined {
 /**
  * Every source of `item`: its db.json drops, crafts and reputation vendors in db.json's order, then its tier token or
  * Sunmote exchange, then PvP for an arena piece; `[{kind: 'unknown'}]` when wowsims states none. A heroic drop outside
- * Magisters' Terrace is a `heroic` source, which files under the "Heroic dungeon" bucket and names no zone.
+ * Magisters' Terrace is a `heroic` source, grouped under "Heroic dungeon" with no zone named.
  */
 export function sourcesOf(item: UIItem, db: SourceDb, exchange: ExchangeIndex): ItemSource[] {
 	const found: ItemSource[] = [];

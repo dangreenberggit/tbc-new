@@ -21,8 +21,8 @@ const paneId = (tab: ResultsTabId) => `upgrades-pane-${tab}`;
 /**
  * A settled ranking as sub-tabs: the Upgrades list, one pane per slot `slotTabs` names, then the
  * export. The open tab lives here, unstored; the column sort every pane shares is in the tab store.
- * Only the shown pane is mounted, since a hidden pane has no size to window its rows by, so the
- * open below-cutoff groups are kept here to survive a pane switch.
+ * Only the shown pane is mounted, since a hidden pane has no size to virtualise its rows by, so
+ * which below-cutoff groups are open is kept here, to survive a pane switch.
  */
 type Pane = { id: ResultsTabId; label: string; badge?: string; className?: string };
 /** A pane's rows, and its slot for every pane but the Upgrades list. */

@@ -4,7 +4,7 @@ import type { BonusRef, ScreenedReason, SetBonusTip, TipEntry, TipLabel } from '
 
 /**
  * One printed popover row. `id` names what the row is about, for a list key; `total`
- * marks the receipt's last line; `muted` marks a line the figure does not count.
+ * marks the last line of a `receipt` tip; `muted` marks a line the figure does not count.
  */
 export type TipTextRow =
 	| { type: 'heading'; id: string; text: string }
@@ -69,7 +69,7 @@ export function tipLabelText(label: TipLabel): string {
 				? i18n.t('upgrades_tab.set_bonus.tip_item_alone', { ns: 'upgrades', name: label.name })
 				: i18n.t('upgrades_tab.set_bonus.tip_item_alone_breaks', { ns: 'upgrades', name: label.name, broken: brokenNames(label.broken) });
 		case 'reachable': {
-			// A step ranking drops a future's pieces when no partner choice was measured, leaving no pieces to name.
+			// A `stepRanking` run leaves `pieces` empty when it measured no choice of the set's other pieces.
 			if (label.pieces.length === 0)
 				return i18n.t('upgrades_tab.set_bonus.tip_reachable_bonus', { ns: 'upgrades', set: label.set, threshold: label.threshold });
 			const args = { set: label.set, threshold: label.threshold, pieces: joinNames(label.pieces) };
@@ -86,7 +86,7 @@ export function tipLabelText(label: TipLabel): string {
 	}
 }
 
-/** What the set screen found, in place of a figure. */
+/** What `setScreen` found for the set, shown in place of a figure. */
 const screenedValueText = (reason: ScreenedReason): string => {
 	switch (reason) {
 		case 'outside-band':
@@ -99,9 +99,10 @@ const screenedValueText = (reason: ScreenedReason): string => {
 };
 
 /**
- * A receipt figure is signed, with no unit (the column says DPS), as is a step past
- * the stop, which shows the piece's own amount even when negative. Any other outcome
- * is "N DPS more" or "N DPS less" with no sign, since outcomes are not added up.
+ * A `receipt` line that is not an outcome is signed, with no unit (the column says DPS),
+ * as is an `againstStop` line, which shows the piece's own amount even when negative.
+ * Any other outcome is "N DPS more" or "N DPS less" with no sign, since outcomes are
+ * not added up.
  */
 const valueText = (kind: SetBonusTip['kind'], entry: Extract<TipEntry, { type: 'line' }>): string => {
 	const { dps } = entry;

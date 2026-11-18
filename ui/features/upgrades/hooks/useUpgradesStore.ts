@@ -17,7 +17,7 @@ export { selectRun, selectRunStatus, selectSettledSignature, selectSort } from '
 
 const SETTINGS_SEED: SettingsSeed = { iterations: DEFAULT_ITERATIONS };
 
-/** The dev link's iterations and cap, read once per page load; a field the link leaves out is absent, so the saved iterations stand and no cap is set. */
+/** The iterations and cap from the dev URL flags, read once per page load; a flag left out is absent, so the saved iterations stand and no cap is set. */
 const DEV_LINK: LinkedSettings = {
 	...(DEV_FLAGS.iterations !== undefined && { iterations: DEV_FLAGS.iterations }),
 	...(DEV_FLAGS.cap !== undefined && { candidateCap: DEV_FLAGS.cap }),
@@ -28,11 +28,11 @@ const stores = new WeakMap<Sim, UpgradesStore>();
 /**
  * The Upgrades tab's store for a page, one per `Sim` as the sim store is, found from
  * the host with no provider and created by the first reader. That reader is usually
- * a render, which then also installs the page-lifetime phase subscription
- * (`followPhase`); it writes no state, and the `WeakMap` hands a repeated render
- * (StrictMode) the same store. The store goes in the map before `followPhase` runs,
- * so a render React discards still leaves the one store the next render finds. It
- * starts from what this spec's page saved last, as the sim's own settings do.
+ * a render, which then also subscribes the store to phase changes for the page's
+ * lifetime (`followPhase`); it writes no state, and the `WeakMap` hands a repeated
+ * render (StrictMode) the same store. The store goes in the map before `followPhase`
+ * runs, so a render React discards still leaves the one store the next render finds.
+ * It starts from what this spec's page saved last, as the sim's own settings do.
  */
 export function upgradesStoreFor(host: IndividualSimHost<Spec>): UpgradesStore {
 	let store = stores.get(host.sim);
@@ -47,11 +47,11 @@ export function upgradesStoreFor(host: IndividualSimHost<Spec>): UpgradesStore {
 export const useUpgradesStoreApi = (): UpgradesStore => upgradesStoreFor(useSimHost());
 
 /**
- * A number picker's change source and read for one tab setting. It rings on that
- * field alone, so a row a run lands does not rewrite the field. Writes go through
+ * A number picker's subscription and read for one tab setting. It notifies on that
+ * field alone, so a row a run finishes does not rewrite the field. Writes go through
  * `useUpgradesSettings`, which applies the scope's default sets first. Gated like
- * every sim picker source (`subscriptions.ts` `fromSelector`), so a write inside
- * `batch()` rings once, at the batch's end.
+ * the sim's own pickers (`subscriptions.ts` `fromSelector`), so a write inside
+ * `batch()` notifies once, at the batch's end.
  */
 export const numberSettingSource = (field: 'iterations' | 'candidateCap') => ({
 	storeSubscribe:

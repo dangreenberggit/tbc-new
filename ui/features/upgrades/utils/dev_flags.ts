@@ -14,10 +14,10 @@ export type DevFlags = {
 };
 
 /**
- * The fixture switch: on on the dev server, or with `VITE_TBC_TAB_FIXTURES=1`. A
- * production build without it replaces the reads with `false` and drops each branch
- * as dead code. `FixtureFileInput` reads the env itself, so its body is dropped
- * whatever the bundler does across modules.
+ * Fixtures are on for the dev server, or with `VITE_TBC_TAB_FIXTURES=1`. A production
+ * build without that variable replaces the reads with `false` and drops each branch as
+ * dead code. `FixtureFileInput` reads the env itself, so its body is dropped even if
+ * the bundler does not remove dead code across modules.
  */
 export const FIXTURES_ENABLED: boolean = import.meta.env.DEV || import.meta.env.VITE_TBC_TAB_FIXTURES === '1';
 

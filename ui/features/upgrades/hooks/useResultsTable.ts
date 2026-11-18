@@ -67,7 +67,7 @@ export function useResultsTable(rows: readonly RankedItem[], rowContext: RowCont
 	// Memoised because `useTable` hands back a new table object whenever its options object is new, and a new
 	// columns array rebuilds every column. Both hold only while the caller keeps `rows` the same array.
 	const columns = useMemo(() => resultsColumns(sortLabelsFor(hiddenSources ?? NO_HIDDEN_SOURCES), dpsKey), [dpsKey, hiddenSources]);
-	// Controlled `state.sorting` rather than a TanStack atom: the sort lives in the tab's one zustand store, and an atom would be a second store.
+	// Controlled `state.sorting` rather than TanStack's own sort state: the sort lives in the tab's zustand store, and TanStack's would be a second store.
 	const options = useMemo(
 		() => ({
 			...RESULTS_TABLE_OPTIONS,

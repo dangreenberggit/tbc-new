@@ -13,8 +13,8 @@ export type FixtureAutoloadOptions = {
 };
 
 /**
- * The page hooks that the dev server's fixture plugin, the fixture recorder and
- * `FixtureFileInput` call. The only code in the tab that installs anything on
+ * The `window` functions that the dev server's fixture plugin, the fixture recorder
+ * and `FixtureFileInput` call. The only code in the tab that installs anything on
  * `window`; a production build installs nothing.
  */
 export function useFixtureAutoload({ onLoaded, currentRanking }: FixtureAutoloadOptions): void {

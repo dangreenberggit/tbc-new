@@ -6,7 +6,6 @@ import { offeredHidden, offeredSourceKeys, type ViewSourceOptions, withOfferedSo
 import { ViewSourcesDialog } from './ViewSourcesDialog';
 
 export interface ViewSourcesButtonProps {
-	/** The sources the settled table offers (`ViewSourceOptions`). */
 	options: ViewSourceOptions;
 	/** The hidden sources as stored, which may name a source this table does not offer. */
 	hidden: readonly string[];

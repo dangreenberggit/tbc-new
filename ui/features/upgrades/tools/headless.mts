@@ -1,8 +1,7 @@
-// Headless harness for the upgrades exporters: lets an exporter run the sim's real
-// decision functions (canEquipItem and friends) under plain Node. Each shim stands in
-// for a browser global some imported module touches at load time. The shims must stay
-// inert placeholders: an exporter that depends on what a shim returns is borrowing UI
-// behaviour, not a pure decision, and is no longer safe.
+// Lets the upgrades exporters run the sim's own rule functions, such as canEquipItem,
+// under plain Node. Each shim stands in for a browser global that an imported module
+// touches at load time. The shims must stay empty placeholders: an exporter that needs
+// what a shim returns is relying on UI behaviour, not a pure rule, and is not safe.
 //
 // No known module needs the window.location shim; whether one still does is untested.
 //

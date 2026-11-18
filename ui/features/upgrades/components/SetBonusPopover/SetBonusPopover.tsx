@@ -38,8 +38,8 @@ const sideFor = (figure: Element): PopoverSide => {
 };
 
 /**
- * Where a row's set-bonus figure comes from: a receipt whose lines add up to the figure, or a step
- * ranking row's separate outcomes. Opens on hover, and from the keyboard with Enter or Space on the
+ * Where a row's set-bonus figure comes from: itemised lines that add up to the figure, or the separate
+ * outcomes of a `stepRanking` row. Opens on hover, and from the keyboard with Enter or Space on the
  * figure (Base UI's trigger is a button). Right of the figure when it fits, so the DPS column stays
  * readable, and above it otherwise; on the right it covers the row's own Slot cell.
  */

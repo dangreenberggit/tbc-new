@@ -69,9 +69,10 @@ export function validateFixture(payload: unknown): { ok: true; fixture: TabFixtu
 }
 
 /**
- * Loads a fixture into the page: phase, then gear, then the result. The staleness
- * mark listens to phase and gear changes, so the result goes in last, after one
- * macrotask has let those listeners run; otherwise it would render already stale.
+ * Loads a fixture into the page: phase, then gear, then the result. The out-of-date
+ * check (`useRunStale`) listens to phase and gear changes, so the result goes in
+ * last, after one macrotask has let those listeners run; otherwise it would show as
+ * out of date.
  */
 export async function loadFixture(host: IndividualSimHost<Spec>, payload: unknown, show: (ranking: Ranking) => void): Promise<FixtureLoadResult> {
 	const checked = validateFixture(payload);

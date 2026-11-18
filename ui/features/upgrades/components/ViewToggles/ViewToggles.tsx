@@ -13,7 +13,6 @@ interface ViewToggleProps {
 	onChange: (checked: boolean) => void;
 }
 
-/** One view toggle: a checkbox whose label carries the tooltip that says what it does. */
 const ViewToggle = ({ testId, label, tooltip, checked, onChange }: ViewToggleProps) => {
 	const id = useId();
 	return (

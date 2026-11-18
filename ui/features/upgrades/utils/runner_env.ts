@@ -1,7 +1,7 @@
 import type { RunnerEnv } from '../model/adapters/worker_pool_sim_runner';
 
-// The only file in the Upgrades feature that reads these browser globals:
-// `model/` is lint-barred from them, so the run model takes this value instead.
+// The only file in the Upgrades feature that reads these browser globals: a lint rule
+// bars `model/` from them, so the run model takes this value instead.
 export const RUNNER_ENV: RunnerEnv = {
 	storageRead: key => localStorage.getItem(key),
 	hardwareConcurrency: navigator.hardwareConcurrency,

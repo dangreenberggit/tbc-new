@@ -24,7 +24,7 @@ export interface UpgradesResultsProps {
  * The results area: the rows landed so far while a run is in flight, the view
  * toggles, sub-tabs and dropped candidates once it settles, or what to say in
  * their place. `memo`, because the tab body renders again on every settings edit
- * with the same props, and the panes and export would re-sort the shortlist.
+ * with the same props, and the panes and export would re-sort the results.
  */
 export const UpgradesResults = memo(({ run, bisHeadingsOf, specId }: UpgradesResultsProps) => {
 	const { toggles, offered, setToggle, sourceOptions, hiddenSources, toggleViewSource, setViewSources, rowContext, view } = useResultsView(

@@ -47,7 +47,7 @@ const ChipRow = ({ options, selectedKeys, tooltipId, onToggleSet }: ChipRowProps
 	</div>
 );
 
-/** The gear sets a run can be limited to: this phase's chips, the other phases' behind a disclosure, and the prune. */
+/** The gear sets a run can be limited to: this phase's chips, the other phases' behind a disclosure, and the prune toggle. */
 export const SetChips = ({ chips, selectedKeys, prune, onToggleSet, onPruneChange }: SetChipsProps) => {
 	const [otherOpen, setOtherOpen] = useState(false);
 	const titleId = useId();

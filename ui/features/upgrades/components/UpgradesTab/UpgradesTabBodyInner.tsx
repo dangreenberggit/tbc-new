@@ -29,8 +29,8 @@ export const UpgradesTabBodyInner = () => {
 	const settings = useUpgradesSettings();
 	const { runSettings } = settings;
 	const stale = useRunStale(runSettings);
-	// Read when Run is clicked or a fixture lands, so it records the page as it is then. Memoised with `onStart`, so
-	// a row a run lands hands the run card, a `memo` component, the same handler.
+	// Read when Run is clicked or a fixture loads, so it records the page as it is then. Memoised with `onStart`, so
+	// each row a run finishes still hands the memoised `RunSettingsPanel` the same handler.
 	const signatureNow = useCallback(() => inputsSignature({ liveKey: liveInputsKey(sim), settings: runSettings }), [sim, runSettings]);
 	const { selectedOptions } = settings;
 	const onStart = useCallback(() => start(runSettings, signatureNow(), selectedOptions), [start, runSettings, signatureNow, selectedOptions]);
