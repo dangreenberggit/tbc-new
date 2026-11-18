@@ -4,10 +4,9 @@
  * does not correct any number.
  */
 
-/** Only the top 8 items are rerun on more seeds, not the whole list. */
 export const PAIRED_REPLICATE_TOP_N = 8;
 
-/** Five seeds for paired replication; `PAIRED_REPLICATE_TOP_N` sets how many rows. */
+/** `PAIRED_REPLICATE_TOP_N` sets how many rows. */
 export const DEFAULT_SEED_COUNT = 5;
 
 export function isReplicable(row: { readonly belowCutoff: boolean; readonly simmed?: false }): boolean {

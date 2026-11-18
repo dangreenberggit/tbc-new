@@ -7,7 +7,6 @@ import type { UpgradesStore } from '../../model/upgrades_store';
 const CANDIDATE_CAP = numberSettingSource('candidateCap');
 
 export interface CandidateCapPickerProps {
-	/** The tab's store, which the picker reads the cap back from. */
 	store: UpgradesStore;
 	onCapChange: (cap: number) => void;
 }

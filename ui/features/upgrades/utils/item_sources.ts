@@ -25,7 +25,6 @@ export type TierExchange = {
 	sunmote: readonly { baseId: number; upgradeId: number }[];
 };
 
-/** The exchange file keyed by the item each row adds a source to. */
 export type ExchangeIndex = {
 	tokenByPiece: ReadonlyMap<number, TierExchange['tokens'][number]>;
 	baseByUpgrade: ReadonlyMap<number, number>;

@@ -57,8 +57,8 @@ export const simSlotLabel = (slot: SimOrderName): string => translateSlotName(IT
 export const slotLabel = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): string => simSlotLabel(effectiveSlot(row));
 
 /**
- * A source kind's translated name. The English `ZONELESS_SOURCE_LABELS` stay as the pool's source keys
- * (`settings_pool.ts`), so only the shown text is translated; an unknown kind keeps its raw name.
+ * The English `ZONELESS_SOURCE_LABELS` stay as the pool's source keys (`settings_pool.ts`), so only the shown
+ * text is translated; an unknown kind keeps its raw name.
  */
 const kindLabel = (kind: string): string => (kind in ZONELESS_SOURCE_LABELS ? i18n.t(`upgrades_tab.sources.${kind}`, { ns: 'upgrades' }) : kind);
 
@@ -125,7 +125,6 @@ export const zoneWithMark = (zone: string, difficulty: DungeonDifficulty): strin
  */
 const ownSourceKey = (source: ItemSource): string => ('zone' in source ? source.zone : zonelessSourceKey(source.kind));
 
-/** Whether any source of the row, first or not, is one `hidden` hides. */
 export const rowNamesHiddenSource = (row: SourcedEntry, hidden: readonly string[]): boolean =>
 	hidden.length > 0 && sourcesOf(row).some(source => hidden.includes(ownSourceKey(source)));
 

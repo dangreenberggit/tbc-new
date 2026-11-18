@@ -34,7 +34,6 @@ export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
 	prune: boolean;
 	/** Undefined when the page's spec has no ranking data. */
 	eligibleCount: number | undefined;
-	/** The tab's store, which the number pickers read their value from. */
 	store: UpgradesStore;
 	toggleSource: (key: string) => void;
 	toggleSet: (key: string) => void;

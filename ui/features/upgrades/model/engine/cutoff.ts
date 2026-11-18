@@ -21,7 +21,6 @@ export function setBonusNoiseFloorDps(cutoff: Cutoff): number {
 	return Math.SQRT2 * cutoff.absDps;
 }
 
-/** Lives beside `CUTOFF` so the value and the check that reads it stay in one place. */
 export function meetsCutoff(deltaDps: number, cutoff: Cutoff): boolean {
 	return deltaDps >= cutoff.absDps;
 }

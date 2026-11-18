@@ -10,7 +10,6 @@ const ITERATIONS = numberSettingSource('iterations');
 export interface RunControlsProps {
 	ready: boolean;
 	running: boolean;
-	/** The tab's store, which the picker reads the iterations back from. */
 	store: UpgradesStore;
 	onIterationsChange: (iterations: number) => void;
 	onStart: () => void;

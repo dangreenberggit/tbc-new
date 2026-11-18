@@ -34,7 +34,6 @@ export const TEST_MISSING_IDS: ReadonlySet<number> = new Set(MISSING_ITEM_EFFECT
 
 const zonesById = new Map(TEST_DB.zones.map(zone => [zone.id, zone]));
 const npcsById = new Map(TEST_DB.npcs.map(npc => [npc.id, npc]));
-/** The parts of `sim.db` that `sourcesOf` reads, backed by the test database. */
 export const TEST_SOURCE_DB: SourceDb = {
 	getZone: id => zonesById.get(id) ?? null,
 	getNpc: id => npcsById.get(id) ?? null,

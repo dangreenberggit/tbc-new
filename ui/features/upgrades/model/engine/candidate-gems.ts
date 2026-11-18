@@ -333,7 +333,7 @@ function layoutScore(itemId: number, sockets: readonly number[], gemIds: readonl
 	return score;
 }
 
-/** Test helper: the EP of a gem, by id. */
+/** Test helper. */
 export function gemEp(gemId: number, epWeights: EpWeightRecord): number {
 	const gem = getGem(gemId);
 	return gem ? epScore(gem.stats, epWeights) : 0;

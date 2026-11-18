@@ -81,7 +81,6 @@ function readSavedTab(storage: Storage, key: string): RestoredTab {
 	};
 }
 
-/** The parts of the tab's state the entry holds; the run is not saved. */
 const SAVED_PARTS = ['settings', 'sort', 'view', 'hiddenSources', 'exportFlavour'] as const satisfies readonly (keyof UpgradesState)[];
 
 const savedTabOf = ({ settings: { candidateCap: _notSaved, ...settings }, sort, view, hiddenSources, exportFlavour }: UpgradesState) => ({

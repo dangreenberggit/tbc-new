@@ -95,7 +95,6 @@ export type SetScreenRecord = {
 	sets: SetScreenSet[];
 	/** Sims sent to the runner, failed ones included. */
 	simmed: number;
-	/** Sims the store answered. */
 	fromStore: number;
 };
 
@@ -125,7 +124,6 @@ export type SetScreenOn = {
 	sets: SetScreenOnSet[];
 	/** Sims sent to the runner, failed ones included. */
 	simmed: number;
-	/** Sims the store answered. */
 	fromStore: number;
 };
 
