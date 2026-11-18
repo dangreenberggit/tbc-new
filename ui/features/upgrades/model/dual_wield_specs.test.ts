@@ -5,9 +5,8 @@ import { PROTO_SPEC } from '../testing/db_pool';
 import { DUAL_WIELD_SPECS } from './engine/pool';
 import type { SpecId } from './engine/types';
 
-// Fork-added. The engine cannot load wowsims' PlayerSpec (the core parity test
-// runs it without the fork's build), so it keeps its own list of specs that may
-// put a one-hander in the off hand. This pins that list to wowsims' flag.
+// The engine cannot load wowsims' PlayerSpec, so it keeps its own list of specs
+// that may put a one-hander in the off hand. This pins that list to wowsims' flag.
 describe('DUAL_WIELD_SPECS', () => {
 	const specs = Object.entries(PROTO_SPEC) as [SpecId, (typeof PROTO_SPEC)[SpecId]][];
 

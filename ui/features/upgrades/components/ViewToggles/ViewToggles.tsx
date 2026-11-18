@@ -41,7 +41,7 @@ export interface ViewTogglesProps {
 
 /**
  * The view toggles over a finished ranking, titled for what they do to rows
- * already measured, so they cannot be read as more run settings (old tab).
+ * already measured, so they cannot be read as more run settings.
  * "Filter by source" also shows over a stopped run's table, which is settled
  * too; the toggles do not.
  */
@@ -56,7 +56,7 @@ export const ViewToggles = ({ offered, toggles, maxPhase, bisTagPhase, onChange,
 				<fieldset className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-1" data-testid="upgrades-view-toggles">
 					<legend className="float-left mr-6 mb-0 text-sm font-bold">{i18n.t('upgrades_tab.view.title', { ns: 'upgrades' })}</legend>
 					{/* One flex item after the title, so on a narrow row the controls wrap under the title together and no
-					    toggle starts a line of its own under it (ticket 607); the layout gate's check 20 measures it. */}
+					    toggle starts a line of its own under it. */}
 					<div className="flex flex-wrap items-center gap-x-6 gap-y-1">
 						{offered.withSetPotential && (
 							<ViewToggle

@@ -11,7 +11,7 @@ import { effectiveExcludedSources, validSourceKeysOf } from './settings_pool';
 import { createUpgradesStore } from './upgrades_store';
 
 /**
- * A ret page at phase 3, over the fork's db.json and ret's presets, once it has started up (when the tab starts
+ * A ret page at phase 3, over db.json and ret's presets, once it has started up (when the tab starts
  * following the phase), whose tab store holds a pick, an exclusion only the phase-4 pool offers, and one no pool offers.
  */
 const pageAt3 = async (spec: Spec) => {

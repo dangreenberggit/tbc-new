@@ -61,7 +61,7 @@ describe('ResultsPane', () => {
 		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 more item');
 	});
 
-	// Owner, 2026-11-02: players "dont know a cutoff exists and we shouldnt have to explain it either".
+	// Players do not know a cutoff exists, so the group names a gain in DPS instead.
 	it('names the bar as a gain in DPS on the group once a ranking is shown, never as a cutoff', () => {
 		const rowContext = { ...CONTEXT, tip: { ranking: RANKING_FIXTURE } };
 		const one = onPage({ rows: paneRowsOf([fixtureRow(0)], [fixtureRow(5)]), rowContext });
@@ -99,8 +99,8 @@ describe('ResultsPane', () => {
 		expect(queryByTestId('upgrades-below-cutoff')).toBeNull();
 	});
 
-	// Ticket 748: "No upgrades found" above a row that gained DPS without clearing the bar was false (owner, 2026-11-02:
-	// "there could be upgrades but below the cutoff. so it's now lying"), so the closed group is all the pane shows.
+	// "No upgrades found" above a row that gained DPS without clearing the bar would be false, so the closed group is
+	// all the pane shows.
 	it('shows only the closed group, with no empty-state message, when the only row gained DPS below the bar', () => {
 		const gainedBelowBar = fixtureRow(5);
 		expect(gainedBelowBar.deltaDps).toBeGreaterThan(0);

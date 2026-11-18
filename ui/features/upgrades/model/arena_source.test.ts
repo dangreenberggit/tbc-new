@@ -4,11 +4,11 @@ import { describe, expect, it } from 'vitest';
 import { dbPoolFor, testItem } from '../testing/db_pool';
 import { effectivePool, sourceKeyOf } from './settings_pool';
 
-// Fork-added. Ticket 642: arena gear is a source the player keeps or removes,
-// not an exclusion. Every arena piece (upstream's `isPVPItem`) carries one
-// `pvp`/`arena` source, files under "PvP vendor", and unticking that source
-// removes it. wowsims states no TBC arena season, so the source names none;
-// the season prefixes below only check which seasons the pool holds.
+// Arena gear is a source the player keeps or removes, not an exclusion. Every
+// arena piece (`isPVPItem`) carries one `pvp`/`arena` source, files under "PvP
+// vendor", and unticking that source removes it. wowsims states no TBC arena
+// season, so the source names none; the season prefixes below only check which
+// seasons the pool holds.
 const SEASON_BY_PREFIX: [string, number][] = [
 	["Merciless Gladiator's ", 2],
 	["Vengeful Gladiator's ", 3],
@@ -17,8 +17,7 @@ const SEASON_BY_PREFIX: [string, number][] = [
 ];
 const seasonOf = (name: string): number | undefined => SEASON_BY_PREFIX.find(([prefix]) => name.startsWith(prefix))?.[1];
 
-// The ret phase-4 pool's arena pieces, counted over the fork's db.json by this test; the bundled list the run-time
-// pool replaced (ticket 505) held 56.
+// The ret phase-4 pool's arena pieces, counted over db.json by this test.
 const ARENA_PIECES = 78;
 
 describe('arena gear in the ret phase-4 pool', () => {

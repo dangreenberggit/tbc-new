@@ -1,13 +1,5 @@
 /**
  * Candidate pool types and filters.
- *
- * PORTED from packages/core/src/pool.ts. `ItemSlot` and `ItemSourceKindName`
- * were generated `as const` unions in packages/core (codegen gated by
- * `pnpm verify` there); the fork has no such generator, so both are
- * hand-written literal unions here, kept in sync by inspection with
- * packages/core/src/items.ts's `ItemSlot` and
- * item-source-kinds.generated.ts's `ITEM_SOURCE_KINDS` — see
- * engine/PROVENANCE.md and the drift gate for how a divergence is caught.
  */
 
 import { HandType } from "@generated/proto/common";
@@ -46,11 +38,10 @@ export const ITEM_SOURCE_KINDS = [
 export type ItemSourceKindName = (typeof ITEM_SOURCE_KINDS)[number];
 
 /**
- * Fork-only narrowing (ticket 505): the tab reads its sources from wowsims'
- * item facts (`utils/item_sources.ts`), which state no origin, recipe, cost,
- * faction id or arena season. The `badge` and `world` variants stay only
- * because `ITEM_SOURCE_KINDS` must list packages/core's kinds (the drift
- * gate's union compare); the tab builds neither.
+ * The tab reads its sources from wowsims' item data
+ * (ui/features/upgrades/utils/item_sources.ts), which states no origin, recipe,
+ * cost, faction id or arena season. The tab builds neither the `badge` nor the
+ * `world` variant.
  */
 export type ItemSource =
   | { kind: "raid"; zone: string; boss?: string; heroic?: boolean }
@@ -216,9 +207,8 @@ export function bossesInPool(
 }
 
 /**
- * A sim equipment slot name. Hand-written subset of `SimOrderName`
- * (slots.ts) the same way packages/core/src/pool.ts derives it, minus the
- * generated-file machinery.
+ * A sim equipment slot name, written out from `ItemSlot` to match
+ * `SimOrderName` (slots.ts).
  */
 export type SimSlotName =
   | Exclude<ItemSlot, "finger" | "trinket" | "weapon">
@@ -232,17 +222,18 @@ export type SimSlotName =
 /**
  * Specs that can put a one-handed *weapon* in the off hand.
  *
- * This mirrors wowsims' per-spec `canDualWield` flag, and the fork pins the two
- * together with a test (`dual_wield_specs.test.ts`). Membership is about what
- * the spec *can* equip, not what its BiS set happens to use: a hunter or an
- * enhancement shaman may be playing a two-hander build this week, and the
- * per-item hand-type filter below decides whether any given item fits.
+ * This mirrors wowsims' per-spec `canDualWield` flag, and a test
+ * (ui/features/upgrades/model/dual_wield_specs.test.ts) pins the two together.
+ * Membership is about what the spec *can* equip, not what its BiS set happens
+ * to use: a hunter or an enhancement shaman may be playing a two-hander build
+ * this week, and the per-item hand-type filter below decides whether any given
+ * item fits.
  *
  * It governs one-handers only. A dedicated off-hand item (a shield, a held
  * item, an off-hand-only weapon) goes to the off hand for every spec, so a spec
  * missing here — ret, feral, the casters — cannot dual-wield, which is not the
  * same as having no off hand. Which off-hand items a spec may wear at all is
- * decided upstream, where the pool admits only what wowsims lets it equip.
+ * decided earlier, where the pool admits only what wowsims lets it equip.
  */
 export const DUAL_WIELD_SPECS: ReadonlySet<SpecId> = new Set<SpecId>([
   "rogue",
@@ -254,18 +245,17 @@ export const DUAL_WIELD_SPECS: ReadonlySet<SpecId> = new Set<SpecId>([
 /**
  * Whether an item can physically be placed in the given sim slot.
  *
- * Only weapons need this, and the off hand is an **allowlist**, not a
- * denylist: a one-hander or a dedicated off-hand item, and nothing else.
- * Excluding just two-handers is not enough — `HandTypeMainHand` is a distinct
- * value carried by 235 items in the pinned db (Talon of the Phoenix among
- * them), and letting one through produces a candidate the fork's own equip
- * logic then rejects with "No slots left to equip", failing the whole run
- * rather than one row.
+ * Only weapons need this, and the off hand is an **allowlist**, not a denylist:
+ * a one-hander or a dedicated off-hand item, and nothing else. Excluding just
+ * two-handers is not enough — `HandTypeMainHand` is a distinct value carried by
+ * 235 items in the database (Talon of the Phoenix among them), and letting one
+ * through produces a candidate the equip logic then rejects with "No slots left
+ * to equip", failing the whole run rather than one row.
  *
  * The main hand is the mirror: everything except a dedicated off-hand item.
  *
- * Items with no recorded hand type (`null`, which the index writes for
- * everything that is not a weapon) are left alone rather than filtered, since
+ * Items with no recorded hand type (`null`, which items.ts gives everything
+ * that is not a weapon) are left alone rather than filtered, since
  * a missing field is not evidence of a restriction.
  */
 function itemFitsSimSlot(itemId: number, slotName: SimSlotName): boolean {

@@ -39,7 +39,7 @@ export const UpgradesTabBody = () => {
 	const probe = useRef<HTMLDivElement>(null);
 	const [opened, setOpened] = useState(false);
 
-	// From page start, so a phase change made before the tab first opens resets its saved sets (ticket 564's rule), with no download.
+	// From page start, so a phase change made before the tab first opens resets its saved sets, with no download.
 	useEffect(() => watchPhaseChanges(host), [host]);
 
 	useLayoutEffect(() => {

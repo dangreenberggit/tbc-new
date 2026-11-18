@@ -1,9 +1,5 @@
 /**
  * Why a slot has no upgrade in it.
- *
- * PORTED from packages/core/src/dead-slots.ts, unchanged except for the
- * items.ts import path and, fork-only (ticket 512), the `counts` option for
- * which lost counts are breaks.
  */
 
 import { getItem } from "./items";

@@ -16,10 +16,10 @@ import { SIM_ORDER } from './engine/slots';
 import { itemEpFor } from './item_ep';
 
 /**
- * Ticket 701 at the fork's own `rankUpgrades`: a Stop placeholder for a ring or
- * trinket worn in its second slot names that slot, as its simmed row would.
- * The page's database is the fork's real `assets/database/db.json`; the sim is
- * a synthetic one, and nothing here asserts on a DPS number.
+ * At `rankUpgrades`, a Stop placeholder for a ring or trinket worn in its second
+ * slot names that slot, as its simmed row would. The page's database is the real
+ * `assets/database/db.json`; the sim is a synthetic one, and nothing here asserts
+ * on a DPS number.
  */
 
 // The engine reads items and gems through `Database.getSync()`; the real class over the test database stands in for the page's.

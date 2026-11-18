@@ -19,13 +19,10 @@ const COLUMNS: readonly Column[] = ['rank', ...SORT_COLUMNS, 'favorite', 'batch'
 export const RESULTS_COLUMN_COUNT = COLUMNS.length;
 
 /**
- * One width per column, shared by every results table (fixed
- * layout) so the below-cutoff group's columns sit under the shortlist's head.
- * Each width is a little over the widest cell the ret-p3-p2 and feral-p3-p2bis
- * fixtures put in that column with the content's own widths (rank 50, slot 90,
- * ΔDPS 76, toggles 30 px at 1280); item, slot and source text wraps. The item column
- * has no width and takes the rest of the table; the table's floor
- * (`ResultsTable`) sets how narrow it can get.
+ * One width per column, shared by every results table (fixed layout) so the below-cutoff group's
+ * columns sit under the shortlist's head. Each width is a little over the widest cell seen at
+ * 1280 px (rank 50, slot 90, ΔDPS 76, toggles 30); item, slot and source text wraps. The item
+ * column takes the rest of the table, down to the floor `ResultsTable` sets.
  */
 const COLUMN_WIDTH: Record<Column, string | undefined> = {
 	rank: 'w-15',

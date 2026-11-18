@@ -1,21 +1,15 @@
 /**
- * Skeleton serialization (plan §2.3, decision D5) — the page's *current* sim
- * state, in protojson form, without `simOptions`. D5: our sim must match the
- * user's by construction, so the skeleton is never anything the user did not
- * themselves configure on the page.
+ * The page's current sim state as a protojson request, without `simOptions`.
+ * The tab's sims must match the page's, so the skeleton holds only what the
+ * user configured.
  *
- * `Sim.makeRaidSimRequest(options)` (`ui/sim/sim.ts:299`) is upstream's own
- * request builder — the same one the page's Simulate button runs — so this
- * calls it directly rather than re-deriving raid/encounter/player state by
- * hand. Empty options are a real run's request; `singleIteration` would force
- * `iterations: 1`, which would make every candidate sim meaningless.
+ * It calls `Sim.makeRaidSimRequest` (`ui/sim/sim.ts`), the builder the page's
+ * Simulate button runs. Empty options give a real run's request;
+ * `singleIteration` would force `iterations: 1`.
  *
- * `simOptions` and `requestId` are stripped, mirroring engine/compose.ts's
- * own `delete req.simOptions; delete req.requestId` — compose() is what
- * patches this skeleton per candidate, and PLAN.md §7 [R6] requires the
- * cache key to be formed before seed/iterations are injected. `WorkerPoolSimRunner`
- * (worker_pool_sim_runner.ts) is what injects them back, once, right before the
- * actual sim call.
+ * `simOptions` and `requestId` are stripped, as compose() strips them, so the
+ * cache key is formed before seed and iterations go in. `WorkerPoolSimRunner`
+ * puts them back right before the sim call.
  */
 
 import { RaidSimRequest as RaidSimRequestProto } from '@generated/proto/api';

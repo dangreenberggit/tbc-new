@@ -7,7 +7,7 @@ import { bisSetsFor, hasEffectRecord, type HeroicFiveManPolicy, isHeroicFiveManO
 import cellsFixture from './pool_source.cells.fixture.json';
 import { effectiveExcludedSources, effectivePool, validSourceKeysOf } from './settings_pool';
 
-// JSON values only: the fixture's shape is asserted here, never derived from the import (AGENTS.md, Types from JSON).
+// The fixture's shape is asserted here, never derived from the JSON import.
 const CELLS = (cellsFixture as { cells: Record<string, { exclude: number; include: number; bisRows: number }> }).cells;
 const poolOf = (spec: SpecId, phase: number, policy: HeroicFiveManPolicy) => dbPoolFor(spec, phase, policy);
 
@@ -31,7 +31,6 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 		}).toEqual(expected);
 	});
 
-	// 41,318 / 43,758 before ticket 753 took one Sergeant's cape and one cloak out of each of the 55 cells.
 	it('totals the measured 41,208 / 43,648 rows and 1,182 BiS rows', () => {
 		const sum = (key: 'exclude' | 'include' | 'bisRows') => CELL_NAMES.reduce((n, name) => n + CELLS[name]![key], 0);
 		expect([sum('exclude'), sum('include'), sum('bisRows')]).toEqual([41208, 43648, 1182]);
@@ -74,8 +73,8 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 		expect([ids.has(23206), ids.has(23207)]).toEqual([true, true]);
 	});
 
-	// Ticket 753: db.json gives 28378/28379 and 28377/28380 the same record but the id, so the tab showed each item
-	// twice. The two Marks differ in effect (attack power or spell damage), so both stay.
+	// db.json gives 28378/28379 and 28377/28380 the same record but the id, so each would show twice. The two Marks
+	// differ in effect (attack power or spell damage), so both stay.
 	it('offers each Sergeant’s cape and cloak once and keeps both Mark of the Champion items', () => {
 		const pool = poolOf('ret', 5, 'include');
 		const count = (name: string) => pool.filter(e => e.name === name).length;
@@ -161,7 +160,7 @@ describe('bisSetsFor', () => {
 		expect(bisSetsFor(sets.slice(1), 1, () => undefined)).toBeUndefined();
 	});
 
-	// The items each cell gained when the name rule went (ticket 686); the cells fixture's _comment lists them too.
+	// The items each cell gained when the name rule went; the cells fixture's _comment lists them too.
 	it.each([
 		['ret', 3, [28485]],
 		['feral', 2, [30222, 30223, 30229, 30230, 30834]],

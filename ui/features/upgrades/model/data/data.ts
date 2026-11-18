@@ -1,13 +1,12 @@
 /**
  * The data a run reads besides the page itself: the per-spec EP weights
- * (bundled JSON, copies of wowsims presets; the outer repo's
- * docs/fork-provenance/data.md records their sources) and the candidate pool,
- * which is built at run time from wowsims' own item database and the spec's
- * preset gear sets (`pool_source.ts`, ticket 505). No item list is bundled.
+ * (bundled JSON copies of wowsims presets; each file names its source) and the
+ * candidate pool, built at run time from wowsims' item database and the spec's
+ * preset gear sets (`pool_source.ts`). No item list is bundled.
  *
- * EP drives only the candidate prefilter and the gem fill, never the ranking
- * numbers themselves, which sims produce, so a spec whose weights were written
- * for another phase is a disclosed degradation, not a wrong ranking.
+ * EP drives only the candidate prefilter and the gem fill; sims produce every
+ * ranking number. So weights written for another phase are a disclosed
+ * degradation, not a wrong ranking.
  */
 
 import type { PoolEntry } from '../engine/pool';
@@ -30,7 +29,7 @@ import warriorEpWeights from './warrior-fallback.ep-weights.json';
 /**
  * A bundled EP-weights set: one per spec, plus the two builds that share a
  * page with another one (Survival on the hunter page, Arms on the warrior
- * page; ticket 803).
+ * page).
  */
 export type EpWeightsSet = SpecId | 'hunter-sv' | 'warrior-arms';
 
@@ -57,18 +56,8 @@ export function epWeightsSetFor(spec: SpecId, talentPointsByTree: readonly numbe
 	return leads ? variant.set : spec;
 }
 
-/**
- * One EP-weights set per spec, and per talent variant.
- *
- * The nine specs added by the all-DPS-specs pass each bundle their
- * `fallback` file — the entry `data/presets/ep-weights-by-phase.json` names
- * for a spec below its lowest `byPhase` key. A spec whose weights were
- * written for an earlier phase than the one being ranked is a real,
- * disclosed degradation, not a bug: EP drives only the candidate prefilter
- * and the gem fill, and every ranking number comes from the sim. The tab's
- * Assumptions block states it per run.
- */
-// JSON values only: the files' shape is stated here, never derived from the import (AGENTS.md, Types from JSON).
+/** One EP-weights set per spec, and per talent variant. */
+// The files' shape is stated here, never derived from the JSON import.
 export type EpWeightsFile = {
 	weights: Record<string, number>;
 	/** Keyed by wowsims `PseudoStat`; 0, 1 and 2 are main-hand, off-hand and ranged weapon DPS. */
@@ -87,27 +76,21 @@ const EP_WEIGHTS_BY_SET: Record<EpWeightsSet, EpWeightsFile> = {
 	enh: enhEpWeights as EpWeightsFile,
 	warlock: warlockEpWeights as EpWeightsFile,
 	warrior: warriorEpWeights as EpWeightsFile,
-	// P1_SV_EP_PRESET, which has P1_BM_EP_PRESET's numbers at fork b603564ee.
+	// P1_SV_EP_PRESET, which has P1_BM_EP_PRESET's numbers.
 	'hunter-sv': hunterSvEpWeights as EpWeightsFile,
-	// P3_ARMS_EP_PRESET ('P3, P4 & P5 - Arms'), not P1_ARMS_EP_PRESET: upstream's
-	// own Arms builds for phases 3-5 use it (specs/warrior/dps/presets.ts), and the
-	// page opens at phase 3 (CURRENT_PHASE), the phase the tab ranks by default.
-	// The disclosure below says when a run ranks another phase.
+	// P3_ARMS_EP_PRESET ('P3, P4 & P5 - Arms'), not P1_ARMS_EP_PRESET: wowsims'
+	// Arms builds for phases 3-5 use it (`ui/specs/warrior/dps/presets.ts`), and
+	// the page opens at phase 3 (CURRENT_PHASE), the phase the tab ranks by
+	// default. The disclosure below says when a run ranks another phase.
 	'warrior-arms': warriorArmsEpWeights as EpWeightsFile,
 };
 
 /**
  * The phase each spec's bundled EP weights was written for.
  *
- * `undefined` means the file records no phase at all — elemental ships a
- * single preset labelled "Default" — which still gets disclosed, as
- * "unphased default". Saying nothing because a file has no phase number
- * would be the same silent degradation the disclosure exists to prevent.
- *
- * The phases come from `data/presets/ep-weights-by-phase.json`, except ret
- * and feral (from the outer repo's docs/fork-provenance/data.md) and the two
- * talent variants (from the upstream preset names `P1_SV_EP_PRESET` and
- * `P3_ARMS_EP_PRESET`).
+ * `undefined` means the preset names no phase (elemental ships one labelled
+ * "Default"). It is still disclosed, as "unphased default", so a run never
+ * hides which weights it used.
  */
 const EP_WEIGHTS_PHASE_BY_SET: Record<EpWeightsSet, number | undefined> = {
 	ret: 2,
@@ -127,12 +110,9 @@ const EP_WEIGHTS_PHASE_BY_SET: Record<EpWeightsSet, number | undefined> = {
 
 /**
  * The EP-weights disclosure for a run that took `set`, or `undefined` when
- * the weights were written for exactly the phase being ranked.
- *
- * EP drives only the candidate prefilter and the gem fill — every ranking
- * number comes from the sim — so a mismatch degrades the shortlist's ordering
- * rather than falsifying a DPS figure. That makes it disclosable rather than
- * blocking, but it is not nothing, and it must not be silent.
+ * the weights were written for exactly the phase being ranked. A mismatch
+ * degrades the shortlist but falsifies no DPS figure, so it is disclosed
+ * rather than blocking.
  */
 export function epWeightsDisclosureFor(set: EpWeightsSet, maxPhase: ContentPhase): { from: string; requested: string } | undefined {
 	const phase = EP_WEIGHTS_PHASE_BY_SET[set];

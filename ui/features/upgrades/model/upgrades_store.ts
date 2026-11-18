@@ -1,6 +1,6 @@
 /**
- * The Upgrades tab's state as a zustand store, one per page `Sim` (ticket
- * 564), built the way upstream's sim store is (`ui/sim/state/sim_store.ts`).
+ * The Upgrades tab's state as a zustand store, one per page `Sim`, built the
+ * way wowsims' sim store is (`ui/sim/state/sim_store.ts`).
  * Its actions live in the store next to the state, as zustand recommends
  * (https://zustand.docs.pmnd.rs/learn/guides/practice-with-no-store-actions);
  * each one takes its next state from a pure function in `run_state.ts` or
@@ -43,13 +43,13 @@ import {
 /**
  * A column sort in TanStack Table's `SortingState` shape, declared here so the
  * model imports no React package; the table reads it as its controlled
- * `sorting` (ticket 565). Empty is the engine's order.
+ * `sorting`. Empty is the engine's order.
  */
 export type ResultsSort = Array<{ id: string; desc: boolean }>;
 
 /**
- * `sort` is the one column sort every results table and the export follow
- * (ticket 280). `view` is the view toggles as the user set them; a run that
+ * `sort` is the one column sort every results table and the export follow.
+ * `view` is the view toggles as the user set them; a run that
  * does not offer one shows it off (`appliedToggles`). `hiddenSources` is the
  * source keys "Filter by source" hides from a settled table; a key the table
  * does not offer hides nothing. `exportFlavour` is the export panel's token or
@@ -141,7 +141,7 @@ export function createUpgradesStore(seed: SettingsSeed, restored: RestoredTab = 
 				// The token is the default: the raid awards the token, not the tier piece.
 				exportFlavour: restored.exportFlavour ?? 'token',
 
-				// A run leaves the sort alone: the column sort the user chose holds across runs (owner ruling, ticket 582).
+				// A run leaves the sort alone: the column sort the user chose holds across runs.
 				startRun: (runId, startedAt, measuredOn) => setRun(() => runStarted(runId, startedAt, measuredOn)),
 				loadFixture: (runId, ranking, measuredOn) => setRun(() => fixtureLoaded(runId, ranking, measuredOn)),
 				landRow: (runId, row) => setRun(run => rowLanded(run, runId, row)),
@@ -179,7 +179,7 @@ export const selectHiddenSources = (state: UpgradesState): readonly string[] => 
 export const selectExportFlavour = (state: UpgradesState): ExportFlavour => state.exportFlavour;
 export const selectRunStatus = (state: UpgradesState): RunState['status'] => state.run.status;
 
-/** The signature the result on screen was measured on; none while a run is in flight, which is never stale (ticket 560). */
+/** The signature the result on screen was measured on; none while a run is in flight, which is never stale. */
 export const selectSettledSignature = (state: UpgradesState): string | undefined =>
 	state.run.status === 'done' || state.run.status === 'stopped' ? state.run.measuredOn?.inputsSignature : undefined;
 

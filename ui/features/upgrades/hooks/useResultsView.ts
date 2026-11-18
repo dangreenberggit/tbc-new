@@ -54,7 +54,7 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 	const ranking = run.status === 'done' || run.status === 'stopped' ? run.result : undefined;
 	const measuredOn = run.status === 'running' || run.status === 'done' || run.status === 'stopped' ? run.measuredOn : undefined;
 	// The sets the run was ranked with, not the sets selected now: a phase change after the run selects the new
-	// phase's sets (ticket 865). Memoised on them alone, so a row's tags keep their identity and its memoised name
+	// phase's sets. Memoised on them alone, so a row's tags keep their identity and its memoised name
 	// cell holds.
 	const rankedSets = measuredOn?.selectedSets ?? NO_SETS;
 	const tagsOf = useMemo(() => rowTagIndex(rankedSets), [rankedSets]);

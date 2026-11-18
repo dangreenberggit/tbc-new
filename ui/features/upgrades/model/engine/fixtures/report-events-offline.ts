@@ -1,13 +1,7 @@
 /**
- * Build RecordedGearSourceData from a raw WCL capture.
- *
- * PORTED from packages/core/src/fixtures/report-events-offline.ts, unchanged
- * except for import paths. Kept even though the fork's real
- * `PlayerGearSource` (slice 3) never reads WCL — this is E-W3's fixture
- * loader, not production code, and E-W3 (plan §8 "runs here, not in the
- * fork" note) needs the ported `RecordedSimRunner`/`RecordedGearSource` pair
- * to replay the same committed slamaltman fixture this repo's own
- * `slamaltman-offline.test.ts` uses.
+ * Build RecordedGearSourceData from a raw WCL capture. A fixture loader, not
+ * production code: it lets `RecordedSimRunner`/`RecordedGearSource` replay a
+ * committed capture.
  */
 
 import {
@@ -44,13 +38,9 @@ export const REPORT_EVENTS_REF: CharacterRef = {
 };
 
 /**
- * PORTED from packages/core/src/slots.ts's `mapWclGearToSim` +
- * `WCL_ORDER`/`SIM_ORDER` mapping — the 19→17 WCL translation plan §2.1
- * excludes from the *production* port surface (the page's `Gear` is already
- * sim-native) but which the raw fixture itself is still built for, since
- * `slamaltman.raw.json` is a genuine WCL capture. E-W3 needs this to turn
- * the fixture into the same `SimItemSpec[]` type production code consumes,
- * so it lives here, scoped to the fixture loader rather than the engine.
+ * WCL's 19-slot gear order. The page's `Gear` is already sim-native; only a
+ * raw WCL capture needs mapping to the 17-slot `SimItemSpec[]` that
+ * production code consumes, so the mapping lives with the fixture loader.
  */
 const WCL_ORDER = [
   "head",

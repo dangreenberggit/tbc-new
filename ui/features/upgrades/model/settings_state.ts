@@ -26,7 +26,7 @@ export type SettingsState = {
  */
 export type SettingsScope = { key: string; selectedSetKeys: readonly string[]; validSourceKeys: readonly string[] };
 
-/** The old tab's cap field read 0 as "no cap" (C6). */
+/** A cap of 0 means "no cap". */
 const normaliseCap = (cap: number | undefined): number | undefined => (cap !== undefined && cap > 0 ? cap : undefined);
 
 const toggled = (keys: readonly string[], key: string): readonly string[] => (keys.includes(key) ? keys.filter(k => k !== key) : [...keys, key]);
@@ -77,10 +77,9 @@ export function appliedSettings(state: SettingsState, scope: SettingsScope | und
 }
 
 /**
- * The page moved to another spec:phase, which gets its own default sets when next applied, as on the old tab
- * whatever the user had picked. An exclusion the new pool does not offer is dropped now, so it stays dropped on the
- * way back, as when the old tab applied that phase. With no sets to forget and no exclusion to drop, it returns the
- * state it was given.
+ * The page moved to another spec:phase, which gets its own default sets when next applied, whatever the user had
+ * picked. An exclusion the new pool does not offer is dropped now, so it stays dropped on the way back. With no sets
+ * to forget and no exclusion to drop, it returns the state it was given.
  */
 export function afterScopeChange(state: SettingsState, validSourceKeys: readonly string[]): SettingsState {
 	const excludedSources = offeredExclusions(state.excludedSources, validSourceKeys);
@@ -94,7 +93,7 @@ export function withoutUnofferedSources(state: SettingsState, validSourceKeys: r
 	return kept.length === state.excludedSources.length ? state : { ...state, excludedSources: kept };
 }
 
-/** The old tab hid the prune box while no set was selected, and a hidden box read as off. */
+/** The prune box is hidden while no set is selected, and a hidden box reads as off. */
 export const pruneEffective = (state: SettingsState): boolean => state.prune && state.selectedSetKeys.length > 0;
 
 export const toRunSettings = (state: SettingsState, selectedSetItemIds: readonly number[]): RunSettings => ({

@@ -1,8 +1,5 @@
 /**
  * Detect single-item swaps that break a 2-piece or 4-piece set bonus.
- *
- * PORTED from packages/core/src/set-bonus.ts, unchanged except for the
- * items.ts import path.
  */
 
 import { getItem } from "./items";

@@ -33,7 +33,7 @@ const RunStatusText = ({ run }: StatusLineProps) => {
 				</span>
 			);
 		case 'stopped': {
-			// No time on a stopped run: it would read as the cost of a full ranking (ticket 460).
+			// No time on a stopped run: it would read as the cost of a full ranking.
 			const dps = formatDps(run.result.baseline.dps);
 			return (
 				<span className="text-warning" data-testid="upgrades-baseline-summary">
@@ -50,7 +50,7 @@ const RunStatusText = ({ run }: StatusLineProps) => {
 
 /**
  * The run's status in two live regions, both always in the page so that a
- * screen reader hears each change (old tab): the polite region carries every
+ * screen reader hears each change: the polite region carries every
  * state but a failure, and the alert region carries only the failure.
  */
 export const StatusLine = ({ run }: StatusLineProps) => (

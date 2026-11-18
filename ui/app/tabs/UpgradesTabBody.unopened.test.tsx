@@ -98,7 +98,7 @@ describe('UpgradesTabBody while its tab has not been opened (ticket 589)', () =>
 		LOADS_DATA_TIMEOUT_MS,
 	);
 
-	// Ticket 564's rule, kept for a tab that never opens (ticket 587): the next open applies the new phase's defaults.
+	// A tab that never opens still resets to the new phase's defaults on its next open.
 	it('saves a phase change as the saved sets’ reset, and keeps every other saved choice', async () => {
 		const storage = memoryStorage({
 			[KEY]: savedEntry({ selectedSetKeys: [], excludedSources: ['Hyjal Summit'], iterations: 4321, defaultsFor: 'ret:3' }),
@@ -117,8 +117,7 @@ describe('UpgradesTabBody while its tab has not been opened (ticket 589)', () =>
 		});
 	});
 
-	// A closed tab cannot read the pools, so only an open tab drops an exclusion its new phase does not offer. Review
-	// round 3 of feat/tab-settings-persist accepted the difference (D-r3-2).
+	// A closed tab cannot read the pools, so only an open tab drops an exclusion its new phase does not offer.
 	it(
 		'keeps, through a phase round trip, an exclusion the middle phase does not offer',
 		async () => {
@@ -152,7 +151,7 @@ describe('UpgradesTabBody while its tab has not been opened (ticket 589)', () =>
 		expect(storage.entries.size).toBe(0);
 	});
 
-	// A3: the page's settings load writes the saved phase back; that is not a change.
+	// The page's settings load writes the saved phase back; that is not a change.
 	it('keeps the saved sets through the page’s own start-up phase write', async () => {
 		const saved = savedEntry({ selectedSetKeys: ['preset:4:P4'], defaultsFor: 'ret:4' });
 		const storage = memoryStorage({ [KEY]: saved });

@@ -1,10 +1,5 @@
 /**
  * Standing assumptions vs this-run substitutions.
- *
- * PORTED from packages/core/src/disclosure.ts, unchanged except that ticket
- * 521 deleted `hitCapBanner`: nothing called it, and the cap readout it
- * formatted is gone from the fork (`caps.ts`). Pure formatting over
- * `types.ts`/`meta-repair.ts` types — no data-source dependency to adapt.
  */
 
 import type { MetaRepairSwap } from "./meta-repair";
@@ -41,7 +36,7 @@ export type Substitution = {
   slot?: SimOrderName;
   /**
    * The error that a failed sim, read or request build gave, word for word,
-   * apart from the tab's one-sentence `detail` (ticket 874).
+   * apart from the tab's one-sentence `detail`.
    */
   error?: string;
 };

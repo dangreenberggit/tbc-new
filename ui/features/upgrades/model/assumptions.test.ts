@@ -19,7 +19,7 @@ describe('assumptionsLine', () => {
 		}
 	});
 
-	// The Arms set was written for P3 and Fury's for P1 (ticket 803), so the phase in the line shows which set the talents picked.
+	// The Arms set was written for P3 and Fury's for P1, so the phase in the line shows which set the talents picked.
 	it('says which phase an Arms or a Fury run’s EP weights were written for', () => {
 		const rankingP4 = { ...RANKING_FIXTURE, assumptions: { ...RANKING_FIXTURE.assumptions, maxPhase: 4 as const } };
 		expect(assumptionsLine(rankingP4, { epWeightsSet: epWeightsSetFor('warrior', [33, 28, 0]) })).toContain(' · EP weights: written for P3, ranking P4');
@@ -43,13 +43,12 @@ describe('assumptionsLine', () => {
 		expect(line).not.toContain('candidate cap');
 	});
 
-	// 1042: ret-p3 under include-unticked (1044 before ticket 753 took one Sergeant's cape and cloak out), measured once by the independent script `pool_source.cells.fixture.json`'s
-	// _comment describes, which no checkout holds; re-pin as that _comment says.
+	// 1042: ret-p3 under include-unticked, measured as `pool_source.cells.fixture.json`'s _comment says; re-pin the same way.
 	it('names the page’s database and the size of the pool the run drew from', () => {
 		expect(assumptionsLine(RANKING_FIXTURE, { epWeightsSet: 'ret', host: dbPoolHost('ret') })).toContain(' · pool source: wowsims db (1042 entries)');
 	});
 
-	// A replayed run and a loaded fixture record no EP-weights set (ticket 811), but the page's pool is still known.
+	// A replayed run and a loaded fixture record no EP-weights set, but the page's pool is still known.
 	it('names the page’s pool and no EP weights when no set is known', () => {
 		const line = assumptionsLine(RANKING_FIXTURE, { host: dbPoolHost('ret') });
 		expect(line).toContain(' · pool source: wowsims db (1042 entries)');
@@ -81,7 +80,7 @@ describe('substitutionConsoleLines', () => {
 			'[upgrades] Warglaive of Azzinoth: This item was not ranked in this slot, because its sim failed.\nitem 32837, slot mainhand\npanic: runtime error\ngoroutine 1 [running]:\nmain.main()',
 		]);
 		expect(substitutionConsoleLines([{ field: 'hit cap', detail: 'Kept the worn hit gems.' }])).toEqual([]);
-		// Owner's ruling 2026-11-11: the page shows no error, so each failure's whole error goes to the console.
+		// The page shows no error, so each failure's whole error goes to the console.
 		const failed = (error: string) => ({ field: 'set', detail: 'Its sim failed.', error });
 		expect(substitutionConsoleLines([failed('HTTP 500 from /raidSimAsync')])).toEqual(['[upgrades] set: Its sim failed.\nHTTP 500 from /raidSimAsync']);
 		expect(substitutionConsoleLines([failed(' \n')])).toEqual([]);

@@ -58,7 +58,7 @@ describe('openSavedUpgradesStore', () => {
 		expect(state.view.onlyBis).toBe(true);
 	});
 
-	// In version 1 a stored source key meant "excluded"; a stored default-off key now means "ticked" (ticket 505).
+	// In version 1 a stored source key meant "excluded"; a stored default-off key now means "ticked".
 	it('reads a version-1 entry that unticked "Heroic dungeon" as nothing saved, so the run still excludes it', () => {
 		const heroic = bucketKeyOf('heroic');
 		const raw = JSON.stringify({ version: 1, settings: { excludedSources: [heroic] } });
@@ -95,7 +95,7 @@ describe('openSavedUpgradesStore', () => {
 		expect(openSavedUpgradesStore(SEED, storage, KEY, { iterations: 300 }).getState().settings.iterations).toBe(300);
 	});
 
-	// The cap picker shows only on a page with `?upgrades-dev` (ticket 466), so a cap that came back on another page would cut the run unseen (ticket 586).
+	// The cap picker shows only on a page with `?upgrades-dev`, so a cap that came back on another page would cut the run unseen.
 	it('restores no cap: a page without the dev link runs uncapped whatever a dev page set', () => {
 		const storage = memoryStorage({ [KEY]: JSON.stringify({ version: SAVED_VERSION, settings: { candidateCap: 25 } }) });
 		const devPage = openSavedUpgradesStore(SEED, storage, KEY, { candidateCap: 3 });

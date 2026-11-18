@@ -11,10 +11,7 @@ export type TipTextRow =
 	| { type: 'heading'; id: string; text: string }
 	| { type: 'line'; id: string; label: string; value: string; marker?: string; total: boolean; muted?: boolean };
 
-/**
- * Joins names as "A", "A and B", or "A, B and C". Literal English, as the old
- * tab had it; the `set_bonus` keys carry no list pattern.
- */
+/** Joins names as "A", "A and B", or "A, B and C", in literal English: the `set_bonus` keys carry no list pattern. */
 const joinNames = (names: readonly string[]): string => (names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`);
 
 /** "{set} {count}pc", with the no-break space the `tip_*` keys use, so a count never wraps away from its set. */
@@ -90,7 +87,7 @@ export function tipLabelText(label: TipLabel): string {
 	}
 }
 
-/** What the set screen found, in place of a figure (ticket 336). */
+/** What the set screen found, in place of a figure. */
 const screenedValueText = (reason: ScreenedReason): string => {
 	switch (reason) {
 		case 'outside-band':
@@ -104,10 +101,9 @@ const screenedValueText = (reason: ScreenedReason): string => {
 
 /**
  * A receipt figure is signed, with no unit (the column says DPS). So is a
- * step past the stop, the owner's "It could just show that the 4 piece is
- * that amount (negative)" (ticket 655, 2026-11-01). Any other outcome is
- * "N DPS more" or "N DPS less" with no sign, because outcomes are not added
- * to anything.
+ * step past the stop, which shows the piece's own amount even when negative.
+ * Any other outcome is "N DPS more" or "N DPS less" with no sign, because
+ * outcomes are not added to anything.
  */
 const valueText = (kind: SetBonusTip['kind'], entry: Extract<TipEntry, { type: 'line' }>): string => {
 	const { dps } = entry;

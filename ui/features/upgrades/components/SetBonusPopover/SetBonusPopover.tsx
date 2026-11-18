@@ -28,7 +28,7 @@ const FLIP_MARGIN_PX = 5 + 1;
 
 /**
  * Right when the widest popup fits between the figure and the window's edge, above otherwise. Measured here because
- * Base UI's own fallback for `right` is `left`, which would cover the row's item name (ticket 495).
+ * Base UI's own fallback for `right` is `left`, which would cover the row's item name.
  */
 const sideFor = (figure: Element): PopoverSide => {
 	const rootPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
@@ -38,13 +38,10 @@ const sideFor = (figure: Element): PopoverSide => {
 };
 
 /**
- * Where a row's set-bonus figure comes from: a receipt whose lines add up to
- * the figure, or a step ranking row's separate outcomes. Opens on hover, and
- * from the keyboard with Enter or Space on the figure (Base UI's trigger is a
- * button). Right of the figure when it fits, so the DPS column stays readable,
- * and above it otherwise (ticket 495). Since ticket 606 put Slot after DPS, the
- * right side covers the row's own Slot cell; the owner accepted that
- * (Q-606-popover-side).
+ * Where a row's set-bonus figure comes from: a receipt whose lines add up to the figure, or a step
+ * ranking row's separate outcomes. Opens on hover, and from the keyboard with Enter or Space on the
+ * figure (Base UI's trigger is a button). Right of the figure when it fits, so the DPS column stays
+ * readable, and above it otherwise; on the right it covers the row's own Slot cell.
  */
 export const SetBonusPopover = ({ tip, children }: SetBonusPopoverProps) => {
 	const [side, setSide] = useState<PopoverSide>('top');

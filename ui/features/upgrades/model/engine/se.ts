@@ -1,14 +1,11 @@
 /**
- * Paired-replicate standard error (PLAN.md §10, Stage 2).
- *
- * Pure and separate from `rank.ts` because §10's claim is a statistical one
- * that stands or falls on its own: replicate a delta across distinct seeds and
- * report `sd(deltas) / sqrt(n)`. Correct by construction, no distributional
- * assumptions. This buys **resolution, not correctness** — a refinement of how
- * finely the top of the list can be ordered, not a fix to any number below it.
+ * Paired-replicate standard error: replicate a delta across distinct seeds and
+ * report `sd(deltas) / sqrt(n)`, with no distributional assumptions. This buys
+ * **resolution, not correctness**: how finely the top of the list can be
+ * ordered, not a fix to any number below it.
  */
 
-/** §10: "for the top ~8 items only" — 5× sims on 8 items rather than on 180. */
+/** Replicate the top 8 items only: 5× sims on 8 items, not on the whole list. */
 export const PAIRED_REPLICATE_TOP_N = 8;
 
 /**
@@ -25,21 +22,17 @@ export class DegenerateSeedsError extends Error {
 }
 
 /**
- * §4: `RankInput.seeds` is the switch — "`>1` enables paired replication".
- * Honoured here rather than by a second flag, so the two cannot disagree.
+ * `RankInput.seeds` is the switch: more than one seed enables paired
+ * replication. No second flag, so the two cannot disagree.
  */
 export function usesPairedReplication(seeds: readonly number[]): boolean {
   return seeds.length > 1;
 }
 
 /**
- * Every seed must be distinct, and the reason is measured rather than assumed:
- * the shared-seed arm of the §10 five-seed experiment repeated
- * **bit-identical** — 0.00 spread, recorded in `docs/verification-log.md` and
- * `docs/five-seed-spread.json`. So replicating one seed five times yields
- * `sd(deltas) = 0` and an SE of zero — a plausible-looking number that is
- * entirely an artifact, and worse than no number at all because it reads as
- * precision. Fail loudly instead of reporting it.
+ * Every seed must be distinct: a shared seed repeats **bit-identical**, so
+ * replicating one seed yields `sd(deltas) = 0` and an SE of zero, an artifact
+ * that reads as precision. Fail loudly instead of reporting it.
  */
 export function assertDistinctSeeds(seeds: readonly number[]): void {
   if (!usesPairedReplication(seeds)) return;
@@ -61,15 +54,11 @@ export function assertDistinctSeeds(seeds: readonly number[]): void {
 
 /**
  * The full guard on a multi-seed replication: distinct **and** spaced far
- * enough apart to be independent (ticket 236).
+ * enough apart to be independent.
  *
- * `iterations` is required rather than optional, and the spacing check is not
- * separately reachable, because an optional argument made ticket 236's whole
- * fix opt-in: omitting it silently downgraded to distinctness alone and
- * re-admitted the false-precision SE that PLAN.md names as the project's worst
- * case. A caller that genuinely only wants distinctness now asks for
- * `assertDistinctSeeds` by name, so the weaker check is a visible choice
- * instead of a missing argument (ticket 243).
+ * `iterations` is required so the spacing check cannot be skipped by
+ * omission. A caller that wants distinctness alone calls
+ * `assertDistinctSeeds` by name, so the weaker check is a visible choice.
  */
 export function assertUsableSeeds(
   seeds: readonly number[],
@@ -96,20 +85,13 @@ export function assertUsableSeeds(
 
 /**
  * `count` seeds from `base`, spaced by `iterations` so no two runs share a
- * per-iteration RNG stream (ticket 236).
+ * per-iteration RNG stream: iteration i of a run reseeds to `RandomSeed + i`
+ * (`reseedRands`, sim/core/sim.go). Derived rather than pinned, so the spacing
+ * follows the iteration count. Upstream spaces concurrent splits the same way
+ * (sim/core/sim_concurrent.go).
  *
- * Derived rather than pinned as constants, because the defect this replaced
- * was constants that stayed still while the iteration count they were only
- * correct relative to moved. Upstream applies the same rule to keep concurrent
- * splits independent (`sim/core/sim_concurrent.go:39-40`).
- *
- * Spacing is what matters, not the arrangement: at 20 seeds and 3,000
- * iterations, seeds spaced by exactly `iterations` measure `sampleSd/SE` 0.895
- * and 20 scattered seeds measure 1.074 — both consistent with independence,
- * against 0.087 for the seeds this fixed. Do not read a single five-seed ratio
- * as a measurement of independence: at n=5 the sample sd has 34 % relative
- * error, so it cannot separate 0.5 from 1.0. See
- * `.scratch/handoffs/ticket-236-seed-spacing-measurements.md`.
+ * A single five-seed sd ratio cannot test independence: at n=5 the sample sd
+ * has 34 % relative error, so it cannot separate 0.5 from 1.0.
  */
 export function replicateSeeds(
   base: number,
@@ -122,10 +104,9 @@ export function replicateSeeds(
 /**
  * `SE = sd(deltas) / sqrt(n)`, with `sd` the sample standard deviation.
  *
- * Sample (`n - 1`) rather than population: the five seeds are a sample of the
- * seed space, not the whole of it, and the population form would understate
- * the spread — biased toward exactly the false precision this method exists to
- * avoid.
+ * Sample (`n - 1`) rather than population: the seeds are a sample of the seed
+ * space, and the population form would understate the spread, toward the false
+ * precision this method exists to avoid.
  */
 export function pairedReplicateSe(deltas: readonly number[]): number {
   if (deltas.length < 2) {

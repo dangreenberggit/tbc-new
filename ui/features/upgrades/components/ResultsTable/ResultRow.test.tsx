@@ -72,7 +72,7 @@ describe('ResultRow', () => {
 			'',
 			'',
 		]);
-		// The gates find the DPS cell by this id, not by its position (ticket 606).
+		// Tests outside this file find the DPS cell by this id, not by its position.
 		expect(within(tr).getByTestId('upgrades-delta-cell')).toBe(cells[2]);
 		expect(cells[5]?.querySelector('[data-testid="favorite-stub"]')).not.toBeNull();
 		expect(cells[6]?.querySelector('[data-testid="batch-stub"]')).not.toBeNull();
@@ -108,7 +108,7 @@ describe('ResultRow', () => {
 		expect(link.getAttribute('href')).toBe(ActionId.makeNpcUrl(ILLIDAN));
 	});
 
-	// Choker of Serrated Blades drops in Hyjal Summit and Black Temple. Upstream's linked block names only the item's first
+	// Choker of Serrated Blades drops in Hyjal Summit and Black Temple. `ItemSource` names only the item's first
 	// drop, which can be the hidden one, so while any of the row's sources is hidden the cell names a shown one instead.
 	it('names only a shown source of a row from two raids while Filter by source hides the other', () => {
 		const HYJAL = 3606;
@@ -145,8 +145,8 @@ describe('ResultRow', () => {
 		expect(within(sourceCell(['Karazhan'])).getByRole('link').textContent).toBe('Hyjal Summit');
 	});
 
-	// Libram of Hope: upstream's npc 16097 is named 'Isalien"].." - "..format(AL["Tier %s Sets' because its generator
-	// overran the AtlasLoot key (ticket 680). The cell names the boss the key holds.
+	// Libram of Hope: npc 16097 in db.json is named 'Isalien"].." - "..format(AL["Tier %s Sets' because its generator
+	// overran the AtlasLoot key. The cell names the boss the key holds.
 	it('names the boss of an npc whose name overran its AtlasLoot key, and keeps a real name with quotes', () => {
 		const DIRE_MAUL = 2557;
 		const ISALIEN = 16097;
@@ -192,7 +192,7 @@ describe('ResultRow', () => {
 		expect(within(tr).getByText('Black Temple · Reliquary of the Lost').tagName).toBe('SMALL');
 	});
 
-	// Lightbringer Greaves' tier token; upstream's db.json has no source for it, so the plain text is all the cell can show.
+	// Lightbringer Greaves' tier token; db.json has no source for it, so the plain text is all the cell can show.
 	const token = {
 		kind: 'token',
 		zone: 'Black Temple',
@@ -225,9 +225,8 @@ describe('ResultRow', () => {
 		expect(name.className).toBe('text-quality-epic');
 	});
 
-	// Ticket 620: each reputation-ring step is its own item, and the steps of one chain share a name. The two here are
-	// "Band of Eternity" at 136 (Honored) and 135 (Revered): levels from the fork's db.json, standings from
-	// tbc-gear-prio's data/atlasloot_sources.json. Steps of different chains can share both the name and the level.
+	// Each reputation-ring step is its own item, and the steps of one chain share a name. The two here are
+	// "Band of Eternity" at 136 (Honored) and 135 (Revered), with levels from db.json.
 	const ringStep = (id: number, ilvl: number) =>
 		UIItem.create({ id, name: 'Band of Eternity', quality: ItemQuality.ItemQualityEpic, scalingOptions: { 0: { ilvl, stats: {} } } });
 	const RINGS: Record<number, UIItem> = { 29299: ringStep(29299, 136), 29300: ringStep(29300, 135) };
@@ -242,7 +241,7 @@ describe('ResultRow', () => {
 			const tr = renderRow(ringRow(id), RING_CONTEXT);
 			const name = within(tr).getByTestId('upgrades-item-name');
 			const ilvl = within(tr).getByTestId('upgrades-item-ilvl');
-			// After the name and outside its link; layout check 22 (scripts/tab-harness/test-layout.mjs) measures that it sits below.
+			// After the name and outside its link.
 			expect(name.contains(ilvl)).toBe(false);
 			expect(name.compareDocumentPosition(ilvl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 			return ilvl.textContent;
@@ -294,7 +293,7 @@ describe('ResultRow', () => {
 	});
 
 	it('hints at set detail on a non-set row whose own swap breaks a worn bonus, from the gear the ranking was measured on', () => {
-		// Feral wearing Thunderheart Gauntlets and Leggings (2pc); a non-set pair of legs breaks the 2pc (ticket 536).
+		// Feral wearing Thunderheart Gauntlets and Leggings (2pc); a non-set pair of legs breaks the 2pc.
 		const worn = [8345, 30017, 30055, 29994, 30101, 29966, 31034, 30106, 31044, 28545, 29997, 30052, 30627, 29383, 32014, 0, 32387];
 		const legs: RankedItem = { ...fixtureRow(0), itemId: 30900, name: 'Bow-stitched Leggings', slot: 'legs', deltaDps: -94.1, deltaPct: -3.8 };
 		const ranking = { ...RANKING_FIXTURE, brokenSetValues: [{ setId: 676, setName: 'Thunderheart Harness', threshold: 2, dps: 106.24, se: 2 }] };
@@ -330,7 +329,7 @@ describe('ResultRow', () => {
 		expect(within(renderRow(fixtureRow(0))).queryByRole('button', { name: '+45.7' })).toBeNull();
 	});
 
-	// Ticket 618: a row below the 3 DPS cutoff once read "+3.0".
+	// Rounded to the nearest tenth, a row just below the 3 DPS bar would read "+3.0".
 	it('shows a figure just below the cutoff bar one tenth under the bar', () => {
 		const tr = renderRow({ ...fixtureRow(0), deltaDps: 2.96, belowCutoff: true });
 		expect(within(tr).getByTestId('upgrades-delta-cell').textContent).toMatch(/^\+2\.9/);

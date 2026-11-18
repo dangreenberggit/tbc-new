@@ -34,7 +34,7 @@ const show = (tip: SetBonusTip | null, figure = '+4.4') => {
 	return screen.getByRole('button', { name: figure });
 };
 
-/** The popover opens once the pointer rests on the figure, as upstream's hover popovers do. A browser fires `pointerenter` before the mouse events. */
+/** The popover opens once the pointer rests on the figure, as the site's other hover popovers do. A browser fires `pointerenter` before the mouse events. */
 const hover = (trigger: HTMLElement) => {
 	vi.useFakeTimers();
 	fireEvent.pointerEnter(trigger);

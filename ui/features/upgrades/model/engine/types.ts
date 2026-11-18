@@ -1,11 +1,5 @@
 /**
  * Domain refs shared by RankInput and the GearSource seam.
- *
- * PORTED from packages/core/src/types.ts, unchanged.
- *
- * `SpecId` used to be narrowed to ret/feral here because that was what this
- * fork's universes and EP weights covered. Both now cover all eleven DPS
- * specs, so the narrowing is gone and this file matches its source.
  */
 
 export type Region = "US" | "EU" | "KR" | "TW" | "CN";
@@ -17,14 +11,11 @@ export type CharacterRef = {
 };
 
 /**
- * A spec this engine can rank — i.e. one with a preset and a universe.
+ * A spec this engine can rank: one with a preset and a universe.
  *
- * Every per-spec engine table is a **total** `Record<SpecId, …>`, so adding a
- * member here without filling each of them is a compile error rather than a
- * silent inheritance of ret's numbers. That is the point of the totality: the
- * tables that matter (`CAP_PROFILE_BY_SPEC`, `SPEC_PREFERRED_METAS`,
- * `PRESET_ID_BY_SPEC`) each encode a per-spec game fact
- * that has no safe default.
+ * Every per-spec engine table (`CAP_PROFILE_BY_SPEC`, `SPEC_PREFERRED_METAS`,
+ * `PRESET_ID_BY_SPEC`) is a total `Record<SpecId, …>` holding a game fact with
+ * no safe default, so adding a member without filling each is a compile error.
  */
 export type SpecId =
   | "balance"
@@ -40,11 +31,9 @@ export type SpecId =
   | "warrior";
 
 /**
- * A spec this engine can *identify*, which is a wider set than it can rank.
- * Carried from packages/core for type compatibility with ported modules
- * (candidate-gems.ts's SPEC_PREFERRED_METAS keys on this) even though
- * spec.ts itself is not ported — the page already knows its own spec, so
- * nothing in the fork ever produces a "feral-tank" value here.
+ * A spec this engine can *identify*, a wider set than it can rank.
+ * candidate-gems.ts's SPEC_PREFERRED_METAS keys on it. Nothing in the tab
+ * produces "feral-tank": the page already knows its own spec.
  */
 export type DetectedSpecId = SpecId | "feral-tank";
 

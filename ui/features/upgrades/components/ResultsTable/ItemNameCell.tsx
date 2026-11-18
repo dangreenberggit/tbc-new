@@ -13,11 +13,11 @@ import { type RowTag, withHeading } from '../../model/settings_pool';
 export interface ItemNameCellProps {
 	row: Pick<RankedItem, 'itemId' | 'name' | 'bisTags' | 'owned'>;
 	quality: ItemQuality | undefined;
-	/** The selected sets that hold the item (ticket 430). */
+	/** The selected sets that hold the item. */
 	tags: readonly RowTag[];
-	/** The headings of the BiS sets that hold the item, named on its "BiS" badge when no selected set holds it (ticket 810). */
+	/** The headings of the BiS sets that hold the item, named on its "BiS" badge when no selected set holds it. */
 	bisHeadings: readonly string[];
-	/** Shown in the main table although it misses the cutoff (ticket 528): said in text beside the badges, so no hover is needed. */
+	/** Shown in the main table although it misses the cutoff: said in text beside the badges, so no hover is needed. */
 	notUpgrade?: boolean;
 	/** The item's level, or undefined (or 0) when the site's database gives none, which shows no level. */
 	ilvl?: number;
@@ -33,7 +33,7 @@ const listBadge = (bisTags: RankedItem['bisTags'], headings: readonly string[]):
 	return headings.length > 0 ? headings.map(heading => ({ key: `BiS:${heading}`, label: withHeading(label, heading) })) : [{ key: 'BiS', label }];
 };
 
-/** The item: its icon, its name as a wowhead link in its quality colour, and its tags beneath. `memo`: see `ResultRow`. */
+/** The item: its icon, its name as a wowhead link in its quality colour, and its tags beneath. Memoised: see `ResultRow`. */
 export const ItemNameCell = memo(({ row, quality, tags, bisHeadings, notUpgrade = false, ilvl }: ItemNameCellProps) => {
 	const { iconUrl, href } = useActionId(ActionId.fromItemId(row.itemId));
 	const badges = tags.length > 0 ? tags : listBadge(row.bisTags, bisHeadings);
@@ -43,7 +43,7 @@ export const ItemNameCell = memo(({ row, quality, tags, bisHeadings, notUpgrade 
 			<span className="flex items-center gap-2">
 				<WowheadIcon as="div" className="size-6 shrink-0" iconUrl={iconUrl} />
 				{/* The table's floor fits every name's widest word (`ResultsTable`); `wrap-anywhere` only keeps a longer one inside the fixed cell.
-				    The row gap keeps the badges off the name: the owner saw them crowd it at phone width (ticket 423); the layout gate's check 19 measures it. */}
+				    The row gap keeps the badges off the name at phone width. */}
 				<span className="grid min-w-0 gap-y-1 wrap-anywhere">
 					<a
 						href={href || undefined}
@@ -54,8 +54,7 @@ export const ItemNameCell = memo(({ row, quality, tags, bisHeadings, notUpgrade 
 						className={itemQualityClassName(quality)}>
 						{row.name}
 					</a>
-					{/* Ticket 620: the steps of one reputation-ring chain share a name, and the item level is the item fact wowsims has that tells two steps of one chain apart.
-					    Steps of different chains can share both the name and the level. */}
+					{/* The steps of one reputation-ring chain share a name; the item level tells them apart. */}
 					{(!!ilvl || badges.length > 0 || row.owned || notUpgrade) && (
 						<span className="flex flex-wrap items-center gap-1 text-xs">
 							{!!ilvl && <span data-testid="upgrades-item-ilvl">{i18n.t('upgrades_tab.results.item_level', { ns: 'upgrades', ilvl })}</span>}

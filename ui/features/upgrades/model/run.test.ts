@@ -16,10 +16,10 @@ import { MemoryStore } from './engine/seams/store';
 import { progressOf } from './progress_channel';
 import { createRunContext, rankForPlayer, type RunContext, type RunDeps } from './run';
 
-// The page adapters read a live sim page, which a unit test does not have; the
-// engine itself is covered by the repo's E-W3 parity test. This test covers what
-// the run model adds around the engine: where the runner comes from, the ticks,
-// the landed rows, Stop and the duration, and the engine options it passes.
+// The page adapters read a live sim page, which a unit test does not have, and the
+// engine has its own tests. This covers what the run model adds around the engine:
+// where the runner comes from, the ticks, the landed rows, Stop and the duration,
+// and the engine options it passes.
 const { PAGE_SKELETON, pageDatabase } = vi.hoisted(() => ({ PAGE_SKELETON: { raid: 'page' }, pageDatabase: () => undefined }));
 vi.mock('./adapters/skeleton', () => ({ currentPageSkeleton: () => PAGE_SKELETON }));
 vi.mock('./adapters/sim_database', () => ({ simDatabaseResolverFor: vi.fn(() => pageDatabase) }));
@@ -109,7 +109,7 @@ describe('rankForPlayer', () => {
 	});
 
 	// These options change the numbers and nothing else checks them: the engine is mocked here, and a
-	// re-recorded fixture would pin whatever values a dropped option gives (review A1).
+	// re-recorded fixture would pin whatever values a dropped option gives.
 	it('ranks the page skeleton with its sim database and the spec’s EP weights, broken set bonuses measured and the set screen on', async () => {
 		const host = fakeHost();
 		await rankForPlayer(host, SETTINGS, depsFor());
@@ -123,9 +123,9 @@ describe('rankForPlayer', () => {
 		expect(deps.setScreen).toBe('on');
 	});
 
-	// Survival and Arms have no page of their own (ticket 803): the page's talents say which set the run takes. The
-	// talents strings are upstream's presets (SVTalents, BMTalents in specs/hunter/dps/presets.ts; ArmsTalents,
-	// FuryTalents, ArmsKebabTalents in specs/warrior/dps/presets.ts), copied because ui/features may not import specs.
+	// Survival and Arms have no page of their own: the page's talents say which set the run takes. The talents
+	// strings are wowsims' presets (SVTalents, BMTalents in ui/specs/hunter/dps/presets.ts; ArmsTalents, FuryTalents,
+	// ArmsKebabTalents in ui/specs/warrior/dps/presets.ts), copied because ui/features may not import specs.
 	it.each([
 		['a Survival hunter', Spec.SpecHunter, '502-0550201205-333200022003223005103', hunterSvWeights],
 		['a Beast Mastery hunter', Spec.SpecHunter, '522002005150122431051-0505201205', hunterBmWeights],
@@ -141,7 +141,7 @@ describe('rankForPlayer', () => {
 		expect(deps.epWeights).toBe(weightsFile.weights);
 	});
 
-	// One decision (ticket 811): the set the engine's weights came from is the set the run resolves with, for the
+	// One decision: the set the engine's weights came from is the set the run resolves with, for the
 	// session's assumptions line.
 	it('resolves with the EP-weights set it ranked with', async () => {
 		const result = await rankForPlayer(fakeHost(Spec.SpecHunter, 3, '502-0550201205-333200022003223005103'), SETTINGS, depsFor());
@@ -151,9 +151,8 @@ describe('rankForPlayer', () => {
 		expect(result.epWeightsSet).toBe('hunter-sv');
 	});
 
-	// A phase with no candidates (ticket 515): the run must still finish, so the tab can say why it has no rows.
-	// The engine is mocked here; that it returns no rows on an empty pool is tested by `packages/core/test/rank.test.ts`
-	// (the slamaltman baseline case) in the main repo, tbc-gear-prio, not in this fork.
+	// A phase with no candidates: the run must still finish, so the tab can say why it has no rows. The engine is
+	// mocked here.
 	it('passes the phase and an empty pool to the engine on a phase with no candidates, and resolves', async () => {
 		expect(poolFor(fakeHost(Spec.SpecRetributionPaladin, 1), [], 1)).toEqual([]);
 		rankBehaviour = async () => ({ ...RANKING_FIXTURE, items: [] });

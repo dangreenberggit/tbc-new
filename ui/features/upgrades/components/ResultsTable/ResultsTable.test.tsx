@@ -45,7 +45,7 @@ const cellsOf = (row: HTMLElement | undefined) =>
 const rowsOf = (table: HTMLElement) => within(table).getAllByTestId('upgrades-result-row');
 const namesOf = (table: HTMLElement) => rowsOf(table).map(row => within(row).getByTestId('upgrades-item-name').textContent);
 const positionsOf = (table: HTMLElement) => rowsOf(table).map(row => cellsOf(row)[0]);
-// What the main repo's tab harness reads of each row: `data-index`, the item and the Rank cell.
+// What a test driving the page reads of each row: `data-index`, the item and the Rank cell.
 const placesOf = (table: HTMLElement) => rowsOf(table).map(row => [row.dataset.index, row.dataset.itemId, cellsOf(row)[0]]);
 const ID_BY_NAME = new Map(FOUR.map(row => [row.name, String(row.itemId)]));
 /** The places `placesOf` reads when the rows of `FOUR` with these names are shown in this order. */

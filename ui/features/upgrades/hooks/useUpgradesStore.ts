@@ -26,16 +26,16 @@ const DEV_LINK: LinkedSettings = {
 const stores = new WeakMap<Sim, UpgradesStore>();
 
 /**
- * The Upgrades tab's store for a page, one per `Sim` as upstream keeps one sim
- * store per `Sim` (ticket 564). Any reader on the page finds it from the host
- * it already has, with no provider; the first reader creates it. That reader is
+ * The Upgrades tab's store for a page, one per `Sim` as the sim store is. Any
+ * reader on the page finds it from the host it already has, with no provider;
+ * the first reader creates it. That reader is
  * usually a render, so the render that creates the store also installs the
  * page-lifetime phase subscription (`followPhase`); it writes no state, and the
  * `WeakMap` hands a repeated render (StrictMode) the same store. The store is
  * in the map before `followPhase` runs, so a render React discards before
  * commit leaves the one store the next render for that `Sim` finds. The store
- * starts from what this spec's page saved last, under the spec's key as
- * upstream saves the sim's own settings.
+ * starts from what this spec's page saved last, under the spec's key, as the
+ * sim's own settings are saved.
  */
 export function upgradesStoreFor(host: IndividualSimHost<Spec>): UpgradesStore {
 	let store = stores.get(host.sim);
@@ -53,7 +53,7 @@ export const useUpgradesStoreApi = (): UpgradesStore => upgradesStoreFor(useSimH
  * A number picker's change source and read for one tab setting, with the tab
  * store as its model. It rings on that field alone, so a row a run lands does
  * not rewrite the field. Writes go through `useUpgradesSettings`, which
- * applies the scope's default sets first. Gated like every upstream picker
+ * applies the scope's default sets first. Gated like every sim picker
  * source (`subscriptions.ts` `fromSelector`), so a write inside `batch()` rings
  * once, at the batch's end.
  */

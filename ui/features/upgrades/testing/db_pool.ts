@@ -1,8 +1,8 @@
 /**
- * The run-time pool over the fork's own db.json and each spec's wowsims
- * presets, for tests: what `buildPool` gives a live page, without a `Sim` or a
- * `Player`. The presets come from `model/pool_source.presets.fixture.json`,
- * whose `_comment` says how to re-pin it.
+ * The run-time pool over db.json and each spec's presets, for tests: what
+ * `buildPool` gives a live page, without a `Sim` or a `Player`. The presets
+ * come from `model/pool_source.presets.fixture.json`, whose `_comment` says how
+ * to re-pin it.
  */
 
 import { readFileSync } from 'node:fs';
@@ -41,11 +41,11 @@ export const TEST_SOURCE_DB: SourceDb = {
 	getNpc: id => npcsById.get(id) ?? null,
 	getItemById: testItem,
 };
-// JSON values only: the file's shape is stated by `TierExchange`, never derived from the import (AGENTS.md, Types from JSON).
+// JSON values only: the file's shape is stated by `TierExchange`, never derived from the import.
 export const TEST_EXCHANGE = indexExchange(tierExchange as TierExchange);
 export const testSourcesOf = (item: UIItem) => sourcesOf(item, TEST_SOURCE_DB, TEST_EXCHANGE);
 
-// JSON values only: the fixture's shape is asserted here, never derived from the import (AGENTS.md, Types from JSON).
+// JSON values only: the fixture's shape is asserted here, never derived from the import.
 export const TEST_PRESETS = (presetsFixture as { specs: Record<string, PresetSet[]> }).specs;
 
 /** `run.ts`'s spec map read backwards through `specIdFor`, so the two cannot drift; `pool_source.test.ts` checks it covers every preset spec. */

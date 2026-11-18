@@ -35,7 +35,7 @@ import { sourceOptions } from './settings_pool';
 const ids = (rows: ReadonlyArray<{ itemId: number }>) => rows.map(row => row.itemId);
 const VIEW = applyView(RANKING_FIXTURE);
 const helm = fixtureRow(5);
-// The main repo's recording of a ret P3 run from P2 gear (model → upgrades → features → ui → fork → vendor → repo root).
+// A recording of a ret P3 run from P2 gear, kept outside this checkout, six folders above this one.
 const RECORDING = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../../../packages/core/test/fixtures/tab-recordings/ret-p3-p2.json');
 
 describe('effectiveSlot and rowKey', () => {
@@ -49,8 +49,8 @@ describe('effectiveSlot and rowKey', () => {
 	});
 });
 
-// A held-in-off-hand item the engine placed in the off hand (Fathomstone, a P3 caster off hand). Since engine version 7
-// every weapon row carries its `slotChoice`; a row without one would fall back to "mainhand".
+// A held-in-off-hand item the engine placed in the off hand (Fathomstone, a P3 caster off hand). Every weapon row
+// carries its `slotChoice`; a row without one would fall back to "mainhand".
 const offHandRow: RankedItem = { ...fixtureRow(1), itemId: 30049, name: 'Fathomstone', slotChoice: 'offhand' };
 
 describe('a weapon row placed in the off hand', () => {
@@ -104,7 +104,7 @@ describe('paneRows', () => {
 	});
 });
 
-// Ticket 528, owner ruling 2026-10-11 (option A). Helm of the Illidari Shatterer (2.91) misses the 3 DPS bar; Midnight
+// Helm of the Illidari Shatterer (2.91) misses the 3 DPS bar; Midnight
 // Chestguard, moved to -4, misses it by more. Both put on a BiS list.
 const bisHelm: RankedItem = { ...helm, bisTags: ['BiS'] };
 const altChest: RankedItem = { ...fixtureRow(6), deltaDps: -4, belowCutoff: true, bisTags: ['Alt'] };
@@ -236,7 +236,7 @@ describe('resultsViewFor', () => {
 		expect(view.belowCutoffCount).toBe(0);
 	});
 
-	// Ticket 614: a display filter changes which rows a pane shows, never which panes exist.
+	// A display filter changes which rows a pane shows, never which panes exist.
 	it('with BiS only, keeps every slot tab and counts only the BiS-list rows above the cutoff', () => {
 		const view = resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!;
 		expect(slotTabs(view)).toEqual([
@@ -254,7 +254,7 @@ describe('resultsViewFor', () => {
 		});
 	});
 
-	// Ticket 749, owner 2026-11-02: the run may have left the slot's BiS-list item out (pre-run Sources), so a slot pane
+	// The run may have left the slot's BiS-list item out (pre-run Sources), so a slot pane
 	// with no BiS-list row gets the generic text, never one saying the slot has no BiS-list item.
 	it('under BiS only, gives a slot pane with no BiS-list row the no-upgrades reason', () => {
 		expect(paneRows(applyView(RANKING_FIXTURE), 'chest').emptyReason).toBe('no-upgrades');
@@ -262,14 +262,14 @@ describe('resultsViewFor', () => {
 		expect(paneRows(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!, SHOPPING_LIST_TAB).emptyReason).toBe('no-upgrades');
 	});
 
-	// Ticket 625, owner 2026-11-02: a pane whose BiS-list rows are all worn gets the no-upgrades reason, not a reason of its own.
+	// A pane whose BiS-list rows are all worn gets the no-upgrades reason, not a reason of its own.
 	it('under BiS only, gives a pane whose BiS-list rows are all worn the no-upgrades text', () => {
 		const view = resultsViewFor(done({ ...RANKING_FIXTURE, items: [{ ...bisHelm, owned: true }] }), ONLY_BIS)!;
 		expect(paneRows(view, 'head')).toMatchObject({ main: [], emptyReason: 'no-upgrades' });
 		expect(paneRows(view, SHOPPING_LIST_TAB)).toMatchObject({ main: [], emptyReason: 'no-upgrades' });
 	});
 
-	// Review R2-CQ7: when more than one reason holds, the order in paneRows decides what the pane says.
+	// When more than one reason holds, the order in paneRows decides what the pane says.
 	it('says no shown source before no upgrades', () => {
 		// A worn BiS-list helm from Zul'Aman stays; Cursed Vision of Sargeras, the unworn BiS-list helm above the cutoff,
 		// drops in Black Temple. The pane meets both the no-source case and the all-worn case that says no upgrades.
@@ -279,7 +279,7 @@ describe('resultsViewFor', () => {
 		expect(paneRows(view, 'head')).toMatchObject({ main: [], emptyReason: 'no-source-row' });
 	});
 
-	// The fork's own CI has no main repo around it, so the recording is read only where it exists.
+	// The recording is outside this checkout, so this runs only where it exists.
 	it.skipIf(!existsSync(RECORDING))('ret-p3-p2: under BiS only the neck pane, whose BiS-list item is worn, gets the no-upgrades reason (ticket 625)', () => {
 		const ranking = (JSON.parse(readFileSync(RECORDING, 'utf8')) as { ranking: Ranking }).ranking;
 		const view = resultsViewFor(done(ranking), ONLY_BIS)!;
@@ -336,7 +336,7 @@ describe('sourcesView over resultsViewFor', () => {
 		expect(hidingBlackTemple.sourcesHidden).toBe(true);
 	});
 
-	// Ticket 614: a display filter changes which rows a pane shows, never which panes exist.
+	// A display filter changes which rows a pane shows, never which panes exist.
 	it('keeps every slot tab of the unfiltered view, at 0 where the filter emptied it', () => {
 		expect(slotTabs(hidingBlackTemple)).toEqual([
 			{ id: 'head', count: 1 },
@@ -354,7 +354,7 @@ describe('sourcesView over resultsViewFor', () => {
 		expect(ids(bySource(done(ranking), NO_VIEW_TOGGLES, ['Hyjal Summit', 'Black Temple']).rows)).not.toContain(30902);
 	});
 
-	// Review D4 and ticket 647: no row has Zul'Aman first, so only this row's second zone puts it in the dialog.
+	// No row has Zul'Aman first, so only this row's second zone puts it in the dialog.
 	const hyjalOrZulAman: RankedItem = {
 		...twoRaidEdge,
 		sources: [twoRaidEdge.sources![0]!, { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin" }],
@@ -418,7 +418,7 @@ describe('sourcesView over resultsViewFor', () => {
 		expect(slotTabs(allHidden).map(tab => tab.id)).toEqual(['head', 'chest', 'legs', 'trinket1', 'mainhand']);
 	});
 
-	// Review AD1: a pane whose upgrades all come from hidden sources once said every candidate simmed at or below the worn gear.
+	// A pane whose upgrades all come from hidden sources says so, not that every candidate simmed at or below the worn gear.
 	it('says a pane whose upgrades the filter hid has no row from the shown sources, and keeps its below-cutoff rows', () => {
 		// Helm of the Illidari Shatterer, below the cutoff, made a Zul'Aman drop so it is the one row a shown source keeps.
 		const zulAmanHelm: RankedItem = { ...helm, source: { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin" } };
@@ -430,7 +430,7 @@ describe('sourcesView over resultsViewFor', () => {
 		}
 	});
 
-	// Ticket 648: the filter did not empty a main table that was already empty, so the pane keeps the no-upgrades reason.
+	// The filter did not empty a main table that was already empty, so the pane keeps the no-upgrades reason.
 	it('does not blame the shown sources for a pane whose rows were all below the cutoff before the cut', () => {
 		// Helm of the Illidari Shatterer (Black Temple) misses the cutoff; the Hyjal Summit weapon is the row the cut hides.
 		const view = bySource(done(withRows([helm, fixtureRow(1)])), NO_VIEW_TOGGLES, ['Hyjal Summit']);
@@ -439,7 +439,7 @@ describe('sourcesView over resultsViewFor', () => {
 		expect(ids(paneRows(view, 'head').belowCutoff)).toEqual([helm.itemId]);
 	});
 
-	// Review R5-1: with no row in any main table before the cut, only the Upgrades pane arm of `hadRowBeforeSourceCut` says the filter emptied it.
+	// With no row in any main table before the cut, only the Upgrades pane arm of `hadRowBeforeSourceCut` says the filter emptied it.
 	it('says the Upgrades pane has no row from the shown sources when the filter hid every row, all of them below the cutoff', () => {
 		// Helm of the Illidari Shatterer (Black Temple) and a Midnight Chestguard (Hyjal Summit) moved below the cutoff; neither is on a BiS list.
 		const lowChest: RankedItem = { ...fixtureRow(6), deltaDps: -4, belowCutoff: true };
@@ -449,7 +449,7 @@ describe('sourcesView over resultsViewFor', () => {
 		expect(paneRows(view, SHOPPING_LIST_TAB).emptyReason).toBe('no-source-row');
 	});
 
-	// Ticket 749: with the BiS-only reason gone, the filter must still not take the blame for a pane BiS only emptied.
+	// The filter must not take the blame for a pane BiS only emptied.
 	it('under BiS only, says no row comes from the shown sources only for a slot that had a BiS-list row before the source cut', () => {
 		const view = bySource(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple']);
 		// Chest has no BiS-list row at all.

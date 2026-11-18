@@ -1,20 +1,6 @@
 /**
- * Meta gem activation.
- *
- * ADAPTED from packages/core/src/meta.ts. packages/core re-derives
- * `gemColorMatchesSocket` and every meta condition (`data/gems/
- * meta-conditions.json`) because the CLI has nothing else to ask. The fork's
- * own `ui/core/proto_utils/gems.ts` already provides both — the same colour
- * table (including the Prismatic-matches-all-three rule this repo's comment
- * calls out as a deliberate divergence from upstream's Go constraint code)
- * and the same per-gem-id `MetaGemCondition` table, upstream-maintained. This
- * module is therefore reused-not-reimplemented: `gemColorMatchesSocket` and
- * `isMetaConditionMet`/`metaDeficit` delegate to the fork's own gems.ts
- * rather than re-encoding the eighteen meta conditions a second time.
- *
- * `socketBonusActive`, `gemColorCounts` and `metaStatus` are PORTED nearly
- * verbatim — they are packages/core's own orchestration over the shared
- * primitives above, not present in the fork's gems.ts.
+ * Meta gem activation. The colour table and the per-gem `MetaGemCondition`
+ * table come from ui/sim/proto/gems.ts rather than being re-encoded here.
  */
 
 import { GemColor } from "@generated/proto/common";
@@ -46,13 +32,9 @@ export function gemColorMatchesSocket(
 }
 
 /**
- * PORTED verbatim from packages/core/src/meta.ts — the TS rule is not present
- * as a standalone function anywhere in the fork, so this stays a direct port
- * over the shared `gemColorMatchesSocket`. The rule is the sim's own
- * (`sim/core/database.go` `ItemEquipmentGemAndEnchantStats`): every socket,
- * meta included, must hold a gem whose colour matches it, so an empty meta
- * socket withholds the bonus (ticket 541, which supersedes ADR-0025
- * Decision 3).
+ * The sim's own rule (`ItemEquipmentGemAndEnchantStats`, sim/core/database.go):
+ * every socket, meta included, must hold a gem whose colour matches it, so an
+ * empty meta socket withholds the bonus.
  */
 export function socketBonusActive(
   sockets: readonly number[],
@@ -91,18 +73,16 @@ export function isMetaConditionMet(
   metaId: number,
   counts: GemColorCounts
 ): boolean {
-  // getMetaGemCondition throws its own "Missing meta gem condition" error,
-  // which is already the message packages/core/src/meta.ts's callers expect
-  // (`missing meta gem condition for gem: ${id}`) — no need to re-wrap it.
+  // getMetaGemCondition throws its own "Missing meta gem condition" error, so
+  // there is no need to re-wrap it.
   const cond = getMetaGemCondition(metaId);
   return cond.isMet(counts.red, counts.yellow, counts.blue);
 }
 
 /**
- * PORTED from packages/core/src/meta.ts, re-expressed over
- * `getMetaGemCondition` instead of a locally-loaded conditions map — the
- * arithmetic (compare-colour vs min-colour deficit) is packages/core's own
- * and has no fork equivalent, so it is not reused, only its data source is.
+ * How many gems short of activation the meta is: for a compare-colour
+ * condition, the greater colour's shortfall; otherwise the sum of each
+ * colour's shortfall against its minimum.
  */
 export function metaDeficit(metaId: number, counts: GemColorCounts): number {
   const cond = getMetaGemCondition(metaId);
@@ -128,7 +108,6 @@ function categoryCount(color: number, counts: GemColorCounts): number {
   throw new Error(`invalid gem color for category check: ${color}`);
 }
 
-/** PORTED verbatim from packages/core/src/meta.ts. */
 export function metaStatus(
   headSockets: readonly number[],
   gemIds: readonly number[]

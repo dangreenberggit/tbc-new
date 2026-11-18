@@ -1,10 +1,8 @@
 /**
- * Meta repair: the recolours that switch an inactive meta gem back on.
- *
- * PORTED from packages/core/src/meta-repair.ts. Fork-only since ticket 535:
- * an exact search over minimal recolour sets that counts socket bonuses both
+ * Meta repair: the recolours that switch an inactive meta gem back on. An
+ * exact search over minimal recolour sets that counts socket bonuses both
  * ways, values hit up to an optional budget, and falls back to greedy with
- * the same value past a work limit. Core keeps plain greedy.
+ * the same value past a work limit.
  */
 
 import { GemColor } from "@generated/proto/common";
@@ -63,19 +61,19 @@ export class MetaStepBudgetExceededError extends MetaRepairError {
  * The most (partial layout, item option) pairs the exact search examines
  * before it stops and repair falls back to greedy. The engine runs on the
  * page's main thread, so the search needs a bound; the largest count measured
- * on the tab fixtures was 1,343,593 (ticket 535). The limit decides which
+ * on the tab fixtures was 1,343,593. The limit decides which
  * repair a gear gets, so a change to it requires changing the `metaRepair`
  * content-hash key in `rank.ts`.
  */
 export const REPAIR_SEARCH_WORK_LIMIT = 5_000_000;
 
 /**
- * How a repair values a layout (ticket 535). With a budget, gems and bonuses
+ * How a repair values a layout. With a budget, gems and bonuses
  * are priced without the hit stat, and hit is priced separately, capped at
  * the budget over the layout's total: `w × (min(ΔH, r) − min(0, r))`. The
  * `− min(0, r)` makes the term 0 when the hit does not change, even on gear
  * already over the cap. Without a budget, hit is priced at full weight with
- * the rest, as greedy repair always priced it.
+ * the rest.
  */
 type ValueModel = {
   gem: (gemId: number) => number;
@@ -206,8 +204,7 @@ export function repairMeta(opts: {
 /**
  * The head's meta status when its meta gem is off, else undefined. It is the
  * test `repairAndMinimize` makes before it swaps anything; the ranking uses it
- * to skip the worn-gear stats read when the repair would swap nothing (ticket
- * 705).
+ * to skip the worn-gear stats read when the repair would swap nothing.
  */
 export function inactiveMeta(
   items: readonly SocketedItem[]
@@ -281,7 +278,7 @@ export function minimizeRegems(opts: {
 
 /**
  * Switches an inactive meta back on with the best minimal recolour set of at
- * most `d + 1` changes, `d` being the meta's colour deficit (ticket 535).
+ * most `d + 1` changes, `d` being the meta's colour deficit.
  * Past the work limit it writes one warning and runs greedy with the same
  * value, which always finishes.
  */
@@ -359,7 +356,7 @@ type Change = { itemIndex: number; socketIndex: number; from: number; to: number
 const NO_COLOUR_CHANGE = 13;
 
 /**
- * The best minimal recolour set that switches the meta on (ticket 535).
+ * The best minimal recolour set that switches the meta on.
  *
  * A minimal set: every change places a non-meta palette gem of another
  * colour, the meta is active, undoing any one change leaves it inactive, no
@@ -644,7 +641,7 @@ function candidatePool(
   return pool;
 }
 
-/** Hit from every gem plus every active socket bonus (ticket 535). */
+/** Hit from every gem plus every active socket bonus. */
 export function layoutHitRating(
   items: readonly SocketedItem[],
   stat: Stat

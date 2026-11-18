@@ -1,51 +1,27 @@
 /**
- * Per-request item rows for the WASM sim (ticket 212).
+ * Per-request item rows for the WASM sim. `lib.wasm` is built without the
+ * `with_db` tag, so its item registry is filled per request from
+ * `player.database`; a candidate the character does not wear is in no database
+ * the page built, and the sim panics on its id before the first iteration.
  *
- * `lib.wasm` is built without the `with_db` tag and with `all_items.go`
- * filtered out, so its item registry starts empty and is filled per request
- * from `player.database`. `wowsimcli` IS built `with_db`, which is why no CLI
- * run ever reproduced the browser's panic: a candidate item the character
- * does not wear appears in no database the page ever built, and environment
- * construction dies on its id before a single iteration runs.
+ * The rows come from wowsims' own path: `Database.lookupEquipmentSpec`
+ * resolves the equipment into a `Gear`, and `Gear.toDatabase(db)` builds the
+ * `SimDatabase` the page attaches to every sim, with gems, enchants, random
+ * suffixes and itemEffectRandPropPoints included. An item the Database cannot
+ * resolve gets no row on purpose: the sim's panic is reported on that row,
+ * where a fallback would give a wrong number.
  *
- * This is upstream's own path, not a reimplementation:
- * `Database.lookupEquipmentSpec` resolves an EquipmentSpec into a `Gear`, and
- * `Gear.toDatabase(db)` produces the `SimDatabase` upstream itself attaches
- * beside the equipment on every sim (`ui/core/sim.ts` — `toProto` /
- * `makeRaidSimRequest`). Going through it means gems, enchants, random
- * suffixes and itemEffectRandPropPoints are all included exactly as a normal
- * page sim includes them.
- *
- * An item the Database cannot resolve produces no row, and the sim then
- * panics on that id — deliberately. A silent fallback would turn a data gap
- * into a wrong number; the per-row disclosure (ticket 156 slice A) reports
- * the panic instead.
- *
- * Item-swap gear is merged in beside the composed equipment (ticket 362).
- * The character's swap set is not inert: `enableItemSwap`
- * (`sim/core/item_swaps.go`) resolves every swap entry at character
- * construction, before a single iteration runs, so an id it cannot find
- * panics the run — which is what the enhancement page's shipped default swap
- * did. The skeleton the tab captures already holds those rows in
- * `player.database`, but compose() replaces that field wholesale with this
- * resolver's result, so the rows have to be re-supplied here or they are
- * lost. Merging them unconditionally, worn-then-swap, is upstream's own
- * invariant: `Player.toDatabase` is
- * `mergeSimDatabases(gear.toDatabase(db), itemSwapSettings.getGear().toDatabase(db))`
- * (`ui/core/player.tsx`), which likewise does not consult
- * `getEnableItemSwap()` — an empty swap set contributes no rows, so the
- * unconditional merge costs a disabled page nothing.
- *
- * The player's `consumables` and `spellEffects` rows are copied from the
- * skeleton the same run captured (ticket 522). The same `makeRaidSimRequest`
- * call that built the skeleton named the consumables and filled these rows
- * (`ui/core/sim.ts` → `extendPlayerProtoWithMissingEffects`), so the names and
- * rows agree and equal the page's own request. compose() replaces
- * `player.database` as a whole (`engine/compose.ts:48`), so without this a
- * backend that had not seen the rows simmed the tab's requests with no
- * consumables: Go skips a named consumable that has no row, and a consumable
- * row whose effect row is missing is a nil dereference
- * (`sim/core/consumes.go:256-259`).
+ * compose() replaces `player.database` wholesale, so two sets of rows from the
+ * skeleton must be supplied again here:
+ * - Item-swap gear. `enableItemSwap` (`sim/core/item_swaps.go`) resolves every
+ *   swap entry at character construction, so a missing id panics the run.
+ *   `Player.toDatabase` (`ui/sim/player/player.ts`) merges worn and swap gear
+ *   without checking `getEnableItemSwap()`, and so does this; an empty swap
+ *   set adds no rows.
+ * - The player's `consumables` and `spellEffects`. `makeRaidSimRequest`
+ *   (`ui/sim/sim.ts`) named the consumables and filled these rows when it built
+ *   the skeleton. Go skips a named consumable that has no row, and a consumable
+ *   whose effect row is missing is a nil dereference (`sim/core/consumes.go`).
  */
 
 import { EquipmentSpec } from '@generated/proto/common';
@@ -61,11 +37,9 @@ import type { SimItemSpec } from '../engine/slots';
  * (`Deps.simDatabaseFor`). Returns protojson, matching the engine's opaque
  * `Readonly<Record<string, unknown>>` — the engine never inspects it.
  *
- * Closes over the page's `Player` so every request includes that player's
- * item-swap rows, and over the run's skeleton so every request includes the
- * page's consumable rows. A factory rather than a bare function because the
- * engine hands the resolver only the equipment array, and widening that
- * signature would mean editing a ported engine file (ticket 362).
+ * Closes over the page's `Player` for its item-swap rows and over the run's
+ * skeleton for its consumable rows, because the engine hands the resolver only
+ * the equipment array.
  */
 export function simDatabaseResolverFor(
 	player: Player<any>,
@@ -83,8 +57,8 @@ export function simDatabaseResolverFor(
 	return equipment => {
 		// Unguarded, like the engine's own items.ts: `getSync` throws if the
 		// Database has not loaded, and by the time a ranking runs the page has
-		// long since awaited it. A guard returning undefined here would silently
-		// hand the sim a database-less request -- the exact bug ticket 212 fixes.
+		// long since awaited it. A guard returning undefined would hand the sim a
+		// request with no item rows.
 		const db = Database.getSync();
 
 		const spec = EquipmentSpec.fromJson({ items: equipment.map(item => ({ ...item })) }, { ignoreUnknownFields: true });

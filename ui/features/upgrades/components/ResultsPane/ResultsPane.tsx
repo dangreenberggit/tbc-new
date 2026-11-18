@@ -28,7 +28,7 @@ export interface ResultsPaneProps {
  *
  * An empty-state message shows only when the pane shows no row at all: beside
  * the group, "No items to show" or "No rows from the shown sources." would be
- * false (ticket 748). The group's own label says what its rows gained.
+ * false. The group's own label says what its rows gained.
  */
 export const ResultsPane = ({ rows, rowContext, groupOpen, onGroupOpenChange }: ResultsPaneProps) => {
 	const { main, notUpgrades, belowCutoff, emptyReason } = rows;

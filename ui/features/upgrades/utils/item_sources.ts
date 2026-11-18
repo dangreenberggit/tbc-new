@@ -1,11 +1,10 @@
 /**
- * A candidate's sources from wowsims' own item facts (ticket 505): the item's
- * `sources` in db.json named through `sim.db.getZone`/`getNpc` and upstream's
- * name tables, upstream's `isPVPItem`, and the one exchange file the outer repo
- * copies in (`model/data/tier-exchange.json`: tier piece to token, Sunmote
- * upgrade to base item), because wowsims states no token or Sunmote exchange.
- * Upstream's `ItemSource` component builds its text inside JSX and exports no
- * helper, so the tab names the facts itself.
+ * A candidate's sources from the item's `sources` in db.json, named through
+ * `sim.db.getZone`/`getNpc` and the name tables, plus `isPVPItem` and one
+ * exchange file (`model/data/tier-exchange.json`: tier piece to token, Sunmote
+ * upgrade to base item), because db.json states no token or Sunmote exchange.
+ * `ItemSource` builds its text inside JSX and exports no helper, so the tab
+ * names the facts itself.
  */
 
 import { DungeonDifficulty, type UIItem } from '@generated/proto/ui';
@@ -46,7 +45,7 @@ export const MAGISTERS_TERRACE_ZONE_ID = 4131;
 export const isHeroicFiveManDrop = (drop: { zoneId: number; difficulty: DungeonDifficulty }): boolean =>
 	drop.difficulty === DungeonDifficulty.DifficultyHeroic && drop.zoneId !== MAGISTERS_TERRACE_ZONE_ID;
 
-/** A drop's boss: the npc's name, cut where upstream's generator overran its AtlasLoot key (ticket 680). */
+/** A drop's boss: the npc's name, cut where the database generator overran its AtlasLoot key. */
 const bossOf = (db: SourceDb, npcId: number): string | undefined => {
 	const name = db.getNpc(npcId)?.name;
 	return name === undefined ? undefined : (overrunNpcKey(name) ?? name);

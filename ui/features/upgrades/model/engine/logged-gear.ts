@@ -1,9 +1,6 @@
 /**
  * Convert LoggedGear (sim slot names) into the 17-slot equipment vector
  * compose expects.
- *
- * PORTED from packages/core/src/logged-gear.ts, unchanged except for import
- * paths.
  */
 
 import type { SocketedItem } from "./meta-repair";

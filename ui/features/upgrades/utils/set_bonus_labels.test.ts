@@ -137,7 +137,7 @@ describe('the not-counted section (ticket 336)', () => {
 		]);
 	});
 
-	// Ticket 655 case 1, the owner on 2026-11-01: "It could just show that the 4 piece is that amount (negative)".
+	// A step past the stop shows the 4-piece's own amount, negative included.
 	it('prints a step past the stop as a signed figure like the receipt’s, and one within the noise in words', () => {
 		const malorne4 = reachable('Malorne Harness', 4, ['Mantle of Malorne', 'Breastplate of Malorne', 'Greaves of Malorne']);
 		const rows = setBonusTipText({
@@ -171,12 +171,12 @@ describe('the not-counted section (ticket 336)', () => {
 	});
 
 	it.each([
-		// Mock-up row 1, toggle off: the 4pc breaks the worn Malorne 2pc.
+		// Toggle off: the 4pc breaks the worn Malorne 2pc.
 		[
 			reachable('Thunderheart Harness', 4, ['Thunderheart Pauldrons', 'Thunderheart Chestguard', 'Thunderheart Leggings'], [malorne2]),
 			`Thunderheart Harness${NBSP}4pc with Thunderheart Pauldrons, Thunderheart Chestguard and Thunderheart Leggings, breaks Malorne Harness${NBSP}2pc`,
 		],
-		// Mock-up row 5, toggle off.
+		// Toggle off.
 		[
 			reachable('Malorne Harness', 4, ['Mantle of Malorne', 'Breastplate of Malorne', 'Greaves of Malorne']),
 			`Malorne Harness${NBSP}4pc with Mantle of Malorne, Breastplate of Malorne and Greaves of Malorne`,

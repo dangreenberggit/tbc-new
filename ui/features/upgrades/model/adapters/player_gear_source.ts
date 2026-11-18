@@ -1,36 +1,17 @@
 /**
- * PlayerGearSource — GearSource over the page's own current gear/talents
- * (plan §2.2), not a WCL log. `findFights` has nothing to look up: there is
- * exactly one "fight" on this surface — the character as currently configured
- * on the page — so it returns one synthetic FightSummary and `readGear`
- * ignores the FightRef it is handed back (the ref exists only to satisfy the
- * seam's two methods, which packages/core needs for its WCL transport).
+ * GearSource over the page's current gear and talents. The page has exactly one
+ * "fight", the character as configured, so `findFights` returns one synthetic
+ * FightSummary and `readGear` ignores the FightRef it is handed back.
  *
- * Field-by-field verification against `Player` state (plan §2.2's "open
- * verification item"):
- *  - `talentPointsByTree`: `player.getTalentTreePoints()`
- *    (`ui/core/proto_utils/utils.ts`'s `getTalentTreePoints`, summing digits
- *    of the page's own talents string per tree) returns exactly the
- *    `[number, number, number]` type this field needs, sourced from the
- *    page's live talents — not a stand-in. This resolves the plan's
- *    "untested" flag; it was answered, not worked around.
- *  - `items[].id/enchant/gems`: `EquippedItem.id` / `.enchant?.effectId` /
- *    `.gems` (`ui/core/proto_utils/equipped_item.ts`) are the same accessors
- *    `EquippedItem.asSpec()` uses to build the protojson `ItemSpec` the sim
- *    itself consumes, so there is no second, independently-drifting reading
- *    of the same state.
- *  - `items[].slot`: `Gear.getEquippedItems()` returns `Object.values(this.gear)`
- *    over a `Partial<Record<ItemSlot, EquippedItem>>`; JS iterates
- *    integer-keyed properties in ascending numeric order regardless of
- *    insertion order (a language guarantee, not an implementation detail),
- *    and the fork's own `ItemSlot` enum (`proto/common.ts`) is declared
- *    0 (Head) .. 16 (Ranged) in exactly `SIM_ORDER`'s order — verified by
- *    reading both enumerations side by side, not assumed. So index `i` in
- *    the returned array *is* `SIM_ORDER[i]`.
- *  - `className`/`specIdHint`: left undefined. `rank.ts`'s doc comment
- *    already states these are unread on this port (no spec-mismatch check —
- *    `spec.ts` is not ported, plan §2.1), so there is nothing for them to
- *    disclose.
+ * - `talentPointsByTree` comes from `player.getTalentTreePoints()`
+ *   (`ui/sim/proto/utils.ts`), which sums the page's talents string per tree.
+ * - `items[].id/enchant/gems` use the accessors `EquippedItem.asSpec()` uses
+ *   (`ui/sim/proto/equipped_item.ts`), so they read the gear as the sim does.
+ * - `items[].slot`: `Gear.getEquippedItems()` is `Object.values` over a record keyed
+ *   by `ItemSlot`. JS iterates integer keys in ascending order, and `ItemSlot`
+ *   (`proto/common.proto`) runs 0 (Head) .. 16 (Ranged) in `SIM_ORDER`'s order, so
+ *   index `i` is `SIM_ORDER[i]`.
+ * - `className`/`specIdHint` stay undefined: nothing in the tab reads them.
  */
 
 import type { Spec } from '@generated/proto/common';
@@ -63,7 +44,7 @@ export function equippedItemIds(player: IndividualSimHost<Spec>['player']): numb
 export class PlayerGearSource implements GearSource {
 	/**
 	 * The ids the last `readGear` gave the engine. The ranking holds no gear, so
-	 * the tab keeps these to work out a row's own set breaks (ticket 536).
+	 * the tab keeps these to work out a row's own set breaks.
 	 */
 	lastItemIds: readonly number[] | undefined;
 
@@ -103,11 +84,9 @@ export class PlayerGearSource implements GearSource {
 }
 
 /**
- * `getTalentTreePoints()` returns `Array<number>` (its own source sums an
- * arbitrary-length talents-string split on `-`), but `LoggedGear` needs
- * exactly 3. TBC has exactly 3 talent trees per spec; a length other than 3
- * means the page's talents string itself is malformed, which is a real
- * problem to report rather than paper over with a default.
+ * `getTalentTreePoints()` returns one entry per `-`-separated part of the talents
+ * string. TBC specs have 3 trees, so any other length means the talents string is
+ * malformed, and that is reported rather than defaulted.
  */
 function talentPointsByTree(points: number[]): [number, number, number] {
 	if (points.length !== 3) {

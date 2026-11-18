@@ -25,7 +25,7 @@ export type RowContext = {
 	sim: Sim;
 	/** What the set-bonus hint and the %-rule note are measured against; it has no ranking while a run is in flight. */
 	tip: SetBonusTipContext;
-	/** The names of the selected sets that hold an item (ticket 430); one array per item, so the name cell's memo holds. */
+	/** The names of the selected sets that hold an item; one array per item, so the name cell's memo holds. */
 	tagsOf: (itemId: number) => readonly RowTag[];
 	/** The headings the "BiS" badge names on a row in no selected set (`bisHeadingIndex`). */
 	bisHeadingsOf: (itemId: number) => readonly string[];
@@ -37,27 +37,23 @@ export type RowContext = {
 
 export interface ResultRowProps {
 	row: RankedItem;
-	/** The row's place in its own table, which is what the Rank column shows (owner ruling, ticket 287). */
+	/** The row's place in its own table, which is what the Rank column shows */
 	position: number;
 	context: RowContext;
-	/** A BiS-list row the main table shows although it misses the cutoff (ticket 528). */
+	/** A BiS-list row the main table shows although it misses the cutoff. */
 	notUpgrade?: boolean;
 	/** The virtualiser's measuring ref (`useVirtualRows`). */
 	ref?: Ref<HTMLTableRowElement>;
 }
 
 /**
- * One ranked item. DPS comes before Slot so a phone shows the figure without scrolling sideways (ticket 606). The
- * main repo's gates (`scripts/tab-harness/run-tab-cdp.mjs`, `test-layout.mjs`) find the DPS cell by its test id and
- * the slot cell as the one after it, and read Rank, Item and Source by position.
+ * One ranked item. DPS comes before Slot so a phone shows the figure without scrolling sideways.
  *
- * `memo`, because a run lands rows one at a time and each landing renders the table: without it every
- * row already shown renders again, which a 467-row replay measured at over 20 s. A landing row or a sort
- * still moves `position` for the rows below it, so the costly cells are memoised on their own and
- * only the Rank cell changes.
+ * Memoised because a run lands rows one at a time and each landing renders the table; without it a
+ * 467-row run takes over 20 s to render. A landing row or a sort still moves `position` for the rows
+ * below it, so the costly cells are memoised on their own and only the Rank cell changes.
  *
- * `data-index` is the row's index in its table, which the virtualiser reads when it measures the row
- * and the gates read to collect a table's rows across scroll positions.
+ * `data-index` is the row's index in its table, which the virtualiser reads when it measures the row.
  */
 export const ResultRow = memo(({ row, position, context, notUpgrade = false, ref }: ResultRowProps) => {
 	const item = context.itemOf(row.itemId);

@@ -8,12 +8,10 @@ export interface SubstitutionsListProps {
 }
 
 /**
- * Every item the run left out, and why (ticket 156), with the run's other
- * notes: a left-out item is a reason an item the player expected is missing
- * from the list. Each line shows the tab's sentence only. A failed call's
- * error goes to the console, and the run's first one to the run's error toast
- * (`run_session.ts`): no wowsims screen puts a sim error in a list (owner's
- * ruling 2026-11-11, tickets 873 and 874).
+ * Every item the run left out, and why, with the run's other notes: a left-out item is a reason an
+ * item the player expected is missing from the list. Each line shows the tab's sentence only. A
+ * failed call's error goes to the console, and the run's first one to the run's error toast
+ * (`run_session.ts`), as no other sim screen puts a sim error in a list.
  */
 export const SubstitutionsList = ({ substitutions }: SubstitutionsListProps) => (
 	<section className="mt-4">

@@ -51,7 +51,7 @@ const POOL: PoolEntry[] = [
 	entry(6, BT, { phase: 4 }),
 ];
 
-// An item from Hyjal Summit and Zul'Aman where no item has Zul'Aman first, as no real pool has (tickets 647, 649).
+// An item from Hyjal Summit and Zul'Aman where no item has Zul'Aman first, as no real pool has.
 const ZUL_AMAN = { kind: 'raid', zone: "Zul'Aman" } as const;
 const TWO_ZONE_POOL: PoolEntry[] = [
 	entry(7, HYJAL, { sources: [HYJAL, ZUL_AMAN] }),
@@ -97,7 +97,7 @@ describe('validSourceKeysOf', () => {
 		expect([...raids, ...other].map(o => o.key)).toEqual(validSourceKeysOf(POOL));
 	});
 
-	// Tickets 647 and 649: an entry's second zone is offered though no entry has it first, after the first zones.
+	// An entry's second zone is offered though no entry has it first, after the first zones.
 	it('offers every zone an entry matches, each zone that is some entry’s first in its old place', () => {
 		expect(validSourceKeysOf(TWO_ZONE_POOL)).toEqual(['Hyjal Summit', 'Tempest Keep', "Zul'Aman", 'Badge vendor']);
 		expect(sourceOptions(TWO_ZONE_POOL).raids).toEqual([
@@ -147,8 +147,8 @@ describe('eligibleCount', () => {
 		expect(eligibleCount(POOL, 4, NO_WEAPON)).toBe(6);
 	});
 
-	// Measured once under include-unticked by the independent script `pool_source.cells.fixture.json`'s _comment
-	// describes, which no checkout holds; re-pin as that _comment says. Ticket 753 took 2 off each (one Sergeant's cape and cloak).
+	// Measured once under include-unticked, as `pool_source.cells.fixture.json`'s _comment describes; re-pin as that
+	// _comment says.
 	it('matches the measured ret pool sizes (1173 at phase 4, 1439 at phase 5)', () => {
 		expect(eligibleCount(effectivePool(dbPoolFor('ret', 4), NO_FILTER), 4, NO_WEAPON)).toBe(1173);
 		expect(eligibleCount(effectivePool(dbPoolFor('ret', 5), NO_FILTER), 5, NO_WEAPON)).toBe(1439);
@@ -196,7 +196,7 @@ describe('setOptions', () => {
 	});
 });
 
-// Ticket 690: hunter's "DW - 6% hit" exists once per wowsims group in a phase.
+// Hunter's "DW - 6% hit" exists once per wowsims group in a phase.
 describe('setOptions over presets that share a phase and a name', () => {
 	const options = setOptions({
 		presets: [
@@ -263,7 +263,7 @@ describe('rowTags', () => {
 	});
 });
 
-// Ticket 810: warrior's and hunter's gear sets sit under two wowsims headings each (Fury and Arms; Beast Mastery and
+// Warrior's and hunter's gear sets sit under two wowsims headings each (Fury and Arms; Beast Mastery and
 // Survival), and both builds' sets are BiS sets, so every badge for a set names its heading. Ret's sit under none.
 describe('badges on a page whose sets sit under more than one heading', () => {
 	/** The page's offer, default selection and BiS headings at `phase`, as `useUpgradesSettings` builds them over the spec's presets. */
@@ -330,7 +330,7 @@ describe('rowTagIndex', () => {
 	});
 });
 
-// Ticket 753: the pool offers one id of items db.json describes the same but the id, the worn one if any, so a set
+// The pool offers one id of items db.json describes the same but the id, the worn one if any, so a set
 // can name the id the pool left out. The set still holds the item the pool offers.
 describe('a set that names the other id of an item the pool offers once', () => {
 	const twins = twinIdsOf(TEST_DB.items);

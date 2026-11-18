@@ -24,7 +24,7 @@ export interface RunSettingsPanelProps {
 /**
  * The run card. Below `xl` the settings sit behind a summary button, so a
  * phone does not scroll past them to reach the results; the eligible count
- * and Run stay outside it and never collapse (ticket 321). Memoised: the tab
+ * and Run stay outside it and never collapse. Memoised: the tab
  * renders again for every row a run lands, which changes none of its props.
  */
 export const RunSettingsPanel = memo(({ settings, ready, running, devVisible, onStart }: RunSettingsPanelProps) => {
@@ -51,8 +51,8 @@ export const RunSettingsPanel = memo(({ settings, ready, running, devVisible, on
 					onToggleSet={settings.toggleSet}
 					onPruneChange={settings.setPrune}
 				/>
-				{/* Always in the page: the desktop gate writes the cap input on a production build. Hidden without
-				    `?upgrades-dev`, because a cut of the candidate list the user cannot see drops real upgrades (ticket 466). */}
+				{/* Always in the page, so a test driving a production build can set the cap. Hidden without
+				    `?upgrades-dev`, because a cut of the candidate list the user cannot see drops real upgrades. */}
 				<div className="grid gap-6" hidden={!devVisible}>
 					<CandidateCapPicker store={settings.store} onCapChange={settings.setCandidateCap} />
 					<FixtureFileInput />

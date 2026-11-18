@@ -45,7 +45,7 @@ describe('ExportPanel', () => {
 		expect(screen.getByText('Exporting the gear item ID for every row.')).toBeTruthy();
 	});
 
-	// Ticket 588: the choice is saved with the tab's other settings, so it survives a reload.
+	// The choice is saved with the tab's other settings, so it survives a reload.
 	it('starts from the choice the page saved, and keeps a new one in the tab’s store', () => {
 		const store = upgradesStoreFor(host);
 		store.getState().setExportFlavour('gear');

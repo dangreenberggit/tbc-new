@@ -1,11 +1,6 @@
 /**
  * Fill empty sockets on a candidate item with highest-EP gems from the phase
  * palette.
- *
- * PORTED from packages/core/src/candidate-gems.ts, unchanged except for
- * import paths retargeted at this directory's Database-backed items.ts/
- * gems.ts/meta.ts adapters, and the fork-only `GemContext.repairHitCap`
- * (ticket 535).
  */
 import { GemColor } from "@generated/proto/common";
 
@@ -41,43 +36,38 @@ function rankableSpec(spec: DetectedSpecId | undefined): SpecId | undefined {
 type EpWeightRecord = Readonly<Record<string, number>>;
 
 /**
- * The three values every gem decision needs, which previously travelled as
- * separate parameters through the whole candidate-swap chain (ticket 24's
- * data clump).
+ * The values every gem decision needs, passed together through the
+ * candidate-swap chain.
  *
  * `weights` and `weightRecord` are the *same* weights in the two forms the
  * code below needs: `epScore` in `stats.ts` accepts the dense-array form, the
  * gem fillers only ever want the record. Deriving the record once at
- * construction is why this is a context object and not just a tuple — callers
- * previously had to remember to pass both, in the right order, and nothing
- * stopped them passing weights that disagreed.
+ * construction means callers cannot pass two forms that disagree.
  */
 export type GemContext = {
   readonly palette: readonly GemEntry[];
   /**
-   * The palette both auto-fill and meta repair may draw from — `palette`
-   * capped at rare. Ticket 111 left repair on the full `palette`, but repair
-   * only ever touches coloured sockets (never the meta socket), and on those
-   * it was quietly handing out epic gems the fill had deliberately avoided
-   * (ticket 117). Every colour exists at rare and all 18 TBC meta gems are
-   * quality 3, so nothing becomes unsolvable under the cap.
+   * The palette both auto-fill and meta repair may draw from: `palette`
+   * capped at rare. Repair only touches coloured sockets (never the meta
+   * socket), and on the full palette it would hand out epic gems the fill
+   * deliberately avoids. Every colour exists at rare and all 18 TBC meta gems
+   * are quality 3, so nothing becomes unsolvable under the cap.
    */
   readonly fillPalette: readonly GemEntry[];
   readonly weights: EpWeights;
   readonly weightRecord: EpWeightRecord;
   /**
    * Which spec's preferred meta applies. Absent means "unspecified", which
-   * keeps the pre-table behaviour — ret's entry — so every existing caller
-   * reads exactly as it did before `SPEC_PREFERRED_METAS` existed.
+   * uses ret's entry (`PREFERRED_META_IDS`).
    */
   readonly spec?: DetectedSpecId;
   /**
-   * Meta repair's hit budget (ticket 535), set once the sim has read the
+   * Meta repair's hit budget, set once the sim has read the
    * baseline's hit: the rating still useful on the baseline, and the hit the
    * baseline's equipment has by `gearHitRating`. Each swap's budget is
    * `baselineRemaining − (gearHitRating(swapped) − baselineGearHit)`. Absent
    * means repair values hit at full weight. `groups` are the baseline
-   * budget's (`HitCapBudget.groups`, ticket 831); every swap keeps them.
+   * budget's (`HitCapBudget.groups`); every swap keeps them.
    */
   readonly repairHitCap?: {
     readonly stat: Stat;
@@ -127,9 +117,8 @@ const META_NEAR_EP = 1.0;
  * Relentless leads by ~7x at 10% crit and ~28x at 40%, so it never flips in
  * any realistic ret range.
  *
- * Ret's meta is Relentless Earthstorm Diamond in all three upstream wowsims
- * ret gear presets (preraid, p1, p2 under
- * `ui/paladin/retribution/gear_sets/`), which carry no other meta.
+ * Ret's meta is Relentless Earthstorm Diamond in every wowsims ret gear preset
+ * (ui/specs/paladin/retribution/gear_sets/), which carry no other meta.
  *
  * Activation is deliberately not checked. Relentless requires 2 red / 2 yellow
  * / 2 blue elsewhere, and a player who slots a meta arranges their other gems
@@ -139,83 +128,34 @@ const META_NEAR_EP = 1.0;
 const PREFERRED_META_IDS: readonly number[] = [32409];
 
 /**
- * Preferred meta gem per detected spec.
+ * Preferred meta gem per detected spec, read from the meta socketed in that
+ * spec's wowsims gear presets (ui/specs/<class>/<spec>/gear_sets/). It is not
+ * an EP ranking, because stat EP cannot rank metas at all.
  *
- * The ret row is read from upstream's gear presets, per the evidence
- * procedure the ret comment above describes, extended per spec
- * (step6-meta-choice-spike.md option 1): read the meta socketed in that
- * spec's presets, as of `wowsims/tbc-new` @ v0.0.101 (`8aa378b3`). It is not
- * an EP ranking, because stat EP cannot rank metas at all — the ordering it
- * produces is the wrong one.
+ * Presets are read by gem colour rather than array position: `gems` follows
+ * the head item's own socket order, so the meta is not always `gems[0]` (Cowl
+ * of Gul'dan, id 34332, sockets `[4,1]`, holds its meta second). No spec
+ * changes meta between phases. Some presets wear a socketless head: feral
+ * cat's 15 lower sets wear Wolfshead Helm (8345) and only p5 seats 32409;
+ * priest's pre-raid and p1 sets wear Spellstrike Hood (24266) and only p2/p3
+ * seat 25893.
  *
- * **The `feral` row is an owner ruling — 2026-08-22, ticket 257.** It is the
- * one row here not read from a preset. All five vendored feral (cat) presets
- * (`preraid`, `p2_6p`, `p2_9p`, `p3_6p`, `p3_9p`) wear socketless Wolfshead
- * Helm 8345, so upstream socketed no cat meta to copy. Ticket 257 found that
- * leaving the row out was not the neutral "disclose and skip" it looked like:
- * for a feral who wears no meta (every Wolfshead wearer — the upstream-normal
- * case), the worn head has no socket to be missing anything from, so the
- * baseline prices at full value while every meta-socket candidate head prices
- * with an empty socket against it. A real under-pricing, not a symmetric gap.
- * The owner's ruling closes that gap rather than opening a general policy for
- * inventing metas: *"if theyre based on wowsims code, leave it i guess... but
- * if it is just for feral dps then you can just assume relentless earthstorm
- * would be the chosen meta gem, ezpz, done."* 32409 is not invented for the
- * occasion — every other row here reads it out of a wowsims preset.
+ * A feral row matters even though most feral presets wear no meta: without
+ * one, a Wolfshead baseline has no socket to be missing anything from and
+ * prices at full value, while every meta-socket candidate head prices with an
+ * empty socket against it.
  *
- * **The `feral-tank` row is read from upstream, like ret's.** It is sourced
- * from wowsims' bear presets, which are a separate spec upstream
- * (`SpecFeralBearDruid`, `ui/druid/feralbear/gear_sets/` in the fork clone)
- * and were missed when this table was first written — hence the earlier claim
- * here that upstream recorded no feral meta at all, which was wrong for bear.
- * Seven of the eleven bear sets socket 32409 (`p1`, `p2_balanced`,
- * `p2_offensive`, `p2_survival`, `p3`, `p4`, `preraid`); of the rest, three
- * wear socketless Wolfshead and `p5` uses Powerful Earthstorm Diamond 25896.
- * That last one is a genuine disagreement, not a scoping artefact: 25896 is
- * phase 1 in `data/gems/palette.json`, so it is in range for every phase this
- * project supports. The row follows the majority of the sets that socket a
- * meta at all, and this is the judgment call — 7 of 11 — that a derived table
- * would have to make explicit (ticket 263). Re-check with:
+ * The `feral-tank` row is read from the bear presets
+ * (ui/specs/druid/feralbear/gear_sets/). Seven of the eleven sets socket 32409,
+ * three wear socketless Wolfshead, and p5 uses Powerful Earthstorm Diamond
+ * 25896; the row follows the majority. `feral-tank` is identified but never
+ * ranked (it is not a `SpecId`), so its row only keeps
+ * `missingMetaPreferenceNote` and `metaSocketUnpriced` quiet for it.
  *
- *     node -e "for (const f of require('fs').readdirSync('vendor/tbc-new-fork/ui/druid/feralbear/gear_sets')) { const g = require('./vendor/tbc-new-fork/ui/druid/feralbear/gear_sets/' + f); console.log(f, (g.items || []).flatMap(i => i.gems || []).filter(x => x === 32409).length); }"
- *
- * Note what the `feral-tank` row does and does not reach today. It is read —
- * `missingMetaPreferenceNote` and `metaSocketUnpriced` below both consult the
- * table for any spec, and its presence is what keeps them quiet for
- * feral-tank. What it never reaches is a ranking: `feral-tank` is identified
- * but never ranked (it is not a member of `SpecId`, `types.ts`), so no candidate
- * is ever gemmed from it. It is recorded because the evidence exists, not
- * because a ranking needs it.
- *
- * Only `DetectedSpecId`s can appear: a spec the pipeline cannot detect cannot
- * reach this code, so a row for one would be untestable decoration.
- *
- * **When the detectable-spec list grows, this table must grow with it**
- * (ticket 142, review row 5-D4). A newly detectable spec — a caster one
- * especially — falls into the "no preference recorded" branch by default, and
- * unlike feral's now-settled case that outcome is a quiet quality regression
- * (an empty meta socket where a real preference exists upstream) rather than
- * a fact about the game. So on adding a `DetectedSpecId`: find that spec's
- * meta in the vendored presets and add a row, or, if upstream genuinely
- * records none, get an owner ruling the way ticket 257 got one for feral — do
- * not leave it to the fallback and do not inherit another spec's row without
- * that ruling.
- *
- * The type below enforces exactly that rule for the *rankable* specs: it is
- * total over `SpecId` and optional only for the identify-but-not-rank
- * remainder of `DetectedSpecId`. A new rankable spec cannot reach the
- * empty-socket branch by omission any more — the compiler asks first.
- *
- * The nine rows added for the all-DPS-specs pass were each read out of that
- * spec's **highest-phase** vendored gear set, by gem colour rather than array
- * position: the meta is not reliably `gems[0]`, since the array follows the
- * head item's own socket order (Cowl of Gul'dan, id 34332, sockets `[4,1]`,
- * holds its meta second). Every one of the nine is stable across every phase
- * of that spec that seats a meta at all — no spec changes meta between phases.
- * Two carry a wrinkle worth knowing rather than a disagreement: priest's
- * pre-raid and p1 sets wear the socketless Spellstrike Hood (24266), and only
- * p2/p3 seat 25893; feral's 15 lower sets wear socketless Wolfshead (8345) and
- * only p5 seats 32409.
+ * The type is total over `SpecId` and optional only for the
+ * identify-but-not-rank remainder of `DetectedSpecId`, so a new rankable spec
+ * cannot reach the empty-socket branch by omission. On adding one, read its
+ * meta from its presets; do not inherit another spec's row.
  */
 export const SPEC_PREFERRED_METAS: Readonly<
   Record<SpecId, readonly number[]> &
@@ -226,27 +166,27 @@ export const SPEC_PREFERRED_METAS: Readonly<
   "feral-tank": PREFERRED_META_IDS,
 
   // Chaotic Skyfire Diamond — the caster crit meta.
-  // ui/druid/balance/gear_sets/p5.gear.json, head 34403.
+  // ui/specs/druid/balance/gear_sets/p5.gear.json, head 34403.
   balance: [34220],
-  // ui/mage/dps/gear_sets/p2Arcane.gear.json, head 30206.
+  // ui/specs/mage/dps/gear_sets/p2Arcane.gear.json, head 30206.
   mage: [34220],
-  // ui/shaman/elemental/gear_sets/p5.gear.json, head 34332 (meta second).
+  // ui/specs/shaman/elemental/gear_sets/p5.gear.json, head 34332 (meta second).
   ele: [34220],
-  // ui/warlock/dps/gear_sets/swp.gear.json, head 34340.
+  // ui/specs/warlock/dps/gear_sets/swp.gear.json, head 34340.
   warlock: [34220],
 
   // Mystical Skyfire Diamond. Shadow is the one caster here not on 34220:
-  // ui/priest/dps/gear_sets/p3.gear.json, head 31064, seats 25893.
+  // ui/specs/priest/dps/gear_sets/p3.gear.json, head 31064, seats 25893.
   shadow: [25893],
 
   // Relentless Earthstorm Diamond — the same melee meta ret and feral use.
-  // ui/hunter/dps/gear_sets/phase_4/bm/2h_6p.gear.json, head 32235.
+  // ui/specs/hunter/dps/gear_sets/phase_4/bm/2h_6p.gear.json, head 32235.
   hunter: PREFERRED_META_IDS,
-  // ui/rogue/dps/gear_sets/p3.gear.json, head 32235.
+  // ui/specs/rogue/dps/gear_sets/p3.gear.json, head 32235.
   rogue: PREFERRED_META_IDS,
-  // ui/shaman/enhancement/gear_sets/p5.gear.json, head 34333 (meta second).
+  // ui/specs/shaman/enhancement/gear_sets/p5.gear.json, head 34333 (meta second).
   enh: PREFERRED_META_IDS,
-  // ui/warrior/dps/gear_sets/p5_fury.gear.json, head 34333 (meta second);
+  // ui/specs/warrior/dps/gear_sets/p5_fury.gear.json, head 34333 (meta second);
   // p5_arms.gear.json seats the same one.
   warrior: PREFERRED_META_IDS,
 };
@@ -255,11 +195,11 @@ export const SPEC_PREFERRED_METAS: Readonly<
  * The disclosure for a spec whose meta preference is not recorded, or
  * `undefined` when there is nothing to disclose.
  *
- * Fail loud, per the spike: silently leaving the socket empty looks identical
- * to a palette that had no meta gem, and silently seating ret's would be
- * wrong. Naming the spec is what lets a reader tell the two apart. The note
- * names the lost socket bonus too, because the sim pays no socket bonus while
- * a socket is empty (ticket 541).
+ * Fail loud: silently leaving the socket empty looks identical to a palette
+ * that had no meta gem, and silently seating ret's would be wrong. Naming the
+ * spec is what lets a reader tell the two apart. The note names the lost
+ * socket bonus too, because the sim pays no socket bonus while a socket is
+ * empty.
  */
 export function missingMetaPreferenceNote(
   spec: DetectedSpecId | undefined
@@ -277,9 +217,8 @@ export function missingMetaPreferenceNote(
  * than deciding from socket colours and the spec table alone. `swapItemAt`
  * fills from `migrateGemsToItem`, which brings a worn meta onto the
  * candidate, so a spec with no recorded preference can still end up with a
- * full socket. Ticket 139: the colour-only test printed "priced with an empty
- * meta socket" over a seated gem, which is the failure this flag exists to
- * prevent.
+ * full socket, and a colour-only test would report an empty meta socket over
+ * a seated gem.
  */
 export function metaSocketUnpriced(
   itemId: number,
@@ -302,9 +241,9 @@ export type FillEmptyOpts = {
    */
   meta?: { metaId: number; otherGemIds: readonly number[] };
   /**
-   * Whose preferred meta to seat. Absent keeps the pre-table behaviour (ret's
-   * entry); a spec with no entry in `SPEC_PREFERRED_METAS` leaves the meta
-   * socket empty rather than inheriting another spec's gem.
+   * Whose preferred meta to seat. Absent uses ret's entry; a spec with no
+   * entry in `SPEC_PREFERRED_METAS` leaves the meta socket empty rather than
+   * inheriting another spec's gem.
    */
   spec?: DetectedSpecId;
 };
@@ -312,12 +251,11 @@ export type FillEmptyOpts = {
 /**
  * Keep already-placed gems; EP-fill only empty sockets (after UI-style migrate).
  *
- * Deliberate simplification, not a mirror of wowsims' suggest-gems button
- * (ticket 111 "Two behavioural facts", observed in the owner's web session):
- * the button re-gems existing body gems and skips meta sockets, whereas we
- * keep every worn gem and fill only what migration left empty. Do not "fix"
- * this toward the button — silently re-gemming worn slots breaks the owner's
- * consistency principle (the user must know which gems were used).
+ * Deliberate simplification, not a mirror of wowsims' suggest-gems button:
+ * the button re-gems existing body gems and skips meta sockets, whereas this
+ * keeps every worn gem and fills only what migration left empty. Do not "fix"
+ * this toward the button: silently re-gemming worn slots hides which gems the
+ * ranking used.
  */
 export function fillEmptyCandidateGems(
   itemId: number,
@@ -342,8 +280,9 @@ export function fillEmptyCandidateGems(
 /**
  * Softcaps: hit / expertise EP overstates gems on capped raid sets.
  * Used only for candidate socket fills. Meta repair does not use these
- * weights: on ret and feral it values hit up to a budget the sim reads
- * (`GemContext.repairHitCap`, ticket 535), elsewhere at full weight.
+ * weights: on the budget specs (`CAP_PROFILE_BY_SPEC`, cap-profile.ts) it
+ * values hit up to a budget the sim reads (`GemContext.repairHitCap`),
+ * elsewhere at full weight.
  *
  * Which stats are softcapped is the spec's own question, and getting it wrong
  * is silent in both directions: zeroing melee hit for a caster leaves spell hit

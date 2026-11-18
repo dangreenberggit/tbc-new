@@ -27,7 +27,7 @@ const PLAYER_KEY = 1;
 
 /**
  * A fresh page per case, so each case gets its own tab store (the store is keyed by the page's `Sim`).
- * The page's sim store and its subscriptions are real, so an edit notifies the hook only if upstream's
+ * The page's sim store and its subscriptions are real, so an edit notifies the hook only if the
  * `subscribeSimChange` selector sees it; the protos the key reads are stand-ins.
  */
 const makePage = () => {

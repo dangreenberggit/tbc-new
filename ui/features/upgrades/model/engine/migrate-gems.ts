@@ -1,15 +1,9 @@
 /**
- * Move gems from a worn piece onto a candidate item the way wowsims UI
- * `EquippedItem.withItem` does.
+ * Move gems from a worn piece onto a candidate item the way
+ * `EquippedItem.withItem` (ui/sim/proto/equipped_item.ts) does.
  *
- * PORTED from packages/core/src/migrate-gems.ts, retargeted at this
- * directory's `items.ts`/`gems.ts`/`meta.ts` adapters instead of
- * packages/core's JSON-backed ones. `gemEligibleForSocket` duplicates the
- * fork's own `ui/core/proto_utils/gems.ts` export of the same name — kept
- * local rather than re-exported from there because packages/core's tests
- * import it from this module's path and the port preserves that surface;
- * the two implementations are identical one-liners over the same GemColor
- * enum, so there is nothing to drift.
+ * `gemEligibleForSocket` repeats the one-line export of the same name in
+ * ui/sim/proto/gems.ts; callers and tests import it from this module.
  */
 
 import { GemColor } from "@generated/proto/common";

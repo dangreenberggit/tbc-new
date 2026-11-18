@@ -34,9 +34,9 @@ const tabLink = (item: UIItem) =>
 		</table>,
 	).container.querySelector('td a')!.outerHTML;
 
-// The Source cell draws upstream's drop-with-npc link itself (`dropSource`), so the tab and the gear picker show a
-// boss drop the same way only while this copy follows upstream's `ItemSource`; a wowsims catch-up that changes that
-// branch fails here. The only intended difference is the no-break space before the difficulty mark (ticket 607).
+// The Source cell draws `ItemSource`'s drop-with-npc link itself (`dropSource`), so the tab and the gear picker show a
+// boss drop the same way only while this copy follows `ItemSource`; a change to that branch fails here. The only
+// intended difference is the no-break space before the difficulty mark.
 describe('SourceCell draws a boss drop as upstream’s ItemSource does', () => {
 	it.each([
 		['a raid boss', bossDrop(3959, 22917, DungeonDifficulty.DifficultyNormal)],

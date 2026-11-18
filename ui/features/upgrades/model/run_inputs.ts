@@ -1,7 +1,7 @@
 /**
  * What a shown result was measured on, as a string: the page's run inputs and
  * the tab's settings. A run records it when it starts; the result is stale once
- * the same string built from the page now differs (ticket 560). Pure.
+ * the same string built from the page now differs. Pure.
  */
 
 import { Raid as RaidProto } from '@generated/proto/api';

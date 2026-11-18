@@ -1,17 +1,12 @@
-// Export per-spec equip eligibility by running the fork's own canEquipItem
-// (ui/sim/proto/items.ts) over the fork's own item database
-// (assets/database/db.json, parsed with the fork's own UIDatabase.fromJson).
+// Export per-spec equip eligibility by running canEquipItem
+// (ui/sim/proto/items.ts) over assets/database/db.json, parsed with
+// UIDatabase.fromJson, for an external consumer that would otherwise have to
+// re-implement the equip rules.
 //
-// The outer repo (tbc-gear-prio) commits the output and consumes it in
-// scripts/assemble_universe.py instead of re-implementing the equip rules in
-// Python -- a re-implementation that drifted and offered a rogue a two-handed
-// sword the sim's own gear picker refuses (ticket 301).
+// Nothing here decides equip legality. Every answer comes from canEquipItem,
+// and keys are the PlayerSpecs names.
 //
-// Nothing here decides equip legality. Every answer comes from canEquipItem.
-// Keys are the fork's own PlayerSpecs names, so the committed JSON speaks the
-// fork's vocabulary rather than inventing a third one.
-//
-// Run from the fork root (see tools/README.md for the exact command).
+// Run from the repo root (see README.md in this folder for the command).
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -28,7 +23,7 @@ const { PlayerSpecs } = await import('@sim/player/specs');
 const { UIDatabase } = await import('@generated/proto/ui');
 const { canEquipItem } = await import('@sim/proto/items');
 
-// tools/ sits at ui/features/upgrades/tools -- four up.
+// This folder is ui/features/upgrades/tools, four levels below the repo root.
 const FORK_ROOT = resolvePath(dirname(fileURLToPath(import.meta.url)), '../../../..');
 
 function readForkCommit(): string {
@@ -44,13 +39,9 @@ function isPlayerSpec(value: unknown): boolean {
 }
 
 /**
- * JSON with each spec's id array on ONE line.
- *
- * `JSON.stringify(payload, null, 2)` puts every id on its own line, which for
- * ~79k ids is a megabyte of file and dominates the diff of any commit that
- * touches it. Per-id diff granularity buys nothing here: when this file
- * disagrees with the fork, check_equip_eligibility.py names the exact ids that
- * moved, so a line-per-id would only duplicate the gate's own error output.
+ * JSON with each spec's id array on one line. `JSON.stringify(payload, null, 2)`
+ * puts every id on its own line, which for ~79k ids is a megabyte of file and
+ * dominates the diff of any commit that touches it.
  */
 function serialize(payload: { _comment: string; generatedFrom: Record<string, string>; itemCount: number; specs: Record<string, number[]> }): string {
 	const lines = [
@@ -78,8 +69,8 @@ async function main(): Promise<void> {
 		.filter(([, value]) => isPlayerSpec(value))
 		.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
 
-	// A change to the PlayerSpecs enum would otherwise yield an empty-but-green
-	// export, which the outer checker would then happily diff against itself.
+	// A change to PlayerSpecs' shape would otherwise yield an empty export that
+	// looks like success.
 	if (entries.length === 0) throw new Error('no PlayerSpecs entries matched the spec shape -- has PlayerSpecs changed?');
 	if (db.items.length === 0) throw new Error('db.json parsed to zero items');
 

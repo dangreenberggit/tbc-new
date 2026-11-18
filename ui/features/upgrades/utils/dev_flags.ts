@@ -4,8 +4,8 @@
  *
  * `?upgrades-runner=replay:<name>` streams a saved ranking through the real
  * run path; `?upgrades-dev&cap=N&iterations=M` seeds a short live run. The
- * fixture link `?upgrades-fixture=<name>` is read by the script the fixture
- * plugin injects (`tools/vite/tab_fixtures.mts`), not here.
+ * fixture link `?upgrades-fixture=<name>` is read by the script the dev-server
+ * fixture plugin injects, not here.
  */
 
 export type DevFlags = {
@@ -19,8 +19,8 @@ export type DevFlags = {
 /**
  * The fixture switch, for every reader but `FixtureFileInput`, which reads it
  * at its own branch so a production build drops its body whatever the bundler
- * does across modules. On by default on the dev server; the gate harness's
- * build turns it on with `VITE_TBC_TAB_FIXTURES=1`. A production build without
+ * does across modules. On by default on the dev server; a test build
+ * turns it on with `VITE_TBC_TAB_FIXTURES=1`. A production build without
  * that variable replaces both reads with `false`, so each branch on this
  * value is dropped as dead code.
  */

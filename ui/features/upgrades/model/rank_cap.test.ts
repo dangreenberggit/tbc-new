@@ -14,10 +14,10 @@ import { MemoryStore } from './engine/seams/store';
 import { SIM_ORDER } from './engine/slots';
 
 /**
- * The candidate cap at the fork's own `rankUpgrades`: a worn item the EP order
- * puts inside the first N takes no cap place, so a cap of N still sims N items
- * the player does not wear. The page's database is the fork's real
- * `assets/database/db.json`; the sim is a synthetic one.
+ * The candidate cap at `rankUpgrades`: a worn item the EP order puts inside the
+ * first N takes no cap place, so a cap of N still sims N items the player does
+ * not wear. The page's database is the real `assets/database/db.json`; the sim
+ * is a synthetic one.
  */
 
 vi.mock('@sim/proto/database', async importOriginal => {
@@ -69,7 +69,7 @@ const sim: SimRunner = {
 
 describe('SimRunner', () => {
 	it('must read stats, so a hit-budget spec never repairs at full weight unannounced (ticket 830)', () => {
-		// @ts-expect-error computeStats is required; the fork's tsc fails here if it turns optional again.
+		// @ts-expect-error computeStats is required; tsc fails here if it turns optional.
 		const noStatsReader: SimRunner = { version: sim.version, run: sim.run };
 		expect(noStatsReader.computeStats).toBeUndefined();
 	});

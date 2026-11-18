@@ -59,7 +59,7 @@ describe('ResultsPanes', () => {
 		expect(tabLabels(container)).toEqual(['Upgrades', 'Head (2)', 'Chest (2)', 'Legs (1)', 'Trinket 1 (1)', 'Main Hand (4)']);
 	});
 
-	// Only the shown pane is mounted (ticket 565), so only its tab can name the pane it controls.
+	// Only the shown pane is mounted, so only its tab can name the pane it controls.
 	it('links the shown tab to its pane and the other tabs to none', async () => {
 		const { container } = render(panes(VIEW));
 		const controls = () =>
@@ -155,7 +155,7 @@ describe('ResultsPanes', () => {
 		expect(trigger()?.getAttribute('aria-expanded')).toBe('false');
 	});
 
-	// Ticket 528 (option A): Helm of the Illidari Shatterer (2.91) misses the 3 DPS bar but is put on a BiS list here.
+	// Helm of the Illidari Shatterer (2.91) misses the 3 DPS bar but is put on a BiS list here.
 	it('shows a BiS-list row below the cutoff in the main table, marked in text, and leaves it out of the counts and the export', () => {
 		const exportedIds = (container: HTMLElement) => {
 			const payload: { items: Array<{ id: number }> } = JSON.parse(
@@ -178,7 +178,6 @@ describe('ResultsPanes', () => {
 		expect(withoutTag).not.toContain(32373);
 	});
 
-	// Ticket 614.
 	it('under BiS only keeps every slot tab, and dims a slot with no BiS-list row at (0) over an empty pane', () => {
 		const bisOnly = resultsViewFor({ status: 'done', runId: 1, result: RANKING_FIXTURE }, { withSetPotential: false, onlyBis: true })!;
 		const { container } = render(panes(bisOnly));
@@ -190,7 +189,7 @@ describe('ResultsPanes', () => {
 		expect(namesIn(activePane(container))).toEqual([]);
 	});
 
-	// Ticket 749, owner 2026-11-02: the run may have left the slot's BiS-list item out, so the pane shows the generic text.
+	// The run may have left the slot's BiS-list item out, so the pane shows the generic text.
 	it('under BiS only gives a slot with no BiS-list row the generic empty text, never that the slot has no BiS-list item', () => {
 		const bisOnly = resultsViewFor({ status: 'done', runId: 1, result: RANKING_FIXTURE }, { withSetPotential: false, onlyBis: true })!;
 		const { container } = render(panes(bisOnly));

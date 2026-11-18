@@ -1,12 +1,6 @@
 /**
- * Store seam — content-addressed blob cache + job rows.
- *
- * ADAPTED from packages/core/src/seams/store.ts: `MemoryStore` only.
- * `SqliteStore` is explicitly not ported (plan §2.1 — `node:sqlite` has no
- * browser equivalent, and plan §2.5 scopes the fork's cache to the page
- * session, IndexedDB being a later nicety per §9 slice 7). The `Store`
- * interface itself is unchanged so `rank.ts`'s cache-then-run logic and job
- * bookkeeping port without modification.
+ * Store seam: content-addressed blob cache plus job rows. `MemoryStore` keeps
+ * them for the page session only.
  */
 
 export type JobStatus = "queued" | "running" | "done" | "error";

@@ -24,7 +24,7 @@ const staticImports = (source: string): string[] => {
 const dynamicImports = (source: string): string[] => [...source.matchAll(/\bimport\(\s*['"]([^'"]+)['"]\s*\)/g)].map(match => match[1]);
 
 /**
- * The path aliases of the fork's `tsconfig.json`, as prefix and directory. Read from the file, so a new alias is
+ * The path aliases of the repo's `tsconfig.json`, as prefix and directory. Read from the file, so a new alias is
  * followed: a copied list would miss it, and the walk would stop at its imports without an error.
  */
 const TSCONFIG_PATHS: Record<string, string[]> = JSON.parse(readFileSync(path.join(ROOT, 'tsconfig.json'), 'utf8')).compilerOptions.paths;
@@ -69,8 +69,7 @@ const resolvesIntoFeature = (file: string, specifier: string): boolean => {
 };
 
 /**
- * The feature files the eager tab body may import statically, to save phase changes from page start (tickets 587,
- * 589). Each imports nothing from the feature but another of them, so they bring in neither the tab's code nor its data.
+ * The feature files the eager tab body may import statically, to save phase changes from page start. Each imports nothing from the feature but another of them, so they bring in neither the tab's code nor its data.
  */
 const EAGER_FILES = ['model/phase_changes.ts', 'model/saved_entry.ts', 'utils/is_record.ts'];
 const EAGER_SPECIFIERS = new Set(EAGER_FILES.map(file => `@features/upgrades/${file.replace(/\.ts$/, '')}`));
@@ -118,7 +117,7 @@ describe('the Upgrades feature loads lazily', () => {
 		expect(tabBody).toMatch(/import\(\s*'@features\/upgrades\//);
 	});
 
-	// A phase change made while the tab is closed must not download the tab's data (ticket 589).
+	// A phase change made while the tab is closed must not download the tab's data.
 	it('is downloaded by the tab body only when the tab opens', () => {
 		expect(dynamicImports(readFileSync(TAB_BODY, 'utf8'))).toEqual(['@features/upgrades/components/UpgradesTab']);
 	});

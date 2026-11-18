@@ -1,11 +1,7 @@
 /**
- * Compose stage — patch a golden RaidSimRequest skeleton with the player's
- * name / race / equipment.
- *
- * PORTED from packages/core/src/compose.ts, unchanged. Operates on the same
- * `RaidSimRequest` in protojson form (seams/sim-runner.ts) as packages/core;
- * see that seam file's doc comment for why the fork's typed proto interface
- * is not used directly here.
+ * Patch a golden RaidSimRequest skeleton with the player's name, race and
+ * equipment. Works on the protojson form of `RaidSimRequest`; see
+ * seams/sim-runner.ts for why the typed proto interface is not used here.
  */
 
 import type { RaidSimRequest } from "./seams/sim-runner";
@@ -18,10 +14,9 @@ export type ComposePlayer = {
   equipment: readonly SimItemSpec[];
   /**
    * Per-request item rows for the WASM sim, which is built without
-   * `with_db` and so starts with an empty registry (ticket 212). Opaque
-   * protojson, like RaidSimRequest — the type belongs to the sim's
-   * SimDatabase, and deriving a type for it here would buy nothing.
-   * Omitted by CLI callers, whose binary is built with_db.
+   * `with_db` and so starts with an empty registry. Opaque protojson, like
+   * RaidSimRequest: the type belongs to the sim's SimDatabase. Omitted by CLI
+   * callers, whose binary is built with_db.
    */
   database?: Readonly<Record<string, unknown>>;
 };

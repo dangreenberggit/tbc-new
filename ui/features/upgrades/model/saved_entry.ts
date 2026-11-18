@@ -1,22 +1,22 @@
 /**
  * Where the Upgrades tab's saved entry lives, and the one edit the page makes to it without the tab's store. Small
  * and free of the tab's code and data on purpose: the eager `UpgradesTabBody` reaches it through `phase_changes.ts`,
- * so a page whose tab never opens downloads neither (ticket 589). `saved_settings.ts` reads and writes the whole entry.
+ * so a page whose tab never opens downloads neither. `saved_settings.ts` reads and writes the whole entry.
  */
 
 import type { Env } from '@sim/state/env';
 
 import { isRecord } from '../utils/is_record';
 
-/** The key suffix the page's spec prefix goes in front of, as upstream's `__savedGear__` and the rest. */
+/** The key suffix the page's spec prefix goes in front of, as for `__savedGear__` and the rest. */
 export const UPGRADES_SETTINGS_STORAGE_KEY = '__upgradesSettings__';
 
 /**
  * Bumped when a field changes meaning. A new field needs no bump: an entry
  * saved before it reads back without it and the field takes its default, as
- * `view` did. Upstream migrates an old saved proto (`updateProtoVersion`);
- * this tab has no migration yet, so another version reads back as nothing saved.
- * Version 2 (ticket 505): a stored default-off source key, such as "Heroic
+ * `view` did. wowsims migrates an old saved proto (`updateProtoVersion`);
+ * this tab has no migration, so another version reads back as nothing saved.
+ * Version 2: a stored default-off source key, such as "Heroic
  * dungeon", means ticked, where in version 1 every stored key meant excluded.
  */
 export const SAVED_VERSION = 2;

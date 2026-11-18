@@ -1,9 +1,6 @@
 /**
- * Build RecordedGearSourceData from the Stage 0 slamaltman raw fixture, via
- * the ranked route.
- *
- * PORTED from packages/core/src/fixtures/slamaltman-offline.ts, unchanged
- * except for import paths.
+ * Build RecordedGearSourceData from the slamaltman raw fixture, via the
+ * ranked route.
  */
 
 import type { RecordedGearSourceData } from "../seams/gear-source";

@@ -228,7 +228,7 @@ describe('UpgradesResults Filter by source', () => {
 		expect(rowIds(container)).toEqual([28830]);
 	});
 
-	// Review AD3: the Source cell reads only the hidden sources this view offers (`useResultsView` `actingHidden`).
+	// The Source cell reads only the hidden sources this view offers (`useResultsView` `actingHidden`).
 	it('leaves every Source cell alone for a stored hidden source the view does not offer', () => {
 		// Vengeful Gladiator's Greatsword sold for badges and dropped in Black Temple. The dialog lists it under Black
 		// Temple, and no row here comes from badges alone, so the view does not offer "Badge vendor".

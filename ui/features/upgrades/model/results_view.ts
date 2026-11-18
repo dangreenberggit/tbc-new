@@ -1,9 +1,8 @@
 /**
- * Which rows each results pane shows, as the old tab chose them (cb561067
- * `upgrades_tab.tsx`): an "Upgrades" pane plus one pane per slot with a row,
- * each split into its main table and its below-cutoff group. Under BiS only, a
- * slot keeps its pane when the filter removes all its rows (`tabSlots`, ticket
- * 614). Pure; the panes render what this returns.
+ * Which rows each results pane shows: an "Upgrades" pane plus one pane per slot
+ * with a row, each split into its main table and its below-cutoff group. Under
+ * BiS only, a slot keeps its pane when the filter removes all its rows
+ * (`tabSlots`). Pure; the panes render what this returns.
  */
 
 import { type SimSlotName, simSlotsForPoolSlot } from './engine/pool';
@@ -31,9 +30,8 @@ export const rowKey = (row: Pick<RankedItem, 'itemId' | 'slot'>): string => `${r
 /**
  * A view as the results area renders it. `tabSlots` is set on a view that a
  * display filter cut down: it names the slots of the view before the cut, so
- * each keeps its tab. The old tab's rule (cb561067 `upgrades_tab.tsx`): "a
- * display filter must change which rows a pane shows, never which panes
- * exist" (ticket 614). `sourcesHidden` is set on a view that "Filter by
+ * each keeps its tab: a display filter changes which rows a pane shows, never
+ * which panes exist. `sourcesHidden` is set on a view that "Filter by
  * source" cut by at least one row, with `slotsBeforeSourceCut` naming the
  * slots that had a row before that cut and `panesWithMainBeforeSourceCut`
  * the panes whose main table had a row.
@@ -63,7 +61,7 @@ export function slotTabs(view: ResultsViewResult): Array<{ id: SimSlotName; coun
 	});
 }
 
-/** On some phase's BiS list, as the old tab's `isBisTagged` tested it: a BiS or an Alt tag. */
+/** On some phase's BiS list: a BiS or an Alt tag. */
 const onBisList = (row: Pick<RankedItem, 'bisTags'>): boolean => row.bisTags.length > 0;
 
 /** A row a pane's main table shows: one that meets the cutoff, or a BiS-list row that misses it and is not owned (`paneRows`). */
@@ -83,11 +81,10 @@ export type PaneEmptyReason = 'no-source-row' | 'no-upgrades';
  * One pane's rows: its main table, the keys of the rows in that table that
  * miss the cutoff, and its below-cutoff group.
  *
- * The main table is the rows that meet the cutoff plus, by the owner's ruling
- * on ticket 528 (option A, 2026-10-11), the BiS-list rows that miss it, in the
- * view's order, so each sits where its gain puts it. `notUpgrades` marks those
- * rows; the slot counts and the export still read only the rows that meet the
- * cutoff (`slotTabs`, `view.shortlist`).
+ * The main table is the rows that meet the cutoff plus the BiS-list rows that
+ * miss it, in the view's order, so each sits where its gain puts it.
+ * `notUpgrades` marks those rows; the slot counts and the export still read
+ * only the rows that meet the cutoff (`slotTabs`, `view.shortlist`).
  *
  * Owned rows stay out of the below-cutoff group, and so out of the main table
  * when they miss the cutoff: an owned item is re-simmed into the slot it
@@ -100,15 +97,14 @@ export type PaneEmptyReason = 'no-source-row' | 'no-upgrades';
  * order is decided here.
  *
  * - `no-source-row`: "Filter by source" emptied the pane, so it says no row
- *   comes from the shown sources. A slot pane that BiS only had already
- *   emptied before the cut does not get it (as ticket 648 rules for a main
- *   table already empty).
+ *   comes from the shown sources. A pane that was already empty before the
+ *   cut, or a slot pane that BiS only emptied, does not get it.
  * - `no-upgrades`: otherwise; the pane says it has no items to show.
  *
  * Under BiS only there is no reason that says the slot has no BiS-list item:
  * the run's candidates are cut before the sim (pre-run Sources, the set
  * prune, `poolFor`), so a slot with no BiS-list row may still have a BiS-list
- * item the run left out (ticket 749).
+ * item the run left out.
  */
 export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 	const rows = tab === SHOPPING_LIST_TAB ? view.rows : view.rows.filter(row => effectiveSlot(row) === tab);
@@ -132,7 +128,7 @@ export const landedRows = (rows: readonly RankedItem[]): RankedItem[] => rows.fi
 /**
  * A stopped run's rows as a view. `applyView` accepts only a complete ranking
  * on purpose (`rank.ts` on `Ranking.complete`), so a partial gets its own
- * list, as the old tab built one: the simmed rows in engine order, split on
+ * list: the simmed rows in engine order, split on
  * the engine's own cutoff verdict.
  */
 export function stoppedView(result: StoppedRanking): ViewResult {
@@ -142,7 +138,7 @@ export function stoppedView(result: StoppedRanking): ViewResult {
 }
 
 /**
- * The two view toggles of a finished run (old tab C5). They reshape a ranking
+ * The two view toggles of a finished run. They reshape a ranking
  * already measured and never change a run, so they are not run settings and
  * do not mark a result stale.
  */
@@ -155,7 +151,7 @@ export const hasBisRows = (ranking: Pick<Ranking, 'items'>): boolean => ranking.
 
 /**
  * The toggles the tab shows for `run`: both on a finished run only, and BiS
- * only only when some row is on a BiS list, as the old tab chose.
+ * only only when some row is on a BiS list.
  */
 export const offeredToggles = (run: RunState): ViewToggles =>
 	run.status === 'done' ? { withSetPotential: true, onlyBis: hasBisRows(run.result) } : NO_VIEW_TOGGLES;
@@ -206,8 +202,8 @@ export const withOfferedSourcesHidden = (hidden: readonly string[], offered: rea
 /**
  * A view cut to the rows of the sources not in `hidden`. A row stays while
  * some source key it matches is not hidden, so an item from two raids stays
- * while either is shown (review D4). The dialog offers every key a row
- * matches, so Hide all leaves no row (ticket 647). A hidden key the view
+ * while either is shown. The dialog offers every key a row
+ * matches, so Hide all leaves no row. A hidden key the view
  * does not offer changes nothing. Like `bisOnlyView`, only the count
  * below the cutoff changes, and every slot keeps its tab.
  */

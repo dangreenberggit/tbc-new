@@ -1,32 +1,14 @@
 /**
- * rankUpgrades — the deep module interface. Stages sit behind this; callers
- * only see RankInput → Ranking.
+ * rankUpgrades: the engine's entry point. Callers see only RankInput →
+ * Ranking; the stages sit behind it.
  *
- * ADAPTED from packages/core/src/rank.ts. Two real changes from the source,
- * both required by plan §2.1's port surface:
+ * There is no spec-mismatch check: the gear source reads the page's current
+ * gear under the page's selected spec, so no talent classification can
+ * disagree with `input.spec`. `logged.className`/`specIdHint` stay on
+ * `LoggedGear` but are unused here.
  *
- * 1. **No spec-mismatch check.** packages/core resolves gear from a WCL log
- *    whose owner might have logged an off-spec night, so it classifies the
- *    fight's talents (`spec.ts`) and refuses to rank a mismatch
- *    (carry-forward 61). `spec.ts` is explicitly not ported (§2.1: "the page
- *    *is* a spec") — `PlayerGearSource` (slice 3) reads the page's own
- *    current gear under the page's own selected spec, so there is no
- *    talent-classification step that could disagree with `input.spec`, and
- *    nothing to refuse. `logged.className`/`specIdHint` stay on `LoggedGear`
- *    for seam-interface parity but are unused here.
- * 2. **`contentHashOf`/`ENGINE_VERSION` replaced by a canonical-JSON string
- *    key, not a sha256 digest (D4).** `content-hash.ts`'s `canonicalJson` is
- *    ported unchanged (content-hash.ts in this directory); its `sha256Hex`
- *    half is not — `rankingCacheKey` below hashes nothing, it *is* the
- *    canonical string, mirroring `simCacheKey`'s D4 change in
- *    seams/sim-runner.ts.
- *
- * candidate-pool.md M1 (candidates cap, concurrency, EP ordering, Stop,
- * row-landed progress) is ported alongside these two pre-existing
- * adaptations, unchanged in form from packages/core/src/rank.ts.
- *
- * Everything else — the eight-stage pipeline, cutoff/replication logic, set
- * synergy, disclosure assembly — is unchanged from packages/core.
+ * `rankingCacheKey` is the canonical-JSON string itself, not a digest of it,
+ * like `simCacheKey` in seams/sim-runner.ts.
  */
 
 import { HandType } from "@generated/proto/common";
@@ -182,11 +164,8 @@ export type RankInput = {
   seeds?: number[];
   /**
    * Keeps the first N candidates of the EP ordering that the player does not
-   * wear, plus every owned row (§5.1.1). `undefined` means "no cap" — hashed
-   * identically to a cap equal to the eligible set's size
-   * (content-hash.ts's `candidateCap` normalization, mirrored below since
-   * this file hashes via `canonicalJson` directly rather than through
-   * `contentHashOf`).
+   * wear, plus every owned row. `undefined` means no cap, and hashes the
+   * same as a cap equal to the eligible set's size.
    */
   candidateCap?: number;
 };
@@ -201,69 +180,57 @@ export type Deps = {
   /**
    * The candidate order's item score per sim slot. The tab passes wowsims'
    * own weapon-aware score (`model/item_ep.ts`). Required, with no default:
-   * the old default, stats times `epWeights`, gave a weapon no credit for its
-   * weapon damage (ticket 821), and a caller that forgot this field got that
-   * order back with every test green.
+   * stats times `epWeights` gives a weapon no credit for its weapon damage.
    */
   itemEp: ItemEp;
   gemPalette?: readonly GemEntry[];
   pool?: readonly PoolEntry[];
   /**
-   * Per-request item rows for the sim's database (ticket 212). Data, not a
-   * port: synchronous, no I/O, nothing to record — same family as `pool` and
-   * `epWeights`.
+   * Per-request item rows for the sim's database. Plain data, like `pool` and
+   * `epWeights`: synchronous, no I/O.
    *
-   * The browser needs it because its WASM sim is built without `with_db`, so
-   * the registry is filled per request; a candidate is never worn, so the
-   * skeleton's own database never describes it. CLI callers omit it —
-   * `wowsimcli` is built `with_db` — and composed requests then stay
-   * byte-identical to today's.
+   * The browser's WASM sim is built without `with_db`, so the registry is
+   * filled per request; a candidate is never worn, so the skeleton's own
+   * database never describes it. CLI callers omit it (`wowsimcli` is built
+   * `with_db`), and composed requests then keep the skeleton's database.
    */
   simDatabaseFor?: (
     equipment: readonly SimItemSpec[]
   ) => Readonly<Record<string, unknown>> | undefined;
   /**
-   * How many candidate sims may be in flight at once (candidate-pool.md
-   * §5.1.2). A plain scalar, not a ranking input — it changes how fast a
+   * How many candidate sims may be in flight at once. It changes how fast a
    * run goes, never what it returns, so it stays out of the content hash.
-   * Defaults to 1 (serial) when omitted.
+   * Defaults to 1 (serial).
    */
   concurrency?: number;
   /**
    * When set, `buildSetBonuses` measures every bonus of every worn set on the
    * player's own gear with the worn-set ladder, and charges a break only where
-   * that value clears the noise gate (tickets 467 and 512); it also measures
-   * each package's bonus on the package's own gear (ticket 511). The tab
-   * passes it; the E-W3 parity harness does not, so the compared request
-   * lists stay identical (`wowsims-fork-parity.test.ts` never sets the flag).
-   * Absent = today's behaviour and today's request list exactly.
+   * that value clears the noise gate; it also measures each package's bonus on
+   * the package's own gear. The tab passes it. Absent, none of those sims run.
    */
   measureBrokenSetValue?: boolean;
   /**
-   * The rule that picks each set row's partner pieces for a bonus (ticket 511,
-   * `partner-choice.ts`). Absent means `PARTNER_RULE`. Only the tab's check
+   * The rule that picks each set row's partner pieces for a bonus
+   * (`partner-choice.ts`). Absent means `PARTNER_RULE`. Only the tab's check
    * hook sets it, in dev and gate builds, to score the rules; it joins the
    * content hash only when set, so a ranking cached under one rule is never
    * served for another.
    */
   partnerRule?: PartnerRule;
   /**
-   * The set screen (ticket 511, `set-screen.ts`), with the flag only. "on"
-   * filters the gain side to the sets the screen keeps; the tab passes it
-   * (ticket 511 K5ON, ADR-0035). "record" runs the record mode's sims,
-   * filtering nothing; only the tab's check hook sets it, in dev and gate
-   * builds. Both write `Ranking.setScreen`. Absent means "off", so the core
-   * engine, the CLI and E-W3 are unchanged. It joins the content hash only
-   * when set.
+   * The set screen (`set-screen.ts`), with the flag only. "on" filters the
+   * gain side to the sets the screen keeps; the tab passes it. "record" runs
+   * the record mode's sims, filtering nothing; only the tab's check hook sets
+   * it, in dev and gate builds. Both write `Ranking.setScreen`. Absent means
+   * "off", so the CLI is unchanged. It joins the content hash only when set.
    */
   setScreen?: SetScreenMode;
   /**
-   * Stop signal (candidate-pool.md §5.1.4). On abort, in-flight per-candidate
-   * sims finish and the run returns a `PartialRanking` (`complete: false`); no
-   * further candidates are dispatched. A Stop during the set phase or during
-   * paired replication lets the sim in flight finish, sends no further sim,
-   * and returns the same `PartialRanking` as a Stop during the last
-   * candidate sim (ticket 533).
+   * Stop signal. On abort, in-flight per-candidate sims finish, no further
+   * sim is sent, and the run returns a `PartialRanking` (`complete: false`).
+   * A Stop during the set phase or paired replication returns the same
+   * `PartialRanking` as a Stop during the last candidate sim.
    */
   signal?: AbortSignal;
 };
@@ -278,15 +245,13 @@ export type Progress =
    * total is a budget: it counts replicas for up to `PAIRED_REPLICATE_TOP_N`
    * rows before the run knows how many rows clear the cutoff. The first
    * `simming` after `ranking` repeats `done` with the exact total, and the run
-   * ends on `done === total` (ticket 566).
+   * ends on `done === total`.
    */
   | { stage: "simming"; done: number; total: number }
   /**
-   * A single candidate's row finished — fired as each sim finishes, ahead of
-   * the "ranking" stage, so a caller can fill a skeleton row incrementally
-   * rather than waiting for the whole run (candidate-pool.md §5.1.5). No
-   * `stage` field: this is a side channel alongside the stage sequence
-   * above, not a replacement for the "simming" done/total updates.
+   * One candidate's row finished, fired as each sim finishes so a caller can
+   * fill rows before the "ranking" stage. No `stage` field: this is a side
+   * channel beside the stage sequence, not a replacement for "simming".
    */
   | { kind: "row"; row: RankedItem }
   | { stage: "ranking" };
@@ -337,11 +302,8 @@ export type RankedItem = {
   emptyMetaSocket?: boolean;
   owned?: boolean;
   /**
-   * `false` only on a row Stop left unsimmed (candidate-pool.md §5.1.4) —
-   * absent otherwise, never `true`, so an ordinary complete run never
-   * has the field at all and a reader can tell "simmed" from "this
-   * `Ranking` predates Stop" apart from "this row was skipped by Stop".
-   * Such a row's `deltaDps`/`se`/etc. are placeholders, excluded from
+   * `false` only on a row Stop left unsimmed; absent otherwise, never
+   * `true`. Such a row's `deltaDps`/`se`/etc. are placeholders, excluded from
    * cutoff classification and tie groups.
    */
   simmed?: false;
@@ -350,15 +312,15 @@ export type RankedItem = {
 };
 
 /**
- * A per-row breakdown of one set piece's set-bonus consequences (ticket 467).
+ * A per-row breakdown of one set piece's set-bonus consequences.
  *
  * `singleBreaks` are already inside `deltaDps` (this one piece's own break);
  * `futureBonuses` and `commitBreaks` are the ON-view terms added on top of
  * `deltaDps` (bonuses the completed set would gain, and worn bonuses completing
  * it would break beyond the single's own break). `dps` on a break is the
  * measured `B`; absent means it could not be measured (`no-neutral-candidates`,
- * `dependent-unmeasured`) and the row falls back to disclosure-only, per the
- * plan's fallback rule — for a future bonus or a commit break alike (477).
+ * `dependent-unmeasured`) and the row falls back to disclosure-only, for a
+ * future bonus or a commit break alike.
  *
  * A future's `breaks` are the worn bonuses its own path breaks beyond the
  * row's single break: this candidate plus the best remaining pieces of that
@@ -366,8 +328,8 @@ export type RankedItem = {
  * it). Only these are charged by the ON credit. `commitBreaks` keeps the top
  * package with this candidate substituted: disclosure ("full set end state")
  * and a measurement-target source. Charging the top package's breaks to
- * every future made a Malorne chest row pay for the Thunderheart 2pc that
- * only the Malorne 4pc's hands piece breaks (ticket 490). Every path break is
+ * every future would make a Malorne chest row pay for the Thunderheart 2pc
+ * that only the Malorne 4pc's hands piece breaks. Every path break is
  * already a measurement target: a path is a subset of the substituted top
  * package, because packages nest, and a subset of vacated slots loses a
  * subset of thresholds.
@@ -376,8 +338,8 @@ export type RankedItem = {
  * each with its own stats as `dps`: its single delta, plus the worn bonuses it
  * breaks alone, minus the 2pc it crosses alone at worn 1. The ON credit counts
  * them because committing to the bonus means wearing those pieces too, gain or
- * loss (ticket 502, ADR-0034). `pieces` is present, possibly empty, exactly
- * when the future has a path; `dps` is absent when an input was unmeasured.
+ * loss. `pieces` is present, possibly empty, exactly when the future has a
+ * path; `dps` is absent when an input was unmeasured.
  */
 export type SetContext = {
   setId: number;
@@ -387,10 +349,10 @@ export type SetContext = {
   nextThreshold: SetThreshold | null;
   crossesThreshold: boolean;
   /**
-   * Set on every row of a step ranking (ticket 511): the engine valued each
-   * future as a sim of the row's step gear. The view's helpers that see only
-   * this context read it to apply the step rule instead of the ticket 502
-   * walk. Absent on rankings made without `measureBrokenSetValue`.
+   * Set on every row of a step ranking: the engine valued each future as a
+   * sim of the row's step gear. The view's helpers that see only this context
+   * read it to apply the step rule instead of summing `pieces`. Absent on
+   * rankings made without `measureBrokenSetValue`.
    */
   stepRanking?: true;
   /**
@@ -408,15 +370,15 @@ export type SetContext = {
     threshold: SetThreshold;
     piecesNeeded: number;
     dps?: number;
-    /** The entry's `sameGearDps` and `sameGearSe`, copied (ticket 511). */
+    /** The entry's `sameGearDps` and `sameGearSe`, copied. */
     sameGearDps?: number;
     sameGearSe?: number;
-    /** The entry's gate did not clear: no package or step sim ran (511). */
+    /** The entry's gate did not clear: no package or step sim ran. */
     belowGate?: true;
     /**
      * The sim of the current gear plus this row plus its partner pieces, minus
-     * the sim of the current gear, and that difference's standard error
-     * (ticket 511). Present only on a step ranking, for a future whose gate
+     * the sim of the current gear, and that difference's standard error.
+     * Present only on a step ranking, for a future whose gate
      * cleared, when the partner choice and the sim succeeded.
      */
     stepGearDps?: number;
@@ -425,7 +387,7 @@ export type SetContext = {
      * The sim of the gear just before this step with the worn bonuses the
      * step newly loses turned off (the lost set's replaced pieces sent as
      * set-less copies), minus the sim of the current gear; that difference's
-     * standard error; and the bonuses that sim turned off (K6B). The popover
+     * standard error; and the bonuses that sim turned off. The popover
      * splits the step into a Breaks line and a pieces line from it. Present
      * only on a step ranking, for a shown step that newly loses a worn bonus,
      * when the plain gear before was in the store and the sim succeeded.
@@ -464,11 +426,10 @@ export type SetPackageContext = {
 
 /**
  * Standalone value `B` of one worn set bonus (X, t) that a swap can break: the
- * worn-set ladder's value at count t on the player's own gear (ticket 512), for
- * a count whose value clears the noise gate or could not be measured. `dps` is
- * `B`; absent with `unmeasured` when a ladder sim failed. Only `sim-failed` is
- * produced since the ladder replaced the vacate sims; the other members are
- * kept for rankings saved before it.
+ * worn-set ladder's value at count t on the player's own gear, for a count
+ * whose value clears the noise gate or could not be measured. `dps` is `B`;
+ * absent with `unmeasured` when a ladder sim failed. Only `sim-failed` is
+ * produced now; the other members keep older saved rankings readable.
  */
 export type BrokenSetValue = {
   setId: number;
@@ -484,7 +445,7 @@ export type BrokenSetValue = {
 };
 
 /**
- * One count of one worn set's ladder (ticket 512): its measured value on the
+ * One count of one worn set's ladder: its measured value on the
  * player's own gear, and whether it is `counted` as a break — a value that
  * clears the noise gate, or one whose sim failed (the row then shows it as
  * unmeasured). Counts at which the set has no bonus read about 0 and are not
@@ -500,7 +461,7 @@ export type WornSetLadderEntry = {
   counted: boolean;
 };
 
-/** One crossing gate of `Ranking.crossingGates` (ticket 511). */
+/** One crossing gate of `Ranking.crossingGates`. */
 export type CrossingGate = {
   setId: number;
   /** One more than the worn count: the count a single swap reaches. */
@@ -521,7 +482,7 @@ export type SetStepSims = {
 };
 
 /**
- * The bonus-off sims of a step ranking (K6B), one per distinct request: the
+ * The bonus-off sims of a step ranking, one per distinct request: the
  * gear just before a shown step with the lost set's replaced pieces sent as
  * set-less copies. `gears` counts the distinct requests and `failedGears`
  * those whose sim failed. `beforeInStore` counts the requests whose plain
@@ -558,13 +519,14 @@ export type SetBonusValue = {
   /**
    * The package synergy `pkgΔ − Σsingles − raw2pc`, before any broken-bonus
    * correction. One exception: at worn 1 a 4pc also adds back `(n−1)·B2` from
-   * the pair sim (ticket 492, `selfConfound`). E-W3 compares this field.
+   * the pair sim (`selfConfound`).
    */
   bonusDps?: number;
   /**
-   * `bonusDps` corrected for ticket 90's `(k − c)·B` inflation using the
-   * measured broken-bonus value `B` (ticket 467); the value the ON credit and
-   * sort key use. Absent when any needed `B` is unmeasured, or when a worn-1
+   * `bonusDps` corrected for the worn bonuses the package breaks
+   * (`netInflation`), using the measured broken-bonus value `B`; the value
+   * the ON credit and sort key use. Absent when any needed `B` is
+   * unmeasured, or when a worn-1
    * 4pc's `selfConfound` has no `dps` (no usable pair, or the pair sim or its
    * gem repair failed). Absent reverts the row to disclosure-only.
    */
@@ -573,9 +535,9 @@ export type SetBonusValue = {
   /**
    * The bonus measured on its own package's gear: the same gear simmed twice
    * with enough of this set's pieces sent as copies to leave `threshold − 1`
-   * without them, set kept in one sim and set-less in the other (tickets 511
-   * and 512, `measureSameGearBonus`). The noise gate for a
-   * set step reads it; `bonusDps` is left as it was. Present only under
+   * without them, set kept in one sim and set-less in the other
+   * (`measureSameGearBonus`). The noise gate for a set step reads it;
+   * `bonusDps` is left as it was. Present only under
    * `deps.measureBrokenSetValue` and for a measured package; absent when a sim
    * failed. `sameGearSe` is the combined standard error of the two sims.
    */
@@ -583,7 +545,7 @@ export type SetBonusValue = {
   sameGearSe?: number;
   /**
    * The same-gear value is at or below the noise gate, so this count is not
-   * a bonus here and no package, pair or step sim ran for it (ticket 511).
+   * a bonus here and no package, pair or step sim ran for it.
    * Such an entry is never a simmed package: `packageDeltaDps` is 0 and
    * `bonusDps` is absent.
    */
@@ -621,27 +583,25 @@ export type Ranking = {
   setBonuses?: SetBonusValue[];
   /**
    * Standalone value `B` of each worn set bonus a swap can break: one entry per
-   * counted ladder count (tickets 467 and 512). Present only when
-   * `deps.measureBrokenSetValue` is set; the E-W3 harness leaves it unset, so
-   * this field never appears there and adds no requests to the parity
-   * comparison.
+   * counted ladder count. Present only when `deps.measureBrokenSetValue` is
+   * set.
    */
   brokenSetValues?: BrokenSetValue[];
   /**
    * Every count from 2 to the worn count of every worn set, measured with the
-   * ladder, counted or not (ticket 512). Present only when
+   * ladder, counted or not. Present only when
    * `deps.measureBrokenSetValue` is set and a set is worn at 2 or more.
    */
   wornSetLadder?: WornSetLadderEntry[];
   /**
    * One gate per worn set with a pool piece in a slot the set does not fill:
    * the bonus at one piece more than worn, measured on that set's best such
-   * candidate's own swap (ticket 511). A row crosses a bonus only when its
+   * candidate's own swap. A row crosses a bonus only when its
    * count's gate here cleared. Present only with `measureBrokenSetValue`.
    */
   crossingGates?: CrossingGate[];
   /**
-   * The step-gear sims of a step ranking (ticket 511): the rule that chose
+   * The step-gear sims of a step ranking: the rule that chose
    * the partner pieces, how many distinct step gears there were, and how many
    * of their sims ran or came from the store. Its presence marks the ranking
    * as one whose set rows are valued by the step rule.
@@ -649,18 +609,18 @@ export type Ranking = {
   setStepSims?: SetStepSims;
   /**
    * The bonus-off sims that split a shown step's broken-set loss onto its own
-   * popover line (K6B). Present whenever `setStepSims` is.
+   * popover line. Present whenever `setStepSims` is.
    */
   setBonusOffSims?: SetBonusOffSims;
   /**
    * Every partner set simmed for every eligible future, written only under
    * the "every-combination" rule, which the tab's check hook sets to score
-   * the zero-sim rules (ticket 511). Players never get it.
+   * the zero-sim rules. Players never get it.
    */
   partnerAudit?: PartnerAuditEntry[];
   /**
    * The set screen's readings, written only when `deps.setScreen` is
-   * "record" or "on" (ticket 511). In "on" mode it also holds each screened
+   * "record" or "on". In "on" mode it also holds each screened
    * set's verdict and reason. Nothing in the engine or the view reads it:
    * the gain side filters on the screen's own result, and record mode's
    * readings are scored offline.
@@ -668,27 +628,22 @@ export type Ranking = {
   setScreen?: SetScreen;
   plausibilityWarnings?: PlausibilityWarning[];
   /**
-   * `true` unless Stop cut this run short (candidate-pool.md §5.1.4).
+   * `true` unless Stop cut this run short.
    *
-   * The literal type does real work at every consumer that names `Ranking`
-   * in its signature — `applyView` will not accept a `PartialRanking`. It
-   * does **not** guard the ranking cache: `Store.put<T>` is generic, so
-   * writing a partial under a `ranking:` key type-checks fine. The only
-   * thing keeping a partial out of the cache is the `if (aborted) return
-   * partial` branch below, which returns before the write — a runtime
-   * check, so treat it as one and do not remove it on the theory that the
-   * type covers you.
+   * The literal type keeps a `PartialRanking` out of `applyView`, but it does
+   * not guard the ranking cache: `Store.put<T>` is generic. Only the
+   * `if (aborted) return partial` branch below, which returns before the
+   * write, keeps a partial out of the cache.
    */
   complete: true;
 };
 
 /**
- * What `rankUpgrades` returns when `Deps.signal` aborts mid-run
- * (candidate-pool.md §5.1.4). Rows Stop never reached carry
- * `simmed: false` and are excluded from `rank`/cutoff classification and
- * tie groups; per-sim cache rows for whatever did complete are still
- * written, so a re-run resumes cheaply. Never written to the ranking
- * cache — only a `complete: true` `Ranking` is.
+ * What `rankUpgrades` returns when `Deps.signal` aborts mid-run. Rows Stop
+ * never reached carry `simmed: false` and are excluded from `rank`/cutoff
+ * classification and tie groups. Per-sim cache rows for the sims that
+ * finished are still written, so a re-run resumes cheaply; the partial
+ * ranking itself is never cached.
  */
 export type PartialRanking = Omit<Ranking, "complete"> & { complete: false };
 
@@ -700,59 +655,43 @@ type BestSwap = {
   slotIndex: number;
   setBonusNote?: string;
   repairSwaps: readonly MetaRepairSwap[];
-  /** Worn items the winning attempt took off beyond the swap itself (350). */
+  /** Worn items the winning attempt took off beyond the swap itself. */
   removed: readonly { slotIndex: number; itemId: number }[];
   candidateGems: readonly number[];
 };
 
 /**
- * Flat and fixed, for the accurate final pass rather than for speed. The owner's
- * standing decision is that the ranking's published numbers come from a full
- * per-candidate sim at this count.
- *
- * Deliberately not adaptive. Raising the base count and adopting an
- * adaptive-iteration scheme are held together as one open decision in ticket
- * 339 — the two interact (adaptive is the mechanism that makes a higher base
- * affordable), so neither moves alone.
- *
- * Changing it is not local: the value is part of every ranking cache key.
+ * Flat and fixed: the ranking's published numbers come from a full
+ * per-candidate sim at this count, not an adaptive one. The value is part of
+ * every ranking cache key, so changing it invalidates every cached ranking.
  */
 const DEFAULT_ITERATIONS = 5000;
 /**
- * Five distinct seeds, because `usesPairedReplication` is what switches §10
- * Stage 2 on and it keys off `seeds.length > 1` (`se.ts`).
+ * Five distinct seeds, because `usesPairedReplication` (`se.ts`) turns paired
+ * replication on only when `seeds.length > 1`.
  *
- * Spaced by the iteration count rather than pinned, because upstream seeds
- * iteration `i` from `RandomSeed + i` (`sim/core/sim.go:249` and `:348`), so
- * a run of `N` iterations from seed `S` consumes the streams `S..S+N-1`. The
- * previous values 11/22/33/44/55 sat inside one run's span: at the tab's
- * 3,000 iterations seeds 11 and 22 shared 2,989 of 3,000 streams, so the five
- * "replicates" were near-copies and the SE derived from their spread was far
- * too small. Core measured `sampleSd/SE` 0.087 for those seeds where
- * independence gives ~0.9 (core ticket 236; ported for ticket 530).
+ * Spaced by the iteration count rather than pinned: the sim seeds iteration
+ * `i` from `RandomSeed + i` (`reseedRands` in `sim/core/sim.go`), so a run of
+ * `N` iterations from seed `S` uses the streams `S..S+N-1`. Seeds closer than
+ * `N` share most of their streams, and the SE from their spread comes out far
+ * too small.
  */
 const DEFAULT_SEED_BASE = 11;
-/** §10 Stage 2 replicates across five seeds; `PAIRED_REPLICATE_TOP_N` sets who. */
+/** Five seeds for paired replication; `PAIRED_REPLICATE_TOP_N` sets who. */
 const DEFAULT_SEED_COUNT = 5;
 
 /**
- * Derived from the run's *resolved* iteration count, not from
- * `DEFAULT_ITERATIONS`. Freezing the defaults against the default iteration
- * count would rebuild the very drift this replaced: a caller passing
- * `iterations: 10000` would get seeds 5,000 apart — under-spaced, and
- * rejected by the guard on a call that used to work (core ticket 236,
- * ticket 530).
+ * Derived from the run's resolved iteration count, not `DEFAULT_ITERATIONS`:
+ * a caller passing `iterations: 10000` would otherwise get seeds 5,000 apart,
+ * which overlap and fail `assertUsableSeeds`.
  */
 function defaultSeedsFor(iterations: number): number[] {
   return replicateSeeds(DEFAULT_SEED_BASE, DEFAULT_SEED_COUNT, iterations);
 }
 
 /**
- * Per-spec preset id, disclosed in `Assumptions.presetId`. Values are a fork
- * concept (the page's own current settings serialize to the skeleton per
- * plan D5/§2.3), kept as a stable label rather than packages/core's
- * `ret/p2.raid-sim-skeleton` file-path style, since there is no such file
- * here — the skeleton comes from the page, not from disk.
+ * Per-spec preset id, disclosed in `Assumptions.presetId`. A stable label, not
+ * a file path: the skeleton is the page's own current settings.
  */
 const PRESET_ID_BY_SPEC: Record<SpecId, string> = {
   ret: "ret/current-page-settings",
@@ -795,28 +734,23 @@ export async function rankUpgrades(
 
   onProgress?.({ stage: "composing" });
   const race = input.race ?? raceFromSkeleton(deps.raidSimSkeleton);
-  // Every request describes its own equipment in its own database, which is
-  // upstream's invariant (ui/core/sim.ts:346-347). Without a resolver this is
-  // exactly today's compose call, so CLI requests stay byte-identical.
+  // Every request describes its own equipment in its own database, as the sim
+  // does when it sets `player.database` from the gear (`ui/sim/sim.ts`).
+  // Without a resolver this is a plain compose call, the CLI path.
   const composeFor = (forEquipment: readonly SimItemSpec[]) => {
     const database = deps.simDatabaseFor?.(forEquipment);
     return compose(deps.raidSimSkeleton, {
       name: input.character.name.toLowerCase(),
       race,
       equipment: forEquipment,
-      // Spread rather than `database: undefined` — exactOptionalPropertyTypes
-      // distinguishes an absent key from an explicit undefined, and compose
-      // must see no key at all when there is no resolver.
-      //
-      // `!== undefined`, not truthiness: an empty database is a meaningful
-      // answer ("this request needs no extra rows") and must be written
-      // through, where `undefined` means no resolver at all — the CLI path.
+      // Spread rather than `database: undefined`: exactOptionalPropertyTypes
+      // tells an absent key from an explicit undefined. `!== undefined`, not
+      // truthiness: an empty database ("no extra rows") is still written.
       ...(database !== undefined ? { database } : {}),
     });
   };
   // Set when repair values hit only up to the cap: the spec's repair is a
-  // budget (tickets 535 and 746), read through `computeStats`, which every
-  // runner has (ticket 830).
+  // budget, read through `computeStats`, which every runner has.
   const capProfile = capProfileFor(input.spec);
   const budgetSlot =
     capProfile.repair.kind === "budget"
@@ -825,13 +759,13 @@ export async function rankUpgrades(
   /**
    * How repair priced hit where the ranking cannot show it: no cap used
    * (a full-weight spec, or a target not at level 73), or a per-spell hit
-   * talent the cap leaves out (ticket 831).
+   * talent the cap leaves out.
    */
   const hitCapNotes: Substitution[] = [];
   /**
    * One stats read of `request` as a hit percent and the repair budget it
    * gives. A spell-hit budget also needs a sim result's spell damage by
-   * school (ticket 831).
+   * school.
    */
   const readHitCap = async (
     request: RaidSimRequest,
@@ -871,19 +805,19 @@ export async function rankUpgrades(
   let metaAdjusted = false;
   let metaSwaps: MetaRepairSwap[] = [];
   // Reassigned once, after the baseline's stats read, so every later repair
-  // site gets the hit budget (ticket 535).
+  // site gets the hit budget.
   let gems = gemContext(
     deps.gemPalette ?? gemsForPhase(input.maxPhase),
     deps.epWeights,
     input.spec
   );
   // The worn repair runs before the baseline exists, so its hit budget comes
-  // from its own read of the un-repaired gear (ticket 705). That budget's
+  // from its own read of the un-repaired gear. That budget's
   // `remaining` is relative to the items the repair is given, as
   // `repairAndMinimize` expects. A read Stop ended is no failure, as at the
   // baseline read: the run goes on and the candidate loop returns a partial
   // ranking, which is never cached. A spell-hit budget also sims that gear
-  // first, for the spells it casts (ticket 831); that sim failing fails the
+  // first, for the spells it casts; that sim failing fails the
   // run with the sim's error, as the baseline sim's does.
   let wornHitCap: HitCapBudget | undefined;
   if (budgetSlot !== undefined && inactiveMeta(preRepairSocketed)) {
@@ -972,7 +906,7 @@ export async function rankUpgrades(
         );
   // Ordering runs before any sim, from raw item data only, so it cannot fail on
   // a candidate the sim itself would later reject. This order also decides
-  // which N the cap keeps (§5.1.1).
+  // which N the cap keeps.
   const ordered = orderCandidatesByEp(
     eligible,
     equipment,
@@ -982,15 +916,10 @@ export async function rankUpgrades(
 
   const simVersion = await deps.sim.version();
 
-  // Hashed on every *eligible* candidate, not the post-cap set: which
-  // candidates are eligible is known before any sim runs, so this is stable
-  // enough to gate the cache lookup before the sim loop starts.
-  // `candidateCap` is a separate hashed field (below) that narrows the
-  // eligible set down to what actually gets a full sim — hashing here rather
-  // than at entry because the logged gear is the
-  // largest input to every delta, and it is not known until readGear
-  // resolves. The check still happens before the sim loop, which is the
-  // expensive part.
+  // Hashed on every eligible candidate, not the post-cap set; `candidateCap`
+  // is its own hashed field. Hashed here rather than at entry because the
+  // logged gear, the largest input to every delta, is known only after
+  // readGear, and this is still before the expensive sim loop.
   const contentHash = canonicalJson({
     character: {
       region: input.character.region.toLowerCase(),
@@ -1028,38 +957,31 @@ export async function rankUpgrades(
     seeds: [...seeds],
     simVersion,
     engineVersion: ENGINE_VERSION,
-    // Normalized the same way content-hash.ts normalizes these fields for
-    // `contentHashOf` — "no cap"/omitted knob must hash identically to its
-    // explicit-default equivalent (plan §5.1.1, §6.1) — even though this
-    // file hashes via `canonicalJson` directly rather than `contentHashOf`
-    // (D4, see file doc comment above).
+    // No cap hashes the same as an explicit cap of every eligible candidate.
     candidateCap: input.candidateCap ?? ordered.length,
-    // Frozen at the values the tab has written since `41e2260` set
-    // `fullPool: true`. Racing is gone and these describe nothing the engine
-    // still does, but they are part of every cache key already written:
-    // dropping them would rehash every stored ranking and silently re-sim it.
-    // Three fields, not core's four — the fork never hashed `promoteTopJ`,
-    // and adding it would change every key. Deliberate divergence; delete
-    // only alongside an ENGINE_VERSION bump.
+    // Fixed values that describe nothing the engine still does, kept because
+    // they are part of every cache key already written: dropping them would
+    // rehash every stored ranking and re-sim it. Delete only alongside an
+    // ENGINE_VERSION bump.
     fullPool: true,
     screenIterations: null,
     promoteTopK: null,
     // Only when set, so a run without it keeps every key already written; a
-    // run with it is never served a ranking another rule made (ticket 511).
+    // run with it is never served a ranking another rule made.
     ...(deps.partnerRule !== undefined ? { partnerRule: deps.partnerRule } : {}),
     // The same rule for the screen: a ranking without its readings is never
     // served to a run that asked for them.
     ...(deps.setScreen !== undefined ? { setScreen: deps.setScreen } : {}),
     // Only when set, so a full-weight spec keeps the key a run with the
     // same rule writes; a run that reads hit is never served a
-    // ranking repaired at full weight (ticket 535). The value names which
-    // repairs the budget reaches, so a ranking cached when only candidate
-    // repairs used it is not served (ticket 705).
+    // ranking repaired at full weight. The value names which repairs the
+    // budget reaches, so a ranking cached when only candidate repairs used it
+    // is not served.
     ...(budgetSlot !== undefined
       ? { metaRepairHitCap: "worn-and-candidates" }
       : {}),
     // The repair rule, on every run, so no ranking cached under greedy repair
-    // or another work limit is served (ticket 535).
+    // or another work limit is served.
     metaRepair: `exact-credit-per-version;limit=${REPAIR_SEARCH_WORK_LIMIT}`,
   });
 
@@ -1071,7 +993,7 @@ export async function rankUpgrades(
 
   let simsDone = 0;
   let totalSimsForProgress = 0;
-  /** The baseline's sim hit rating, once the budget is set (ticket 535). */
+  /** The baseline's sim hit rating, once the budget is set. */
   let baselineSimHit: number | undefined;
 
   const job = await deps.store.job.create({ contentHash, input });
@@ -1087,7 +1009,7 @@ export async function rankUpgrades(
         errorDetail: err instanceof Error ? err.message : String(err),
       });
     } catch {
-      // deliberately ignored — see packages/core/src/rank.ts
+      // A failed status write must not replace the error being rethrown.
     }
     throw err;
   }
@@ -1110,8 +1032,8 @@ export async function rankUpgrades(
     }
     simsDone = 1;
 
-    // Ticket 535: one stats read of the baseline turns into the repair hit
-    // budget every later swap starts from. Before the first candidate site,
+    // One stats read of the baseline turns into the repair hit budget every
+    // later swap starts from. Before the first candidate site,
     // so every repair gets it. A read Stop ended is no failure: the run goes
     // on and the candidate loop returns a partial ranking.
     if (budgetSlot !== undefined) {
@@ -1150,9 +1072,9 @@ export async function rankUpgrades(
     }
 
     /**
-     * Each version of one set-phase build, with its own hit budget (ticket
-     * 535 and its close). A version's missed hit is the hit the
-     * local budget cannot see, set-bonus hit on the measured gear:
+     * Each version of one set-phase build, with its own hit budget. A
+     * version's missed hit is the hit the local budget cannot see, set-bonus
+     * hit on the measured gear:
      * `sim hit(version) − sim hit(baseline) − (gear hit(build) − gear hit(baseline))`,
      * the gear hit taken on real item ids before the copies. A version whose
      * build made no repair is never read. One read per distinct default
@@ -1246,8 +1168,8 @@ export async function rankUpgrades(
     /**
      * The gem context one candidate's repair runs with. The run's budget
      * moves by the swap's gear hit change, which misses set-bonus hit the
-     * swap breaks or completes (ticket 535 § Limits; a warlock's Mana-Etched
-     * head breaks a +35 spell hit set). So when the swap turns the meta off,
+     * swap breaks or completes (a warlock's Mana-Etched head breaks a +35
+     * spell hit set). So when the swap turns the meta off,
      * the candidate's own stats read corrects the budget by its missed hit,
      * as each set version's read does above. The read runs on the same sim
      * worker as the candidate's sim, so a failed read rejects with
@@ -1321,12 +1243,10 @@ export async function rankUpgrades(
       // two-hander stays in the main hand — a pairing the game cannot equip,
       // priced as an upgrade.
       //
-      // Skipping is the minimal correct semantics. The alternative, letting the
-      // off-hand pick displace the worn two-hander, prices a two-item swap under
-      // a one-item row: the delta would silently include losing the two-hander,
-      // which is not what the row claims. With a two-hander worn, no one-hander reaches
-      // this guard (`oneHandBlockedEntries` holds them out before ordering);
-      // it stays as a backstop.
+      // Letting the off-hand pick displace the worn two-hander instead would
+      // price a two-item swap under a one-item row. With a two-hander worn, no
+      // one-hander reaches this guard (`oneHandBlockedEntries` holds them out
+      // before ordering); it stays as a backstop.
       if (slotName === "offhand" && !mainHandIsOneHanded) return { kind: "skip" };
       const slotIndex = SIM_ORDER.indexOf(slotName);
       if (slotIndex < 0) return { kind: "unmapped" };
@@ -1336,18 +1256,14 @@ export async function rankUpgrades(
       // leaves the identity swap as the only outcome for a worn item, matching
       // what every unpaired slot already does.
       //
-      // Wearing a second copy of a *non-unique* ring or trinket is legal in TBC,
-      // and this guard blocks that row. Ticket 308 decided it is deliberately out
-      // of scope, because relaxing the guard here does not produce the missing
-      // row. The loop emits one row per *item*, not per placement: it keeps only
-      // the best swap across slots, so an unguarded second placement would not
-      // appear alongside the worn item's identity swap — it would win the
-      // comparison and overwrite it, turning "you already wear this" into "wear a
-      // second one" with nothing in the row saying so. The below-cutoff owned-row
-      // filter in upgrades_tab.tsx rests on this guard for the same reason.
-      // Producing the row honestly needs a per-placement row concept through the
-      // engine output, the view, and the UI; every item entry already has
-      // `unique` for whoever builds it. Ticket 309 holds the redesign map.
+      // Wearing a second copy of a non-unique ring or trinket is legal in TBC,
+      // and this guard blocks that row on purpose. The loop emits one row per
+      // item and keeps only the best swap across slots, so an unguarded second
+      // placement would overwrite the worn item's identity swap, turning "you
+      // already wear this" into "wear a second one" with nothing in the row
+      // saying so. The below-cutoff owned-row filter in
+      // `model/results_view.ts` rests on this guard too. Showing that row needs
+      // a per-placement row through the engine output, the view and the UI.
       const wornAt = equipment.findIndex((spec) => spec.id === entry.itemId);
       if (wornAt >= 0 && wornAt !== slotIndex) return { kind: "skip" };
       return { kind: "ok", slotIndex };
@@ -1378,17 +1294,13 @@ export async function rankUpgrades(
     };
 
     /**
-     * One candidate's full slot-attempt loop, unchanged from the old serial
-     * body except that it is now a `promisePool` task rather than one turn
-     * of a `for` loop (candidate-pool.md §5.1.2) — every mutation below
-     * still writes to the shared `ranked`/`candidateSkips`/
+     * One candidate's full slot-attempt loop, run as a `promisePool` task.
+     * Every mutation below writes to the shared `ranked`/`candidateSkips`/
      * `individualDeltasByItemId`/`winningRequests` collections, which is
-     * safe because JS interleaves at `await` points only, never inside a
-     * synchronous stretch of code. Ordering downstream never depends on
-     * which task finishes first: `ranked` is sorted by `deltaDps` right
-     * after the pool drains, and `candidateSkips` is sorted by item id
-     * before it feeds `substitutions` below — both so two runs at
-     * different `concurrency` values produce byte-identical output (7.3).
+     * safe because JS interleaves only at `await` points. Output never depends
+     * on which task finishes first: `ranked` is sorted by `deltaDps` after the
+     * pool drains and `candidateSkips` by item id before it feeds
+     * `substitutions`, so any `concurrency` gives byte-identical output.
      */
     async function runCandidate(entry: PoolEntry): Promise<void> {
       const owned = equippedIds.has(entry.itemId);
@@ -1550,7 +1462,7 @@ export async function rankUpgrades(
 
     // Every eligible candidate gets a full-iteration sim; the cap keeps the
     // first N items of the EP order the player does not wear, plus every owned
-    // row (§5.1.1). Owned rows are kept anyway and the list leaves them out,
+    // row. Owned rows are kept anyway and the list leaves them out,
     // so one counted against N would leave the list a row short.
     const cap = input.candidateCap ?? ordered.length;
     const keptNotOwned = new Set(
@@ -1570,12 +1482,8 @@ export async function rankUpgrades(
     totalSimsForProgress = totalSims;
     onProgress?.({ stage: "simming", done: simsDone, total: totalSims });
 
-    // Stop (candidate-pool.md §5.1.4): candidates not yet dispatched when
-    // `signal` aborts are simply never started — `promisePool` stops
-    // pulling new tasks once it observes the abort, so this is a plain
-    // pre-dispatch filter rather than cooperative cancellation of tasks
-    // already in flight. Read once so an abort mid-dispatch is a clean cut
-    // rather than a race between this check and the pool's own loop.
+    // Stop: candidates not yet dispatched when `signal` aborts never start;
+    // sims already in flight run to the end.
     const signal = deps.signal;
 
     const dispatchedCandidates = signal?.aborted ? [] : simCandidates;
@@ -1586,9 +1494,7 @@ export async function rankUpgrades(
     let aborted = signal?.aborted ?? false;
     if (tasks.length > 0) {
       if (signal !== undefined) {
-        // A cooperative check between dispatches, not preemption of a task
-        // already running — promisePool's own dispatch loop calls this
-        // between tasks, so nothing in flight is torn down mid-sim.
+        // Checked as each task starts, so nothing in flight is torn down.
         await promisePool(
           tasks.map((task) => async () => {
             if (signal.aborted) {
@@ -1603,17 +1509,13 @@ export async function rankUpgrades(
         await promisePool(tasks, concurrency);
       }
     }
-    // Re-read after the pool drains: an abort raised while the *last* task
-    // was in flight skips nothing, so the loop above never sets the flag,
-    // yet the run must still stop before replication and set packages
-    // (§5.1.4 — completeness is "the whole flow ran", not "all candidates
-    // ran").
+    // Re-read after the pool drains: an abort raised while the last task was
+    // in flight skips nothing, so the loop above never sets the flag, yet the
+    // run must still stop before replication and set packages.
     if (signal?.aborted) aborted = true;
-    // A candidate the sim panicked on is already dropped and disclosed in
-    // `substitutions` (ticket 122), and it never reaches
-    // `individualDeltasByItemId` either — so filtering on that map alone
-    // would re-add it here as a Stop placeholder, and the ranking would
-    // both say it was dropped for a sim failure and show it as unsimmed.
+    // A skipped candidate (failed repair or sim) is already disclosed in
+    // `substitutions`, and never reaches `individualDeltasByItemId`, so
+    // filtering on that map alone would re-add it as a Stop placeholder.
     const skippedIds = new Set(candidateSkips.map((s) => s.itemId));
     const unsimmedCandidates = aborted
       ? simCandidates.filter(
@@ -1623,10 +1525,9 @@ export async function rankUpgrades(
       : [];
     for (const entry of unsimmedCandidates) {
       const slotChoice = placeholderSlotChoice(entry);
-      // A row Stop never reached — placeholder numbers so the row stays a
-      // RankedItem, but `simmed: false` pulls it out of cutoff
-      // classification and tie groups below rather than letting a zeroed
-      // deltaDps masquerade as a measured one.
+      // A row Stop never reached: placeholder numbers keep it a RankedItem,
+      // and `simmed: false` keeps the zeroed deltaDps out of cutoff
+      // classification and tie groups.
       ranked.push({
         rank: null,
         itemId: entry.itemId,
@@ -1648,20 +1549,18 @@ export async function rankUpgrades(
       });
     }
     // Deterministic regardless of completion order, so `substitutions`
-    // below reads the same on every run at every `concurrency` (7.3).
+    // below reads the same on every run at every `concurrency`.
     candidateSkips.sort((a, b) => a.itemId - b.itemId);
 
     // A line for every set bonus the set phase could not measure, and for
     // every set screen or worn-set ladder sim that failed, most with the
-    // sim's error (ticket 863).
+    // sim's error.
     const setBonusLines: Substitution[] = [];
     const setCheckLines: Substitution[] = [];
 
-    // Set-bonus packages and paired replication both dispatch further sims
-    // for refinement, not for coverage — Stop's contract is "finish
-    // in-flight and stop", so once aborted, neither runs; what already
-    // simmed stands, and the unsimmed rows stay honestly unsimmed rather
-    // than pulling more work in behind the caller's back.
+    // Set-bonus packages and paired replication only refine, so once Stop
+    // fires neither runs: what already simmed stands and the unsimmed rows
+    // stay unsimmed.
     let setBonusResult = aborted
       ? emptySetPhase()
       : await buildSetBonuses(
@@ -1690,7 +1589,7 @@ export async function rankUpgrades(
       ? countedLadderBreaks(setBonusResult.wornSetLadder)
       : undefined;
     let setBonuses = setBonusResult.bonuses;
-    // Ticket 511: with the flag, each set row is valued by the step rule.
+    // With the flag, each set row is valued by the step rule.
     const stepPath = (deps.measureBrokenSetValue ?? false) && !aborted;
     const hasSetContext =
       setBonuses.length > 0 || setBonusResult.markedSetIds.length > 0;
@@ -1708,7 +1607,7 @@ export async function rankUpgrades(
       );
     }
     // After the futures are complete and before replication rewrites the top
-    // rows' `deltaDps` (C89): the step gears' sims, one per distinct gear.
+    // rows' `deltaDps`: the step gears' sims, one per distinct gear.
     let steps =
       stepPath && hasSetContext && counts
         ? await measureSetSteps({
@@ -1735,18 +1634,13 @@ export async function rankUpgrades(
         : undefined;
     if (signal?.aborted) aborted = true;
     onProgress?.({ stage: "ranking" });
-    // Sorted first so replication can pick the contested top of the list, then
-    // sorted again below — replication rewrites the very `deltaDps` this order
-    // is built from, so ranking before it would freeze the ordering the
-    // refinement exists to correct. Unsimmed rows sort last regardless of
-    // their placeholder deltaDps (0), so an aborted run's honest-but-unsimmed
-    // rows never crowd out real deltas at the top of the list.
-    // Tiebreak matches view.ts's compareRows (bisTags richness, then itemId)
-    // so the stamped rank and the rendered row order agree inside exact
-    // delta ties (ticket 279) -- but only while the view sorts on raw
-    // deltaDps: with set-potential on, compareRows keys on deltaDps +
-    // rankableSetPotential and the two orders can still diverge (repo
-    // ticket 287).
+    // Sorted here so replication can pick the contested top of the list, and
+    // again below, because replication rewrites the `deltaDps` this order is
+    // built from. Unsimmed rows sort last whatever their placeholder 0.
+    // The tiebreak matches view.ts's compareRows (bisTags richness, then
+    // itemId), so the stamped rank and the rendered order agree inside exact
+    // ties while the view sorts on raw deltaDps; with set potential on,
+    // compareRows adds rankableSetPotential and the two orders can differ.
     const bySimmedThenDelta = (a: RankedItem, b: RankedItem): number => {
       if (a.simmed === false && b.simmed !== false) return 1;
       if (b.simmed === false && a.simmed !== false) return -1;
@@ -1768,8 +1662,8 @@ export async function rankUpgrades(
     }
     if (signal?.aborted) aborted = true;
     if (aborted) {
-      // Ticket 533: a Stop after the candidate loop returns what a Stop during
-      // its last sim returns. A ladder cut short would charge breaks from
+      // A Stop after the candidate loop returns what a Stop during its last
+      // sim returns. A ladder cut short would charge breaks from
       // counts it never measured, so no partial set figure is kept.
       setBonusResult = emptySetPhase();
       counts = deps.measureBrokenSetValue
@@ -1795,9 +1689,8 @@ export async function rankUpgrades(
 
     let rank = 1;
     for (const item of ranked) {
-      // Stop left this row unsimmed — excluded from cutoff classification
-      // and tie groups (candidate-pool.md §5.1.4): there is no measured
-      // delta to classify or group.
+      // Stop left this row unsimmed: there is no measured delta to classify
+      // or group.
       if (item.simmed === false) {
         item.rank = null;
         continue;
@@ -1871,11 +1764,9 @@ export async function rankUpgrades(
     };
 
     if (aborted) {
-      // No ranking-cache row for a partial run (candidate-pool.md §5.1.4) —
-      // the type only permits `complete: true` there, so this branch is the
-      // enforcement, not a convention a future edit could quietly drop.
-      // Per-sim rows already landed via `cacheSimResult` inside
-      // `runCandidate`, so a re-run still resumes cheaply.
+      // No ranking-cache row for a partial run; this branch is the only
+      // thing that enforces it (see `Ranking.complete`). Per-sim rows already
+      // landed via `cacheSimResult`, so a re-run still resumes cheaply.
       const partial: PartialRanking = { ...rankingBase, complete: false };
       await deps.store.job.update(job.id, {
         status: "done",
@@ -1895,8 +1786,7 @@ export async function rankUpgrades(
 
   /**
    * The top rows' paired deltas, one per seed. It writes nothing to the rows,
-   * so a Stop part-way through leaves them as the candidate loop left them
-   * (ticket 533).
+   * so a Stop part-way through leaves them as the candidate loop left them.
    */
   async function replicateTopItems(
     ranked: RankedItem[],
@@ -1909,7 +1799,7 @@ export async function rankUpgrades(
       : [];
     // The total sent so far budgeted re-sims for up to top-N rows; only now is
     // the number of rows known, so the total is restated as the sims done
-    // plus the sims this function will run (ticket 566).
+    // plus the sims this function will run.
     totalSimsForProgress =
       simsDone + (top.length === 0 ? 0 : (seeds.length - 1) * (1 + top.length));
     onProgress?.({
@@ -1985,10 +1875,9 @@ async function buildSetBonuses(
   race: Race,
   input: RankInput,
   /**
-   * `rankUpgrades`'s own compose helper, passed in rather than rebuilt here:
-   * a second copy drifts silently, since no test covers both call sites
-   * (ticket 212 review). Every composed request must carry the database its
-   * own equipment needs.
+   * `rankUpgrades`'s own compose helper, passed in rather than rebuilt here
+   * so the two cannot drift. Every composed request must carry the database
+   * its own equipment needs.
    */
   composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
   individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>,
@@ -1999,9 +1888,7 @@ async function buildSetBonuses(
   setCheckLines: Substitution[],
   /**
    * When set, measure every worn set's bonuses with the ladder, charge only
-   * the counted ones as breaks, and gate each package's bonus (tickets 467,
-   * 511 and 512). Off in the E-W3 harness so the compared request list is
-   * unchanged.
+   * the counted ones as breaks, and gate each package's bonus.
    */
   measureBrokenSetValue: boolean,
   /** The ranking's cutoff, for the noise floor of the ladder's gate. */
@@ -2011,7 +1898,7 @@ async function buildSetBonuses(
    * the on-mode screen's σ.
    */
   baselineStdev: number,
-  /** Every simmed version of a repaired gear comes from it (ticket 535). */
+  /** Every simmed version of a repaired gear comes from it. */
   versionGears: VersionGears
 ): Promise<{
   bonuses: SetBonusValue[];
@@ -2037,8 +1924,7 @@ async function buildSetBonuses(
     );
 
   // The set sims' own store-cached run. A gate or ladder request sends
-  // copies, so it is never a request the store already holds (tickets 511
-  // and 512).
+  // copies, so it is never a request the store already holds.
   const cachedSampleRun =
     (what: string) =>
     async (request: RaidSimRequest): Promise<DpsSample> => {
@@ -2048,7 +1934,7 @@ async function buildSetBonuses(
           obs = await deps.sim.run(request, runOpts);
         } catch (err) {
           // After Stop the guard refused the sim, which is no sim failure,
-          // and the caller drops this run's set figures (ticket 533).
+          // and the caller drops this run's set figures.
           if (!deps.signal?.aborted) {
             console.warn(`[upgrades] ${what} not measured: the sim failed`, err);
           }
@@ -2059,7 +1945,7 @@ async function buildSetBonuses(
       return { dps: obs.dps, se: obs.stdev / Math.sqrt(runOpts.iterations) };
     };
 
-  // Ticket 512: the value of every bonus each worn set has, on the player's
+  // The value of every bonus each worn set has, on the player's
   // own gear, before any package is built, so every break below reads the
   // gated measurement instead of a table. It runs even when no set piece is a
   // candidate, because the dead-slot check reads it too.
@@ -2129,9 +2015,9 @@ async function buildSetBonuses(
     }
     return packages;
   };
-  // Ticket 644, flag only: the counts each set has a bonus at, as the sim
-  // itself lists them. Without it the gain side tried, and the ranking
-  // listed, counts the set has no bonus at (Thunderheart Harness at 5).
+  // Flag only: the counts each set has a bonus at, as the sim itself lists
+  // them, so the gain side never tries a count with no bonus (Thunderheart
+  // Harness at 5).
   const bonusCounts = measureBrokenSetValue
     ? await setBonusCountsInReach(
         deps.sim,
@@ -2156,7 +2042,7 @@ async function buildSetBonuses(
           )
       )
     : new Map<number, ReadonlySet<number>>();
-  // Ticket 511, flag only: the counts in reach at which the set has a bonus.
+  // Flag only: the counts in reach at which the set has a bonus.
   // The same-gear gate below decides which bonuses are worth something here.
   const reachableCounts = (setId: number, piecesWorn: number): SetThreshold[] => {
     const known = bonusCounts.get(setId);
@@ -2165,9 +2051,9 @@ async function buildSetBonuses(
       .filter((t) => !known || known.has(t));
   };
 
-  // Ticket 511: the screen runs after the worn-set ladder and before the
-  // package loop. Both modes get the same sets, packages and sim options, so
-  // an on-mode pair is the record mode's request at that N (K5ON).
+  // The screen runs after the worn-set ladder and before the package loop.
+  // Both modes get the same sets, packages and sim options, so an on-mode
+  // pair is the record mode's request at that N.
   const screenMode = measureBrokenSetValue ? deps.setScreen : undefined;
   const screenInput: SetScreenInput | undefined =
     screenMode === "record" || screenMode === "on"
@@ -2199,7 +2085,7 @@ async function buildSetBonuses(
             return {
               request: composeFor(base.equipment),
               added: pieces,
-              // Each rung its own repair (ticket 535). A rung whose repair
+              // Each rung its own repair. A rung whose repair
               // fails is not measured, as a package whose repair fails above.
               requestsFor: async (copiesList) =>
                 (
@@ -2241,9 +2127,8 @@ async function buildSetBonuses(
             ),
         }
       : undefined;
-  // The on mode's package estimate is rule Z's (`partner-choice.ts`) with the
-  // package's first added piece as the row, so it reads as the K5E scorer's
-  // stats(t), on which the rule was chosen.
+  // The on mode's package estimate is the "sum-of-singles" rule's
+  // (`sumOfSinglesEstimate`), with the package's first added piece as the row.
   const breakDpsBy = new Map(
     brokenSetValues.map((v) => [bonusKey(v), v.dps] as const)
   );
@@ -2310,18 +2195,18 @@ async function buildSetBonuses(
     );
     let twoPieceBonus: number | undefined;
     let twoPieceUnmeasurableAtThisWornCount = false;
-    // Flag only (C31): a 4pc's raw value subtracts the 2pc's, so it is left
+    // Flag only: a 4pc's raw value subtracts the 2pc's, so it is left
     // unset when the 2pc package was attempted and failed.
     let twoPieceFailed = false;
 
     const thresholds = measureBrokenSetValue
       ? reachableCounts(setId, piecesWorn)
       : SET_THRESHOLDS.filter((t) => t > piecesWorn);
-    // No bonus is in reach, or the set screen dropped the set (ticket 511
-    // K5ON): no gate, package or step sims. The set is marked so its rows
-    // keep their single breaks and crossing in `setContext`. It gets no
-    // `setBonuses` entry: an entry names a piece count, and here none is a
-    // bonus the ranking measured (ticket 644 found one at Thunderheart 5).
+    // No bonus is in reach, or the set screen dropped the set: no gate,
+    // package or step sims. The set is marked so its rows keep their single
+    // breaks and crossing in `setContext`. It gets no `setBonuses` entry: an
+    // entry names a piece count, and here none is a bonus the ranking
+    // measured.
     if (
       (measureBrokenSetValue && thresholds.length === 0) ||
       screenedOut.has(setId)
@@ -2405,7 +2290,7 @@ async function buildSetBonuses(
       const builtPackage = packageBuild;
       const rebuildPackage = (g: GemContext) =>
         chainSwapsWithRepairs(equipment, addedPieces, g);
-      // Ticket 535: the package sim and its gate's "on" and "off" are one
+      // The package sim and its gate's "on" and "off" are one
       // pair, so all three come from one `versionGears` call when the gate
       // runs; the package's own version is kept for its sim.
       // The package's plain version once built, or why it could not be.
@@ -2431,7 +2316,7 @@ async function buildSetBonuses(
         return entries.slice(1).map(requestOf);
       };
 
-      // Ticket 511, flag only: the gate runs before the package sim, so a
+      // Flag only: the gate runs before the package sim, so a
       // count with no bonus on this gear costs its two gate sims and nothing
       // else. It does not need the package's result.
       let sameGear: DpsSample | undefined;
@@ -2525,7 +2410,7 @@ async function buildSetBonuses(
       }
       const packageRequest = packageEntry.request;
       // The package entry's gem changes are the swaps of the build its sim
-      // wore, without the package's own slots (ticket 535).
+      // wore, without the package's own slots.
       const packageSlots = new Set(addedPieces.map((p) => p.slotIndex));
       const packageRepairSwaps = packageEntry.swaps.filter(
         (s) => !packageSlots.has(s.itemIndex)
@@ -2540,7 +2425,7 @@ async function buildSetBonuses(
         try {
           packageObs = await deps.sim.run(packageRequest, runOpts);
         } catch (err) {
-          // No warning for a sim the Stop guard refused (ticket 533).
+          // No warning for a sim the Stop guard refused.
           if (!deps.signal?.aborted) {
             console.warn(
               `[upgrades] ${label} ${threshold}pc bonus package not measured: the sim failed`,
@@ -2588,7 +2473,7 @@ async function buildSetBonuses(
           ? { threshold: 2 }
           : undefined;
       if (selfConfound) {
-        // Ticket 492. At worn 1 the 2pc package is one piece, so the 2pc is
+        // At worn 1 the 2pc package is one piece, so the 2pc is
         // never measured, and every single of the 4pc package crosses the
         // 2pc: raw4 = B4 − (n−1)·B2 for n added pieces. Two added pieces
         // simmed together end at 3 worn with only the 2pc active, so
@@ -2661,7 +2546,7 @@ async function buildSetBonuses(
     }
   }
 
-  // Ticket 511, flag only: whether one more piece of a worn set reaches a
+  // Flag only: whether one more piece of a worn set reaches a
   // bonus, measured on the gear a row actually makes. One gate per worn set
   // with a candidate in a slot the set does not fill, on that set's best such
   // candidate's own swap, so a row's "crosses" label reads a measurement
@@ -2671,7 +2556,7 @@ async function buildSetBonuses(
     for (const setId of [...setIdsWithCandidates].sort((a, b) => a - b)) {
       const worn = wornCounts.get(setId) ?? 0;
       if (worn < 1) continue;
-      // Ticket 644: one more piece reaches no bonus the sim lists.
+      // One more piece reaches no bonus the sim lists.
       if (bonusCounts.get(setId)?.has(worn + 1) === false) continue;
       const wornSlots = new Set(
         equipment.flatMap((spec, i) =>
@@ -2712,7 +2597,7 @@ async function buildSetBonuses(
               spec.id && getItem(spec.id)?.setId === setId ? [i] : []
             ),
             worn,
-            // "On" and "off" are one pair: one call (ticket 535).
+            // "On" and "off" are one pair: one call.
             async (copiesList) => {
               const entries = repairErrorOr(
                 await versionGears(
@@ -2768,14 +2653,14 @@ async function buildSetBonuses(
     }
   }
 
-  // Correct `bonusDps` for ticket 90's inflation using the measured B:
-  // `bonusDpsNet = bonusDps − netInflation(keys)`, where set-value.ts's
-  // `netInflation` derives the formula and its sign history. Reading each
-  // package's own `breaks` (its measured end state) keeps this right when the
-  // 2pc and 4pc packages pick different slots (ticket 467).
+  // Correct `bonusDps` for the worn bonuses its package breaks, using the
+  // measured B: `bonusDpsNet = bonusDps − netInflation(keys)` (set-value.ts
+  // derives the formula). Reading each package's own `breaks` (its measured
+  // end state) keeps this right when the 2pc and 4pc packages pick different
+  // slots.
   //
   // The keys are the union of this package's breaks, the 2pc package's
-  // breaks, and every member single's breaks. Today the 2pc package is a
+  // breaks, and every member single's breaks. The 2pc package is now a
   // prefix of the 4pc and a member single never breaks what its package
   // keeps, so the union equals this package's own `breaks`; it is kept so the
   // formula stays whole if package selection changes.
@@ -2862,7 +2747,7 @@ async function buildSetBonuses(
 }
 
 /**
- * The step-sim phase of a step ranking (ticket 511). For each set row and each
+ * The step-sim phase of a step ranking. For each set row and each
  * future whose same-gear gate cleared, `choosePartnerSet` picks the partner
  * pieces once, and the row's step gear — the current gear plus the row plus
  * those pieces, folded in slot order with the same gem repairs as every other
@@ -2885,9 +2770,9 @@ async function measureSetSteps(args: {
   simVersion: string;
   runOpts: SimRunOpts;
   cutoff: Cutoff;
-  /** Every step sim's request comes from it (ticket 535). */
+  /** Every step sim's request comes from it. */
   versionGears: VersionGears;
-  /** A line for each set bonus whose step or bonus-off sim failed, with the sim's error (ticket 863). */
+  /** A line for each set bonus whose step or bonus-off sim failed, with the sim's error. */
   bonusLines: Substitution[];
 }): Promise<{
   setStepSims: SetStepSims;
@@ -2918,7 +2803,7 @@ async function measureSetSteps(args: {
       try {
         obs = await deps.sim.run(request, runOpts);
       } catch (err) {
-        // No warning for a sim the Stop guard refused (ticket 533).
+        // No warning for a sim the Stop guard refused.
         if (!deps.signal?.aborted) console.warn(failure, err);
         return { simError: errorText(err) };
       }
@@ -2965,8 +2850,8 @@ async function measureSetSteps(args: {
       chainSwapsWithRepairs(equipment, inSlotOrder(swaps), g);
 
   /**
-   * The step gear's request, its own version (ticket 535), or why it could
-   * not be built: a failed gem repair or a request build error (ticket 872).
+   * The step gear's request, its own version, or why it could not be built:
+   * a failed gem repair or a request build error.
    */
   const stepGear = async (
     swaps: readonly PackagePiece[]
@@ -3084,7 +2969,7 @@ async function measureSetSteps(args: {
         rule
       );
       // On a step ranking an eligible future's `pieces` and `breaks` are its
-      // partner choice's, so the ticket 502 path's are dropped first.
+      // partner choice's, so the `pathToThreshold` path's are dropped first.
       delete f.pieces;
       delete f.breaks;
       if (choice === undefined) {
@@ -3145,7 +3030,7 @@ async function measureSetSteps(args: {
   }
 
   // Identical step gears are simmed once. Each task handles its own sim
-  // failure, so one failed sim leaves only its own futures unmeasured (C170).
+  // failure, so one failed sim leaves only its own futures unmeasured.
   const totals = new Map<string, { totalDps: number; se: number }>();
   const stepErrors = new Map<string, string>();
   const keys = [...requests.keys()];
@@ -3177,7 +3062,7 @@ async function measureSetSteps(args: {
   }
 
   // The bonus-off sims run for exactly the steps the popover shows, so this
-  // uses the view's one definition of those steps (K6B, ADR-0035).
+  // uses the view's one definition of those steps (`setPotentialSteps`).
   const offCounter: SimCounter = { simmed: 0, fromStore: 0 };
   const offRequests = new Map<
     string,
@@ -3235,7 +3120,7 @@ async function measureSetSteps(args: {
         return false;
       }
     }
-    // Ticket 535: `plain` must be the request simmed for the gear before, and
+    // `plain` must be the request simmed for the gear before, and
     // the bonus-off version its pair, so both come from one call. On later
     // steps entry 0 is the previous step's own request (the build is
     // deterministic and its read is cached).
@@ -3285,7 +3170,7 @@ async function measureSetSteps(args: {
     // On the first step the gear before is the row's single swap, built
     // here on the run's budget. When entry 0 was rebuilt for set hit that
     // budget misses, it differs from that build, so the split is skipped
-    // rather than paired with another layout (ticket 535). The candidate
+    // rather than paired with another layout. The candidate
     // loop repairs on the row's own stats read, so it may have simmed entry
     // 0; this check does not look for that sim.
     if (
@@ -3334,7 +3219,7 @@ async function measureSetSteps(args: {
   // A Breaks line pairs the bonus-off sim with the plain gear before's sim
   // (the previous step's total, or the row's single swap). Only a gear before
   // that this run already holds makes that a paired difference, so a request
-  // whose plain gear before is missing is not simmed (ruling GK6-2).
+  // whose plain gear before is missing is not simmed.
   const paired = new Set<string>();
   for (const [key, { plain }] of offRequests) {
     if (await readCachedSim(deps, plain, args.simVersion, runOpts)) {
@@ -3403,13 +3288,13 @@ async function measureSetSteps(args: {
 
 /**
  * The highest measured, non-empty package of one set: the package a row's
- * `commitBreaks` completes, and a source of measurement targets (ticket 477).
+ * `commitBreaks` completes, and a source of measurement targets.
  */
 function topMeasuredPackage(
   bonusesForSet: readonly SetBonusValue[]
 ): SetBonusValue | undefined {
-  // `!belowGate` (C198): a below-gate entry has package ids but no package
-  // sim, so it is never a measured package (ticket 511).
+  // A below-gate entry has package ids but no package sim, so it is never a
+  // measured package.
   return [...bonusesForSet]
     .filter(
       (b) =>
@@ -3424,7 +3309,7 @@ function topMeasuredPackage(
  * The worn bonuses broken by the top package with `itemId` substituted into
  * its own slot (the package's piece in that slot, if any, is dropped). Shared
  * by `applySetContext`'s `commitBreaks` and the B target discovery, so every
- * break a row shows is one the engine tried to measure (ticket 477).
+ * break a row shows is one the engine tried to measure.
  */
 function substitutedPackageBreaks(
   itemId: number,
@@ -3450,11 +3335,10 @@ function substitutedPackageBreaks(
 
 /**
  * One sim of two break-free set pieces added together at worn 1, giving the
- * 2pc value `B2 = Σ singles − pair delta` (ticket 492). Undefined when the gem
- * repair or the sim fails; the caller then keeps the raw 4pc `bonusDps` and
- * leaves its `bonusDpsNet` unset. Why it was not measured goes to
- * `onNotMeasured` with the error (tickets 863 and 872), except a sim Stop
- * refused.
+ * 2pc value `B2 = Σ singles − pair delta`. Undefined when the gem repair or
+ * the sim fails; the caller then keeps the raw 4pc `bonusDps` and leaves its
+ * `bonusDpsNet` unset. Why it was not measured goes to `onNotMeasured` with
+ * the error, except a sim Stop refused.
  */
 async function measurePairTwoPiece(
   bonusLabel: string,
@@ -3509,7 +3393,7 @@ async function measurePairTwoPiece(
     try {
       obs = await deps.sim.run(request, runOpts);
     } catch (err) {
-      // No warning for a sim the Stop guard refused (ticket 533).
+      // No warning for a sim the Stop guard refused.
       if (!deps.signal?.aborted) {
         console.warn(
           `[upgrades] ${bonusLabel} net value not measured: the sim failed for the worn-1 pair that measures the 2pc`,
@@ -3540,7 +3424,7 @@ async function measurePairTwoPiece(
 
 /**
  * The pieces a player adds to reach `pkg`'s threshold when this candidate is
- * one of them (ticket 490): the whole package if the candidate is in it,
+ * one of them: the whole package if the candidate is in it,
  * else the candidate plus the best `pkg.length − 1` package pieces outside its
  * slot, ranked the way `selectPackage` ranks them (single delta, then lowest
  * id). A candidate outside the package keeps what the package would not need.
@@ -3609,14 +3493,14 @@ function countMembersBreaking(
 }
 
 /**
- * The worn-set ladder of every set worn at 2 or more pieces, in set-id order
- * (ticket 512). Each count is `counted` when its value clears the same noise
- * gate as a set bonus, or when its sims failed and the set has a bonus at
- * that count. No table decides which sets or counts are measured. A failed
- * rung leaves its count unknown, and a count with no bonus would then be
- * listed as a break (ticket 870), so the sim's list of the set's bonuses
- * (`readBonuses`) decides. When that list fails too, no failed count is
- * counted (ticket 871): the row claims no break it did not measure, and the
+ * The worn-set ladder of every set worn at 2 or more pieces, in set-id order.
+ * Each count is `counted` when its value clears the same noise gate as a set
+ * bonus, or when its sims failed and the set has a bonus at that count. No
+ * table decides which sets or counts are measured. A failed rung leaves its
+ * count unknown, and a count with no bonus would then be listed as a break,
+ * so the sim's list of the set's bonuses (`readBonuses`) decides. When that
+ * list fails too, no failed count is counted: the row claims no break it did
+ * not measure, and the
  * ladder's and the read's lines say what was not measured. A runner with no
  * list gives no such line, so there a failed count is counted.
  */
@@ -3672,8 +3556,8 @@ async function measureWornSetLadders(
 }
 
 /**
- * The counts at which a worn set has a bonus, as the sim lists them (ticket
- * 870): the bonuses active on the worn gear that go when the set's pieces are
+ * The counts at which a worn set has a bonus, as the sim lists them: the
+ * bonuses active on the worn gear that go when the set's pieces are
  * sent as set-less copies. Empty when a read fails, with a line that gives
  * its error; undefined when Stop refused the read.
  */
@@ -3732,7 +3616,7 @@ function countedLadderBreaks(
 
 /**
  * The smallest entry count above `after` whose same-gear gate cleared, or
- * null (ticket 511). An entry has `sameGearDps` without `belowGate`
+ * null. An entry has `sameGearDps` without `belowGate`
  * exactly when its gate cleared.
  */
 function nextClearedThreshold(
@@ -3751,8 +3635,8 @@ export function memberPackages(
   itemId: number,
   bonusesForSet: readonly SetBonusValue[]
 ): SetPackageContext[] | undefined {
-  // `!belowGate` (C198): a below-gate entry's package was never simmed, so
-  // its `packageDeltaDps` of 0 is not a measurement (ticket 511).
+  // A below-gate entry's package was never simmed, so its `packageDeltaDps`
+  // of 0 is not a measurement.
   const measured = bonusesForSet.filter(
     (b) => b.unmeasured === undefined && !b.belowGate
   );
@@ -3779,12 +3663,12 @@ function applySetContext(
   individualDeltasByItemId: ReadonlyMap<number, IndividualDelta> = new Map(),
   counts: BonusCountPredicate = isBonusImplemented,
   /**
-   * Present exactly on the flag path (ticket 511): the crossing gates, so the
+   * Present exactly on the flag path: the crossing gates, so the
    * crossing and next-bonus counts read measurements instead of the six-set
    * table, and every entry above the swap's count becomes a future.
    */
   stepPath?: { crossingGates: readonly CrossingGate[] },
-  /** Sets whose rows get a `setContext` though they have no entry (ticket 644). */
+  /** Sets whose rows get a `setContext` though they have no entry. */
   markedSetIds: readonly number[] = []
 ): void {
   const wornCounts = setCounts(equipment);
@@ -3813,7 +3697,7 @@ function applySetContext(
     const piecesAfterSwap = item.owned
       ? piecesWornBefore
       : piecesWornBefore + 1;
-    // Flag path (ticket 511): one more piece crosses a bonus only when that
+    // Flag path: one more piece crosses a bonus only when that
     // count's crossing gate cleared, and the next bonus is the next count
     // whose gate cleared. No table is read.
     const crossingCleared =
@@ -3872,9 +3756,9 @@ function applySetContext(
     // corrected net value. dps absent when the correction could not be measured.
     // Only for a swap that adds a set piece: an owned row's swap changes nothing,
     // so crediting it a future bonus would rank "keep what you wear" on value
-    // the swap cannot bring (ticket 478 A4; fixture A4 showed credit 80).
+    // the swap cannot bring.
     const advancesPieceCount = piecesAfterSwap > piecesWornBefore;
-    // Flag path (ticket 511): every entry above the swap's count that has a
+    // Flag path: every entry above the swap's count that has a
     // package or is below the gate, with no list. A below-gate future is
     // never a stop, but it is shown so the row can say the count was tried.
     const T = stepPath
@@ -3903,7 +3787,7 @@ function applySetContext(
         ...(dps !== undefined ? { dps } : {}),
       };
     };
-    // A path piece's own stats (ticket 502): its single from the individual
+    // A path piece's own stats: its single from the individual
     // deltas, read here before replication rewrites the top rows'
     // `deltaDps`, so a row inside a measured package sums to that package's
     // delta. The worn bonuses it breaks alone are added back because the path
@@ -3937,8 +3821,7 @@ function applySetContext(
     const futureBonuses = T.map((t) => {
       const bonus = bonusesForSet.find((b) => b.threshold === t);
       const net = bonus?.bonusDpsNet;
-      // `!belowGate` (C198): no path through a package that was never simmed
-      // (ticket 511).
+      // No path through a below-gate package: it was never simmed.
       const path =
         bonus &&
         bonus.unmeasured === undefined &&
@@ -3954,14 +3837,14 @@ function applySetContext(
             )
           : undefined;
       // The worn bonuses this future's own path breaks beyond the single's
-      // own break (ticket 490). Keys a lower future already lists stay here
+      // own break. Keys a lower future already lists stay here
       // too; the view charges each key once.
       const pathBreaks = path
         ? brokenSetBonuses(equipment, path, setId, counts).filter(
             (brk) => !singleKeys.has(bonusKey(brk))
           )
         : [];
-      // The path's other members (ticket 502). Pieces a lower future already
+      // The path's other members. Pieces a lower future already
       // lists stay here too; the view counts each piece once.
       const pieces = path
         ?.filter((p) => p.itemId !== item.itemId)
@@ -3973,9 +3856,9 @@ function applySetContext(
             ...(dps !== undefined ? { dps } : {}),
           };
         });
-      // Pieces the player still needs from their CURRENT worn count to activate
-      // this threshold, counting this candidate as one of them (ticket 467 case
-      // 2: at worn 1 the 4pc needs 3 more).
+      // Pieces the player still needs from their current worn count to
+      // activate this threshold, counting this candidate as one of them (at
+      // worn 1 the 4pc needs 3 more).
       return {
         threshold: t,
         piecesNeeded: t - piecesWornBefore,
@@ -4092,7 +3975,7 @@ async function cacheSimResult(
 
 /**
  * A store-cached sim at explicit options, for sims whose seed, iteration count
- * or `saveAllValues` differ from the run's own (the set screen, ticket 511).
+ * or `saveAllValues` differ from the run's own (the set screen).
  * The store key holds every option (`simCacheKey`), so it never answers one
  * question with another's reading. Throws when the sim fails.
  */
@@ -4110,8 +3993,8 @@ async function runSimAt(
 }
 
 /**
- * A sim the guard below refused to start because the caller's Stop fired
- * (ticket 533). Its own class, so replication can tell it from a sim
+ * A sim the guard below refused to start because the caller's Stop fired.
+ * Its own class, so replication can tell it from a sim
  * failure, which fails the ranking.
  */
 class StopRefusedSim extends Error {
@@ -4123,14 +4006,14 @@ class StopRefusedSim extends Error {
 }
 
 /**
- * A candidate's own stats read failed (ticket 746). Its own class, so
+ * A candidate's own stats read failed. Its own class, so
  * `runCandidate` can report only the read as that candidate's failed sim
  * and still fail the run on a code error around it.
  */
 class CandidateHitReadFailed extends Error {
   override readonly name = "CandidateHitReadFailed";
 
-  // `cause` as a field: the fork's lib is es2021, which has no Error options.
+  // `cause` as a field: the TS lib is es2021, which has no Error options.
   constructor(readonly cause: unknown) {
     super(cause instanceof Error ? cause.message : String(cause));
   }
@@ -4156,7 +4039,7 @@ function hitPercentOf(
 /**
  * The hit percent of a worn-gear, baseline or set-version stats read. A read
  * that fails fails the run with the sim's error, as a failed baseline sim
- * does (ticket 852). A read Stop ended still rejects with `StopRefusedSim`.
+ * does. A read Stop ended still rejects with `StopRefusedSim`.
  * A read that answers with no hit number is not a sim failure:
  * `hitPercentOf`'s error fails the run as an internal error.
  */
@@ -4175,14 +4058,14 @@ async function hitPercentOrSimFailed(
 }
 
 /**
- * One stats read, raced against Stop (ticket 538). The listener goes on
+ * One stats read, raced against Stop. The listener goes on
  * before the read starts, so an abort fired while the read is being sent is
  * not missed. There is no timeout. Every path on which a read gets no answer
  * (a worker that never finished starting, or a desktop server that accepts
  * the request and never answers) leaves that worker unable to answer sims.
  * A read timeout would almost always only move the hang to a later sim on
- * that worker. Least-busy routing sends that worker a sim once every healthy
- * worker is busy (ticket 538's close).
+ * that worker, because least-busy routing sends that worker a sim once
+ * every healthy worker is busy.
  */
 async function readStats(
   sim: Deps["sim"],
@@ -4216,8 +4099,7 @@ async function readStats(
 
 /**
  * Pre-formatted, so a forwarded console line keeps the number. It times
- * reads on either sim transport; the browser build's read time is
- * unmeasured (ticket 538).
+ * reads on either sim transport.
  */
 function logStatsRead(started: number): void {
   console.debug(
@@ -4226,8 +4108,8 @@ function logStatsRead(started: number): void {
 }
 
 /**
- * `deps` whose sim refuses to start once `deps.signal` has aborted (ticket
- * 533). The set phase and replication use it. The candidate loop keeps the
+ * `deps` whose sim refuses to start once `deps.signal` has aborted. The set
+ * phase and replication use it. The candidate loop keeps the
  * plain runner, because it turns a failed sim into a dropped row and has its
  * own Stop check.
  */
@@ -4259,9 +4141,8 @@ function stopGuardedDeps(deps: Deps): Deps {
 }
 
 /**
- * Ticket 644: for each set, the piece counts above the worn count at which
- * the sim has a bonus, up to the most pieces the pool can fill.
- * `largestPackage` gives, for a set, the pieces that take it to the most
+ * For each set, the piece counts above the worn count at which the sim has a
+ * bonus, up to the most pieces the pool can fill. `largestPackage` gives, for a set, the pieces that take it to the most
  * pieces the pool can fill. The counts are the bonuses the sim lists as
  * active (`<set> (<n>pc)`) on the current gear with those pieces added, less
  * those already active on the current gear. The sim's own list is read so
@@ -4269,13 +4150,12 @@ function stopGuardedDeps(deps: Deps): Deps {
  *
  * When those pieces fail gem repair or a read fails, the set gets no counts,
  * so the gain side tries none for it and the ranking lists none; a console
- * warning names the set, and `onNotRead` gets the reason with the error
- * (ticket 867). The crossing gate also skips a set with no counts,
- * which is intended: a failed check gives the set no entry. When Stop
+ * warning names the set, and `onNotRead` gets the reason with the error.
+ * The crossing gate also skips a set with no counts, which is intended: a
+ * failed check gives the set no entry. When Stop
  * refuses a read, the set also gets no counts, with no warning, and
  * `rankUpgrades` then drops the whole set phase. A runner that cannot read
- * the bonuses gives an empty map: the gain side then tries every count, as
- * before this ticket.
+ * the bonuses gives an empty map: the gain side then tries every count.
  */
 async function setBonusCountsInReach(
   sim: SimRunner,
@@ -4317,7 +4197,7 @@ async function setBonusCountsInReach(
       }
       out.set(setId, counts);
     } catch (err) {
-      // A read the Stop guard refused is no failure to report (ticket 533).
+      // A read the Stop guard refused is no failure to report.
       if (!(err instanceof StopRefusedSim)) {
         console.warn(
           `[upgrades] set ${setId}: its bonus counts were not read`,
@@ -4401,8 +4281,8 @@ export function equipmentForCandidateSwap(
 
 /**
  * The first half of `candidateSwapWithRepairs`: the gear after the swap and
- * its gem fill, before any meta repair. Exported so the ticket 535 test can
- * read each repair's input.
+ * its gem fill, before any meta repair. Exported so a test can read each
+ * repair's input.
  */
 export function candidateSwapPreRepair(
   equipment: readonly SimItemSpec[],
@@ -4468,7 +4348,7 @@ export function candidateSwapWithRepairs(
   return {
     equipment: applyRepairedGems(swapped, minimized.items),
     swaps: minimized.swaps.filter((s) => s.itemIndex !== slotIndex),
-    // The swapped slot included, which `swaps` filters out (ticket 535).
+    // The swapped slot included, which `swaps` filters out.
     repaired: minimized.swaps.length > 0,
     removed,
   };
@@ -4476,7 +4356,7 @@ export function candidateSwapWithRepairs(
 
 /**
  * A site's fixed chain of `candidateSwapWithRepairs` calls from the gear it
- * starts on, as built (ticket 535): the set phase's package, step and pair
+ * starts on, as built: the set phase's package, step and pair
  * gears. `repaired` is whether any call changed a socket; `swaps` is every
  * call's repair swaps in call order.
  */
@@ -4501,9 +4381,8 @@ type VersionEntry = {
 /**
  * A version whose rebuild failed its gem repair. It is no failed call, so a
  * caller handles it as the same failure on its own build, never as a request
- * that could not be built (review A1 of `fix/867-870-tab-errors`): a line with
- * a build error carries `Substitution.error`, which the run's error toast
- * shows.
+ * that could not be built: a line with a build error carries
+ * `Substitution.error`, which the run's error toast shows.
  */
 type RepairFailure = { repairError: MetaRepairError };
 
@@ -4524,10 +4403,10 @@ const repairErrorOr = (
 
 /**
  * Each version of one set-phase build, a pair's versions in one call
- * (ticket 535; `rankUpgrades` defines it). `base` is the build with the run's
+ * (`rankUpgrades` defines it). `base` is the build with the run's
  * budget; `rebuild` builds the same chain with another budget. An entry is
  * a `BuildFailure` with the error when that version's default request cannot
- * be composed (ticket 869), and, unless Stop ends a later read in the same
+ * be composed, and, unless Stop ends a later read in the same
  * call, a `RepairFailure` when rebuilding it fails its gem repair.
  */
 type VersionGears = (
@@ -4546,7 +4425,7 @@ const requestOf = (
  * Missed hit below this many rating keeps a version on the run's budget. On
  * the measured gear, gem, item and enchant hit cancel inside `missed`, so
  * what is left is set-bonus hit, a whole number of rating (20 on Burning
- * Rage's 2pc); the tolerance only absorbs the percent round trip (ticket 535).
+ * Rage's 2pc); the tolerance only absorbs the percent round trip.
  */
 const MISSED_HIT_TOLERANCE = 0.5;
 
@@ -4574,21 +4453,17 @@ function chainSwapsWithRepairs(
 
 /**
  * Takes the worn off-hand item off when a two-handed candidate goes in the
- * main hand, and names what it took (ticket 350).
+ * main hand, and names what it took.
  *
  * A two-hander occupies both hands, so pricing one beside a worn off-hand item
- * composes gear the game cannot equip. Clearing the slot leaves a legal,
- * ordinary two-hander build and an honest swap — the row's sim runs without
- * the off-hand item and the row discloses it through
- * `RankedItem.removedItems`, so a reader cannot mistake the two-item change
- * for a one-item one.
+ * composes gear the game cannot equip. The row's sim runs without the
+ * off-hand item and the row discloses it through `RankedItem.removedItems`.
  *
- * This is a different case from the `offhand` guard in `attemptEligibility`,
- * which covers a two-hander already WORN with a one-hander offered for the off
- * hand. That trade is rejected there because displacing the worn two-hander
- * would price a one-hander while silently costing a two-hander; this one is
- * disclosed rather than rejected because the resulting build is legal and the
- * cost is stated. See that guard's own scope paragraph.
+ * The `offhand` guard in `attemptEligibility` covers the other case, a worn
+ * two-hander with a one-hander offered for the off hand, and rejects it
+ * because displacing the two-hander would be a hidden cost; this case is
+ * disclosed instead, because the resulting build is legal and the cost is
+ * stated.
  *
  * Returns the input array untouched, with no removals, in every other case.
  */
@@ -4612,9 +4487,7 @@ function clearOffHandForTwoHander(
 
   const cleared = equipment.map((spec, i) =>
     // The bare-slot value `equipmentFromLoggedGear` writes for an empty slot,
-    // so a cleared off hand is indistinguishable from one the player never
-    // filled — which is what every downstream gem and stat stage already
-    // handles.
+    // so a cleared off hand looks like one the player never filled.
     i === offHandIndex ? { gems: [] } : spec
   );
   return {
@@ -4721,7 +4594,7 @@ export function candidateSkipSubstitution(skip: CandidateSkip): Substitution {
 
 /**
  * Why a set bonus or a set was not measured: the end of the tab's sentence
- * and, when a call failed, its own error (tickets 863 and 874).
+ * and, when a call failed, its own error.
  */
 export type SkipReason = { because: string; error?: string };
 
@@ -4755,12 +4628,12 @@ export const SET_BONUS_SKIP_REASONS = {
     because: "their sims could not be built.",
     error,
   }),
-  /** The request for the set's bonus list could not be built (ticket 872). */
+  /** The request for the set's bonus list could not be built. */
   bonusListNotBuilt: (error: string): SkipReason => ({
     because: "the check that lists the set's bonuses could not be built.",
     error,
   }),
-  /** The sim's list of a set's active bonuses (ticket 644) failed. */
+  /** The sim's list of a set's active bonuses failed. */
   bonusListFailed: (error: string): SkipReason => ({
     because: "the sim could not list the set's bonuses.",
     error,
@@ -4792,7 +4665,7 @@ export function setBonusSkipSubstitution(skip: SetBonusSkip): Substitution {
 }
 
 /**
- * A set whose bonus counts were not read (ticket 867). No count above the worn
+ * A set whose bonus counts were not read. No count above the worn
  * one is tried for it, so its bonuses in reach get no figure; its worn bonuses
  * are measured apart, by the worn-set ladder.
  */
@@ -4810,14 +4683,14 @@ export function setBonusesSkipSubstitution(skip: {
 }
 
 /**
- * A step's bonus-off sim that failed (ticket 863). The step is still measured
+ * A step's bonus-off sim that failed. The step is still measured
  * as one line; only the split of its break from its pieces is lost.
  */
 export function breakSplitSkipSubstitution(skip: {
   setName: string;
   threshold: SetThreshold;
   error: string;
-  /** The bonus-off request could not be built, so no sim ran (ticket 872). */
+  /** The bonus-off request could not be built, so no sim ran. */
   notBuilt?: true;
 }): Substitution {
   return {
@@ -4828,13 +4701,13 @@ export function breakSplitSkipSubstitution(skip: {
 }
 
 /**
- * A set screen sim that failed (ticket 863). The screen only decides whether
+ * A set screen sim that failed. The screen only decides whether
  * a set's bonuses are measured at all, and a set it could not read is kept.
  */
 export type SetScreenSkip = {
   setName: string;
   error: string;
-  /** The check's request could not be built, so no sim ran (ticket 869). */
+  /** The check's request could not be built, so no sim ran. */
   notBuilt?: true;
 };
 
@@ -4847,14 +4720,14 @@ export function setScreenSkipSubstitution(skip: SetScreenSkip): Substitution {
 }
 
 /**
- * A worn-set ladder sim that failed (ticket 863). The line names the set and
+ * A worn-set ladder sim that failed. The line names the set and
  * no count: the ladder does not know which counts hold a bonus, and a rung's
  * count (1 for the first) is no count the player wears.
  */
 export function wornSetSkipSubstitution(skip: {
   setName: string;
   error: string;
-  /** The rung's request could not be built, so no sim ran (ticket 872). */
+  /** The rung's request could not be built, so no sim ran. */
   notBuilt?: true;
 }): Substitution {
   return {
@@ -4872,7 +4745,7 @@ export function wornSetSkipSubstitution(skip: {
  * would show one sentence many times. The first one's full text stays, in
  * its place, unless it has no `error` and a later one does: that one then
  * takes the place, so the console and the run's error toast keep the failed
- * call's error (review N3 of `fix/867-870-tab-errors`).
+ * call's error.
  */
 export function uniqueSubstitutions(
   substitutions: readonly Substitution[]
@@ -4907,11 +4780,10 @@ export function hitCapUnknownNote(): Substitution {
 }
 
 /**
- * The note every `fullWeight` spec gets (ticket 746), with or without a stats
- * read. It names no reason because the reasons differ by spec (dual wield,
- * the hunter's melee weave, a talent's hit inside the stats read for balance
- * and elemental),
- * and the warrior page serves Arms and Fury under one spec id.
+ * The note every `fullWeight` spec gets, with or without a stats read. It
+ * names no reason because the reasons differ by spec (dual wield, the
+ * hunter's melee weave, a talent's hit inside the stats read for balance and
+ * elemental), and the warrior page serves Arms and Fury under one spec id.
  */
 export function hitCapFullWeightNote(): Substitution {
   return {
@@ -4924,7 +4796,7 @@ export function hitCapFullWeightNote(): Substitution {
 
 /**
  * The note a spell-hit budget gets when the player has points in a per-spell
- * hit talent (ticket 831): the budget leaves that talent's hit out, so the
+ * hit talent: the budget leaves that talent's hit out, so the
  * spells it covers reach the cap sooner than the budget counts.
  */
 export function hitCapPerSpellTalentNote(talent: string): Substitution {

@@ -10,15 +10,10 @@ import { keepMarkWithZone, rowNamesHiddenSource, rowSourceDetail, zoneWithMark }
 import { itemSourceShows, overrunNpcKey } from '../../utils/item_source';
 
 /**
- * Upstream's drop-with-npc link (`ItemSource`), drawn here when the item's
- * first source is a drop from a known npc; else undefined, and upstream's
- * block draws the source. Upstream files stay unedited, so the cell draws
- * the same link itself, zone and difficulty over the boss, linking the npc,
- * for two reasons. The zone and its mark are joined by a no-break space, so
- * a narrow cell never puts "(N)" on a line of its own (ticket 607). And when
- * the npc name overran its AtlasLoot key, the boss is the one
- * `overrunNpcKey` recovers, where `ItemSource` prints the Lua text (ticket
- * 680; review finding P2 of feat/tab-follow-ups).
+ * The drop-with-npc link `ItemSource` draws, drawn here for an item whose first source is a drop
+ * from a known npc; else undefined, and `ItemSource` draws the source. The zone and its difficulty
+ * mark are joined by a no-break space, so a narrow cell never puts "(N)" on a line of its own, and
+ * an npc name that overran its AtlasLoot key is replaced by the boss `overrunNpcKey` recovers.
  */
 const dropSource = (item: UIItem, sim: Sim): ReactNode | undefined => {
 	const [first] = item.sources;
@@ -53,19 +48,13 @@ export interface SourceCellProps {
 }
 
 /**
- * Where the item comes from, as the gear picker shows it: upstream's linked
- * source (a drop's zone and boss, a quest, a vendor). When the site has no
- * source to show, the engine's plain label in the same small type. `memo`
- * with the row's other costly cells, so a landing row renders only the Rank
- * cell again.
+ * Where the item comes from, as the gear picker shows it, or the engine's plain label when the site
+ * has no source to show. Memoised so a landing row renders only its Rank cell again.
  *
- * A row kept by "Filter by source" can also come from a hidden source (an
- * item from two raids stays while either is shown). Upstream's block names
- * the item's first source only, which may be the hidden one, so while any
- * of the row's sources is hidden the cell names its first shown source in
- * plain text instead. The plain text names that one source with what the
- * row holds beyond its zone or bucket: a drop's or token's boss, a
- * reputation's standing, a PvP item's currency.
+ * A row kept by "Filter by source" can also come from a hidden source (an item from two raids
+ * stays while either is shown). `ItemSource` names only the first source, which may be the hidden
+ * one, so while any of the row's sources is hidden the cell names its first shown source in plain
+ * text instead.
  */
 export const SourceCell = memo(({ row, item, sim, hiddenSources = [] }: SourceCellProps) => {
 	const namesHidden = rowNamesHiddenSource(row, hiddenSources);

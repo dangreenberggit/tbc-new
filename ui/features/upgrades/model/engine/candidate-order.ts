@@ -1,11 +1,11 @@
 /**
- * Pre-sim candidate ordering (plan §5.1.3 — candidate-pool.md M1).
+ * Pre-sim candidate ordering.
  *
  * Sorts eligible candidates by committed-EP delta against the owned item in
- * that slot, computed from raw item data — no gem repair — so the order
+ * that slot, computed from raw item data with no gem repair, so the order
  * exists before any sim runs and can never fail on a candidate the sim
  * itself would reject. Ordering only changes *when* a row fills and what a
- * pre-M2 cap keeps; it never changes a displayed number (plan §0).
+ * candidate cap keeps; it never changes a displayed number.
  */
 import { HandType } from "@generated/proto/common";
 

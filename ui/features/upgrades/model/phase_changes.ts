@@ -1,8 +1,8 @@
 /**
  * The page's phase changes, from the moment its saved settings have loaded, for the Upgrades tab: a phase change
- * resets the tab to that phase's default sets whether or not the tab is on screen (ticket 564). Small and free of the
- * tab's code and data on purpose: the eager `UpgradesTabBody` starts the watch at page start, and a page whose tab
- * never opens must download neither (tickets 587, 589).
+ * resets the tab to that phase's default sets whether or not the tab is on screen. Small and free of the tab's code
+ * and data on purpose: the eager `UpgradesTabBody` starts the watch at page start, and a page whose tab never opens
+ * must download neither.
  */
 
 import type { Spec } from '@generated/proto/common';

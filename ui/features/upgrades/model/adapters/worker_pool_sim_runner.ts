@@ -1,26 +1,15 @@
 /**
- * WorkerPoolSimRunner — SimRunner over the site's own WorkerPool (WASM workers
- * on the web build, HTTP net workers on the desktop build) (plan §2.4).
+ * SimRunner over the site's WorkerPool (WASM workers on the web build, HTTP
+ * workers on the desktop build).
  *
- * Owns an independent `WorkerPool`, rather than reaching into `Sim`'s
- * private `workerPool` field — `Sim.workerPool` has no public accessor
- * (`ui/core/sim.ts`), and `WorkerPool`'s own constructor is self-contained
- * (points every worker at the fixed `SIM_WORKER_URL`, no dependency on `Sim`
- * state), so a second pool is the same kind of object the page already runs,
- * not a workaround.
+ * It owns its own `WorkerPool`: `Sim`'s pool is private (`ui/sim/sim.ts`), and a
+ * `WorkerPool` depends on no `Sim` state.
  *
- * Deliberately does **not** call `runConcurrentSim`
- * (`ui/core/sim_concurrent.ts`): that function splits *one request's
- * iterations* across workers by sharding the seed
- * (`sim/core/sim_concurrent.go`'s `SplitSimRequestForConcurrency`), which is
- * a different number for a different worker count (confirmed empirically in
- * `docs/plans/compute-topology.md` §3.1 — same seed, different core count,
- * different float in the last few digits). So `raidSimAsync` is called once per
- * candidate, unsharded, and the pool's own least-busy-worker balancing
- * (`WorkerPoolManager`) is what runs several candidates concurrently.
- *
- * The old tab's bulk screening runners were measured slower than this loop and
- * deleted, with the engine's bulk branch (tbc-gear-prio tickets 411 and 567).
+ * It does not call `runConcurrentSim` (`ui/sim/wasm/sim.ts`). That splits one
+ * request's iterations across workers by sharding the seed
+ * (`SplitSimRequestForConcurrency`, `sim/core/sim_concurrent.go`), so the result
+ * changes with the worker count. Each candidate runs unsharded through
+ * `raidSimAsync`, and the pool's `WorkerPoolManager` runs candidates side by side.
  */
 
 import { ComputeStatsRequest, RaidSimRequest as RaidSimRequestProto } from '@generated/proto/api';
@@ -39,38 +28,24 @@ import {
 	spellDamageBySchool,
 } from '../engine/seams/sim-runner';
 
-/** Matches upstream's own default (`ui/core/sim.ts`'s WorkerPool(1) plus its
- * wasm-concurrency auto-sizing, capped at 4 — see that file's constructor). */
+/** Matches the default worker count `Sim`'s constructor picks (`ui/sim/sim.ts`). */
 export const DEFAULT_WORKER_COUNT = 4;
 
 /**
- * E-W5 measured **183.8 MB** peak RSS for one `wowsimcli` process running
- * 5,000 iterations (candidate-pool.md §3.1) — the Node/CLI sim binary, not
- * this browser's WASM worker. No in-browser RSS-per-worker measurement
- * exists yet (that number was explicitly out of scope for E-W5, which ran
- * against the CLI), so this constant is the CLI figure carried over as the
- * best available proxy: same Go sim core compiled to WASM instead of a
- * native binary, running the same fixed-duration encounter loop that
- * dominates RSS. Treat `memoryCapFromDeviceMemory` below as a
- * **hypothesis**, not a measured browser number, until a WASM-side RSS
- * sample replaces it — flagged here so a future change to this constant
- * updates the reasoning in both places at once.
+ * Peak RSS of one `wowsimcli` process running 5,000 iterations. No in-browser
+ * figure per WASM worker has been measured; the CLI runs the same Go sim, so its
+ * figure stands in, and `memoryCapFromDeviceMemory` is an estimate until a
+ * browser measurement replaces it.
  */
 const MEASURED_MB_PER_SIM_PROCESS = 183.8;
 
 /**
- * `min(workers, memoryCap)` per candidate-pool.md §5.1.2/§5.2. `memoryCap`
- * comes from `navigator.deviceMemory` (Chrome/Chromium only — the Device
- * Memory API; Firefox and Safari never expose it and the property is
- * `undefined` there), read as an approximate device RAM figure in GiB.
- * Reserves half of reported RAM for everything else already running (the
- * OS, the tab's own DOM/JS heap, other tabs) rather than assuming this sim
- * can claim the whole figure, then divides the remainder by the measured
- * per-process cost above. Falls back to `DEFAULT_WORKER_COUNT` (matching
- * upstream's own hardcoded default, `ui/core/sim.ts`) when the API is
- * unavailable, so a Firefox/Safari user is not capped to 1 by a browser
- * quirk unrelated to their actual RAM. The caller reads `navigator.deviceMemory`
- * (`utils/runner_env.ts`): `model/` may not touch browser globals.
+ * How many sims fit in memory, from `navigator.deviceMemory` in GiB (Chromium
+ * only). Half the reported RAM is left for the OS, the page and other tabs, and
+ * the rest is divided by the per-process figure above. Without the API (Firefox,
+ * Safari) it returns `DEFAULT_WORKER_COUNT`, so those users are not capped to 1.
+ * The caller reads `navigator.deviceMemory` (`utils/runner_env.ts`): `model/` may
+ * not touch browser globals.
  */
 export function memoryCapFromDeviceMemory(deviceMemoryGiB: number | undefined): number {
 	if (deviceMemoryGiB === undefined) return DEFAULT_WORKER_COUNT;
@@ -155,14 +130,10 @@ export class WorkerPoolSimRunner implements SimRunner {
 	private readonly signalManager = new SimSignalManager();
 
 	/**
-	 * `min(workers, memoryCap)` (candidate-pool.md §5.1.2) — how many
-	 * candidate sims `rankUpgrades`'s `promisePool` may dispatch at once.
-	 * Distinct from the `WorkerPool`'s own `numWorkers`: that number sizes
-	 * how many WASM workers exist to *service* requests; this number caps how
-	 * many *requests* are in flight so their combined memory stays under
-	 * `memoryCap`. `numWorkers` is itself already `min`-folded in when it is
-	 * lower than the memory cap, since dispatching more requests than there
-	 * are workers to run them buys nothing.
+	 * How many candidate sims `rankUpgrades`'s `promisePool` may dispatch at once:
+	 * `min(numWorkers, memoryCap)`. `numWorkers` sizes the pool; this caps the
+	 * requests in flight so their combined memory stays under the cap, and more
+	 * requests than workers would buy nothing.
 	 */
 	readonly concurrency: number;
 
@@ -176,18 +147,15 @@ export class WorkerPoolSimRunner implements SimRunner {
 	}
 
 	async run(req: RaidSimRequest, opts: SimRunOpts): Promise<SimObservation> {
-		// Only the set screen asks for per-iteration values (ticket 511). Without
-		// the option, the request and the observation are exactly as before.
+		// Only the set screen asks for per-iteration values.
 		const saveAllValues = opts.saveAllValues === true;
 		const withOptions = {
 			...req,
+			// The same id helper `Sim.makeRaidSimRequest` uses (`ui/sim/sim.ts`).
 			requestId: generateRequestId(SimRequest.raidSimAsync),
 			simOptions: {
 				iterations: opts.iterations,
-				// protobuf-ts int64 fields accept a numeric string on fromJson;
-				// matches how the CLI seam (packages/core/src/seams/cli-sim-runner.ts)
-				// and the recorded fixtures already spell a seed (D4's sibling
-				// adaptation, same convention, not a new one invented here).
+				// protobuf-ts int64 fields accept a numeric string on fromJson.
 				randomSeed: String(opts.seed),
 				debugFirstIteration: false,
 				...(saveAllValues ? { saveAllValues: true } : {}),
@@ -222,9 +190,9 @@ export class WorkerPoolSimRunner implements SimRunner {
 	}
 
 	/**
-	 * The first player's final stats for the request's gear (ticket 535), the
-	 * call the page's own stats panel makes (`ui/core/sim.ts`
-	 * `getCharacterStatsForGear`). Meta repair reads hit from it.
+	 * The first player's final stats for the request's gear, the call the page's
+	 * stats panel makes (`getCharacterStatsForGear`, `ui/sim/sim.ts`). Meta repair
+	 * reads hit from it.
 	 */
 	async computeStats(req: RaidSimRequest): Promise<PlayerStatsObservation> {
 		const proto = ComputeStatsRequest.fromJson({ raid: req.raid, encounter: req.encounter } as JsonValue, { ignoreUnknownFields: true });
@@ -239,7 +207,7 @@ export class WorkerPoolSimRunner implements SimRunner {
 		return { stats: [...finalStats.stats], pseudoStats: [...finalStats.pseudoStats] };
 	}
 
-	/** The first player's active set bonuses from the same stats call (ticket 644). */
+	/** The first player's active set bonuses from the same stats call. */
 	async activeSetBonuses(req: RaidSimRequest): Promise<readonly string[]> {
 		const proto = ComputeStatsRequest.fromJson({ raid: req.raid, encounter: req.encounter } as JsonValue, { ignoreUnknownFields: true });
 		const result = await this.pool.computeStats(proto);

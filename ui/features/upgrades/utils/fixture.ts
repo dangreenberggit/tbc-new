@@ -1,20 +1,16 @@
 /**
- * Recorded-fixture loading for the Upgrades tab (ticket 504). Developer and
- * gate use only.
+ * Recorded-fixture loading for the Upgrades tab, for development and layout
+ * checks only.
  *
  * A fixture is a finished `Ranking` recorded from a real run, plus the phase
  * and gear the run used. Rendering one takes seconds and needs no backend and
- * no WASM run, which is what lets the layout gate and `pnpm tab-review` check
- * set-bonus rows that the gate's own live ret run never produces. The fixtures
- * and their recorder live in the main repo (`data/tab-fixtures/`,
- * `scripts/tab-fixtures/record.mjs`); the dev server's `tabFixtures` plugin
- * serves them (`tools/vite/tab_fixtures.mts`).
+ * no WASM run, so layout checks can see rows a short live run never produces.
+ * The fixtures, their recorder and the dev-server plugin that serves them are
+ * not part of this repo.
  *
  * Every caller sits behind `FIXTURES_ENABLED` (`dev_flags.ts`), so a
- * production build drops them as dead code.
- *
- * Not a fourth port: nothing here feeds `rankUpgrades`. It replaces the
- * result of a run, not any input to one.
+ * production build drops them as dead code. Nothing here feeds `rankUpgrades`:
+ * it replaces the result of a run, not any input to one.
  */
 
 import type { Spec } from '@generated/proto/common';
@@ -82,9 +78,9 @@ export function validateFixture(payload: unknown): { ok: true; fixture: TabFixtu
 /**
  * Loads a fixture into the page: phase, then gear, then the result.
  *
- * The order matters. Phase and gear changes are what a later staleness mark
- * (P3) listens to, so the result goes in last, after one macrotask has let
- * those listeners run; otherwise the fixture would render already stale.
+ * The order matters. The staleness mark listens to phase and gear changes, so
+ * the result goes in last, after one macrotask has let those listeners run;
+ * otherwise the fixture would render already stale.
  */
 export async function loadFixture(host: IndividualSimHost<Spec>, payload: unknown, show: (ranking: Ranking) => void): Promise<FixtureLoadResult> {
 	const checked = validateFixture(payload);
@@ -105,7 +101,7 @@ export async function loadFixture(host: IndividualSimHost<Spec>, payload: unknow
 	return { ok: true, rows: fixture.ranking.items.length };
 }
 
-/** The dev server's route for one fixture's JSON (`tools/vite/tab_fixtures.mts`). */
+/** The dev server's route for one fixture's JSON, served by the fixture plugin. */
 export const fixtureUrl = (name: string): string => `/tbc/tab-fixtures/${encodeURIComponent(name)}.json`;
 
 export async function fetchFixture(name: string): Promise<TabFixture> {

@@ -18,7 +18,7 @@ vi.mock('../model/data/data', async importOriginal => ({
 
 describe('upgradesStoreFor', () => {
 	const storage = memoryStorage();
-	// A new `Sim` is a page load; the spec prefix is upstream's `specStorageKey`. SpecUnknown has no ranking data, so no phase subscription is made.
+	// A new `Sim` is a page load; the spec prefix is the sim's `specStorageKey`. SpecUnknown has no ranking data, so no phase subscription is made.
 	const pageFor = (specPrefix: string) =>
 		upgradesStoreFor(
 			fakeTabHost({ sim: { env: { storage } }, player: { getSpec: () => Spec.SpecUnknown }, getStorageKey: (part: string) => specPrefix + part }),

@@ -1,10 +1,9 @@
 // Headless harness for the upgrades exporters.
 //
-// This file exists solely so an exporter can run the fork's REAL decision
-// functions (canEquipItem and friends) under plain Node, outside the browser.
-// No fork source is modified to make that work: every shim below stands in for
-// a browser global that some module in the import graph touches at load time
-// for reasons unrelated to the decision being borrowed.
+// Lets an exporter run the sim's real decision functions (canEquipItem and
+// friends) under plain Node, with no change to the sim's source: every shim
+// below stands in for a browser global that some module in the import graph
+// touches at load time for reasons unrelated to the decision being borrowed.
 //
 // Each shim is listed with the module that forces it and what that module
 // wants it for. If a shim ever needs to grow beyond an inert placeholder --
@@ -12,14 +11,11 @@
 // that the thing being borrowed is UI behaviour, not a pure decision, and the
 // borrow is no longer safe.
 //
-// The first two rows name modules of the old ui/core tree (fork cb561067).
-// Upstream 42c75dc9 has neither SPEC_DIRECTORY nor getSpecSiteUrl; whether those
-// two shims are still needed there has not been measured.
+// The window.location shim served modules that no longer exist (they derived a
+// routing string and a spec page URL at load time); whether any module still
+// needs it is untested.
 //
-//   window.location.pathname   ui/core/constants/other.ts    derives SPEC_DIRECTORY,
-//                                                            a UI routing string
-//   window.location.protocol   ui/core/proto_utils/utils.ts  getSpecSiteUrl builds a
-//   + .host                    (getSpecSiteUrl)              docs URL for a spec page
+//   window.location            (see above)
 //   localStorage               ui/i18n/locale_service.ts     reads a saved language
 //   virtual:i18next-loader     ui/i18n/config.ts             Vite-only specifier for
 //                                                            the translation bundle

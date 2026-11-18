@@ -99,7 +99,7 @@ describe('UpgradesResults', () => {
 		const pane = activePane(container);
 
 		expect(within(pane).getAllByTestId('upgrades-item-name')[0]?.className).toBe('text-quality-epic');
-		// Faceguard's own break, and Lightbringer Breastplate's bonuses within the noise (ticket 655).
+		// Faceguard's own break, and Lightbringer Breastplate's bonuses within the noise.
 		expect(within(pane).getAllByTestId('upgrades-set-bonus')).toHaveLength(2);
 	});
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { shownTenths } from './shown_figure';
 
-// Ticket 618: a figure below the ranking's bar once read as the bar ("+3.0" for 2.96 against a 3 DPS cutoff).
+// A figure below the ranking's bar must not read as the bar ("+3.0" for 2.96 against a 3 DPS cutoff).
 describe('shownTenths', () => {
 	it('shows a positive figure below the bar one tenth under the bar when rounding would reach it', () => {
 		expect(shownTenths(2.96, 3)).toBe(29);

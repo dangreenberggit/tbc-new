@@ -1,12 +1,5 @@
 /**
  * Stat-index helpers for raw stats / socketBonus arrays.
- *
- * PORTED from packages/core/src/stats.ts. `Stat` is imported from the fork's
- * own generated `proto/common.js` instead of packages/core's
- * `proto/common_pb.js` — both are code-generated from the same wowsims
- * common.proto at compatible commits, so the enum values agree; this is the
- * "adapt: Database-backed item metadata" half of plan §9 slice 2, applied to
- * the enum import instead of an item lookup.
  */
 
 import { Stat } from "@generated/proto/common";

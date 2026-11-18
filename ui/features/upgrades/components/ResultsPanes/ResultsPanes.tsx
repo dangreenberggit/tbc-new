@@ -19,16 +19,13 @@ export interface ResultsPanesProps {
 const paneId = (tab: ResultsTabId) => `upgrades-pane-${tab}`;
 
 /**
- * A settled ranking as sub-tabs: the Upgrades list, then one pane per slot
- * that `slotTabs` names (under BiS only, also each slot the filter emptied,
- * ticket 614), then the export. The open tab lives here and is not stored; the
- * one column sort shared by every pane and the export (ticket 280) lives in the
- * tab store (ticket 565), which every results table reads.
+ * A settled ranking as sub-tabs: the Upgrades list, then one pane per slot that `slotTabs` names,
+ * then the export. The open tab lives here and is not stored; the one column sort shared by every
+ * pane and the export lives in the tab store.
  *
- * Only the shown pane is mounted (ticket 565): a hidden pane has no size, so
- * its rows could not be windowed. Which below-cutoff groups are open is kept
- * here for that reason, so a group stays open across a switch to another
- * pane, and only the shown pane's tab names a pane it controls.
+ * Only the shown pane is mounted: a hidden pane has no size, so its rows could not be windowed.
+ * For that reason the open below-cutoff groups are kept here, so a group stays open across a pane
+ * switch, and only the shown pane's tab names a pane it controls.
  */
 type Pane = { id: ResultsTabId; label: string; badge?: string; className?: string };
 /** A pane's rows, and its slot for every pane but the Upgrades list. */
@@ -56,8 +53,7 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 		],
 		[view],
 	);
-	// A group that a new view takes away closes, as it did when it lived in its own pane: it unmounted with
-	// its rows. Adjusted during render, so no frame shows it open.
+	// A group that a new view takes away closes. Adjusted during render, so no frame shows it open.
 	if (groupsSeenFor !== view) {
 		setGroupsSeenFor(view);
 		const kept = [...openGroups].filter(id => contents.some(pane => pane.id === id && pane.rows.belowCutoff.length > 0));
@@ -75,7 +71,7 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 				}
 			: { id, label: i18n.t('upgrades_tab.subtabs.shopping_list', { ns: 'upgrades' }) },
 	);
-	// A new result without the open slot falls back to the Upgrades list, as the old tab did.
+	// A new result without the open slot falls back to the Upgrades list.
 	const shownTab = panes.find(pane => pane.id === activeTab)?.id ?? SHOPPING_LIST_TAB;
 	// `TabNav` falls back to the tab's own value when this is undefined, which is not a pane's id, so a tab whose pane is
 	// not mounted gets an empty list instead.

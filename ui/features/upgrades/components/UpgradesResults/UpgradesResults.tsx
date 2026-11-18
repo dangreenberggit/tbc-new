@@ -14,9 +14,9 @@ import { ViewToggles } from '../ViewToggles';
 
 export interface UpgradesResultsProps {
 	run: RunState;
-	/** The headings a row's "BiS" badge names when the row is in no selected set (ticket 810). */
+	/** The headings a row's "BiS" badge names when the row is in no selected set. */
 	bisHeadingsOf: (itemId: number) => readonly string[];
-	/** The spec the run ranked for; with the run's phase it tells a phase with no candidate list from a list with no upgrades (ticket 515). */
+	/** The spec the run ranked for; with the run's phase it tells a phase with no candidate list from a list with no upgrades. */
 	specId?: SpecId;
 }
 
@@ -86,7 +86,7 @@ export const UpgradesResults = memo(({ run, bisHeadingsOf, specId }: UpgradesRes
 					</>
 				);
 			}
-			// A table "Filter by source" emptied keeps its panes, so every slot keeps its tab (ticket 614) and each pane
+			// A table "Filter by source" emptied keeps its panes, so every slot keeps its tab and each pane
 			// can say why it is empty (`paneRows`).
 			const filteredEmpty = !hasRows && view?.sourcesHidden === true;
 			// A stopped run with no finished row shows no empty state: the status line already says so.

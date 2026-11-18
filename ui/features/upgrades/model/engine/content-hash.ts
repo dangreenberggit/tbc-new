@@ -1,24 +1,8 @@
 /**
- * canonicalJson — the cache-key string builder, ADAPTED per D4.
- *
- * packages/core/src/content-hash.ts hashes `canonicalJson`'s output with
- * `node:crypto`'s sha256 into `contentHashOf`. D4 rules that moot in the
- * fork: cache keys need uniqueness, not compression, and the browser has no
- * `node:crypto`. So this module keeps `canonicalJson` (the deterministic
- * sorted-key serializer — pinned by test rather than left to
- * `JSON.stringify`'s object-order behaviour, same as packages/core) and
- * drops `sha256Hex`/`contentHashOf` entirely; `rank.ts` calls
- * `canonicalJson(...)` directly where packages/core called `contentHashOf`,
- * and the result *is* the cache key rather than a hash of one.
- *
- * `HashedGearItem` is ported unchanged: a plain data type with nothing to
- * adapt. `ENGINE_VERSION` is the fork's own number; its comment says why.
- *
- * candidate-pool.md M2 once added racing fields to `rank.ts`'s inline
- * `canonicalJson(...)` call site rather than here, because this file has no
- * `ContentHashInput`/`hashPayload` type to extend. Racing is gone (ADR-0026)
- * and `rank.ts` now freezes those fields as literals to keep existing cache
- * keys stable. Nothing in this file changed for either.
+ * canonicalJson: the deterministic sorted-key serializer that builds the
+ * ranking cache key. Key order is pinned by test rather than left to
+ * `JSON.stringify`'s insertion order. The string is the key itself, not
+ * hashed: the cache needs uniqueness, not compression.
  */
 
 export function canonicalJson(value: unknown): string {
@@ -48,15 +32,8 @@ function canonicalize(value: unknown): unknown {
 
 /**
  * Bump when a ranking-logic change should invalidate every cached result.
- * The fork's own number, not core's (packages/core/src/content-hash.ts): the
- * tab keeps its ranking cache only in memory for one mounted tab, so a core
- * bump has no cached verdict to invalidate here and the two can differ
- * (ADR-0037 records why this stayed 6 when core moved to 9).
+ * The cache lives only in memory for one mounted tab.
  */
-// 7: off-hand placement for every spec; slotChoice on weapon rows; two-hander
-// off-hand disclosure. Bumped with core's 10 so both copies name the change.
-// 8: one-handed weapons held out while a two-hander is worn, with their own
-// disclosure line (ticket 700). Bumped with core's 11.
 export const ENGINE_VERSION = 8;
 
 export type HashedGearItem = {

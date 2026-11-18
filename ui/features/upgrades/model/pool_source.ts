@@ -1,6 +1,6 @@
 /**
  * The candidate pool, built at run time from wowsims' own item database and the
- * spec's wowsims preset gear sets (ticket 505, ADR-0038 in the outer repo). No
+ * spec's wowsims preset gear sets. No
  * item list is bundled: membership, phase and BiS tags all come from data the
  * page already has. `pool_source.test.ts` pins the per-cell sizes in
  * `pool_source.cells.fixture.json`, whose `_comment` says how to re-pin them.
@@ -25,7 +25,7 @@ import type { ItemSlot, ItemSource, PoolEntry } from './engine/pool';
  */
 export type HeroicFiveManPolicy = 'exclude' | 'include' | 'include-unticked';
 
-/** The owner chose this policy on 2026-10-18 (answer "1" to Q-heroic; ADR-0038 in the outer repo, "Heroic five-man drops"). */
+/** Heroic five-man drops are in the pool, with their Sources entry unticked. */
 export const HEROIC_FIVE_MAN: HeroicFiveManPolicy = 'include-unticked';
 
 /**
@@ -36,10 +36,9 @@ export type PresetSet = { name: string; phase?: number; group?: string; itemIds:
 
 /**
  * The floor every non-preset candidate meets: epic or better, and item level
- * 100 or more unless wowsims records an effect for it. An engineering decision
- * on run cost, not an owner ruling: the tab sims every candidate in a loop, and
- * wowsims' gear picker as is gives about 5.4 times the rows of the old bundled
- * lists (ADR-0038, "The pool rule").
+ * 100 or more unless wowsims records an effect for it. It bounds run cost: the
+ * tab sims every candidate, and the gear picker's full list is several times
+ * larger.
  */
 const MIN_QUALITY = ItemQuality.ItemQualityEpic;
 const MIN_ILVL = 100;
@@ -76,7 +75,7 @@ export const ilvlOf = (item: Pick<UIItem, 'scalingOptions' | 'ilvl'>): number =>
  * "Effect record present": db.json gives the item an `itemEffects` record and
  * wowsims' own missing-effects list does not name it. This is not "simulated":
  * the page cannot see Go's id-keyed registrations, and a few old epics have a
- * record but no registration (ADR-0038 lists them). Their records have the same
+ * record but no registration. Their records have the same
  * fields as Mark of the Champion's, which is simulated, so no db.json rule
  * tells them apart.
  */
@@ -102,9 +101,8 @@ export function presetPhase(preset: Pick<PresetSet, 'phase' | 'itemIds'>, itemPh
 /**
  * The BiS sets at `maxPhase`: every preset whose phase is the newest preset
  * phase at or below `maxPhase`, with that phase. wowsims' `PresetGear` has no
- * BiS field, and the owner ruled on 2026-10-18 that a pre-raid or alternative
- * set ("Bulwark", "Alt 6%") counts like any other preset (ticket 686), so no
- * preset is told apart by its name.
+ * BiS field, and a pre-raid or alternative set ("Bulwark", "Alt 6%") counts like
+ * any other preset, so no preset is told apart by its name.
  */
 export function bisSetsFor(
 	presets: readonly PresetSet[],
@@ -197,7 +195,7 @@ function groupTwins<T>(entries: readonly T[], itemOf: (entry: T) => UIItem): T[]
 
 /**
  * One entry per group of items wowsims' database describes the same in every
- * field but the id, such as Sergeant's Heavy Cape 28378 and 28379 (ticket 753):
+ * field but the id, such as Sergeant's Heavy Cape 28378 and 28379:
  * the tab would show the same row twice, and nothing on the page tells the two
  * apart. The page cannot see Go's id-keyed effects (see `hasEffectRecord`), so
  * equal records are the only signal. The group keeps the id the player wears,
@@ -242,7 +240,7 @@ function mergeTwins(group: readonly PoolEntry[], wornIds: ReadonlySet<number>): 
 let missingIdsCache: ReadonlySet<number> | undefined;
 const missingIds = (): ReadonlySet<number> => (missingIdsCache ??= new Set(MISSING_ITEM_EFFECTS.keys()));
 
-// JSON values only: the file's shape is stated by `TierExchange`, never derived from the import (AGENTS.md, Types from JSON).
+// The file's shape is stated by `TierExchange`, never derived from the JSON import.
 let exchangeCache: ExchangeIndex | undefined;
 const exchange = () => (exchangeCache ??= indexExchange(tierExchange as TierExchange));
 

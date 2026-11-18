@@ -19,12 +19,10 @@ export interface BelowCutoffGroupProps {
 const GROUP = 'below-cutoff';
 
 /**
- * The rows the cutoff left out, behind one expand ("hidden, never deleted",
- * candidate-pool.md §6.1). Collapsed until opened, and its table is not
- * mounted until then. The shared sort orders it too, so the order does not
- * stop at the fold (ticket 280). Its title names the bar in DPS from the
- * ranking the rows came from, so a recorded fixture names the bar its rows
- * were judged against (ADR-0037).
+ * The rows the cutoff left out: hidden behind one expand, never dropped. Collapsed until opened,
+ * and its table is not mounted until then. The shared sort orders it too, so the order does not
+ * stop at the fold. Its title takes the bar from the ranking the rows came from, so a recorded
+ * fixture names the bar its rows were judged against.
  */
 export const BelowCutoffGroup = ({ head, table, rowContext, open, onOpenChange }: BelowCutoffGroupProps) => {
 	const count = table.options.data.length;

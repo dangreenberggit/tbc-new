@@ -1,5 +1,5 @@
 /**
- * One Upgrades run on the live page: the page's gear and settings, the fork's
+ * One Upgrades run on the live page: the page's gear and settings, the tab's
  * ranking engine, and the tab's own WASM worker pool. DOM-free; the browser
  * values the pool is sized from arrive as a `RunnerEnv`.
  */
@@ -104,7 +104,7 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 		candidateCap: settings.candidateCap,
 	};
 
-	// The run picks its EP-weights set once (ticket 811): that set drives the engine and is the one the run returns.
+	// The run picks its EP-weights set once: that set drives the engine and is the one the run returns.
 	const epWeightsSet = epWeightsSetFor(specId, host.player.getTalentTreePoints());
 	const weights = epWeightsFileFor(epWeightsSet);
 	const ranking = await rankUpgrades(
@@ -125,8 +125,7 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 			simDatabaseFor: simDatabaseResolverFor(host.player, skeleton),
 			concurrency: simRunner.concurrency,
 			signal: deps.signal,
-			// The old tab's settings: a worn set bonus a swap breaks is measured
-			// (ticket 467), and the set screen is on (ticket 511 K5ON, ADR-0035).
+			// A worn set bonus a swap breaks is measured, and the set screen is on.
 			measureBrokenSetValue: true,
 			setScreen: 'on',
 		},

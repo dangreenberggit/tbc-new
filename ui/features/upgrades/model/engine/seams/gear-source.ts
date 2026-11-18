@@ -1,14 +1,6 @@
 /**
- * GearSource seam — hide the gear-reading transport behind findFights /
+ * GearSource seam: hides the gear-reading transport behind findFights /
  * readGear.
- *
- * PORTED from packages/core/src/seams/gear-source.ts. `CachingGearSource`
- * and `RecordedGearSource` are unchanged; the WCL-facing doc comments (race
- * being "intentionally absent", the fight-list TTL note) describe the CLI's
- * transport and are kept for provenance even though this fork's real
- * `PlayerGearSource` (slice 3) reads the page instead of WCL — the seam
- * *interface* is what plan §2.1 asks to be ported, unchanged by which
- * adapter implements it.
  */
 
 import type { CharacterRef, FightRef, SpecId } from "../types";

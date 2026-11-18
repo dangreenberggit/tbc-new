@@ -1,6 +1,6 @@
 /**
- * What the Upgrades tab's progress component shows while a run is in flight
- * (ticket 542): the phase the engine is in, the bar's ratio, and an estimate
+ * What the Upgrades tab's progress component shows while a run is in flight:
+ * the phase the engine is in, the bar's ratio, and an estimate
  * of the time left.
  *
  * The engine sends no phase of its own. The phase comes from the order its
@@ -12,7 +12,7 @@
  * candidate from the start of the set phase is the candidate count, which
  * `replicationBoundary` solves from the first event's `total`. That first
  * total is a budget, so the tracker takes the final count from the first
- * event after `ranking` (ticket 566).
+ * event after `ranking`.
  */
 
 import type { Progress } from './engine/rank';
@@ -20,13 +20,8 @@ import { PAIRED_REPLICATE_TOP_N } from './engine/se';
 
 /**
  * The tab passes no `seeds`, so `rank.ts` uses `defaultSeedsFor`, whose count
- * is the module-private `DEFAULT_SEED_COUNT`. This mirrors it rather than
- * editing the engine to export it. The guard is the block "run progress event
- * order (542)" in the repo's `fork-run-progress.test.ts`: it drives the real
- * engine with its default seeds on a seven- and a twelve-candidate pool and
- * checks the boundary and the replication count against the events the
- * engine sends. That block runs only where the fork is checked out; CI has no
- * fork and skips it.
+ * is the module-private `DEFAULT_SEED_COUNT`. This mirrors it; keep the two
+ * equal.
  */
 export const TAB_REPLICATE_SEED_COUNT = 5;
 
@@ -37,13 +32,10 @@ export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; kappa: numb
 /**
  * The estimator and when to show it, all in one place so a change of
  * estimator touches only these values and `estimateRemainingMs`. Fitted on
- * one recorded feral run (run 1, 2026-10-03, fork 9b11bf214, 364 candidates,
- * concurrency 4), in sample: `.scratch/handoffs/542-run-progress/decision.md`
- * in the repo, section "Round 4". On that run later candidates took longer
- * while the sim server sat partly idle; the likely cause (hypothesis, render
- * time not measured) is the tab rebuilding every landed row twice per
- * finished candidate (`upgrades_tab.tsx`, `landedRowsTable`). So `slowdown`,
- * `kappa` and `psi` must be refitted if that rebuild changes.
+ * one recorded feral run (364 candidates, concurrency 4). On that run later
+ * candidates took longer while the sim server sat partly idle, likely from
+ * render work per landed row, so refit `slowdown`, `kappa` and `psi` when the
+ * cost of rendering rows changes.
  */
 export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', kappa: 0.3221, psi: 50.993, slowdown: 0.003064 };
 export const RUN_PROGRESS_SHOW_FROM_FRACTION = 0.35;
@@ -66,10 +58,7 @@ export function replicationBoundary(total: number, seedCount: number, topN: numb
 	return null;
 }
 
-/**
- * The Bulk dialog's elapsed text, so the two read the same
- * (`progress_tracker_modal.tsx`, `updateTimeDisplay`).
- */
+/** Elapsed time as `12.3s` under a minute, else as `2m 5s`. */
 export function formatElapsed(ms: number): string {
 	const elapsed = ms / 1000;
 	if (elapsed < 60) return `${elapsed.toFixed(1)}s`;
@@ -297,12 +286,7 @@ export class RunProgressTracker {
 
 	/**
 	 * Mirrors rank.ts `replicateTopItems`' filter (`!belowCutoff && simmed !==
-	 * false`, at most `PAIRED_REPLICATE_TOP_N`). In the repo's
-	 * `fork-run-progress.test.ts`, test N1 checks the `simmed` clause on
-	 * hand-built rows, and the block "run progress event order (542)" checks
-	 * this count against the real engine's replication sims, including a pool
-	 * with more qualifying rows than top-N. Both run only where the fork is
-	 * checked out; CI has no fork and skips them.
+	 * false`, at most `PAIRED_REPLICATE_TOP_N`); keep the two in step.
 	 */
 	private observeRow(row: { readonly belowCutoff: boolean; readonly simmed?: false }): void {
 		if (this.rankingAt !== undefined || row.belowCutoff !== false || row.simmed === false) return;

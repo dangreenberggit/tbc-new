@@ -145,8 +145,7 @@ describe('useUpgradesSettings', () => {
 		expect(other.result.current.runSettings).toEqual(view.result.current.runSettings);
 	});
 
-	// As on the old tab, which applied each phase's defaults on every phase change (bb6d447aa
-	// `useUpgradesSettings.ts:76-79`), the result must not depend on an unrelated edit in between (review K2-1).
+	// Each phase change applies that phase's defaults, so the result must not depend on an unrelated edit in between.
 	it.each([
 		{ path: 'with no edit at phase 4', editAtPhase4: () => {} },
 		{ path: 'with an iterations edit at phase 4', editAtPhase4: (settings: UpgradesSettings) => settings.setIterations(2000) },
@@ -195,7 +194,7 @@ describe('useUpgradesSettings', () => {
 		expect(selectedKeys(view.result.current)).toEqual([]);
 	});
 
-	// Ticket 810: a row's BiS tag comes from the ranking on screen, and the page's phase can move on under it.
+	// A row's BiS tag comes from the ranking on screen, and the page's phase can move on under it.
 	it('names the BiS headings of the phase the ranking on screen ran at, after the page’s phase changed', async () => {
 		const headed = [
 			{ name: 'BIS', phase: 3, group: 'Fury', gear: gear(1) },

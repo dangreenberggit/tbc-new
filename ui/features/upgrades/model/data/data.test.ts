@@ -5,7 +5,7 @@ import { epWeightsSetFor } from './data';
 
 describe('epWeightsSetFor', () => {
 	// A page with no talents yet, or a talents string with no points, must not count as Arms or Survival: the variant
-	// tree has to lead with at least one point (review finding A1 of feat/452-survival-arms).
+	// tree has to lead with at least one point.
 	it.each([
 		['no trees', []],
 		['an empty talents string', getTalentTreePoints('')],

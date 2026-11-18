@@ -18,8 +18,8 @@ type RowContext = import('./ResultRow').RowContext;
 
 loadEnglishBundles({ character: true });
 
-// The attributes the main repo's tab harness trusts (`scripts/tab-harness/rows.mjs`): it counts a table's rows
-// from the tbody's `data-row-count` and reads each row by `data-index` while it is rendered. Unlike
+// The attributes a test driving the page relies on: it counts a table's rows from the tbody's
+// `data-row-count` and reads each row by `data-index` while it is rendered. Unlike
 // `ResultsTable.test.tsx`, the windowing here is the real `useVirtualRows`, so fewer rows are rendered than ranked.
 const RANKED = 200;
 const VIEWPORT = 900;
@@ -97,7 +97,7 @@ describe('ResultRows windowed by useVirtualRows', () => {
 		expect(indexes.length).toBeGreaterThan(0);
 		expect(indexes.length).toBeLessThan(RANKED);
 		expect(indexes).toEqual(run(0, indexes.length));
-		// The harness reads a row's content by its `data-index`, so the row there must be that ranked row.
+		// A row's content is read by its `data-index`, so the row there must be that ranked row.
 		expect(renderedPairs(container)).toEqual(ownRows(indexes));
 		// The rows not rendered below the screen keep the table's full height.
 		expect(spacers(container)).toHaveLength(1);

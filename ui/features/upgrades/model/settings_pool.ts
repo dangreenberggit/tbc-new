@@ -1,8 +1,7 @@
 /**
  * The pool rules behind the tab's settings: which sources a pool offers, which
  * gear sets can be selected and which are selected by default, the pool a run
- * then sims, and the count of candidates in it. Pure, and ported from the old
- * tab (cb561067 `upgrades_tab.tsx`), where they were private methods.
+ * then sims, and the count of candidates in it. Pure.
  */
 
 import type { PagePreset } from './data/data';
@@ -25,17 +24,17 @@ export type SetOption = {
 	name: string;
 	label: string;
 	phase?: number;
-	/** wowsims' preset `group`, which tells apart two presets of one phase that share a name (ticket 690). */
+	/** wowsims' preset `group`, which tells apart two presets of one phase that share a name. */
 	group?: string;
 	/**
 	 * The heading wowsims' gear tab shows over the set (its `group`), set only on a page whose sets sit under more
-	 * than one heading, as warrior's Fury and Arms do: there every badge for the set names it (ticket 810).
+	 * than one heading, as warrior's Fury and Arms do: there every badge for the set names it.
 	 */
 	heading?: string;
 	kind: 'preset' | 'saved';
 	itemIds: readonly number[];
 	/**
-	 * The other ids of items in `itemIds` that db.json describes the same but the id (`twinIdsOf`, ticket 753), set only
+	 * The other ids of items in `itemIds` that db.json describes the same but the id (`twinIdsOf`), set only
 	 * where there are any. The pool offers one id of such an item, maybe not the set's, and the set holds it under any.
 	 */
 	sameItemIds?: readonly number[];
@@ -93,7 +92,7 @@ const ZONELESS_KEYS = new Set(Object.values(SOURCE_LABELS));
 
 /**
  * Source keys that start unticked wherever a pool offers them: the "Heroic dungeon" bucket under the
- * `include-unticked` policy (`pool_source.ts` `HEROIC_FIVE_MAN`, which the owner chose on 2026-10-18).
+ * `include-unticked` policy (`pool_source.ts` `HEROIC_FIVE_MAN`).
  */
 export const DEFAULT_OFF_SOURCE_KEYS: readonly string[] = HEROIC_FIVE_MAN === 'include-unticked' ? [bucketKeyOf('heroic')] : [];
 
@@ -120,7 +119,7 @@ export function effectiveExcludedSources(
  * the dialog disagrees on.
  *
  * Every key an entry matches is offered, so each one can be unticked and a
- * Hide all hides every row (tickets 647, 649). A zone that is no entry's first
+ * Hide all hides every row. A zone that is no entry's first
  * comes after every first zone, so the first zones keep their order.
  */
 export function validSourceKeysOf(pool: readonly SourcedEntry[]): string[] {
@@ -196,7 +195,7 @@ export function setOptions({
  * come from (`bisTagPhaseFor().tagsFromPhase`) whose in-pool items are all
  * BiS-tagged, with at least one in the pool. The phase test is needed: the ids
  * alone over-select (feral P3's ids also satisfy the P4 BiS pair). Since
- * every preset of the tag phase is a BiS set (ticket 686), the ids test
+ * every preset of the tag phase is a BiS set, the ids test
  * passes for each of them that has an item in the pool, ret's "Bulwark"
  * included.
  */
@@ -227,7 +226,7 @@ export const selectedSetItemIds = (options: readonly SetOption[], selectedKeys: 
  * The pool a run sims. An entry stays while some source it matches is still
  * ticked, so an item from two raids survives one being excluded. With prune
  * on, only the selected sets' items stay; the sets never add an item back
- * past the Sources filter (ticket 456).
+ * past the Sources filter.
  */
 export function effectivePool(pool: readonly PoolEntry[], { excludedSources, selectedSetItemIds, prune }: PoolFilter): PoolEntry[] {
 	const excluded = new Set(excludedSources);
@@ -255,16 +254,16 @@ export const eligibleCount = (pool: readonly PoolEntry[], maxPhase: number, { sp
 /** A row's badge for a selected set: the set's key, and its name as the gear tab names it. */
 export type RowTag = { key: string; label: string };
 
-/** A badge label that names the gear-set heading it belongs to, such as "BIS (Fury)" (ticket 810). */
+/** A badge label that names the gear-set heading it belongs to, such as "BIS (Fury)". */
 export const withHeading = (label: string, heading: string): string => `${label} (${heading})`;
 
 /**
- * One badge per selected set that holds the item (ticket 430). A set with a
+ * One badge per selected set that holds the item. A set with a
  * heading names it after its name, so on warrior's page a Fury-only item reads
- * "BIS (Fury)", not a bare "BIS" the Arms build could take for its own
- * (ticket 810). Two selected sets whose badges would still read the same get
- * their phase in front; elsewhere, two that also share the phase get their
- * wowsims group after it (ticket 690).
+ * "BIS (Fury)", not a bare "BIS" the Arms build could take for its own.
+ * Two selected sets whose badges would still read the same get their phase in
+ * front; elsewhere, two that also share the phase get their wowsims group
+ * after it.
  */
 export function rowTags(itemId: number, selectedOptions: readonly SetOption[]): RowTag[] {
 	const holding = selectedOptions.filter(o => heldIds(o).includes(itemId));
@@ -282,7 +281,7 @@ const NO_HEADINGS: readonly string[] = [];
  * The headings of the BiS sets that hold each item: the presets of the BiS-tag
  * phase, read on a page whose sets sit under more than one heading, and none
  * elsewhere. A row in no selected set shows the pool's "BiS" badge, and this
- * names the build it is BiS for (ticket 810).
+ * names the build it is BiS for.
  */
 export function bisHeadingIndex(options: readonly SetOption[], bisTagPhase: number | undefined): (itemId: number) => readonly string[] {
 	const byItem = new Map<number, string[]>();
@@ -346,8 +345,7 @@ export function settingsOffer({
 	};
 }
 
-/** What the user's picks make of an offer: the chips, the run they ask for and its candidate count. */
-/** The sets the user picked, as the offer has them. Apart from `SettingsView` so it can outlive changes to the other settings. */
+/** The sets the user picked, as the offer has them, and their chips. Apart from the other settings so it can outlive changes to them. */
 export type SetSelection = {
 	selectedOptions: readonly SetOption[];
 	selectedKeys: readonly string[];

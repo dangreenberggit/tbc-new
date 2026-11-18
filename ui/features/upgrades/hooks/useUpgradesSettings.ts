@@ -28,7 +28,7 @@ import { useUpgradesStoreApi } from './useUpgradesStore';
 export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
 	runSettings: RunSettings;
 	sources: SettingsOffer['sources'];
-	/** The headings a row's "BiS" badge names when the row is in no selected set, for the phase the ranking on screen ran at (ticket 810). */
+	/** The headings a row's "BiS" badge names when the row is in no selected set, for the phase the ranking on screen ran at. */
 	bisHeadingsOf: (itemId: number) => readonly string[];
 	excludedSources: readonly string[];
 	prune: boolean;
@@ -45,7 +45,7 @@ export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
 
 /**
  * The tab's effective run settings over the page's spec, phase, gear presets
- * and saved gear sets, for any component on the page (ticket 564). The default
+ * and saved gear sets, for any component on the page. The default
  * sets of the page's spec and phase are a derivation over the stored settings,
  * so every caller shows them from the first render and right after a phase
  * change; the first write stores them along with the user's change.
@@ -105,7 +105,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 	// and the eligible count key on it.
 	const selection = useMemo(() => setSelection(offer, state.selectedSetKeys, phase), [offer, state.selectedSetKeys, phase]);
 	// Memoised, as is the result below, so a render that changes no setting (a row a run lands) hands the run card
-	// the same settings and its `memo` skips the render (review K2-4).
+	// the same settings and its `memo` skips the render.
 	const runSettings = useMemo(() => runSettingsOf(selection, state), [selection, state]);
 	const { excludedSources } = state;
 	const effectivePrune = runSettings.prune ?? false;

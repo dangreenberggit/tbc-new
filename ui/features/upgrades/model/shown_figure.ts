@@ -1,7 +1,7 @@
 /**
  * The tenths of a DPS a row's figure shows. A positive figure below the
  * ranking's bar that would round to the bar or above shows one tenth under it,
- * so a row below the cutoff never reads as meeting it (ticket 618). The cell and
+ * so a row below the cutoff never reads as meeting it. The cell and
  * the set-bonus popover both use this, so the popover's lines add up to the
  * figure the cell shows.
  */

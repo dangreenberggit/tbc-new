@@ -1,9 +1,8 @@
 /**
- * The run's assumptions as one console line (ticket 318), ported from the old
- * tab's `logAssumptions` (cb561067 `upgrades_tab.tsx`). Every item on it was a
- * restatement of a control or detail no player can act on, so it left the
- * page; it is still what someone diagnosing a bad ranking reads. Plain English
- * on purpose: a console line is a diagnostic, not localised UI.
+ * The run's assumptions as one console line, for someone diagnosing a bad
+ * ranking. Each item restates a control or a detail no player can act on, so
+ * none of it is on the page. Plain English on purpose: a console line is a
+ * diagnostic, not localised UI.
  */
 
 import { bisTagPhaseFor, epWeightsDisclosureFor, type EpWeightsSet, type PagePoolHost, poolFor, poolSourceFor, unsourcedCountFor } from './data/data';
@@ -50,7 +49,7 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
 
 /**
  * A substitution caused by a sim crash carries the whole Go stack trace, and
- * its first line already says what went wrong (ticket 311). The trace's breaks
+ * its first line already says what went wrong. The trace's breaks
  * arrive both as real newlines and as written-out backslash-n pairs, because
  * the sim's error object is stringified into the detail.
  */

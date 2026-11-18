@@ -1,29 +1,27 @@
 /**
- * Copies of set pieces, and the same-gear value of one set bonus (tickets 511
- * and 512, ADR-0035).
+ * Copies of set pieces, and the same-gear value of one set bonus.
  *
- * FORK-ONLY, no packages/core ancestor. No request field turns off one set
- * bonus, so a bonus is measured by simming the same gear twice, with some of
- * the set's pieces sent as copies: in one request the copies keep their set,
- * in the other they belong to no set. The copies keep every stat, so the
- * difference is the bonus alone on that gear, with no replacement item's
- * stats mixed in. The one exception is meta repair: in the sockets a repair
- * changed, the gems may differ between the two requests, because each wears
- * the repair chosen for its own hit (ticket 535, ADR-0035 amendment).
+ * No request field turns off one set bonus, so a bonus is measured by simming
+ * the same gear twice, with some of the set's pieces sent as copies: in one
+ * request the copies keep their set, in the other they belong to no set. The
+ * copies keep every stat, so the difference is the bonus alone on that gear,
+ * with no replacement item's stats mixed in. The one exception is meta repair:
+ * in the sockets a repair changed, the gems may differ between the two
+ * requests, because each wears the repair chosen for its own hit.
  *
  * Why the changed pieces are copies in both requests: a copy has a new item
  * id, and the Go sim reads equipped item ids in several places. It applies
- * item effects by id (`itemEffects[eq.ID]`, sim/core/item_effects.go:75-80),
+ * item effects by id (`itemEffects[eq.ID]`, sim/core/item_effects.go),
  * turns on the PvP glove mods only for listed hands ids (`RegisterPvPGloveMod`,
- * sim/core/item_sets.go:274-291), and checks ids in `HasTrinketEquipped` and
- * `HasRingEquipped` (sim/core/character.go:528-535), in weapon checks
- * (character.go:631), in item swaps (sim/core/item_swaps.go:312-317) and in
- * class code (for example sim/paladin/item_librams.go, sim/hunter/hunter.go).
- * A piece that is real in one request and a copy in the other would bring
- * such an effect into the measured value. Sent as a copy in both, it lacks
- * the effect in both, so the effect cancels, and no list of which pieces have
- * such effects is needed. The value is then the bonus on gear without those
- * pieces' id-keyed effects (a second-order difference; hypothesis, untested).
+ * sim/core/item_sets.go), and checks ids in `HasTrinketEquipped`,
+ * `HasRingEquipped` and weapon checks (sim/core/character.go), in item swaps
+ * (sim/core/item_swaps.go) and in class code (for example
+ * sim/paladin/item_librams.go, sim/hunter/hunter.go). A piece that is real in
+ * one request and a copy in the other would bring such an effect into the
+ * measured value. Sent as a copy in both, it lacks the effect in both, so the
+ * effect cancels, and no list of which pieces have such effects is needed. The
+ * value is then the bonus on gear without those pieces' id-keyed effects (a
+ * second-order difference, not measured).
  */
 
 import type { Cutoff } from "./cutoff";
@@ -34,23 +32,23 @@ import type { DpsSample } from "./set-value";
  * Added to an item id to name that item's set-less copy.
  *
  * The Go sim skips a piece with a blank set name before any set lookup
- * (sim/core/item_sets.go:116-118), so a copy keeps its stats and counts toward
- * no set. The copy cannot reuse the real id: the sim's item map is shared by
- * every request in the process and keeps the first row it sees for an id
- * (sim/core/database.go:54). For the same reason the copy id must be a fixed
- * function of the real id, so every request that names a copy agrees on its
- * row. 1,000,000 is above every item id in the database, and the sum stays
- * inside int32. ADR-0035 has the details.
+ * (`getSetBonuses`, sim/core/item_sets.go), so a copy keeps its stats and
+ * counts toward no set. The copy cannot reuse the real id: the sim's item map
+ * is shared by every request in the process and keeps the first row it sees
+ * for an id (`addToDatabase`, sim/core/database.go). For the same reason the
+ * copy id must be a fixed function of the real id, so every request that names
+ * a copy agrees on its row. 1,000,000 is above every item id in the database,
+ * and the sum stays inside int32.
  */
 export const SET_LESS_ID_OFFSET = 1_000_000;
 
 /**
  * Added to an item id to name that item's set-kept copy: the real row with only
  * its id changed. Go matches a piece to its set by set id and name, never by
- * item id (sim/core/item_sets.go:119-131), so the copy still counts toward its
- * set. It needs its own offset because a set-kept and a set-less copy of one
- * item are different rows, and the process-wide item map keeps the first row
- * per id (database.go:54). 2,000,000 + the largest item id stays inside int32.
+ * item id (`getSetBonuses`, sim/core/item_sets.go), so the copy still counts
+ * toward its set. It needs its own offset because a set-kept and a set-less
+ * copy of one item are different rows, and the process-wide item map keeps the
+ * first row per id. 2,000,000 + the largest item id stays inside int32.
  */
 export const SET_KEPT_ID_OFFSET = 2_000_000;
 
@@ -120,7 +118,7 @@ export function applySetLessCopies(
   return applyCopies(request, { setLess: slots });
 }
 
-/** A sim that failed, with the sim's own error text for the player (ticket 863). */
+/** A sim that failed, with the sim's own error text for the player. */
 export type SimFailure = { simError: string };
 
 export const errorText = (err: unknown): string =>
@@ -128,7 +126,7 @@ export const errorText = (err: unknown): string =>
 
 /**
  * A request that could not be built, with the error that stopped it, so no
- * sim ran (ticket 869).
+ * sim ran.
  */
 export type BuildFailure = { buildError: string };
 
@@ -144,11 +142,10 @@ export const isBuildFailure = <T extends object>(
  * on − off, and `se` combines both sims' standard errors. Undefined when
  * nothing is left to copy, a `BuildFailure` when a request cannot be built,
  * so no sim ran; a `SimFailure` when a sim fails. With `requestsFor`, both
- * requests come from
- * one call to it, so each can carry the gems repair chose for its own hit
- * (ticket 535); without it, both are `composedRequest` with the copies
+ * requests come from one call to it, so each can carry the gems repair chose
+ * for its own hit; without it, both are `composedRequest` with the copies
  * applied. A rejection from `requestsFor` is not caught here: it goes to the
- * caller (ticket 852).
+ * caller.
  */
 export async function measureSameGearBonus(
   runSim: (request: RaidSimRequest) => Promise<DpsSample>,
@@ -204,7 +201,7 @@ export type WornSetRung = {
 
 /**
  * The value of every bonus a worn set has, from 2 up to its worn count, on the
- * gear `composedRequest` wears (ticket 512). With the set's pieces at slots
+ * gear `composedRequest` wears. With the set's pieces at slots
  * s_1 < … < s_w, rung R(c) for c = 1 … w keeps s_1 real, sends s_2 … s_c as
  * set-kept copies and s_(c+1) … s_w as set-less copies, so Go counts c pieces.
  * No rung sends the real id of s_2 … s_w, so an effect keyed by one of those
@@ -213,8 +210,8 @@ export type WornSetRung = {
  * count at which the set has no bonus reads 0. There is no cap on w: a set
  * with bonuses at 6 or 8 pieces gets those counts too. A failed rung makes
  * both counts that use it `sim-failed`, and its error goes to `onFailed`,
- * with `notBuilt` when the rung's request could not be built and no sim ran
- * (tickets 863 and 872). Empty when w < 2.
+ * with `notBuilt` when the rung's request could not be built and no sim ran.
+ * Empty when w < 2.
  */
 export async function measureWornSetLadder(
   runSim: (request: RaidSimRequest) => Promise<DpsSample>,
@@ -269,7 +266,7 @@ export async function measureWornSetLadder(
  * Every value this gate reads is one sim minus another (a same-gear value, a
  * ladder rung, a crossing, a gap between two step gears), so it has the noise
  * of one item delta and gets the item delta's bar, not the √2 floor of
- * `setBonusNoiseFloorDps`, which is for a four-sim figure (ticket 623). It
+ * `setBonusNoiseFloorDps`, which is for a four-sim figure. It
  * takes the `Cutoff` rather than a number so that floor cannot be passed in.
  */
 export function clearsSameGearGate(

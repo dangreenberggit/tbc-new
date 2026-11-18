@@ -142,7 +142,7 @@ describe('createRunSession', () => {
 		await vi.waitFor(() => expect(run()).toMatchObject({ status: 'error', message: 'failed: worker died' }));
 	});
 
-	// Ticket 868, as wowsims' bulk sim shows a failed run (`ui/features/bulk/model/run.ts:301-310` at 24606be6).
+	// As wowsims' bulk sim shows a failed run (`runBulkBatch`, `ui/features/bulk/model/run.ts`).
 	it("sends a failed run's whole error to the console and its own message to one error toast", async () => {
 		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 		const toast = vi.spyOn(toastManager, 'add');
@@ -172,8 +172,8 @@ describe('createRunSession', () => {
 		expect(toast).not.toHaveBeenCalled();
 	});
 
-	// Review A2 of `fix/867-870-tab-errors`: on a spec with no Upgrades data the status line already says so in the
-	// tab's words, and the error is the tab's own, not a sim's, so the wowsims precedent for a toast does not apply.
+	// On a spec with no Upgrades data the status line already says so in the tab's words, and the error is the tab's
+	// own, not a sim's, so the bulk sim's toast does not apply.
 	it('shows no toast for a run on a spec with no Upgrades data', async () => {
 		vi.spyOn(console, 'error').mockImplementation(() => {});
 		const toast = vi.spyOn(toastManager, 'add');
@@ -184,8 +184,8 @@ describe('createRunSession', () => {
 		expect(toast).not.toHaveBeenCalled();
 	});
 
-	// Ticket 874, owner's ruling 2026-11-11: the run goes on past a failed sim, and its end shows one toast, not one per
-	// failure, with the first failure's own message as wowsims' bulk sim shows its one failure (`run.ts:301-310`).
+	// The run goes on past a failed sim, and its end shows one toast, not one per failure, with the first failure's own
+	// message as wowsims' bulk sim shows its one failure.
 	describe('a run that ends with failed sims', () => {
 		const setBonus = { setName: 'Justicar Battlegear', threshold: 4 as const };
 		const failures = [

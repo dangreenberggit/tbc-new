@@ -1,6 +1,6 @@
 /**
  * The Upgrades tab's settings, column sort, view toggles, hidden sources and export choice, kept across page reloads the
- * way upstream keeps the sim's own settings (`ui/sim/state/persistence.ts`):
+ * way wowsims keeps the sim's own settings (`ui/sim/state/persistence.ts`):
  * through the sim's `Env` storage, under a per-spec key, read once when the
  * store is made and written on every change after.
  */
@@ -19,8 +19,8 @@ type Settings = UpgradesState['settings'];
 
 /**
  * Every setting but the candidate cap. Its picker shows only on a page with
- * `?upgrades-dev` (`RunSettingsPanel`, ticket 466), so a saved cap would cut
- * the runs of a later page that cannot show it (ticket 586). The dev link
+ * `?upgrades-dev` (`RunSettingsPanel`), so a saved cap would cut the runs
+ * of a later page that cannot show it. The dev link
  * carries the cap on each load instead.
  */
 type SavedSettings = Omit<Settings, 'candidateCap'>;
@@ -102,7 +102,7 @@ export type LinkedSettings = Partial<Pick<Settings, 'iterations' | 'candidateCap
 /**
  * A new store over the page's saved settings, sort, view toggles, hidden
  * sources and export choice, saving each later change to any of them. A run changes none of
- * them, so a run writes nothing. The load order is upstream's (`persistence.ts`): defaults,
+ * them, so a run writes nothing. The load order is wowsims' (`ui/sim/state/persistence.ts`): defaults,
  * then saved, then the link.
  */
 export function openSavedUpgradesStore(seed: SettingsSeed, storage: Storage, key: string, link: LinkedSettings = {}): UpgradesStore {

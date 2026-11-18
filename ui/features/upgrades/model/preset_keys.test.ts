@@ -4,8 +4,8 @@ import { dbPoolHost, TEST_PRESETS } from '../testing/db_pool';
 import type { SpecId } from './engine/types';
 import { setOptions } from './settings_pool';
 
-// Hunter and warrior list each (phase, name) twice, once per wowsims `group` (ticket 690). A shared key made React
-// reuse one chip for both twins, so ticking one ticked the other.
+// Hunter and warrior list each (phase, name) twice, once per wowsims `group`. A shared key would make React reuse
+// one chip for both twins, so ticking one would tick the other.
 const PRESET_COUNTS: Partial<Record<SpecId, number>> = { hunter: 31, warrior: 12 };
 
 describe('preset set keys', () => {

@@ -18,7 +18,7 @@ const HELD = [32361, 28734, 30911]; // Blind-Seers Icon, Jewel of Infinite Possi
 const ONE_HANDER = 28524; // Emerald Ripper
 const TWO_HANDER = 29988; // The Nexus Key
 const POOL = [...HELD, ONE_HANDER, TWO_HANDER].map(weapon);
-/** What a worn two-hander holds out: the off-hand-only items and the one-hander (tickets 365, 700). */
+/** What a worn two-hander holds out: the off-hand-only items and the one-hander. */
 const HELD_OUT = HELD.length + 1;
 
 vi.mock('../model/data/data', async importOriginal => ({

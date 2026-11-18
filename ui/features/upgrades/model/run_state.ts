@@ -17,7 +17,7 @@ export type RunSettings = {
 	/** Keep the first N candidates of the EP ordering that the player does not wear; undefined is no cap. */
 	candidateCap?: number;
 	/**
-	 * The pool filters the old tab offered: excluded sources, and with `prune`
+	 * The pool filters: excluded sources, and with `prune`
 	 * only the items of the selected sets. `rankForPlayer` applies them through
 	 * `effectivePool`; the set keys are for the assumptions line only.
 	 */
@@ -27,7 +27,7 @@ export type RunSettings = {
 	prune?: boolean;
 };
 
-/** The old tab's iteration count, used when the field is empty or zero. */
+/** The iteration count used when the field is empty or zero. */
 export const DEFAULT_ITERATIONS = 3000;
 
 export const runSettings = (iterations: number, candidateCap?: number): RunSettings => ({
@@ -54,12 +54,12 @@ export type RunOutcome = RunResult & { runner?: RunnerName; epWeightsSet?: EpWei
 /**
  * What a ranking was measured against. The ranking holds no gear, and a row's
  * own set breaks are worked out from the gear it was measured on, not the gear
- * worn now (ticket 536). `inputsSignature` is the page and settings when the
+ * worn now. `inputsSignature` is the page and settings when the
  * run started or the fixture loaded (`run_inputs.ts`); the result is stale
  * once the same signature built now differs. `runner` is set only by a live
  * run, never by a fixture or a replay. `selectedSets` are the sim sets picked
  * then, which a row's gear-set badges name: a phase change after the run picks
- * the new phase's sets, which this result was not ranked with (ticket 865).
+ * the new phase's sets, which this result was not ranked with.
  */
 export type MeasuredOn = {
 	wornItemIds?: readonly number[];

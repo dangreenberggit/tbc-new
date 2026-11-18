@@ -1,21 +1,15 @@
 /**
- * SimRunner seam — drive the browser's own WASM sim, or replay fixtures.
+ * SimRunner seam: drive the browser's own WASM sim, or replay fixtures.
  *
- * ADAPTED from packages/core/src/seams/sim-runner.ts per decision D4: no
- * `node:crypto` in the fork (the browser has no such module, and plan D4
- * says the cache key only needs uniqueness, not a compression digest). The
- * cache key is the canonical-JSON string itself rather than its sha256 hash
- * — a `Map` key does not need to be short, only stable and collision-free
- * for the same logical request, and `JSON.stringify` over sorted keys gives
- * that directly.
+ * The cache key is the canonical-JSON string itself rather than a hash: a
+ * `Map` key need only be stable and collision-free for the same logical
+ * request.
  *
- * `RaidSimRequest` is left as `Readonly<Record<string, unknown>>` rather
- * than the fork's typed proto interface of the same name (`ui/core/proto/
- * api.ts`) — the ported `compose()` (compose.ts) still emits plain protojson
- * objects, matching how packages/core's CLI and this fork's own
- * `WorkerPoolSimRunner` (slice 3) exchange requests with `wasmSimRequest`/
- * `sim_worker.ts`. Slice 3's adapter is what bridges to the fork's real
- * typed `RaidSimRequest` before handing off to `WorkerPool`.
+ * `RaidSimRequest` is plain protojson rather than the typed proto interface of
+ * the same name (ui/generated/proto/api.ts), because `compose()` (compose.ts)
+ * emits protojson objects. `WorkerPoolSimRunner`
+ * (ui/features/upgrades/model/adapters/worker_pool_sim_runner.ts) converts to
+ * the typed `RaidSimRequest` before handing off to `WorkerPool`.
  */
 
 export type RaidSimRequest = Readonly<Record<string, unknown>>;
@@ -24,9 +18,8 @@ export type SimRunOpts = {
   seed: number;
   iterations: number;
   /**
-   * Ask for each iteration's DPS (ticket 511, the set screen's record mode).
-   * Only the screen sets it; a runner that does not support it ignores it.
-   * Absent leaves every request and observation exactly as before.
+   * Ask for each iteration's DPS (the set screen's record mode). Only the
+   * screen sets it; a runner that does not support it ignores it.
    */
   saveAllValues?: boolean;
 };
@@ -39,7 +32,7 @@ export type SimObservation = {
   /** Each iteration's DPS, only when the run asked with `saveAllValues`. */
   allValues?: readonly number[];
   /**
-   * The first player's own spell damage summed over the run (ticket 831).
+   * The first player's own spell damage summed over the run.
    * A spell-hit budget prices hit by it; a caster ranked on a runner that
    * leaves it out fails at the budget.
    */
@@ -47,14 +40,14 @@ export type SimObservation = {
 };
 
 /**
- * Damage keyed by the sim's `SpellSchool` bit (`sim/core/flags.go:226-232`),
+ * Damage keyed by the sim's `SpellSchool` bit (sim/core/flags.go),
  * the value `ActionMetrics.spell_school` carries.
  */
 export type SpellDamageBySchool = Readonly<Record<number, number>>;
 
 /**
  * A sim result's first player's damage by school, from its action metrics,
- * melee actions left out (ticket 831). Pets are separate units, so a caller
+ * melee actions left out. Pets are separate units, so a caller
  * that passes the player's own actions leaves them out too.
  */
 export function spellDamageBySchool(
@@ -79,14 +72,14 @@ export interface SimRunner {
   version(): Promise<string>;
   run(req: RaidSimRequest, opts: SimRunOpts): Promise<SimObservation>;
   /**
-   * The stats read (ticket 535): the first player's final stats for the
-   * request's gear, with no sim. Meta repair reads hit with it, so hit
-   * counts only up to the cap. Required (ticket 830): a runner without it
+   * The stats read: the first player's final stats for the request's gear,
+   * with no sim. Meta repair reads hit with it, so hit counts only up to the
+   * cap. Required: a runner without it
    * would repair a hit-budget spec at full weight and say nothing.
    */
   computeStats(req: RaidSimRequest): Promise<PlayerStatsObservation>;
   /**
-   * Optional (ticket 644): the set bonuses the sim counts active for the
+   * Optional: the set bonuses the sim counts active for the
    * request's first player, in the sim's own form `<set name> (<n>pc)`
    * (`GetActiveSetBonusNames`, sim/core/item_sets.go). The ranking reads from
    * it which piece counts a set has a bonus at. When a runner lacks it, the
@@ -105,7 +98,7 @@ export type PlayerStatsObservation = {
 };
 
 /**
- * Stable key: canonical-JSON(request) + version + seed + iterations (D4). A run
+ * Stable key: canonical-JSON(request) + version + seed + iterations. A run
  * that asks for per-iteration values gets its own `:all` key, so a stored
  * observation without them never answers it; no other key changes.
  */
@@ -120,8 +113,7 @@ export function simCacheKey(
 
 /**
  * Canonical JSON with object keys sorted, so two equal requests give one
- * string. Exported for the set phase's per-request stats-read cache
- * (ticket 535).
+ * string. Exported for the set phase's per-request stats-read cache.
  */
 export function stableStringify(value: unknown): string {
   return JSON.stringify(sortKeys(value));

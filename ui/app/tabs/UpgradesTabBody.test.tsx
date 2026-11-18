@@ -166,7 +166,7 @@ const Probe = () => {
 };
 const probe = (field: string) => screen.getByTestId(`probe-${field}`).textContent;
 
-/** The sets the shown result was ranked with, which its rows' set badges name (ticket 865). */
+/** The sets the shown result was ranked with, which its rows' set badges name. */
 const RankedSetsProbe = () => {
 	const run = useUpgradesStore(selectRun);
 	const keys = (measuredOnOf(run)?.selectedSets ?? []).map(set => set.key);
@@ -206,7 +206,7 @@ describe('UpgradesTabBody', () => {
 		expect(screen.queryByTestId('upgrades-run-progress')).toBeNull();
 	});
 
-	// Nothing the run card shows changes while rows land, so a landed row must not render it again (review K2-4).
+	// Nothing the run card shows changes while rows land, so a landed row must not render it again.
 	it('does not render the run card again for a row a run lands', () => {
 		mount();
 		const run = clickRun();
@@ -385,7 +385,7 @@ describe('UpgradesTabBody before its tab is first opened', () => {
 		await act(settled);
 	};
 
-	// Ticket 564: a phase change resets the tab to that phase's defaults whether or not the tab is on screen (ticket 587, A1).
+	// A phase change resets the tab to that phase's defaults whether or not the tab is on screen.
 	it('selects the phase’s default sets for a phase change made before the tab opens, even one back to the saved phase', async () => {
 		current = makeHost(clearedAt3());
 		renderClosed();

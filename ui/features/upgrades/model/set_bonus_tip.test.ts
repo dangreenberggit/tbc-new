@@ -22,7 +22,7 @@ const tenths = (dps: number | undefined) => Math.round((dps ?? 0) * 10);
 /**
  * The receipt's rule: the lines above the total add up to the total, as shown
  * in tenths; a total alone is the row's figure. Lines after the total are not
- * counted (ticket 336).
+ * counted.
  */
 const addsUp = (tip: SetBonusTip | null) => {
 	const all = lines(tip);
@@ -61,8 +61,8 @@ const reachable = (dps: number, broken: Array<{ setName: string; threshold: numb
 const totalLine = (dps: number) => ({ type: 'line', label: { kind: 'total' }, dps });
 
 /**
- * A ranking whose set screen dropped Lightbringer for `reason`. Since ticket 644 the
- * dropped set has no `setBonuses` entry; `olderMarker` adds the one earlier rankings have.
+ * A ranking whose set screen dropped Lightbringer for `reason`. The dropped set has no
+ * `setBonuses` entry; `olderMarker` adds the one older rankings have.
  */
 const screenedRanking = (reason: 'outside-band' | 'exact-zero' | 'below-zero', olderMarker = false): Ranking => ({
 	...RANKING_FIXTURE,
@@ -102,7 +102,7 @@ describe('setBonusTipLines', () => {
 		expect(addsUp(tip)).toBe(true);
 	});
 
-	// Ticket 618: the popover's total is the figure the cell shows, so it never reads as the bar for a row below it.
+	// The popover's total is the figure the cell shows, so it never reads as the bar for a row below it.
 	describe('a total just below the cutoff bar (ticket 618)', () => {
 		const nearBar: RankedItem = { ...fixtureRow(10), deltaDps: 2.96 };
 		const totalOf = (tip: SetBonusTip | null) => lines(tip).find(line => line.label.kind === 'total')?.dps;
@@ -209,7 +209,7 @@ describe('setBonusTipLines', () => {
 		expect(lines(on)).toContainEqual({ type: 'line', label: { kind: 'bonus', set: 'Lightbringer Battlegear', threshold: 2, have: 0 }, dps: undefined });
 	});
 
-	// Ticket 336: the toggle decides what the figure counts, never whether the popover exists.
+	// The toggle decides what the figure counts, never whether the popover exists.
 	describe('the not-counted section (ticket 336)', () => {
 		it('lists a reachable bonus under the total with the toggle off, as an outcome against the item alone', () => {
 			const tip = setBonusTipLines(stepRow({ futureBonuses: [future()] }), context);
@@ -285,7 +285,6 @@ describe('setBonusTipLines', () => {
 			expect(tip?.entries).toContainEqual({ type: 'line', label: { kind: 'screened', set: LIGHTBRINGER, reason: 'exact-zero' }, dps: undefined });
 		});
 
-		// Ticket 655 case 2: the owner chose candidate A on 2026-11-01 ("Case 2 a sounds fine").
 		it('names each bonus within the noise gate, with no figure, in both states', () => {
 			const row = stepRow({
 				futureBonuses: [
@@ -307,7 +306,7 @@ describe('setBonusTipLines', () => {
 			expect(setBonusTipLines(row, context)?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_off' }, reachable(26)]);
 		});
 
-		// Ticket 655 case 1: each line says how much the figure would change if the tab counted that step in place of what it counts now.
+		// Each line says how much the figure would change if the tab counted that step in place of what it counts now.
 		describe('a bonus past the stop, with the toggle on (ticket 655)', () => {
 			const PIECES_4PC = ['Lightbringer Breastplate', 'Lightbringer Greaves', 'Lightbringer Shoulderbraces'];
 			const fourPiece = (stepGearDps: number, over: Partial<Future> = {}): Future =>
@@ -351,7 +350,7 @@ describe('setBonusTipLines', () => {
 			});
 
 			it('gives a step past the stop no figure when its difference from the stop’s gear is within the noise', () => {
-				// The gap is one step gear's sim minus another's, so its floor is the item bar, 3, not √2 × 3 (ticket 623).
+				// The gap is one step gear's sim minus another's, so its floor is the item bar, 3, not √2 × 3.
 				// A tie under the strict best-stop rule, then a gap of exactly 3.
 				for (const stepGearDps of [30.5, 27.5]) {
 					const row = stepRow({ futureBonuses: [future(), fourPiece(stepGearDps)] });
@@ -409,7 +408,7 @@ describe('setBonusTipLines', () => {
 		});
 
 		it('leaves the toggle-on popover of every credited row of the feral fixtures as it was before ticket 336, adding only the steps past the stop', () => {
-			// Captured from the fork at 176268e7c (before ticket 336) over data/tab-fixtures/feral-p3-p2bis.json and feral-p3-th-hands-legs.json.
+			// Captured before the not-counted steps were added, over the feral-p3-p2bis and feral-p3-th-hands-legs fixtures.
 			// A value cast: the JSON import's own type widens every literal, so it is not used as a type.
 			const snapshot = onSnapshot as unknown as Record<string, { ranking: Ranking; rows: Array<{ row: RankedItem; tip: SetBonusTip }> }>;
 			const rows = Object.values(snapshot).flatMap(fixture => fixture.rows.map(({ row, tip }) => ({ ranking: fixture.ranking, row, tip })));
@@ -418,7 +417,7 @@ describe('setBonusTipLines', () => {
 			for (const { ranking, row, tip } of rows) {
 				const now = setBonusTipLines(row, { ranking, withSetPotential: true });
 				expect(now && { ...now, entries: now.entries.slice(0, tip.entries.length) }).toEqual(tip);
-				// Ticket 655: the Malorne rows of feral-p3-th-hands-legs stop at the 2pc, so their 4pc follows under "Not counted".
+				// The Malorne rows of feral-p3-th-hands-legs stop at the 2pc, so their 4pc follows under "Not counted".
 				const added = now!.entries.slice(tip.entries.length);
 				if (added.length === 0) continue;
 				withPastStop++;

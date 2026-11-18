@@ -127,7 +127,7 @@ describe('the results table sort', () => {
 		expect(ids(sameBoss, [{ id: 'source', desc: false }])).toEqual([32332, 32235]);
 	});
 
-	// Review AD2: the column once sorted on the row's first source while its cell named the first shown one.
+	// The column sorts on the source its cell names, the first shown one, not the row's first source.
 	it('sorts a row whose first source is hidden on the source its cell names', () => {
 		// Cataclysm's Edge as a drop in Hyjal Summit and Black Temple, beside Dragonspine Trophy from Gruul's Lair.
 		const hyjalOrBlackTemple: RankedItem = {

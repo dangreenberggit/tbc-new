@@ -1,16 +1,6 @@
 /**
- * Set-bonus prospective value — completion-package synergy.
- *
- * PORTED from packages/core/src/set-value.ts. Fork-only changes: the items.ts
- * import path; `brokenSetBonuses` reports every lost implemented threshold, not
- * only the highest, via `lostThresholds` (ticket 476); `netInflation`, the
- * package-synergy correction for broken worn bonuses (ticket 478); and the
- * exported `IMPLEMENTED_SET_IDS`, so a test reads the set list instead of
- * copying it. Core never received ticket 467's broken-bonus work, so these do
- * not exist there. Ticket 512 (fork-only): `SetThreshold` is any piece count,
- * and the break helpers take a `BonusCountPredicate` for which lost counts are
- * breaks. Pure
- * functions only: no sim calls, no seams — same invariant as the source file.
+ * Set-bonus prospective value: completion-package synergy. Pure functions
+ * only: no sim calls, no seams.
  */
 
 import { getItem } from "./items";
@@ -21,13 +11,13 @@ import type { SimItemSpec } from "./slots";
  * A piece count of 2 or more at which a set may have a bonus. A plain number,
  * not a union of known counts: the Go sim keys set bonuses at whatever counts a
  * set defines (3 for the crafted 3-piece sets, 6 and 8 for Cryptstalker), and
- * the break side measures every count a swap loses (ticket 512).
+ * the break side measures every count a swap loses.
  */
 export type SetThreshold = number;
 
 /**
- * The counts the gain side tries, and the counts the flag-off break side
- * reads with `isBonusImplemented`. Ticket 511's K5 moves the gain side off it.
+ * The counts the gain side tries, and the counts the break side reads with
+ * `isBonusImplemented` when `measureBrokenSetValue` is off.
  */
 export const SET_THRESHOLDS: readonly SetThreshold[] = [2, 4];
 
@@ -35,7 +25,7 @@ export const SET_THRESHOLDS: readonly SetThreshold[] = [2, 4];
  * Whether losing `count` pieces' bonus of `setId` counts as a break. The
  * default, `isBonusImplemented`, reads the six-set table below; with
  * `measureBrokenSetValue` the ranking passes the worn-set ladder's gated
- * measurement instead (ticket 512, `rank.ts`).
+ * measurement instead (`rank.ts`).
  */
 export type BonusCountPredicate = (setId: number, count: number) => boolean;
 
@@ -46,31 +36,26 @@ export type UnmeasuredReason =
   | "repair-failed"
   | "unmeasurable-at-this-worn-count"
   /**
-   * The set screen dropped the set (ticket 511 K5ON, `set-screen.ts`). Only
-   * rankings made before ticket 644 have this marker entry; since then a
-   * dropped set has no entry and `ranking.setScreen` records it.
+   * The set screen dropped the set (`set-screen.ts`). Only rankings from an
+   * older engine version carry this marker entry; now a dropped set has no
+   * entry and `ranking.setScreen` records it.
    */
   | "screened-out";
 
 /**
- * Which (setId, threshold) bonuses the flag-off ranking measures. It stays
- * equal to packages/core/src/set-value.ts's table so that, without
- * `measureBrokenSetValue`, the fork gives the E-W3 parity harness the same
- * `unmeasured` values and breaks as core. With the flag the break side does
- * not read it (ticket 512: the worn-set ladder measures every lost count and
- * the noise gate decides), and after ticket 511's K5 the gain side does not
- * either. The owner decided on 2026-09-28 that the tab keeps no list of
- * implemented set bonuses, so do not extend this table.
+ * Which (setId, threshold) bonuses a ranking without `measureBrokenSetValue`
+ * measures. With the flag the ranking does not gate on it: the worn-set ladder
+ * measures every lost count and the noise gate decides. The tab keeps no list
+ * of implemented set bonuses, so do not extend this table.
  */
 const IMPLEMENTED_IN_SIM: Record<
   number,
   Partial<Record<SetThreshold, boolean>>
 > = {
   // Justicar 2pc is `false` although it has an effect body: its item_sets.go
-  // closure is empty, but sim/paladin/seals.go:553 (also at 8aa378b3) scales
-  // the Judgement of the Crusader bonus by 1.15. The default ret APL judges
-  // Crusader only in its prepull actions, so the effect is expected near 0
-  // DPS (hypothesis, not measured).
+  // closure is empty, but sim/paladin/seals.go scales the Judgement of the
+  // Crusader bonus by 1.15. The default ret APL judges Crusader only in its
+  // prepull actions, so the effect is expected near 0 DPS (not measured).
   626: { 2: false, 4: true }, // Justicar Battlegear
   629: { 2: true, 4: true }, // Crystalforge Battlegear
   680: { 2: true, 4: true }, // Lightbringer Battlegear
@@ -263,8 +248,8 @@ export function lostThresholds(
 /**
  * Every worn bonus the added pieces break, one entry per lost count that
  * `counts` accepts, sorted by `setId` then descending threshold. A package
- * that takes Malorne from 4 to 0 loses the 4pc AND the 2pc; reporting only
- * the 4pc left the 2pc's value out of every net (ticket 476).
+ * that takes Malorne from 4 to 0 loses the 4pc AND the 2pc, so both are
+ * reported and both count in the net.
  */
 export function brokenSetBonuses(
   equipment: readonly SimItemSpec[],
@@ -333,10 +318,9 @@ export type InflationKey = {
  * `computeSynergy` gives `pkgΔ − Σsingles − raw2pc`. A broken bonus puts a −B
  * in `pkgΔ` once if the package's end state breaks it, in each member single
  * that breaks it (subtracted, so +B each), and in the raw 2pc it subtracts
- * (whose own inflation is `(members2pc − twoPcEnd)·B`, subtracted again). The
- * earlier code subtracted `twoPcEnd`; the sign was hidden at worn 4, where
- * `members2pc − twoPcEnd = 1 = twoPcEnd` (ticket 478 A3, pinned by fixture
- * 476-B in packages/core/test/fork-set-net.test.ts).
+ * (whose own inflation is `(members2pc − twoPcEnd)·B`, subtracted again). At
+ * worn 4, `members2pc − twoPcEnd = 1 = twoPcEnd`, so the wrong sign on
+ * `twoPcEnd` gives the same answer there and shows only at other worn counts.
  */
 export function netInflation(keys: readonly InflationKey[]): number {
   return keys.reduce(
@@ -374,7 +358,7 @@ export type SelfSetConfound = {
   threshold: SetThreshold;
   /**
    * The confounding threshold's own value, measured by one pair sim and
-   * already added back into the 4pc `bonusDps` (ticket 492). Absent when no
+   * already added back into the 4pc `bonusDps`. Absent when no
    * two package pieces were break-free alone and together, or that sim or its
    * gem repair failed: the 4pc `bonusDps` then still has the `−(n−1)·B2`
    * confound, and `rank.ts` leaves its `bonusDpsNet` unset.

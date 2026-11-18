@@ -43,9 +43,8 @@ describe('SubstitutionsList', () => {
 		expect(cells()).toEqual(['This item was not ranked in this slot, because its sim failed.']);
 	});
 
-	// Tickets 873 and 874, owner's ruling 2026-11-11: the line keeps the tab's one sentence. The error goes to the
-	// console and, for the run's first failure, to the run's one error toast (`run_session.ts`): no wowsims screen
-	// puts a sim error in a list.
+	// The line keeps the tab's one sentence. The error goes to the console and, for the run's first failure, to the
+	// run's one error toast (`run_session.ts`), as no other sim screen puts a sim error in a list.
 	it("shows only the tab's sentence, in every state of the failed call's error", () => {
 		const sentence = 'The Justicar Battlegear 2-piece set bonus was not measured, because its sim failed.';
 		const line = (error?: string) => ({ field: 'Justicar Battlegear 2-piece set bonus', detail: sentence, ...(error === undefined ? {} : { error }) });
@@ -86,8 +85,8 @@ describe('SubstitutionsList', () => {
 		expect(cells()).toEqual(['The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed.']);
 	});
 
-	// Review N3 of `fix/867-870-tab-errors`: `measuringSimsNotBuilt` and `notBuilt` give one sentence, and only the second
-	// carries the error the console and the run's error toast need, so the line once must keep it, in the first one's place.
+	// `measuringSimsNotBuilt` and `notBuilt` give one sentence, and only the second carries the error the console and the
+	// run's error toast need, so the one line kept must keep it, in the first one's place.
 	it("keeps a failed call's error when an earlier line with the same sentence has none", () => {
 		const setBonus = { setName: 'Justicar Battlegear', threshold: 4 as const };
 		const noError = setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt });
@@ -102,7 +101,7 @@ describe('SubstitutionsList', () => {
 		expect(within(screen.getByTestId('upgrades-substitutions')).getByRole('definition').textContent).toBe('Kept the worn hit gems.');
 	});
 
-	// Ticket 704: every line the engine writes, built by the engine's own
+	// Every line the engine writes, built by the engine's own
 	// functions, with ids, raw errors and the spec id after the line break.
 	it('shows every engine line as one plain sentence', () => {
 		const ring = { itemId: 29283, name: 'Violet Signet of the Master Assassin', reason: 'panic: runtime error' };

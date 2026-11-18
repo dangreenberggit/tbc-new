@@ -1,11 +1,9 @@
 /**
- * The set-bonus popover of a result row, as data (tickets 431, 467, 494, 517,
- * ported from the old tab's `setBonusPresentation`, cb561067
- * `upgrades_tab.tsx`). A receipt whose lines add up to the row's figure as the
- * cell shows it, after the ticket-618 clamp (`shownTenths`), so the reader sees
- * where the number came from; or, for a step ranking row
- * whose partner sets do not nest (K6), separate outcomes that are not a sum.
- * `utils/set_bonus_labels.ts` turns it into text.
+ * The set-bonus popover of a result row, as data. A receipt whose lines add up
+ * to the row's figure as the cell shows it, after the below-bar clamp
+ * (`shownTenths`), so the reader sees where the number came from; or, for a step
+ * ranking row whose partner sets do not nest, separate outcomes that are not a
+ * sum. `utils/set_bonus_labels.ts` turns it into text.
  */
 
 import type { Cutoff } from './engine/cutoff';
@@ -40,11 +38,11 @@ export type TipLabel =
 	/** A step ranking line: the partner pieces, the bonus they reach and the worn bonuses lost. */
 	| { kind: 'pieces'; form: 'stop' | 'step'; pieces: string[]; threshold: number; broken: BonusRef[] }
 	| { kind: 'item_alone'; name: string; broken: BonusRef[] }
-	/** A bonus the row can reach that its figure does not count: the partner pieces and the worn bonuses the step breaks beyond the row's own (ticket 336). */
+	/** A bonus the row can reach that its figure does not count: the partner pieces and the worn bonuses the step breaks beyond the row's own. */
 	| { kind: 'reachable'; set: string; threshold: number; have: number; pieces: string[]; broken: BonusRef[] }
-	/** A set the set screen dropped (ADR-0035), so no bonus of it was measured for the row. */
+	/** A set the set screen dropped, so no bonus of it was measured for the row. */
 	| { kind: 'screened'; set: string; reason: ScreenedReason }
-	/** A bonus whose measured value is within the noise gate, so it has no figure (ticket 655). */
+	/** A bonus whose measured value is within the noise gate, so it has no figure. */
 	| { kind: 'noise'; set: string; threshold: number }
 	| { kind: 'total' };
 
@@ -78,7 +76,7 @@ export type SetBonusTipContext = {
 
 type Line = { label: TipLabel; dps: number | undefined; figure?: boolean };
 
-/** `v` as the row's figure shows it: raw unless the ticket-618 clamp changed it, so a figure the clamp leaves alone keeps its full value. */
+/** `v` as the row's figure shows it: raw unless the below-bar clamp changed it, so a figure the clamp leaves alone keeps its full value. */
 const shownValue = (v: number, bar: number | undefined): number => (shownTenths(v, bar) === tenthsOf(v) ? v : shownTenths(v, bar) / 10);
 
 /**
@@ -118,9 +116,9 @@ const NO_POTENTIAL: Potential = { lines: [], kind: 'none' };
 /**
  * The Set potential section of a row with future bonuses, with the toggle on:
  * `unmeasured` names each figure the credit lacks; `none` when the credit is
- * 0; `itemised` the credit's terms (ticket 502); `steps` a step ranking's
- * steps up to the stop, which add up to the credit (K6, K6B); `outcomes` a
- * step ranking whose partner sets do not nest, one total per bonus.
+ * 0; `itemised` the credit's terms; `steps` a step ranking's steps up to the
+ * stop, which add up to the credit; `outcomes` a step ranking whose partner
+ * sets do not nest, one total per bonus.
  */
 function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): Potential {
 	const futures = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
@@ -184,12 +182,11 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): Potent
  * receipt already prices those. Each figure is how much the row's
  * figure would change if it counted that step in place of what it counts now.
  * With the toggle off it is measured against the row alone. With the toggle
- * on it is measured against the stop's gear, for the steps past the stop
- * (ticket 655). Only the futures the step rule can stop at are listed
- * (`stepEligible`, ticket 511), so no bonus within the noise gate is listed
- * here. A step past the stop also gets no figure when its difference from the
- * stop's gear does not clear the same gate; its line says the difference is
- * too small to measure.
+ * on it is measured against the stop's gear, for the steps past the stop.
+ * Only the futures the step rule can stop at are listed (`stepEligible`), so
+ * no bonus within the noise gate is listed here. A step past the stop also
+ * gets no figure when its difference from the stop's gear does not clear the
+ * same gate; its line says the difference is too small to measure.
  *
  * Only a step ranking measures the row with its partner pieces; elsewhere a
  * future's figure is the bonus's own value, which a label naming pieces and
@@ -233,9 +230,9 @@ function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopTh
 
 /**
  * The bonuses of a step ranking row whose every bonus was measured within the
- * noise gate (ticket 655, the owner's "Case 2 a sounds fine" of 2026-11-01):
- * one line each, with no figure, so the row says its set was tried. A row with
- * a bonus that clears the gate lists that one instead (`reachableLines`).
+ * noise gate: one line each, with no figure, so the row says its set was
+ * tried. A row with a bonus that clears the gate lists that one instead
+ * (`reachableLines`).
  */
 function noiseLines(ctx: SetContext, cutoff: Cutoff): TipEntry[] {
 	const futures = ctx.futureBonuses ?? [];
@@ -255,11 +252,11 @@ function notCountedHeading(hasReachable: boolean, on: boolean): Extract<TipEntry
 /**
  * The line for a row whose set the set screen dropped, or null. It carries no
  * figure: a `below-zero` measure is the pieces and the bonus together, so
- * printing it as the bonus would credit the pieces' loss to it (ticket 336).
+ * printing it as the bonus would credit the pieces' loss to it.
  */
 function screenedLine(ctx: SetContext, ranking: SetBonusTipContext['ranking']): TipEntry | null {
 	const screen = ranking?.setScreen?.mode === 'on' ? ranking.setScreen.sets.find(s => s.setId === ctx.setId) : undefined;
-	// Rankings made before ticket 644 also mark the set with a "screened-out" entry.
+	// Older rankings also mark the set with a "screened-out" entry.
 	const marked = ranking?.setBonuses?.some(b => b.setId === ctx.setId && b.unmeasured === 'screened-out') ?? false;
 	if (screen?.kept !== false && !marked) return null;
 	// With no screen entry to read, "not measured" is the one value that is still true.
@@ -268,14 +265,13 @@ function screenedLine(ctx: SetContext, ranking: SetBonusTipContext['ranking']): 
 }
 
 /**
- * Each line is a separate outcome compared with the current gear (the owner's
- * ruling of 2026-10-01), so there is no Item stats addend and no total. On a
- * row paired replication rewrote, every bonus's total moves by the same amount
- * as the row's single swap, so the item-alone line and the marked line equal
- * the figures the row shows. The item-alone line is the cell's figure with the
- * toggle off and the marked line is it with the toggle on, so both go through
- * the ticket-618 clamp, as the cell does; the others are compared, not shown in
- * the cell, so stay raw.
+ * Each line is a separate outcome compared with the current gear, so there is
+ * no Item stats addend and no total. On a row paired replication rewrote,
+ * every bonus's total moves by the same amount as the row's single swap, so
+ * the item-alone line and the marked line equal the figures the row shows. The
+ * item-alone line is the cell's figure with the toggle off and the marked line
+ * is it with the toggle on, so both go through the below-bar clamp, as the
+ * cell does; the others are compared, not shown in the cell, so stay raw.
  */
 function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Line[], bar: number | undefined): TipEntry[] {
 	const shift = row.deltaDps - (ctx.singleDeltaDps ?? row.deltaDps);
@@ -291,7 +287,7 @@ function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Li
  * stats" line balances the toggle-off receipt and keeps its value when the
  * toggle changes, so the toggle's rounding goes into the Set potential lines.
  * A plain "Item stats" line equal to the total only repeats the cell, so it is
- * dropped, and a row left with only the total gets no popover (ticket 517).
+ * dropped, and a row left with only the total gets no popover.
  */
 export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = {}): SetBonusTip | null {
 	const ctx = row.setContext;
@@ -299,7 +295,7 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 	const bar = cutoff?.absDps;
 	const on = (context.withSetPotential ?? false) && cutoff !== undefined;
 	const credit = on ? rankableSetPotential(row, cutoff, 'full') : 0;
-	// A row with no set context gets the same receipt for the worn bonuses its own swap breaks (ticket 536).
+	// A row with no set context gets the same receipt for the worn bonuses its own swap breaks.
 	const ownBreaks =
 		ctx || !context.ranking || !context.specId ? [] : singleSwapBreaks(row, context.ranking.brokenSetValues, context.wornItemIds, context.specId);
 	if (!ctx && ownBreaks.length === 0) return null;
@@ -339,7 +335,7 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 		potential.lines.forEach((l, i) => entries.push(line(l.label, shown[i]! / 10)));
 	}
 
-	// What the figure does not count, after the total, so the toggle never decides whether the popover exists (ticket 336).
+	// What the figure does not count, after the total, so the toggle never decides whether the popover exists.
 	const notCounted: TipEntry[] = [];
 	if (ctx && cutoff !== undefined) {
 		const pastStop = on && potential.stopThreshold !== undefined;

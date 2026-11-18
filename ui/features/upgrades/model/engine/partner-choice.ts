@@ -1,21 +1,15 @@
 /**
- * The partner pieces a set row is valued with, for one bonus (ticket 511,
- * ADR-0035).
+ * The partner pieces a set row is valued with, for one bonus.
  *
- * FORK-ONLY, no packages/core ancestor. A set row with Set potential on is
- * valued as a sim of gear the player could wear: the current gear plus the
- * row's item plus the other pieces of its set that reach the bonus. Those
- * other pieces are the "partner set". The owner chose this ("option A") and
- * wrote: "Maybe there's a way to just show the best "partner" and use that".
- * The owner also ruled out any player control over the choice: the player
- * picks gear in the game, not the sim setup. "One partner set per bonus,
- * chosen by one function and shown alone" is the orchestrator's reading of
- * those words (stage-gate decision log, 2026-09-28; gitignored, ADR-0035
- * records the result), not the owner's own.
+ * A set row with Set potential on is valued as a sim of gear the player could
+ * wear: the current gear plus the row's item plus the other pieces of its set
+ * that reach the bonus. Those other pieces are the "partner set". One partner
+ * set is chosen per bonus and shown alone, with no player control over the
+ * choice: the player picks gear in the game, not the sim setup.
  *
  * `choosePartnerSet` is the only place a partner set is chosen, so the rule
  * can be replaced without touching anything else. `PARTNER_RULE` names the
- * rule the tab uses; its comment gives the check (stage K5P) that chose it.
+ * rule the tab uses.
  *
  * The rules, for row r with single-swap figure d_r and a candidate partner
  * set P, where d_p is piece p's single-swap figure:
@@ -39,8 +33,8 @@
  * - "single-swap" (T): the pieces today's `pathToThreshold` picks. Kept for
  *   scoring only.
  * - "every-combination": sims every partner set and takes the highest
- *   total, ties going to Z's order. It is the check's reference answer and
- *   writes an audit; players never run it.
+ *   total, ties going to Z's order. It is the reference answer the other
+ *   rules are scored against and writes an audit; players never run it.
  *
  * Neither this file nor its caller holds a table of set ids or piece counts.
  */
@@ -59,25 +53,18 @@ export type PartnerRule =
   | "every-combination";
 
 /**
- * The rule the tab uses. The K5P check (eight built characters, live sims at
- * 10,000 iterations) found that no zero-sim rule chose a set within noise of
- * the best simmed set on every row: outcome P-C. So the tab sims the close
- * calls. Against a player's full-pool run that adds 0 to 4.2% more sims
- * (worst character 27 of 645), and the owner accepted the cost: "I assume
- * it's a full run, 5% for a solid outcome is worth it" (stage-gate decision
- * log, 2026-10-01).
+ * The rule the tab uses. On eight test characters, with live sims at 10,000
+ * iterations, no zero-sim rule chose a set within noise of the best simmed set
+ * on every row, so the tab sims the close calls. That adds 0 to 4.2% more sims
+ * to a full-pool run.
  */
 export const PARTNER_RULE: PartnerRule = "close-calls";
 
 /**
  * How far below the best Z estimate a partner set may be and still be simmed
- * by "close-calls". It is M′ = 2·M, where M = 15.9334 DPS is the largest gap
- * K5P measured between the best Z estimate and the estimate of the set the
- * sims found best, over every decided (row, bonus) of its eight characters
- * (W3-TH, Mantle of Malorne 29100, 4pc). Source: the K5P report, from
- * `python fallback_global.py results` in the stage folder
- * `.scratch/stage-gate/511-512-set-credit/k5p/` (gitignored; ADR-0035 records
- * the result). The plan of that stage sets the margin at twice M.
+ * by "close-calls". It is 2·M, where M = 15.9334 DPS is the largest gap
+ * measured between the best Z estimate and the estimate of the set the sims
+ * found best, over every decided (row, bonus) of the eight test characters.
  */
 export const CLOSE_CALL_MARGIN_DPS = 31.866872635956497;
 

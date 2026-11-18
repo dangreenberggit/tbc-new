@@ -52,7 +52,7 @@ describe('formatDelta', () => {
 		expect(formatDelta(0)).toBe('0.0');
 	});
 
-	// Ticket 618: a figure below the cutoff bar never reads as the bar.
+	// A figure below the cutoff bar never reads as the bar.
 	it('shows a figure just below the bar one tenth under it, and every other figure as usual', () => {
 		expect(formatDelta(2.96, 3)).toBe('+2.9');
 		expect(formatDelta(2.94, 3)).toBe('+2.9');
@@ -119,7 +119,7 @@ describe('sourceDetail', () => {
 		expect(sourceDetail({ kind: 'token', zone: 'Black Temple', token: 'Leggings of the Forgotten Protector' })).toBe('Black Temple (N)');
 	});
 
-	// Five-man drops mix Normal and Heroic in upstream's db.json, so a raid-kind row prints no difficulty.
+	// Five-man drops mix Normal and Heroic in db.json, so a raid-kind row prints no difficulty.
 	it('names a drop’s zone and boss, and the zone alone when no boss is recorded', () => {
 		expect(sourceDetail({ kind: 'raid', zone: 'The Mechanar', boss: 'Pathaleon the Calculator' })).toBe('The Mechanar · Pathaleon the Calculator');
 		expect(sourceDetail({ kind: 'raid', zone: 'Hyjal Summit' })).toBe('Hyjal Summit');
@@ -155,7 +155,7 @@ describe('sourceDetail', () => {
 	});
 });
 
-// A narrow Source cell wrapped "Tempest Keep (N)" as "Tempest Keep" / "(N)" (ticket 607).
+// A narrow Source cell must not wrap "Tempest Keep (N)" as "Tempest Keep" / "(N)".
 describe('keepMarkWithZone', () => {
 	it('joins each difficulty mark to the word before it with a no-break space', () => {
 		expect(keepMarkWithZone('Black Temple (N) · The Illidari Council')).toBe('Black Temple\u00a0(N) · The Illidari Council');
@@ -232,7 +232,7 @@ describe('substitutionText', () => {
 		expect(substitutionText('Kept the worn hit gems.')).toBe('Kept the worn hit gems.');
 	});
 
-	// Tickets 873 and 874, owner's ruling 2026-11-11: the page adds no note about the console.
+	// The page adds no note about the console.
 	it('shows the sentence alone, in every state of the text after it', () => {
 		const sentence = 'The Justicar Battlegear 2-piece set bonus was not measured, because its sim failed.';
 		const cut = sentence;
@@ -272,7 +272,7 @@ describe('sourceKeyLabel', () => {
 		withTranslation('upgrades_tab.sources.badge', 'Marken', () => expect(sourceKeyLabel('Badge vendor')).toBe('Marken'));
 	});
 
-	// Ticket 645: some of these rings may be quest rewards (untested), so the bucket no longer claims a vendor; the saved key keeps its text.
+	// Some of these rings may be quest rewards, so the bucket claims no vendor; the saved key keeps its text.
 	it('names the reputation bucket "Reputation" while its key stays "Reputation vendor"', () => {
 		expect(sourceKeyLabel('Reputation vendor')).toBe('Reputation');
 	});
@@ -294,7 +294,7 @@ describe('describeRunError', () => {
 		expect(describeRunError(new RankError('not-implemented', 'no data'))).toBe('This spec has no ranking data yet.');
 	});
 
-	// Ticket 868: the error's own message goes to a toast, as wowsims' bulk sim shows it, so the status line names no error.
+	// The error's own message goes to a toast, as wowsims' bulk sim shows it, so the status line names no error.
 	it('says only that the ranking failed, for any other failure', () => {
 		const panic = 'sim error (ErrorOutcome): runtime error: index out of range\nStack Trace:\ngoroutine 7 [running]:';
 		expect(describeRunError(new Error('worker died'))).toBe('Ranking failed.');

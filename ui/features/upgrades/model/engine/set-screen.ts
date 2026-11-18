@@ -1,12 +1,8 @@
 /**
- * The set screen (ticket 511, stages K5R and K5ON; ADR-0035).
- *
- * FORK-ONLY, no packages/core ancestor. A screen is a cheap first pass over
- * every set the gain side covers. It decides which sets get the exact
- * per-bonus measurement (`.scratch/stage-gate/511-512-set-credit/
- * set-screening-plan.md` §2; gitignored, ADR-0035 records the result),
- * because that measurement costs most of a run's set sims and most sets a
- * player is offered are not worth collecting.
+ * The set screen: a cheap first pass over every set the gain side covers. It
+ * decides which sets get the exact per-bonus measurement, because that
+ * measurement costs most of a run's set sims and most sets a player is offered
+ * are not worth collecting.
  *
  * Per set S worn at w, with R the highest count the pool can reach and R − w
  * at least 2: on the gear of S's package at R, rung k (k = 0 … R − w) sends
@@ -16,7 +12,7 @@
  * Every sim asks for per-iteration values, and the rungs share a seed, so a
  * difference of two rungs has a paired standard error. A rung's gems can
  * differ from rung 0's where meta repair chose them for that rung's own hit
- * (ticket 535, `ScreenPackage.requestsFor`).
+ * (`ScreenPackage.requestsFor`).
  *
  * Record mode runs the pair at four iteration counts and the whole ladder,
  * and records them, so candidate rules can be scored offline. It filters
@@ -24,9 +20,9 @@
  *
  * On mode, the tab's default, runs only the pair at the rule's iteration
  * count and applies `SCREEN_ON_RULE`. A set it drops gets no gate, package
- * or step sims, and no `setBonuses` entry (ticket 644). A set
- * whose readings failed is kept, so a sim failure never hides a set (the
- * known case is ticket 532: off-class Cryptstalker sims fail).
+ * or step sims, and no `setBonuses` entry. A set whose readings failed is
+ * kept, so a sim failure never hides a set (off-class Cryptstalker sims fail,
+ * for one).
  *
  * Neither mode holds a table of set ids or piece counts.
  */
@@ -45,7 +41,7 @@ import {
 
 export type SetScreenMode = "off" | "record" | "on";
 
-/** Iteration counts of the pair, and of the ladder (set-screening-plan.md Q4). */
+/** Iteration counts of the pair, and of the ladder. */
 export const SCREEN_PAIR_ITERATIONS: readonly number[] = [10, 100, 300, 1000];
 export const SCREEN_LADDER_ITERATIONS: readonly number[] = [100, 300, 1000];
 
@@ -64,14 +60,11 @@ export type ScreenOnRule = {
 };
 
 /**
- * The on mode's rule: the runner-up of the K5E scoring, which kept every set
- * worth collecting on all eleven check characters under σ, 1.5 × σ and each
- * reading's own paired error (`.scratch/stage-gate/511-512-set-credit/k5e/
- * report.md`; gitignored, ADR-0035 records the result). The orchestrator
- * chose it over the cheaper top pick at Gate C on 2026-10-01 (Q-K5E-rule),
- * because the top pick kept three needed sets only through its band;
- * ADR-0035 records both. Changing any constant needs a new K5E-style scoring
- * of the check characters.
+ * The on mode's rule. Scored offline against record-mode readings, it kept
+ * every set worth collecting on all eleven test characters under σ, 1.5 × σ
+ * and each reading's own paired error. A cheaper rule was passed over because
+ * it kept three needed sets only through its band. Changing any constant needs
+ * a new scoring of the test characters.
  */
 export const SCREEN_ON_RULE = {
   measure: "M2",
@@ -170,12 +163,11 @@ export type ScreenPackage = {
   /** The added pieces' slot indices and item ids, in slot order. */
   added: ReadonlyArray<{ slotIndex: number; itemId: number }>;
   /**
-   * Each rung's request with its own repair-chosen gems (ticket 535), one
-   * entry per copies, a `BuildFailure` when that request cannot be built, and
-   * undefined when that rung's gem repair fails: that rung is not measured,
-   * with no line, as when `packageAt` gives no package (review A1 of
-   * `fix/867-870-tab-errors`). Absent means every rung is `request` with its
-   * copies applied.
+   * Each rung's request with its own repair-chosen gems, one entry per
+   * copies, a `BuildFailure` when that request cannot be built, and undefined
+   * when that rung's gem repair fails: that rung is not measured, with no
+   * line, as when `packageAt` gives no package. Absent means every rung is
+   * `request` with its copies applied.
    */
   requestsFor?: (
     copiesList: Array<{ setKept: number[]; setLess: number[] }>
@@ -200,12 +192,12 @@ export type SetScreenInput = {
   /**
    * The caller's Stop. Once it has aborted, a failed reading is the runner
    * refusing the sim and the caller drops the screen, so the reading writes
-   * no warning (ticket 533).
+   * no warning.
    */
   signal?: AbortSignal;
-  /** Each failed sim's error, except a sim Stop refused (ticket 863). */
+  /** Each failed sim's error, except a sim Stop refused. */
   onSimFailed?: (setId: number, error: string) => void;
-  /** The error of each rung request that could not be built (ticket 869). */
+  /** The error of each rung request that could not be built. */
   onRequestNotBuilt?: (setId: number, error: string) => void;
   pairIterations?: readonly number[];
   ladderIterations?: readonly number[];
@@ -467,10 +459,9 @@ export async function runSetScreenOn(
 }
 
 /**
- * Which screened sets the on mode keeps, and why. A port of `apply_rule` in
- * `.scratch/stage-gate/511-512-set-credit/k5e/score_screen.py` (bound mode;
- * gitignored, ADR-0035 records the result), so the scoring's verdict still
- * holds; keep the two in step. In ascending set id:
+ * Which screened sets the on mode keeps, and why. It is the rule the offline
+ * scoring applied, so the scoring's verdict holds only while the two match.
+ * In ascending set id:
  *
  * 1. a pair of exactly 0 is dropped, before the absence check;
  * 2. an absent measure or σ keeps the set, outside the ranking;

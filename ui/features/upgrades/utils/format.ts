@@ -25,10 +25,7 @@ export const formatDps = (dps: number): string => formatToNumber(dps, ONE_DECIMA
 
 export const formatSeconds = (ms: number): string => formatToNumber(ms / 1000, { ...ONE_DECIMAL, useGrouping: false });
 
-/**
- * The sign comes from the number: a hard-coded `+` once printed "+-41.0" for a loss. `bar` is the
- * ranking's cutoff, which a figure below it never reads as (`shownTenths`, ticket 618).
- */
+/** The sign comes from the number, so a loss reads "-41.0". A figure below `bar`, the ranking's cutoff, never rounds up to it (`shownTenths`). */
 export const formatDelta = (deltaDps: number, bar?: number): string =>
 	i18n.t('upgrades_tab.results.delta_dps_value', {
 		ns: 'upgrades',
@@ -82,14 +79,10 @@ const DETAIL_SEPARATOR = ' · ';
 
 const joinDetail = (...parts: (string | undefined)[]): string => parts.filter(part => part !== undefined).join(DETAIL_SEPARATOR);
 
-/**
- * Every drop upstream's `db.json` records in a phase raid is Normal, and the universe builder keeps a token's zone to
- * the phase raids, so a token row prints upstream's Normal mark as a drop row does. The builder guard is "Token zones
- * stay phase raids only" in the main repo's `scripts/assemble_universe.py`; ticket 619 records the db.json check.
- */
+/** Every phase-raid drop in `db.json` is Normal and a token's zone is always a phase raid, so a token row carries the Normal mark as a drop row does. */
 const TOKEN_DIFFICULTY = difficultyNames.get(DungeonDifficulty.DifficultyNormal);
 
-/** A Magisters' Terrace heroic drop keys under the zone's row, so its text carries upstream's Heroic mark as upstream's block does. */
+/** A Magisters' Terrace heroic drop keys under the zone's row, so its text carries the Heroic mark as `ItemSource` does. */
 const HEROIC_DIFFICULTY = difficultyNames.get(DungeonDifficulty.DifficultyHeroic);
 
 /**
@@ -119,7 +112,7 @@ const DIFFICULTY_MARKS = [...new Set(difficultyNames.values())].map(name => ` ($
 
 /**
  * `text` as the Source cell draws it: a no-break space before each difficulty mark, so a narrow cell breaks
- * "Tempest Keep (N)" before "Keep" and never leaves "(N)" alone on a line (ticket 607). Only the drawn text changes:
+ * "Tempest Keep (N)" before "Keep" and never leaves "(N)" alone on a line. Only the drawn text changes:
  * `sourceDetail` keeps the plain space, because the column sorts on it and tests compare it with recorded text.
  */
 export const keepMarkWithZone = (text: string): string => DIFFICULTY_MARKS.reduce((out, mark) => out.replaceAll(mark, NO_BREAK_SPACE + mark.slice(1)), text);
@@ -148,14 +141,13 @@ const shownSourceOf = (row: SourcedEntry, hidden: readonly string[]): ItemSource
 
 /**
  * The Source cell's plain text for a row: the detail of its first shown source only, so a kept row never names a
- * source "Filter by source" hides. A row from two zones names one of them, as upstream's block names its first drop.
+ * source "Filter by source" hides. A row from two zones names one of them, as `ItemSource` names its first drop.
  */
 export const rowSourceDetail = (row: SourcedEntry, hidden: readonly string[] = []): string => sourceDetail(shownSourceOf(row, hidden));
 
 /**
- * The slot column sorts on its cell's text and the source column on the detail its cell's plain text shows under the
- * acting hidden sources (`rowSourceDetail`), so the sort matches the cell (review AD2): a reputation row sorts on its
- * faction, not under "Reputation". The export sorts with the same labels, so its order is the order on screen.
+ * The slot and source columns sort on the text their cells show (`rowSourceDetail` under the hidden sources), so a
+ * reputation row sorts on its faction, not under "Reputation". The export sorts with the same labels.
  */
 export const sortLabelsFor = (hiddenSources: readonly string[]): SortLabels<Pick<RankedItem, 'slot' | 'slotChoice'> & SourcedEntry> => ({
 	slot: slotLabel,
@@ -178,7 +170,7 @@ export const substitutionLabel = (substitution: Substitution): string =>
 /** A notes-list reason as the page shows it: its first line. The run logs the whole text to the console. */
 export const substitutionText = (detail: string): string => substitutionFirstLine(detail).line;
 
-/** The status line names no error: `run_session.ts` shows the error's own message in a toast (ticket 868). */
+/** The status line names no error: `run_session.ts` shows the error's own message in a toast. */
 export const describeRunError = (error: unknown): string => {
 	if (error instanceof RankError && error.kind === 'not-implemented') return i18n.t('upgrades_tab.status.unsupported_spec', { ns: 'upgrades' });
 	return i18n.t('upgrades_tab.status.error', { ns: 'upgrades' });

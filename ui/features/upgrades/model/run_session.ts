@@ -1,5 +1,5 @@
 /**
- * The tab's one run, outside React (ticket 564): the run in flight, the id
+ * The tab's one run, outside React: the run in flight, the id
  * that tells its callbacks from a superseded run's, and the run context.
  * It writes the run state to the tab's store; the hook that owns it only
  * creates it once and disposes it on unmount.
@@ -54,10 +54,10 @@ const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string, 
 });
 
 /**
- * The run's assumptions for whoever diagnoses a bad ranking (ticket 318), the
- * full text of each notes-list reason the page cuts to one line (ticket 311),
- * and each failed call's error, which the page does not show. Logged once
- * when a ranking arrives, never from a render.
+ * The run's assumptions for whoever diagnoses a bad ranking, the full text of
+ * each notes-list reason the page cuts to one line, and each failed call's
+ * error, which the page does not show. Logged once when a ranking arrives,
+ * never from a render.
  */
 const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'cutoff' | 'substitutions'>, context: AssumptionsContext) => {
 	console.info(assumptionsLine(result, context));
@@ -66,10 +66,10 @@ const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'cutoff' | 'substi
 
 /**
  * A failed run's own message, shown as wowsims' bulk sim shows one
- * (`ui/features/bulk/model/run.ts:301-310` at 24606be6, ticket 868). The
- * caller skips it after Stop, as wowsims skips it when the user cancelled.
- * A run that goes on past failed sims shows the first one's error the same
- * way, once (ticket 874): wowsims' bulk sim stops at its one failure.
+ * (`runBulkBatch`, `ui/features/bulk/model/run.ts`). The caller skips it after
+ * Stop, as the bulk sim skips it when the user cancelled. A run that goes on
+ * past failed sims shows the first one's error the same way, once, since the
+ * bulk sim stops at its one failure.
  */
 const toastErrorMessage = (error: unknown) => {
 	const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : undefined;
@@ -106,7 +106,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 				store.getState().settleRun(id, result);
 				// The store drops a superseded run's result, so it is not logged either.
 				if (id !== runId) return;
-				// The set the run says it ranked with (ticket 811); a replay names none, as it ranked nothing.
+				// The set the run says it ranked with; a replay names none, as it ranked nothing.
 				logAssumptions(result, { epWeightsSet: result.epWeightsSet, settings, host });
 				// The notes list's order: the first line whose call failed.
 				if (!current.signal.aborted) toastErrorMessage(result.substitutions.find(s => s.error?.trim())?.error);
@@ -114,7 +114,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 			(error: unknown) => {
 				if (id === runId) {
 					console.error('[upgrades] the run failed', error);
-					// A spec with no Upgrades data is the tab's own error, not a sim's, and the status line says so (review A2).
+					// A spec with no Upgrades data is the tab's own error, not a sim's, and the status line says so.
 					const noSpecData = error instanceof RankError && error.kind === 'not-implemented';
 					if (!current.signal.aborted && !noSpecData) toastErrorMessage(error);
 				}
@@ -123,7 +123,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		);
 	};
 
-	/** Nothing is cancelled mid-sim: the engine finishes the step in flight and returns the rows so far (option (a), ticket 559). */
+	/** Nothing is cancelled mid-sim: the engine finishes the step in flight and returns the rows so far. */
 	const stop = () => {
 		if (!controller) return;
 		controller.abort();

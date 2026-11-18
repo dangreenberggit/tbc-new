@@ -56,7 +56,7 @@ export interface UseResultsTableOptions {
 
 /**
  * One results table over `rows`, sorted by the tab store's one sort, so every
- * table on the page and the export follow the same click (ticket 565).
+ * table on the page and the export follow the same click.
  */
 export function useResultsTable(rows: readonly RankedItem[], rowContext: RowContext, { sortable = true }: UseResultsTableOptions = {}) {
 	const store = useUpgradesStoreApi();
@@ -67,7 +67,7 @@ export function useResultsTable(rows: readonly RankedItem[], rowContext: RowCont
 	// Memoised because `useTable` hands back a new table object whenever its options object is new, and a new
 	// columns array rebuilds every column. Both hold only while the caller keeps `rows` the same array.
 	const columns = useMemo(() => resultsColumns(sortLabelsFor(hiddenSources ?? NO_HIDDEN_SOURCES), dpsKey), [dpsKey, hiddenSources]);
-	// Controlled `state.sorting` rather than a TanStack atom: the sort lives in the tab's one zustand store (ticket 565, plan Q-sort), and an atom would be a second store.
+	// Controlled `state.sorting` rather than a TanStack atom: the sort lives in the tab's one zustand store, and an atom would be a second store.
 	const options = useMemo(
 		() => ({
 			...RESULTS_TABLE_OPTIONS,

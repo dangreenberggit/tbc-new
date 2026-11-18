@@ -57,7 +57,7 @@ describe('ItemNameCell badges', () => {
 		expect(badgesOf(fixtureRow(1), [])).toEqual([]);
 	});
 
-	// Ticket 810: on warrior's page the BiS sets sit under Fury and Arms.
+	// On warrior's page the BiS sets sit under Fury and Arms.
 	it('names each heading of the BiS sets that hold a row in no selected set', () => {
 		expect(badgesOf(torch, [], ['Fury'])).toEqual(['BiS (Fury)']);
 		expect(badgesOf(torch, [], ['Fury', 'Arms'])).toEqual(['BiS (Fury)', 'BiS (Arms)']);

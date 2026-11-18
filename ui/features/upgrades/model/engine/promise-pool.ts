@@ -1,25 +1,23 @@
 /**
- * promisePool — bounded concurrency over a fixed batch of tasks.
- *
- * Pure and I/O-free: it knows nothing about sims, candidates or gear. The
- * candidate loop in rank.ts is the only caller today (PLAN.md §5 M1), and
- * keeping this generic is what let 7.9 test it without a SimRunner fixture.
+ * promisePool: bounded concurrency over a fixed batch of tasks, for the
+ * candidate loop in rank.ts. wowsims' ui/sim/wasm/bulk_sim/batch.ts bounds its
+ * candidate fan-out with `async`'s `queue`; this exists because results land at
+ * their task's index regardless of finish order, and on failure the
+ * lowest-index error is reported, so the outcome does not depend on
+ * concurrency.
  */
 
 /** A unit of work; `promisePool` runs it exactly once, on dispatch. */
 export type PoolTask<T> = () => Promise<T>;
 
 /**
- * Runs `tasks` with at most `n` in flight at once. Results land at the same
- * index as their task, regardless of completion order — a caller keying
- * downstream state on array position (candidate cap, ordering) must not see
- * results reshuffled by which one happened to finish first.
+ * Runs `tasks` with at most `n` in flight at once. Results land at their
+ * task's index, so callers can key state (candidate cap, ordering) on array
+ * position.
  *
- * On any task's rejection, the returned promise rejects with that same
- * error. In-flight tasks are not cancelled — there is no cooperative
- * cancellation primitive here (Stop uses `AbortSignal` at the `rankUpgrades`
- * level instead) — but no further tasks are dispatched once a rejection has
- * been observed.
+ * On a rejection the returned promise rejects with the lowest-index error.
+ * In-flight tasks are not cancelled (Stop uses an `AbortSignal` at the
+ * `rankUpgrades` level), but no further tasks are dispatched.
  */
 export async function promisePool<T>(
   tasks: readonly PoolTask<T>[],
@@ -41,11 +39,8 @@ export async function promisePool<T>(
       try {
         results[index] = await task();
       } catch (err) {
-        // Lowest index wins, not whichever rejected first in wall-clock
-        // order: with two tasks failing in one drain, a time-ordered winner
-        // makes the reported error depend on pool size and sim latency, and
-        // the caller's "same error at any concurrency" guarantee is exactly
-        // what a bounded pool is supposed to preserve.
+        // Lowest index wins, not the first to reject in wall-clock order, so
+        // the reported error does not depend on pool size or sim latency.
         if (index < firstErrorIndex) {
           firstErrorIndex = index;
           firstError = err;
@@ -58,8 +53,7 @@ export async function promisePool<T>(
 
   // `Math.min(NaN, len)` is NaN and `Array.from({length: NaN})` is empty, so
   // a non-finite `n` would spawn zero workers, run nothing, and return a
-  // sparse array as if it had succeeded. No caller passes one today; this
-  // exists so the silent-success path cannot be reintroduced by one.
+  // sparse array as if it had succeeded.
   const requested = Number.isFinite(n) ? Math.trunc(n) : 1;
   const workerCount = Math.max(1, Math.min(requested, tasks.length));
   await Promise.all(Array.from({ length: workerCount }, () => worker()));

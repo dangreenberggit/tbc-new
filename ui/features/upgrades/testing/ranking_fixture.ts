@@ -3,10 +3,10 @@ import type { StoppedRanking } from '../model/run_state';
 
 /**
  * A small finished ranking for the tab's unit tests. Rows 0-5 are trimmed
- * from the repo's recorded `data/tab-fixtures/ret-p3-p2.json`: four ranked
- * rows, one set row (Lightbringer Breastplate, renumbered from rank 16 to 5)
- * and one row below the cutoff, with the recording's numbers so a format test
- * reads real magnitudes. P1 tests read those six by index.
+ * from a recorded Retribution run: four ranked rows, one set row (Lightbringer
+ * Breastplate, renumbered from rank 16 to 5) and one row below the cutoff,
+ * with the recording's numbers so a format test reads real magnitudes. Tests
+ * read those six by index.
  *
  * Rows 6-10 are appended so that each results feature has a row to show, and
  * the one substitution is there for the same reason. No recorded fixture has
@@ -139,7 +139,7 @@ export const RANKING_FIXTURE: Ranking = {
 			belowCutoff: true,
 		},
 		{
-			// Recorded figures. The old percentage rule admitted it (3.32 DPS < 3.4, 0.159% ≥ 0.15%); it clears the flat 3 DPS bar (ADR-0037).
+			// Recorded figures: 3.32 DPS clears the flat 3 DPS bar.
 			rank: 6,
 			itemId: 30905,
 			name: 'Midnight Chestguard',
