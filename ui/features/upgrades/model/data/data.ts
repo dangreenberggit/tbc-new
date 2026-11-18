@@ -1,12 +1,7 @@
 /**
- * The data a run reads besides the page itself: the per-spec EP weights
- * (bundled JSON copies of wowsims presets; each file names its source) and the
- * candidate pool, built at run time from wowsims' item database and the spec's
- * preset gear sets (`pool_source.ts`). No item list is bundled.
- *
- * EP drives only the candidate prefilter and the gem fill; sims produce every
- * ranking number. So weights written for another phase are a disclosed
- * degradation, not a wrong ranking.
+ * The bundled per-spec EP weights (copies of wowsims presets; each file names its
+ * source) and the page's candidate pool. EP only prefilters candidates and fills
+ * gems, so weights from another phase are disclosed, not wrong.
  */
 
 import type { PoolEntry } from '../engine/pool';
@@ -26,21 +21,13 @@ import warlockEpWeights from './warlock-fallback.ep-weights.json';
 import warriorArmsEpWeights from './warrior-arms-p3.ep-weights.json';
 import warriorEpWeights from './warrior-fallback.ep-weights.json';
 
-/**
- * A bundled EP-weights set: one per spec, plus the two builds that share a
- * page with another one (Survival on the hunter page, Arms on the warrior
- * page).
- */
+/** A bundled EP-weights set: one per spec, plus Survival on the hunter page and Arms on the warrior page. */
 export type EpWeightsSet = SpecId | 'hunter-sv' | 'warrior-arms';
 
 /**
- * The build whose own set replaces the spec's on that spec's page, and the
- * talent tree that marks it. The page's talents decide, not its gear: the
- * build is the variant when that tree has strictly more points than each
- * other tree, and a tie or no talents keeps the spec's own set. So an
- * Arms - Kebab build (Mortal Strike with two one-handers, most points in
- * Arms) takes the Arms set. Tree indexes follow the talents string: hunter
- * Beast Mastery, Marksmanship, Survival; warrior Arms, Fury, Protection.
+ * The build whose set replaces the spec's on its page, marked by a talent tree with
+ * strictly more points than each other, not by gear (so Arms - Kebab takes Arms).
+ * Tree indexes follow the talents string: hunter BM, MM, SV; warrior Arms, Fury, Prot.
  */
 const TALENT_VARIANT_BY_SPEC: Partial<Record<SpecId, { set: EpWeightsSet; tree: number }>> = {
 	hunter: { set: 'hunter-sv', tree: 2 },
@@ -78,19 +65,14 @@ const EP_WEIGHTS_BY_SET: Record<EpWeightsSet, EpWeightsFile> = {
 	warrior: warriorEpWeights as EpWeightsFile,
 	// P1_SV_EP_PRESET, which has P1_BM_EP_PRESET's numbers.
 	'hunter-sv': hunterSvEpWeights as EpWeightsFile,
-	// P3_ARMS_EP_PRESET ('P3, P4 & P5 - Arms'), not P1_ARMS_EP_PRESET: wowsims'
-	// Arms builds for phases 3-5 use it (`ui/specs/warrior/dps/presets.ts`), and
-	// the page opens at phase 3 (CURRENT_PHASE), the phase the tab ranks by
-	// default. The disclosure below says when a run ranks another phase.
+	// P3_ARMS_EP_PRESET, not P1_ARMS_EP_PRESET: wowsims' phase 3-5 Arms builds use it
+	// (`ui/specs/warrior/dps/presets.ts`), and the page opens at phase 3 (CURRENT_PHASE).
 	'warrior-arms': warriorArmsEpWeights as EpWeightsFile,
 };
 
 /**
- * The phase each spec's bundled EP weights was written for.
- *
- * `undefined` means the preset names no phase (elemental ships one labelled
- * "Default"). It is still disclosed, as "unphased default", so a run never
- * hides which weights it used.
+ * The phase each bundled EP set was written for; `undefined` when the preset names
+ * none (elemental's "Default"), which is still disclosed, as an unphased default.
  */
 const EP_WEIGHTS_PHASE_BY_SET: Record<EpWeightsSet, number | undefined> = {
 	ret: 2,
@@ -109,10 +91,9 @@ const EP_WEIGHTS_PHASE_BY_SET: Record<EpWeightsSet, number | undefined> = {
 };
 
 /**
- * The EP-weights disclosure for a run that took `set`, or `undefined` when
- * the weights were written for exactly the phase being ranked. A mismatch
- * degrades the shortlist but falsifies no DPS figure, so it is disclosed
- * rather than blocking.
+ * The EP-weights disclosure for `set`, or `undefined` when the weights match the
+ * ranked phase. A mismatch degrades the shortlist but falsifies no DPS figure, so
+ * it is disclosed, not blocked.
  */
 export function epWeightsDisclosureFor(set: EpWeightsSet, maxPhase: ContentPhase): { from: string; requested: string } | undefined {
 	const phase = EP_WEIGHTS_PHASE_BY_SET[set];
@@ -157,10 +138,9 @@ export function presetsWithPhase<P extends PagePreset>(host: PoolHost, presets: 
 }
 
 /**
- * The phase the pool's BiS tags speak for, or `undefined` when no preset set
- * is a BiS set at or below `maxPhase`. Earlier than `maxPhase` where the
- * spec's presets stop short of it, so the tags mean "BiS as of the latest
- * set" and the assumptions line says so.
+ * The phase the pool's BiS tags speak for, or `undefined` when no preset is a BiS
+ * set at or below `maxPhase`. It is earlier than `maxPhase` where the spec's
+ * presets stop short, and the assumptions line then says so.
  */
 export function bisTagPhaseFor(
 	host: PoolHost,

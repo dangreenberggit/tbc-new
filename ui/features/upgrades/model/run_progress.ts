@@ -1,27 +1,18 @@
 /**
- * What the Upgrades tab's progress component shows while a run is in flight:
- * the phase the engine is in, the bar's ratio, and an estimate
- * of the time left.
- *
- * The engine sends no phase of its own. The phase comes from the order its
- * `Progress` events arrive in (`rank.ts`): the pre-sim stages; the first
- * `simming` event (the baseline, `done` 1) and one per candidate; a set phase
- * that runs sims but sends nothing and is not counted in `total`; `ranking`;
- * one `simming` event that repeats `done` with the run's exact total; then one
- * `simming` event per replication sim. The only thing that tells the last
- * candidate from the start of the set phase is the candidate count, which
- * `replicationBoundary` solves from the first event's `total`. That first
- * total is a budget, so the tracker takes the final count from the first
- * event after `ranking`.
+ * What the progress component shows while a run is in flight. The engine sends no
+ * phase, so it comes from the `Progress` event order (`rank.ts`): pre-sim stages,
+ * one `simming` for the baseline and each candidate, a silent set phase not in
+ * `total`, `ranking`, a `simming` repeating `done` with the exact total, then one per
+ * replication sim. Only the candidate count solved from the first `total`
+ * (`replicationBoundary`) tells the last candidate from the set phase.
  */
 
 import type { Progress } from './engine/rank';
 import { PAIRED_REPLICATE_TOP_N } from './engine/se';
 
 /**
- * The tab passes no `seeds`, so `rank.ts` uses `defaultSeedsFor`, whose count
- * is the module-private `DEFAULT_SEED_COUNT`. This mirrors it; keep the two
- * equal.
+ * The tab passes no `seeds`, so `rank.ts` uses `defaultSeedsFor`, whose count is
+ * the module-private `DEFAULT_SEED_COUNT`. Keep the two equal.
  */
 export const TAB_REPLICATE_SEED_COUNT = 5;
 
@@ -30,12 +21,9 @@ export type RunPhase = 'preparing' | 'candidates' | 'set-bonuses' | 'replication
 export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; kappa: number; psi: number; slowdown: number };
 
 /**
- * The estimator and when to show it, all in one place so a change of
- * estimator touches only these values and `estimateRemainingMs`. Fitted on
- * one recorded feral run (364 candidates, concurrency 4). On that run later
- * candidates took longer while the sim server sat partly idle, likely from
- * render work per landed row, so refit `slowdown`, `kappa` and `psi` when the
- * cost of rendering rows changes.
+ * The estimator and when to show it. Fitted on one recorded feral run (364
+ * candidates, concurrency 4), where later candidates slowed, likely from render
+ * work per landed row: refit `slowdown`, `kappa` and `psi` when that cost changes.
  */
 export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', kappa: 0.3221, psi: 50.993, slowdown: 0.003064 };
 export const RUN_PROGRESS_SHOW_FROM_FRACTION = 0.35;
@@ -89,14 +77,10 @@ export type RunTimeline = {
 };
 
 /**
- * The `done` the run ends on: `finalTotal` once the engine has sent it.
- * Before that, a projection. Replication re-sims only the rows that cleared
- * the cutoff, at most `topN`, with `seedCount - 1` sims each plus as many for
- * the baseline, and none at all when no row qualifies; the first `total`
- * budgets for `min(topN, c)` rows, so it is only an upper bound. Before the
- * last candidate, the qualifying rows so far are scaled up to the whole pool.
- * A replication event past the projection means the count was wrong, and
- * `total` is used. `total` also when the boundary is unknown.
+ * The `done` the run ends on: `finalTotal` once sent, else a projection from the
+ * rows that cleared the cutoff (at most `topN`, scaled up to the pool before the
+ * last candidate), as the first `total` is only an upper bound. Falls back to
+ * `total` when the boundary is unknown or an event passes the projection.
  */
 export function expectedFinalDone(run: RunTimeline): number {
 	if (run.finalTotal !== undefined) return run.finalTotal;
@@ -116,19 +100,10 @@ export function expectedFinalDone(run: RunTimeline): number {
 }
 
 /**
- * The time left, in ms, at the latest event of `run`; undefined when the run
- * has not said enough. Pure, so a different estimator replaces only this.
- *
- * Linear: the elapsed time per counted sim times the sims left.
- *
- * Phased: candidates run `concurrency` at a time, the set phase is uncounted,
- * and replication runs one sim at a time. With r the observed time per
- * candidate, psi is the set phase in candidate-times and each replication sim
- * costs k = kappa * concurrency candidate-times. Before the last candidate,
- * the i-th candidate is taken to cost a * (1 + slowdown * i), so the
- * candidates still to come cost more than the ones already done. The
- * replication sims counted are those `expectedFinalDone` expects, not the
- * whole budget in `total`.
+ * The time left, in ms, at the latest event; undefined when the run has not said
+ * enough. Linear: time per counted sim times the sims left. Phased: in
+ * candidate-times, the set phase costs psi and each serial replication sim
+ * kappa * concurrency, and the i-th candidate costs a * (1 + slowdown * i).
  */
 export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): number | undefined {
 	const first = run.sims[0];
@@ -212,10 +187,9 @@ type TrackerOptions = {
 };
 
 /**
- * Follows one run's `Progress` events. The estimate is recomputed at
- * `simming` and `ranking` events, and at a row that adds to the qualifying
- * count (timed at the last `simming` event); it is held in between, as the
- * Bulk tab's is.
+ * Follows one run's `Progress` events. The estimate is recomputed at `simming` and
+ * `ranking` events and at a row that adds to the qualifying count (timed at the
+ * last `simming` event), and held in between, as the Bulk tab's is.
  */
 export class RunProgressTracker {
 	private readonly options: Required<TrackerOptions>;

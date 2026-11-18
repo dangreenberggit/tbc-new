@@ -1,15 +1,7 @@
 /**
- * The page's current sim state as a protojson request, without `simOptions`.
- * The tab's sims must match the page's, so the skeleton holds only what the
- * user configured.
- *
- * It calls `Sim.makeRaidSimRequest` (`ui/sim/sim.ts`), the builder the page's
- * Simulate button runs. Empty options give a real run's request;
- * `singleIteration` would force `iterations: 1`.
- *
- * `simOptions` and `requestId` are stripped, as compose() strips them, so the
- * cache key is formed before seed and iterations go in. `WorkerPoolSimRunner`
- * puts them back right before the sim call.
+ * The page's sim state as a protojson request from `Sim.makeRaidSimRequest`, as the
+ * Simulate button builds it. `simOptions` and `requestId` are stripped so the cache
+ * key forms before seed and iterations go in; `WorkerPoolSimRunner` puts them back.
  */
 
 import { RaidSimRequest as RaidSimRequestProto } from '@generated/proto/api';

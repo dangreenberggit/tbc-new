@@ -1,9 +1,8 @@
 /**
- * What the results tables sort on: the sortable columns and
- * each one's value for a row. The table itself is TanStack Table's, built in
- * `hooks/useResultsTable.ts` with its one sort kept in the tab store, so every
- * pane, the below-cutoff group and the export follow the same click. A display
- * concern only: it never re-runs the view.
+ * What the results tables sort on: the sortable columns and each one's value for a
+ * row. The table is TanStack Table's (`hooks/useResultsTable.ts`), with its one sort
+ * in the tab store, so every pane, the below-cutoff group and the export follow the
+ * same click. Display only: it never re-runs the view.
  */
 
 import type { RankedItem } from './engine/rank';
@@ -34,11 +33,10 @@ export const sortValue = (key: ResultsSortKey, row: RankedItem, labels: SortLabe
 };
 
 /**
- * Plain `<`, 0 on a tie. The table breaks a tie on the row's index, so rows a
- * sort does not tell apart keep the engine's order in both directions.
- * TanStack's `sortFn: 'auto'` is not used because it picks `alphanumeric` for
- * a text column with a digit in it, which splits on digits. This is the
- * comparison TanStack's `sortFn_basic` makes.
+ * Plain `<`, 0 on a tie, as TanStack's `sortFn_basic` compares. The table breaks a
+ * tie on row index, so rows a sort cannot tell apart keep the engine's order both
+ * ways. Not `sortFn: 'auto'`: it picks `alphanumeric` for a text column with a
+ * digit in it, which splits on digits.
  */
 export const compareSortValues = (a: string | number, b: string | number): number => {
 	if (a === b) return 0;

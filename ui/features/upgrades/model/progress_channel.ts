@@ -1,8 +1,7 @@
 /**
- * The Upgrades run's progress ticks, per player, outside React state: a tick
- * renders only the progress bar that subscribes to it, never the tab. The
- * same split as the Bulk run (`features/bulk/model/run.ts`,
- * `subscribeBulkProgress`).
+ * The run's progress ticks, per player, outside React state, so a tick renders only
+ * the progress bar that subscribes to it, as with the Bulk run's
+ * `subscribeBulkProgress` (`features/bulk/model/run.ts`).
  */
 
 import type { Player } from '@sim/player/player';

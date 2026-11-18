@@ -1,17 +1,7 @@
 /**
- * GearSource over the page's current gear and talents. The page has exactly one
- * "fight", the character as configured, so `findFights` returns one synthetic
- * FightSummary and `readGear` ignores the FightRef it is handed back.
- *
- * - `talentPointsByTree` comes from `player.getTalentTreePoints()`
- *   (`ui/sim/proto/utils.ts`), which sums the page's talents string per tree.
- * - `items[].id/enchant/gems` use the accessors `EquippedItem.asSpec()` uses
- *   (`ui/sim/proto/equipped_item.ts`), so they read the gear as the sim does.
- * - `items[].slot`: `Gear.getEquippedItems()` is `Object.values` over a record keyed
- *   by `ItemSlot`. JS iterates integer keys in ascending order, and `ItemSlot`
- *   (`proto/common.proto`) runs 0 (Head) .. 16 (Ranged) in `SIM_ORDER`'s order, so
- *   index `i` is `SIM_ORDER[i]`.
- * - `className`/`specIdHint` stay undefined: nothing in the tab reads them.
+ * GearSource over the page's current gear and talents, as one synthetic fight.
+ * `Gear.getEquippedItems()` is `Object.values` over integer `ItemSlot` keys, which
+ * iterate in `SIM_ORDER`'s order, so index `i` is `SIM_ORDER[i]`.
  */
 
 import type { Spec } from '@generated/proto/common';
@@ -85,8 +75,7 @@ export class PlayerGearSource implements GearSource {
 
 /**
  * `getTalentTreePoints()` returns one entry per `-`-separated part of the talents
- * string. TBC specs have 3 trees, so any other length means the talents string is
- * malformed, and that is reported rather than defaulted.
+ * string; TBC specs have 3 trees, so another length is reported as malformed.
  */
 function talentPointsByTree(points: number[]): [number, number, number] {
 	if (points.length !== 3) {

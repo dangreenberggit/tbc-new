@@ -1,7 +1,6 @@
 /**
- * The Upgrades tab's settings, column sort, view toggles, hidden sources and export choice, kept across page reloads the
- * way wowsims keeps the sim's own settings (`ui/sim/state/persistence.ts`):
- * through the sim's `Env` storage, under a per-spec key, read once when the
+ * The tab's settings, column sort, view toggles, hidden sources and export choice, kept across reloads as wowsims
+ * keeps its own (`ui/sim/state/persistence.ts`): in the sim's `Env` storage under a per-spec key, read once when the
  * store is made and written on every change after.
  */
 
@@ -18,10 +17,8 @@ type Storage = Env['storage'];
 type Settings = UpgradesState['settings'];
 
 /**
- * Every setting but the candidate cap. Its picker shows only on a page with
- * `?upgrades-dev` (`RunSettingsPanel`), so a saved cap would cut the runs
- * of a later page that cannot show it. The dev link
- * carries the cap on each load instead.
+ * Every setting but the candidate cap. Its picker shows only with `?upgrades-dev` (`RunSettingsPanel`), so a saved
+ * cap would cut the runs of a later page that cannot show it; the dev link carries the cap on each load instead.
  */
 type SavedSettings = Omit<Settings, 'candidateCap'>;
 
@@ -78,7 +75,7 @@ function readSavedTab(storage: Storage, key: string): RestoredTab {
 		settings: restoredSettings(saved.settings),
 		sort: restoredSort(saved.sort),
 		view: restoredView(saved.view),
-		// Added to version 1 without a bump: an entry saved before it has no key and restores every source shown.
+		// A new field, so no version bump: an entry without it restores every source shown.
 		hiddenSources: isStringList(saved.hiddenSources) ? saved.hiddenSources : undefined,
 		exportFlavour: EXPORT_FLAVOURS.find(flavour => flavour === saved.exportFlavour),
 	};
@@ -100,10 +97,8 @@ const savedTabOf = ({ settings: { candidateCap: _notSaved, ...settings }, sort, 
 export type LinkedSettings = Partial<Pick<Settings, 'iterations' | 'candidateCap'>>;
 
 /**
- * A new store over the page's saved settings, sort, view toggles, hidden
- * sources and export choice, saving each later change to any of them. A run changes none of
- * them, so a run writes nothing. The load order is wowsims' (`ui/sim/state/persistence.ts`): defaults,
- * then saved, then the link.
+ * A new store over the page's saved entry, saving each later change to it; a run changes none of the saved fields, so
+ * a run writes nothing. The load order is wowsims' (`ui/sim/state/persistence.ts`): defaults, then saved, then the link.
  */
 export function openSavedUpgradesStore(seed: SettingsSeed, storage: Storage, key: string, link: LinkedSettings = {}): UpgradesStore {
 	const saved = readSavedTab(storage, key);

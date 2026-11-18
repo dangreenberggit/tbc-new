@@ -1,9 +1,8 @@
 /**
- * The results' JSON export for a loot-priority tool such as ThatsMyBis. The
- * caller passes the rows that meet the cutoff (`view.shortlist`) in the sort on
- * screen, so the payload carries the cross-slot ranked order. The BiS-list rows
- * below the cutoff, which the main table also shows, are not upgrades, so they
- * stay out of the export.
+ * The results' JSON export for a loot-priority tool such as ThatsMyBis. The caller
+ * passes the rows that meet the cutoff (`view.shortlist`) in the on-screen sort, so
+ * the payload carries the cross-slot order; the BiS-list rows below the cutoff that
+ * the main table shows are not upgrades and stay out.
  */
 
 import type { RankedItem } from './engine/rank';

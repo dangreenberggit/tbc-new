@@ -1,8 +1,7 @@
 /**
- * The page's phase changes, from the moment its saved settings have loaded, for the Upgrades tab: a phase change
- * resets the tab to that phase's default sets whether or not the tab is on screen. Small and free of the tab's code
- * and data on purpose: the eager `UpgradesTabBody` starts the watch at page start, and a page whose tab never opens
- * must download neither.
+ * The page's phase changes once its saved settings load, which reset the tab to that phase's default sets whether
+ * or not it is on screen. Free of the tab's code and data on purpose: the eager `UpgradesTabBody` starts the watch
+ * at page start, and a page whose tab never opens must download neither.
  */
 
 import type { Spec } from '@generated/proto/common';
@@ -18,10 +17,10 @@ type Follower = (phase: number) => void;
 const watches = new WeakMap<Sim, { follower?: Follower }>();
 
 /**
- * Starts watching the page's phase, once per page. Until a tab store follows the phase, a change is saved straight
- * into the tab's saved entry (`forgetSavedSets`), so the store, made later from that entry, starts from the new
- * phase's defaults. The watch starts after `waitForInit`: the page queues its settings load on that promise before any
- * tab code runs (`app/individual_sim_ui.tsx`), so the load's own phase write is the saved phase coming back, not a change.
+ * Starts watching the page's phase, once per page. Until a tab store follows, a change goes straight into the saved
+ * entry (`forgetSavedSets`), so the store made later from it starts from the new phase's defaults. The watch starts
+ * after `waitForInit`, on which the page queues its settings load (`app/individual_sim_ui.tsx`), so the load's own
+ * phase write is not taken for a change.
  */
 export function watchPhaseChanges(host: IndividualSimHost<Spec>): void {
 	const { sim } = host;

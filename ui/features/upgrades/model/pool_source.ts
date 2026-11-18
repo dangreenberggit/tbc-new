@@ -1,9 +1,7 @@
 /**
- * The candidate pool, built at run time from wowsims' own item database and the
- * spec's wowsims preset gear sets. No
- * item list is bundled: membership, phase and BiS tags all come from data the
- * page already has. `pool_source.test.ts` pins the per-cell sizes in
- * `pool_source.cells.fixture.json`, whose `_comment` says how to re-pin them.
+ * The candidate pool, built at run time from wowsims' item database and the spec's
+ * presets. `pool_source.cells.fixture.json` pins the per-cell sizes; its `_comment`
+ * says how to re-pin them.
  */
 
 import { ItemQuality, ItemType, type Spec } from '@generated/proto/common';
@@ -35,10 +33,9 @@ export const HEROIC_FIVE_MAN: HeroicFiveManPolicy = 'include-unticked';
 export type PresetSet = { name: string; phase?: number; group?: string; itemIds: readonly number[] };
 
 /**
- * The floor every non-preset candidate meets: epic or better, and item level
- * 100 or more unless wowsims records an effect for it. It bounds run cost: the
- * tab sims every candidate, and the gear picker's full list is several times
- * larger.
+ * The floor every non-preset candidate meets: epic or better, and item level 100
+ * or more unless wowsims records an effect for it. It bounds run cost, since the
+ * tab sims every candidate.
  */
 const MIN_QUALITY = ItemQuality.ItemQualityEpic;
 const MIN_ILVL = 100;
@@ -72,12 +69,9 @@ const phaseOf = (item: Pick<UIItem, 'phase'>): number => knownPhase(item) ?? Inf
 export const ilvlOf = (item: Pick<UIItem, 'scalingOptions' | 'ilvl'>): number => item.scalingOptions[0]?.ilvl ?? item.ilvl;
 
 /**
- * "Effect record present": db.json gives the item an `itemEffects` record and
- * wowsims' own missing-effects list does not name it. This is not "simulated":
- * the page cannot see Go's id-keyed registrations, and a few old epics have a
- * record but no registration. Their records have the same
- * fields as Mark of the Champion's, which is simulated, so no db.json rule
- * tells them apart.
+ * db.json gives the item an `itemEffects` record and the missing-effects list does
+ * not name it. Not "simulated": the page cannot see Go's id-keyed registrations, and
+ * a few old epics have a record but no registration.
  */
 export const hasEffectRecord = (item: Pick<UIItem, 'id' | 'itemEffects'>, missingIds: ReadonlySet<number>): boolean =>
 	item.itemEffects.length > 0 && !missingIds.has(item.id);
@@ -118,13 +112,9 @@ export function bisSetsFor(
 }
 
 /**
- * The pool for one spec at `maxPhase`: every item the spec can equip in a pool
- * slot, minus Kael's temporary legendaries and the items wowsims lists as
- * missing an effect, kept when it meets the floor at or below `maxPhase` or is
- * in one of the spec's presets of that phase or earlier; then the heroic
- * five-man policy. Each entry's sources come from `sourcesFor`; without it
- * they are unknown (`[{kind: 'unknown'}]`). Items db.json describes the same but
- * the id are offered once (`offerTwinsOnce`), as the id in `wornIds` if any.
+ * The pool for one spec at `maxPhase`: every item the spec can equip in a pool slot
+ * that meets the floor or is in a preset of that phase or earlier, less Kael's
+ * temporary legendaries, items missing an effect and, per `policy`, heroic five-mans.
  */
 export function selectPool(
 	items: readonly UIItem[],
@@ -194,13 +184,9 @@ function groupTwins<T>(entries: readonly T[], itemOf: (entry: T) => UIItem): T[]
 }
 
 /**
- * One entry per group of items wowsims' database describes the same in every
- * field but the id, such as Sergeant's Heavy Cape 28378 and 28379:
- * the tab would show the same row twice, and nothing on the page tells the two
- * apart. The page cannot see Go's id-keyed effects (see `hasEffectRecord`), so
- * equal records are the only signal. The group keeps the id the player wears,
- * so the row reads as owned; else one a preset holds; else the lowest. The kept
- * entry takes the tags of every member and the first member's place.
+ * One entry per group of items db.json describes the same but the id (Sergeant's
+ * Heavy Cape 28378 and 28379), which would show as identical rows. It keeps the
+ * worn id, else one a preset holds, else the lowest, with every member's tags.
  */
 function offerTwinsOnce(pool: readonly PoolEntry[], byId: ReadonlyMap<number, UIItem>, wornIds: ReadonlySet<number>): PoolEntry[] {
 	const groups = groupTwins(pool, entry => byId.get(entry.itemId)!);
@@ -208,10 +194,9 @@ function offerTwinsOnce(pool: readonly PoolEntry[], byId: ReadonlyMap<number, UI
 }
 
 /**
- * Each id that `offerTwinsOnce` would group, with every id of its group. The
- * pool offers one of them, chosen by the gear worn, so a gear set that names
- * another still holds the item the pool offers; the settings match set items
- * through this (`settings_pool.ts`).
+ * Each id `offerTwinsOnce` would group, with every id of its group. The pool offers
+ * one of them, so the settings match set items through this (`settings_pool.ts`)
+ * and a set naming another id still holds the item.
  */
 export function twinIdsOf(items: readonly UIItem[]): ReadonlyMap<number, readonly number[]> {
 	const twins = new Map<number, readonly number[]>();

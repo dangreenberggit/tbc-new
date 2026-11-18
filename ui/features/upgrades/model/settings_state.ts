@@ -1,10 +1,7 @@
 /**
- * The Upgrades tab's run settings: which sources are excluded, which sets are
- * selected, the prune, the candidate cap and the iteration count, and the pure
- * functions that change them. One state, because the eligible count and the
- * run read several of them together. The tab's store actions call these
- * functions (`upgrades_store.ts`), and `useUpgradesSettings` derives the
- * options from the page.
+ * The tab's run settings (excluded sources, selected sets, prune, candidate cap,
+ * iterations) and the pure functions the store's actions change them with. One
+ * state, because the eligible count and the run read several of them together.
  */
 
 import { type RunSettings, runSettings } from './run_state';
@@ -60,10 +57,9 @@ export function withCandidateCap(state: SettingsState, cap: number | undefined):
 export const withIterations = (state: SettingsState, iterations: number): SettingsState => (state.iterations === iterations ? state : { ...state, iterations });
 
 /**
- * The settings the tab shows and runs with: the stored state with the scope's default sets applied. Pure, so a
- * reader computes it during render without writing; the store's settings actions apply it before the user's change,
- * so the stored state matches what was shown. It returns the state it was given once the defaults are stored, or
- * when there is no scope.
+ * The settings the tab shows and runs with: the stored state with the scope's default sets applied. Pure, so render
+ * can compute it; the settings actions apply it before the user's change, so the stored state matches what was
+ * shown. Returns the given state once the defaults are stored, or when there is no scope.
  */
 export function appliedSettings(state: SettingsState, scope: SettingsScope | undefined): SettingsState {
 	// Once per spec:phase, so a set the user deselects stays deselected through the re-renders a gear change causes.
@@ -77,9 +73,8 @@ export function appliedSettings(state: SettingsState, scope: SettingsScope | und
 }
 
 /**
- * The page moved to another spec:phase, which gets its own default sets when next applied, whatever the user had
- * picked. An exclusion the new pool does not offer is dropped now, so it stays dropped on the way back. With no sets
- * to forget and no exclusion to drop, it returns the state it was given.
+ * The page moved to another spec:phase, which gets its own default sets when next applied. An exclusion the new pool
+ * does not offer is dropped now, so it stays dropped on the way back. With nothing to forget or drop, returns `state`.
  */
 export function afterScopeChange(state: SettingsState, validSourceKeys: readonly string[]): SettingsState {
 	const excludedSources = offeredExclusions(state.excludedSources, validSourceKeys);

@@ -1,8 +1,7 @@
 /**
- * The tab's one run, outside React: the run in flight, the id
- * that tells its callbacks from a superseded run's, and the run context.
- * It writes the run state to the tab's store; the hook that owns it only
- * creates it once and disposes it on unmount.
+ * The tab's one run, outside React: the run in flight, the id that tells its
+ * callbacks from a superseded run's, and the run context. It writes the run state to
+ * the tab's store; the hook that owns it only creates it and disposes it on unmount.
  */
 
 import type { Spec } from '@generated/proto/common';
@@ -20,9 +19,8 @@ import type { SetOption } from './settings_pool';
 import type { UpgradesStore } from './upgrades_store';
 
 /**
- * What the session takes from the browser and the UI layer, which `model/`
- * may not import: the worker pool's browser values (`utils/runner_env.ts`)
- * and the wording of a failed run (`utils/format.ts`).
+ * What the session takes from the browser and the UI layer, which `model/` may not
+ * import: the worker pool's browser values and the wording of a failed run.
  */
 export type RunSessionEnv = {
 	runner: RunnerEnv;
@@ -31,9 +29,8 @@ export type RunSessionEnv = {
 
 export type RunSession = {
 	/**
-	 * A click handler: a run starts only from the user's Run. The caller passes
-	 * the inputs signature (`run_inputs.ts`) and the sim sets picked, because
-	 * the tab's settings live with the caller.
+	 * A click handler: a run starts only from the user's Run. The settings live with
+	 * the caller, so it passes the inputs signature (`run_inputs.ts`) and the sets picked.
 	 */
 	start: (settings: RunSettings, inputsSignature: string, selectedSets: readonly SetOption[]) => void;
 	stop: () => void;
@@ -42,9 +39,9 @@ export type RunSession = {
 };
 
 /**
- * The page's gear and spec now. Read at the click, because the progress
- * dialog blocks gear edits until the run settles, so this is the gear the
- * engine reads; and read when a fixture loads, which sets the page gear first.
+ * The page's gear and spec now, read at the click (the progress dialog blocks gear
+ * edits until the run settles, so this is the gear the engine reads) or when a
+ * fixture loads, which sets the page gear first.
  */
 const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string, selectedSets: readonly SetOption[]): MeasuredOn => ({
 	wornItemIds: equippedItemIds(host.player),
@@ -54,10 +51,9 @@ const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string, 
 });
 
 /**
- * The run's assumptions for whoever diagnoses a bad ranking, the full text of
- * each notes-list reason the page cuts to one line, and each failed call's
- * error, which the page does not show. Logged once when a ranking arrives,
- * never from a render.
+ * The run's assumptions, for diagnosing a bad ranking, with the full text of each
+ * notes-list reason the page cuts to one line and each failed call's error. Logged
+ * once when a ranking arrives, never from a render.
  */
 const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'cutoff' | 'substitutions'>, context: AssumptionsContext) => {
 	console.info(assumptionsLine(result, context));
@@ -65,11 +61,9 @@ const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'cutoff' | 'substi
 };
 
 /**
- * A failed run's own message, shown as wowsims' bulk sim shows one
- * (`runBulkBatch`, `ui/features/bulk/model/run.ts`). The caller skips it after
- * Stop, as the bulk sim skips it when the user cancelled. A run that goes on
- * past failed sims shows the first one's error the same way, once, since the
- * bulk sim stops at its one failure.
+ * A failed run's own message, shown as the bulk sim shows one (`runBulkBatch`,
+ * `ui/features/bulk/model/run.ts`) and skipped after Stop as it is on cancel. A run
+ * that goes on past failed sims shows the first one's error, once.
  */
 const toastErrorMessage = (error: unknown) => {
 	const errorMessage = error instanceof Error ? error.message : typeof error === 'string' ? error : undefined;
@@ -139,11 +133,9 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 	};
 
 	/**
-	 * Aborts the run and nothing more. StrictMode unmounts and remounts every
-	 * component once in development, so this runs before the first Run, and
-	 * the session must stay usable. The workers live for the page's life, as
-	 * wowsims' own do (`worker_pool_sim_runner.ts`). The run id keeps counting,
-	 * so a callback of the aborted run still reads as superseded.
+	 * Aborts the run and nothing more: StrictMode's dev remount runs this before the
+	 * first Run, so the session must stay usable, and the run id keeps counting so the
+	 * aborted run's callbacks still read as superseded.
 	 */
 	const dispose = () => {
 		controller?.abort();

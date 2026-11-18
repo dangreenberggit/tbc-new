@@ -34,8 +34,8 @@ export type SetOption = {
 	kind: 'preset' | 'saved';
 	itemIds: readonly number[];
 	/**
-	 * The other ids of items in `itemIds` that db.json describes the same but the id (`twinIdsOf`), set only
-	 * where there are any. The pool offers one id of such an item, maybe not the set's, and the set holds it under any.
+	 * Other ids db.json describes the same as one in `itemIds` (`twinIdsOf`), set only where there are any: the
+	 * pool offers one id of such an item, maybe not the set's, and the set holds it under any.
 	 */
 	sameItemIds?: readonly number[];
 	/** How many of `itemIds` are in this spec and phase's pool, under their own id or another in `sameItemIds`. */
@@ -63,10 +63,8 @@ export const sourcesOf = (entry: SourcedEntry): readonly ItemSource[] => entry.s
 export const bucketKeyOf = (kind: string): string => SOURCE_LABELS[kind] ?? kind;
 
 /**
- * The source key an entry files under: its first zone, else its source
- * bucket. Mirrors the engine's module-private `zoneKeyOf` (view.ts) over a
- * pool entry; the engine does not export it, so this is a copy and must
- * change with it.
+ * The source key an entry files under: its first zone, else its source bucket.
+ * A copy of the engine's module-private `zoneKeyOf` (`view.ts`); change both together.
  */
 export function sourceKeyOf(entry: SourcedEntry): string {
 	for (const s of sourcesOf(entry)) {
@@ -97,10 +95,9 @@ const ZONELESS_KEYS = new Set(Object.values(SOURCE_LABELS));
 export const DEFAULT_OFF_SOURCE_KEYS: readonly string[] = HEROIC_FIVE_MAN === 'include-unticked' ? [bucketKeyOf('heroic')] : [];
 
 /**
- * The sources a run excludes, from the stored toggles and the keys the pool offers. For a key that starts unticked,
- * a stored entry is the user's tick, so the key is excluded unless it is stored. The stored list keeps a key only
- * while the pool offers it (`settings_state.ts`), so a tick stays through a phase change that still offers the key,
- * and a key that comes back after a phase without it starts unticked again.
+ * The sources a run excludes. For a key that starts unticked, a stored entry is the user's tick, so the key is
+ * excluded unless stored. The stored list keeps a key only while the pool offers it (`settings_state.ts`), so a
+ * key that comes back after a phase without it starts unticked again.
  */
 export function effectiveExcludedSources(
 	stored: readonly string[],
@@ -112,15 +109,9 @@ export function effectiveExcludedSources(
 }
 
 /**
- * Every source key the pool offers, raid zones first, then zoneless buckets,
- * each in first-seen order. These are the keys the Sources dialog lists and the
- * only ones a scope's exclusions may name; the offer and the phase reset
- * (`follow_phase.ts`) both read them, so a reset never keeps or drops a source
- * the dialog disagrees on.
- *
- * Every key an entry matches is offered, so each one can be unticked and a
- * Hide all hides every row. A zone that is no entry's first
- * comes after every first zone, so the first zones keep their order.
+ * Every source key the pool offers: zones, then zoneless buckets, in first-seen
+ * order. The Sources dialog and the phase reset both read these, so they agree, and
+ * every key an entry matches is offered, so Hide all hides every row.
  */
 export function validSourceKeysOf(pool: readonly SourcedEntry[]): string[] {
 	const keys = [...new Set([...pool.map(sourceKeyOf), ...pool.flatMap(sourceKeysMatching)])];
@@ -191,13 +182,9 @@ export function setOptions({
 }
 
 /**
- * The sets selected by default: the presets of the phase the pool's BiS tags
- * come from (`bisTagPhaseFor().tagsFromPhase`) whose in-pool items are all
- * BiS-tagged, with at least one in the pool. The phase test is needed: the ids
- * alone over-select (feral P3's ids also satisfy the P4 BiS pair). Since
- * every preset of the tag phase is a BiS set, the ids test
- * passes for each of them that has an item in the pool, ret's "Bulwark"
- * included.
+ * The sets selected by default: BiS-tag phase presets whose in-pool items, at least
+ * one, are all BiS-tagged. The phase test is needed: the ids alone over-select
+ * (feral P3's ids also satisfy the P4 BiS pair).
  */
 export function defaultSetKeys(options: readonly SetOption[], pool: readonly PoolEntry[], bisTagPhase: number | undefined): string[] {
 	if (bisTagPhase === undefined) return [];
@@ -223,10 +210,9 @@ export const selectedSetItemIds = (options: readonly SetOption[], selectedKeys: 
 ];
 
 /**
- * The pool a run sims. An entry stays while some source it matches is still
- * ticked, so an item from two raids survives one being excluded. With prune
- * on, only the selected sets' items stay; the sets never add an item back
- * past the Sources filter.
+ * The pool a run sims. An entry stays while some source it matches is ticked, so
+ * an item from two raids survives one being excluded. Prune keeps only the
+ * selected sets' items; the sets never add an item back past the Sources filter.
  */
 export function effectivePool(pool: readonly PoolEntry[], { excludedSources, selectedSetItemIds, prune }: PoolFilter): PoolEntry[] {
 	const excluded = new Set(excludedSources);
@@ -258,12 +244,9 @@ export type RowTag = { key: string; label: string };
 export const withHeading = (label: string, heading: string): string => `${label} (${heading})`;
 
 /**
- * One badge per selected set that holds the item. A set with a
- * heading names it after its name, so on warrior's page a Fury-only item reads
- * "BIS (Fury)", not a bare "BIS" the Arms build could take for its own.
- * Two selected sets whose badges would still read the same get their phase in
- * front; elsewhere, two that also share the phase get their wowsims group
- * after it.
+ * One badge per selected set that holds the item, with the set's heading if any, so
+ * a Fury-only item reads "BIS (Fury)". Badges that would read the same get their
+ * phase in front; without a heading, those that share the phase too get their group.
  */
 export function rowTags(itemId: number, selectedOptions: readonly SetOption[]): RowTag[] {
 	const holding = selectedOptions.filter(o => heldIds(o).includes(itemId));
@@ -278,10 +261,9 @@ export function rowTags(itemId: number, selectedOptions: readonly SetOption[]): 
 const NO_HEADINGS: readonly string[] = [];
 
 /**
- * The headings of the BiS sets that hold each item: the presets of the BiS-tag
- * phase, read on a page whose sets sit under more than one heading, and none
- * elsewhere. A row in no selected set shows the pool's "BiS" badge, and this
- * names the build it is BiS for.
+ * The headings of the BiS-tag phase's presets that hold each item, on a page with
+ * more than one heading (none elsewhere), so the pool's "BiS" badge on a row in no
+ * selected set can name the build it is BiS for.
  */
 export function bisHeadingIndex(options: readonly SetOption[], bisTagPhase: number | undefined): (itemId: number) => readonly string[] {
 	const byItem = new Map<number, string[]>();
@@ -300,9 +282,8 @@ export function bisHeadingIndex(options: readonly SetOption[], bisTagPhase: numb
 const NO_TAGS: readonly RowTag[] = [];
 
 /**
- * `rowTags` for every item at once. Each item keeps one array for as long as
- * the selection stands, so a memoised name cell given its tags does not render
- * again when only its row's position moves.
+ * `rowTags` for every item at once. Each item keeps one array while the selection
+ * stands, so a memoised name cell does not re-render when only its row moves.
  */
 export function rowTagIndex(selectedOptions: readonly SetOption[]): (itemId: number) => readonly RowTag[] {
 	const byItem = new Map<number, readonly RowTag[]>();

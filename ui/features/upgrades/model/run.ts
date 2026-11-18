@@ -37,9 +37,8 @@ export type RunDeps = {
 export type RunFn = (host: IndividualSimHost<Spec>, settings: RunSettings, deps: RunDeps) => Promise<RunOutcome>;
 
 /**
- * Which page spec the engine can rank, and under what name. `Partial` on
- * purpose: tanks and healers are not ranked, and a spec missing here is a
- * state the tab shows, not a gap to fill.
+ * Which page spec the engine can rank, and under what name. `Partial` on purpose:
+ * tanks and healers are not ranked, and a missing spec is a state the tab shows.
  */
 const SPEC_ID_BY_PROTO_SPEC: Partial<Record<Spec, SpecId>> = {
 	[Spec.SpecBalanceDruid]: 'balance',

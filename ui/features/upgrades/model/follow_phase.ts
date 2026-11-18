@@ -9,15 +9,10 @@ import { validSourceKeysOf } from './settings_pool';
 import type { UpgradesStore } from './upgrades_store';
 
 /**
- * A phase change sends the settings back to the new phase's default sets,
- * whether or not the tab is on screen. The changes come from the page's watch
- * (`phase_changes.ts`); one made before this store existed is already in the
- * saved entry the store was made from. It follows for the page's lifetime, as
- * `initBulk` keeps the Bulk batch in step with the gear, so no render writes the
- * store. A spec with no ranking data has no defaults to go back to.
- *
- * Once the page has loaded, an exclusion the page's pool no longer offers is
- * dropped, so a saved key that a data update removed is not counted as excluded.
+ * Resets the settings to each new phase's default sets for the page's lifetime,
+ * whether or not the tab is on screen, as `initBulk` follows the gear, so no render
+ * writes the store. Once the page loads, a saved exclusion the pool no longer
+ * offers is dropped, so it is not counted.
  */
 export function followPhase(store: UpgradesStore, host: IndividualSimHost<Spec>): void {
 	const { sim, player } = host;

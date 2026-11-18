@@ -1,9 +1,7 @@
 /**
- * The Upgrades tab's run state and the pure functions that move it along a
- * run's life, so the linked fields of a run (its id, its landed rows, its
- * result) change together and are unit-tested without a store. The tab's
- * store actions call them (`upgrades_store.ts`); the run session
- * (`run_session.ts`) holds the abort controller and the run id counter.
+ * The tab's run state and the pure functions that move it along a run's life, so a
+ * run's linked fields (id, landed rows, result) change together. The store's
+ * actions call them; `run_session.ts` holds the abort controller and run id counter.
  */
 
 import type { EpWeightsSet } from './data/data';
@@ -17,9 +15,8 @@ export type RunSettings = {
 	/** Keep the first N candidates of the EP ordering that the player does not wear; undefined is no cap. */
 	candidateCap?: number;
 	/**
-	 * The pool filters: excluded sources, and with `prune`
-	 * only the items of the selected sets. `rankForPlayer` applies them through
-	 * `effectivePool`; the set keys are for the assumptions line only.
+	 * The pool filters: excluded sources and, with `prune`, only the selected sets'
+	 * items, applied through `effectivePool`. The set keys are for the assumptions line.
 	 */
 	excludedSources?: readonly string[];
 	guaranteedSetKeys?: readonly string[];
@@ -44,22 +41,16 @@ export type RunResult = FinishedRanking | StoppedRanking;
 export type RunnerName = 'WorkerPoolSimRunner';
 
 /**
- * What a run function resolves with: the result and, for a live run, the
- * runner that measured it and the EP-weights set it ranked with. The runner
- * moves to `MeasuredOn` when the run settles and the set is dropped, so the
- * ranking a fixture recorder saves carries neither. A replay sets neither.
+ * What a run function resolves with: the result and, for a live run, the runner
+ * that measured it and the EP-weights set it ranked with (`runSettled`).
  */
 export type RunOutcome = RunResult & { runner?: RunnerName; epWeightsSet?: EpWeightsSet };
 
 /**
- * What a ranking was measured against. The ranking holds no gear, and a row's
- * own set breaks are worked out from the gear it was measured on, not the gear
- * worn now. `inputsSignature` is the page and settings when the
- * run started or the fixture loaded (`run_inputs.ts`); the result is stale
- * once the same signature built now differs. `runner` is set only by a live
- * run, never by a fixture or a replay. `selectedSets` are the sim sets picked
- * then, which a row's gear-set badges name: a phase change after the run picks
- * the new phase's sets, which this result was not ranked with.
+ * What a ranking was measured against: it holds no gear, and a row's own set breaks
+ * come from the gear it was measured on. The result is stale once an
+ * `inputsSignature` built now differs (`run_inputs.ts`). `selectedSets` is a
+ * snapshot because a later phase change picks other sets.
  */
 export type MeasuredOn = {
 	wornItemIds?: readonly number[];
@@ -117,9 +108,8 @@ export const rowLanded = (state: RunState, runId: number, row: RankedItem): RunS
 export const stopRequested = (state: RunState, runId: number): RunState => (isCurrentRun(state, runId) ? { ...state, stopping: true } : state);
 
 /**
- * A partial ranking is what Stop returns, so it settles as stopped and a complete one as done. The runner moves off
- * the result into `measuredOn` and the EP-weights set, which only the assumptions line reads, is dropped, so a ranking
- * the fixture recorder saves carries neither.
+ * A partial ranking is what Stop returns, so it settles as stopped and a complete one as done. The runner moves into
+ * `measuredOn` and the EP-weights set is dropped, so a ranking the fixture recorder saves carries neither.
  */
 export function runSettled(state: RunState, runId: number, outcome: RunOutcome): RunState {
 	if (!isCurrentRun(state, runId)) return state;
@@ -131,7 +121,7 @@ export function runSettled(state: RunState, runId: number, outcome: RunOutcome):
 export const runFailed = (state: RunState, runId: number, message: string): RunState =>
 	isCurrentRun(state, runId) ? { status: 'error', runId, message } : state;
 
-/** The rows the table shows for `run`. A stopped ranking also lists the candidates Stop never reached. */
+/** The rows the table shows for `run`. A stopped ranking also lists the candidates Stop never reached; they are left out. */
 export function visibleRows(run: RunState): readonly RankedItem[] {
 	switch (run.status) {
 		case 'running':

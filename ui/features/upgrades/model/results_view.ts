@@ -1,8 +1,6 @@
 /**
  * Which rows each results pane shows: an "Upgrades" pane plus one pane per slot
- * with a row, each split into its main table and its below-cutoff group. Under
- * BiS only, a slot keeps its pane when the filter removes all its rows
- * (`tabSlots`). Pure; the panes render what this returns.
+ * with a row, each split into its main table and its below-cutoff group. Pure.
  */
 
 import { type SimSlotName, simSlotsForPoolSlot } from './engine/pool';
@@ -28,13 +26,9 @@ export const effectiveSlot = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): Sim
 export const rowKey = (row: Pick<RankedItem, 'itemId' | 'slot'>): string => `${row.itemId}:${row.slot}`;
 
 /**
- * A view as the results area renders it. `tabSlots` is set on a view that a
- * display filter cut down: it names the slots of the view before the cut, so
- * each keeps its tab: a display filter changes which rows a pane shows, never
- * which panes exist. `sourcesHidden` is set on a view that "Filter by
- * source" cut by at least one row, with `slotsBeforeSourceCut` naming the
- * slots that had a row before that cut and `panesWithMainBeforeSourceCut`
- * the panes whose main table had a row.
+ * A view as the results area renders it. `tabSlots` keeps the slots from before a
+ * display filter, so a filter never removes a pane. The source-cut fields record
+ * what "Filter by source" removed, for `paneRows`' empty text.
  */
 export type ResultsViewResult = ViewResult & {
 	tabSlots?: readonly SimSlotName[];
@@ -44,10 +38,9 @@ export type ResultsViewResult = ViewResult & {
 };
 
 /**
- * The slot tabs: every slot with a row, in sim order, counted by its
- * above-cutoff rows. A slot whose rows are all below the cutoff, or that a
- * display filter emptied, keeps its tab at 0, so the user can open it and see
- * why it is empty.
+ * The slot tabs: every slot with a row, in sim order, counted by its above-cutoff
+ * rows. A slot with none, or one a display filter emptied, keeps its tab at 0 so
+ * the user can open it and see why.
  */
 export function slotTabs(view: ResultsViewResult): Array<{ id: SimSlotName; count: number }> {
 	const counts = new Map<SimSlotName, number>(view.tabSlots?.map(slot => [slot, 0]));
@@ -78,33 +71,11 @@ export type PaneRows = {
 export type PaneEmptyReason = 'no-source-row' | 'no-upgrades';
 
 /**
- * One pane's rows: its main table, the keys of the rows in that table that
- * miss the cutoff, and its below-cutoff group.
- *
- * The main table is the rows that meet the cutoff plus the BiS-list rows that
- * miss it, in the view's order, so each sits where its gain puts it.
- * `notUpgrades` marks those rows; the slot counts and the export still read
- * only the rows that meet the cutoff (`slotTabs`, `view.shortlist`).
- *
- * Owned rows stay out of the below-cutoff group, and so out of the main table
- * when they miss the cutoff: an owned item is re-simmed into the slot it
- * already fills, so its delta is about 0 by construction and would only list
- * the gear the player wears.
- *
- * `emptyReason` is what the pane says when its main table and its
- * below-cutoff group are both empty, the first of these that applies; a pane
- * reads it only then (`ResultsPane`). One reason, not a flag each, so the
- * order is decided here.
- *
- * - `no-source-row`: "Filter by source" emptied the pane, so it says no row
- *   comes from the shown sources. A pane that was already empty before the
- *   cut, or a slot pane that BiS only emptied, does not get it.
- * - `no-upgrades`: otherwise; the pane says it has no items to show.
- *
- * Under BiS only there is no reason that says the slot has no BiS-list item:
- * the run's candidates are cut before the sim (pre-run Sources, the set
- * prune, `poolFor`), so a slot with no BiS-list row may still have a BiS-list
- * item the run left out.
+ * One pane's rows. The main table holds the rows that meet the cutoff plus the
+ * BiS-list rows that miss it (`notUpgrades`); owned rows that miss it are dropped,
+ * as a re-simmed owned item's delta is about 0 by construction. `emptyReason` is
+ * `no-source-row` only when "Filter by source" emptied the pane. No reason says a
+ * slot has no BiS-list item: the run cuts candidates before the sim.
  */
 export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 	const rows = tab === SHOPPING_LIST_TAB ? view.rows : view.rows.filter(row => effectiveSlot(row) === tab);
@@ -126,10 +97,9 @@ export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
 export const landedRows = (rows: readonly RankedItem[]): RankedItem[] => rows.filter(row => row.simmed !== false).sort((a, b) => b.deltaDps - a.deltaDps);
 
 /**
- * A stopped run's rows as a view. `applyView` accepts only a complete ranking
- * on purpose (`rank.ts` on `Ranking.complete`), so a partial gets its own
- * list: the simmed rows in engine order, split on
- * the engine's own cutoff verdict.
+ * A stopped run's rows as a view. `applyView` takes only a complete ranking
+ * (`Ranking.complete`), so a partial lists its simmed rows in engine order, split
+ * on the engine's own cutoff verdict.
  */
 export function stoppedView(result: StoppedRanking): ViewResult {
 	const rows: ViewRow[] = result.items.filter(row => row.simmed !== false).map(row => ({ ...row, belowCutoffInView: row.belowCutoff }));
@@ -137,11 +107,7 @@ export function stoppedView(result: StoppedRanking): ViewResult {
 	return { rows, shortlist, belowCutoffCount: rows.length - shortlist.length, pinBisAvailable: false };
 }
 
-/**
- * The two view toggles of a finished run. They reshape a ranking
- * already measured and never change a run, so they are not run settings and
- * do not mark a result stale.
- */
+/** A finished run's view toggles. They reshape a measured ranking, so they are not run settings and never mark a result stale. */
 export type ViewToggles = { withSetPotential: boolean; onlyBis: boolean };
 
 export const NO_VIEW_TOGGLES: ViewToggles = { withSetPotential: false, onlyBis: false };
@@ -175,9 +141,8 @@ function bisOnlyView(view: ViewResult): ResultsViewResult {
 }
 
 /**
- * The sources "Filter by source" lists: `sourceOptions` of the view's rows
- * before the source cut, keyed and counted as the pre-run Sources dialog keys
- * and counts them, so the dialog lists only sources that rows on screen have.
+ * The sources "Filter by source" lists: `sourceOptions` of the view's rows before
+ * the source cut, keyed and counted as the pre-run Sources dialog does.
  */
 export type ViewSourceOptions = { raids: SourceOption[]; other: SourceOption[] };
 
@@ -200,12 +165,9 @@ export const withViewSourceToggled = (hidden: readonly string[], key: string): s
 export const withOfferedSourcesHidden = (hidden: readonly string[], offered: readonly string[]): string[] => [...new Set([...hidden, ...offered])];
 
 /**
- * A view cut to the rows of the sources not in `hidden`. A row stays while
- * some source key it matches is not hidden, so an item from two raids stays
- * while either is shown. The dialog offers every key a row
- * matches, so Hide all leaves no row. A hidden key the view
- * does not offer changes nothing. Like `bisOnlyView`, only the count
- * below the cutoff changes, and every slot keeps its tab.
+ * A view cut to the rows of the sources not in `hidden`. A row stays while any
+ * source key it matches is shown, so an item from two raids stays while either is.
+ * As with `bisOnlyView`, only the below-cutoff count changes and every slot keeps its tab.
  */
 export function sourcesView(view: ResultsViewResult, hidden: readonly string[]): ResultsViewResult {
 	const acting = offeredHidden(sourceOptions(view.rows), hidden);

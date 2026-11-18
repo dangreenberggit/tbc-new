@@ -1,15 +1,7 @@
 /**
- * SimRunner over the site's WorkerPool (WASM workers on the web build, HTTP
- * workers on the desktop build).
- *
- * It owns its own `WorkerPool`: `Sim`'s pool is private (`ui/sim/sim.ts`), and a
- * `WorkerPool` depends on no `Sim` state.
- *
- * It does not call `runConcurrentSim` (`ui/sim/wasm/sim.ts`). That splits one
- * request's iterations across workers by sharding the seed
- * (`SplitSimRequestForConcurrency`, `sim/core/sim_concurrent.go`), so the result
- * changes with the worker count. Each candidate runs unsharded through
- * `raidSimAsync`, and the pool's `WorkerPoolManager` runs candidates side by side.
+ * SimRunner over its own WorkerPool, since `Sim`'s is private. Not `runConcurrentSim`:
+ * that shards one request's seed across workers (`sim/core/sim_concurrent.go`), so
+ * the result would change with the worker count; each candidate runs unsharded.
  */
 
 import { ComputeStatsRequest, RaidSimRequest as RaidSimRequestProto } from '@generated/proto/api';
@@ -32,20 +24,16 @@ import {
 export const DEFAULT_WORKER_COUNT = 4;
 
 /**
- * Peak RSS of one `wowsimcli` process running 5,000 iterations. No in-browser
- * figure per WASM worker has been measured; the CLI runs the same Go sim, so its
- * figure stands in, and `memoryCapFromDeviceMemory` is an estimate until a
- * browser measurement replaces it.
+ * Peak RSS of one `wowsimcli` process running 5,000 iterations. It stands in for a
+ * WASM worker, which runs the same Go sim but has no in-browser figure yet.
  */
 const MEASURED_MB_PER_SIM_PROCESS = 183.8;
 
 /**
- * How many sims fit in memory, from `navigator.deviceMemory` in GiB (Chromium
- * only). Half the reported RAM is left for the OS, the page and other tabs, and
- * the rest is divided by the per-process figure above. Without the API (Firefox,
- * Safari) it returns `DEFAULT_WORKER_COUNT`, so those users are not capped to 1.
- * The caller reads `navigator.deviceMemory` (`utils/runner_env.ts`): `model/` may
- * not touch browser globals.
+ * How many sims fit in memory, from `navigator.deviceMemory` in GiB: half the RAM
+ * is left for the OS, the page and other tabs, the rest divided by the figure above.
+ * Without the API (Firefox, Safari) it returns `DEFAULT_WORKER_COUNT`, so those
+ * users are not capped to 1.
  */
 export function memoryCapFromDeviceMemory(deviceMemoryGiB: number | undefined): number {
 	if (deviceMemoryGiB === undefined) return DEFAULT_WORKER_COUNT;
@@ -56,8 +44,7 @@ export function memoryCapFromDeviceMemory(deviceMemoryGiB: number | undefined): 
 
 /**
  * The browser values the tab sizes its worker pool from. `model/` may not touch
- * browser globals (`.oxlintrc.json`), so `utils/runner_env.ts` reads them and
- * the caller passes them in.
+ * browser globals (`.oxlintrc.json`), so `utils/runner_env.ts` reads them.
  */
 export type RunnerEnv = {
 	/** `localStorage.getItem`; may throw when storage is unavailable. */
@@ -71,11 +58,7 @@ export type RunnerEnv = {
 /** The user's own worker-count choice in the site's settings; `0` is a deliberate "off". */
 const WASM_CONCURRENCY_KEY = '__tbc_new_wasmconcurrency';
 
-/**
- * The user's worker-count setting: the default when the key is absent, the
- * stored number when it is readable, and undefined when the store throws or
- * the value is not a finite number.
- */
+/** The default when the key is absent; undefined when the store throws or the value is not a finite number. */
 function readWasmConcurrency(storageRead: RunnerEnv['storageRead']): number | undefined {
 	try {
 		const raw = storageRead(WASM_CONCURRENCY_KEY);
@@ -88,11 +71,10 @@ function readWasmConcurrency(storageRead: RunnerEnv['storageRead']): number | un
 }
 
 /**
- * How many workers the tab's pool gets. A choice above one is capped by the
- * cores and by `memoryCapFromDeviceMemory`, with a floor of two; no choice
- * counts as the default and is capped the same way. Off (`0`) and `1` get one
- * worker, because the tab cannot rank with none. An unreadable setting gets
- * the default, uncapped.
+ * How many workers the tab's pool gets. A choice above one, or no choice (the
+ * default), is capped by the cores and `memoryCapFromDeviceMemory`, with a floor of
+ * two. Off (`0`) and `1` get one worker, as the tab cannot rank with none. An unreadable
+ * setting gets the default, uncapped.
  */
 export function workerCountFor(env: RunnerEnv): number {
 	const setting = readWasmConcurrency(env.storageRead);
@@ -103,11 +85,9 @@ export function workerCountFor(env: RunnerEnv): number {
 }
 
 /**
- * The tab's one pool, kept for the page's life and never ended, as wowsims'
- * own `Sim` keeps its pool (`ui/sim/sim.ts`: created once, then only
- * resized). `WorkerPool` has no public way to end its workers, so a second
- * runner on the same page (a remount after a run) must reuse this pool;
- * a new one would leave the old workers running with nothing to reach them.
+ * The tab's one pool, kept for the page's life as `Sim` keeps its own. `WorkerPool`
+ * has no public way to end its workers, so a later runner on the page must reuse
+ * this one; a new pool would leave the old workers running unreachable.
  */
 let sharedPool: WorkerPool | undefined;
 
@@ -130,10 +110,8 @@ export class WorkerPoolSimRunner implements SimRunner {
 	private readonly signalManager = new SimSignalManager();
 
 	/**
-	 * How many candidate sims `rankUpgrades`'s `promisePool` may dispatch at once:
-	 * `min(numWorkers, memoryCap)`. `numWorkers` sizes the pool; this caps the
-	 * requests in flight so their combined memory stays under the cap, and more
-	 * requests than workers would buy nothing.
+	 * How many candidate sims `rankUpgrades` may dispatch at once: `min(numWorkers,
+	 * memoryCap)`, so the requests in flight stay under the memory cap.
 	 */
 	readonly concurrency: number;
 

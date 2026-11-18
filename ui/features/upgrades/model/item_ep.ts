@@ -1,13 +1,7 @@
 /**
- * The candidate order's item score, computed by wowsims' own code: the same
- * `EquippedItem.calcStats(slot)` and `Stats.computeEP` that the gear picker's
- * `Player.computeItemEP` uses (`ui/sim/player/player.ts`). `calcStats(slot)`
- * adds a weapon's damage per second as the main-hand, off-hand or ranged
- * pseudo-stat of that slot, so the tab's weights file's `pseudoWeights` price
- * weapon damage.
- *
- * Not `Player.computeItemEP` itself: that scores with the page's EP weights,
- * and the tab orders by its bundled weights set (`data/data.ts`).
+ * The candidate order's item score: `Player.computeItemEP`'s `calcStats(slot)` and
+ * `computeEP` (`ui/sim/player/player.ts`), but with the tab's bundled weights, not
+ * the page's. `calcStats(slot)` adds weapon DPS as a pseudo-stat `pseudoWeights` price.
  */
 
 import type { UIItem } from '@generated/proto/ui';

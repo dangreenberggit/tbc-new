@@ -1,8 +1,7 @@
 /**
- * The run's assumptions as one console line, for someone diagnosing a bad
- * ranking. Each item restates a control or a detail no player can act on, so
- * none of it is on the page. Plain English on purpose: a console line is a
- * diagnostic, not localised UI.
+ * The run's assumptions as one console line, for diagnosing a bad ranking. No
+ * player can act on these, so none is on the page. Plain English on purpose: a
+ * console line is a diagnostic, not localised UI.
  */
 
 import { bisTagPhaseFor, epWeightsDisclosureFor, type EpWeightsSet, type PagePoolHost, poolFor, poolSourceFor, unsourcedCountFor } from './data/data';
@@ -48,10 +47,9 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
 }
 
 /**
- * A substitution caused by a sim crash carries the whole Go stack trace, and
- * its first line already says what went wrong. The trace's breaks
- * arrive both as real newlines and as written-out backslash-n pairs, because
- * the sim's error object is stringified into the detail.
+ * A sim crash's substitution carries the whole Go stack trace, whose first line
+ * says what went wrong. Its breaks arrive as real newlines and as written-out
+ * backslash-n pairs, because the sim's error object is stringified into the detail.
  */
 export function substitutionFirstLine(detail: string): { line: string; truncated: boolean } {
 	const [line = detail, ...rest] = detail.split(/\r?\n|\\n/);

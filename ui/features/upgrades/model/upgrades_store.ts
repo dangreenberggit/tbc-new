@@ -1,10 +1,7 @@
 /**
- * The Upgrades tab's state as a zustand store, one per page `Sim`, built the
- * way wowsims' sim store is (`ui/sim/state/sim_store.ts`).
- * Its actions live in the store next to the state, as zustand recommends
- * (https://zustand.docs.pmnd.rs/learn/guides/practice-with-no-store-actions);
- * each one takes its next state from a pure function in `run_state.ts` or
- * `settings_state.ts`, which the unit tests check without a store.
+ * The tab's state as a zustand store, one per page `Sim`, built as wowsims' sim
+ * store is (`ui/sim/state/sim_store.ts`). Its actions live next to the state; each
+ * takes its next state from a pure function in `run_state.ts` or `settings_state.ts`.
  */
 
 import { subscribeWithSelector } from 'zustand/middleware';
@@ -42,19 +39,14 @@ import {
 
 /**
  * A column sort in TanStack Table's `SortingState` shape, declared here so the
- * model imports no React package; the table reads it as its controlled
- * `sorting`. Empty is the engine's order.
+ * model imports no React package. Empty is the engine's order.
  */
 export type ResultsSort = Array<{ id: string; desc: boolean }>;
 
 /**
- * `sort` is the one column sort every results table and the export follow.
- * `view` is the view toggles as the user set them; a run that
- * does not offer one shows it off (`appliedToggles`). `hiddenSources` is the
- * source keys "Filter by source" hides from a settled table; a key the table
- * does not offer hides nothing. `exportFlavour` is the export panel's token or
- * gear choice. All four hold across runs, and the page saves them with the
- * settings (`saved_settings.ts`).
+ * `sort`, `view`, `hiddenSources` and `exportFlavour` hold across runs and are saved
+ * with the settings (`saved_settings.ts`). `view` is the toggles as the user set
+ * them; `appliedToggles` drops those a run does not offer.
  */
 export type UpgradesData = {
 	run: RunState;

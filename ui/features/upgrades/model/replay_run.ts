@@ -1,8 +1,7 @@
 /**
- * A dev-only run that replays a saved ranking through the real run path:
- * rows land a few at a time, progress ticks, Stop ends it with the rows so
- * far, all without a sim. It never calls `deps.runContext`, so a replay
- * builds no WASM workers.
+ * A dev-only run that replays a saved ranking through the real run path without a
+ * sim: rows land a few at a time, progress ticks, Stop ends it with the rows so far.
+ * It never calls `deps.runContext`, so it builds no WASM workers.
  */
 
 import type { Ranking } from './engine/rank';

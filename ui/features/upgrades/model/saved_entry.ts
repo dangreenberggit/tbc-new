@@ -1,7 +1,7 @@
 /**
- * Where the Upgrades tab's saved entry lives, and the one edit the page makes to it without the tab's store. Small
- * and free of the tab's code and data on purpose: the eager `UpgradesTabBody` reaches it through `phase_changes.ts`,
- * so a page whose tab never opens downloads neither. `saved_settings.ts` reads and writes the whole entry.
+ * Where the tab's saved entry lives, and the one edit the page makes to it without the tab's store. Free of the
+ * tab's code and data on purpose: the eager `UpgradesTabBody` reaches it through `phase_changes.ts`, so a page whose
+ * tab never opens downloads neither. `saved_settings.ts` reads and writes the whole entry.
  */
 
 import type { Env } from '@sim/state/env';
@@ -12,23 +12,18 @@ import { isRecord } from '../utils/is_record';
 export const UPGRADES_SETTINGS_STORAGE_KEY = '__upgradesSettings__';
 
 /**
- * Bumped when a field changes meaning. A new field needs no bump: an entry
- * saved before it reads back without it and the field takes its default, as
- * `view` did. wowsims migrates an old saved proto (`updateProtoVersion`);
- * this tab has no migration, so another version reads back as nothing saved.
- * Version 2: a stored default-off source key, such as "Heroic
- * dungeon", means ticked, where in version 1 every stored key meant excluded.
+ * Bumped when a field changes meaning; a new field needs none, as an entry without
+ * it reads back with the default. Unlike wowsims (`updateProtoVersion`) the tab has
+ * no migration, so another version reads back as nothing saved. In version 2 a
+ * stored default-off source key, such as "Heroic dungeon", means ticked.
  */
 export const SAVED_VERSION = 2;
 
 /**
- * A phase change made while no tab store follows the phase: the saved entry forgets its sets and the scope they were
- * applied for, as the store's `changeScope` would, so the tab applies the new phase's default sets when it next
- * opens, on this page or after a reload. Everything else saved stays. Unlike `changeScope`, it cannot drop an
- * exclusion the new phase's pool does not offer, because that needs the tab's data; the store drops such an
- * exclusion against the page's phase when it opens (`appliedSettings`, `dropUnofferedSources`). An entry that is
- * missing, unreadable or of another version is left alone: the tab reads it as nothing saved and starts from the
- * defaults anyway.
+ * A phase change made while no tab store follows: the saved entry forgets its sets and their scope, as `changeScope`
+ * would, so the tab applies the new phase's defaults when it next opens. Unlike `changeScope` it cannot drop an
+ * exclusion the new pool does not offer, as that needs the tab's data; the store does that when it opens
+ * (`dropUnofferedSources`). An entry missing, unreadable or of another version is left alone: it reads as nothing saved.
  */
 export function forgetSavedSets(storage: Env['storage'], key: string): void {
 	try {
