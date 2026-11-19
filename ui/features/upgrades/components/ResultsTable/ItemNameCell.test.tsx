@@ -21,7 +21,7 @@ const set = (key: string, name: string, phase: number | undefined, itemIds: numb
 	phase,
 	kind: phase === undefined ? 'saved' : 'preset',
 	itemIds,
-	inPool: itemIds.length,
+	inPoolCount: itemIds.length,
 });
 
 const badgesOf = (row: RankedItem, gearSetBadges: readonly RowBadge[], bisHeadings: readonly string[] = []) => {

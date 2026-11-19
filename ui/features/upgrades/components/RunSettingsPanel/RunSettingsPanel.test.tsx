@@ -30,10 +30,10 @@ const settingsWith = (toggleExcludedSource: UpgradesSettings['toggleExcludedSour
 	setCandidateCap: () => {},
 });
 
-const mount = (devVisible = false) => {
+const mount = (showDevControls = false) => {
 	const onStart = vi.fn();
 	const toggleExcludedSource = vi.fn();
-	render(<RunSettingsPanel settings={settingsWith(toggleExcludedSource)} ready running={false} devVisible={devVisible} onStart={onStart} />);
+	render(<RunSettingsPanel settings={settingsWith(toggleExcludedSource)} ready running={false} showDevControls={showDevControls} onStart={onStart} />);
 	return { onStart, toggleExcludedSource };
 };
 

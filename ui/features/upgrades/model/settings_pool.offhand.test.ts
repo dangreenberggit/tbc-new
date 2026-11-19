@@ -12,20 +12,20 @@ vi.mock('@sim/proto/database', () => ({
 
 const weapon = (itemId: number): PoolEntry => ({ itemId, name: `item ${itemId}`, slot: 'weapon', phase: 3, source: { kind: 'raid', zone: 'Black Temple' } });
 
-const HELD = [32361, 28734, 30911]; // Blind-Seers Icon, Jewel of Infinite Possibilities, Scepter of Purification: off hand only
+const OFF_HAND_ONLY = [32361, 28734, 30911]; // Blind-Seers Icon, Jewel of Infinite Possibilities, Scepter of Purification: off hand only
 const ONE_HANDER = 28524; // Emerald Ripper
 const TWO_HANDER = 29988; // The Nexus Key
 const NO_HAND_TYPE = 29182; // Riftmaker, given no hand type by the mock above
-const POOL = [...HELD, ONE_HANDER, TWO_HANDER].map(weapon);
+const POOL = [...OFF_HAND_ONLY, ONE_HANDER, TWO_HANDER].map(weapon);
 
 describe('eligibleCount and the worn main hand', () => {
 	it('leaves out the off-hand-only items and the one-hander while a two-hander is worn, as a run does', () => {
-		expect(eligibleCount(POOL, 3, { spec: 'mage', wornMainHandId: TWO_HANDER })).toBe(POOL.length - HELD.length - 1);
+		expect(eligibleCount(POOL, 3, { spec: 'mage', wornMainHandId: TWO_HANDER })).toBe(POOL.length - OFF_HAND_ONLY.length - 1);
 	});
 
 	it('keeps a weapon with no hand type beside a two-hander', () => {
 		const pool = [...POOL, weapon(NO_HAND_TYPE)];
-		expect(eligibleCount(pool, 3, { spec: 'mage', wornMainHandId: TWO_HANDER })).toBe(pool.length - HELD.length - 1);
+		expect(eligibleCount(pool, 3, { spec: 'mage', wornMainHandId: TWO_HANDER })).toBe(pool.length - OFF_HAND_ONLY.length - 1);
 	});
 
 	it('counts them beside a one-hander or an empty main hand', () => {

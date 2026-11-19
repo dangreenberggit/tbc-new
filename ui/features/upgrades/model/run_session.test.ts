@@ -89,16 +89,16 @@ describe('createRunSession', () => {
 
 	it('keeps the sets picked at the click and at a fixture load through a later phase change (ticket 865)', async () => {
 		const { store, session, call, run } = setup();
-		const p3: GearSetOption = { key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [32332], inPool: 1 };
+		const p3: GearSetOption = { key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [32332], inPoolCount: 1 };
 		session.start(SETTINGS, SIGNATURE, [p3]);
 		call(0).settle({ ...RANKING_FIXTURE, durationMs: 1200 });
 		await vi.waitFor(() => expect(run().status).toBe('done'));
-		store.getState().changeScope([]);
+		store.getState().resetForNewPhase([]);
 		expect(store.getState().settings.selectedSetKeys).toEqual([]);
 		expect(run()).toMatchObject({ measuredOn: { selectedGearSets: [p3] } });
 
 		session.loadFixture(RANKING_FIXTURE, SIGNATURE, [p3]);
-		store.getState().changeScope([]);
+		store.getState().resetForNewPhase([]);
 		expect(run()).toMatchObject({ status: 'done', measuredOn: { selectedGearSets: [p3] } });
 	});
 

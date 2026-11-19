@@ -151,14 +151,14 @@ describe('the user’s settings actions', () => {
 		expect(listener).not.toHaveBeenCalled();
 	});
 
-	it('notifies nobody on a second scope change, which has nothing left to forget', () => {
+	it('notifies nobody on a second phase change, which has nothing left to forget', () => {
 		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().setPrune(true, SCOPE);
-		store.getState().changeScope(['raid:hyjal']);
+		store.getState().resetForNewPhase(['raid:hyjal']);
 		const listener = vi.fn();
 		store.subscribe(listener);
 
-		store.getState().changeScope(['raid:hyjal']);
+		store.getState().resetForNewPhase(['raid:hyjal']);
 		expect(listener).not.toHaveBeenCalled();
 	});
 });

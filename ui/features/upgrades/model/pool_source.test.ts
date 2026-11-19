@@ -14,7 +14,7 @@ import {
 	twinIdsOf,
 } from './pool_source';
 import cellsFixture from './pool_source.cells.fixture.json';
-import { effectiveExcludedSources, effectivePool, poolSourceKeysOf } from './settings_pool';
+import { effectiveExcludedSources, effectivePool, sourceKeysInPool } from './settings_pool';
 
 // The fixture's shape is asserted here, never derived from the JSON import.
 const CELLS = (cellsFixture as { cells: Record<string, { exclude: number; include: number; bisRows: number }> }).cells;
@@ -62,7 +62,7 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 	it.each(CELL_NAMES)('%s: the default source ticks rank exactly the exclude pool', name => {
 		const [spec, phase] = name.split('-p') as [SpecId, string];
 		const pool = poolOf(spec, Number(phase), 'include-unticked');
-		const excluded = effectiveExcludedSources([], poolSourceKeysOf(pool));
+		const excluded = effectiveExcludedSources([], sourceKeysInPool(pool));
 		const ranked = effectivePool(pool, { excludedSources: excluded, selectedGearSetItemIds: [], prune: false }).map(e => e.itemId);
 		const exclude = poolOf(spec, Number(phase), 'exclude').map(e => e.itemId);
 		expect(ranked.sort()).toEqual(exclude.sort());

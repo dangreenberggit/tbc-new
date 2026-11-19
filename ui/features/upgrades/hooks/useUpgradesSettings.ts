@@ -95,17 +95,17 @@ export function useUpgradesSettings(): UpgradesSettings {
 	// eligible count below key on its fields.
 	const applied = useMemo(() => appliedSettings(stored, scope), [stored, scope]);
 	// The exclusions as shown and run: the stored toggles read against the sources that start unticked.
-	const state = useMemo(
+	const effectiveSettings = useMemo(
 		() => ({ ...applied, excludedSources: effectiveExcludedSources(applied.excludedSources, offer.sourceKeys) }),
 		[applied, offer.sourceKeys],
 	);
 	// On the picked gear sets alone, so it keeps its identity while other settings change: the run settings and the
 	// eligible count key on it.
-	const selection = useMemo(() => gearSetSelection(offer, state.selectedSetKeys, phase), [offer, state.selectedSetKeys, phase]);
+	const selection = useMemo(() => gearSetSelection(offer, effectiveSettings.selectedSetKeys, phase), [offer, effectiveSettings.selectedSetKeys, phase]);
 	// As is the result below, so a render that changes no setting hands `RunSettingsPanel` the same settings and
 	// its `memo` skips the render.
-	const runSettings = useMemo(() => runSettingsOf(selection, state), [selection, state]);
-	const { excludedSources } = state;
+	const runSettings = useMemo(() => runSettingsOf(selection, effectiveSettings), [selection, effectiveSettings]);
+	const { excludedSources } = effectiveSettings;
 	const effectivePrune = runSettings.prune ?? false;
 	// On the pool filters alone: filtering the whole pool must not rerun on an iterations or cap keystroke.
 	const eligibleCount = useMemo(
@@ -126,7 +126,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 			sources: offer.sources,
 			bisHeadingsOf,
 			excludedSources,
-			prune: state.prune,
+			prune: effectiveSettings.prune,
 			eligibleCount: specId ? eligibleCount : undefined,
 			store,
 			toggleExcludedSource: key => toggleExcludedSource(key, scope),
@@ -141,7 +141,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 			offer,
 			bisHeadingsOf,
 			excludedSources,
-			state.prune,
+			effectiveSettings.prune,
 			specId,
 			eligibleCount,
 			store,

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-	afterScopeChange,
+	afterPhaseChange,
 	appliedSettings,
 	initialSettings,
 	pruneEffective,
@@ -89,32 +89,32 @@ describe('the settings changes', () => {
 		expect(next.excludedSources).toEqual(['Crafted']);
 	});
 
-	it('forgets the applied defaults and the picked sets when the scope changes, so the new scope’s defaults apply even after a deselect', () => {
+	it('forgets the applied defaults and the picked sets when the phase changes, so the new phase’s defaults apply even after a deselect', () => {
 		const scope = { specPhase: 'ret:3', defaultGearSetKeys: ['preset:3:P3'], poolSourceKeys: [] };
 		const deselected = withGearSetToggled(appliedSettings(fresh(), scope), 'preset:3:P3');
-		const changed = afterScopeChange(deselected, []);
+		const changed = afterPhaseChange(deselected, []);
 		expect(changed).toMatchObject({ selectedSetKeys: [], defaultsFor: undefined });
 
 		const back = appliedSettings(changed, scope);
 		expect(back).toMatchObject({ selectedSetKeys: ['preset:3:P3'], defaultsFor: 'ret:3' });
 	});
 
-	it('drops on a scope change only the exclusions the new pool does not offer, and keeps the other settings', () => {
+	it('drops on a phase change only the exclusions the new pool does not offer, and keeps the other settings', () => {
 		const excluded = withExcludedSourceToggled(withExcludedSourceToggled(fresh(), 'Hyjal Summit'), 'Black Temple');
 		const edited = withIterations(withPrune(excluded, true), 2000);
-		const changed = afterScopeChange(edited, ['Black Temple', 'Zul’Aman']);
+		const changed = afterPhaseChange(edited, ['Black Temple', 'Zul’Aman']);
 		expect(changed).toMatchObject({ excludedSources: ['Black Temple'], prune: true, iterations: 2000 });
 	});
 
-	it('forgets the picked sets on a scope change even when no defaults were applied', () => {
+	it('forgets the picked sets on a phase change even when no defaults were applied', () => {
 		const picked = withGearSetToggled(fresh(), 'preset:3:P3');
 		expect(picked.defaultsFor).toBeUndefined();
-		expect(afterScopeChange(picked, [])).toMatchObject({ selectedSetKeys: [], defaultsFor: undefined });
+		expect(afterPhaseChange(picked, [])).toMatchObject({ selectedSetKeys: [], defaultsFor: undefined });
 	});
 
-	it('returns the state it was given on a scope change with no sets to forget and no exclusion to drop', () => {
-		const changed = afterScopeChange(withExcludedSourceToggled(fresh(), 'Black Temple'), ['Black Temple']);
-		expect(afterScopeChange(changed, ['Black Temple'])).toBe(changed);
+	it('returns the state it was given on a phase change with no sets to forget and no exclusion to drop', () => {
+		const changed = afterPhaseChange(withExcludedSourceToggled(fresh(), 'Black Temple'), ['Black Temple']);
+		expect(afterPhaseChange(changed, ['Black Temple'])).toBe(changed);
 	});
 });
 

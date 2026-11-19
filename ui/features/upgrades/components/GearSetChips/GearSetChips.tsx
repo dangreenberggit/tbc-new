@@ -27,7 +27,7 @@ interface ChipRowProps {
 const ChipRow = ({ options, selectedKeys, tooltipId, onToggleGearSet }: ChipRowProps) => (
 	<div className="flex flex-wrap gap-2">
 		{options.map(option => {
-			const unavailable = option.inPool === 0;
+			const unavailable = option.inPoolCount === 0;
 			const selected = selectedKeys.includes(option.key);
 			return (
 				<Chip
@@ -38,7 +38,7 @@ const ChipRow = ({ options, selectedKeys, tooltipId, onToggleGearSet }: ChipRowP
 					disabled={unavailable}
 					onSelect={unavailable ? undefined : () => onToggleGearSet(option.key)}
 					chipTooltipId={tooltipId}
-					tooltip={i18n.t('upgrades_tab.settings.sets_in_pool', { ns: 'upgrades', n: option.inPool, m: option.itemIds.length })}
+					tooltip={i18n.t('upgrades_tab.settings.sets_in_pool', { ns: 'upgrades', n: option.inPoolCount, m: option.itemIds.length })}
 					rootProps={{ 'data-set-key': option.key }}
 					nameProps={{ 'aria-pressed': selected, 'aria-disabled': unavailable || undefined }}
 				/>

@@ -36,7 +36,7 @@ export type GearSetOption = {
 	/** The pool offers only one id of an item with twins (`twinIdsOf`), and it may not be the one the gear set names. */
 	twinIds?: readonly number[];
 	/** Counts an item as in the pool under any of its ids. */
-	inPool: number;
+	inPoolCount: number;
 };
 
 const heldIds = (o: Pick<GearSetOption, 'itemIds' | 'twinIds'>): readonly number[] => (o.twinIds ? [...o.itemIds, ...o.twinIds] : o.itemIds);
@@ -95,13 +95,13 @@ export function effectiveExcludedSources(
  * this list, so they agree. Every key an entry matches is offered, so Hide all hides
  * every row.
  */
-export function poolSourceKeysOf(pool: readonly SourcedEntry[]): string[] {
+export function sourceKeysInPool(pool: readonly SourcedEntry[]): string[] {
 	const keys = [...new Set([...pool.map(sourceKeyOf), ...pool.flatMap(sourceKeysMatching)])];
 	return [...keys.filter(k => !ZONELESS_KEYS.has(k)), ...keys.filter(k => ZONELESS_KEYS.has(k))];
 }
 
 export function sourceOptions(pool: readonly SourcedEntry[]): { raids: SourceOption[]; other: SourceOption[] } {
-	const options = poolSourceKeysOf(pool).map(key => ({ key, count: pool.filter(e => sourceMatches(e, key)).length }));
+	const options = sourceKeysInPool(pool).map(key => ({ key, count: pool.filter(e => sourceMatches(e, key)).length }));
 	return { raids: options.filter(o => !ZONELESS_KEYS.has(o.key)), other: options.filter(o => ZONELESS_KEYS.has(o.key)) };
 }
 
@@ -130,7 +130,7 @@ export function gearSetOptions({
 	twins?: ReadonlyMap<number, readonly number[]>;
 }): GearSetOption[] {
 	const poolIds = new Set(pool.map(e => e.itemId));
-	const inPool = (itemIds: readonly number[]) => itemIds.filter(id => (twins.get(id) ?? [id]).some(t => poolIds.has(t))).length;
+	const countInPool = (itemIds: readonly number[]) => itemIds.filter(id => (twins.get(id) ?? [id]).some(t => poolIds.has(t))).length;
 	const withTwinIds = (itemIds: readonly number[]) => {
 		const same = [...new Set(itemIds.flatMap(id => twins.get(id) ?? []))].filter(id => !itemIds.includes(id));
 		return same.length > 0 ? { itemIds, twinIds: same } : { itemIds };
@@ -148,13 +148,13 @@ export function gearSetOptions({
 			...(group && headed ? { heading: group } : {}),
 			kind: 'preset',
 			...withTwinIds(itemIds),
-			inPool: inPool(itemIds),
+			inPoolCount: countInPool(itemIds),
 		};
 	});
 	const fromPresets = presetOptions.map(o => (sharesPhaseAndName(o, presetOptions) ? { ...o, label: `${o.label} (${o.group})` } : o));
 	const fromSaved = savedGearSets.map(({ name, gear }): GearSetOption => {
 		const itemIds = itemIdsOf(gear);
-		return { key: `saved:${name}`, name, label: name, kind: 'saved', ...withTwinIds(itemIds), inPool: inPool(itemIds) };
+		return { key: `saved:${name}`, name, label: name, kind: 'saved', ...withTwinIds(itemIds), inPoolCount: countInPool(itemIds) };
 	});
 	return [...fromPresets, ...fromSaved];
 }
@@ -198,7 +198,7 @@ export const selectedGearSetItemIds = (options: readonly GearSetOption[], select
  */
 export function effectivePool(pool: readonly PoolEntry[], { excludedSources, selectedGearSetItemIds, prune }: PoolFilter): PoolEntry[] {
 	const excluded = new Set(excludedSources);
-	const ticked = poolSourceKeysOf(pool).filter(key => !excluded.has(key));
+	const ticked = sourceKeysInPool(pool).filter(key => !excluded.has(key));
 	const inSets = new Set(selectedGearSetItemIds);
 	return pool.filter(e => ticked.some(key => sourceMatches(e, key)) && (!prune || inSets.has(e.itemId)));
 }
@@ -293,7 +293,7 @@ export function settingsOffer({
 	return {
 		pool,
 		sources: sourceOptions(pool),
-		sourceKeys: poolSourceKeysOf(pool),
+		sourceKeys: sourceKeysInPool(pool),
 		gearSetOptions: options,
 		defaultGearSetKeys: defaultGearSetKeys(options, pool, bisTagPhase),
 	};

@@ -82,7 +82,7 @@ export function appliedSettings(state: SettingsState, scope: SettingsScope | und
  * The page moved to another spec:phase, which gets its own default gear sets when next applied. An exclusion the new pool
  * does not offer is dropped now, so it stays dropped on the way back. With nothing to forget or drop, returns `state`.
  */
-export function afterScopeChange(state: SettingsState, poolSourceKeys: readonly string[]): SettingsState {
+export function afterPhaseChange(state: SettingsState, poolSourceKeys: readonly string[]): SettingsState {
 	const excludedSources = offeredExclusions(state.excludedSources, poolSourceKeys);
 	const unchanged = state.selectedSetKeys.length === 0 && state.defaultsFor === undefined && excludedSources.length === state.excludedSources.length;
 	return unchanged ? state : { ...state, selectedSetKeys: [], excludedSources, defaultsFor: undefined };

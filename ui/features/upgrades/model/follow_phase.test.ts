@@ -7,7 +7,7 @@ import { dbPoolHost } from '../testing/db_pool';
 import { flushPromises } from '../testing/fake_tab_host';
 import { poolFor } from './data/data';
 import { followPhase } from './follow_phase';
-import { effectiveExcludedSources, poolSourceKeysOf } from './settings_pool';
+import { effectiveExcludedSources, sourceKeysInPool } from './settings_pool';
 import { createUpgradesStore } from './upgrades_store';
 
 /**
@@ -26,8 +26,8 @@ const pageAt3 = async (spec: Spec) => {
 	const store = createUpgradesStore({ iterations: 1000 });
 	followPhase(store, host);
 	await flushPromises();
-	const offeredAt3 = poolSourceKeysOf(poolFor(host, host.individualConfig.presets.gear, 3));
-	const offeredAt4 = poolSourceKeysOf(poolFor(host, host.individualConfig.presets.gear, 4));
+	const offeredAt3 = sourceKeysInPool(poolFor(host, host.individualConfig.presets.gear, 3));
+	const offeredAt4 = sourceKeysInPool(poolFor(host, host.individualConfig.presets.gear, 4));
 	const onlyAt4 = offeredAt4.find(key => !offeredAt3.includes(key));
 	expect(onlyAt4).toBeDefined();
 	store.setState({

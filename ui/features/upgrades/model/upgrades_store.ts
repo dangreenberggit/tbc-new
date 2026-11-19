@@ -24,7 +24,7 @@ import {
 	stopRequested,
 } from './run_state';
 import {
-	afterScopeChange,
+	afterPhaseChange,
 	appliedSettings,
 	initialSettings,
 	type SettingsScope,
@@ -80,7 +80,7 @@ export type UpgradesActions = {
 	setIterations: (iterations: number, scope: SettingsScope | undefined) => void;
 	setCandidateCap: (cap: number | undefined, scope: SettingsScope | undefined) => void;
 	/** The page's changes: a phase change, and the pool the page's phase offers once it has loaded (`follow_phase.ts`). */
-	changeScope: (poolSourceKeys: readonly string[]) => void;
+	resetForNewPhase: (poolSourceKeys: readonly string[]) => void;
 	dropUnofferedExclusions: (poolSourceKeys: readonly string[]) => void;
 	setSort: (sort: ResultsSort) => void;
 	setViewToggle: (toggle: keyof ViewToggles, on: boolean) => void;
@@ -119,7 +119,7 @@ export function createUpgradesStore(initial: InitialSettings, restored: Restored
 					const settings = next(state.settings);
 					return settings === state.settings ? state : { settings };
 				});
-			const changeInScope = (scope: SettingsScope | undefined, change: (settings: SettingsState) => SettingsState) =>
+			const changeWithDefaults = (scope: SettingsScope | undefined, change: (settings: SettingsState) => SettingsState) =>
 				setSettings(settings => change(appliedSettings(settings, scope)));
 
 			return {
@@ -139,12 +139,12 @@ export function createUpgradesStore(initial: InitialSettings, restored: Restored
 				settleRun: (runId, outcome) => setRun(run => runSettled(run, runId, outcome)),
 				failRun: (runId, message) => setRun(run => runFailed(run, runId, message)),
 
-				toggleExcludedSource: (key, scope) => changeInScope(scope, settings => withExcludedSourceToggled(settings, key)),
-				toggleGearSet: (key, scope) => changeInScope(scope, settings => withGearSetToggled(settings, key)),
-				setPrune: (prune, scope) => changeInScope(scope, settings => withPrune(settings, prune)),
-				setIterations: (iterations, scope) => changeInScope(scope, settings => withIterations(settings, iterations)),
-				setCandidateCap: (cap, scope) => changeInScope(scope, settings => withCandidateCap(settings, cap)),
-				changeScope: poolSourceKeys => setSettings(settings => afterScopeChange(settings, poolSourceKeys)),
+				toggleExcludedSource: (key, scope) => changeWithDefaults(scope, settings => withExcludedSourceToggled(settings, key)),
+				toggleGearSet: (key, scope) => changeWithDefaults(scope, settings => withGearSetToggled(settings, key)),
+				setPrune: (prune, scope) => changeWithDefaults(scope, settings => withPrune(settings, prune)),
+				setIterations: (iterations, scope) => changeWithDefaults(scope, settings => withIterations(settings, iterations)),
+				setCandidateCap: (cap, scope) => changeWithDefaults(scope, settings => withCandidateCap(settings, cap)),
+				resetForNewPhase: poolSourceKeys => setSettings(settings => afterPhaseChange(settings, poolSourceKeys)),
 				dropUnofferedExclusions: poolSourceKeys => setSettings(settings => withoutUnofferedExclusions(settings, poolSourceKeys)),
 
 				setSort: sort => set(state => (sort === state.sort ? state : { sort })),

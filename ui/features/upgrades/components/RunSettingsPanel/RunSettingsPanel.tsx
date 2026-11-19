@@ -17,7 +17,7 @@ export interface RunSettingsPanelProps {
 	ready: boolean;
 	running: boolean;
 	/** `?upgrades-dev`: shows the candidate cap and the fixture file input. */
-	devVisible: boolean;
+	showDevControls: boolean;
 	onStart: () => void;
 }
 
@@ -26,7 +26,7 @@ export interface RunSettingsPanelProps {
  * phone does not scroll past them to reach the results; the eligible count and Run
  * never collapse. Memoised: every row a run finishes renders the tab but changes no prop.
  */
-export const RunSettingsPanel = memo(({ settings, ready, running, devVisible, onStart }: RunSettingsPanelProps) => {
+export const RunSettingsPanel = memo(({ settings, ready, running, showDevControls, onStart }: RunSettingsPanelProps) => {
 	const [open, setOpen] = useState(false);
 	const bodyId = useId();
 	return (
@@ -52,7 +52,7 @@ export const RunSettingsPanel = memo(({ settings, ready, running, devVisible, on
 				/>
 				{/* Always in the page, so a test driving a production build can set the cap. Hidden without
 				    `?upgrades-dev`, because a cap on the candidate list the user cannot see drops real upgrades. */}
-				<div className="grid gap-6" hidden={!devVisible}>
+				<div className="grid gap-6" hidden={!showDevControls}>
 					<CandidateCapPicker store={settings.store} onCapChange={settings.setCandidateCap} />
 					<FixtureFileInput />
 				</div>

@@ -15,17 +15,17 @@ import {
 	type GearSetOption,
 	gearSetOptions,
 	gearSetSelection,
-	poolSourceKeysOf,
 	rowBadgeIndex,
 	rowBadges,
 	runSettingsOf,
 	selectedGearSetItemIds,
 	settingsOffer,
 	sourceKeyOf,
+	sourceKeysInPool,
 	sourceOptions,
 	splitGearSetChips,
 } from './settings_pool';
-import { afterScopeChange, initialSettings, withExcludedSourceToggled, withGearSetToggled, withPrune } from './settings_state';
+import { afterPhaseChange, initialSettings, withExcludedSourceToggled, withGearSetToggled, withPrune } from './settings_state';
 
 const entry = (itemId: number, source: PoolEntry['source'], extra: Partial<PoolEntry> = {}): PoolEntry => ({
 	itemId,
@@ -90,16 +90,16 @@ describe('sourceOptions', () => {
 	});
 });
 
-describe('poolSourceKeysOf', () => {
+describe('sourceKeysInPool', () => {
 	it('lists raid zones first, then zoneless buckets, which are the keys the Sources dialog lists', () => {
-		expect(poolSourceKeysOf(POOL)).toEqual(['Black Temple', 'Hyjal Summit', 'Tempest Keep', 'Badge vendor', 'Crafted']);
+		expect(sourceKeysInPool(POOL)).toEqual(['Black Temple', 'Hyjal Summit', 'Tempest Keep', 'Badge vendor', 'Crafted']);
 		const { raids, other } = sourceOptions(POOL);
-		expect([...raids, ...other].map(o => o.key)).toEqual(poolSourceKeysOf(POOL));
+		expect([...raids, ...other].map(o => o.key)).toEqual(sourceKeysInPool(POOL));
 	});
 
 	// An entry's second zone is offered though no entry has it first, after the first zones.
 	it('offers every zone an entry matches, each zone that is some entry’s first in its old place', () => {
-		expect(poolSourceKeysOf(TWO_ZONE_POOL)).toEqual(['Hyjal Summit', 'Tempest Keep', "Zul'Aman", 'Badge vendor']);
+		expect(sourceKeysInPool(TWO_ZONE_POOL)).toEqual(['Hyjal Summit', 'Tempest Keep', "Zul'Aman", 'Badge vendor']);
 		expect(sourceOptions(TWO_ZONE_POOL).raids).toEqual([
 			{ key: 'Hyjal Summit', count: 1 },
 			{ key: 'Tempest Keep', count: 1 },
@@ -169,12 +169,12 @@ describe('gearSetOptions', () => {
 
 	it('lists presets then saved sets, with keys, labels, item ids and the in-pool count', () => {
 		expect(options).toEqual([
-			{ key: 'preset:2:P2', name: 'P2', label: 'P2', phase: 2, kind: 'preset', itemIds: [1, 4], inPool: 2 },
-			{ key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [1, 3, 77], inPool: 2 },
-			{ key: 'preset:3:Bulwark', name: 'Bulwark', label: 'P3 - Bulwark', phase: 3, kind: 'preset', itemIds: [5], inPool: 1 },
-			{ key: 'preset::Pre-raid', name: 'Pre-raid', label: 'Pre-raid', phase: undefined, kind: 'preset', itemIds: [88], inPool: 0 },
-			{ key: 'saved:Mine', name: 'Mine', label: 'Mine', kind: 'saved', itemIds: [2, 3], inPool: 2 },
-			{ key: 'saved:Empty', name: 'Empty', label: 'Empty', kind: 'saved', itemIds: [], inPool: 0 },
+			{ key: 'preset:2:P2', name: 'P2', label: 'P2', phase: 2, kind: 'preset', itemIds: [1, 4], inPoolCount: 2 },
+			{ key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [1, 3, 77], inPoolCount: 2 },
+			{ key: 'preset:3:Bulwark', name: 'Bulwark', label: 'P3 - Bulwark', phase: 3, kind: 'preset', itemIds: [5], inPoolCount: 1 },
+			{ key: 'preset::Pre-raid', name: 'Pre-raid', label: 'Pre-raid', phase: undefined, kind: 'preset', itemIds: [88], inPoolCount: 0 },
+			{ key: 'saved:Mine', name: 'Mine', label: 'Mine', kind: 'saved', itemIds: [2, 3], inPoolCount: 2 },
+			{ key: 'saved:Empty', name: 'Empty', label: 'Empty', kind: 'saved', itemIds: [], inPoolCount: 0 },
 		]);
 	});
 
@@ -236,7 +236,7 @@ describe('rowBadges', () => {
 		phase,
 		kind: phase === undefined ? 'saved' : 'preset',
 		itemIds,
-		inPool: itemIds.length,
+		inPoolCount: itemIds.length,
 	});
 
 	it('names each selected set that holds the item', () => {
@@ -312,8 +312,8 @@ describe('badges on a page whose sets sit under more than one heading', () => {
 
 describe('rowBadgeIndex', () => {
 	const selected: GearSetOption[] = [
-		{ key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [1, 2], inPool: 2 },
-		{ key: 'saved:Mine', name: 'Mine', label: 'Mine', kind: 'saved', itemIds: [2], inPool: 1 },
+		{ key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [1, 2], inPoolCount: 2 },
+		{ key: 'saved:Mine', name: 'Mine', label: 'Mine', kind: 'saved', itemIds: [2], inPoolCount: 1 },
 	];
 
 	it('gives each item the badges rowBadges gives it', () => {
@@ -346,7 +346,7 @@ describe('a set that names the other id of an item the pool offers once', () => 
 		const offer = settingsOffer({ pool, presets: [], savedGearSets: [{ name: 'Mine', gear: gear(named) }], bisTagPhase: undefined, twins });
 		const { selectedGearSets, selectedItemIds } = gearSetSelection(offer, ['saved:Mine'], 5);
 		expect(pool.map(e => e.itemId)).toEqual([offered]);
-		expect(offer.gearSetOptions[0]).toMatchObject({ itemIds: [named], inPool: 1 });
+		expect(offer.gearSetOptions[0]).toMatchObject({ itemIds: [named], inPoolCount: 1 });
 		expect(effectivePool(pool, { excludedSources: [], selectedGearSetItemIds: selectedItemIds, prune: true }).map(e => e.itemId)).toEqual([offered]);
 		expect(rowBadgeIndex(selectedGearSets)(offered)).toEqual([{ key: 'saved:Mine', label: 'Mine' }]);
 	});
@@ -436,9 +436,9 @@ describe('sources that start unticked (Q-heroic, include-unticked)', () => {
 
 	it('keeps a tick through a phase change whose pool still offers the key, and starts the key unticked after a phase without it', () => {
 		const ticked = withExcludedSourceToggled(initialSettings({ iterations: 500 }), HEROIC);
-		const kept = afterScopeChange(ticked, ['Zul’Aman', HEROIC]);
+		const kept = afterPhaseChange(ticked, ['Zul’Aman', HEROIC]);
 		expect(effectiveExcludedSources(kept.excludedSources, ['Zul’Aman', HEROIC])).toEqual([]);
-		const gone = afterScopeChange(ticked, ['Zul’Aman']);
+		const gone = afterPhaseChange(ticked, ['Zul’Aman']);
 		expect(effectiveExcludedSources(gone.excludedSources, ['Zul’Aman', HEROIC])).toEqual([HEROIC]);
 	});
 });

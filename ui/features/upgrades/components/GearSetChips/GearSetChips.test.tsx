@@ -7,7 +7,14 @@ import { GearSetChips, type GearSetChipsProps } from './GearSetChips';
 
 loadEnglishBundles();
 
-const option = (key: string, label: string, inPool: number): GearSetOption => ({ key, name: label, label, kind: 'preset', itemIds: [1, 2, 3], inPool });
+const option = (key: string, label: string, inPoolCount: number): GearSetOption => ({
+	key,
+	name: label,
+	label,
+	kind: 'preset',
+	itemIds: [1, 2, 3],
+	inPoolCount,
+});
 const P3 = option('preset:3:P3', 'P3', 3);
 const EMPTY = option('preset:3:Empty', 'Empty', 0);
 const P2 = option('preset:2:P2', 'P2', 2);

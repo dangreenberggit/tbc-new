@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { poolFor } from '../model/data/data';
 import { SAVED_VERSION, UPGRADES_SETTINGS_STORAGE_KEY } from '../model/saved_entry';
-import { poolSourceKeysOf } from '../model/settings_pool';
+import { sourceKeysInPool } from '../model/settings_pool';
 import { createUpgradesStore } from '../model/upgrades_store';
 import { fakeTabHost, flushPromises, memoryStorage } from '../testing/fake_tab_host';
 import { numberSettingSource, upgradesStoreFor } from './useUpgradesStore';
@@ -91,7 +91,7 @@ describe('upgradesStoreFor and the page’s phase (ticket 587)', () => {
 	});
 
 	it('drops a saved exclusion the page’s pool no longer offers once the page has loaded (D2)', async () => {
-		const offered = poolSourceKeysOf(poolFor(retPage(memoryStorage(), 3).host, [], 3))[0]!;
+		const offered = sourceKeysInPool(poolFor(retPage(memoryStorage(), 3).host, [], 3))[0]!;
 		const storage = memoryStorage(savedSettings({ excludedSources: [offered, 'A zone a data update removed'], defaultsFor: 'ret:3' }));
 		const page = retPage(storage, 3);
 		const store = upgradesStoreFor(page.host);

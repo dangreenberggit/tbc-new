@@ -54,7 +54,7 @@ export const UpgradesTabBodyInner = () => {
 						settings={settings}
 						ready={ready}
 						running={run.status === 'running'}
-						devVisible={DEV_FLAGS.dev ?? false}
+						showDevControls={DEV_FLAGS.dev ?? false}
 						onStart={onStart}
 					/>
 				</div>

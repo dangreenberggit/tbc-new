@@ -135,7 +135,7 @@ describe('UpgradesResults view toggles', () => {
 	});
 
 	it('badges a row with the name of each set the run was ranked with that holds it', () => {
-		const p3: GearSetOption = { key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [32332], inPool: 1 };
+		const p3: GearSetOption = { key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [32332], inPoolCount: 1 };
 		const { container } = show({ status: 'done', runId: 1, result: RANKING_FIXTURE, measuredOn: { selectedGearSets: [p3] } });
 		const torch = within(activePane(container)).getAllByTestId('upgrades-result-row')[0]!;
 		expect(
