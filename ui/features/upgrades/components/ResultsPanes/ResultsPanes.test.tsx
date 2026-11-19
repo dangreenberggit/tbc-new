@@ -37,7 +37,7 @@ const panes = (view: ResultsViewResult) => (
 	</SimHostProvider>
 );
 
-const tabStrip = (container: HTMLElement) => within(within(container).getByTestId('upgrades-tab-tabs'));
+const tabStrip = (container: HTMLElement) => within(within(container).getByTestId('upgrades-results-subtabs'));
 const tabLabels = (container: HTMLElement) =>
 	tabStrip(container)
 		.getAllByRole('tab')
@@ -66,8 +66,8 @@ describe('ResultsPanes', () => {
 			tabStrip(container)
 				.getAllByRole('tab')
 				.map(tab => tab.getAttribute('aria-controls'));
-		expect(controls()).toEqual(['upgrades-pane-shopping-list', '', '', '', '', '']);
-		expect(container.querySelector('#upgrades-pane-shopping-list')?.getAttribute('data-testid')).toBe('tab-pane');
+		expect(controls()).toEqual(['upgrades-pane-all-slots', '', '', '', '', '']);
+		expect(container.querySelector('#upgrades-pane-all-slots')?.getAttribute('data-testid')).toBe('tab-pane');
 
 		clickTab(container, 'Head');
 		expect(controls()).toEqual(['', 'upgrades-pane-head', '', '', '', '']);
@@ -80,7 +80,7 @@ describe('ResultsPanes', () => {
 
 		clickTab(container, 'Head');
 		await waitFor(() => expect(container.querySelectorAll('[data-testid="tab-pane"]')).toHaveLength(1));
-		expect(container.querySelector('#upgrades-pane-shopping-list')).toBeNull();
+		expect(container.querySelector('#upgrades-pane-all-slots')).toBeNull();
 		expect(namesIn(activePane(container))).toEqual(['Cursed Vision of Sargeras', 'Lightbringer Faceguard']);
 	});
 
@@ -92,7 +92,7 @@ describe('ResultsPanes', () => {
 		expect(opened).toBeGreaterThan(0);
 
 		clickTab(container, 'Head');
-		await waitFor(() => expect(container.querySelector('#upgrades-pane-shopping-list')).toBeNull());
+		await waitFor(() => expect(container.querySelector('#upgrades-pane-all-slots')).toBeNull());
 		clickTab(container, 'Upgrades');
 		await waitFor(() => expect(container.querySelector('#upgrades-pane-head')).toBeNull());
 		expect(groupRows()).toHaveLength(opened);

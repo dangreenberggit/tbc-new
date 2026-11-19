@@ -8,6 +8,7 @@ import { fixtureRow, RANKING_FIXTURE, STOPPED_FIXTURE } from '../testing/ranking
 import type { RankedItem, Ranking } from './engine/rank';
 import { applyView } from './engine/view';
 import {
+	ALL_SLOTS_PANE,
 	appliedToggles,
 	dpsSortKeyFor,
 	effectiveSlot,
@@ -20,7 +21,6 @@ import {
 	paneRows,
 	resultsViewFor,
 	rowKey,
-	SHOPPING_LIST_TAB,
 	slotTabs,
 	sourcesView,
 	stoppedView,
@@ -85,7 +85,7 @@ describe('slotTabs', () => {
 
 describe('paneRows', () => {
 	it('splits the Upgrades pane into the shortlist and the below-cutoff rows', () => {
-		const pane = paneRows(VIEW, SHOPPING_LIST_TAB);
+		const pane = paneRows(VIEW, ALL_SLOTS_PANE);
 		expect(ids(pane.main)).toEqual([32332, 30902, 32235, 33688, 28830, 30989, 29993, 30990, 30993, 30905]);
 		expect(ids(pane.belowCutoff)).toEqual([32373]);
 		expect(pane.notUpgrades.size).toBe(0);
@@ -117,7 +117,7 @@ describe('BiS-list rows below the cutoff', () => {
 	const view = applyView(WITH_BIS_BELOW);
 
 	it('show in the main table in gain order, marked as not upgrades, and leave the below-cutoff group', () => {
-		const pane = paneRows(view, SHOPPING_LIST_TAB);
+		const pane = paneRows(view, ALL_SLOTS_PANE);
 		expect(ids(pane.main)).toEqual([32332, 30902, 32235, 33688, 28830, 30989, 29993, 30990, 30993, 32373, 30905]);
 		expect([...pane.notUpgrades]).toEqual(['32373:head', '30905:chest']);
 		expect(pane.belowCutoff).toEqual([]);
@@ -144,7 +144,7 @@ describe('BiS-list rows below the cutoff', () => {
 
 	it('keep the rule under BiS only and with Set potential, judged on the same effective DPS as the cutoff', () => {
 		const bisOnly = resultsViewFor(done(WITH_BIS_BELOW), ONLY_BIS)!;
-		const bisPane = paneRows(bisOnly, SHOPPING_LIST_TAB);
+		const bisPane = paneRows(bisOnly, ALL_SLOTS_PANE);
 		expect(ids(bisPane.main)).toEqual([32332, 32235, 28830, 32373, 30905]);
 		expect([...bisPane.notUpgrades]).toEqual(['32373:head', '30905:chest']);
 		expect(slotTabs(bisOnly).find(tab => tab.id === 'head')).toEqual({ id: 'head', count: 1 });
@@ -162,7 +162,7 @@ describe('BiS-list rows below the cutoff', () => {
 			done({ ...WITH_BIS_BELOW, items: WITH_BIS_BELOW.items.map(row => (row.itemId === altChest.itemId ? credited : row)) }),
 			SET_POTENTIAL,
 		)!;
-		const pane = paneRows(withPotential, SHOPPING_LIST_TAB);
+		const pane = paneRows(withPotential, ALL_SLOTS_PANE);
 		expect([...pane.notUpgrades]).toEqual(['32373:head']);
 		expect(ids(withPotential.shortlist)).toContain(credited.itemId);
 	});
@@ -259,14 +259,14 @@ describe('resultsViewFor', () => {
 	it('under BiS only, gives a slot pane with no BiS-list row the no-upgrades reason', () => {
 		expect(paneRows(applyView(RANKING_FIXTURE), 'chest').emptyReason).toBe('no-upgrades');
 		expect(paneRows(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!, 'chest').emptyReason).toBe('no-upgrades');
-		expect(paneRows(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!, SHOPPING_LIST_TAB).emptyReason).toBe('no-upgrades');
+		expect(paneRows(resultsViewFor(done(RANKING_FIXTURE), ONLY_BIS)!, ALL_SLOTS_PANE).emptyReason).toBe('no-upgrades');
 	});
 
 	// A pane whose BiS-list rows are all worn gets the no-upgrades reason, not a reason of its own.
 	it('under BiS only, gives a pane whose BiS-list rows are all worn the no-upgrades text', () => {
 		const view = resultsViewFor(done({ ...RANKING_FIXTURE, items: [{ ...bisHelm, owned: true }] }), ONLY_BIS)!;
 		expect(paneRows(view, 'head')).toMatchObject({ main: [], emptyReason: 'no-upgrades' });
-		expect(paneRows(view, SHOPPING_LIST_TAB)).toMatchObject({ main: [], emptyReason: 'no-upgrades' });
+		expect(paneRows(view, ALL_SLOTS_PANE)).toMatchObject({ main: [], emptyReason: 'no-upgrades' });
 	});
 
 	// When more than one reason holds, the order in paneRows decides what the pane says.
@@ -286,7 +286,7 @@ describe('resultsViewFor', () => {
 		const neck = paneRows(view, 'neck');
 		expect(neck.main).toEqual([]);
 		expect(neck.emptyReason).toBe('no-upgrades');
-		expect(paneRows(view, SHOPPING_LIST_TAB).emptyReason).toBe('no-upgrades');
+		expect(paneRows(view, ALL_SLOTS_PANE).emptyReason).toBe('no-upgrades');
 	});
 });
 
@@ -409,7 +409,7 @@ describe('sourcesView over resultsViewFor', () => {
 
 		const everySource = ['Black Temple', 'Hyjal Summit', "Gruul's Lair", 'Tempest Keep', 'PvP vendor'];
 		const allHidden = bySource(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, everySource);
-		expect(paneRows(allHidden, SHOPPING_LIST_TAB)).toEqual({
+		expect(paneRows(allHidden, ALL_SLOTS_PANE)).toEqual({
 			main: [],
 			notUpgrades: new Set(),
 			belowCutoff: [],
@@ -424,9 +424,9 @@ describe('sourcesView over resultsViewFor', () => {
 		const zulAmanHelm: RankedItem = { ...helm, source: { kind: 'raid', zone: "Zul'Aman", boss: "Zul'jin" } };
 		const everyOtherSource = ['Black Temple', 'Hyjal Summit', "Gruul's Lair", 'Tempest Keep', 'PvP vendor'];
 		const view = bySource(done(replacing(zulAmanHelm)), NO_VIEW_TOGGLES, everyOtherSource);
-		for (const tab of ['head', SHOPPING_LIST_TAB] as const) {
-			expect(paneRows(view, tab)).toMatchObject({ main: [], emptyReason: 'no-source-row' });
-			expect(ids(paneRows(view, tab).belowCutoff)).toEqual([zulAmanHelm.itemId]);
+		for (const pane of ['head', ALL_SLOTS_PANE] as const) {
+			expect(paneRows(view, pane)).toMatchObject({ main: [], emptyReason: 'no-source-row' });
+			expect(ids(paneRows(view, pane).belowCutoff)).toEqual([zulAmanHelm.itemId]);
 		}
 	});
 
@@ -446,7 +446,7 @@ describe('sourcesView over resultsViewFor', () => {
 		const view = bySource(done(withRows([helm, lowChest])), NO_VIEW_TOGGLES, ['Black Temple', 'Hyjal Summit']);
 		expect(view.rows).toEqual([]);
 		expect(view.panesWithMainBeforeSourceCut).toEqual([]);
-		expect(paneRows(view, SHOPPING_LIST_TAB).emptyReason).toBe('no-source-row');
+		expect(paneRows(view, ALL_SLOTS_PANE).emptyReason).toBe('no-source-row');
 	});
 
 	// The filter must not take the blame for a pane BiS only emptied.

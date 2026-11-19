@@ -11,9 +11,10 @@ import type { DpsSortKey } from './results_columns';
 import type { RunState, StoppedRanking } from './run_state';
 import { sourceKeysMatching, type SourceOption, sourceOptions } from './settings_pool';
 
-export const SHOPPING_LIST_TAB = 'shopping-list';
+/** The first pane, labelled "Upgrades": every slot's rows. */
+export const ALL_SLOTS_PANE = 'all-slots';
 
-export type ResultsTabId = typeof SHOPPING_LIST_TAB | SimSlotName;
+export type PaneId = typeof ALL_SLOTS_PANE | SimSlotName;
 
 /**
  * Do not cast `row.slot`: `weapon`, `finger` and `trinket` each cover two sim
@@ -25,20 +26,20 @@ export const effectiveSlot = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): Sim
 export const rowKey = (row: Pick<RankedItem, 'itemId' | 'slot'>): string => `${row.itemId}:${row.slot}`;
 
 /**
- * `tabSlots` keeps the slots from before a display filter, so a filter never
+ * `paneSlots` keeps the slots from before a display filter, so a filter never
  * removes a pane. The `...BeforeSourceCut` fields let `paneRows` tell when
  * "Filter by source" emptied a pane.
  */
 export type ResultsViewResult = ViewResult & {
-	tabSlots?: readonly SimSlotName[];
+	paneSlots?: readonly SimSlotName[];
 	sourcesHidden?: true;
 	slotsBeforeSourceCut?: readonly SimSlotName[];
-	panesWithMainBeforeSourceCut?: readonly ResultsTabId[];
+	panesWithMainBeforeSourceCut?: readonly PaneId[];
 };
 
 /** A slot with no row above the cutoff keeps its tab at 0, so the user can open it and see why it is empty. */
 export function slotTabs(view: ResultsViewResult): Array<{ id: SimSlotName; count: number }> {
-	const counts = new Map<SimSlotName, number>(view.tabSlots?.map(slot => [slot, 0]));
+	const counts = new Map<SimSlotName, number>(view.paneSlots?.map(slot => [slot, 0]));
 	for (const row of view.rows) {
 		const slot = effectiveSlot(row);
 		counts.set(slot, (counts.get(slot) ?? 0) + (row.belowCutoffInView ? 0 : 1));
@@ -70,13 +71,13 @@ export type PaneEmptyReason = 'no-source-row' | 'no-upgrades';
  * wears the item, so its gain is about 0. There is no empty text for "no BiS-list
  * item", because the run may have left such an item out before simming.
  */
-export function paneRows(view: ResultsViewResult, tab: ResultsTabId): PaneRows {
-	const rows = tab === SHOPPING_LIST_TAB ? view.rows : view.rows.filter(row => effectiveSlot(row) === tab);
+export function paneRows(view: ResultsViewResult, pane: PaneId): PaneRows {
+	const rows = pane === ALL_SLOTS_PANE ? view.rows : view.rows.filter(row => effectiveSlot(row) === pane);
 	const missed = rows.filter(row => row.belowCutoffInView && !row.owned);
 	const shownAnyway = missed.filter(onBisList);
 	const main = rows.filter(inMainTable);
-	const hadRowBeforeSourceCut = tab === SHOPPING_LIST_TAB || view.slotsBeforeSourceCut?.includes(tab) === true;
-	const sourceCutEmptied = (rows.length === 0 && hadRowBeforeSourceCut) || (main.length === 0 && view.panesWithMainBeforeSourceCut?.includes(tab) === true);
+	const hadRowBeforeSourceCut = pane === ALL_SLOTS_PANE || view.slotsBeforeSourceCut?.includes(pane) === true;
+	const sourceCutEmptied = (rows.length === 0 && hadRowBeforeSourceCut) || (main.length === 0 && view.panesWithMainBeforeSourceCut?.includes(pane) === true);
 	const emptyReason: PaneEmptyReason = view.sourcesHidden === true && sourceCutEmptied ? 'no-source-row' : 'no-upgrades';
 	return {
 		main,
@@ -115,8 +116,8 @@ export const appliedToggles = (offered: ViewToggles, toggles: ViewToggles): View
 function bisOnlyView(view: ViewResult): ResultsViewResult {
 	const rows = view.rows.filter(onBisList);
 	const shortlist = view.shortlist.filter(onBisList);
-	const tabSlots = [...new Set(view.rows.map(effectiveSlot))];
-	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length, tabSlots };
+	const paneSlots = [...new Set(view.rows.map(effectiveSlot))];
+	return { ...view, rows, shortlist, belowCutoffCount: rows.length - shortlist.length, paneSlots };
 }
 
 /** Built by `sourceOptions`, so "Filter by source" uses the same keys and counts as the pre-run Sources dialog. */
@@ -143,16 +144,16 @@ export function sourcesView(view: ResultsViewResult, hidden: readonly string[]):
 	const rows = view.rows.filter(kept);
 	if (rows.length === view.rows.length) return view;
 	const shortlist = view.shortlist.filter(kept);
-	const tabSlots = view.tabSlots ?? [...new Set(view.rows.map(effectiveSlot))];
+	const paneSlots = view.paneSlots ?? [...new Set(view.rows.map(effectiveSlot))];
 	const slotsBeforeSourceCut = [...new Set(view.rows.map(effectiveSlot))];
 	const mainBefore = view.rows.filter(inMainTable);
-	const panesWithMainBeforeSourceCut: ResultsTabId[] = mainBefore.length > 0 ? [SHOPPING_LIST_TAB, ...new Set(mainBefore.map(effectiveSlot))] : [];
+	const panesWithMainBeforeSourceCut: PaneId[] = mainBefore.length > 0 ? [ALL_SLOTS_PANE, ...new Set(mainBefore.map(effectiveSlot))] : [];
 	return {
 		...view,
 		rows,
 		shortlist,
 		belowCutoffCount: rows.length - shortlist.length,
-		tabSlots,
+		paneSlots,
 		sourcesHidden: true,
 		slotsBeforeSourceCut,
 		panesWithMainBeforeSourceCut,

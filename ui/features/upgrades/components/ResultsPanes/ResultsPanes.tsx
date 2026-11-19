@@ -4,7 +4,7 @@ import { TabNav, type TabNavTab, TabPanel, TabPanels } from '@ui-kit/TabNav';
 import { useMemo, useState } from 'react';
 
 import { useResultsTable } from '../../hooks/useResultsTable';
-import { type PaneRows, paneRows, type ResultsTabId, type ResultsViewResult, SHOPPING_LIST_TAB, slotTabs } from '../../model/results_view';
+import { ALL_SLOTS_PANE, type PaneId, type PaneRows, paneRows, type ResultsViewResult, slotTabs } from '../../model/results_view';
 import { simSlotLabel } from '../../utils/format';
 import { ExportPanel } from '../ExportPanel';
 import { ResultsPane } from '../ResultsPane';
@@ -16,7 +16,11 @@ export interface ResultsPanesProps {
 }
 
 /** `TabPanel` sets the pane's DOM id; the prefix keeps a slot name such as `head` from colliding with another id on the page. */
-const paneId = (tab: ResultsTabId) => `upgrades-pane-${tab}`;
+const paneId = (tab: PaneId) => `upgrades-pane-${tab}`;
+
+type SubTab = { id: PaneId; label: string; badge?: string; className?: string };
+/** A pane's rows, and its slot for every pane but the Upgrades list. */
+type PaneContent = { id: PaneId; rows: PaneRows; slot?: ReturnType<typeof slotTabs>[number] };
 
 /**
  * A settled ranking as sub-tabs: the Upgrades list, one pane per slot `slotTabs` names, then the
@@ -24,16 +28,12 @@ const paneId = (tab: ResultsTabId) => `upgrades-pane-${tab}`;
  * Only the shown pane is mounted, since a hidden pane has no size to virtualise its rows by, so
  * which below-cutoff groups are open is kept here, to survive a pane switch.
  */
-type Pane = { id: ResultsTabId; label: string; badge?: string; className?: string };
-/** A pane's rows, and its slot for every pane but the Upgrades list. */
-type PaneContent = { id: ResultsTabId; rows: PaneRows; slot?: ReturnType<typeof slotTabs>[number] };
-
 export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 	// A string, because the tab strip reports any tab's value; `shownTab` checks it against this view's panes.
-	const [activeTab, setActiveTab] = useState<string>(SHOPPING_LIST_TAB);
-	const [openGroups, setOpenGroups] = useState<ReadonlySet<ResultsTabId>>(new Set());
+	const [activeTab, setActiveTab] = useState<string>(ALL_SLOTS_PANE);
+	const [openGroups, setOpenGroups] = useState<ReadonlySet<PaneId>>(new Set());
 	const [groupsSeenFor, setGroupsSeenFor] = useState(view);
-	const setGroupOpen = (pane: ResultsTabId, open: boolean) =>
+	const setGroupOpen = (pane: PaneId, open: boolean) =>
 		setOpenGroups(current => {
 			const next = new Set(current);
 			if (open) next.add(pane);
@@ -45,7 +45,7 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 	// tables, so a sort click would rebuild every pane's tables instead of re-sorting them.
 	const contents = useMemo(
 		(): PaneContent[] => [
-			{ id: SHOPPING_LIST_TAB, rows: paneRows(view, SHOPPING_LIST_TAB) },
+			{ id: ALL_SLOTS_PANE, rows: paneRows(view, ALL_SLOTS_PANE) },
 			...slotTabs(view).map(slot => ({ id: slot.id, slot, rows: paneRows(view, slot.id) })),
 		],
 		[view],
@@ -57,7 +57,7 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 		if (kept.length !== openGroups.size) setOpenGroups(new Set(kept));
 	}
 
-	const panes: Pane[] = contents.map(({ id, slot }) =>
+	const subTabs: SubTab[] = contents.map(({ id, slot }) =>
 		slot
 			? {
 					id,
@@ -66,18 +66,18 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 					// A slot with nothing above the cutoff keeps its tab, dimmed, so the user can open it and see why.
 					className: slot.count === 0 ? 'opacity-60' : undefined,
 				}
-			: { id, label: i18n.t('upgrades_tab.subtabs.shopping_list', { ns: 'upgrades' }) },
+			: { id, label: i18n.t('upgrades_tab.subtabs.all_slots', { ns: 'upgrades' }) },
 	);
 	// A new result without the open slot falls back to the Upgrades list.
-	const shownTab = panes.find(pane => pane.id === activeTab)?.id ?? SHOPPING_LIST_TAB;
+	const shownTab = subTabs.find(subTab => subTab.id === activeTab)?.id ?? ALL_SLOTS_PANE;
 	// `TabNav` falls back to the tab's own value when this is undefined, which is not a pane's id, so a tab whose pane is
 	// not mounted gets an empty list instead.
-	const tabs: TabNavTab[] = panes.map(pane => ({ ...pane, ariaControls: pane.id === shownTab ? paneId(pane.id) : '' }));
+	const tabs: TabNavTab[] = subTabs.map(subTab => ({ ...subTab, ariaControls: subTab.id === shownTab ? paneId(subTab.id) : '' }));
 
 	return (
 		<>
 			<Tabs.Root value={shownTab} onValueChange={next => setActiveTab(String(next))}>
-				<TabNav tabs={tabs} testId="upgrades-tab-tabs" />
+				<TabNav tabs={tabs} testId="upgrades-results-subtabs" />
 				<TabPanels>
 					{contents.map(({ id, rows }) => (
 						<TabPanel key={id} value={id} id={paneId(id)} keepMounted={false}>

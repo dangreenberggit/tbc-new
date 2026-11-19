@@ -16,12 +16,12 @@
 				"subtabs": {
 					"type": "object",
 					"properties": {
-						"shopping_list": {
+						"all_slots": {
 							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["shopping_list"]
+					"required": ["all_slots"]
 				},
 				"run": {
 					"type": "string"

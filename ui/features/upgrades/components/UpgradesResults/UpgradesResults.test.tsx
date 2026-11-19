@@ -80,13 +80,13 @@ describe('UpgradesResults', () => {
 		expect(table.dataset.provisional).toBe('true');
 		expect(namesIn(table)).toEqual(['Torch of the Damned', 'Cursed Vision of Sargeras', "Vengeful Gladiator's Greatsword"]);
 		expect(queryByTestId('upgrades-sort-item')).toBeNull();
-		expect(queryByTestId('upgrades-tab-tabs')).toBeNull();
+		expect(queryByTestId('upgrades-results-subtabs')).toBeNull();
 	});
 
 	it('shows a stopped run in sub-tabs with the rows Stop never reached left out', () => {
 		const { container, getByTestId } = show({ status: 'stopped', runId: 1, result: STOPPED_FIXTURE });
 
-		expect(getByTestId('upgrades-tab-tabs')).not.toBeNull();
+		expect(getByTestId('upgrades-results-subtabs')).not.toBeNull();
 		const names = namesIn(activePane(container));
 		expect(names).toContain('Torch of the Damned');
 		expect(names).not.toContain("Shadowmaster's Boots");

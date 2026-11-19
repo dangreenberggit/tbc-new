@@ -147,12 +147,12 @@ describe('UpgradesResults view toggles', () => {
 });
 
 const tabLabels = (container: HTMLElement) =>
-	within(within(container).getByTestId('upgrades-tab-tabs'))
+	within(within(container).getByTestId('upgrades-results-subtabs'))
 		.getAllByRole('tab')
 		.map(tab => tab.textContent);
 const tabNames = (container: HTMLElement) => tabLabels(container).map(label => label?.replace(/ \(\d+\)$/, ''));
 const clickTab = (container: HTMLElement, label: string) =>
-	fireEvent.click(within(within(container).getByTestId('upgrades-tab-tabs')).getByRole('tab', { name: new RegExp(`^${label}`) }));
+	fireEvent.click(within(within(container).getByTestId('upgrades-results-subtabs')).getByRole('tab', { name: new RegExp(`^${label}`) }));
 const openSourcesDialog = (container: HTMLElement) => fireEvent.click(within(container).getByTestId('upgrades-view-sources-button'));
 const closeSourcesDialog = () => fireEvent.click(within(screen.getByTestId('upgrades-view-sources-dialog')).getByTestId('sim-dialog-close'));
 const untickSource = (key: string) =>
