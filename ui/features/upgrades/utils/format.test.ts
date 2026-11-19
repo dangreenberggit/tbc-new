@@ -52,8 +52,8 @@ describe('formatDelta', () => {
 		expect(formatDelta(0)).toBe('0.0');
 	});
 
-	// A figure below the cutoff bar never reads as the bar.
-	it('shows a figure just below the bar one tenth under it, and every other figure as usual', () => {
+	// A figure below the cutoff never reads as the cutoff.
+	it('shows a figure just below the cutoff one tenth under it, and every other figure as usual', () => {
 		expect(formatDelta(2.96, 3)).toBe('+2.9');
 		expect(formatDelta(2.94, 3)).toBe('+2.9');
 		expect(formatDelta(3.04, 3)).toBe('+3.0');

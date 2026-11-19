@@ -155,7 +155,7 @@ describe('ResultsPanes', () => {
 		expect(trigger()?.getAttribute('aria-expanded')).toBe('false');
 	});
 
-	// Helm of the Illidari Shatterer (2.91) misses the 3 DPS bar but is put on a BiS list here.
+	// Helm of the Illidari Shatterer (2.91) misses the 3 DPS cutoff but is put on a BiS list here.
 	it('shows a BiS-list row below the cutoff in the main table, marked in text, and leaves it out of the counts and the export', () => {
 		const exportedIds = (container: HTMLElement) => {
 			const payload: { items: Array<{ id: number }> } = JSON.parse(

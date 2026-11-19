@@ -29,7 +29,7 @@ export const BelowCutoffGroup = ({ head, table, rowContext, open, onOpenChange }
 	const title =
 		cutoff === undefined
 			? i18n.t('upgrades_tab.results.below_cutoff_group', { ns: 'upgrades', count })
-			: i18n.t('upgrades_tab.results.below_cutoff_group_bar', { ns: 'upgrades', count, abs: String(cutoff.absDps) });
+			: i18n.t('upgrades_tab.results.below_cutoff_group_title', { ns: 'upgrades', count, abs: String(cutoff.absDps) });
 
 	return (
 		<Accordion value={open ? [GROUP] : []} onValueChange={value => onOpenChange(value.includes(GROUP))}>

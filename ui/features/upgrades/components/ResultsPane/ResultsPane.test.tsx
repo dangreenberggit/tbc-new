@@ -62,7 +62,7 @@ describe('ResultsPane', () => {
 	});
 
 	// Players do not know a cutoff exists, so the group names a gain in DPS instead.
-	it('names the bar as a gain in DPS on the group once a ranking is shown, never as a cutoff', () => {
+	it('names the cutoff as a gain in DPS on the group title once a ranking is shown, not by the word "cutoff"', () => {
 		const rowContext = { ...CONTEXT, rankingContext: { ranking: RANKING_FIXTURE } };
 		const one = onPage({ rows: paneRowsOf([fixtureRow(0)], [fixtureRow(5)]), rowContext });
 		expect(one.getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 item that gains less than 3 DPS');
@@ -99,14 +99,14 @@ describe('ResultsPane', () => {
 		expect(queryByTestId('upgrades-below-cutoff')).toBeNull();
 	});
 
-	// "No upgrades found" above a row that gained DPS without clearing the bar would be false, so the closed group is
+	// "No upgrades found" above a row that gained DPS without meeting the cutoff would be false, so the closed group is
 	// all the pane shows.
-	it('shows only the closed group, with no empty-state message, when the only row gained DPS below the bar', () => {
-		const gainedBelowBar = fixtureRow(5);
-		expect(gainedBelowBar.deltaDps).toBeGreaterThan(0);
-		expect(gainedBelowBar.deltaDps).toBeLessThan(RANKING_FIXTURE.cutoff.absDps);
+	it('shows only the closed group, with no empty-state message, when the only row gained DPS below the cutoff', () => {
+		const gainedBelowCutoff = fixtureRow(5);
+		expect(gainedBelowCutoff.deltaDps).toBeGreaterThan(0);
+		expect(gainedBelowCutoff.deltaDps).toBeLessThan(RANKING_FIXTURE.cutoff.absDps);
 		const rowContext = { ...CONTEXT, rankingContext: { ranking: RANKING_FIXTURE } };
-		const { getByTestId, queryByTestId } = onPage({ rows: paneRowsOf([], [gainedBelowBar]), rowContext });
+		const { getByTestId, queryByTestId } = onPage({ rows: paneRowsOf([], [gainedBelowCutoff]), rowContext });
 
 		expect(queryByTestId('upgrades-empty-state')).toBeNull();
 		expect(queryByTestId('upgrades-results-table')).toBeNull();

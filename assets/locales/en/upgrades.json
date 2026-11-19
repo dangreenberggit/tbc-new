@@ -153,8 +153,8 @@
 			"empty_no_source_row": "No rows from the shown sources.",
 			"below_cutoff_group_one": "1 more item",
 			"below_cutoff_group_other": "{{count}} more items",
-			"below_cutoff_group_bar_one": "1 item that gains less than {{abs}} DPS",
-			"below_cutoff_group_bar_other": "{{count}} items that gain less than {{abs}} DPS",
+			"below_cutoff_group_title_one": "1 item that gains less than {{abs}} DPS",
+			"below_cutoff_group_title_other": "{{count}} items that gain less than {{abs}} DPS",
 			"removes_worn": "removes worn {{name}} ({{slot}})",
 			"sort_ascending": "sorted ascending",
 			"sort_descending": "sorted descending"

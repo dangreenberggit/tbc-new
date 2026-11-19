@@ -72,7 +72,7 @@ export type RankingContext = {
 type Line = { label: PopoverLabel; dps: number | undefined; marker?: boolean };
 
 /** Raw unless `shownTenths` moved it below the cutoff, so a figure it leaves alone keeps its full precision. */
-const shownValue = (v: number, bar: number | undefined): number => (shownTenths(v, bar) === tenthsOf(v) ? v : shownTenths(v, bar) / 10);
+const shownValue = (v: number, cutoffDps: number | undefined): number => (shownTenths(v, cutoffDps) === tenthsOf(v) ? v : shownTenths(v, cutoffDps) / 10);
 
 /**
  * Rounds `values` to tenths so they add up to exactly `target` tenths, moving
@@ -252,12 +252,12 @@ function screenedLine(ctx: SetContext, ranking: RankingContext['ranking']): Popo
  * seeds moved the row's own figure. The item-alone and `marker` lines then match the
  * cell with the toggle off and on, so they are rounded as the cell is.
  */
-function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Line[], bar: number | undefined): PopoverEntry[] {
+function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Line[], cutoffDps: number | undefined): PopoverEntry[] {
 	const shift = row.deltaDps - (ctx.singleDeltaDps ?? row.deltaDps);
 	return [
 		{ type: 'heading', heading: 'set_potential_totals' },
-		line({ kind: 'item_alone', name: row.name, broken: (ctx.singleBreaks ?? []).map(ref) }, shownValue(row.deltaDps, bar)),
-		...outcomes.map(o => line(o.label, o.marker ? shownValue((o.dps ?? 0) + shift, bar) : (o.dps ?? 0) + shift, o.marker)),
+		line({ kind: 'item_alone', name: row.name, broken: (ctx.singleBreaks ?? []).map(ref) }, shownValue(row.deltaDps, cutoffDps)),
+		...outcomes.map(o => line(o.label, o.marker ? shownValue((o.dps ?? 0) + shift, cutoffDps) : (o.dps ?? 0) + shift, o.marker)),
 	];
 }
 
@@ -269,7 +269,7 @@ function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Li
 export function setBonusPopoverLines(row: RankedItem, context: RankingContext = {}): SetBonusPopoverContent | null {
 	const ctx = row.setContext;
 	const cutoff = context.ranking?.cutoff;
-	const bar = cutoff?.absDps;
+	const cutoffDps = cutoff?.absDps;
 	const setPotentialOn = (context.withSetPotential ?? false) && cutoff !== undefined;
 	const credit = setPotentialOn ? rankableSetPotential(row, cutoff, 'full') : 0;
 	// A row with no `setContext` still lists the worn bonuses its own swap breaks.
@@ -282,7 +282,7 @@ export function setBonusPopoverLines(row: RankedItem, context: RankingContext = 
 	if (subLine === null) return null;
 
 	const potential = ctx && setPotentialOn && (ctx.futureBonuses ?? []).length > 0 ? potentialLines(ctx, cutoff, credit) : NO_SET_POTENTIAL;
-	if (ctx && potential.kind === 'outcomes') return { subLine, kind: 'outcomes', entries: outcomesEntries(row, ctx, potential.lines, bar) };
+	if (ctx && potential.kind === 'outcomes') return { subLine, kind: 'outcomes', entries: outcomesEntries(row, ctx, potential.lines, cutoffDps) };
 
 	const singleBreaks = ctx ? (ctx.singleBreaks ?? []) : ownBreaks;
 	const measuredBreaks = singleBreaks.flatMap(b => (b.dps === undefined ? [] : [{ ...b, dps: b.dps }]));
@@ -291,11 +291,11 @@ export function setBonusPopoverLines(row: RankedItem, context: RankingContext = 
 	const bonus = ctx?.crossesThreshold ? { setName: ctx.setName, threshold: crossingLabelCount(ctx) ?? ctx.piecesAfterSwap } : undefined;
 	const total = row.deltaDps + credit;
 	const breakTenths = measuredBreaks.map(b => tenthsOf(-b.dps));
-	const itemStatsTenths = shownTenths(row.deltaDps, bar) - breakTenths.reduce((a, b) => a + b, 0);
+	const itemStatsTenths = shownTenths(row.deltaDps, cutoffDps) - breakTenths.reduce((a, b) => a + b, 0);
 
 	const entries: PopoverEntry[] = [];
 	// Kept even when it equals the total if it names a bonus or a loss, as no other line names them.
-	if (bonus !== undefined || unmeasuredBreaks.length > 0 || itemStatsTenths !== shownTenths(total, bar)) {
+	if (bonus !== undefined || unmeasuredBreaks.length > 0 || itemStatsTenths !== shownTenths(total, cutoffDps)) {
 		entries.push(line({ kind: 'item_stats', ...(bonus ? { bonus } : {}), unmeasuredBreaks }, itemStatsTenths / 10));
 	}
 	measuredBreaks.forEach((b, i) => entries.push(line({ kind: 'breaks', broken: [ref(b)] }, breakTenths[i]! / 10)));
@@ -307,7 +307,7 @@ export function setBonusPopoverLines(row: RankedItem, context: RankingContext = 
 		// The toggle-off lines add up to the toggle-off figure, so these must add up to the difference.
 		const shown = spreadTenths(
 			potential.lines.map(l => l.dps ?? 0),
-			shownTenths(total, bar) - shownTenths(row.deltaDps, bar),
+			shownTenths(total, cutoffDps) - shownTenths(row.deltaDps, cutoffDps),
 		);
 		potential.lines.forEach((l, i) => entries.push(line(l.label, shown[i]! / 10)));
 	}
@@ -322,6 +322,6 @@ export function setBonusPopoverLines(row: RankedItem, context: RankingContext = 
 		if (section.length > 0) notCounted.push({ type: 'heading', heading: notCountedHeading(reachable.length > 0 && !pastStop, setPotentialOn) }, ...section);
 	}
 	if (entries.length === 0 && notCounted.length === 0) return null;
-	entries.push(line({ kind: 'total' }, shownValue(total, bar)), ...notCounted);
+	entries.push(line({ kind: 'total' }, shownValue(total, cutoffDps)), ...notCounted);
 	return { subLine, kind: 'receipt', entries };
 }

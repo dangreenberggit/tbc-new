@@ -548,10 +548,10 @@
 						"below_cutoff_group_other": {
 							"type": "string"
 						},
-						"below_cutoff_group_bar_one": {
+						"below_cutoff_group_title_one": {
 							"type": "string"
 						},
-						"below_cutoff_group_bar_other": {
+						"below_cutoff_group_title_other": {
 							"type": "string"
 						},
 						"removes_worn": {
@@ -589,8 +589,8 @@
 						"empty_no_source_row",
 						"below_cutoff_group_one",
 						"below_cutoff_group_other",
-						"below_cutoff_group_bar_one",
-						"below_cutoff_group_bar_other",
+						"below_cutoff_group_title_one",
+						"below_cutoff_group_title_other",
 						"removes_worn",
 						"sort_ascending",
 						"sort_descending"

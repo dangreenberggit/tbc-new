@@ -25,11 +25,11 @@ export const formatDps = (dps: number): string => formatToNumber(dps, ONE_DECIMA
 
 export const formatSeconds = (ms: number): string => formatToNumber(ms / 1000, { ...ONE_DECIMAL, useGrouping: false });
 
-/** The sign comes from the number, so a loss reads "-41.0". A figure below `bar`, the ranking's cutoff, never rounds up to it (`shownTenths`). */
-export const formatDelta = (deltaDps: number, bar?: number): string =>
+/** The sign comes from the number, so a loss reads "-41.0". A figure below `cutoffDps`, the ranking's cutoff, never rounds up to it (`shownTenths`). */
+export const formatDelta = (deltaDps: number, cutoffDps?: number): string =>
 	i18n.t('upgrades_tab.results.delta_dps_value', {
 		ns: 'upgrades',
-		delta: `${deltaDps > 0 ? '+' : ''}${formatDps(shownTenths(deltaDps, bar) / 10)}`,
+		delta: `${deltaDps > 0 ? '+' : ''}${formatDps(shownTenths(deltaDps, cutoffDps) / 10)}`,
 	});
 
 const ITEM_SLOT_BY_SIM_SLOT: Record<SimOrderName, ItemSlot> = {

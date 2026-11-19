@@ -331,13 +331,13 @@ describe('ResultRow', () => {
 		expect(within(renderRow(fixtureRow(0))).queryByRole('button', { name: '+45.7' })).toBeNull();
 	});
 
-	// Rounded to the nearest tenth, a row just below the 3 DPS bar would read "+3.0".
-	it('shows a figure just below the cutoff bar one tenth under the bar', () => {
+	// Rounded to the nearest tenth, a row just below the 3 DPS cutoff would read "+3.0".
+	it('shows a figure just below the cutoff one tenth under the cutoff', () => {
 		const tr = renderRow({ ...fixtureRow(0), deltaDps: 2.96, belowCutoff: true });
 		expect(within(tr).getByTestId('upgrades-delta-cell').textContent).toMatch(/^\+2\.9/);
 	});
 
-	it('keeps a Set potential figure just below the bar under the bar', () => {
+	it('keeps a Set potential figure just below the cutoff under the cutoff', () => {
 		const tr = renderRow(fixtureRow(0), { ...CONTEXT, dpsKey: () => 2.96 });
 		expect(within(tr).getByTestId('upgrades-delta-cell').textContent).toMatch(/^\+2\.9/);
 	});

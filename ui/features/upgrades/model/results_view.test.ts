@@ -104,7 +104,7 @@ describe('paneRows', () => {
 	});
 });
 
-// Helm of the Illidari Shatterer (2.91) misses the 3 DPS bar; Midnight
+// Helm of the Illidari Shatterer (2.91) misses the 3 DPS cutoff; Midnight
 // Chestguard, moved to -4, misses it by more. Both put on a BiS list.
 const bisHelm: RankedItem = { ...helm, bisTags: ['BiS'] };
 const altChest: RankedItem = { ...fixtureRow(6), deltaDps: -4, belowCutoff: true, bisTags: ['Alt'] };
@@ -150,7 +150,7 @@ describe('BiS-list rows below the cutoff', () => {
 		expect(slotTabs(bisOnly).find(tab => tab.id === 'head')).toEqual({ id: 'head', count: 1 });
 
 		// A made-up Lightbringer Battlegear chest in place of Midnight Chestguard, which is in no set. Given Lightbringer
-		// Faceguard's set context with a measured 2-piece bonus, the -4 chest clears the bar on effective DPS: an
+		// Faceguard's set context with a measured 2-piece bonus, the -4 chest meets the cutoff on effective DPS: an
 		// upgrade, so not marked. The id is not a real item's.
 		const credited: RankedItem = {
 			...altChest,

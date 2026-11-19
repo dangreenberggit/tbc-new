@@ -105,12 +105,12 @@ describe('setBonusPopoverLines', () => {
 		expect(addsUp(popover)).toBe(true);
 	});
 
-	// The popover's total is the figure the cell shows, so it never reads as the bar for a row below it.
-	describe('a total just below the cutoff bar (ticket 618)', () => {
+	// The popover's total is the figure the cell shows, so it never reads as the cutoff for a row below it.
+	describe('a total just below the cutoff (ticket 618)', () => {
 		const nearBar: RankedItem = { ...fixtureRow(10), deltaDps: 2.96 };
 		const totalOf = (popover: SetBonusPopoverContent | null) => lines(popover).find(line => line.label.kind === 'total')?.dps;
 
-		it('shows the total one tenth under the bar and spreads the receipt against it, with the toggle off', () => {
+		it('shows the total one tenth under the cutoff and spreads the receipt against it, with the toggle off', () => {
 			const popover = setBonusPopoverLines(nearBar, context);
 			expect(totalOf(popover)).toBe(2.9);
 			expect(addsUp(popover)).toBe(true);
@@ -125,7 +125,7 @@ describe('setBonusPopoverLines', () => {
 			expect(addsUp(popover)).toBe(true);
 		});
 
-		it('shows the outcome marked as the row’s figure one tenth under the bar, and the other lines raw', () => {
+		it('shows the outcome marked as the row’s figure one tenth under the cutoff, and the other lines raw', () => {
 			const row: RankedItem = {
 				...stepRow({
 					singleDeltaDps: 1,
@@ -145,7 +145,7 @@ describe('setBonusPopoverLines', () => {
 		});
 
 		// With the toggle off the cell shows the item alone, so the line must read as that cell does.
-		it('shows the item-alone line one tenth under the bar when an outcome is marked', () => {
+		it('shows the item-alone line one tenth under the cutoff when an outcome is marked', () => {
 			const row: RankedItem = {
 				...stepRow({
 					singleDeltaDps: 2.96,
@@ -358,21 +358,21 @@ describe('setBonusPopoverLines', () => {
 			});
 
 			it('gives a step past the stop no figure when its difference from the stop’s gear is within the noise', () => {
-				// The gap is one step gear's sim minus another's, so its floor is the item bar, 3, not √2 × 3.
+				// The gap is one step gear's sim minus another's, so its floor is the item cutoff, 3, not √2 × 3.
 				// A tie under the strict best-stop rule, then a gap of exactly 3.
 				for (const stepGearDps of [30.5, 27.5]) {
 					const row = stepRow({ futureBonuses: [future(), fourPiece(stepGearDps)] });
 					const popover = setBonusPopoverLines(row, { ...context, withSetPotential: true });
 					expect(popover?.entries.slice(-2)).toEqual([{ type: 'heading', heading: 'not_counted' }, pastStop4(undefined)]);
 				}
-				// A 3.5 gap clears the bar, so it gets its figure.
+				// A 3.5 gap meets the cutoff, so it gets its figure.
 				const row = stepRow({ futureBonuses: [future(), fourPiece(27)] });
 				expect(setBonusPopoverLines(row, { ...context, withSetPotential: true })?.entries.at(-1)).toEqual(pastStop4(-3.5));
 			});
 
 			it('compares the gap with twice the two step gears’ standard errors added in quadrature', () => {
 				// A 10.5 gap. Either error alone at 6 hides it (2 × 6 = 12), so a gate that read only the other one would show it.
-				// Both at 4 hide it only together: 2 × √32 = 11.31, but 2 × 4 = 8. At 3, the bar 3 and 2 × √18 = 8.49 do not.
+				// Both at 4 hide it only together: 2 × √32 = 11.31, but 2 × 4 = 8. At 3, the cutoff 3 and 2 × √18 = 8.49 do not.
 				for (const [stopSe, stepSe, expected] of [
 					[6, 0, pastStop4(undefined)],
 					[0, 6, pastStop4(undefined)],
