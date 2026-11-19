@@ -306,8 +306,8 @@ export function hitCapBudgetFrom(
 	}
 	const faerieFire = req.raid?.debuffs?.faerieFire;
 	const improved = faerieFire === 'TristateEffectImproved' || faerieFire === 2;
-	const fire = improved && profile.hitStat === Stat.StatMeleeHitRating ? IMPROVED_FAERIE_FIRE_HIT_PERCENT : 0;
-	const remaining = (profile.hitCapPercent - fire - hitPercent) * profile.ratingPerPercent;
+	const faerieFireHitPercent = improved && profile.hitStat === Stat.StatMeleeHitRating ? IMPROVED_FAERIE_FIRE_HIT_PERCENT : 0;
+	const remaining = (profile.hitCapPercent - faerieFireHitPercent - hitPercent) * profile.ratingPerPercent;
 	if (!usesSpellHitBudget(profile)) {
 		return { stat: profile.hitStat, remaining };
 	}
@@ -346,8 +346,8 @@ function spellHitGroups(
 	for (const [key, damage] of Object.entries(spellDamageBySchool)) {
 		const school = Number(key);
 		if (!(damage > 0) || school === SPELL_SCHOOL_PHYSICAL) continue;
-		const slot = SCHOOL_HIT_PSEUDO_STAT[school];
-		const schoolPercent = slot === undefined ? sharedPercent : (pseudoStats[slot] ?? sharedPercent);
+		const hitPercentIndex = SCHOOL_HIT_PSEUDO_STAT[school];
+		const schoolPercent = hitPercentIndex === undefined ? sharedPercent : (pseudoStats[hitPercentIndex] ?? sharedPercent);
 		const offset = Math.max(0, schoolPercent - sharedPercent) * ratingPerPercent;
 		damageByOffset.set(offset, (damageByOffset.get(offset) ?? 0) + damage);
 		total += damage;

@@ -50,7 +50,7 @@ export type GemContext = {
 	 * `baselineRemaining − (gearHitRating(swapped) − baselineGearHit)`, with the
 	 * baseline's `groups`. Absent means meta repair values hit at full weight.
 	 */
-	readonly repairHitCap?: {
+	readonly repairHitBudget?: {
 		readonly stat: Stat;
 		readonly baselineRemaining: number;
 		readonly baselineGearHit: number;
@@ -204,7 +204,7 @@ export function fillEmptyCandidateGems(
  * because hit and expertise EP overstate gems on raid gear that is already
  * capped. The cap profile names them: `hitStat`, and expertise when
  * `hasExpertiseCap`. Meta repair does not use these weights; it values hit with
- * `GemContext.repairHitCap`, or at full weight.
+ * `GemContext.repairHitBudget`, or at full weight.
  */
 export function gemFillWeights(epWeights: EpWeightRecord, spec?: DetectedSpecId): Record<string, number> {
 	const profile = capProfileFor(rankableSpec(spec));

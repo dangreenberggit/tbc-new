@@ -4,7 +4,7 @@ import { CAP_PROFILE_BY_SPEC, capProfileFor, hitCapBudgetFrom, PHYSICAL_HIT_RATI
 import { Stat } from './stats';
 import type { SpecId } from './types';
 
-/** A pseudo-stat array with slots 12 (melee hit %) and 13 (spell hit %) set. */
+/** A pseudo-stat array with indexes 12 (melee hit %) and 13 (spell hit %) set. */
 function pseudoStats(hit: { melee?: number; spell?: number }): number[] {
 	const out = new Array<number>(25).fill(0);
 	out[12] = hit.melee ?? 0;

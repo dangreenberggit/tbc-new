@@ -23,7 +23,7 @@ import { findMetaGemId, type GemEntry, gemsForPhase, getGem } from './gems';
 import { getItem } from './items';
 import { isKaelTempLegendary } from './kael-temp';
 import { equipmentFromLoggedGear, socketedItemsFromLoggedGear } from './logged-gear';
-import { inactiveMeta, MetaRepairError, type MetaRepairSwap, REPAIR_SEARCH_WORK_LIMIT, repairAndMinimize, type SocketedItem } from './meta-repair';
+import { type GemRecolour, inactiveMeta, MetaRepairError, REPAIR_SEARCH_WORK_LIMIT, repairMetaGems, type SocketedItem } from './meta-repair';
 import { migrateGemsToItem } from './migrate-gems';
 import { choosePartners, estimateCombinedDelta, PARTNER_RULE, type PartnerAudit, type PartnerPiece, partnerPool, type PartnerRule } from './partner-choice';
 import { type PlausibilityWarning, plausibilityWarnings } from './plausibility';
@@ -564,7 +564,7 @@ type BestSwap = {
 	slotChoice?: SimSlotName;
 	slotIndex: number;
 	setBonusNote?: string;
-	repairSwaps: readonly MetaRepairSwap[];
+	repairRecolours: readonly GemRecolour[];
 	/** Worn items the winning attempt took off beyond the swap itself. */
 	removed: readonly { slotIndex: number; itemId: number }[];
 	candidateGems: readonly number[];
@@ -651,7 +651,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 	// Set when the gem repair values hit only up to the hit cap, read through
 	// `computeStats`, which every runner has.
 	const capProfile = capProfileFor(input.spec);
-	const budgetSlot = capProfile.repair.kind === 'budget' ? capProfile.repair.hitPercentPseudoStat : undefined;
+	const hitPercentStat = capProfile.repair.kind === 'budget' ? capProfile.repair.hitPercentPseudoStat : undefined;
 	/**
 	 * How repair priced hit where the ranking cannot show it: no cap used
 	 * (a full-weight spec, or a target not at level 73), or a per-spell hit
@@ -687,18 +687,18 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 	const preRepairSocketed = socketedItemsFromLoggedGear(logged);
 	let socketed: SocketedItem[] = preRepairSocketed;
 	let metaAdjusted = false;
-	let metaSwaps: MetaRepairSwap[] = [];
+	let metaRecolours: GemRecolour[] = [];
 	// Reassigned once, after the baseline's stats read, so every later repair
 	// site gets the hit budget.
 	let gems = gemContext(deps.gemPalette ?? gemsForPhase(input.maxPhase), deps.epWeights, input.spec);
 	// The worn repair runs before the baseline exists, so its hit budget comes
 	// from its own read of the un-repaired gear, relative to the items the
-	// repair is given, as `repairAndMinimize` expects. A spell-hit budget first
+	// repair is given, as `repairMetaGems` expects. A spell-hit budget first
 	// sims that gear for the spells it casts; that sim failing fails the run. A
 	// read Stop ended is no failure: the candidate loop returns a partial
 	// ranking, which is never cached.
 	let wornHitCap: HitCapBudget | undefined;
-	if (budgetSlot !== undefined && inactiveMeta(preRepairSocketed)) {
+	if (hitPercentStat !== undefined && inactiveMeta(preRepairSocketed)) {
 		const preRequest = composeFor(equipmentFromLoggedGear(logged));
 		let spellDamage: SpellDamageBySchool | undefined;
 		if (usesSpellHitBudget(capProfile) && targetsAtCapLevel(preRequest)) {
@@ -709,13 +709,13 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			}
 		}
 		try {
-			wornHitCap = (await readHitCap(preRequest, budgetSlot, spellDamage)).budget;
+			wornHitCap = (await readHitCap(preRequest, hitPercentStat, spellDamage)).budget;
 		} catch (err) {
 			if (!(err instanceof StopRefusedSim)) throw err;
 		}
 	}
 	try {
-		const minimized = repairAndMinimize({
+		const minimized = repairMetaGems({
 			items: preRepairSocketed,
 			epWeights: deps.epWeights,
 			palette: gems.fillPalette,
@@ -723,7 +723,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		});
 		socketed = minimized.items;
 		metaAdjusted = minimized.metaAdjusted;
-		metaSwaps = minimized.swaps;
+		metaRecolours = minimized.recolours;
 	} catch (err) {
 		if (err instanceof MetaRepairError) {
 			throw new RankError('meta-unsolvable', err.message);
@@ -816,7 +816,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		// Only when set, so a full-weight spec keeps its key and a run that reads
 		// hit is never served a ranking repaired at full weight. The value names
 		// which repairs the budget reaches, so changing that reach changes the key.
-		...(budgetSlot !== undefined ? { metaRepairHitCap: 'worn-and-candidates' } : {}),
+		...(hitPercentStat !== undefined ? { metaRepairHitCap: 'worn-and-candidates' } : {}),
 		// The repair rule, on every run, so no ranking cached under greedy repair
 		// or another work limit is served.
 		metaRepair: `exact-credit-per-version;limit=${REPAIR_SEARCH_WORK_LIMIT}`,
@@ -869,13 +869,13 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		// One stats read of the baseline gives the repair hit budget every later
 		// swap starts from, so it runs before the first candidate. A read Stop
 		// ended is no failure: the candidate loop returns a partial ranking.
-		if (budgetSlot !== undefined) {
+		if (hitPercentStat !== undefined) {
 			try {
-				const { hitPercent, budget } = await readHitCap(request, budgetSlot, observation.spellDamageBySchool);
+				const { hitPercent, budget } = await readHitCap(request, hitPercentStat, observation.spellDamageBySchool);
 				if (budget) {
 					gems = {
 						...gems,
-						repairHitCap: {
+						repairHitBudget: {
 							stat: budget.stat,
 							baselineRemaining: budget.remaining,
 							baselineGearHit: gearHitRating(equipment, budget.stat),
@@ -925,13 +925,13 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 					return { buildError: errorText(err) };
 				}
 			});
-			const shared = () => defaults.map(request => (isBuildFailure(request) ? request : { request, swaps: base.swaps }));
-			const cap = gems.repairHitCap;
-			if (!base.repaired || !cap || budgetSlot === undefined || baselineSimHit === undefined || versionBudgetsOff) {
+			const shared = () => defaults.map(request => (isBuildFailure(request) ? request : { request, recolours: base.recolours }));
+			const hitBudget = gems.repairHitBudget;
+			if (!base.repaired || !hitBudget || hitPercentStat === undefined || baselineSimHit === undefined || versionBudgetsOff) {
 				return shared();
 			}
 			try {
-				const buildHit = gearHitRating(base.equipment, cap.stat);
+				const buildHit = gearHitRating(base.equipment, hitBudget.stat);
 				const out: LayoutResult[] = [];
 				for (let i = 0; i < copiesList.length; i++) {
 					const request = defaults[i]!;
@@ -945,19 +945,19 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 						read = readStats(deps.sim, request, deps.signal);
 						statsReadsByRequest.set(key, read);
 					}
-					const { hitPercent } = await hitPercentOrSimFailed(read, budgetSlot);
-					const missed = hitPercent * capProfile.ratingPerPercent - baselineSimHit - (buildHit - cap.baselineGearHit);
+					const { hitPercent } = await hitPercentOrSimFailed(read, hitPercentStat);
+					const missed = hitPercent * capProfile.ratingPerPercent - baselineSimHit - (buildHit - hitBudget.baselineGearHit);
 					if (Math.abs(missed) < MISSED_HIT_TOLERANCE) {
-						out.push({ request, swaps: base.swaps });
+						out.push({ request, recolours: base.recolours });
 						continue;
 					}
 					let rebuilt: ChainBuild;
 					try {
 						rebuilt = rebuild({
 							...gems,
-							repairHitCap: {
-								...cap,
-								baselineRemaining: cap.baselineRemaining - missed,
+							repairHitBudget: {
+								...hitBudget,
+								baselineRemaining: hitBudget.baselineRemaining - missed,
 							},
 						});
 					} catch (err) {
@@ -967,7 +967,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 					}
 					out.push({
 						request: applyCopies(composeFor(rebuilt.equipment), copiesList[i]!),
-						swaps: rebuilt.swaps,
+						recolours: rebuilt.recolours,
 					});
 				}
 				return out;
@@ -989,8 +989,8 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		 * read Stop refused rejects with `StopRefusedSim`.
 		 */
 		const candidateRepairGems = async (slotIndex: number, itemId: number): Promise<GemContext> => {
-			const cap = gems.repairHitCap;
-			if (!cap || budgetSlot === undefined || baselineSimHit === undefined) {
+			const hitBudget = gems.repairHitBudget;
+			if (!hitBudget || hitPercentStat === undefined || baselineSimHit === undefined) {
 				return gems;
 			}
 			const pre = candidateSwapPreRepair(equipment, slotIndex, itemId, gems);
@@ -998,18 +998,18 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			const request = composeFor(pre.swapped);
 			let hitPercent: number;
 			try {
-				hitPercent = hitPercentOf(await readStats(deps.sim, request, deps.signal), budgetSlot);
+				hitPercent = hitPercentOf(await readStats(deps.sim, request, deps.signal), hitPercentStat);
 			} catch (err) {
 				if (err instanceof StopRefusedSim) throw err;
 				throw new CandidateHitReadFailed(err);
 			}
-			const missed = hitPercent * capProfile.ratingPerPercent - baselineSimHit - (gearHitRating(pre.swapped, cap.stat) - cap.baselineGearHit);
+			const missed = hitPercent * capProfile.ratingPerPercent - baselineSimHit - (gearHitRating(pre.swapped, hitBudget.stat) - hitBudget.baselineGearHit);
 			if (Math.abs(missed) < MISSED_HIT_TOLERANCE) return gems;
 			return {
 				...gems,
-				repairHitCap: {
-					...cap,
-					baselineRemaining: cap.baselineRemaining - missed,
+				repairHitBudget: {
+					...hitBudget,
+					baselineRemaining: hitBudget.baselineRemaining - missed,
 				},
 			};
 		};
@@ -1081,7 +1081,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				if (eligibility.kind === 'skip') continue;
 				const { slotIndex } = eligibility;
 				let swapped: SimItemSpec[];
-				let repairSwaps: readonly MetaRepairSwap[];
+				let repairRecolours: readonly GemRecolour[];
 				let removed: readonly { slotIndex: number; itemId: number }[];
 				let repairGems: GemContext;
 				try {
@@ -1102,7 +1102,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				try {
 					const outcome = candidateSwapWithRepairs(equipment, slotIndex, entry.itemId, repairGems);
 					swapped = outcome.equipment;
-					repairSwaps = outcome.swaps;
+					repairRecolours = outcome.recolours;
 					removed = outcome.removed;
 				} catch (err) {
 					if (!(err instanceof MetaRepairError)) throw err;
@@ -1140,7 +1140,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 						stdev: candObs.stdev,
 						request: candReq,
 						slotIndex,
-						repairSwaps,
+						repairRecolours,
 						removed,
 						candidateGems: swapped[slotIndex]?.gems ?? [],
 					};
@@ -1188,8 +1188,8 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			if (entry.sources) item.sources = entry.sources;
 			if (best.slotChoice) item.slotChoice = best.slotChoice;
 			if (best.setBonusNote) item.setBonusNote = best.setBonusNote;
-			if (best.repairSwaps.length > 0) {
-				item.gemSubstitutions = best.repairSwaps.map(s => ({
+			if (best.repairRecolours.length > 0) {
+				item.gemSubstitutions = best.repairRecolours.map(s => ({
 					itemId: s.itemId,
 					socketIndex: s.socketIndex,
 					from: s.from,
@@ -1215,8 +1215,8 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		// first N items of the EP order the player does not wear, plus every worn
 		// row. Worn rows are kept anyway and the list leaves them out, so one
 		// counted against N would leave the list a row short.
-		const cap = input.candidateCap ?? ordered.length;
-		const keptNotWorn = new Set(ordered.filter(e => !equippedIds.has(e.itemId)).slice(0, cap));
+		const candidateCap = input.candidateCap ?? ordered.length;
+		const keptNotWorn = new Set(ordered.filter(e => !equippedIds.has(e.itemId)).slice(0, candidateCap));
 		const simCandidates = ordered.filter(e => keptNotWorn.has(e) || equippedIds.has(e.itemId));
 
 		// Counted here, after the cap decides the full-iteration set. An upper
@@ -1467,7 +1467,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				standing: buildStandingAssumptions(race),
 			},
 			substitutions: [
-				...notesFromMetaRepair(metaSwaps),
+				...notesFromMetaRepair(metaRecolours),
 				...hitCapNotes,
 				...metaPreferenceNotes(gems.spec),
 				...offHandBlockedNotes(blockedOffHand.length),
@@ -2064,7 +2064,7 @@ async function buildSetBonuses(
 			// The gem changes to list: the repair swaps of the gear this sim wore,
 			// outside the added pieces' own slots.
 			const addedSlots = new Set(addedPieces.map(p => p.slotIndex));
-			const gearRepairSwaps = gearEntry.swaps.filter(s => !addedSlots.has(s.itemIndex));
+			const gearRepairRecolours = gearEntry.recolours.filter(s => !addedSlots.has(s.itemIndex));
 			let gearObs = await readCachedSim(deps, gearRequest, simVersion, runOpts);
 			if (!gearObs) {
 				try {
@@ -2152,9 +2152,9 @@ async function buildSetBonuses(
 				...gateFields,
 				...(breaks.length > 0 ? { breaks } : {}),
 				...(selfConfound ? { selfConfound } : {}),
-				...(gearRepairSwaps.length > 0
+				...(gearRepairRecolours.length > 0
 					? {
-							gemSubstitutions: gearRepairSwaps.map(s => ({
+							gemSubstitutions: gearRepairRecolours.map(s => ({
 								itemId: s.itemId,
 								itemIndex: s.itemIndex,
 								socketIndex: s.socketIndex,
@@ -3585,31 +3585,31 @@ export function candidateSwapWithRepairs(
 	gems: GemContext,
 ): {
 	equipment: SimItemSpec[];
-	swaps: readonly MetaRepairSwap[];
+	recolours: readonly GemRecolour[];
 	repaired: boolean;
 	removed: readonly { slotIndex: number; itemId: number }[];
 } {
 	const { swapped, socketed, removed } = candidateSwapPreRepair(equipment, slotIndex, itemId, gems);
-	const cap = gems.repairHitCap;
-	const minimized = repairAndMinimize({
+	const hitBudget = gems.repairHitBudget;
+	const minimized = repairMetaGems({
 		items: socketed,
 		epWeights: gems.weights,
 		palette: gems.fillPalette,
-		...(cap
+		...(hitBudget
 			? {
 					hitCap: {
-						stat: cap.stat,
-						remaining: cap.baselineRemaining - (gearHitRating(swapped, cap.stat) - cap.baselineGearHit),
-						...(cap.groups ? { groups: cap.groups } : {}),
+						stat: hitBudget.stat,
+						remaining: hitBudget.baselineRemaining - (gearHitRating(swapped, hitBudget.stat) - hitBudget.baselineGearHit),
+						...(hitBudget.groups ? { groups: hitBudget.groups } : {}),
 					},
 				}
 			: {}),
 	});
 	return {
 		equipment: applyRepairedGems(swapped, minimized.items),
-		swaps: minimized.swaps.filter(s => s.itemIndex !== slotIndex),
+		recolours: minimized.recolours.filter(s => s.itemIndex !== slotIndex),
 		// The swapped slot included, which `swaps` filters out.
-		repaired: minimized.swaps.length > 0,
+		repaired: minimized.recolours.length > 0,
 		removed,
 	};
 }
@@ -3623,7 +3623,7 @@ export function candidateSwapWithRepairs(
 type ChainBuild = {
 	equipment: SimItemSpec[];
 	repaired: boolean;
-	swaps: MetaRepairSwap[];
+	recolours: GemRecolour[];
 };
 
 /** `{}` sends no copies. */
@@ -3634,7 +3634,7 @@ type CopyLayout = {
 
 type LayoutRequest = {
 	request: RaidSimRequest;
-	swaps: readonly MetaRepairSwap[];
+	recolours: readonly GemRecolour[];
 };
 
 /**
@@ -3677,14 +3677,14 @@ const MISSED_HIT_TOLERANCE = 0.5;
 function chainSwapsWithRepairs(equipment: readonly SimItemSpec[], pieces: readonly { slotIndex: number; itemId: number }[], gems: GemContext): ChainBuild {
 	let gear: SimItemSpec[] = [...equipment];
 	let repaired = false;
-	const swaps: MetaRepairSwap[] = [];
+	const recolours: GemRecolour[] = [];
 	for (const piece of pieces) {
 		const outcome = candidateSwapWithRepairs(gear, piece.slotIndex, piece.itemId, gems);
 		gear = outcome.equipment;
 		repaired ||= outcome.repaired;
-		swaps.push(...outcome.swaps);
+		recolours.push(...outcome.recolours);
 	}
-	return { equipment: gear, repaired, swaps };
+	return { equipment: gear, repaired, recolours };
 }
 
 /**
