@@ -10,12 +10,12 @@ import { followPhase } from '../model/follow_phase';
 import { TAB_DEFAULT_ITERATIONS } from '../model/run_state';
 import { UPGRADES_SETTINGS_STORAGE_KEY } from '../model/saved_entry';
 import { type LinkedSettings, openSavedUpgradesStore } from '../model/saved_settings';
-import type { SettingsSeed, UpgradesState, UpgradesStore } from '../model/upgrades_store';
+import type { InitialSettings, UpgradesState, UpgradesStore } from '../model/upgrades_store';
 import { DEV_FLAGS } from '../utils/dev_flags';
 
 export { selectRun, selectRunStatus, selectSettledSignature, selectSort } from '../model/upgrades_store';
 
-const SETTINGS_SEED: SettingsSeed = { iterations: TAB_DEFAULT_ITERATIONS };
+const INITIAL_SETTINGS: InitialSettings = { iterations: TAB_DEFAULT_ITERATIONS };
 
 /** The iterations and cap from the dev URL flags, read once per page load; a flag left out is absent, so the saved iterations stand and no cap is set. */
 const DEV_LINK: LinkedSettings = {
@@ -37,7 +37,7 @@ const stores = new WeakMap<Sim, UpgradesStore>();
 export function upgradesStoreFor(host: IndividualSimHost<Spec>): UpgradesStore {
 	let store = stores.get(host.sim);
 	if (!store) {
-		store = openSavedUpgradesStore(SETTINGS_SEED, host.sim.env.storage, host.getStorageKey(UPGRADES_SETTINGS_STORAGE_KEY), DEV_LINK);
+		store = openSavedUpgradesStore(INITIAL_SETTINGS, host.sim.env.storage, host.getStorageKey(UPGRADES_SETTINGS_STORAGE_KEY), DEV_LINK);
 		stores.set(host.sim, store);
 		followPhase(store, host);
 	}

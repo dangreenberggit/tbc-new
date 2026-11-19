@@ -8,19 +8,19 @@ import { openSavedUpgradesStore } from './saved_settings';
 import { effectiveExcludedSources, zonelessSourceKey } from './settings_pool';
 
 const KEY = '__tbc_new_feral_druid__upgradesSettings__';
-const SEED = { iterations: 1000 };
+const INITIAL_SETTINGS = { iterations: 1000 };
 
 describe('openSavedUpgradesStore', () => {
 	it('restores the settings and the sort a user chose in a fresh store', () => {
 		const storage = memoryStorage();
-		const first = openSavedUpgradesStore(SEED, storage, KEY);
+		const first = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY);
 		first.getState().setIterations(5000, undefined);
 		first.getState().toggleSource('raid:hyjal', undefined);
 		// A write with a scope is what stores that scope's defaults, as in production.
 		first.getState().setPrune(true, { specPhase: 'feral:3', defaultGearSetKeys: ['preset:P3'], poolSourceKeys: ['raid:hyjal'] });
 		first.getState().setSort([{ id: 'slot', desc: false }]);
 
-		const reloaded = openSavedUpgradesStore(SEED, storage, KEY);
+		const reloaded = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY);
 
 		expect(reloaded.getState().settings).toEqual({
 			excludedSources: ['raid:hyjal'],
@@ -34,26 +34,26 @@ describe('openSavedUpgradesStore', () => {
 
 	it('restores the view toggles a user set in a fresh store', () => {
 		const storage = memoryStorage();
-		const first = openSavedUpgradesStore(SEED, storage, KEY);
+		const first = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY);
 		first.getState().setViewToggle('withSetPotential', true);
 		first.getState().setViewToggle('onlyBis', true);
 		first.getState().setViewToggle('withSetPotential', false);
 
-		expect(openSavedUpgradesStore(SEED, storage, KEY).getState().view).toEqual({ withSetPotential: false, onlyBis: true });
+		expect(openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY).getState().view).toEqual({ withSetPotential: false, onlyBis: true });
 	});
 
 	it('restores the sources "Filter by source" hides in a fresh store', () => {
 		const storage = memoryStorage();
-		const first = openSavedUpgradesStore(SEED, storage, KEY);
+		const first = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY);
 		first.getState().toggleViewSource('Black Temple');
 		first.getState().toggleViewSource('Crafted');
 
-		expect(openSavedUpgradesStore(SEED, storage, KEY).getState().hiddenSources).toEqual(['Black Temple', 'Crafted']);
+		expect(openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY).getState().hiddenSources).toEqual(['Black Temple', 'Crafted']);
 	});
 
 	it('restores an entry saved before the source filter was, with every source shown', () => {
 		const raw = JSON.stringify({ version: SAVED_VERSION, settings: { iterations: 5000 }, view: { onlyBis: true }, exportFlavour: 'gear' });
-		const state = openSavedUpgradesStore(SEED, memoryStorage({ [KEY]: raw }), KEY).getState();
+		const state = openSavedUpgradesStore(INITIAL_SETTINGS, memoryStorage({ [KEY]: raw }), KEY).getState();
 		expect(state.hiddenSources).toEqual([]);
 		expect(state.view.onlyBis).toBe(true);
 	});
@@ -62,26 +62,26 @@ describe('openSavedUpgradesStore', () => {
 	it('reads a version-1 entry that unticked "Heroic dungeon" as nothing saved, so the run still excludes it', () => {
 		const heroic = zonelessSourceKey('heroic');
 		const raw = JSON.stringify({ version: 1, settings: { excludedSources: [heroic] } });
-		const { excludedSources } = openSavedUpgradesStore(SEED, memoryStorage({ [KEY]: raw }), KEY).getState().settings;
+		const { excludedSources } = openSavedUpgradesStore(INITIAL_SETTINGS, memoryStorage({ [KEY]: raw }), KEY).getState().settings;
 		expect(effectiveExcludedSources(excludedSources, ['Black Temple', heroic])).toContain(heroic);
 	});
 
 	it('restores the export panel’s token or gear choice in a fresh store (ticket 588)', () => {
 		const storage = memoryStorage();
-		openSavedUpgradesStore(SEED, storage, KEY).getState().setExportFlavour('gear');
-		expect(openSavedUpgradesStore(SEED, storage, KEY).getState().exportFlavour).toBe('gear');
+		openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY).getState().setExportFlavour('gear');
+		expect(openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY).getState().exportFlavour).toBe('gear');
 	});
 
 	it('restores token for an entry saved before the export choice was', () => {
 		const raw = JSON.stringify({ version: SAVED_VERSION, settings: { iterations: 5000 }, view: { onlyBis: true } });
-		const state = openSavedUpgradesStore(SEED, memoryStorage({ [KEY]: raw }), KEY).getState();
+		const state = openSavedUpgradesStore(INITIAL_SETTINGS, memoryStorage({ [KEY]: raw }), KEY).getState();
 		expect(state.exportFlavour).toBe('token');
 		expect(state.view.onlyBis).toBe(true);
 	});
 
 	it('restores an entry saved before the view toggles were, with the toggles off', () => {
 		const raw = JSON.stringify({ version: SAVED_VERSION, settings: { iterations: 5000 }, sort: [{ id: 'slot', desc: true }] });
-		const state = openSavedUpgradesStore(SEED, memoryStorage({ [KEY]: raw }), KEY).getState();
+		const state = openSavedUpgradesStore(INITIAL_SETTINGS, memoryStorage({ [KEY]: raw }), KEY).getState();
 		expect(state.settings.iterations).toBe(5000);
 		expect(state.sort).toEqual([{ id: 'slot', desc: true }]);
 		expect(state.view).toEqual({ withSetPotential: false, onlyBis: false });
@@ -89,28 +89,28 @@ describe('openSavedUpgradesStore', () => {
 
 	it('lets the dev link’s iterations win over the saved ones, as a settings link wins over saved settings upstream', () => {
 		const storage = memoryStorage();
-		const first = openSavedUpgradesStore(SEED, storage, KEY);
+		const first = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY);
 		first.getState().setIterations(5000, undefined);
 
-		expect(openSavedUpgradesStore(SEED, storage, KEY, { iterations: 300 }).getState().settings.iterations).toBe(300);
+		expect(openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY, { iterations: 300 }).getState().settings.iterations).toBe(300);
 	});
 
 	// The cap picker shows only on a page with `?upgrades-dev`, so a cap that came back on another page would cut the run unseen.
 	it('restores no cap: a page without the dev link runs uncapped whatever a dev page set', () => {
 		const storage = memoryStorage({ [KEY]: JSON.stringify({ version: SAVED_VERSION, settings: { candidateCap: 25 } }) });
-		const devPage = openSavedUpgradesStore(SEED, storage, KEY, { candidateCap: 3 });
+		const devPage = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY, { candidateCap: 3 });
 		expect(devPage.getState().settings.candidateCap).toBe(3);
 		devPage.getState().setCandidateCap(7, undefined);
 		devPage.getState().setIterations(2000, undefined);
 
-		const plainPage = openSavedUpgradesStore(SEED, storage, KEY).getState().settings;
+		const plainPage = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY).getState().settings;
 		expect(plainPage.iterations).toBe(2000);
 		expect(plainPage.candidateCap).toBeUndefined();
 	});
 
 	it('stores nothing from a run', () => {
 		const storage = memoryStorage();
-		const store = openSavedUpgradesStore(SEED, storage, KEY);
+		const store = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY);
 		store.getState().startRun(1, 1000, { inputsSignature: 'sig' });
 		store.getState().landRow(1, RANKING_FIXTURE.items[0]!);
 		expect(storage.entries.has(KEY)).toBe(false);
@@ -123,7 +123,7 @@ describe('openSavedUpgradesStore', () => {
 
 	it('rewrites nothing when a setting is set to the value it already holds', () => {
 		const storage = memoryStorage();
-		const store = openSavedUpgradesStore(SEED, storage, KEY);
+		const store = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY);
 		store.getState().setPrune(true, undefined);
 		const setItem = vi.spyOn(storage, 'setItem');
 
@@ -144,7 +144,7 @@ describe('openSavedUpgradesStore', () => {
 			hiddenSources: [],
 		};
 		const restoredFrom = (raw: string | undefined) => {
-			const store = openSavedUpgradesStore(SEED, memoryStorage(raw === undefined ? {} : { [KEY]: raw }), KEY);
+			const store = openSavedUpgradesStore(INITIAL_SETTINGS, memoryStorage(raw === undefined ? {} : { [KEY]: raw }), KEY);
 			const { settings, sort, view, exportFlavour, hiddenSources } = store.getState();
 			return { settings, sort, view, exportFlavour, hiddenSources };
 		};
@@ -211,7 +211,7 @@ describe('openSavedUpgradesStore', () => {
 				},
 				removeItem: () => {},
 			};
-			const store = openSavedUpgradesStore(SEED, blocked, KEY);
+			const store = openSavedUpgradesStore(INITIAL_SETTINGS, blocked, KEY);
 			expect(() => store.getState().setIterations(2000, undefined)).not.toThrow();
 			expect(store.getState().settings.iterations).toBe(2000);
 		});

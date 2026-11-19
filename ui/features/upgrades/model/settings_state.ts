@@ -38,12 +38,12 @@ const offeredExclusions = (excluded: readonly string[], poolSourceKeys: readonly
 };
 
 /** No cap: only the dev link sets one (`utils/dev_flags.ts`), and it goes over these settings (`saved_settings.ts`). */
-export const initialSettings = (seed: { iterations: number }): SettingsState => ({
+export const initialSettings = (initial: { iterations: number }): SettingsState => ({
 	excludedSources: [],
 	selectedSetKeys: [],
 	prune: false,
 	candidateCap: undefined,
-	iterations: seed.iterations,
+	iterations: initial.iterations,
 });
 
 export const withSourceToggled = (state: SettingsState, key: string): SettingsState => ({ ...state, excludedSources: toggled(state.excludedSources, key) });

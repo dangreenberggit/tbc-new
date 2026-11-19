@@ -6,13 +6,13 @@ import { appliedSettings } from './settings_state';
 import { createUpgradesStore, selectHiddenSources, selectRunStatus, selectSettledSignature, selectSort } from './upgrades_store';
 
 const [rowA] = RANKING_FIXTURE.items;
-const SEED = { iterations: 1000 };
+const INITIAL_SETTINGS = { iterations: 1000 };
 const SCOPE = { specPhase: 'ret:3', defaultGearSetKeys: ['preset:P3'], poolSourceKeys: ['raid:hyjal'] };
 const MEASURED = { inputsSignature: 'sig-at-click' };
 
 describe('createUpgradesStore', () => {
-	it('starts idle with the seed as the settings', () => {
-		const store = createUpgradesStore(SEED);
+	it('starts idle with the initial settings', () => {
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		expect(selectRunStatus(store.getState())).toBe('idle');
 		expect(store.getState().settings).toEqual({ excludedSources: [], selectedSetKeys: [], prune: false, iterations: 1000 });
 	});
@@ -20,7 +20,7 @@ describe('createUpgradesStore', () => {
 
 describe('the run actions', () => {
 	it('notifies nobody when a superseded run lands a row', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().startRun(2, 1000);
 		const listener = vi.fn();
 		store.subscribe(listener);
@@ -34,7 +34,7 @@ describe('the run actions', () => {
 	});
 
 	it('keeps the sort the user chose when the next run starts and lands', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().startRun(1, 1000);
 		store.getState().settleRun(1, RANKING_FIXTURE);
 		store.getState().setSort([{ id: 'item', desc: false }]);
@@ -48,7 +48,7 @@ describe('the run actions', () => {
 	});
 
 	it('keeps the hidden sources the user chose when the next run starts and lands', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().startRun(1, 1000);
 		store.getState().settleRun(1, RANKING_FIXTURE);
 		store.getState().setHiddenSources(['Black Temple', 'PvP vendor']);
@@ -62,7 +62,7 @@ describe('the run actions', () => {
 	});
 
 	it('keeps the sort when a recorded ranking loads', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().setSort([{ id: 'item', desc: false }]);
 
 		store.getState().loadFixture(1, RANKING_FIXTURE);
@@ -71,7 +71,7 @@ describe('the run actions', () => {
 	});
 
 	it('starts a new run from a finished one, keeping none of its rows or what it was measured on', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().startRun(1, 1000, MEASURED);
 		store.getState().landRow(1, rowA!);
 		store.getState().settleRun(1, RANKING_FIXTURE);
@@ -81,7 +81,7 @@ describe('the run actions', () => {
 	});
 
 	it('leaves the settings object alone', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		const settings = store.getState().settings;
 		store.getState().startRun(1, 1000);
 		expect(store.getState().settings).toBe(settings);
@@ -90,7 +90,7 @@ describe('the run actions', () => {
 
 describe('appliedSettings', () => {
 	it('applies the scope defaults to a fresh state and returns the same object on a second call', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		const raw = store.getState().settings;
 		const first = appliedSettings(raw, SCOPE);
 		expect(first).toMatchObject({ selectedSetKeys: ['preset:P3'], defaultsFor: 'ret:3' });
@@ -99,21 +99,21 @@ describe('appliedSettings', () => {
 	});
 
 	it('returns the stored object once a write has stored the defaults', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().setPrune(true, SCOPE);
 		const stored = store.getState().settings;
 		expect(appliedSettings(stored, SCOPE)).toBe(stored);
 	});
 
 	it('applies nothing for a page whose spec has no ranking data', () => {
-		const raw = createUpgradesStore(SEED).getState().settings;
+		const raw = createUpgradesStore(INITIAL_SETTINGS).getState().settings;
 		expect(appliedSettings(raw, undefined)).toBe(raw);
 	});
 });
 
 describe('the user’s settings actions', () => {
 	it('applies the defaults and then the toggle in one notification', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		const listener = vi.fn();
 		store.subscribe(listener);
 
@@ -123,14 +123,14 @@ describe('the user’s settings actions', () => {
 	});
 
 	it('keeps a set the user deselected deselected on the next write in the same scope', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().toggleGearSet('preset:P3', SCOPE);
 		store.getState().setIterations(2000, SCOPE);
 		expect(store.getState().settings).toMatchObject({ selectedSetKeys: [], iterations: 2000 });
 	});
 
 	it('stores the scope’s defaults on the first write even when the value already holds', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		const listener = vi.fn();
 		store.subscribe(listener);
 
@@ -140,7 +140,7 @@ describe('the user’s settings actions', () => {
 	});
 
 	it('notifies nobody when a setting is set to the value it already holds', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().setPrune(false, SCOPE);
 		const listener = vi.fn();
 		store.subscribe(listener);
@@ -152,7 +152,7 @@ describe('the user’s settings actions', () => {
 	});
 
 	it('notifies nobody on a second scope change, which has nothing left to forget', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().setPrune(true, SCOPE);
 		store.getState().changeScope(['raid:hyjal']);
 		const listener = vi.fn();
@@ -165,7 +165,7 @@ describe('the user’s settings actions', () => {
 
 describe('run selectors', () => {
 	it('gives no settled signature while a run is in flight, and the signature once it is done or stopped', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().startRun(1, 1000, MEASURED);
 		expect(selectSettledSignature(store.getState())).toBeUndefined();
 
@@ -181,18 +181,18 @@ describe('run selectors', () => {
 
 describe('setSort', () => {
 	it('starts with no sort, the engine order', () => {
-		expect(selectSort(createUpgradesStore(SEED).getState())).toEqual([]);
+		expect(selectSort(createUpgradesStore(INITIAL_SETTINGS).getState())).toEqual([]);
 	});
 
 	it('stores the sort it is given', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().setSort([{ id: 'item', desc: true }]);
 		store.getState().setSort([{ id: 'item', desc: false }]);
 		expect(selectSort(store.getState())).toEqual([{ id: 'item', desc: false }]);
 	});
 
 	it('tells every reader of the store, so a second table follows the first', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		const first = vi.fn();
 		const second = vi.fn();
 		store.subscribe(selectSort, first);
@@ -203,7 +203,7 @@ describe('setSort', () => {
 	});
 
 	it('notifies nobody when given the sort it already holds', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		const listener = vi.fn();
 		store.subscribe(listener);
 		store.getState().setSort(selectSort(store.getState()));
@@ -213,12 +213,12 @@ describe('setSort', () => {
 
 describe('the source filter actions', () => {
 	it('start with every source shown, or the hidden sources restored', () => {
-		expect(selectHiddenSources(createUpgradesStore(SEED).getState())).toEqual([]);
-		expect(selectHiddenSources(createUpgradesStore(SEED, { hiddenSources: ['Karazhan'] }).getState())).toEqual(['Karazhan']);
+		expect(selectHiddenSources(createUpgradesStore(INITIAL_SETTINGS).getState())).toEqual([]);
+		expect(selectHiddenSources(createUpgradesStore(INITIAL_SETTINGS, { hiddenSources: ['Karazhan'] }).getState())).toEqual(['Karazhan']);
 	});
 
 	it('hide and show one source at a time, and set the whole list at once', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().toggleViewSource('Black Temple');
 		store.getState().toggleViewSource('Karazhan');
 		store.getState().toggleViewSource('Black Temple');
@@ -231,7 +231,7 @@ describe('the source filter actions', () => {
 	});
 
 	it('notify nobody when the list is set to the sources it already hides', () => {
-		const store = createUpgradesStore(SEED, { hiddenSources: ['Karazhan'] });
+		const store = createUpgradesStore(INITIAL_SETTINGS, { hiddenSources: ['Karazhan'] });
 		const listener = vi.fn();
 		store.subscribe(listener);
 		store.getState().setHiddenSources(['Karazhan']);
@@ -239,7 +239,7 @@ describe('the source filter actions', () => {
 	});
 
 	it('leave the run alone, so hiding a source never marks a result stale', () => {
-		const store = createUpgradesStore(SEED);
+		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().startRun(1, 1000, MEASURED);
 		store.getState().settleRun(1, RANKING_FIXTURE);
 		const run = store.getState().run;

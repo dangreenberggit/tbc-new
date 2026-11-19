@@ -92,9 +92,9 @@ export type UpgradesActions = {
 export type UpgradesState = UpgradesData & UpgradesActions;
 
 /** The settings a new store starts from, before the page's saved entry and the dev link go over them (`saved_settings.ts`). */
-export type SettingsSeed = { iterations: number };
+export type InitialSettings = { iterations: number };
 
-/** What a store restores from storage over its seed: only the fields that read back valid. */
+/** What a store restores from storage over its initial settings: only the fields that read back valid. */
 export type RestoredTab = {
 	settings?: Partial<SettingsState>;
 	sort?: ResultsSort;
@@ -105,7 +105,7 @@ export type RestoredTab = {
 
 export type UpgradesStore = ReturnType<typeof createUpgradesStore>;
 
-export function createUpgradesStore(seed: SettingsSeed, restored: RestoredTab = {}) {
+export function createUpgradesStore(initial: InitialSettings, restored: RestoredTab = {}) {
 	return createStore<UpgradesState>()(
 		subscribeWithSelector((set): UpgradesState => {
 			// Returning the same state object is what makes zustand skip the write and the notification.
@@ -124,7 +124,7 @@ export function createUpgradesStore(seed: SettingsSeed, restored: RestoredTab = 
 
 			return {
 				run: IDLE_RUN,
-				settings: { ...initialSettings(seed), ...restored.settings },
+				settings: { ...initialSettings(initial), ...restored.settings },
 				sort: restored.sort ?? [],
 				view: { ...NO_VIEW_TOGGLES, ...restored.view },
 				hiddenSources: restored.hiddenSources ?? [],

@@ -11,7 +11,7 @@ import type { ExportFlavour } from './export';
 import { SORT_COLUMN_IDS } from './results_columns';
 import { NO_VIEW_TOGGLES } from './results_view';
 import { SAVED_VERSION } from './saved_entry';
-import { createUpgradesStore, type RestoredTab, type ResultsSort, type SettingsSeed, type UpgradesState, type UpgradesStore } from './upgrades_store';
+import { createUpgradesStore, type InitialSettings, type RestoredTab, type ResultsSort, type UpgradesState, type UpgradesStore } from './upgrades_store';
 
 type Storage = Env['storage'];
 type Settings = UpgradesState['settings'];
@@ -99,9 +99,9 @@ export type LinkedSettings = Partial<Pick<Settings, 'iterations' | 'candidateCap
  * A new store over the page's saved entry, saving each later change to it; a run changes none of the saved fields, so
  * a run writes nothing. The load order is wowsims' (`ui/sim/state/persistence.ts`): defaults, then saved, then the link.
  */
-export function openSavedUpgradesStore(seed: SettingsSeed, storage: Storage, key: string, link: LinkedSettings = {}): UpgradesStore {
+export function openSavedUpgradesStore(initial: InitialSettings, storage: Storage, key: string, link: LinkedSettings = {}): UpgradesStore {
 	const saved = readSavedTab(storage, key);
-	const store = createUpgradesStore(seed, { ...saved, settings: { ...saved.settings, ...link } });
+	const store = createUpgradesStore(initial, { ...saved, settings: { ...saved.settings, ...link } });
 	store.subscribe((state, previous) => {
 		if (SAVED_PARTS.every(part => state[part] === previous[part])) return;
 		try {
