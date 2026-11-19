@@ -1253,7 +1253,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		// run must still stop before replication and the set-bonus sims.
 		if (signal?.aborted) aborted = true;
 		// A skipped candidate (failed repair or sim) is already disclosed in
-		// `substitutions`, and never reaches `individualDeltasByItemId`, so
+		// `substitutions`, and never reaches `ownDeltasByItemId`, so
 		// filtering on that map alone would re-add it as a Stop placeholder.
 		const skippedIds = new Set(candidateSkips.map(s => s.itemId));
 		const unsimmedCandidates = aborted ? simCandidates.filter(c => !ownDeltasByItemId.has(c.itemId) && !skippedIds.has(c.itemId)) : [];
