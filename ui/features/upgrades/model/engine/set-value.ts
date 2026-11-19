@@ -22,7 +22,7 @@ export const SET_THRESHOLDS: readonly SetThreshold[] = [2, 4];
 
 /**
  * Whether losing `setId`'s `count`-piece bonus counts as a break: `isBonusImplemented` by
- * default, or with `measureSetBonuses`, whether `measureWornSetLadder` measured that
+ * default, or with `measureSetBonuses`, whether `measureWornSetCounts` measured that
  * bonus above noise.
  */
 export type BonusCountPredicate = (setId: number, count: number) => boolean;
@@ -41,7 +41,7 @@ export type UnmeasuredReason =
 
 /**
  * Which (setId, threshold) bonuses a ranking without `measureSetBonuses` measures; with
- * it, every lost count is measured by `measureWornSetLadder`. Do not extend this table:
+ * it, every lost count is measured by `measureWornSetCounts`. Do not extend this table:
  * the tab keeps no list of implemented set bonuses.
  */
 const IMPLEMENTED_IN_SIM: Record<number, Partial<Record<SetThreshold, boolean>>> = {

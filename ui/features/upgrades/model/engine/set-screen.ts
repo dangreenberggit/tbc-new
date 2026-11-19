@@ -7,7 +7,7 @@
  * least 2 more: it sims the gear with all those pieces, sending the first k
  * added pieces (in slot order) as normal copies and the rest as copies with no
  * set (`applyCopies`), so the sim counts `worn` + k pieces. Each k is one of
- * `rungs`, and a `pairs` entry is k = 0 against k = `reach` − `worn`. They all
+ * the screened counts, and a `pairs` entry is k = 0 against k = `reach` − `worn`. They all
  * share a seed and return per-iteration values, so the difference of two has a
  * paired standard error.
  *
@@ -23,9 +23,9 @@ import { applyCopies, type BuildFailure, errorText, isBuildFailure } from './set
 
 export type SetScreenMode = 'off' | 'record' | 'on';
 
-/** Iteration counts for `pairs`, and for `rungs`, in `'record'` mode. */
+/** Iteration counts for `pairs`, and for `countSims`, in `'record'` mode. */
 export const SCREEN_PAIR_ITERATIONS: readonly number[] = [10, 100, 300, 1000];
-export const SCREEN_LADDER_ITERATIONS: readonly number[] = [100, 300, 1000];
+export const SCREEN_COUNT_ITERATIONS: readonly number[] = [100, 300, 1000];
 
 export type ScreenOnRule = {
 	/** `'M2'`: `bestStats` plus the pair's DPS. */
@@ -65,7 +65,7 @@ export type SetScreenPair = {
 	pairedSe?: number;
 };
 
-export type SetScreenRung = {
+export type SetScreenCountSim = {
 	iterations: number;
 	/** How many of the set's pieces the sim counts. */
 	count: number;
@@ -84,14 +84,14 @@ export type SetScreenSet = {
 	packageItemIds: number[];
 	pairs: SetScreenPair[];
 	/** Grouped by iteration count, then in count order. */
-	rungs: SetScreenRung[];
+	countSims: SetScreenCountSim[];
 };
 
 export type SetScreenRecord = {
 	mode: 'record';
 	seed: number;
 	pairIterations: number[];
-	ladderIterations: number[];
+	countIterations: number[];
 	sets: SetScreenSet[];
 	/** Sims sent to the runner, failed ones included. */
 	simmed: number;
@@ -169,10 +169,10 @@ export type SetScreenInput = {
 	/** The error of each sim request that could not be built. */
 	onRequestNotBuilt?: (setId: number, error: string) => void;
 	pairIterations?: readonly number[];
-	ladderIterations?: readonly number[];
+	countIterations?: readonly number[];
 };
 
-export type SetScreenOnInput = Omit<SetScreenInput, 'pairIterations' | 'ladderIterations'> & {
+export type SetScreenOnInput = Omit<SetScreenInput, 'pairIterations' | 'countIterations'> & {
 	/**
 	 * The `'sum-of-singles'` partner rule's estimate for `setId`'s pieces at
 	 * `count`, which needs no extra sim. Undefined when an input is missing.
@@ -195,17 +195,17 @@ function screenGear(input: Pick<SetScreenInput, 'gearAt'>, setId: number, reach:
  * Runs one of a set's sims for a given k, shared by both modes so an `'on'` pair
  * is the same request, with the same options, as a `'record'` pair at that
  * iteration count. Each sim catches its own failure, so one failure loses only
- * that sim. With `gear.requestsFor`, the first sim builds all of `rungs` in one
+ * that sim. With `gear.requestsFor`, the first sim builds all of `counts` in one
  * call.
  */
-function rungSimmer(
+function countSimmer(
 	input: Pick<SetScreenInput, 'runSimAt' | 'seed' | 'signal' | 'onSimFailed' | 'onRequestNotBuilt'>,
 	setId: number,
 	worn: number,
 	gear: ScreenGear | undefined,
 	slots: readonly number[],
 	counter: ScreenCounter,
-	rungs: readonly number[],
+	counts: readonly number[],
 ): (k: number, iterations: number) => Promise<SimObservation | undefined> {
 	const copiesAt = (k: number) => ({
 		setKept: slots.slice(0, k),
@@ -217,9 +217,9 @@ function rungSimmer(
 		const what = `[upgrades] set screen: set ${setId} at ${worn + k} pieces, ${iterations} iterations, not measured`;
 		let request: RaidSimRequest | undefined;
 		if (gear.requestsFor) {
-			requests ??= gear.requestsFor(rungs.map(copiesAt));
-			const index = rungs.indexOf(k);
-			if (index < 0) throw new Error(`${what}: rung ${k} is not a screened rung`);
+			requests ??= gear.requestsFor(counts.map(copiesAt));
+			const index = counts.indexOf(k);
+			if (index < 0) throw new Error(`${what}: count ${k} is not a screened count`);
 			const built = (await requests)[index];
 			if (built === undefined) return undefined;
 			if (isBuildFailure(built)) {
@@ -261,7 +261,7 @@ function rungSimmer(
 
 export async function recordSetScreen(input: SetScreenInput): Promise<SetScreenRecord> {
 	const pairIterations = [...(input.pairIterations ?? SCREEN_PAIR_ITERATIONS)];
-	const ladderIterations = [...(input.ladderIterations ?? SCREEN_LADDER_ITERATIONS)];
+	const countIterations = [...(input.countIterations ?? SCREEN_COUNT_ITERATIONS)];
 	const counter: ScreenCounter = { simmed: 0, fromStore: 0 };
 	const sets: SetScreenSet[] = [];
 
@@ -269,7 +269,7 @@ export async function recordSetScreen(input: SetScreenInput): Promise<SetScreenR
 		if (reach - worn < 2) continue;
 		const { gear, added, slots } = screenGear(input, setId, reach);
 		const top = reach - worn;
-		const rungAt = rungSimmer(
+		const simAtCount = countSimmer(
 			input,
 			setId,
 			worn,
@@ -281,8 +281,8 @@ export async function recordSetScreen(input: SetScreenInput): Promise<SetScreenR
 
 		const pairs: SetScreenPair[] = [];
 		for (const iterations of pairIterations) {
-			const low = await rungAt(0, iterations);
-			const high = await rungAt(top, iterations);
+			const low = await simAtCount(0, iterations);
+			const high = await simAtCount(top, iterations);
 			pairs.push({
 				iterations,
 				...(low && high ? { dps: high.dps - low.dps } : {}),
@@ -290,12 +290,12 @@ export async function recordSetScreen(input: SetScreenInput): Promise<SetScreenR
 			});
 		}
 
-		const rungs: SetScreenRung[] = [];
-		for (const iterations of ladderIterations) {
+		const countSims: SetScreenCountSim[] = [];
+		for (const iterations of countIterations) {
 			let below: SimObservation | undefined;
 			for (let k = 0; k <= top; k++) {
-				const obs = await rungAt(k, iterations);
-				rungs.push({
+				const obs = await simAtCount(k, iterations);
+				countSims.push({
 					iterations,
 					count: worn + k,
 					...(obs ? { dps: obs.dps, se: obs.stdev / Math.sqrt(iterations) } : {}),
@@ -311,7 +311,7 @@ export async function recordSetScreen(input: SetScreenInput): Promise<SetScreenR
 			reach,
 			packageItemIds: added.map(p => p.itemId),
 			pairs,
-			rungs,
+			countSims,
 		});
 	}
 
@@ -319,7 +319,7 @@ export async function recordSetScreen(input: SetScreenInput): Promise<SetScreenR
 		mode: 'record',
 		seed: input.seed,
 		pairIterations,
-		ladderIterations,
+		countIterations,
 		sets,
 		simmed: counter.simmed,
 		fromStore: counter.fromStore,
@@ -340,9 +340,9 @@ export async function runSetScreenOn(input: SetScreenOnInput): Promise<SetScreen
 	for (const { setId, worn, reach } of [...input.sets].sort((a, b) => a.setId - b.setId)) {
 		if (reach - worn < 2) continue;
 		const { gear, added, slots } = screenGear(input, setId, reach);
-		const rungAt = rungSimmer(input, setId, worn, gear, slots, counter, [0, reach - worn]);
-		const low = await rungAt(0, iterations);
-		const high = await rungAt(reach - worn, iterations);
+		const simAtCount = countSimmer(input, setId, worn, gear, slots, counter, [0, reach - worn]);
+		const low = await simAtCount(0, iterations);
+		const high = await simAtCount(reach - worn, iterations);
 		const pairDps = low && high ? high.dps - low.dps : undefined;
 
 		let bestStats: number | undefined;

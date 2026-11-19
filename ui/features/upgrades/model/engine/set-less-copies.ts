@@ -161,7 +161,7 @@ export type WornSetCountValue = {
  * sim makes both counts that use it `sim-failed`, and `onFailed` gets `notBuilt` when the
  * request could not be built.
  */
-export async function measureWornSetLadder(
+export async function measureWornSetCounts(
 	runSim: (request: RaidSimRequest) => Promise<DpsSample>,
 	composedRequest: RaidSimRequest,
 	wornSetSlots: readonly number[],
@@ -169,7 +169,7 @@ export async function measureWornSetLadder(
 ): Promise<WornSetCountValue[]> {
 	const slots = [...wornSetSlots].sort((a, b) => a - b);
 	if (slots.length < 2) return [];
-	const rungs: Array<DpsSample | undefined> = [];
+	const simsByCount: Array<DpsSample | undefined> = [];
 	for (let c = 1; c <= slots.length; c++) {
 		let request: RaidSimRequest;
 		try {
@@ -178,21 +178,21 @@ export async function measureWornSetLadder(
 				setLess: slots.slice(c),
 			});
 		} catch (err) {
-			rungs[c] = undefined;
+			simsByCount[c] = undefined;
 			onFailed?.(errorText(err), true);
 			continue;
 		}
 		try {
-			rungs[c] = await runSim(request);
+			simsByCount[c] = await runSim(request);
 		} catch (err) {
-			rungs[c] = undefined;
+			simsByCount[c] = undefined;
 			onFailed?.(errorText(err));
 		}
 	}
 	const out: WornSetCountValue[] = [];
 	for (let c = 2; c <= slots.length; c++) {
-		const upper = rungs[c];
-		const lower = rungs[c - 1];
+		const upper = simsByCount[c];
+		const lower = simsByCount[c - 1];
 		out.push(
 			upper && lower
 				? {

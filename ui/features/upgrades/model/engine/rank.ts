@@ -70,7 +70,7 @@ import {
 	isBuildFailure,
 	isSimFailure,
 	measureSameGearBonus,
-	measureWornSetLadder,
+	measureWornSetCounts,
 	type SimFailure,
 } from './set-less-copies';
 import { recordSetScreen, runSetScreenOn, type SetScreen, type SetScreenInput, type SetScreenMode } from './set-screen';
@@ -365,11 +365,11 @@ export type BrokenSetValue = {
 
 /**
  * The value of one piece count of one worn set on the player's own gear
- * (`measureWornSetLadder`), and whether it is `counted` as a bonus a swap can
+ * (`measureWornSetCounts`), and whether it is `counted` as a bonus a swap can
  * lose: a value above noise, or a failed sim at a count that may hold a
- * bonus (`measureWornSetLadders`). Counts with no bonus read about 0.
+ * bonus (`measureWornSets`). Counts with no bonus read about 0.
  */
-export type WornSetLadderEntry = {
+export type WornSetCountEntry = {
 	setId: number;
 	setName: string;
 	count: number;
@@ -502,7 +502,7 @@ export type Ranking = {
 	 * set, counted or not. Present only with `deps.measureSetBonuses` and a
 	 * set worn at 2+.
 	 */
-	wornSetLadder?: WornSetLadderEntry[];
+	wornSetLadder?: WornSetCountEntry[];
 	/**
 	 * One check per worn set with a pool piece in a slot the set does not fill:
 	 * the bonus at one piece more than worn, measured on that set's best such
@@ -1320,7 +1320,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		// With `measureSetBonuses`, a swap loses a worn bonus only at a count
 		// `wornSetLadder` counted, and no table is read. An aborted run has none,
 		// so it charges no loss.
-		let counts: BonusCountPredicate | undefined = deps.measureSetBonuses ? countedLadderBreaks(setBonusResult.wornSetLadder) : undefined;
+		let counts: BonusCountPredicate | undefined = deps.measureSetBonuses ? countsAsBreakFrom(setBonusResult.wornSetLadder) : undefined;
 		let setBonuses = setBonusResult.bonuses;
 		// With `measureSetBonuses`, a set row's future bonuses are valued by
 		// one sim of the row plus its partner pieces.
@@ -1398,7 +1398,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			// sim returns. Worn-set values cut short would charge losses at counts
 			// never measured, so no partial set figure is kept.
 			setBonusResult = emptySetPhase();
-			counts = deps.measureSetBonuses ? countedLadderBreaks(setBonusResult.wornSetLadder) : undefined;
+			counts = deps.measureSetBonuses ? countsAsBreakFrom(setBonusResult.wornSetLadder) : undefined;
 			setBonuses = setBonusResult.bonuses;
 			steps = undefined;
 			setBonusLines.length = 0;
@@ -1610,7 +1610,7 @@ async function buildSetBonuses(
 ): Promise<{
 	bonuses: SetBonusValue[];
 	brokenSetValues: BrokenSetValue[];
-	wornSetLadder: WornSetLadderEntry[];
+	wornSetLadder: WornSetCountEntry[];
 	crossingGates: CrossingGate[];
 	/** For `applySetContext` to find each row's losses. */
 	bestSlotIndexByItemId: Map<number, number>;
@@ -1652,7 +1652,7 @@ async function buildSetBonuses(
 	// candidate, because `classifyDeadSlots` (in `plausibilityWarnings`) reads
 	// it too.
 	const wornSetLadder = measureSetBonuses
-		? await measureWornSetLadders(
+		? await measureWornSets(
 				equipment,
 				composeFor,
 				cachedSampleRun,
@@ -1661,7 +1661,7 @@ async function buildSetBonuses(
 				deps.sim.activeSetBonuses ? request => deps.sim.activeSetBonuses!(request) : undefined,
 			)
 		: [];
-	const counts: BonusCountPredicate = measureSetBonuses ? countedLadderBreaks(wornSetLadder) : isBonusImplemented;
+	const counts: BonusCountPredicate = measureSetBonuses ? countsAsBreakFrom(wornSetLadder) : isBonusImplemented;
 	const brokenSetValues: BrokenSetValue[] = wornSetLadder
 		.filter(e => e.counted)
 		.sort((a, b) => (a.setId !== b.setId ? a.setId - b.setId : b.count - a.count))
@@ -2921,32 +2921,32 @@ function countMembersBreaking(
 
 /**
  * The value of each piece count of every set worn at 2 or more pieces
- * (`measureWornSetLadder`), in set-id order. A count is `counted` when its
+ * (`measureWornSetCounts`), in set-id order. A count is `counted` when its
  * value is above noise. A count whose sim failed is `counted` only when the
  * sim's list of the set's bonuses (`readBonuses`) has it, so no count without
  * a bonus becomes a loss. When that list fails too, no failed count is
  * counted, and the lines say what was not measured. A runner with no list
  * gives no such line, so there a failed count is counted.
  */
-async function measureWornSetLadders(
+async function measureWornSets(
 	equipment: readonly SimItemSpec[],
 	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
 	cachedSampleRun: (what: string) => (request: RaidSimRequest) => Promise<DpsSample>,
 	cutoff: Cutoff,
 	lines: Substitution[],
 	readBonuses?: (request: RaidSimRequest) => Promise<readonly string[]>,
-): Promise<WornSetLadderEntry[]> {
+): Promise<WornSetCountEntry[]> {
 	const worn = [...setCounts(equipment)]
 		.filter(([, count]) => count >= 2)
 		.map(([setId]) => setId)
 		.sort((a, b) => a - b);
 	if (worn.length === 0) return [];
 	const request = composeFor(equipment);
-	const entries: WornSetLadderEntry[] = [];
+	const entries: WornSetCountEntry[] = [];
 	for (const setId of worn) {
 		const setName = setLabel(equipment, setId);
 		const slots = equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : []));
-		const rungs = await measureWornSetLadder(cachedSampleRun(`${setName} worn-set ladder`), request, slots, (error, notBuilt) =>
+		const countValues = await measureWornSetCounts(cachedSampleRun(`${setName} worn-set counts`), request, slots, (error, notBuilt) =>
 			lines.push(
 				wornSetSkipSubstitution({
 					setName,
@@ -2956,15 +2956,15 @@ async function measureWornSetLadders(
 			),
 		);
 		const bonusCounts =
-			readBonuses && rungs.some(rung => rung.unmeasured !== undefined)
+			readBonuses && countValues.some(countValue => countValue.unmeasured !== undefined)
 				? await wornSetBonusCounts(readBonuses, request, slots, setName, lines)
 				: undefined;
-		for (const rung of rungs) {
+		for (const countValue of countValues) {
 			const counted =
-				rung.unmeasured !== undefined
-					? (bonusCounts?.has(rung.count) ?? true)
-					: rung.dps !== undefined && clearsSameGearGate(rung.dps, rung.se ?? 0, cutoff);
-			entries.push({ setId, setName, ...rung, counted });
+				countValue.unmeasured !== undefined
+					? (bonusCounts?.has(countValue.count) ?? true)
+					: countValue.dps !== undefined && clearsSameGearGate(countValue.dps, countValue.se ?? 0, cutoff);
+			entries.push({ setId, setName, ...countValue, counted });
 		}
 	}
 	return entries;
@@ -3020,8 +3020,8 @@ async function wornSetBonusCounts(
 }
 
 /** With `measureSetBonuses`, a swap loses only counts `wornSetLadder` counted. */
-function countedLadderBreaks(ladder: readonly WornSetLadderEntry[]): BonusCountPredicate {
-	const counted = new Set(ladder.filter(e => e.counted).map(e => `${e.setId}:${e.count}`));
+function countsAsBreakFrom(wornSetCounts: readonly WornSetCountEntry[]): BonusCountPredicate {
+	const counted = new Set(wornSetCounts.filter(e => e.counted).map(e => `${e.setId}:${e.count}`));
 	return (setId, count) => counted.has(`${setId}:${count}`);
 }
 
