@@ -1,7 +1,7 @@
 import { UIItem } from '@generated/proto/ui';
 import { describe, expect, it } from 'vitest';
 
-import { dbPoolFor, PROTO_SPEC, TEST_DB, TEST_MISSING_IDS, TEST_PRESETS, testItem, testItemPhase } from '../testing/db_pool';
+import { dbPoolFor, PROTO_SPEC_BY_SPEC_ID, TEST_DB, TEST_MISSING_IDS, TEST_PRESETS, testItem, testItemPhase } from '../testing/db_pool';
 import type { SpecId } from './engine/types';
 import {
 	bisGearSetsFor,
@@ -25,7 +25,7 @@ const CELL_NAMES = Object.keys(CELLS);
 describe('selectPool over the fork db.json and the wowsims presets', () => {
 	it('covers 11 specs at phases 1-5', () => {
 		expect(CELL_NAMES).toHaveLength(55);
-		expect(Object.keys(TEST_PRESETS).sort()).toEqual(Object.keys(PROTO_SPEC).sort());
+		expect(Object.keys(TEST_PRESETS).sort()).toEqual(Object.keys(PROTO_SPEC_BY_SPEC_ID).sort());
 	});
 
 	it.each(CELL_NAMES)('%s has the measured pool sizes and BiS rows', name => {

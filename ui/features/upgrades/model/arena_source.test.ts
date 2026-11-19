@@ -18,14 +18,14 @@ const SEASON_BY_PREFIX: [string, number][] = [
 const seasonOf = (name: string): number | undefined => SEASON_BY_PREFIX.find(([prefix]) => name.startsWith(prefix))?.[1];
 
 // The ret phase-4 pool's arena pieces, counted over db.json by this test.
-const ARENA_PIECES = 78;
+const ARENA_PIECE_COUNT = 78;
 
 describe('arena gear in the ret phase-4 pool', () => {
 	const pool = dbPoolFor('ret', 4);
 	const arena = pool.filter(e => isPVPItem(testItem(e.itemId)!));
 
 	it('holds the arena pieces of seasons 1-3', () => {
-		expect(arena).toHaveLength(ARENA_PIECES);
+		expect(arena).toHaveLength(ARENA_PIECE_COUNT);
 		expect(new Set(arena.map(e => seasonOf(e.name)))).toEqual(new Set([1, 2, 3]));
 	});
 

@@ -117,7 +117,7 @@ const valueText = (kind: SetBonusPopoverContent['kind'], entry: Extract<PopoverE
 		: i18n.t('upgrades_tab.set_bonus.popover_dps_more', { ns: 'upgrades', dps: amount });
 };
 
-const bonusIds = (bonuses: readonly BonusRef[]): string => bonuses.map(b => `${b.setName}:${b.threshold}`).join('+');
+const bonusesKey = (bonuses: readonly BonusRef[]): string => bonuses.map(b => `${b.setName}:${b.threshold}`).join('+');
 
 /** What a popover line is about, from its data rather than its printed text. */
 export function popoverLabelId(label: PopoverLabel): string {
@@ -127,7 +127,7 @@ export function popoverLabelId(label: PopoverLabel): string {
 		case 'total':
 			return label.kind;
 		case 'breaks':
-			return `breaks:${bonusIds(label.broken)}`;
+			return `breaks:${bonusesKey(label.broken)}`;
 		case 'bonus':
 			return `bonus:${label.set}:${label.threshold}`;
 		case 'piece_stats':

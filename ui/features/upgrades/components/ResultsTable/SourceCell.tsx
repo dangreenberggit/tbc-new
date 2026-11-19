@@ -7,13 +7,13 @@ import { memo, type ReactNode } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
 import { keepMarkWithZone, rowNamesHiddenSource, rowSourceDetail, zoneWithMark } from '../../utils/format';
-import { itemSourceShows, overrunNpcKey } from '../../utils/item_source';
+import { itemSourceShows, nameBeforeOverrunKey } from '../../utils/gear_selector_source';
 
 /**
  * The drop-with-npc link `ItemSource` draws, drawn here for an item whose first source is a drop
  * from a known npc; else undefined, and `ItemSource` draws the source. The zone and its difficulty
  * mark are joined by a no-break space, so a narrow cell never puts "(N)" on a line of its own, and
- * an npc name that overran its AtlasLoot key is replaced by the boss `overrunNpcKey` recovers.
+ * an npc name that overran its AtlasLoot key is replaced by the boss `nameBeforeOverrunKey` recovers.
  */
 const dropSource = (item: UIItem, sim: Sim): ReactNode | undefined => {
 	const [first] = item.sources;
@@ -22,7 +22,7 @@ const dropSource = (item: UIItem, sim: Sim): ReactNode | undefined => {
 	const zone = sim.db.getZone(drop.zoneId);
 	const npc = sim.db.getNpc(drop.npcId);
 	if (!zone || !npc) return undefined;
-	const boss = overrunNpcKey(npc.name) ?? npc.name;
+	const boss = nameBeforeOverrunKey(npc.name) ?? npc.name;
 	const href = ActionId.makeNpcUrl(npc.id);
 	const category = drop.category ? ` - ${drop.category}` : '';
 	return (

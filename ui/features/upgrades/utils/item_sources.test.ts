@@ -10,7 +10,7 @@ const sourcesOfId = (id: number) => {
 	return testSourcesOf(item);
 };
 
-describe('sourcesOf over the fork db.json and tier-exchange.json', () => {
+describe('itemSourcesFromDb over the fork db.json and tier-exchange.json', () => {
 	it('gives a tier piece its token from the exchange file, with the token id', () => {
 		expect(sourcesOfId(29073)).toEqual([
 			{ kind: 'token', zone: 'Karazhan', boss: 'Prince Malchezaar', token: 'Helm of the Fallen Champion', tokenId: 29760 },

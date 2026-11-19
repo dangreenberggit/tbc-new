@@ -5,7 +5,7 @@ import { fakeHost } from '@sim/testing';
 import { render } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { itemSourceShows, overrunNpcKey } from './item_source';
+import { itemSourceShows, nameBeforeOverrunKey } from './gear_selector_source';
 
 const ZONE_ID = 10;
 const { sim } = fakeHost({
@@ -59,14 +59,14 @@ describe('itemSourceShows', () => {
 	});
 });
 
-describe('overrunNpcKey', () => {
+describe('nameBeforeOverrunKey', () => {
 	it('recovers the boss from a name the generator ran past its AtlasLoot key on (ticket 680)', () => {
-		expect(overrunNpcKey('Isalien"].." - "..format(AL["Tier %s Sets')).toBe('Isalien');
-		expect(overrunNpcKey('Lord Valthalak"].." - "..format(AL["Tier %s Sets')).toBe('Lord Valthalak');
+		expect(nameBeforeOverrunKey('Isalien"].." - "..format(AL["Tier %s Sets')).toBe('Isalien');
+		expect(nameBeforeOverrunKey('Lord Valthalak"].." - "..format(AL["Tier %s Sets')).toBe('Lord Valthalak');
 	});
 
 	it('leaves a real name alone, quotes included', () => {
-		expect(overrunNpcKey('Eric "The Swift"')).toBeUndefined();
-		expect(overrunNpcKey('Gruul the Dragonkiller')).toBeUndefined();
+		expect(nameBeforeOverrunKey('Eric "The Swift"')).toBeUndefined();
+		expect(nameBeforeOverrunKey('Gruul the Dragonkiller')).toBeUndefined();
 	});
 });

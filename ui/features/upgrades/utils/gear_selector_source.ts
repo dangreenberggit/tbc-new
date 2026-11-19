@@ -5,7 +5,7 @@ import type { Sim } from '@sim/sim';
 /**
  * Whether the gear selector's `ItemSource` (`ui/features/gear/components/SelectorModal/ItemSource.tsx`)
  * renders anything for `item`. A component cannot tell its parent it rendered nothing, so this
- * follows its branches in order; `item_source.test.tsx` fails when the two disagree.
+ * follows its branches in order; `gear_selector_source.test.tsx` fails when the two disagree.
  */
 export function itemSourceShows(item: UIItem, sim: Sim): boolean {
 	const pvpShows = () => isPVPItem(item) && Boolean(getPVPSeasonFromItem(item));
@@ -26,7 +26,7 @@ export function itemSourceShows(item: UIItem, sim: Sim): boolean {
  * key, naming npc 16097 `Isalien"].." - "..format(AL["Tier %s Sets`. The key's
  * closing `"]` marks the overrun; a real name with quotes (`Eric "The Swift"`) has none.
  */
-export function overrunNpcKey(name: string): string | undefined {
+export function nameBeforeOverrunKey(name: string): string | undefined {
 	const end = name.indexOf('"]');
 	return end === -1 ? undefined : name.slice(0, end);
 }

@@ -18,10 +18,10 @@ import type { PagePoolHost } from '../model/data/data';
 import tierExchange from '../model/data/tier-exchange.json';
 import type { PoolEntry } from '../model/engine/pool';
 import type { SpecId } from '../model/engine/types';
-import { HEROIC_FIVE_MAN, type HeroicFiveManPolicy, type PresetGearSet, selectPool } from '../model/pool_source';
+import { HEROIC_FIVE_MAN_POLICY, type HeroicFiveManPolicy, type PresetGearSet, selectPool } from '../model/pool_source';
 import presetsFixture from '../model/pool_source.presets.fixture.json';
 import { specIdFor } from '../model/run';
-import { indexExchange, type SourceDb, sourcesOf, type TierExchange } from '../utils/item_sources';
+import { indexExchange, itemSourcesFromDb, type SourceDb, type TierExchange } from '../utils/item_sources';
 
 const FORK_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
 
@@ -41,13 +41,13 @@ export const TEST_SOURCE_DB: SourceDb = {
 };
 // JSON values only: the file's shape is stated by `TierExchange`, never derived from the import.
 export const TEST_EXCHANGE = indexExchange(tierExchange as TierExchange);
-export const testSourcesOf = (item: UIItem) => sourcesOf(item, TEST_SOURCE_DB, TEST_EXCHANGE);
+export const testSourcesOf = (item: UIItem) => itemSourcesFromDb(item, TEST_SOURCE_DB, TEST_EXCHANGE);
 
 // JSON values only: the fixture's shape is asserted here, never derived from the import.
 export const TEST_PRESETS = (presetsFixture as { specs: Record<string, PresetGearSet[]> }).specs;
 
 /** Built by inverting `specIdFor` from `run.ts`, so the two cannot drift; `pool_source.test.ts` checks it covers every preset spec. */
-export const PROTO_SPEC = Object.fromEntries(
+export const PROTO_SPEC_BY_SPEC_ID = Object.fromEntries(
 	Object.values(Spec)
 		.filter((spec): spec is Spec => typeof spec === 'number')
 		.flatMap(spec => {
@@ -57,18 +57,18 @@ export const PROTO_SPEC = Object.fromEntries(
 ) as Record<SpecId, Spec>;
 
 const canEquipFor = (spec: SpecId) => {
-	const playerSpec = PlayerSpecs.fromProto(PROTO_SPEC[spec]);
+	const playerSpec = PlayerSpecs.fromProto(PROTO_SPEC_BY_SPEC_ID[spec]);
 	return (item: UIItem) => canEquipItem(item, playerSpec, undefined);
 };
 
-export const dbPoolFor = (spec: SpecId, phase: number, policy: HeroicFiveManPolicy = HEROIC_FIVE_MAN): PoolEntry[] =>
+export const dbPoolFor = (spec: SpecId, phase: number, policy: HeroicFiveManPolicy = HEROIC_FIVE_MAN_POLICY): PoolEntry[] =>
 	selectPool(TEST_DB.items, canEquipFor(spec), TEST_PRESETS[spec]!, TEST_MISSING_IDS, phase, policy, testSourcesOf);
 
 /** The parts of the page that `poolFor` reads, backed by the test database and the spec's presets, so tests get a live page's pool without a `Sim`. */
 export const dbPoolHost = (spec: SpecId) =>
 	({
 		sim: { db: { getAllItems: () => TEST_DB.items, ...TEST_SOURCE_DB } },
-		player: { getPlayerSpec: () => PlayerSpecs.fromProto(PROTO_SPEC[spec]), getGear: () => ({ getEquippedItems: () => [] }) },
+		player: { getPlayerSpec: () => PlayerSpecs.fromProto(PROTO_SPEC_BY_SPEC_ID[spec]), getGear: () => ({ getEquippedItems: () => [] }) },
 		individualConfig: {
 			presets: {
 				gear: TEST_PRESETS[spec]!.map(p => ({

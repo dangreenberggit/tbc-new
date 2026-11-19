@@ -10,9 +10,9 @@ import { isPVPItem } from '@sim/proto/items';
 import { professionNames, REP_FACTION_NAMES, REP_LEVEL_NAMES } from '@sim/proto/names';
 
 import type { ItemSource } from '../model/engine/pool';
-import { overrunNpcKey } from './item_source';
+import { nameBeforeOverrunKey } from './gear_selector_source';
 
-/** The parts of the page's database (`sim.db`) that `sourcesOf` reads. */
+/** The parts of the page's database (`sim.db`) that `itemSourcesFromDb` reads. */
 export type SourceDb = {
 	getZone(zoneId: number): { name: string } | null;
 	getNpc(npcId: number): { name: string } | null;
@@ -45,13 +45,13 @@ export const isHeroicFiveManDrop = (drop: { zoneId: number; difficulty: DungeonD
 /** A drop's boss: the npc's name, cut where the database generator overran its AtlasLoot key. */
 const bossOf = (db: SourceDb, npcId: number): string | undefined => {
 	const name = db.getNpc(npcId)?.name;
-	return name === undefined ? undefined : (overrunNpcKey(name) ?? name);
+	return name === undefined ? undefined : (nameBeforeOverrunKey(name) ?? name);
 };
 
 const withBoss = <S extends object>(source: S, boss: string | undefined): S & { boss?: string } => (boss === undefined ? source : { ...source, boss });
 
 /** One db.json source entry as the tab's source, or undefined when wowsims gives it no fact the tab names. */
-function sourceOfEntry(entry: UIItem['sources'][number], db: SourceDb): ItemSource | undefined {
+function sourceFromDbEntry(entry: UIItem['sources'][number], db: SourceDb): ItemSource | undefined {
 	const { source } = entry;
 	switch (source.oneofKind) {
 		case 'drop': {
@@ -78,7 +78,7 @@ function sourceOfEntry(entry: UIItem['sources'][number], db: SourceDb): ItemSour
 function sunmoteSource(baseId: number, db: SourceDb): ItemSource | undefined {
 	const base = db.getItemById(baseId);
 	if (!base) return undefined;
-	const drop = base.sources.map(entry => sourceOfEntry(entry, db)).find(s => s?.kind === 'raid');
+	const drop = base.sources.map(entry => sourceFromDbEntry(entry, db)).find(s => s?.kind === 'raid');
 	if (drop?.kind !== 'raid') return undefined;
 	return withBoss({ kind: 'token' as const, zone: drop.zone, token: `Sunmote + ${base.name}` }, drop.boss);
 }
@@ -88,10 +88,10 @@ function sunmoteSource(baseId: number, db: SourceDb): ItemSource | undefined {
  * Sunmote exchange, then PvP for an arena piece; `[{kind: 'unknown'}]` when wowsims states none. A heroic drop outside
  * Magisters' Terrace is a `heroic` source, grouped under "Heroic dungeon" with no zone named.
  */
-export function sourcesOf(item: UIItem, db: SourceDb, exchange: ExchangeIndex): ItemSource[] {
+export function itemSourcesFromDb(item: UIItem, db: SourceDb, exchange: ExchangeIndex): ItemSource[] {
 	const found: ItemSource[] = [];
 	for (const entry of item.sources) {
-		const source = sourceOfEntry(entry, db);
+		const source = sourceFromDbEntry(entry, db);
 		if (source) found.push(source);
 	}
 	const token = exchange.tokenByPiece.get(item.id);

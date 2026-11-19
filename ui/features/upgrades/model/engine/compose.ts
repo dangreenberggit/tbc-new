@@ -26,15 +26,15 @@ export function compose(skeleton: RaidSimRequest, player: ComposePlayer): RaidSi
 	const raid = req.raid as {
 		parties: Array<{ players: Array<Record<string, unknown>> }>;
 	};
-	const slot = raid.parties[0]?.players[0];
-	if (!slot) {
+	const firstPlayer = raid.parties[0]?.players[0];
+	if (!firstPlayer) {
 		throw new Error('skeleton missing raid.parties[0].players[0]');
 	}
 
-	slot.name = player.name;
-	slot.race = player.race;
-	slot.equipment = { items: player.equipment.map(toProtoItem) };
-	if (player.database) slot.database = player.database;
+	firstPlayer.name = player.name;
+	firstPlayer.race = player.race;
+	firstPlayer.equipment = { items: player.equipment.map(toProtoItem) };
+	if (player.database) firstPlayer.database = player.database;
 
 	return req;
 }

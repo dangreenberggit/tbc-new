@@ -203,10 +203,10 @@ function itemFitsSimSlot(itemId: number, slotName: SimSlotName): boolean {
  * Pool slot → sim slot names. Rings and trinkets try both; a dual-wield spec's one-handers
  * try both hands; a dedicated off-hand item goes to the off hand. The off hand is a
  * placement, like `finger2`, not an `ItemSlot` member, which would split every one-hander
- * into two pool rows. With `itemId`, only the placements that item fits are returned.
+ * into two pool rows. With `itemId`, only the sim slots that item fits are returned.
  */
 export function simSlotsForPoolSlot(slot: ItemSlot, spec?: SpecId, itemId?: number): readonly SimSlotName[] {
-	const placements: readonly SimSlotName[] = ((): readonly SimSlotName[] => {
+	const simSlots: readonly SimSlotName[] = ((): readonly SimSlotName[] => {
 		switch (slot) {
 			case 'finger':
 				return ['finger1', 'finger2'];
@@ -222,8 +222,8 @@ export function simSlotsForPoolSlot(slot: ItemSlot, spec?: SpecId, itemId?: numb
 		}
 	})();
 
-	if (itemId === undefined) return placements;
-	return placements.filter(slotName => itemFitsSimSlot(itemId, slotName));
+	if (itemId === undefined) return simSlots;
+	return simSlots.filter(slotName => itemFitsSimSlot(itemId, slotName));
 }
 
 /**

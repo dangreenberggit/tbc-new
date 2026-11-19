@@ -37,8 +37,8 @@ describe('exportPayload', () => {
 	});
 
 	it('lists two rows that emit the same id once', () => {
-		const ringInOtherFinger = { ...fixtureRow(0), slotChoice: 'offhand' as const };
-		expect(exportPayload([fixtureRow(0), ringInOtherFinger], 'gear')).toEqual({ items: [{ id: 32332 }] });
+		const torchInOffHand = { ...fixtureRow(0), slotChoice: 'offhand' as const };
+		expect(exportPayload([fixtureRow(0), torchInOffHand], 'gear')).toEqual({ items: [{ id: 32332 }] });
 	});
 
 	it('is a well-formed empty list when every row is worn', () => {

@@ -11,7 +11,7 @@ import type { RunNote } from '../model/engine/disclosure';
 import type { ItemSource } from '../model/engine/pool';
 import { type RankedItem, RankError } from '../model/engine/rank';
 import type { SimOrderName } from '../model/engine/slots';
-import { ZONELESS_SOURCE_LABELS } from '../model/engine/view';
+import { ZONELESS_SOURCE_KEYS } from '../model/engine/view';
 import type { SortLabels } from '../model/results_columns';
 import { effectiveSlot } from '../model/results_view';
 import type { RunActivity, RunProgressView } from '../model/run_progress';
@@ -57,12 +57,12 @@ export const simSlotLabel = (slot: SimOrderName): string => translateSlotName(IT
 export const slotLabel = (row: Pick<RankedItem, 'slot' | 'slotChoice'>): string => simSlotLabel(effectiveSlot(row));
 
 /**
- * The English `ZONELESS_SOURCE_LABELS` stay as the pool's source keys (`settings_pool.ts`), so only the shown
+ * The English `ZONELESS_SOURCE_KEYS` stay as the pool's source keys (`settings_pool.ts`), so only the shown
  * text is translated; an unknown kind keeps its raw name.
  */
-const kindLabel = (kind: string): string => (kind in ZONELESS_SOURCE_LABELS ? i18n.t(`upgrades_tab.sources.${kind}`, { ns: 'upgrades' }) : kind);
+const kindLabel = (kind: string): string => (kind in ZONELESS_SOURCE_KEYS ? i18n.t(`upgrades_tab.sources.${kind}`, { ns: 'upgrades' }) : kind);
 
-const KIND_BY_SOURCE_KEY = new Map(Object.entries(ZONELESS_SOURCE_LABELS).map(([kind, key]) => [key, kind]));
+const KIND_BY_SOURCE_KEY = new Map(Object.entries(ZONELESS_SOURCE_KEYS).map(([kind, key]) => [key, kind]));
 
 /** A Sources dialog key's shown name: a zone keeps its own name, any other key shows its source kind's name. */
 export const sourceKeyLabel = (key: string): string => {

@@ -8,8 +8,8 @@ import type { PagePreset } from './data/data';
 import { isKaelTempLegendary } from './engine/kael-temp';
 import { filterPoolByPhase, type ItemSource, offHandBlockedEntries, oneHandBlockedEntries, type PoolEntry } from './engine/pool';
 import type { SpecId } from './engine/types';
-import { zoneKeyOf, ZONELESS_SOURCE_LABELS } from './engine/view';
-import { HEROIC_FIVE_MAN } from './pool_source';
+import { zoneKeyOf, ZONELESS_SOURCE_KEYS } from './engine/view';
+import { HEROIC_FIVE_MAN_POLICY } from './pool_source';
 import type { RunSettings } from './run_state';
 import { type SettingsState, toRunSettings } from './settings_state';
 
@@ -55,7 +55,7 @@ export type SourcedEntry = Pick<PoolEntry, 'source' | 'sources'>;
 export const sourcesOf = (entry: SourcedEntry): readonly ItemSource[] => entry.sources ?? [entry.source];
 
 /** Falls back to the raw kind, as the engine's label does. */
-export const zonelessSourceKey = (kind: string): string => ZONELESS_SOURCE_LABELS[kind] ?? kind;
+export const zonelessSourceKey = (kind: string): string => ZONELESS_SOURCE_KEYS[kind] ?? kind;
 
 /** Its first zone, else its source kind. */
 export const sourceKeyOf: (entry: SourcedEntry) => string = zoneKeyOf;
@@ -72,10 +72,10 @@ export function sourceKeysMatching(entry: SourcedEntry): string[] {
 	return zones.length > 0 ? [...new Set(zones)] : [sourceKeyOf(entry)];
 }
 
-const ZONELESS_KEYS = new Set(Object.values(ZONELESS_SOURCE_LABELS));
+const ZONELESS_KEYS = new Set(Object.values(ZONELESS_SOURCE_KEYS));
 
-/** "Heroic dungeon" starts unticked under the `include-unticked` policy (`HEROIC_FIVE_MAN` in `pool_source.ts`). */
-export const DEFAULT_OFF_SOURCE_KEYS: readonly string[] = HEROIC_FIVE_MAN === 'include-unticked' ? [zonelessSourceKey('heroic')] : [];
+/** "Heroic dungeon" starts unticked under the `include-unticked` policy (`HEROIC_FIVE_MAN_POLICY` in `pool_source.ts`). */
+export const DEFAULT_OFF_SOURCE_KEYS: readonly string[] = HEROIC_FIVE_MAN_POLICY === 'include-unticked' ? [zonelessSourceKey('heroic')] : [];
 
 /**
  * For a key that starts unticked, a stored entry means the user ticked it. The stored list keeps a key only while

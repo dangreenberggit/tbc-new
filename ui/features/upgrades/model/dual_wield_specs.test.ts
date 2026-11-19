@@ -1,14 +1,14 @@
 import { PlayerSpecs } from '@sim/player/specs';
 import { describe, expect, it } from 'vitest';
 
-import { PROTO_SPEC } from '../testing/db_pool';
+import { PROTO_SPEC_BY_SPEC_ID } from '../testing/db_pool';
 import { DUAL_WIELD_SPECS } from './engine/pool';
 import type { SpecId } from './engine/types';
 
 // The engine cannot load wowsims' PlayerSpec, so it keeps its own list of specs
 // that may put a one-hander in the off hand. This pins that list to wowsims' flag.
 describe('DUAL_WIELD_SPECS', () => {
-	const specs = Object.entries(PROTO_SPEC) as [SpecId, (typeof PROTO_SPEC)[SpecId]][];
+	const specs = Object.entries(PROTO_SPEC_BY_SPEC_ID) as [SpecId, (typeof PROTO_SPEC_BY_SPEC_ID)[SpecId]][];
 
 	it('covers the eleven DPS specs the tab ranks', () => {
 		expect(specs).toHaveLength(11);

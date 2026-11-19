@@ -10,7 +10,7 @@ import { MISSING_ITEM_EFFECTS } from '@sim/constants/missing_effects_auto_gen';
 import { canEquipItem } from '@sim/proto/items';
 import type { IndividualSimHost } from '@sim/sim_host';
 
-import { type ExchangeIndex, indexExchange, isHeroicFiveManDrop, sourcesOf, type TierExchange } from '../utils/item_sources';
+import { type ExchangeIndex, indexExchange, isHeroicFiveManDrop, itemSourcesFromDb, type TierExchange } from '../utils/item_sources';
 import tierExchange from './data/tier-exchange.json';
 import { isKaelTempLegendary } from './engine/kael-temp';
 import type { ItemSlot, ItemSource, PoolEntry } from './engine/pool';
@@ -23,7 +23,7 @@ import type { ItemSlot, ItemSource, PoolEntry } from './engine/pool';
  */
 export type HeroicFiveManPolicy = 'exclude' | 'include' | 'include-unticked';
 
-export const HEROIC_FIVE_MAN: HeroicFiveManPolicy = 'include-unticked';
+export const HEROIC_FIVE_MAN_POLICY: HeroicFiveManPolicy = 'include-unticked';
 
 /** `group` tells apart presets that reuse a name within a phase, such as hunter's Beast Mastery and Survival. */
 export type PresetGearSet = { name: string; phase?: number; group?: string; itemIds: readonly number[] };
@@ -125,7 +125,7 @@ export function selectPool(
 		return item === undefined ? undefined : knownPhase(item);
 	};
 	const presetIds = new Set(presets.filter(p => (presetPhase(p, itemPhaseOf) ?? Infinity) <= maxPhase).flatMap(p => p.itemIds));
-	const meetsFloor = (item: UIItem) =>
+	const meetsMinimum = (item: UIItem) =>
 		phaseOf(item) <= maxPhase && item.quality >= MIN_QUALITY && (ilvlOf(item) >= MIN_ILVL || hasEffectRecord(item, missingIds));
 
 	const bis = bisGearSetsFor(presets, maxPhase, itemPhaseOf);
@@ -135,7 +135,7 @@ export function selectPool(
 	for (const item of items) {
 		const slot = poolSlotOf(item);
 		if (slot === undefined || isKaelTempLegendary(item.id) || missingIds.has(item.id) || !canEquip(item)) continue;
-		if (!meetsFloor(item) && !presetIds.has(item.id)) continue;
+		if (!meetsMinimum(item) && !presetIds.has(item.id)) continue;
 		if (policy === 'exclude' && isHeroicFiveManOnly(item)) continue;
 		const bisSets = bis ? gearSetNamesHolding(bis.gearSets, item.id) : [];
 		const curatedSets = gearSetNamesHolding(presets, item.id);
@@ -264,8 +264,8 @@ export function buildPool(host: PoolHost, presets: readonly PresetGearSet[], max
 		presets,
 		missingIds(),
 		maxPhase,
-		HEROIC_FIVE_MAN,
-		item => sourcesOf(item, db, exchange()),
+		HEROIC_FIVE_MAN_POLICY,
+		item => itemSourcesFromDb(item, db, exchange()),
 		wornIds,
 	);
 }
