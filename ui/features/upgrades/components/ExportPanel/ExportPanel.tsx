@@ -25,6 +25,7 @@ export interface ExportPanelProps {
  * nothing to export.
  */
 export const ExportPanel = ({ rows }: ExportPanelProps) => {
+	/** Whether a tier piece exports as itself or as its token. */
 	const flavour = useUpgradesStore(selectExportFlavour);
 	const setExportFlavour = useUpgradesStore(state => state.setExportFlavour);
 	const flavourId = useId();
