@@ -107,7 +107,7 @@ export type SetScreenOnSet = {
 	/** DPS with all added pieces counted minus with none; absent if a sim failed. */
 	pair: { dps?: number; pairedSe?: number };
 	/**
-	 * The highest `sumOfSinglesDpsAt` estimate over the reachable counts, if
+	 * The highest `estimatedDeltaAt` estimate over the reachable counts, if
 	 * any. DPS, not stats: the name stays because recordings store it.
 	 */
 	bestStats?: number;
@@ -174,10 +174,12 @@ export type SetScreenInput = {
 
 export type SetScreenOnInput = Omit<SetScreenInput, 'pairIterations' | 'countIterations'> & {
 	/**
-	 * The `'sum-of-singles'` partner rule's estimate for `setId`'s pieces at
-	 * `count`, which needs no extra sim. Undefined when an input is missing.
+	 * The estimated delta of `setId`'s chosen pieces at `threshold`: their own
+	 * deltas added up with the break corrections, as the `'sum-of-singles'`
+	 * partner rule does, so it needs no extra sim. Undefined when an input is
+	 * missing.
 	 */
-	sumOfSinglesDpsAt: (setId: number, threshold: number) => number | undefined;
+	estimatedDeltaAt: (setId: number, threshold: number) => number | undefined;
 	/** The baseline sim's per-iteration standard deviation. */
 	baselineStdev: number;
 };
@@ -347,7 +349,7 @@ export async function runSetScreenOn(input: SetScreenOnInput): Promise<SetScreen
 
 		let bestStats: number | undefined;
 		for (let t = Math.max(2, worn + 1); t <= reach; t++) {
-			const estimate = input.sumOfSinglesDpsAt(setId, t);
+			const estimate = input.estimatedDeltaAt(setId, t);
 			if (estimate !== undefined && (bestStats === undefined || estimate > bestStats)) {
 				bestStats = estimate;
 			}

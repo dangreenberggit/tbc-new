@@ -25,7 +25,7 @@ import { isKaelTempLegendary } from './kael-temp';
 import { equipmentFromLoggedGear, socketedItemsFromLoggedGear } from './logged-gear';
 import { inactiveMeta, MetaRepairError, type MetaRepairSwap, REPAIR_SEARCH_WORK_LIMIT, repairAndMinimize, type SocketedItem } from './meta-repair';
 import { migrateGemsToItem } from './migrate-gems';
-import { choosePartners, PARTNER_RULE, type PartnerAudit, type PartnerPiece, partnerPool, type PartnerRule, sumOfSinglesEstimate } from './partner-choice';
+import { choosePartners, PARTNER_RULE, type PartnerAudit, type PartnerPiece, partnerPool, type PartnerRule, estimateCombinedDelta } from './partner-choice';
 import { type PlausibilityWarning, plausibilityWarnings } from './plausibility';
 import {
 	filterPoolByPhase,
@@ -1809,10 +1809,10 @@ async function buildSetBonuses(
 						),
 				}
 			: undefined;
-	// The "on" screen estimates a count's value with `sumOfSinglesEstimate`,
+	// The "on" screen estimates a count's value with `estimateCombinedDelta`,
 	// taking the first added piece as the row.
 	const breakDpsBy = new Map(brokenSetValues.map(v => [bonusKey(v), v.dps] as const));
-	const sumOfSinglesDpsAt = (setId: number, threshold: number): number | undefined => {
+	const estimatedDeltaAt = (setId: number, threshold: number): number | undefined => {
 		const selection = selectFor(setId, threshold);
 		if (!selection.ok) return undefined;
 		const pieces: PartnerPiece[] = [];
@@ -1827,7 +1827,7 @@ async function buildSetBonuses(
 		}
 		const [row, ...rest] = pieces;
 		if (!row) return undefined;
-		return sumOfSinglesEstimate(
+		return estimateCombinedDelta(
 			{
 				row,
 				setId,
@@ -1845,7 +1845,7 @@ async function buildSetBonuses(
 		? undefined
 		: screenMode === 'record'
 			? await recordSetScreen(screenInput)
-			: await runSetScreenOn({ ...screenInput, sumOfSinglesDpsAt, baselineStdev });
+			: await runSetScreenOn({ ...screenInput, estimatedDeltaAt, baselineStdev });
 	const screenedOut = new Set(setScreen?.mode === 'on' ? setScreen.sets.filter(s => !s.kept).map(s => s.setId) : []);
 
 	if (setIdsWithCandidates.size === 0) {
@@ -2356,7 +2356,7 @@ async function measureSetSteps(args: {
 	const stepCounter: SimCounter = { simmed: 0, fromStore: 0 };
 	const stepFailure = '[upgrades] set step gear not measured: the sim failed';
 
-	const runCounted = async (request: RaidSimRequest, counter: SimCounter, failure: string): Promise<{ totalDps: number; se: number } | SimFailure> => {
+	const runCounted = async (request: RaidSimRequest, counter: SimCounter, failure: string): Promise<{ deltaDps: number; se: number } | SimFailure> => {
 		let obs = await readCachedSim(deps, request, args.simVersion, runOpts);
 		if (obs) {
 			counter.fromStore += 1;
@@ -2373,7 +2373,7 @@ async function measureSetSteps(args: {
 		}
 		const se = obs.stdev / Math.sqrt(runOpts.iterations);
 		return {
-			totalDps: obs.dps - baseline.dps,
+			deltaDps: obs.dps - baseline.dps,
 			se: Math.sqrt(se ** 2 + baseline.se ** 2),
 		};
 	};
@@ -2488,9 +2488,9 @@ async function measureSetSteps(args: {
 							comparisonFailure ??= request;
 							return undefined;
 						}
-						const total = await runCounted(request, stepCounter, stepFailure);
-						if (!isSimFailure(total)) return total;
-						comparisonFailure ??= SET_BONUS_SKIP_REASONS.rowSimsFailed(total.simError);
+						const delta = await runCounted(request, stepCounter, stepFailure);
+						if (!isSimFailure(delta)) return delta;
+						comparisonFailure ??= SET_BONUS_SKIP_REASONS.rowSimsFailed(delta.simError);
 						return undefined;
 					},
 				},
@@ -2559,14 +2559,14 @@ async function measureSetSteps(args: {
 
 	// Identical gears are simmed once. Each task handles its own sim failure,
 	// so one failed sim leaves only its own future bonuses unmeasured.
-	const totals = new Map<string, { totalDps: number; se: number }>();
+	const deltas = new Map<string, { deltaDps: number; se: number }>();
 	const stepErrors = new Map<string, string>();
 	const keys = [...requests.keys()];
 	await promisePool(
 		keys.map(key => async () => {
-			const total = await runCounted(requests.get(key)!, stepCounter, stepFailure);
-			if (isSimFailure(total)) stepErrors.set(key, total.simError);
-			else totals.set(key, total);
+			const delta = await runCounted(requests.get(key)!, stepCounter, stepFailure);
+			if (isSimFailure(delta)) stepErrors.set(key, delta.simError);
+			else deltas.set(key, delta);
 		}),
 		deps.concurrency ?? 1,
 	);
@@ -2575,10 +2575,10 @@ async function measureSetSteps(args: {
 		if (simError !== undefined) {
 			skipOnSomeRows(setName, future.threshold, SET_BONUS_SKIP_REASONS.rowSimsFailed(simError));
 		}
-		const total = totals.get(key);
-		if (!total) continue;
-		future.stepGearDps = total.totalDps;
-		future.stepGearSe = total.se;
+		const delta = deltas.get(key);
+		if (!delta) continue;
+		future.stepGearDps = delta.deltaDps;
+		future.stepGearSe = delta.se;
 	}
 
 	// The bonus-off sims run for exactly the bonuses the popover shows, so this
@@ -2708,16 +2708,16 @@ async function measureSetSteps(args: {
 			paired.add(key);
 		}
 	}
-	const offTotals = new Map<string, { totalDps: number; se: number }>();
+	const offDeltas = new Map<string, { deltaDps: number; se: number }>();
 	const offErrors = new Map<string, string>();
 	let failedGears = 0;
 	await promisePool(
 		[...paired].map(key => async () => {
-			const total = await runCounted(offRequests.get(key)!.request, offCounter, '[upgrades] set step break not split: the sim failed');
-			if (isSimFailure(total)) {
-				offErrors.set(key, total.simError);
+			const delta = await runCounted(offRequests.get(key)!.request, offCounter, '[upgrades] set step break not split: the sim failed');
+			if (isSimFailure(delta)) {
+				offErrors.set(key, delta.simError);
 				failedGears += 1;
-			} else offTotals.set(key, total);
+			} else offDeltas.set(key, delta);
 		}),
 		deps.concurrency ?? 1,
 	);
@@ -2738,10 +2738,10 @@ async function measureSetSteps(args: {
 				);
 			}
 		}
-		const total = offTotals.get(key);
-		if (!total) continue;
-		future.bonusOffDps = total.totalDps;
-		future.bonusOffSe = total.se;
+		const delta = offDeltas.get(key);
+		if (!delta) continue;
+		future.bonusOffDps = delta.deltaDps;
+		future.bonusOffSe = delta.se;
 		future.bonusOff = lost;
 	}
 
