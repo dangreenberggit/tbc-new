@@ -25,7 +25,7 @@ import { isKaelTempLegendary } from './kael-temp';
 import { equipmentFromLoggedGear, socketedItemsFromLoggedGear } from './logged-gear';
 import { inactiveMeta, MetaRepairError, type MetaRepairSwap, REPAIR_SEARCH_WORK_LIMIT, repairAndMinimize, type SocketedItem } from './meta-repair';
 import { migrateGemsToItem } from './migrate-gems';
-import { choosePartners, PARTNER_RULE, type PartnerAudit, type PartnerPiece, partnerPool, type PartnerRule, estimateCombinedDelta } from './partner-choice';
+import { choosePartners, estimateCombinedDelta, PARTNER_RULE, type PartnerAudit, type PartnerPiece, partnerPool, type PartnerRule } from './partner-choice';
 import { type PlausibilityWarning, plausibilityWarnings } from './plausibility';
 import {
 	filterPoolByPhase,
@@ -75,18 +75,18 @@ import {
 } from './set-less-copies';
 import { recordSetScreen, runSetScreenOn, type SetScreen, type SetScreenInput, type SetScreenMode } from './set-screen';
 import {
-	type CountsAsBreak,
 	bonusKey,
 	type BrokenSetBonus,
 	brokenSetBonuses,
 	combineSe,
 	computeSynergy,
+	type CountsAsBreak,
 	type DpsSample,
-	type OwnDelta,
 	type InflationKey,
 	isBonusImplemented,
 	netInflation,
 	nextMeasurableThreshold,
+	type OwnDelta,
 	type PlacedItem,
 	selectAddedPieces,
 	type SelfSetConfound,

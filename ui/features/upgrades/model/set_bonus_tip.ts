@@ -13,13 +13,13 @@ import { bonusKey } from './engine/set-value';
 import type { SpecId } from './engine/types';
 import {
 	crossingLabelCount,
+	ownSwapBreaks,
 	rankableSetPotential,
 	setBonusSubLine,
 	setCreditUnmeasured,
 	setPotentialSteps,
 	type SetPotentialTerm,
 	setPotentialTerms,
-	ownSwapBreaks,
 	stepEligible,
 	stepFutureUnmeasured,
 } from './engine/view';
