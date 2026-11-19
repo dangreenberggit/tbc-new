@@ -3,7 +3,7 @@ import { Encounter as EncounterProto, EquipmentSpec, ItemSpec } from '@generated
 import { SimDatabase, SimItem } from '@generated/proto/db';
 import { describe, expect, it } from 'vitest';
 
-import { inputsSignature, liveInputsKey, type LiveInputsSource } from './run_inputs';
+import { inputsSignature, type LiveInputsSource, pageInputsSignature } from './run_inputs';
 import type { RunSettings } from './run_state';
 
 /**
@@ -30,21 +30,21 @@ const page = (itemIds: number[], phase = 3): LiveInputsSource => ({
 	getPhase: () => phase,
 });
 
-describe('liveInputsKey', () => {
+describe('pageInputsSignature', () => {
 	it('is the same for the same page', () => {
-		expect(liveInputsKey(page([30129, 32461]))).toBe(liveInputsKey(page([30129, 32461])));
+		expect(pageInputsSignature(page([30129, 32461]))).toBe(pageInputsSignature(page([30129, 32461])));
 	});
 
 	it('changes when a gear slot changes', () => {
-		expect(liveInputsKey(page([30129, 32461]))).not.toBe(liveInputsKey(page([30129, 30022])));
+		expect(pageInputsSignature(page([30129, 32461]))).not.toBe(pageInputsSignature(page([30129, 30022])));
 	});
 
 	it('changes when the phase changes', () => {
-		expect(liveInputsKey(page([30129], 3))).not.toBe(liveInputsKey(page([30129], 4)));
+		expect(pageInputsSignature(page([30129], 3))).not.toBe(pageInputsSignature(page([30129], 4)));
 	});
 
 	it('uses the export form, which leaves out the item database', () => {
-		expect(liveInputsKey(page([30129]))).not.toContain('database');
+		expect(pageInputsSignature(page([30129]))).not.toContain('database');
 	});
 });
 

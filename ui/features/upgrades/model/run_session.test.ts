@@ -315,16 +315,16 @@ describe('createRunSession', () => {
 		session.start(SETTINGS, SIGNATURE, []);
 		expect(contexts).toHaveLength(0);
 
-		const first = call(0).deps.runContext();
+		const first = call(0).deps.getRunContext();
 		session.start(SETTINGS, SIGNATURE, []);
-		expect(call(1).deps.runContext()).toBe(first);
+		expect(call(1).deps.getRunContext()).toBe(first);
 		expect(contexts).toHaveLength(1);
 	});
 
 	it('aborts the run on dispose', () => {
 		const { session, call } = setup();
 		session.start(SETTINGS, SIGNATURE, []);
-		call(0).deps.runContext();
+		call(0).deps.getRunContext();
 
 		session.dispose();
 		expect(call(0).deps.signal.aborted).toBe(true);
@@ -333,12 +333,12 @@ describe('createRunSession', () => {
 	it('runs again after dispose, with the same run context and the run id counting on (StrictMode remount)', async () => {
 		const { session, call, run } = setup();
 		session.start(SETTINGS, SIGNATURE, []);
-		const first = call(0).deps.runContext();
+		const first = call(0).deps.getRunContext();
 		session.dispose();
 
 		session.start(SETTINGS, SIGNATURE, []);
 		expect(run()).toMatchObject({ status: 'running', runId: 2 });
-		expect(call(1).deps.runContext()).toBe(first);
+		expect(call(1).deps.getRunContext()).toBe(first);
 		expect(contexts).toHaveLength(1);
 
 		call(1).deps.onLanded(rowA);

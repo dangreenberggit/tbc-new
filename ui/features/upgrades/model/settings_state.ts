@@ -4,7 +4,7 @@
  * state, because the eligible count and the run read several of them together.
  */
 
-import { type RunSettings, runSettings } from './run_state';
+import { iterationsAndCap, type RunSettings } from './run_state';
 
 export type SettingsState = {
 	/** Sources whose items leave the pool. In stored version 2 a default-off source's key means ticked (saved_entry.ts). */
@@ -99,7 +99,7 @@ export const pruneEffective = (state: SettingsState): boolean => state.prune && 
 
 export const toRunSettings = (state: SettingsState, selectedGearSetItemIds: readonly number[]): RunSettings => ({
 	// The field can be empty or zero; the run then takes the default count.
-	...runSettings(state.iterations, state.candidateCap),
+	...iterationsAndCap(state.iterations, state.candidateCap),
 	excludedSources: state.excludedSources,
 	selectedGearSetKeys: state.selectedSetKeys,
 	selectedGearSetItemIds: selectedGearSetItemIds,

@@ -26,7 +26,7 @@ export type RunSettings = {
 /** The iteration count used when the field is empty or zero. */
 export const TAB_DEFAULT_ITERATIONS = 3000;
 
-export const runSettings = (iterations: number, candidateCap?: number): RunSettings => ({
+export const iterationsAndCap = (iterations: number, candidateCap?: number): RunSettings => ({
 	iterations: iterations > 0 ? Math.floor(iterations) : TAB_DEFAULT_ITERATIONS,
 	candidateCap,
 });
@@ -137,4 +137,4 @@ export const measuredOnOf = (run: RunState): MeasuredOn | undefined =>
 	run.status === 'running' || run.status === 'done' || run.status === 'stopped' ? run.measuredOn : undefined;
 
 /** The finished ranking on screen, which the fixture recorder saves. */
-export const shownRanking = (run: RunState): FinishedRanking | undefined => (run.status === 'done' ? run.result : undefined);
+export const finishedRanking = (run: RunState): FinishedRanking | undefined => (run.status === 'done' ? run.result : undefined);

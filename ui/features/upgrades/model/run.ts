@@ -31,7 +31,7 @@ export type RunDeps = {
 	signal: AbortSignal;
 	onLanded: (row: RankedItem) => void;
 	/** Builds the `RunContext` on first call and returns the same one after. */
-	runContext: () => RunContext;
+	getRunContext: () => RunContext;
 };
 
 export type RunFn = (host: IndividualSimHost<Spec>, settings: RunSettings, deps: RunDeps) => Promise<RunOutcome>;
@@ -67,7 +67,7 @@ export function createRunContext(env: RunnerEnv): RunContext {
 }
 
 export const rankForPlayer: RunFn = async (host, settings, deps) => {
-	const { simRunner, store } = deps.runContext();
+	const { simRunner, store } = deps.getRunContext();
 	const startedAt = Date.now();
 
 	const specId = specIdFor(host.player.getSpec());

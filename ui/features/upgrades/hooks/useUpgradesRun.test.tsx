@@ -75,12 +75,12 @@ describe('useUpgradesRun', () => {
 		const { runFn, call } = controllableRun();
 		const { result, rerender } = mount(runFn);
 		act(() => result.current.start(SETTINGS, SIGNATURE, []));
-		const first = call(0).deps.runContext();
+		const first = call(0).deps.getRunContext();
 
 		rerender();
 		act(() => result.current.start(SETTINGS, SIGNATURE, []));
 		expect(call(0).deps.signal.aborted).toBe(true);
-		expect(call(1).deps.runContext()).toBe(first);
+		expect(call(1).deps.getRunContext()).toBe(first);
 		expect(contexts).toHaveLength(1);
 	});
 
@@ -105,7 +105,7 @@ describe('useUpgradesRun', () => {
 		const { runFn, call } = controllableRun();
 		const { result, unmount } = mount(runFn);
 		act(() => result.current.start(SETTINGS, SIGNATURE, []));
-		call(0).deps.runContext();
+		call(0).deps.getRunContext();
 
 		unmount();
 		expect(call(0).deps.signal.aborted).toBe(true);

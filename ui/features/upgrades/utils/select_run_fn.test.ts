@@ -44,7 +44,11 @@ describe('selectRunFn', () => {
 		const landed: number[] = [];
 		const runContext = vi.fn();
 		const host = { player: {} } as Parameters<typeof runFn>[0];
-		const result = await runFn(host, { iterations: 1 }, { signal: new AbortController().signal, onLanded: row => landed.push(row.itemId), runContext });
+		const result = await runFn(
+			host,
+			{ iterations: 1 },
+			{ signal: new AbortController().signal, onLanded: row => landed.push(row.itemId), getRunContext: runContext },
+		);
 
 		expect(fetchStub).toHaveBeenCalledWith('/tbc/tab-fixtures/ret-p3-p2.json');
 		expect(landed).toEqual(RANKING_FIXTURE.items.map(row => row.itemId));

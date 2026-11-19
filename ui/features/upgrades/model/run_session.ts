@@ -89,7 +89,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		runFn(host, settings, {
 			signal: current.signal,
 			onLanded: row => store.getState().landRow(id, row),
-			runContext: () => (context ??= createRunContext(env.runner)),
+			getRunContext: () => (context ??= createRunContext(env.runner)),
 		}).then(
 			result => {
 				store.getState().settleRun(id, result);

@@ -8,8 +8,8 @@ import { useUpgradesRun } from '@features/upgrades/hooks/useUpgradesRun';
 import { useUpgradesSettings } from '@features/upgrades/hooks/useUpgradesSettings';
 import { selectRun, useUpgradesStore } from '@features/upgrades/hooks/useUpgradesStore';
 import { specIdFor } from '@features/upgrades/model/run';
-import { inputsSignature, liveInputsKey } from '@features/upgrades/model/run_inputs';
-import { measuredOnOf, shownRanking } from '@features/upgrades/model/run_state';
+import { inputsSignature, pageInputsSignature } from '@features/upgrades/model/run_inputs';
+import { finishedRanking, measuredOnOf } from '@features/upgrades/model/run_state';
 import { DEV_FLAGS } from '@features/upgrades/utils/dev_flags';
 import { selectRunFn } from '@features/upgrades/utils/select_run_fn';
 import { usePlayer, useSim } from '@sim/context/SimHostContext';
@@ -31,11 +31,11 @@ export const UpgradesTabBodyInner = () => {
 	const stale = useRunStale(runSettings);
 	// Read when Run is clicked or a fixture loads, so it records the page as it is then. Memoised with `onStart`, so
 	// each row a run finishes still hands the memoised `RunSettingsPanel` the same handler.
-	const signatureNow = useCallback(() => inputsSignature({ liveKey: liveInputsKey(sim), settings: runSettings }), [sim, runSettings]);
+	const signatureNow = useCallback(() => inputsSignature({ liveKey: pageInputsSignature(sim), settings: runSettings }), [sim, runSettings]);
 	const { selectedGearSets } = settings;
 	const onStart = useCallback(() => start(runSettings, signatureNow(), selectedGearSets), [start, runSettings, signatureNow, selectedGearSets]);
 	const specId = measuredOnOf(run)?.specId ?? specIdFor(player.getSpec());
-	useFixtureAutoload({ onLoaded: ranking => loadFixture(ranking, signatureNow(), selectedGearSets), currentRanking: () => shownRanking(run) });
+	useFixtureAutoload({ onLoaded: ranking => loadFixture(ranking, signatureNow(), selectedGearSets), currentRanking: () => finishedRanking(run) });
 
 	return (
 		// `contents`, so the two columns stay the pane's own flex items.

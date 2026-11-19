@@ -9,13 +9,13 @@ const view = (done: number): RunProgressView => ({
 	stage: 'simming',
 	done,
 	total: 10,
-	lastCandidateDone: 9,
+	doneAtLastCandidate: 9,
 	concurrency: 4,
-	qualifyingRows: 0,
+	replicableRowCount: 0,
 });
 
 describe('progress channel', () => {
-	it('has no snapshot before the first tick', () => {
+	it('has no last view before the first tick', () => {
 		expect(progressOf({} as Player<any>)).toBeNull();
 	});
 
@@ -40,7 +40,7 @@ describe('progress channel', () => {
 		expect(listener).not.toHaveBeenCalled();
 	});
 
-	it('clears the last run’s snapshot at the start of a run and keeps the subscribers', () => {
+	it('clears the last run’s view at the start of a run and keeps the subscribers', () => {
 		const player = {} as Player<any>;
 		const listener = vi.fn();
 		subscribeProgress(player, listener);

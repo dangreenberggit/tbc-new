@@ -333,7 +333,7 @@ describe('UpgradesTabBody', () => {
 			</StrictMode>,
 		);
 		const run = clickRun();
-		const context = run.deps.runContext();
+		const context = run.deps.getRunContext();
 		expect(contexts).toHaveLength(1);
 		expect(contexts[0]).toBe(context);
 

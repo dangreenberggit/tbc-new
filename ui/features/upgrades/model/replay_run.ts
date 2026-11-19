@@ -1,7 +1,7 @@
 /**
  * A dev-only run that replays a saved ranking through the real run path without a
  * sim: rows land a few at a time, progress ticks, Stop ends it with the rows so far.
- * It never calls `deps.runContext`, so it builds no WASM workers.
+ * It never calls `deps.getRunContext`, so it builds no WASM workers.
  */
 
 import type { Ranking } from './engine/rank';
@@ -27,9 +27,9 @@ export function replayRows(ranking: Ranking, { rowsPerBatch = 3, batchDelayMs = 
 				stage: 'simming',
 				done: landed,
 				total: rows.length,
-				lastCandidateDone: null,
+				doneAtLastCandidate: null,
 				concurrency: 1,
-				qualifyingRows: 0,
+				replicableRowCount: 0,
 			});
 
 		while (landed < rows.length && !deps.signal.aborted) {

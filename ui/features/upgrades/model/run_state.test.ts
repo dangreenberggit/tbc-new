@@ -3,16 +3,16 @@ import { describe, expect, it } from 'vitest';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { PartialRanking } from './engine/rank';
 import {
+	finishedRanking,
 	fixtureLoaded,
 	IDLE_RUN,
+	iterationsAndCap,
 	measuredOnOf,
 	rowLanded,
 	runFailed,
-	runSettings,
 	runSettled,
 	runStarted,
 	type RunState,
-	shownRanking,
 	stopRequested,
 	TAB_DEFAULT_ITERATIONS,
 	visibleRows,
@@ -132,13 +132,13 @@ describe('the run transitions', () => {
 	});
 });
 
-describe('runSettings', () => {
+describe('iterationsAndCap', () => {
 	it('keeps a positive whole iteration count and the cap', () => {
-		expect(runSettings(750, 10)).toEqual({ iterations: 750, candidateCap: 10 });
+		expect(iterationsAndCap(750, 10)).toEqual({ iterations: 750, candidateCap: 10 });
 	});
 
 	it('falls back to the default for an empty or zero field', () => {
-		expect(runSettings(0)).toEqual({ iterations: TAB_DEFAULT_ITERATIONS, candidateCap: undefined });
+		expect(iterationsAndCap(0)).toEqual({ iterations: TAB_DEFAULT_ITERATIONS, candidateCap: undefined });
 	});
 });
 
@@ -179,13 +179,13 @@ describe('visibleRows', () => {
 	});
 });
 
-describe('shownRanking', () => {
+describe('finishedRanking', () => {
 	it('is the finished ranking, and nothing for any other state', () => {
 		const result = { ...RANKING_FIXTURE, durationMs: 1 };
 		// Equal, not the same object: settling copies the result to move the runner off it.
-		expect(shownRanking(runSettled(running(), 1, result))).toEqual(result);
-		expect(shownRanking(running())).toBeUndefined();
-		expect(shownRanking(IDLE_RUN)).toBeUndefined();
+		expect(finishedRanking(runSettled(running(), 1, result))).toEqual(result);
+		expect(finishedRanking(running())).toBeUndefined();
+		expect(finishedRanking(IDLE_RUN)).toBeUndefined();
 	});
 });
 

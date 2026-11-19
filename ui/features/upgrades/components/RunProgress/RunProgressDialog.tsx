@@ -28,9 +28,9 @@ export const RunProgressDialog = ({ onStop, stopping }: RunProgressDialogProps) 
 			setStage(progressStageOf(latest));
 			barRef.current?.setProgress(progressBarOf(latest));
 		}
-		return subscribeProgress(player, view => {
-			setStage(progressStageOf(view));
-			barRef.current?.setProgress(progressBarOf(view));
+		return subscribeProgress(player, progress => {
+			setStage(progressStageOf(progress));
+			barRef.current?.setProgress(progressBarOf(progress));
 		});
 	}, [player]);
 

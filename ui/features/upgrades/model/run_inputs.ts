@@ -22,7 +22,7 @@ export type LiveInputsSource = {
  * proto embeds the worn gear's item database and rebuilds the rotation, and this
  * runs on every store notification.
  */
-export const liveInputsKey = (sim: LiveInputsSource): string =>
+export const pageInputsSignature = (sim: LiveInputsSource): string =>
 	JSON.stringify({
 		raid: RaidProto.toJson(sim.raid.toProto(true)),
 		encounter: EncounterProto.toJson(sim.encounter.toProto()),

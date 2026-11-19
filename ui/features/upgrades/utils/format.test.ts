@@ -33,9 +33,9 @@ loadEnglishBundles({ character: true });
 const view = (overrides: Partial<RunProgressView>): RunProgressView => ({
 	activity: 'preparing',
 	stage: 'resolving',
-	lastCandidateDone: null,
+	doneAtLastCandidate: null,
 	concurrency: 1,
-	qualifyingRows: 0,
+	replicableRowCount: 0,
 	...overrides,
 });
 

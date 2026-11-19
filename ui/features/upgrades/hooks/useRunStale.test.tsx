@@ -6,7 +6,7 @@ import { act, renderHook } from '@testing-library/react';
 import type { ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { inputsSignature, liveInputsKey } from '../model/run_inputs';
+import { inputsSignature, pageInputsSignature } from '../model/run_inputs';
 import type { RunOutcome, RunSettings } from '../model/run_state';
 import { fakeTabHost } from '../testing/fake_tab_host';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
@@ -46,7 +46,7 @@ const makePage = () => {
 		player: { getGear: () => ({ getEquippedItems: () => [] }), getSpec: () => Spec.SpecRetributionPaladin, getTalentTreePoints: () => [] },
 	});
 	const wrapper = ({ children }: { children: ReactNode }) => <SimHostProvider host={host}>{children}</SimHostProvider>;
-	const signatureNow = (settings: RunSettings) => inputsSignature({ liveKey: liveInputsKey(sim), settings });
+	const signatureNow = (settings: RunSettings) => inputsSignature({ liveKey: pageInputsSignature(sim), settings });
 	/** A gear edit, written to the store the way a gear setter writes it. */
 	const changeGear = () => {
 		raidName = 'worn gear B';

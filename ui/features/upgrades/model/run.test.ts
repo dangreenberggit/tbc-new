@@ -72,7 +72,7 @@ const SETTINGS = { iterations: 500, candidateCap: 10 };
 
 const depsFor = (overrides: Partial<RunDeps> = {}): RunDeps => {
 	const context = fakeContext();
-	return { signal: new AbortController().signal, onLanded: () => {}, runContext: () => context, ...overrides };
+	return { signal: new AbortController().signal, onLanded: () => {}, getRunContext: () => context, ...overrides };
 };
 
 /** Emits each row as the engine does, then resolves the whole ranking. */
@@ -96,7 +96,7 @@ describe('rankForPlayer', () => {
 	it('ranks with the runner, store and signal it was given, and resolves with the duration', async () => {
 		const context = fakeContext();
 		const signal = new AbortController().signal;
-		const result = await rankForPlayer(fakeHost(), SETTINGS, depsFor({ signal, runContext: () => context }));
+		const result = await rankForPlayer(fakeHost(), SETTINGS, depsFor({ signal, getRunContext: () => context }));
 
 		expect(result).toMatchObject({ complete: true, items: RANKING_FIXTURE.items });
 		expect(result.durationMs).toBeGreaterThanOrEqual(0);
@@ -190,7 +190,7 @@ describe('rankForPlayer', () => {
 
 	it('takes the run context before its first await, so an unmount after the click can end it', () => {
 		const runContext = vi.fn(fakeContext);
-		const pending = rankForPlayer(fakeHost(), SETTINGS, depsFor({ runContext }));
+		const pending = rankForPlayer(fakeHost(), SETTINGS, depsFor({ getRunContext: runContext }));
 		expect(runContext).toHaveBeenCalledTimes(1);
 		return pending;
 	});
@@ -199,8 +199,8 @@ describe('rankForPlayer', () => {
 		let kept: RunContext | undefined;
 		const build = vi.fn(fakeContext);
 		const runContext = () => (kept ??= build());
-		await rankForPlayer(fakeHost(), SETTINGS, depsFor({ runContext }));
-		await rankForPlayer(fakeHost(), SETTINGS, depsFor({ runContext }));
+		await rankForPlayer(fakeHost(), SETTINGS, depsFor({ getRunContext: runContext }));
+		await rankForPlayer(fakeHost(), SETTINGS, depsFor({ getRunContext: runContext }));
 
 		expect(build).toHaveBeenCalledTimes(1);
 		expect(rankCalls[0]!.deps.sim).toBe(rankCalls[1]!.deps.sim);

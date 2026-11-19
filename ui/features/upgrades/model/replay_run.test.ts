@@ -10,20 +10,20 @@ import type { RunDeps } from './run';
 
 const SETTINGS = { iterations: 1000 };
 
-const fakeHost = () => ({ player: {} }) as unknown as IndividualSimHost<Spec>;
+const bareHost = () => ({ player: {} }) as unknown as IndividualSimHost<Spec>;
 
 const depsWith = (signal: AbortSignal, onLanded: (row: RankedItem) => void) => {
-	const runContext = vi.fn<RunDeps['runContext']>(() => {
+	const runContext = vi.fn<RunDeps['getRunContext']>(() => {
 		throw new Error('the replay runner must not build a sim runner');
 	});
-	return { deps: { signal, onLanded, runContext }, runContext };
+	return { deps: { signal, onLanded, getRunContext: runContext }, runContext };
 };
 
 describe('replayRows', () => {
 	it('lands every row in order and resolves the whole ranking with its duration', async () => {
 		const landed: RankedItem[] = [];
 		const { deps, runContext } = depsWith(new AbortController().signal, row => landed.push(row));
-		const result = await replayRows(RANKING_FIXTURE, { batchDelayMs: 0 })(fakeHost(), SETTINGS, deps);
+		const result = await replayRows(RANKING_FIXTURE, { batchDelayMs: 0 })(bareHost(), SETTINGS, deps);
 
 		expect(landed.map(r => r.itemId)).toEqual(RANKING_FIXTURE.items.map(r => r.itemId));
 		expect(result.complete).toBe(true);
@@ -39,7 +39,7 @@ describe('replayRows', () => {
 			landed.push(row);
 			if (landed.length === 3) controller.abort();
 		});
-		const result = await replayRows(RANKING_FIXTURE, { batchDelayMs: 0 })(fakeHost(), SETTINGS, deps);
+		const result = await replayRows(RANKING_FIXTURE, { batchDelayMs: 0 })(bareHost(), SETTINGS, deps);
 
 		expect(result.complete).toBe(false);
 		expect(result.items.map(r => r.itemId)).toEqual(RANKING_FIXTURE.items.slice(0, 3).map(r => r.itemId));
@@ -52,14 +52,14 @@ describe('replayRows', () => {
 		controller.abort();
 		const onLanded = vi.fn();
 		const { deps } = depsWith(controller.signal, onLanded);
-		const result = await replayRows(RANKING_FIXTURE, { batchDelayMs: 0 })(fakeHost(), SETTINGS, deps);
+		const result = await replayRows(RANKING_FIXTURE, { batchDelayMs: 0 })(bareHost(), SETTINGS, deps);
 
 		expect(result).toMatchObject({ complete: false, items: [] });
 		expect(onLanded).not.toHaveBeenCalled();
 	});
 
 	it('ticks the progress channel up to the row count', async () => {
-		const host = fakeHost();
+		const host = bareHost();
 		const { deps } = depsWith(new AbortController().signal, () => {});
 		await replayRows(RANKING_FIXTURE, { batchDelayMs: 0 })(host, SETTINGS, deps);
 

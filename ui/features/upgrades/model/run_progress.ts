@@ -4,7 +4,7 @@
  * (`rank.ts`): setup stages, a `simming` event for the baseline and each candidate, a
  * set-bonus stage that sends nothing and is not in `total`, `ranking`, then the
  * replication sims.
- * Only the candidate count, which `lastCandidateDoneFor` solves from the first
+ * Only the candidate count, which `doneAtLastCandidateFor` solves from the first
  * `total`, tells the last candidate from the set-bonus stage.
  */
 
@@ -16,14 +16,15 @@ export const TAB_REPLICATE_SEED_COUNT = DEFAULT_SEED_COUNT;
 
 export type RunActivity = 'preparing' | 'candidates' | 'set-bonuses' | 'replication' | 'ranking';
 
-export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; kappa: number; psi: number; slowdown: number };
+export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; replicationSimCost: number; setBonusStageCandidates: number; slowdown: number };
 
 /**
  * Fitted on one recorded feral run (364 candidates, concurrency 4). Later
  * candidates slowed there, likely from rendering each new row, so refit
- * `slowdown`, `kappa` and `psi` when that cost changes.
+ * `slowdown`, `replicationSimCost` and `setBonusStageCandidates` when that cost
+ * changes.
  */
-export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', kappa: 0.3221, psi: 50.993, slowdown: 0.003064 };
+export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', replicationSimCost: 0.3221, setBonusStageCandidates: 50.993, slowdown: 0.003064 };
 export const RUN_PROGRESS_SHOW_FROM_FRACTION = 0.35;
 export const RUN_PROGRESS_MIN_CANDIDATES_DONE = 10;
 
@@ -32,7 +33,7 @@ export const RUN_PROGRESS_MIN_CANDIDATES_DONE = 10;
  * `total = 1 + candidates + (seedCount - 1) * (1 + min(topN, candidates))`.
  * `null` when no whole candidate count fits.
  */
-export function lastCandidateDoneFor(total: number, seedCount: number, topN: number): number | null {
+export function doneAtLastCandidateFor(total: number, seedCount: number, topN: number): number | null {
 	if (seedCount <= 1) return total;
 	const extra = seedCount - 1;
 	// At most topN candidates: total = seedCount * (1 + candidates).
@@ -56,11 +57,11 @@ export type RunTimeline = {
 	readonly rankingAt: number | undefined;
 	readonly total: number;
 	/** null when unknown or contradicted. */
-	readonly lastCandidateDone: number | null;
+	readonly doneAtLastCandidate: number | null;
 	readonly concurrency: number;
 	readonly now: number;
 	/** Rows received before `ranking` that replication can re-sim. */
-	readonly qualifyingRows: number;
+	readonly replicableRowCount: number;
 	/** Seeds per re-simmed row (`TAB_REPLICATE_SEED_COUNT`). */
 	readonly seedCount: number;
 	/** The most rows replication re-sims (`PAIRED_REPLICATE_TOP_N`). */
@@ -77,16 +78,16 @@ export type RunTimeline = {
  */
 export function expectedFinalDone(run: RunTimeline): number {
 	if (run.finalTotal !== undefined) return run.finalTotal;
-	const lastCandidateDone = run.lastCandidateDone;
-	if (lastCandidateDone === null) return run.total;
-	const c = lastCandidateDone - 1;
+	const doneAtLastCandidate = run.doneAtLastCandidate;
+	if (doneAtLastCandidate === null) return run.total;
+	const c = doneAtLastCandidate - 1;
 	const before = run.sims.filter(s => !s.afterRanking);
 	const lastBefore = before[before.length - 1];
 	const n = lastBefore ? Math.min(lastBefore.done - 1, c) : 0;
-	const q = run.qualifyingRows;
+	const q = run.replicableRowCount;
 	const projected = n >= c ? q : n > 0 ? (q * c) / n : 0;
 	const rows = Math.min(run.topN, projected);
-	const expected = lastCandidateDone + (rows === 0 ? 0 : (run.seedCount - 1) * (1 + rows));
+	const expected = doneAtLastCandidate + (rows === 0 ? 0 : (run.seedCount - 1) * (1 + rows));
 	const after = run.sims.filter(s => s.afterRanking);
 	const lastAfter = after[after.length - 1];
 	return lastAfter && lastAfter.done > expected ? run.total : expected;
@@ -96,8 +97,8 @@ export function expectedFinalDone(run: RunTimeline): number {
  * The time left, in ms; undefined until the run has said enough. `linear` scales
  * the time per sim so far. `phased` assumes candidates run `concurrency` at a
  * time, each a little slower than the last (`slowdown`); the set-bonus stage takes
- * `psi` candidates' time; each replication sim runs alone and takes
- * `kappa * concurrency`.
+ * `setBonusStageCandidates` candidates' time; each replication sim runs alone and
+ * takes `replicationSimCost * concurrency` candidates' time.
  */
 export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): number | undefined {
 	const first = run.sims[0];
@@ -114,46 +115,46 @@ export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): 
 	if (config.kind === 'linear') {
 		estimate = linear();
 	} else {
-		const k = config.kappa * run.concurrency;
-		const lastCandidateDone = run.lastCandidateDone;
+		const k = config.replicationSimCost * run.concurrency;
+		const doneAtLastCandidate = run.doneAtLastCandidate;
 		const finalDone = expectedFinalDone(run);
-		const lastCandidateEvent = lastCandidateDone === null ? undefined : run.sims.find(s => !s.afterRanking && s.done === lastCandidateDone);
+		const lastCandidateEvent = doneAtLastCandidate === null ? undefined : run.sims.find(s => !s.afterRanking && s.done === doneAtLastCandidate);
 		if (!atRanking) {
-			if (lastCandidateDone === null) {
+			if (doneAtLastCandidate === null) {
 				estimate = linear();
 			} else {
-				const left = finalDone - lastCandidateDone;
-				if (done < lastCandidateDone) {
+				const left = finalDone - doneAtLastCandidate;
+				if (done < doneAtLastCandidate) {
 					const n = done - 1;
-					const c = lastCandidateDone - 1;
+					const c = doneAtLastCandidate - 1;
 					if (n >= 1) {
 						const tau = run.now - t1;
 						const beta = config.slowdown;
-						const tri = (x: number) => (x * (x + 1)) / 2;
-						const a = tau / (n + beta * tri(n));
-						const candidatesLeft = a * (c - n + beta * (tri(c) - tri(n)));
+						const triangular = (x: number) => (x * (x + 1)) / 2;
+						const a = tau / (n + beta * triangular(n));
+						const candidatesLeft = a * (c - n + beta * (triangular(c) - triangular(n)));
 						const meanPerCandidate = (tau + candidatesLeft) / c;
-						estimate = candidatesLeft + meanPerCandidate * (config.psi + k * left);
+						estimate = candidatesLeft + meanPerCandidate * (config.setBonusStageCandidates + k * left);
 					}
-				} else if (lastCandidateEvent && lastCandidateDone > 1) {
-					estimate = ((lastCandidateEvent.t - t1) / (lastCandidateDone - 1)) * (config.psi + k * left);
+				} else if (lastCandidateEvent && doneAtLastCandidate > 1) {
+					estimate = ((lastCandidateEvent.t - t1) / (doneAtLastCandidate - 1)) * (config.setBonusStageCandidates + k * left);
 				}
 			}
 		} else {
 			const beforeRanking = run.sims.filter(s => !s.afterRanking);
 			const lastBefore = beforeRanking[beforeRanking.length - 1];
 			const b = lastBefore?.done;
-			let rB: number | undefined;
-			if (lastCandidateEvent && lastCandidateDone !== null && lastCandidateDone > 1) {
-				rB = (lastCandidateEvent.t - t1) / (lastCandidateDone - 1);
+			let msPerCandidate: number | undefined;
+			if (lastCandidateEvent && doneAtLastCandidate !== null && doneAtLastCandidate > 1) {
+				msPerCandidate = (lastCandidateEvent.t - t1) / (doneAtLastCandidate - 1);
 			} else if (lastBefore && b !== undefined && b > 1) {
-				rB = (lastBefore.t - t1) / (b - 1);
+				msPerCandidate = (lastBefore.t - t1) / (b - 1);
 			}
 			const m = b === undefined ? 0 : done - b;
 			if (m >= 2) {
 				estimate = ((run.now - run.rankingAt!) / m) * (finalDone - done);
-			} else if (rB !== undefined) {
-				estimate = rB * k * (finalDone - done);
+			} else if (msPerCandidate !== undefined) {
+				estimate = msPerCandidate * k * (finalDone - done);
 			}
 		}
 	}
@@ -166,10 +167,10 @@ export type RunProgressView = {
 	stage: Exclude<Progress, { kind: 'row' }>['stage'];
 	done?: number;
 	total?: number;
-	lastCandidateDone: number | null;
+	doneAtLastCandidate: number | null;
 	remainingMs?: number;
 	concurrency: number;
-	qualifyingRows: number;
+	replicableRowCount: number;
 };
 
 type TrackerOptions = {
@@ -190,11 +191,11 @@ export class RunProgressTracker {
 	private stage: RunProgressView['stage'] = 'resolving';
 	private total: number | undefined;
 	private finalTotal: number | undefined;
-	private lastCandidateDone: number | null = null;
+	private doneAtLastCandidate: number | null = null;
 	private readonly sims: Array<{ t: number; done: number; afterRanking: boolean }> = [];
 	private rankingAt: number | undefined;
 	private concurrency = 1;
-	private qualifyingRows = 0;
+	private replicableRowCount = 0;
 	private stopped = false;
 	private shown = false;
 	private estimate: number | undefined;
@@ -245,23 +246,23 @@ export class RunProgressTracker {
 			activity: this.activity,
 			stage: this.stage,
 			...(this.total === undefined ? {} : { done: this.lastDone(), total: this.total }),
-			lastCandidateDone: this.lastCandidateDone,
+			doneAtLastCandidate: this.doneAtLastCandidate,
 			...(this.shown && !this.stopped && this.estimate !== undefined ? { remainingMs: this.estimate } : {}),
 			concurrency: this.concurrency,
-			qualifyingRows: this.qualifyingRows,
+			replicableRowCount: this.replicableRowCount,
 		};
 	}
 
 	private observeRow(row: { readonly belowCutoff: boolean; readonly simmed?: false }): void {
 		if (this.rankingAt !== undefined || !isReplicable(row)) return;
-		this.qualifyingRows += 1;
+		this.replicableRowCount += 1;
 		const last = this.sims[this.sims.length - 1];
 		if (last) this.recompute(last.t);
 	}
 
 	private observeSimming(done: number, total: number, nowMs: number): void {
 		if (this.total === undefined) {
-			this.lastCandidateDone = lastCandidateDoneFor(total, this.options.seedCount, this.options.topN);
+			this.doneAtLastCandidate = doneAtLastCandidateFor(total, this.options.seedCount, this.options.topN);
 		}
 		this.total = total;
 		const afterRanking = this.rankingAt !== undefined;
@@ -272,8 +273,8 @@ export class RunProgressTracker {
 			return;
 		}
 		// The seed count does not match this run, so the set-bonus stage cannot be told apart.
-		if (this.lastCandidateDone !== null && done > this.lastCandidateDone) this.lastCandidateDone = null;
-		this.activity = this.lastCandidateDone !== null && done === this.lastCandidateDone ? 'set-bonuses' : 'candidates';
+		if (this.doneAtLastCandidate !== null && done > this.doneAtLastCandidate) this.doneAtLastCandidate = null;
+		this.activity = this.doneAtLastCandidate !== null && done === this.doneAtLastCandidate ? 'set-bonuses' : 'candidates';
 	}
 
 	private lastDone(): number | undefined {
@@ -286,10 +287,10 @@ export class RunProgressTracker {
 			sims: this.sims,
 			rankingAt: this.rankingAt,
 			total: this.total,
-			lastCandidateDone: this.lastCandidateDone,
+			doneAtLastCandidate: this.doneAtLastCandidate,
 			concurrency: this.concurrency,
 			now: nowMs,
-			qualifyingRows: this.qualifyingRows,
+			replicableRowCount: this.replicableRowCount,
 			seedCount: this.options.seedCount,
 			topN: this.options.topN,
 			...(this.finalTotal === undefined ? {} : { finalTotal: this.finalTotal }),
