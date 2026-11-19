@@ -26,23 +26,23 @@ export function migrateGemsToItem(wornGems: readonly number[], wornItemId: numbe
 		if (!gem) continue;
 
 		const matchIdx = newSockets.findIndex(
-			(socket, i) => out[i] === 0 && gemEligibleForSocket(gem.colour, socket) && gemColorMatchesSocket(gem.colour, socket),
+			(socket, i) => out[i] === 0 && gemEligibleForSocket(gem.color, socket) && gemColorMatchesSocket(gem.color, socket),
 		);
 		if (matchIdx >= 0) {
 			out[matchIdx] = gemId;
 			continue;
 		}
 
-		const eligibleIdx = newSockets.findIndex((socket, i) => out[i] === 0 && gemEligibleForSocket(gem.colour, socket));
+		const eligibleIdx = newSockets.findIndex((socket, i) => out[i] === 0 && gemEligibleForSocket(gem.color, socket));
 		if (eligibleIdx >= 0) out[eligibleIdx] = gemId;
 	}
 
 	return out;
 }
 
-export function gemEligibleForSocket(gemColour: number, socketColour: number): boolean {
-	if (socketColour === GemColor.GemColorMeta) {
-		return gemColour === GemColor.GemColorMeta;
+export function gemEligibleForSocket(gemColor: number, socketColor: number): boolean {
+	if (socketColor === GemColor.GemColorMeta) {
+		return gemColor === GemColor.GemColorMeta;
 	}
-	return gemColour !== GemColor.GemColorMeta;
+	return gemColor !== GemColor.GemColorMeta;
 }

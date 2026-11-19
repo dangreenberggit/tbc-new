@@ -3,7 +3,7 @@
  * (`RunNote`).
  */
 
-import type { GemRecolour } from './meta-repair';
+import type { GemRecolor } from './meta-repair';
 import type { SimOrderName } from './slots';
 import type { ContentPhase, Race } from './types';
 
@@ -111,16 +111,16 @@ export function setPotentialDisclosureLine(): string {
 	return "set potential is measured with the completion-package synergy method, shared seeds — see PLAN.md §14's 2026-08-09 amendment";
 }
 
-export function notesFromMetaRepair(recolours: readonly GemRecolour[]): RunNote[] {
-	if (recolours.length === 0) return [];
+export function notesFromMetaRepair(recolors: readonly GemRecolor[]): RunNote[] {
+	if (recolors.length === 0) return [];
 	return [
 		{
 			field: 'Meta gem',
 			detail:
 				`Your meta gem was not active, so the ranking swapped ${
-					recolours.length === 1 ? '1 gem' : `${recolours.length} gems`
+					recolors.length === 1 ? '1 gem' : `${recolors.length} gems`
 				} in its own copy of your gear to turn it on; your gear itself was not changed.\n` +
-				`swaps: ${recolours.map(s => `gem ${s.from} -> gem ${s.to} on item ${s.itemId}`).join(', ')}`,
+				`swaps: ${recolors.map(s => `gem ${s.from} -> gem ${s.to} on item ${s.itemId}`).join(', ')}`,
 		},
 	];
 }

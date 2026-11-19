@@ -32,8 +32,8 @@ export type GemContext = {
 	readonly phaseGems: readonly GemEntry[];
 	/**
 	 * The gems socket filling and meta repair may use: `phaseGems` capped at rare,
-	 * so meta repair adds no epic gems that filling would not. Every colour exists
-	 * at rare and every TBC meta gem is rare, so the cap removes no colour or meta.
+	 * so meta repair adds no epic gems that filling would not. Every color exists
+	 * at rare and every TBC meta gem is rare, so the cap removes no color or meta.
 	 */
 	readonly fillGems: readonly GemEntry[];
 	readonly weights: EpWeights;
@@ -75,7 +75,7 @@ function toWeightRecord(weights: EpWeights): EpWeightRecord {
 	return out;
 }
 
-/** EP margin within which the meta's colour needs may pick a lower-EP gem. */
+/** EP margin within which the meta's color needs may pick a lower-EP gem. */
 const META_NEAR_EP = 1.0;
 
 const RELENTLESS_EARTHSTORM_DIAMOND = 32409;
@@ -95,7 +95,7 @@ const PREFERRED_META_IDS: readonly number[] = [RELENTLESS_EARTHSTORM_DIAMOND];
 /**
  * The meta gem each detected spec wears in its wowsims gear presets
  * (ui/specs/<class>/<spec>/gear_sets/), not ranked by EP. Find it in a preset by
- * gem colour, not position: `gems` follows the head's socket order, so the meta
+ * gem color, not position: `gems` follows the head's socket order, so the meta
  * is not always `gems[0]`.
  *
  * Feral needs an entry although most feral presets wear the socketless
@@ -165,8 +165,8 @@ export type FillEmptyOpts = {
 	usedUnique?: ReadonlySet<number>;
 	/**
 	 * The meta gem and the gems on **other slots only**. The filler counts this
-	 * piece's kept gems itself; listing them here counts their colour twice and
-	 * can make the meta's colour needs look met before any gem is tried.
+	 * piece's kept gems itself; listing them here counts their color twice and
+	 * can make the meta's color needs look met before any gem is tried.
 	 */
 	meta?: { metaId: number; otherGemIds: readonly number[] };
 	/**
@@ -272,10 +272,10 @@ function bestGemForSocket(
 		if (gem.unique && usedUnique.has(gem.id)) continue;
 
 		if (socket === GemColor.GemColorMeta) {
-			if (gem.colour !== GemColor.GemColorMeta) continue;
-		} else if (gem.colour === GemColor.GemColorMeta) {
+			if (gem.color !== GemColor.GemColorMeta) continue;
+		} else if (gem.color === GemColor.GemColorMeta) {
 			continue;
-		} else if (matchColors && !gemColorMatchesSocket(gem.colour, socket)) {
+		} else if (matchColors && !gemColorMatchesSocket(gem.color, socket)) {
 			continue;
 		}
 

@@ -4,7 +4,7 @@
  * No request field turns off one set bonus, so the same gear is simmed twice with some
  * set pieces sent as copies: in one request the copies keep their set, in the other they
  * belong to no set. Copies keep every stat, so the difference is the bonus alone, except
- * in sockets recoloured to keep the meta gem active, where each request wears the gems
+ * in sockets recolored to keep the meta gem active, where each request wears the gems
  * chosen for its own hit. The pieces are copies in both requests because the Go sim keys
  * item effects, PvP glove mods, trinket, ring and weapon checks, item swaps and class code
  * on item id (for example `itemEffects[eq.ID]`, sim/core/item_effects.go). A copy lacks

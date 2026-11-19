@@ -94,7 +94,7 @@ describe('UpgradesResults', () => {
 		expect(within(container).queryByText("Shadowmaster's Boots")).toBeNull();
 	});
 
-	it('colours names from the sim database and marks rows from the finished ranking', () => {
+	it('colors names from the sim database and marks rows from the finished ranking', () => {
 		const { container } = show({ status: 'done', runId: 1, result: RANKING_FIXTURE });
 		const pane = activePane(container);
 

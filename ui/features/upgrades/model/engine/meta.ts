@@ -1,12 +1,12 @@
 /**
- * Meta gem activation. The colour table and the per-gem `MetaGemCondition`
+ * Meta gem activation. The color table and the per-gem `MetaGemCondition`
  * table come from ui/sim/proto/gems.ts rather than being re-encoded here.
  */
 
 import { GemColor } from '@generated/proto/common';
 import { gemColorMatchesSocket as upstreamGemColorMatchesSocket, getMetaGemCondition } from '@sim/proto/gems';
 
-import { type GemColour, getGem } from './gems';
+import { getGem } from './gems';
 
 export type GemColorCounts = { red: number; yellow: number; blue: number };
 
@@ -21,13 +21,13 @@ export type MetaStatus =
 			description: string;
 	  };
 
-export function gemColorMatchesSocket(gemColor: GemColour, socketColor: GemColour): boolean {
+export function gemColorMatchesSocket(gemColor: GemColor, socketColor: GemColor): boolean {
 	return upstreamGemColorMatchesSocket(gemColor, socketColor);
 }
 
 /**
  * The sim's own rule (`ItemEquipmentGemAndEnchantStats`, sim/core/database.go):
- * every socket, meta included, must hold a gem whose colour matches it, so an
+ * every socket, meta included, must hold a gem whose color matches it, so an
  * empty meta socket withholds the bonus.
  */
 export function socketBonusActive(sockets: readonly number[], gemIds: readonly number[]): boolean {
@@ -37,22 +37,22 @@ export function socketBonusActive(sockets: readonly number[], gemIds: readonly n
 	for (let i = 0; i < sockets.length; i++) {
 		const gem = getGem(gemIds[i] ?? 0);
 		if (!gem) return false;
-		if (!gemColorMatchesSocket(gem.colour, sockets[i]!)) return false;
+		if (!gemColorMatchesSocket(gem.color, sockets[i]!)) return false;
 	}
 
 	return true;
 }
 
 export function gemColorCounts(gemIds: readonly number[]): GemColorCounts {
-	const colours: GemColour[] = [];
+	const colors: GemColor[] = [];
 	for (const id of gemIds) {
 		const gem = getGem(id);
-		if (gem) colours.push(gem.colour);
+		if (gem) colors.push(gem.color);
 	}
 	return {
-		red: colours.filter(c => gemColorMatchesSocket(c, GemColor.GemColorRed)).length,
-		yellow: colours.filter(c => gemColorMatchesSocket(c, GemColor.GemColorYellow)).length,
-		blue: colours.filter(c => gemColorMatchesSocket(c, GemColor.GemColorBlue)).length,
+		red: colors.filter(c => gemColorMatchesSocket(c, GemColor.GemColorRed)).length,
+		yellow: colors.filter(c => gemColorMatchesSocket(c, GemColor.GemColorYellow)).length,
+		blue: colors.filter(c => gemColorMatchesSocket(c, GemColor.GemColorBlue)).length,
 	};
 }
 
@@ -64,9 +64,9 @@ export function isMetaConditionMet(metaId: number, counts: GemColorCounts): bool
 }
 
 /**
- * How many gems short of activation the meta is: for a compare-colour
- * condition, the greater colour's shortfall; otherwise the sum of each
- * colour's shortfall against its minimum.
+ * How many gems short of activation the meta is: for a compare-color
+ * condition, the greater color's shortfall; otherwise the sum of each
+ * color's shortfall against its minimum.
  */
 export function metaDeficit(metaId: number, counts: GemColorCounts): number {
 	const cond = getMetaGemCondition(metaId);
@@ -92,7 +92,7 @@ export function metaStatus(headSockets: readonly number[], gemIds: readonly numb
 	const hasMetaSocket = headSockets.includes(GemColor.GemColorMeta);
 	if (!hasMetaSocket) return { kind: 'no-meta-socket' };
 
-	const metaId = gemIds.find(id => getGem(id)?.colour === GemColor.GemColorMeta);
+	const metaId = gemIds.find(id => getGem(id)?.color === GemColor.GemColorMeta);
 	if (metaId == null) return { kind: 'no-meta-gem' };
 
 	const counts = gemColorCounts(gemIds);

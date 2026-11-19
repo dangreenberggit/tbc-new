@@ -1,6 +1,6 @@
 /**
  * Hit and expertise cap numbers per spec, used by `gemFillWeights` and by meta
- * repair (`meta-repair.ts`, which recolours gems to turn an inactive meta gem
+ * repair (`meta-repair.ts`, which recolors gems to turn an inactive meta gem
  * back on) so that neither branches on the spec.
  *
  * `CAP_PROFILE_BY_SPEC` must list every `SpecId`: a new spec without an entry

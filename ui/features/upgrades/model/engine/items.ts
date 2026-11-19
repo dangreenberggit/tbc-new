@@ -12,7 +12,7 @@ export type ItemEntry = {
 	sockets: GemColor[];
 	/** Dense stat array indexed by proto.Stat — item's own stats only. */
 	stats: number[];
-	/** Stat array granted only when every socket is colour-matched. */
+	/** Stat array granted only when every socket is color-matched. */
 	socketBonus: number[];
 	setId: number | null;
 	setName: string | null;

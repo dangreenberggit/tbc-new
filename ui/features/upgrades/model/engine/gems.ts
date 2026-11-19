@@ -3,11 +3,9 @@
 import { GemColor, ItemQuality } from '@generated/proto/common';
 import { Database } from '@sim/proto/database';
 
-export type GemColour = number;
-
 export type GemEntry = {
 	id: number;
-	colour: GemColour;
+	color: GemColor;
 	stats: number[];
 	phase: number;
 	quality: ItemQuality;
@@ -17,7 +15,7 @@ export type GemEntry = {
 function toGemEntry(gem: { id: number; color: GemColor; stats: number[]; phase: number; quality: number; unique: boolean }): GemEntry {
 	return {
 		id: gem.id,
-		colour: gem.color,
+		color: gem.color,
 		stats: gem.stats,
 		phase: gem.phase,
 		quality: gem.quality,
@@ -55,7 +53,7 @@ export function fillEligibleGems(gems: readonly GemEntry[]): readonly GemEntry[]
 
 export function findMetaGemId(gemIds: readonly number[]): number | undefined {
 	for (const id of gemIds) {
-		if (getGem(id)?.colour === GemColor.GemColorMeta) return id;
+		if (getGem(id)?.color === GemColor.GemColorMeta) return id;
 	}
 	return undefined;
 }

@@ -1,6 +1,6 @@
 /**
- * Meta repair: the gem recolours that switch an inactive meta gem back on. An exact search
- * over the minimal sets of recolours, counting socket bonuses gained and lost and, with a
+ * Meta repair: the gem recolors that switch an inactive meta gem back on. An exact search
+ * over the minimal sets of recolors, counting socket bonuses gained and lost and, with a
  * hit budget, valuing hit only up to the cap. Past a work limit it falls back to a greedy
  * search that values layouts the same way.
  */
@@ -18,7 +18,7 @@ export type SocketedItem = {
 	gems: number[];
 };
 
-export type GemRecolour = {
+export type GemRecolor = {
 	itemId: number;
 	itemIndex: number;
 	socketIndex: number;
@@ -30,7 +30,7 @@ export type GemRecolour = {
 export type MetaRepairResult = {
 	items: SocketedItem[];
 	metaAdjusted: boolean;
-	recolours: GemRecolour[];
+	recolors: GemRecolor[];
 };
 
 export abstract class MetaRepairError extends Error {}
@@ -129,20 +129,20 @@ export function greedyRepairMeta(opts: {
 
 	const head = items[0];
 	if (!head) {
-		return { items, metaAdjusted: false, recolours: [] };
+		return { items, metaAdjusted: false, recolors: [] };
 	}
 	const headItem = getItem(head.itemId);
 	if (!headItem?.sockets.includes(GemColor.GemColorMeta)) {
-		return { items, metaAdjusted: false, recolours: [] };
+		return { items, metaAdjusted: false, recolors: [] };
 	}
 
 	const initial = metaStatus(headItem.sockets, allGemIds(items));
 	if (initial.kind !== 'inactive') {
-		return { items, metaAdjusted: false, recolours: [] };
+		return { items, metaAdjusted: false, recolors: [] };
 	}
 
 	const model = valueModel(opts.epWeights, opts.hitCap);
-	const recolours: GemRecolour[] = [];
+	const recolors: GemRecolor[] = [];
 	const maxRecolors = 32;
 	// The hit change from the gear before repair, so each move's hit is priced
 	// against the budget the earlier moves left.
@@ -151,7 +151,7 @@ export function greedyRepairMeta(opts: {
 	for (let i = 0; i < maxRecolors; i++) {
 		const status = metaStatus(headItem.sockets, allGemIds(items));
 		if (status.kind === 'active') {
-			return { items, metaAdjusted: recolours.length > 0, recolours };
+			return { items, metaAdjusted: recolors.length > 0, recolors };
 		}
 		if (status.kind !== 'inactive') {
 			throw new MetaInfeasibleError(`unexpected meta status ${status.kind}`);
@@ -159,7 +159,7 @@ export function greedyRepairMeta(opts: {
 
 		const move = bestRepairMove(items, status.metaId, status.counts, opts.allowedGems, model, dH);
 		if (!move) {
-			throw new MetaInfeasibleError(`no legal recolour activates meta ${status.metaId} (${status.description})`);
+			throw new MetaInfeasibleError(`no legal recolor activates meta ${status.metaId} (${status.description})`);
 		}
 
 		const slot = items[move.itemIndex]!;
@@ -167,7 +167,7 @@ export function greedyRepairMeta(opts: {
 		while (slot.gems.length < item.sockets.length) slot.gems.push(0);
 		slot.gems[move.socketIndex] = move.to;
 		dH = move.dHAfter;
-		recolours.push({
+		recolors.push({
 			itemId: slot.itemId,
 			itemIndex: move.itemIndex,
 			socketIndex: move.socketIndex,
@@ -183,7 +183,7 @@ export function greedyRepairMeta(opts: {
 /**
  * The head's meta status when its meta gem is off, else undefined: the test
  * `repairMetaGems` makes first, which the ranking uses to skip a stats read when
- * repair would recolour nothing.
+ * repair would recolor nothing.
  */
 export function inactiveMeta(items: readonly SocketedItem[]): Extract<MetaStatus, { kind: 'inactive' }> | undefined {
 	const head = items[0];
@@ -203,52 +203,52 @@ function allGemIds(items: readonly SocketedItem[]): number[] {
 	return ids;
 }
 
-export function dropUnneededRecolours(opts: {
+export function dropUnneededRecolors(opts: {
 	original: readonly SocketedItem[];
 	repaired: readonly SocketedItem[];
-	recolours: readonly GemRecolour[];
+	recolors: readonly GemRecolor[];
 }): MetaRepairResult {
-	const { original, repaired, recolours } = opts;
+	const { original, repaired, recolors } = opts;
 	const items = repaired.map(it => ({
 		itemId: it.itemId,
 		gems: [...it.gems],
 	}));
 	const metaItem = items.map(it => getItem(it.itemId)).find(entry => entry?.sockets.includes(GemColor.GemColorMeta));
 	if (!metaItem) {
-		return { items, metaAdjusted: recolours.length > 0, recolours: [...recolours] };
+		return { items, metaAdjusted: recolors.length > 0, recolors: [...recolors] };
 	}
 
-	const survivingRecolours: GemRecolour[] = [];
+	const survivingRecolors: GemRecolor[] = [];
 
-	for (const recolour of recolours) {
-		const slot = items[recolour.itemIndex];
-		const originalGem = original[recolour.itemIndex]?.gems[recolour.socketIndex];
-		const socketColor = slot && getItem(slot.itemId)?.sockets[recolour.socketIndex];
-		if (!slot || slot.itemId !== recolour.itemId || !originalGem || socketColor === GemColor.GemColorMeta) {
-			survivingRecolours.push(recolour);
+	for (const recolor of recolors) {
+		const slot = items[recolor.itemIndex];
+		const originalGem = original[recolor.itemIndex]?.gems[recolor.socketIndex];
+		const socketColor = slot && getItem(slot.itemId)?.sockets[recolor.socketIndex];
+		if (!slot || slot.itemId !== recolor.itemId || !originalGem || socketColor === GemColor.GemColorMeta) {
+			survivingRecolors.push(recolor);
 			continue;
 		}
 
-		const before = slot.gems[recolour.socketIndex];
-		slot.gems[recolour.socketIndex] = originalGem;
+		const before = slot.gems[recolor.socketIndex];
+		slot.gems[recolor.socketIndex] = originalGem;
 		const status = metaStatus(metaItem.sockets, allGemIds(items));
 		if (status.kind === 'active') {
 			continue;
 		}
-		slot.gems[recolour.socketIndex] = before ?? 0;
-		survivingRecolours.push(recolour);
+		slot.gems[recolor.socketIndex] = before ?? 0;
+		survivingRecolors.push(recolor);
 	}
 
 	return {
 		items,
-		metaAdjusted: survivingRecolours.length > 0,
-		recolours: survivingRecolours,
+		metaAdjusted: survivingRecolors.length > 0,
+		recolors: survivingRecolors,
 	};
 }
 
 /**
- * Switches an inactive meta back on with the best minimal recolour set of at most `d + 1`
- * changes, `d` being its colour deficit. Past the work limit it warns once and runs
+ * Switches an inactive meta back on with the best minimal recolor set of at most `d + 1`
+ * changes, `d` being its color deficit. Past the work limit it warns once and runs
  * greedy with the same value, which always finishes.
  */
 export function repairMetaGems(opts: {
@@ -263,7 +263,7 @@ export function repairMetaGems(opts: {
 		return {
 			items: opts.items.map(it => ({ itemId: it.itemId, gems: [...it.gems] })),
 			metaAdjusted: false,
-			recolours: [],
+			recolors: [],
 		};
 	}
 	const deficit = metaDeficit(status.metaId, status.counts);
@@ -276,24 +276,24 @@ export function repairMetaGems(opts: {
 		...(opts.workLimit !== undefined ? { workLimit: opts.workLimit } : {}),
 	});
 	if (found === undefined) {
-		throw new MetaInfeasibleError(`no recolour set of at most ${deficit + 1} changes activates meta ${status.metaId} (${status.description})`);
+		throw new MetaInfeasibleError(`no recolor set of at most ${deficit + 1} changes activates meta ${status.metaId} (${status.description})`);
 	}
 	if ('overLimit' in found) {
 		console.warn('[upgrades] meta repair: exact search passed its work limit, greedy used', { metaId: status.metaId, deficit, work: found.work });
 		const repaired = greedyRepairMeta(opts);
-		if (repaired.recolours.length === 0) return repaired;
-		return dropUnneededRecolours({
+		if (repaired.recolors.length === 0) return repaired;
+		return dropUnneededRecolors({
 			original: opts.items,
 			repaired: repaired.items,
-			recolours: repaired.recolours,
+			recolors: repaired.recolors,
 		});
 	}
-	return { items: found.items, metaAdjusted: true, recolours: found.recolours };
+	return { items: found.items, metaAdjusted: true, recolors: found.recolors };
 }
 
 export type MinimalRepair = {
 	items: SocketedItem[];
-	recolours: GemRecolour[];
+	recolors: GemRecolor[];
 	/** The layout's value relative to `items`. */
 	value: number;
 	work: number;
@@ -316,18 +316,18 @@ type SearchState = {
 type ChangeList = { head: Change[]; tail: ChangeList | null };
 type Change = { itemIndex: number; socketIndex: number; from: number; to: number };
 
-const colourChangeKind = (dRed: number, dYellow: number, dBlue: number): number => (dRed + 1) * 9 + (dYellow + 1) * 3 + (dBlue + 1);
-const NO_COLOUR_CHANGE = colourChangeKind(0, 0, 0);
+const colorChangeKind = (dRed: number, dYellow: number, dBlue: number): number => (dRed + 1) * 9 + (dYellow + 1) * 3 + (dBlue + 1);
+const NO_COLOR_CHANGE = colorChangeKind(0, 0, 0);
 
 /**
- * The best minimal set of recolours that switches the meta on: undoing any one leaves it
+ * The best minimal set of recolors that switches the meta on: undoing any one leaves it
  * off. Undefined when there is none. Each change places a non-meta allowed gem of another
- * colour, no unique gem repeats or duplicates a worn one, and there are at most
+ * color, no unique gem repeats or duplicates a worn one, and there are at most
  * `maxChanges`. The value is the gems' EP change, plus bonuses switched on, minus
  * bonuses switched off, plus the hit term of `valueModel`. Ties go to the first layout
  * in SIM_ORDER, socket and allowed-gems order.
  *
- * A dynamic program over the items that keeps the best value per state (which colour
+ * A dynamic program over the items that keeps the best value per state (which color
  * changes, hit change, unique gems placed). This is exact because the value is a sum
  * over items plus a term of the hit change. Past `workLimit` it returns `overLimit`.
  */
@@ -346,7 +346,7 @@ export function bestMinimalRepair(opts: {
 	const headItem = getItem(original[0]?.itemId ?? 0);
 	const status = headItem?.sockets.includes(GemColor.GemColorMeta) ? metaStatus(headItem.sockets, allGemIds(original)) : undefined;
 	if (status?.kind !== 'inactive') {
-		return { items: original, recolours: [], value: 0, work: 0 };
+		return { items: original, recolors: [], value: 0, work: 0 };
 	}
 	const metaId = status.metaId;
 	const limit = opts.workLimit ?? REPAIR_SEARCH_WORK_LIMIT;
@@ -356,12 +356,12 @@ export function bestMinimalRepair(opts: {
 	const poolUnique = new Set(pool.filter(g => g.unique).map(g => g.id));
 	const held = new Set(allGemIds(original));
 	const base = gemColorCounts(allGemIds(original));
-	const colourCache = new Map<number, GemColorCounts>();
-	const colourOf = (gemId: number) => {
-		let c = colourCache.get(gemId);
+	const colorCache = new Map<number, GemColorCounts>();
+	const colorOf = (gemId: number) => {
+		let c = colorCache.get(gemId);
 		if (!c) {
 			c = gemColorCounts(gemId ? [gemId] : []);
-			colourCache.set(gemId, c);
+			colorCache.set(gemId, c);
 		}
 		return c;
 	};
@@ -387,21 +387,21 @@ export function bestMinimalRepair(opts: {
 		const slot = original[itemIndex]!;
 		const item = getItem(slot.itemId);
 		if (!item) continue;
-		const coloured: number[] = [];
-		item.sockets.forEach((colour, s) => {
-			if (colour !== GemColor.GemColorMeta) coloured.push(s);
+		const colored: number[] = [];
+		item.sockets.forEach((color, s) => {
+			if (color !== GemColor.GemColorMeta) colored.push(s);
 		});
-		if (coloured.length === 0) continue;
+		if (colored.length === 0) continue;
 		const before = [...slot.gems];
 		while (before.length < item.sockets.length) before.push(0);
 		const matchedBefore = socketBonusActive(item.sockets, slot.gems);
 		const trial = [...before];
 
-		// Every way to recolour this item's sockets, best per state.
+		// Every way to recolor this item's sockets, best per state.
 		const options = new Map<string, SearchState>();
 		const visit = (j: number, changes: number) => {
 			if (changes > maxChanges) return;
-			if (j === coloured.length) {
+			if (j === colored.length) {
 				let value = 0;
 				let dRed = 0;
 				let dYellow = 0;
@@ -410,16 +410,16 @@ export function bestMinimalRepair(opts: {
 				const kinds: string[] = [];
 				const placed: number[] = [];
 				const head: Change[] = [];
-				for (const s of coloured) {
+				for (const s of colored) {
 					const from = before[s]!;
 					const to = trial[s]!;
 					if (from === to) continue;
 					value += model.gem(to) - model.gem(from);
 					dH += model.gemHit(to) - model.gemHit(from);
-					const a = colourOf(from);
-					const b = colourOf(to);
-					const kind = colourChangeKind(b.red - a.red, b.yellow - a.yellow, b.blue - a.blue);
-					if (kind === NO_COLOUR_CHANGE) return;
+					const a = colorOf(from);
+					const b = colorOf(to);
+					const kind = colorChangeKind(b.red - a.red, b.yellow - a.yellow, b.blue - a.blue);
+					if (kind === NO_COLOR_CHANGE) return;
 					dRed += b.red - a.red;
 					dYellow += b.yellow - a.yellow;
 					dBlue += b.blue - a.blue;
@@ -452,7 +452,7 @@ export function bestMinimalRepair(opts: {
 				if (!prev || value > prev.value) options.set(key, option);
 				return;
 			}
-			const s = coloured[j]!;
+			const s = colored[j]!;
 			trial[s] = before[s]!;
 			visit(j + 1, changes);
 			for (const g of pool) {
@@ -504,7 +504,7 @@ export function bestMinimalRepair(opts: {
 		};
 		if (!isMetaConditionMet(metaId, counts)) continue;
 		// Minimal: undoing one change of any kind present leaves the meta off.
-		// The meta reads colour counts only, so one change per kind is enough.
+		// The meta reads color counts only, so one change per kind is enough.
 		let minimal = true;
 		for (const letter of new Set(s.kinds)) {
 			const kind = letter.charCodeAt(0) - 65;
@@ -532,13 +532,13 @@ export function bestMinimalRepair(opts: {
 	for (let l = best.list; l; l = l.tail) changes.push(...l.head);
 	changes.sort((a, b) => a.itemIndex - b.itemIndex || a.socketIndex - b.socketIndex);
 	const items = original.map(it => ({ itemId: it.itemId, gems: [...it.gems] }));
-	const recolours: GemRecolour[] = [];
+	const recolors: GemRecolor[] = [];
 	for (const c of changes) {
 		const slot = items[c.itemIndex]!;
 		const item = getItem(slot.itemId)!;
 		while (slot.gems.length < item.sockets.length) slot.gems.push(0);
 		slot.gems[c.socketIndex] = c.to;
-		recolours.push({
+		recolors.push({
 			itemId: slot.itemId,
 			itemIndex: c.itemIndex,
 			socketIndex: c.socketIndex,
@@ -547,22 +547,22 @@ export function bestMinimalRepair(opts: {
 			cost: model.gem(c.from) - model.gem(c.to),
 		});
 	}
-	return { items, recolours, value: best.value, work };
+	return { items, recolors, value: best.value, work };
 }
 
 /**
- * Per (colour, hit amount), the non-unique allowed gem with the
+ * Per (color, hit amount), the non-unique allowed gem with the
  * highest value (the first on a tie), plus each unique gem that beats it. No other gem can
- * be in the best layout, as the meta and bonuses read colour alone and the hit term reads
+ * be in the best layout, as the meta and bonuses read color alone and the hit term reads
  * total hit.
  */
 function repairGemPool(allowedGems: readonly GemEntry[], model: ValueModel): GemEntry[] {
 	const groups = new Map<string, { best?: GemEntry; uniques: GemEntry[] }>();
 	for (const g of allowedGems) {
-		if (g.colour === GemColor.GemColorMeta || g.colour === GemColor.GemColorUnknown) {
+		if (g.color === GemColor.GemColorMeta || g.color === GemColor.GemColorUnknown) {
 			continue;
 		}
-		const key = `${g.colour}|${model.gemHit(g.id)}`;
+		const key = `${g.color}|${model.gemHit(g.id)}`;
 		let group = groups.get(key);
 		if (!group) {
 			group = { uniques: [] };
@@ -626,7 +626,7 @@ type Move = {
 };
 
 /**
- * The cheapest recolour that lowers the deficit. Its cost is the drop in value it causes:
+ * The cheapest recolor that lowers the deficit. Its cost is the drop in value it causes:
  * the gem's value change, plus the bonus it switches off, minus the bonus it switches on,
  * plus the hit change priced against the budget the earlier moves left.
  */
@@ -654,7 +654,7 @@ function bestRepairMove(
 			const matchedBefore = socketsMatch(slot.itemId, slot.gems);
 
 			for (const candidate of allowedGems) {
-				if (candidate.colour === GemColor.GemColorMeta) continue;
+				if (candidate.color === GemColor.GemColorMeta) continue;
 				if (candidate.unique && alreadyHasUnique(items, candidate.id, from)) {
 					continue;
 				}

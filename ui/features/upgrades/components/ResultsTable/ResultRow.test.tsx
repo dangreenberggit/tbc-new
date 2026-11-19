@@ -220,7 +220,7 @@ describe('ResultRow', () => {
 		expect(cell.textContent).toBe('Hyjal Summit · Archimonde');
 	});
 
-	it('colours the item name by its quality', () => {
+	it('colors the item name by its quality', () => {
 		const name = within(renderRow(fixtureRow(0))).getByTestId('upgrades-item-name');
 		expect(name.className).toBe('text-quality-epic');
 	});
