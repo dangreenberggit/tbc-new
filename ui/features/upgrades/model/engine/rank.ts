@@ -285,8 +285,10 @@ export type SetContext = {
 	/**
 	 * The row's own swap gain, taken before paired replication rewrites
 	 * `deltaDps`. A future bonus's value is its `stepGearDps` minus this.
+	 * The stored name says "single"; code calls this the own delta.
 	 */
 	singleDeltaDps?: number;
+	/** The worn bonuses the row's own swap loses. The stored name says "single"; code calls these the own breaks. */
 	singleBreaks?: Array<{
 		setId: number;
 		setName: string;
@@ -333,13 +335,16 @@ export type SetContext = {
 		}>;
 		pieces?: Array<{ itemId: number; name: string; dps?: number }>;
 	}>;
+	/** The worn bonuses the top bonus's added pieces break, beyond the row's own. */
 	commitBreaks?: Array<{
 		setId: number;
 		setName: string;
 		threshold: SetThreshold;
 		dps?: number;
 	}>;
+	/** The top bonus's added pieces' sim gain, shown only. Stored name: "package" means a bonus's added pieces. */
 	commitPackageDeltaDps?: number;
+	/** The set's measured bonuses, when this item is among their added pieces. Stored name: "package" means a bonus's added pieces. */
 	packages?: AddedPiecesContext[];
 };
 
@@ -430,7 +435,9 @@ export type SetBonusValue = {
 	setName: string;
 	threshold: SetThreshold;
 	piecesWorn: number;
+	/** Stored name: "package" means this bonus's added pieces. */
 	packageItemIds: number[];
+	/** Stored name: "package" means this bonus's added pieces. */
 	packageDeltaDps: number;
 	/**
 	 * The bonus's value before correcting for lost worn bonuses: the added
@@ -485,6 +492,7 @@ export type ResolvedFight = {
 };
 
 export type Ranking = {
+	/** The run's inputs as canonical JSON (not a digest); the ranking's cache key. */
 	contentHash: string;
 	cutoff: Cutoff;
 	fight: ResolvedFight;
@@ -503,7 +511,7 @@ export type Ranking = {
 	/**
 	 * The value of every piece count from 2 to the worn count of every worn
 	 * set, counted or not. Present only with `deps.measureSetBonuses` and a
-	 * set worn at 2+.
+	 * set worn at 2+. Stored name: "ladder" is the list of counts.
 	 */
 	wornSetLadder?: WornSetCountEntry[];
 	/**
@@ -1613,6 +1621,7 @@ async function buildSetBonuses(
 ): Promise<{
 	bonuses: SetBonusValue[];
 	brokenSetValues: BrokenSetValue[];
+	/** The worn sets' DPS at each piece count. Stored name: "ladder" is the list of counts. */
 	wornSetLadder: WornSetCountEntry[];
 	crossingGates: CrossingGate[];
 	/**

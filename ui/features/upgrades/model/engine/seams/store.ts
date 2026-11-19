@@ -7,6 +7,7 @@ export type JobStatus = 'queued' | 'running' | 'done' | 'error';
 
 export type Job = {
 	id: string;
+	/** The run's inputs as canonical JSON (not a digest); the ranking's cache key. */
 	contentHash: string;
 	status: JobStatus;
 	input: unknown;

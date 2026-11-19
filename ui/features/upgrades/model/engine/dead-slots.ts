@@ -5,10 +5,13 @@
 import { getItem } from './items';
 import { type CountsAsBreak, isBonusImplemented, type SetThreshold } from './set-value';
 
+/** Fewer other candidates than this in a slot reads as a thin pool. */
 export const THIN_POOL_CANDIDATES = 4;
 
+/** A best alternative this far below the worn item (DPS, negative) reads as a unique effect. */
 export const UNIQUE_EFFECT_GAP_DPS = -50;
 
+/** `'set-break-toll'`: nothing beats the worn piece, and replacing it would break a worn set bonus. */
 export type DeadSlotCause =
 	| 'set-break-toll'
 	| 'unique-effect'
@@ -34,6 +37,7 @@ export type DeadSlot = {
 	wornSetId: number | null;
 	wornSetName: string | null;
 	brokenThreshold?: SetThreshold;
+	/** The best strictly worse candidate's DPS change from the worn item (≤ 0); 0 when there is none. */
 	runnerUpGapDps: number | null;
 	tiedCandidates: number | null;
 	poolSize: number;

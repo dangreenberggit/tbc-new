@@ -17,6 +17,7 @@ export type ImplausibleSetBonusWarning = {
 	threshold: SetThreshold;
 	bonusDps: number;
 	fractionOfBaseline: number;
+	/** The share of baseline DPS a set bonus may be, gain or loss, before the warning shows. */
 	thresholdFraction: number;
 	message: string;
 };

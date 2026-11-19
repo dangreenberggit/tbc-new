@@ -20,6 +20,7 @@ export type Assumptions = {
 	iterations: number;
 	race: Race;
 	presetId: string;
+	/** Assumptions every ranking makes, whatever the run. */
 	standing: StandingAssumption[];
 };
 

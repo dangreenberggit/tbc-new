@@ -208,7 +208,7 @@ describe('gearSetOptions over presets that share a phase and a name', () => {
 		pool: POOL,
 	});
 
-	it('keys each by its group and names the group only on the twins', () => {
+	it('keys each by its group and names the group only on presets that share a phase and a name', () => {
 		expect(options.map(o => [o.key, o.label])).toEqual([
 			['preset:2:Beast Mastery/DW - 6% hit', 'P2 - DW - 6% hit (Beast Mastery)'],
 			['preset:2:Survival/DW - 6% hit', 'P2 - DW - 6% hit (Survival)'],
@@ -216,7 +216,7 @@ describe('gearSetOptions over presets that share a phase and a name', () => {
 		]);
 	});
 
-	it('selects only the twin that was ticked', () => {
+	it('selects only the preset that was ticked', () => {
 		const offer = settingsOffer({ pool: POOL, presets: [], savedGearSets: [], bisTagPhase: undefined });
 		const selection = gearSetSelection({ ...offer, gearSetOptions: options }, ['preset:2:Survival/DW - 6% hit'], 2);
 		expect(selection.selectedGearSets.map(o => o.itemIds)).toEqual([[3]]);

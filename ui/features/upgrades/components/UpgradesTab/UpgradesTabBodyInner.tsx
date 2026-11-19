@@ -20,6 +20,7 @@ import { useCallback } from 'react';
 // Chosen once: the flags are read once per page load, and a production build always gets the live run.
 const RUN_FN = runFnForFlags(DEV_FLAGS);
 
+/** The tab's content. `UpgradesTabBody` downloads it the first time the tab is opened. */
 export const UpgradesTabBodyInner = () => {
 	const sim = useSim();
 	const player = usePlayer();
@@ -47,7 +48,7 @@ export const UpgradesTabBodyInner = () => {
 					<UpgradesResults run={run} bisHeadingsOf={settings.bisHeadingsOf} specId={specId} />
 				</div>
 			</TabPanelColumns.Left>
-			{/* First below `xl`, where the columns stack: the run card sits above the results it governs. */}
+			{/* First below `xl`, where the columns stack: the run settings panel sits above the results it governs. */}
 			<TabPanelColumns.Right className="max-xl:order-first">
 				<div className="sticky top-sim-header pt-6">
 					<RunSettingsPanel

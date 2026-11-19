@@ -8,7 +8,9 @@ export type FightSummary = {
 	fightId: number;
 	encounterName: string;
 	killedAt?: string;
+	/** How the fight was found: WCL rankings ('ranked') or a report's own events ('report-events'). */
 	route: 'ranked' | 'report-events';
+	/** How sure the spec guess is, 0 to 1. */
 	confidence: number;
 	salvationUptime?: number;
 };
@@ -20,6 +22,7 @@ export type LoggedItem = {
 	gems?: number[];
 };
 
+/** Gear as a combat log or the page reports it. */
 export type LoggedGear = {
 	items: LoggedItem[];
 	talentPointsByTree: [number, number, number];

@@ -176,9 +176,8 @@ function groupTwins<T>(entries: readonly T[], itemOf: (entry: T) => UIItem): T[]
 }
 
 /**
- * Items db.json describes exactly alike except the id (Sergeant's Heavy Cape 28378
- * and 28379) would show as identical rows, so each group is offered once. It keeps
- * the worn id, else one a preset holds, else the lowest, with every member's tags.
+ * Twins (`twinIdsOf`) would show as identical rows, so each group is offered once. It
+ * keeps the worn id, else one a preset holds, else the lowest, with every member's tags.
  */
 function offerTwinsOnce(pool: readonly PoolEntry[], byId: ReadonlyMap<number, UIItem>, wornIds: ReadonlySet<number>): PoolEntry[] {
 	const groups = groupTwins(pool, entry => byId.get(entry.itemId)!);
@@ -186,8 +185,9 @@ function offerTwinsOnce(pool: readonly PoolEntry[], byId: ReadonlyMap<number, UI
 }
 
 /**
- * The pool offers one id per group (`offerTwinsOnce`), so the settings match gear set
- * items through this map and a gear set naming another id still holds the item.
+ * Twins: items db.json describes exactly alike except the id, such as Sergeant's Heavy Cape
+ * 28378 and 28379. The pool offers one id per group (`offerTwinsOnce`), so the settings
+ * match gear set items through this map and a gear set naming another id still holds the item.
  */
 export function twinIdsOf(items: readonly UIItem[]): ReadonlyMap<number, readonly number[]> {
 	const twins = new Map<number, readonly number[]>();

@@ -61,5 +61,5 @@ export const numberSettingSource = (field: 'iterations' | 'candidateCap') => ({
 	getValue: (store: UpgradesStore): number => store.getState().settings[field] ?? 0,
 });
 
-/** A read of the tab's run state, the way `useBulkState` reads the Bulk tab's slice. */
+/** A read of the tab's store, the way `useBulkState` reads the Bulk tab's slice. */
 export const useUpgradesStore = <T>(selector: (state: UpgradesState) => T): T => useStore(useUpgradesStoreApi(), selector);

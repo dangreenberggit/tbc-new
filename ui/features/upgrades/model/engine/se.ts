@@ -4,9 +4,10 @@
  * does not correct any number.
  */
 
+/** The most rows paired replication re-sims. */
 export const PAIRED_REPLICATE_TOP_N = 8;
 
-/** `PAIRED_REPLICATE_TOP_N` sets how many rows. */
+/** Seeds each replicated row is re-simmed on. */
 export const DEFAULT_SEED_COUNT = 5;
 
 export function isReplicable(row: { readonly belowCutoff: boolean; readonly simmed?: false }): boolean {

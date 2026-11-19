@@ -286,6 +286,7 @@ export type BonusDpsResult = {
 	se: number;
 };
 
+/** When the row's own set bonus may be inside its measured gain. */
 export type SelfSetConfound = {
 	threshold: SetThreshold;
 	/**

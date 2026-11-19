@@ -21,8 +21,9 @@ import { useUpgradesStore } from './useUpgradesStore';
 const NO_GEAR_SETS: readonly GearSetOption[] = [];
 
 export type ResultsView = {
-	/** The view toggles as the user set them, and the ones the tab shows for this run. */
+	/** The view toggles as the user set them. */
 	toggles: ViewToggleState;
+	/** The toggles the tab shows for this run. */
 	offered: ViewToggleState;
 	setToggle: (toggle: keyof ViewToggleState, on: boolean) => void;
 	/** The sources "Filter by source" offers: those of the settled view's rows before that filter applies; none before a run settles. */

@@ -10,6 +10,10 @@ import { HandType } from '@generated/proto/common';
 import { getItem } from './items';
 import type { SpecId } from './types';
 
+/**
+ * A candidate pool slot: rings, trinkets and one-handers are one slot each. Not wowsims'
+ * `ItemSlot` enum; `simSlotsForPoolSlot` maps it to sim slots.
+ */
 export type ItemSlot =
 	| 'head'
 	| 'neck'

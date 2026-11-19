@@ -10,6 +10,7 @@ import type { IndividualSimHost } from '@sim/sim_host';
 
 import type { RaidSimRequest } from '../engine/seams/sim-runner';
 
+/** The page's raid sim request; `compose` copies it and puts in the gear to sim. */
 export function currentPageSkeleton(simUI: IndividualSimHost<Spec>): RaidSimRequest {
 	const proto = simUI.sim.makeRaidSimRequest({});
 	const json = RaidSimRequestProto.toJson(proto) as Record<string, unknown>;
