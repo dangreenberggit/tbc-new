@@ -75,7 +75,7 @@ import {
 } from './set-less-copies';
 import { recordSetScreen, runSetScreenOn, type SetScreen, type SetScreenInput, type SetScreenMode } from './set-screen';
 import {
-	type BonusCountPredicate,
+	type CountsAsBreak,
 	bonusKey,
 	type BrokenSetBonus,
 	brokenSetBonuses,
@@ -1320,7 +1320,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		// With `measureSetBonuses`, a swap loses a worn bonus only at a count
 		// `wornSetLadder` counted, and no table is read. An aborted run has none,
 		// so it charges no loss.
-		let counts: BonusCountPredicate | undefined = deps.measureSetBonuses ? countsAsBreakFrom(setBonusResult.wornSetLadder) : undefined;
+		let countsAsBreak: CountsAsBreak | undefined = deps.measureSetBonuses ? countsAsBreakFrom(setBonusResult.wornSetLadder) : undefined;
 		let setBonuses = setBonusResult.bonuses;
 		// With `measureSetBonuses`, a set row's future bonuses are valued by
 		// one sim of the row plus its partner pieces.
@@ -1334,7 +1334,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				setBonusResult.brokenSetValues,
 				setBonusResult.bestSlotIndexByItemId,
 				ownDeltasByItemId,
-				counts,
+				countsAsBreak,
 				stepPath ? { crossingGates: setBonusResult.crossingGates } : undefined,
 				setBonusResult.setIdsWithoutBonuses,
 			);
@@ -1343,7 +1343,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		// the top rows' `deltaDps`: one sim per distinct gear of a row plus its
 		// partner pieces.
 		let steps =
-			stepPath && hasSetContext && counts
+			stepPath && hasSetContext && countsAsBreak
 				? await measureSetSteps({
 						deps: guardedDeps,
 						ranked,
@@ -1354,7 +1354,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 						ownDeltasByItemId,
 						brokenSetValues: setBonusResult.brokenSetValues,
 						bestSlotIndexByItemId: setBonusResult.bestSlotIndexByItemId,
-						counts,
+						countsAsBreak,
 						baseline: {
 							dps: baselineDps,
 							se: observation.stdev / Math.sqrt(iterations),
@@ -1398,7 +1398,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			// sim returns. Worn-set values cut short would charge losses at counts
 			// never measured, so no partial set figure is kept.
 			setBonusResult = emptySetPhase();
-			counts = deps.measureSetBonuses ? countsAsBreakFrom(setBonusResult.wornSetLadder) : undefined;
+			countsAsBreak = deps.measureSetBonuses ? countsAsBreakFrom(setBonusResult.wornSetLadder) : undefined;
 			setBonuses = setBonusResult.bonuses;
 			steps = undefined;
 			setBonusLines.length = 0;
@@ -1443,7 +1443,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				...(i.owned === true ? { owned: true } : {}),
 			})),
 			wornSetCounts: setCounts(equipment),
-			...(counts ? { counts } : {}),
+			...(countsAsBreak ? { countsAsBreak } : {}),
 		});
 
 		const rankingBase = {
@@ -1661,7 +1661,7 @@ async function buildSetBonuses(
 				deps.sim.activeSetBonuses ? request => deps.sim.activeSetBonuses!(request) : undefined,
 			)
 		: [];
-	const counts: BonusCountPredicate = measureSetBonuses ? countsAsBreakFrom(wornSetLadder) : isBonusImplemented;
+	const countsAsBreak: CountsAsBreak = measureSetBonuses ? countsAsBreakFrom(wornSetLadder) : isBonusImplemented;
 	const brokenSetValues: BrokenSetValue[] = wornSetLadder
 		.filter(e => e.counted)
 		.sort((a, b) => (a.setId !== b.setId ? a.setId - b.setId : b.count - a.count))
@@ -1834,7 +1834,7 @@ async function buildSetBonuses(
 				count,
 				needed: rest.length,
 				pool: [],
-				lostBy: swaps => brokenSetBonuses(equipment, swaps, setId, counts),
+				lostBy: swaps => brokenSetBonuses(equipment, swaps, setId, countsAsBreak),
 				breakDps: (s, c) => breakDpsBy.get(`${s}:${c}`),
 			},
 			rest,
@@ -2096,7 +2096,7 @@ async function buildSetBonuses(
 			});
 			if (threshold === 2) twoPieceBonus = synergy.bonusDps;
 
-			const breaks = brokenSetBonuses(equipment, addedPieces, setId, counts);
+			const breaks = brokenSetBonuses(equipment, addedPieces, setId, countsAsBreak);
 			let selfConfound: SelfSetConfound | undefined = threshold === 4 && twoPieceUnmeasurableAtThisWornCount ? { threshold: 2 } : undefined;
 			if (selfConfound) {
 				// At worn 1 the 2pc takes one added piece, so it is never measured on
@@ -2108,11 +2108,11 @@ async function buildSetBonuses(
 				// that each keep worn Malorne 3 at 2 take it to 1 together. With no
 				// such pair `bonusDpsNet` stays unset.
 				const breakFree = addedPieces.filter(
-					p => brokenSetBonuses(equipment, [p], setId, counts).length === 0 && ownDeltasByItemId.has(p.itemId),
+					p => brokenSetBonuses(equipment, [p], setId, countsAsBreak).length === 0 && ownDeltasByItemId.has(p.itemId),
 				);
 				const pair = breakFree
 					.flatMap((a, i) => breakFree.slice(i + 1).map(b => [a, b]))
-					.find(p => brokenSetBonuses(equipment, p, setId, counts).length === 0);
+					.find(p => brokenSetBonuses(equipment, p, setId, countsAsBreak).length === 0);
 				const pairB2 =
 					pair !== undefined
 						? await measurePairTwoPiece(
@@ -2261,7 +2261,7 @@ async function buildSetBonuses(
 			const slotIndex = bestSlotIndexByItemId.get(itemId);
 			const memberSetId = getItem(itemId)?.setId;
 			if (slotIndex === undefined || memberSetId == null) return [];
-			return brokenSetBonuses(equipment, [{ itemId, slotIndex }], memberSetId, counts);
+			return brokenSetBonuses(equipment, [{ itemId, slotIndex }], memberSetId, countsAsBreak);
 		});
 	for (const b of results) {
 		if (b.bonusDps === undefined) continue;
@@ -2291,8 +2291,8 @@ async function buildSetBonuses(
 				break;
 			}
 			keys.push({
-				piecesBreakingAlone: countMembersBreaking(b, brk, equipment, bestSlotIndexByItemId, counts),
-				twoPcPiecesBreakingAlone: two ? countMembersBreaking(two, brk, equipment, bestSlotIndexByItemId, counts) : 0,
+				piecesBreakingAlone: countMembersBreaking(b, brk, equipment, bestSlotIndexByItemId, countsAsBreak),
+				twoPcPiecesBreakingAlone: two ? countMembersBreaking(two, brk, equipment, bestSlotIndexByItemId, countsAsBreak) : 0,
 				allPiecesBreak: brokenByAllPieces.has(key) ? 1 : 0,
 				allTwoPcPiecesBreak: brokenByAllTwoPcPieces.has(key) ? 1 : 0,
 				brokenBonusDps: B,
@@ -2331,7 +2331,7 @@ async function measureSetSteps(args: {
 	ownDeltasByItemId: ReadonlyMap<number, OwnDelta>;
 	brokenSetValues: readonly BrokenSetValue[];
 	bestSlotIndexByItemId: ReadonlyMap<number, number>;
-	counts: BonusCountPredicate;
+	countsAsBreak: CountsAsBreak;
 	baseline: DpsSample;
 	simVersion: string;
 	runOpts: SimRunOpts;
@@ -2345,7 +2345,7 @@ async function measureSetSteps(args: {
 	bonusOffSims: SetBonusOffSims;
 	partnerAudit?: PartnerAuditEntry[];
 }> {
-	const { deps, equipment, gems, composeFor, counts, baseline, runOpts } = args;
+	const { deps, equipment, gems, composeFor, countsAsBreak, baseline, runOpts } = args;
 	const rule = deps.partnerRule ?? PARTNER_RULE;
 	const bBy = new Map<string, number | undefined>();
 	for (const v of args.brokenSetValues) {
@@ -2453,7 +2453,7 @@ async function measureSetSteps(args: {
 			slotIndex: ownDelta.slotIndex,
 		};
 		rowSwapOf.set(item, rowSwap);
-		const lostBy = (swaps: readonly PlacedItem[]) => brokenSetBonuses(equipment, swaps, setId, counts);
+		const lostBy = (swaps: readonly PlacedItem[]) => brokenSetBonuses(equipment, swaps, setId, countsAsBreak);
 
 		for (const f of eligible) {
 			const entry = args.setBonuses.find(b => b.setId === setId && b.threshold === f.threshold);
@@ -2784,7 +2784,7 @@ function topBonusBreaksWithRow(
 	topBonus: SetBonusValue,
 	bestSlotIndexByItemId: ReadonlyMap<number, number>,
 	equipment: readonly SimItemSpec[],
-	counts: BonusCountPredicate,
+	countsAsBreak: CountsAsBreak,
 ): BrokenSetBonus[] {
 	const substituted: PlacedItem[] = topBonus.packageItemIds
 		.map(pieceItemId => ({
@@ -2793,7 +2793,7 @@ function topBonusBreaksWithRow(
 		}))
 		.filter((p): p is PlacedItem => p.slotIndex !== undefined && p.slotIndex !== slotIndex);
 	substituted.push({ itemId, slotIndex });
-	return brokenSetBonuses(equipment, substituted, setId, counts);
+	return brokenSetBonuses(equipment, substituted, setId, countsAsBreak);
 }
 
 /**
@@ -2903,7 +2903,7 @@ function countMembersBreaking(
 	target: Pick<BrokenSetBonus, 'setId' | 'threshold'>,
 	equipment: readonly SimItemSpec[],
 	bestSlotIndexByItemId: ReadonlyMap<number, number>,
-	counts: BonusCountPredicate,
+	countsAsBreak: CountsAsBreak,
 ): number {
 	let k = 0;
 	for (const itemId of bonus.packageItemIds) {
@@ -2911,7 +2911,7 @@ function countMembersBreaking(
 		if (slotIndex === undefined) continue;
 		const memberSetId = getItem(itemId)?.setId;
 		if (memberSetId == null) continue;
-		const breaks = brokenSetBonuses(equipment, [{ itemId, slotIndex }], memberSetId, counts);
+		const breaks = brokenSetBonuses(equipment, [{ itemId, slotIndex }], memberSetId, countsAsBreak);
 		if (breaks.some(brk => brk.setId === target.setId && brk.threshold === target.threshold)) {
 			k += 1;
 		}
@@ -3020,7 +3020,7 @@ async function wornSetBonusCounts(
 }
 
 /** With `measureSetBonuses`, a swap loses only counts `wornSetLadder` counted. */
-function countsAsBreakFrom(wornSetCounts: readonly WornSetCountEntry[]): BonusCountPredicate {
+function countsAsBreakFrom(wornSetCounts: readonly WornSetCountEntry[]): CountsAsBreak {
 	const counted = new Set(wornSetCounts.filter(e => e.counted).map(e => `${e.setId}:${e.count}`));
 	return (setId, count) => counted.has(`${setId}:${count}`);
 }
@@ -3060,7 +3060,7 @@ function applySetContext(
 	brokenSetValues: readonly BrokenSetValue[] = [],
 	bestSlotIndexByItemId: ReadonlyMap<number, number> = new Map(),
 	ownDeltasByItemId: ReadonlyMap<number, OwnDelta> = new Map(),
-	counts: BonusCountPredicate = isBonusImplemented,
+	countsAsBreak: CountsAsBreak = isBonusImplemented,
 	/**
 	 * Present exactly with `measureSetBonuses`: the `crossingGates`, so the
 	 * reached and next counts read measurements instead of the
@@ -3122,7 +3122,7 @@ function applySetContext(
 		// singleBreaks: worn bonuses this piece loses by itself, already inside
 		// deltaDps; dps is their measured value when there is one.
 		if (slotIndex !== undefined) {
-			const ownBreaks = brokenSetBonuses(equipment, [{ itemId: item.itemId, slotIndex }], setId, counts);
+			const ownBreaks = brokenSetBonuses(equipment, [{ itemId: item.itemId, slotIndex }], setId, countsAsBreak);
 			if (ownBreaks.length > 0) {
 				setContext.singleBreaks = ownBreaks.map(brk => {
 					const dps = dpsForBreak(brk);
@@ -3169,7 +3169,7 @@ function applySetContext(
 			const ownDelta = ownDeltasByItemId.get(p.itemId)?.deltaDps;
 			if (ownDelta === undefined) return undefined;
 			let own = ownDelta;
-			for (const brk of brokenSetBonuses(equipment, [p], setId, counts)) {
+			for (const brk of brokenSetBonuses(equipment, [p], setId, countsAsBreak)) {
 				const dps = dpsForBreak(brk);
 				if (dps === undefined) return undefined;
 				own += dps;
@@ -3192,7 +3192,7 @@ function applySetContext(
 					: undefined;
 			// The worn bonuses this path loses beyond the row's own loss. Ones a
 			// lower future bonus already lists stay; the view charges each once.
-			const pathBreaks = path ? brokenSetBonuses(equipment, path, setId, counts).filter(brk => !ownBreakKeys.has(bonusKey(brk))) : [];
+			const pathBreaks = path ? brokenSetBonuses(equipment, path, setId, countsAsBreak).filter(brk => !ownBreakKeys.has(bonusKey(brk))) : [];
 			// The path's other pieces. Ones a lower future bonus already lists stay;
 			// the view counts each once.
 			const pieces = path
@@ -3225,7 +3225,7 @@ function applySetContext(
 		// those pieces' sim gain, shown only.
 		const topBonus = topMeasuredBonus(bonusesForSet);
 		if (topBonus && slotIndex !== undefined) {
-			const commitAll = topBonusBreaksWithRow(item.itemId, setId, slotIndex, topBonus, bestSlotIndexByItemId, equipment, counts);
+			const commitAll = topBonusBreaksWithRow(item.itemId, setId, slotIndex, topBonus, bestSlotIndexByItemId, equipment, countsAsBreak);
 			const commitOnly = commitAll.filter(brk => !ownBreakKeys.has(bonusKey(brk)));
 			if (commitOnly.length > 0) {
 				setContext.commitBreaks = commitOnly.map(withDps);

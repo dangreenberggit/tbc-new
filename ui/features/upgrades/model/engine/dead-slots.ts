@@ -3,7 +3,7 @@
  */
 
 import { getItem } from './items';
-import { type BonusCountPredicate, isBonusImplemented, type SetThreshold } from './set-value';
+import { type CountsAsBreak, isBonusImplemented, type SetThreshold } from './set-value';
 
 export const THIN_POOL_CANDIDATES = 4;
 
@@ -49,12 +49,12 @@ export type ClassifyDeadSlotsOptions = {
 	wornSetCounts: ReadonlyMap<number, number>;
 	wornUnrankable?: readonly WornUnrankableItem[];
 	/** Which lost counts are breaks; `isBonusImplemented` when absent. */
-	counts?: BonusCountPredicate;
+	countsAsBreak?: CountsAsBreak;
 };
 
 /** Dropping one piece loses exactly the worn count, if it is a break. */
-function thresholdLostByDroppingOnePiece(setId: number, piecesWorn: number, counts: BonusCountPredicate): SetThreshold | null {
-	return piecesWorn >= 2 && counts(setId, piecesWorn) ? piecesWorn : null;
+function thresholdLostByDroppingOnePiece(setId: number, piecesWorn: number, countsAsBreak: CountsAsBreak): SetThreshold | null {
+	return piecesWorn >= 2 && countsAsBreak(setId, piecesWorn) ? piecesWorn : null;
 }
 
 function wornRowsOf(slotRows: readonly DeadSlotRow[]): DeadSlotRow[] {
@@ -125,7 +125,7 @@ export function classifyDeadSlots(rows: readonly DeadSlotRow[], options: Classif
 			const brokenThreshold =
 				wornSetId === null
 					? null
-					: thresholdLostByDroppingOnePiece(wornSetId, options.wornSetCounts.get(wornSetId) ?? 0, options.counts ?? isBonusImplemented);
+					: thresholdLostByDroppingOnePiece(wornSetId, options.wornSetCounts.get(wornSetId) ?? 0, options.countsAsBreak ?? isBonusImplemented);
 
 			let cause: DeadSlotCause;
 			if (wornItem === undefined) {

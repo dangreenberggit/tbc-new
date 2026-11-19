@@ -25,7 +25,7 @@ export const SET_THRESHOLDS: readonly SetThreshold[] = [2, 4];
  * default, or with `measureSetBonuses`, whether `measureWornSetCounts` measured that
  * bonus above noise.
  */
-export type BonusCountPredicate = (setId: number, count: number) => boolean;
+export type CountsAsBreak = (setId: number, count: number) => boolean;
 
 export type UnmeasuredReason =
 	| 'not-implemented-in-sim'
@@ -184,17 +184,17 @@ export type BrokenSetBonus = {
 
 export const bonusKey = (b: { setId: number; threshold: number }): string => `${b.setId}:${b.threshold}`;
 
-/** Lost bonus counts that `counts` accepts, highest first; no list decides which exist. */
-export function lostThresholds(setId: number, before: number, after: number, counts: BonusCountPredicate = isBonusImplemented): SetThreshold[] {
+/** Lost bonus counts that `countsAsBreak` accepts, highest first; no list decides which exist. */
+export function lostThresholds(setId: number, before: number, after: number, countsAsBreak: CountsAsBreak = isBonusImplemented): SetThreshold[] {
 	const lost: SetThreshold[] = [];
 	for (let t = before; t > after && t >= 2; t--) {
-		if (counts(setId, t)) lost.push(t);
+		if (countsAsBreak(setId, t)) lost.push(t);
 	}
 	return lost;
 }
 
 /**
- * Every worn bonus the added pieces break, one entry per lost count `counts` accepts,
+ * Every worn bonus the added pieces break, one entry per lost count `countsAsBreak` accepts,
  * sorted by `setId` then descending threshold. Taking a set from 4 to 0 loses both the
  * 4pc and the 2pc, and both are charged.
  */
@@ -202,7 +202,7 @@ export function brokenSetBonuses(
 	equipment: readonly SimItemSpec[],
 	addedPieces: readonly PlacedItem[],
 	completingSetId: number,
-	counts: BonusCountPredicate = isBonusImplemented,
+	countsAsBreak: CountsAsBreak = isBonusImplemented,
 ): BrokenSetBonus[] {
 	const before = setCounts(equipment);
 	const after = new Map(before);
@@ -223,7 +223,7 @@ export function brokenSetBonuses(
 		if (setId === completingSetId) continue;
 		const piecesAfter = after.get(setId) ?? 0;
 		if (piecesAfter >= piecesBefore) continue;
-		for (const threshold of lostThresholds(setId, piecesBefore, piecesAfter, counts)) {
+		for (const threshold of lostThresholds(setId, piecesBefore, piecesAfter, countsAsBreak)) {
 			broken.push({
 				setId,
 				setName: setLabel(equipment, setId),

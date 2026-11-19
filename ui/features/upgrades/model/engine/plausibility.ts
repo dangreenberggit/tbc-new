@@ -135,7 +135,7 @@ export function plausibilityWarnings(input: PlausibilityInput): PlausibilityWarn
 		...deadSlotWarnings(input.rows, {
 			wornSetCounts: input.wornSetCounts,
 			...(input.wornUnrankable ? { wornUnrankable: input.wornUnrankable } : {}),
-			...(input.counts ? { counts: input.counts } : {}),
+			...(input.countsAsBreak ? { countsAsBreak: input.countsAsBreak } : {}),
 		}),
 	];
 }
