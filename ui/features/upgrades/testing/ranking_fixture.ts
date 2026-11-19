@@ -111,7 +111,7 @@ export const RANKING_FIXTURE: Ranking = {
 				piecesAfterSwap: 1,
 				nextThreshold: null,
 				crossesThreshold: false,
-				stepRanking: true,
+				bonusGearMeasured: true,
 				futureBonuses: [
 					{ threshold: 2, piecesNeeded: 2, sameGearDps: -2.6294543346361934, sameGearSe: 3.181413317205621, belowNoise: true },
 					{ threshold: 4, piecesNeeded: 4, sameGearDps: 0, sameGearSe: 3.2085991552325717, belowNoise: true },

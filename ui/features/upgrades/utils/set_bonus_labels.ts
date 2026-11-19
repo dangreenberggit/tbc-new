@@ -69,7 +69,7 @@ export function popoverLabelText(label: PopoverLabel): string {
 				? i18n.t('upgrades_tab.set_bonus.popover_item_alone', { ns: 'upgrades', name: label.name })
 				: i18n.t('upgrades_tab.set_bonus.popover_item_alone_breaks', { ns: 'upgrades', name: label.name, broken: brokenNames(label.broken) });
 		case 'reachable': {
-			// A `stepRanking` run leaves `pieces` empty when it measured no choice of the set's other pieces.
+			// A `bonusGearMeasured` run leaves `pieces` empty when it measured no choice of the set's other pieces.
 			if (label.pieces.length === 0)
 				return i18n.t('upgrades_tab.set_bonus.popover_reachable_bonus', { ns: 'upgrades', set: label.set, threshold: label.threshold });
 			const args = { set: label.set, threshold: label.threshold, pieces: joinNames(label.pieces) };

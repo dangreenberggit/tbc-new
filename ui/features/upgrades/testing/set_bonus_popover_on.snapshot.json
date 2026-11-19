@@ -277,7 +277,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"futureBonuses": [
 							{
 								"threshold": 2,
@@ -287,8 +287,8 @@
 								"sameGearSe": 2.0095650265208094,
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 31044, "name": "Thunderheart Leggings" }],
-								"stepGearDps": 56.53021214104638,
-								"stepGearSe": 2.0330120899646245
+								"bonusGearDps": 56.53021214104638,
+								"bonusGearSe": 2.0330120899646245
 							},
 							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowNoise": true },
 							{
@@ -304,8 +304,8 @@
 									{ "itemId": 31044, "name": "Thunderheart Leggings" }
 								],
 								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
-								"stepGearDps": 107.66643865691367,
-								"stepGearSe": 2.0209983760134684,
+								"bonusGearDps": 107.66643865691367,
+								"bonusGearSe": 2.0209983760134684,
 								"bonusOffDps": -1.9437862010390745,
 								"bonusOffSe": 1.9875481864130171,
 								"bonusOff": [{ "setId": 640, "threshold": 2 }]
@@ -387,7 +387,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"futureBonuses": [
 							{
 								"threshold": 2,
@@ -397,8 +397,8 @@
 								"sameGearSe": 2.0095650265208094,
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 31034, "name": "Thunderheart Gauntlets" }],
-								"stepGearDps": 56.53021214104638,
-								"stepGearSe": 2.0330120899646245
+								"bonusGearDps": 56.53021214104638,
+								"bonusGearSe": 2.0330120899646245
 							},
 							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowNoise": true },
 							{
@@ -414,8 +414,8 @@
 									{ "itemId": 31034, "name": "Thunderheart Gauntlets" }
 								],
 								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
-								"stepGearDps": 107.66643865691367,
-								"stepGearSe": 2.0209983760134684,
+								"bonusGearDps": 107.66643865691367,
+								"bonusGearSe": 2.0209983760134684,
 								"bonusOffDps": -1.9437862010390745,
 								"bonusOffSe": 1.9875481864130171,
 								"bonusOff": [{ "setId": 640, "threshold": 2 }]
@@ -498,7 +498,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
 						"futureBonuses": [
 							{
@@ -510,8 +510,8 @@
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 31048, "name": "Thunderheart Pauldrons" }],
 								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
-								"stepGearDps": 42.3023871494147,
-								"stepGearSe": 1.9773341621342062
+								"bonusGearDps": 42.3023871494147,
+								"bonusGearSe": 1.9773341621342062
 							},
 							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowNoise": true },
 							{
@@ -527,8 +527,8 @@
 									{ "itemId": 31044, "name": "Thunderheart Leggings" }
 								],
 								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
-								"stepGearDps": 107.66643865691367,
-								"stepGearSe": 2.0209983760134684
+								"bonusGearDps": 107.66643865691367,
+								"bonusGearSe": 2.0209983760134684
 							},
 							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowNoise": true }
 						],
@@ -607,7 +607,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
 						"futureBonuses": [
 							{
@@ -619,8 +619,8 @@
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 31042, "name": "Thunderheart Chestguard" }],
 								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
-								"stepGearDps": 42.3023871494147,
-								"stepGearSe": 1.9773341621342062
+								"bonusGearDps": 42.3023871494147,
+								"bonusGearSe": 1.9773341621342062
 							},
 							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowNoise": true },
 							{
@@ -636,8 +636,8 @@
 									{ "itemId": 31044, "name": "Thunderheart Leggings" }
 								],
 								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
-								"stepGearDps": 107.66643865691367,
-								"stepGearSe": 2.0209983760134684
+								"bonusGearDps": 107.66643865691367,
+								"bonusGearSe": 2.0209983760134684
 							},
 							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowNoise": true }
 						],
@@ -714,7 +714,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 4,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
 						"futureBonuses": [
 							{ "threshold": 2, "piecesNeeded": 2, "sameGearDps": 0, "sameGearSe": 2.0272436471821083, "belowNoise": true },
@@ -732,8 +732,8 @@
 									{ "itemId": 30229, "name": "Nordrassil Feral-Kilt" }
 								],
 								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
-								"stepGearDps": -54.137911085680116,
-								"stepGearSe": 2.0116419279743196
+								"bonusGearDps": -54.137911085680116,
+								"bonusGearSe": 2.0116419279743196
 							},
 							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.0662743664075025, "belowNoise": true }
 						],
@@ -802,7 +802,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 4,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
 						"futureBonuses": [
 							{ "threshold": 2, "piecesNeeded": 2, "sameGearDps": 0, "sameGearSe": 2.0272436471821083, "belowNoise": true },
@@ -820,8 +820,8 @@
 									{ "itemId": 30229, "name": "Nordrassil Feral-Kilt" }
 								],
 								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
-								"stepGearDps": -54.137911085680116,
-								"stepGearSe": 2.0116419279743196
+								"bonusGearDps": -54.137911085680116,
+								"bonusGearSe": 2.0116419279743196
 							},
 							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.0662743664075025, "belowNoise": true }
 						],
@@ -890,7 +890,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"futureBonuses": [
 							{
 								"threshold": 2,
@@ -900,8 +900,8 @@
 								"sameGearSe": 2.0095650265208094,
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 31034, "name": "Thunderheart Gauntlets" }],
-								"stepGearDps": -12.672186871306167,
-								"stepGearSe": 2.076556306689719
+								"bonusGearDps": -12.672186871306167,
+								"bonusGearSe": 2.076556306689719
 							},
 							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowNoise": true },
 							{
@@ -917,8 +917,8 @@
 									{ "itemId": 31034, "name": "Thunderheart Gauntlets" }
 								],
 								"breaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
-								"stepGearDps": 42.02828327370662,
-								"stepGearSe": 2.141856734929318,
+								"bonusGearDps": 42.02828327370662,
+								"bonusGearSe": 2.141856734929318,
 								"bonusOffDps": -67.51497837729039,
 								"bonusOffSe": 2.0735327361612605,
 								"bonusOff": [{ "setId": 640, "threshold": 2 }]
@@ -995,7 +995,7 @@
 						"piecesAfterSwap": 3,
 						"nextThreshold": 4,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"futureBonuses": [
 							{
 								"threshold": 4,
@@ -1005,8 +1005,8 @@
 								"sameGearSe": 2.0030169476884248,
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 29097, "name": "Gauntlets of Malorne" }],
-								"stepGearDps": -184.160238547875,
-								"stepGearSe": 2.1529762990387282
+								"bonusGearDps": -184.160238547875,
+								"bonusGearSe": 2.1529762990387282
 							},
 							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowNoise": true }
 						],
@@ -1275,7 +1275,7 @@
 						"piecesAfterSwap": 3,
 						"nextThreshold": 4,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"futureBonuses": [
 							{
 								"threshold": 4,
@@ -1285,8 +1285,8 @@
 								"sameGearSe": 1.9466998661308272,
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 31048, "name": "Thunderheart Pauldrons" }],
-								"stepGearDps": 100.36788461793321,
-								"stepGearSe": 1.9477160217590683
+								"bonusGearDps": 100.36788461793321,
+								"bonusGearSe": 1.9477160217590683
 							},
 							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.191645723187992, "belowNoise": true }
 						],
@@ -1348,7 +1348,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"futureBonuses": [
 							{
 								"threshold": 2,
@@ -1358,8 +1358,8 @@
 								"sameGearSe": 1.9456539360666278,
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 29100, "name": "Mantle of Malorne" }],
-								"stepGearDps": 50.1827615253992,
-								"stepGearSe": 1.9601647644814157
+								"bonusGearDps": 50.1827615253992,
+								"bonusGearSe": 1.9601647644814157
 							},
 							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowNoise": true },
 							{
@@ -1375,8 +1375,8 @@
 									{ "itemId": 29099, "name": "Greaves of Malorne" }
 								],
 								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
-								"stepGearDps": -32.8140865720552,
-								"stepGearSe": 1.9593184508791375
+								"bonusGearDps": -32.8140865720552,
+								"bonusGearSe": 1.9593184508791375
 							},
 							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowNoise": true }
 						],
@@ -1443,7 +1443,7 @@
 						"piecesAfterSwap": 3,
 						"nextThreshold": 4,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"futureBonuses": [
 							{
 								"threshold": 4,
@@ -1453,8 +1453,8 @@
 								"sameGearSe": 1.9466998661308272,
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 31042, "name": "Thunderheart Chestguard" }],
-								"stepGearDps": 100.36788461793321,
-								"stepGearSe": 1.9477160217590683
+								"bonusGearDps": 100.36788461793321,
+								"bonusGearSe": 1.9477160217590683
 							},
 							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.191645723187992, "belowNoise": true }
 						],
@@ -1516,7 +1516,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"futureBonuses": [
 							{
 								"threshold": 2,
@@ -1526,8 +1526,8 @@
 								"sameGearSe": 1.9456539360666278,
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 29096, "name": "Breastplate of Malorne" }],
-								"stepGearDps": 50.1827615253992,
-								"stepGearSe": 1.9601647644814157
+								"bonusGearDps": 50.1827615253992,
+								"bonusGearSe": 1.9601647644814157
 							},
 							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowNoise": true },
 							{
@@ -1543,8 +1543,8 @@
 									{ "itemId": 29099, "name": "Greaves of Malorne" }
 								],
 								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
-								"stepGearDps": -32.8140865720552,
-								"stepGearSe": 1.9593184508791375
+								"bonusGearDps": -32.8140865720552,
+								"bonusGearSe": 1.9593184508791375
 							},
 							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowNoise": true }
 						],
@@ -1613,7 +1613,7 @@
 						"piecesAfterSwap": 3,
 						"nextThreshold": 4,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"futureBonuses": [
 							{
 								"threshold": 4,
@@ -1623,8 +1623,8 @@
 								"sameGearSe": 1.9466998661308272,
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 31042, "name": "Thunderheart Chestguard" }],
-								"stepGearDps": 38.20534530414989,
-								"stepGearSe": 2.04742586342232
+								"bonusGearDps": 38.20534530414989,
+								"bonusGearSe": 2.04742586342232
 							},
 							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.191645723187992, "belowNoise": true }
 						],
@@ -1688,7 +1688,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"futureBonuses": [
 							{
 								"threshold": 2,
@@ -1698,8 +1698,8 @@
 								"sameGearSe": 1.9456539360666278,
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 29096, "name": "Breastplate of Malorne" }],
-								"stepGearDps": -14.990957059491393,
-								"stepGearSe": 1.9886066507101476
+								"bonusGearDps": -14.990957059491393,
+								"bonusGearSe": 1.9886066507101476
 							},
 							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowNoise": true },
 							{
@@ -1715,8 +1715,8 @@
 									{ "itemId": 29099, "name": "Greaves of Malorne" }
 								],
 								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
-								"stepGearDps": -177.20656475370288,
-								"stepGearSe": 2.0686890231629573
+								"bonusGearDps": -177.20656475370288,
+								"bonusGearSe": 2.0686890231629573
 							},
 							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowNoise": true }
 						],
@@ -1782,7 +1782,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"singleBreaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
 						"futureBonuses": [
 							{
@@ -1794,8 +1794,8 @@
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 29096, "name": "Breastplate of Malorne" }],
 								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
-								"stepGearDps": -24.325749199125312,
-								"stepGearSe": 1.9617915354895448
+								"bonusGearDps": -24.325749199125312,
+								"bonusGearSe": 1.9617915354895448
 							},
 							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowNoise": true },
 							{
@@ -1811,8 +1811,8 @@
 									{ "itemId": 29097, "name": "Gauntlets of Malorne" }
 								],
 								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
-								"stepGearDps": -32.8140865720552,
-								"stepGearSe": 1.9593184508791375
+								"bonusGearDps": -32.8140865720552,
+								"bonusGearSe": 1.9593184508791375
 							},
 							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowNoise": true }
 						],
@@ -1878,7 +1878,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"stepRanking": true,
+						"bonusGearMeasured": true,
 						"singleBreaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
 						"futureBonuses": [
 							{
@@ -1890,8 +1890,8 @@
 								"partnerRule": "close-calls",
 								"pieces": [{ "itemId": 29096, "name": "Breastplate of Malorne" }],
 								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
-								"stepGearDps": -21.193620341134647,
-								"stepGearSe": 1.9617481906341554
+								"bonusGearDps": -21.193620341134647,
+								"bonusGearSe": 1.9617481906341554
 							},
 							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowNoise": true },
 							{
@@ -1907,8 +1907,8 @@
 									{ "itemId": 29099, "name": "Greaves of Malorne" }
 								],
 								"breaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
-								"stepGearDps": -32.8140865720552,
-								"stepGearSe": 1.9593184508791375
+								"bonusGearDps": -32.8140865720552,
+								"bonusGearSe": 1.9593184508791375
 							},
 							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowNoise": true }
 						],

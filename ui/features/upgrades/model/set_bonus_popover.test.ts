@@ -41,7 +41,7 @@ const future = (over: Partial<FutureBonus> = {}): FutureBonus => ({
 	piecesNeeded: 1,
 	sameGearDps: 20,
 	sameGearSe: 1,
-	stepGearDps: 30.5,
+	bonusGearDps: 30.5,
 	pieces: [{ itemId: 30990, name: 'Lightbringer Breastplate' }],
 	breaks: [],
 	...over,
@@ -50,7 +50,7 @@ const future = (over: Partial<FutureBonus> = {}): FutureBonus => ({
 const stepRow = (over: Partial<SetContext>): RankedItem => ({
 	...fixtureRow(10),
 	deltaDps: 4.5,
-	setContext: { ...fixtureRow(10).setContext!, singleBreaks: [], singleDeltaDps: 4.5, stepRanking: true, ...over },
+	setContext: { ...fixtureRow(10).setContext!, singleBreaks: [], singleDeltaDps: 4.5, bonusGearMeasured: true, ...over },
 });
 const LIGHTBRINGER = 'Lightbringer Battlegear';
 const reachable = (dps: number, broken: Array<{ setName: string; threshold: number }> = []) => ({
@@ -89,7 +89,7 @@ describe('setBonusPopoverLines', () => {
 
 	it('gives nothing for a set row whose only line would repeat the figure', () => {
 		// Lightbringer Breastplate as a ranking that did not measure steps: its future bonuses are within the noise and it breaks nothing.
-		const { stepRanking: _, ...notStepped } = fixtureRow(4).setContext!;
+		const { bonusGearMeasured: _, ...notStepped } = fixtureRow(4).setContext!;
 		const row: RankedItem = { ...fixtureRow(4), setContext: notStepped };
 		expect(setBonusPopoverLines(row, context)).toBeNull();
 	});
@@ -130,8 +130,8 @@ describe('setBonusPopoverLines', () => {
 				...stepRow({
 					singleDeltaDps: 1,
 					futureBonuses: [
-						future({ stepGearDps: 2.5 }),
-						future({ threshold: 4, stepGearDps: 2.96, pieces: [{ itemId: 30988, name: 'Lightbringer Legguards' }] }),
+						future({ bonusGearDps: 2.5 }),
+						future({ threshold: 4, bonusGearDps: 2.96, pieces: [{ itemId: 30988, name: 'Lightbringer Legguards' }] }),
 					],
 				}),
 				deltaDps: 1,
@@ -150,8 +150,8 @@ describe('setBonusPopoverLines', () => {
 				...stepRow({
 					singleDeltaDps: 2.96,
 					futureBonuses: [
-						future({ stepGearDps: 5.5 }),
-						future({ threshold: 4, stepGearDps: 8, pieces: [{ itemId: 30988, name: 'Lightbringer Legguards' }] }),
+						future({ bonusGearDps: 5.5 }),
+						future({ threshold: 4, bonusGearDps: 8, pieces: [{ itemId: 30988, name: 'Lightbringer Legguards' }] }),
 					],
 				}),
 				deltaDps: 2.96,
@@ -177,7 +177,14 @@ describe('setBonusPopoverLines', () => {
 	it('names the bonus a row crosses on its first line', () => {
 		const row: RankedItem = {
 			...fixtureRow(10),
-			setContext: { ...fixtureRow(10).setContext!, singleBreaks: [], crossesThreshold: true, piecesWornBefore: 1, piecesAfterSwap: 2, stepRanking: true },
+			setContext: {
+				...fixtureRow(10).setContext!,
+				singleBreaks: [],
+				crossesThreshold: true,
+				piecesWornBefore: 1,
+				piecesAfterSwap: 2,
+				bonusGearMeasured: true,
+			},
 		};
 		expect(lines(setBonusPopoverLines(row, context))[0]).toEqual({
 			type: 'line',
@@ -232,7 +239,7 @@ describe('setBonusPopoverLines', () => {
 		});
 
 		it('lists a bonus that would lose DPS in both states, under a heading that says why it is not counted', () => {
-			const row = stepRow({ futureBonuses: [future({ stepGearDps: 2.5 })] });
+			const row = stepRow({ futureBonuses: [future({ bonusGearDps: 2.5 })] });
 			const off = setBonusPopoverLines(row, context);
 			const on = setBonusPopoverLines(row, { ...context, withSetPotential: true });
 			expect(off?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_off' }, reachable(-2)]);
@@ -247,7 +254,7 @@ describe('setBonusPopoverLines', () => {
 		});
 
 		it('names only the bonus when the step ranking measured no partner choice for it', () => {
-			const row = stepRow({ futureBonuses: [future({ pieces: undefined, breaks: undefined, stepGearDps: undefined })] });
+			const row = stepRow({ futureBonuses: [future({ pieces: undefined, breaks: undefined, bonusGearDps: undefined })] });
 			expect(setBonusPopoverLines(row, context)?.entries).toEqual([
 				totalLine(4.5),
 				{ type: 'heading', heading: 'not_counted_off' },
@@ -261,7 +268,7 @@ describe('setBonusPopoverLines', () => {
 				deltaDps: 4.5,
 				setContext: { ...fixtureRow(10).setContext!, singleBreaks: [], singleDeltaDps: 4.5, futureBonuses: [future({ dps: 20 })] },
 			};
-			expect(row.setContext?.stepRanking).toBeUndefined();
+			expect(row.setContext?.bonusGearMeasured).toBeUndefined();
 			expect(setBonusPopoverLines(row, context)).toBeNull();
 		});
 
@@ -291,8 +298,8 @@ describe('setBonusPopoverLines', () => {
 		it('names each bonus within the noise, with no figure, in both states', () => {
 			const row = stepRow({
 				futureBonuses: [
-					future({ belowNoise: true, stepGearDps: undefined }),
-					future({ threshold: 4, piecesNeeded: 3, sameGearDps: 0, belowNoise: true, stepGearDps: undefined }),
+					future({ belowNoise: true, bonusGearDps: undefined }),
+					future({ threshold: 4, piecesNeeded: 3, sameGearDps: 0, belowNoise: true, bonusGearDps: undefined }),
 				],
 			});
 			const noise = (threshold: number) => ({ type: 'line', label: { kind: 'noise', set: LIGHTBRINGER, threshold }, dps: undefined });
@@ -305,18 +312,18 @@ describe('setBonusPopoverLines', () => {
 		});
 
 		it('names no bonus within the noise when another bonus of the set clears the noise check', () => {
-			const row = stepRow({ futureBonuses: [future(), future({ threshold: 4, piecesNeeded: 3, belowNoise: true, stepGearDps: undefined })] });
+			const row = stepRow({ futureBonuses: [future(), future({ threshold: 4, piecesNeeded: 3, belowNoise: true, bonusGearDps: undefined })] });
 			expect(setBonusPopoverLines(row, context)?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_off' }, reachable(26)]);
 		});
 
 		// Each line says how much the figure would change if the tab counted that step in place of what it counts now.
 		describe('a bonus past the stop, with the toggle on (ticket 655)', () => {
 			const PIECES_4PC = ['Lightbringer Breastplate', 'Lightbringer Greaves', 'Lightbringer Shoulderbraces'];
-			const fourPiece = (stepGearDps: number, over: Partial<FutureBonus> = {}): FutureBonus =>
+			const fourPiece = (bonusGearDps: number, over: Partial<FutureBonus> = {}): FutureBonus =>
 				future({
 					threshold: 4,
 					piecesNeeded: 3,
-					stepGearDps,
+					bonusGearDps,
 					pieces: [
 						{ itemId: 30990, name: PIECES_4PC[0]! },
 						{ itemId: 30993, name: PIECES_4PC[1]! },
@@ -360,8 +367,8 @@ describe('setBonusPopoverLines', () => {
 			it('gives a step past the stop no figure when its difference from the stop’s gear is within the noise', () => {
 				// The gap is one step gear's sim minus another's, so its floor is the item cutoff, 3, not √2 × 3.
 				// A tie under the strict best-stop rule, then a gap of exactly 3.
-				for (const stepGearDps of [30.5, 27.5]) {
-					const row = stepRow({ futureBonuses: [future(), fourPiece(stepGearDps)] });
+				for (const bonusGearDps of [30.5, 27.5]) {
+					const row = stepRow({ futureBonuses: [future(), fourPiece(bonusGearDps)] });
 					const popover = setBonusPopoverLines(row, { ...context, withSetPotential: true });
 					expect(popover?.entries.slice(-2)).toEqual([{ type: 'heading', heading: 'not_counted' }, pastStop4(undefined)]);
 				}
@@ -379,13 +386,13 @@ describe('setBonusPopoverLines', () => {
 					[4, 4, pastStop4(undefined)],
 					[3, 3, pastStop4(-10.5)],
 				] as const) {
-					const row = stepRow({ futureBonuses: [future({ stepGearSe: stopSe }), fourPiece(20, { stepGearSe: stepSe })] });
+					const row = stepRow({ futureBonuses: [future({ bonusGearSe: stopSe }), fourPiece(20, { bonusGearSe: stepSe })] });
 					expect(setBonusPopoverLines(row, { ...context, withSetPotential: true })?.entries.at(-1)).toEqual(expected);
 				}
 			});
 
 			it('lists nothing under "Not counted" when the stop is the last step', () => {
-				const row = stepRow({ futureBonuses: [future({ stepGearDps: 10 }), fourPiece(40)] });
+				const row = stepRow({ futureBonuses: [future({ bonusGearDps: 10 }), fourPiece(40)] });
 				const popover = setBonusPopoverLines(row, { ...context, withSetPotential: true });
 				expect(popover?.entries.at(-1)).toEqual(totalLine(40));
 				expect(popover?.entries.filter(e => e.type === 'heading')).toEqual([{ type: 'heading', heading: 'set_potential' }]);

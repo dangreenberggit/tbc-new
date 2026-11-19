@@ -12,6 +12,7 @@ import type { ScreenReason } from './engine/set-screen';
 import { bonusKey } from './engine/set-value';
 import type { SpecId } from './engine/types';
 import {
+	bonusGearUnmeasured,
 	crossingLabelCount,
 	ownSwapBreaks,
 	rankableSetPotential,
@@ -21,7 +22,6 @@ import {
 	type SetPotentialTerm,
 	setPotentialTerms,
 	stepEligible,
-	stepFutureUnmeasured,
 } from './engine/view';
 import { shownTenths, tenthsOf } from './shown_figure';
 
@@ -120,8 +120,8 @@ const NO_SET_POTENTIAL: SetPotentialSection = { lines: [], kind: 'none' };
 function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPotentialSection {
 	const futureBonuses = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
 	const bonusLabel = (threshold: number): PopoverLabel => ({ kind: 'bonus', set: ctx.setName, threshold, worn: ctx.piecesWornBefore });
-	if (setCreditUnmeasured(ctx) && ctx.stepRanking) {
-		return { lines: futureBonuses.filter(stepFutureUnmeasured).map(f => ({ label: bonusLabel(f.threshold), dps: undefined })), kind: 'unmeasured' };
+	if (setCreditUnmeasured(ctx) && ctx.bonusGearMeasured) {
+		return { lines: futureBonuses.filter(bonusGearUnmeasured).map(f => ({ label: bonusLabel(f.threshold), dps: undefined })), kind: 'unmeasured' };
 	}
 	if (setCreditUnmeasured(ctx)) {
 		const lines: Line[] = [];
@@ -139,7 +139,7 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPot
 		return { lines, kind: 'unmeasured' };
 	}
 	if (credit === 0) return NO_SET_POTENTIAL;
-	if (ctx.stepRanking) {
+	if (ctx.bonusGearMeasured) {
 		const steps = setPotentialSteps(ctx, cutoff);
 		if (steps !== null) {
 			const lines = steps.flatMap((s): Line[] =>
@@ -154,7 +154,7 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPot
 		}
 		const lines = setPotentialTerms(ctx, cutoff)
 			.terms.filter((term): term is Extract<SetPotentialTerm, { kind: 'stop' }> => term.kind === 'stop')
-			.map(term => ({ label: piecesLabel('stop', term), dps: term.totalDps, marker: term.isStop }));
+			.map(term => ({ label: piecesLabel('stop', term), dps: term.bonusGearDps, marker: term.isStop }));
 		return { lines, kind: 'outcomes' };
 	}
 	const lines = setPotentialTerms(ctx, cutoff).terms.map((term): Line => {
@@ -166,35 +166,35 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPot
 			case 'break':
 				return { label: { kind: 'breaks', broken: [ref(term)] }, dps: term.dps };
 			case 'stop':
-				return { label: piecesLabel('stop', term), dps: term.totalDps };
+				return { label: piecesLabel('stop', term), dps: term.bonusGearDps };
 		}
 	});
 	return { lines, kind: 'itemised' };
 }
 
 /**
- * The bonuses a `stepRanking` row can reach that its figure does not count. Each
+ * The bonuses a `bonusGearMeasured` row can reach that its figure does not count. Each
  * figure is how much the row's figure would change if it counted that step instead:
  * against the row alone, or for steps past `stopThreshold`, against the gear at
- * `stopThreshold`. A difference too small to tell from noise gets no figure. Without `stepRanking` a
+ * `stopThreshold`. A difference too small to tell from noise gets no figure. Without `bonusGearMeasured` a
  * future bonus's figure is the bonus alone, which these labels would misstate.
  */
 function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopThreshold?: number): PopoverEntry[] {
-	if (!ctx.stepRanking) return [];
+	if (!ctx.bonusGearMeasured) return [];
 	const own = new Set((ctx.singleBreaks ?? []).map(bonusKey));
 	const stop = stopThreshold === undefined ? undefined : ctx.futureBonuses?.find(f => f.threshold === stopThreshold);
-	if (stopThreshold !== undefined && stop?.stepGearDps === undefined) return [];
-	const reference = stop?.stepGearDps ?? ctx.singleDeltaDps ?? row.deltaDps;
+	if (stopThreshold !== undefined && stop?.bonusGearDps === undefined) return [];
+	const reference = stop?.bonusGearDps ?? ctx.singleDeltaDps ?? row.deltaDps;
 	return [...(ctx.futureBonuses ?? [])]
 		.sort((a, b) => a.threshold - b.threshold)
 		.filter(f => f.threshold > (stopThreshold ?? 0) && stepEligible(f, cutoff))
 		.map((f): PopoverEntry => {
-			const dps = f.stepGearDps === undefined ? undefined : f.stepGearDps - reference;
-			// Both `stepGearDps` values are measured against the same baseline sim, so
+			const dps = f.bonusGearDps === undefined ? undefined : f.bonusGearDps - reference;
+			// Both `bonusGearDps` values are measured against the same baseline sim, so
 			// `Math.hypot` of their errors counts the baseline's error twice. The test
 			// leans toward "too small to measure".
 			const belowNoise =
-				stop !== undefined && dps !== undefined && !clearsSameGearNoise(Math.abs(dps), Math.hypot(f.stepGearSe ?? 0, stop.stepGearSe ?? 0), cutoff);
+				stop !== undefined && dps !== undefined && !clearsSameGearNoise(Math.abs(dps), Math.hypot(f.bonusGearSe ?? 0, stop.bonusGearSe ?? 0), cutoff);
 			return {
 				type: 'line',
 				label: {
@@ -214,12 +214,12 @@ function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopTh
 }
 
 /**
- * When every bonus of a `stepRanking` row is too small to tell from noise, they are
+ * When every bonus of a `bonusGearMeasured` row is too small to tell from noise, they are
  * listed with no figure, so the row still says its set was tried.
  */
 function noiseLines(ctx: SetContext, cutoff: Cutoff): PopoverEntry[] {
 	const futureBonuses = ctx.futureBonuses ?? [];
-	if (!ctx.stepRanking || futureBonuses.some(f => stepEligible(f, cutoff))) return [];
+	if (!ctx.bonusGearMeasured || futureBonuses.some(f => stepEligible(f, cutoff))) return [];
 	return futureBonuses
 		.filter(f => f.belowNoise)
 		.sort((a, b) => a.threshold - b.threshold)

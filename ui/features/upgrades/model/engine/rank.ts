@@ -265,7 +265,7 @@ export type RankedItem = {
  * bonus means wearing them. `pieces` is present exactly when there is such a
  * path. Only these losses are charged: a Malorne chest row must not pay for
  * the Thunderheart 2pc that only the Malorne 4pc's hands piece breaks. With
- * `stepRanking`, `measureSetSteps` replaces both for each bonus above noise.
+ * `bonusGearMeasured`, `measureBonusGear` replaces both for each bonus above noise.
  * `commitBreaks` (losses of `topMeasuredBonus`) are shown, never charged.
  */
 export type SetContext = {
@@ -278,13 +278,13 @@ export type SetContext = {
 	/**
 	 * Set on every row of a ranking made with `measureSetBonuses`: each
 	 * future bonus was valued by one sim of the row plus its partner pieces
-	 * (`stepGearDps`). View helpers that see only this context read it to use
+	 * (`bonusGearDps`). View helpers that see only this context read it to use
 	 * that sim instead of summing `pieces`.
 	 */
-	stepRanking?: true;
+	bonusGearMeasured?: true;
 	/**
 	 * The row's own swap gain, taken before paired replication rewrites
-	 * `deltaDps`. A future bonus's value is its `stepGearDps` minus this.
+	 * `deltaDps`. A future bonus's value is its `bonusGearDps` minus this.
 	 * The stored name says "single"; code calls this the own delta.
 	 */
 	singleDeltaDps?: number;
@@ -305,19 +305,20 @@ export type SetContext = {
 		/** Not above noise on its own gear, so no other sim ran for it. */
 		belowNoise?: true;
 		/**
-		 * The sim of the current gear plus this row plus its partner pieces, minus
-		 * the sim of the current gear, and that difference's standard error.
-		 * Present only with `stepRanking`, for a bonus above noise, when the
+		 * The bonus gear is the current gear plus this row plus its partner pieces:
+		 * the gear that reaches this bonus. These are its sim minus the sim of the
+		 * current gear, and that difference's standard error.
+		 * Present only with `bonusGearMeasured`, for a bonus above noise, when the
 		 * partner choice and the sim succeeded.
 		 */
-		stepGearDps?: number;
-		stepGearSe?: number;
+		bonusGearDps?: number;
+		bonusGearSe?: number;
 		/**
 		 * The sim of the gear before this bonus with the worn bonuses it newly
 		 * loses turned off (their pieces sent as set-less copies), minus the
 		 * current gear's sim; its standard error; and the bonuses turned off. The
 		 * popover uses it to show those losses on their own line. Present only
-		 * with `stepRanking`, for a shown bonus that newly loses a worn bonus,
+		 * with `bonusGearMeasured`, for a shown bonus that newly loses a worn bonus,
 		 * when that gear without copies was in the store and the sim succeeded.
 		 */
 		bonusOffDps?: number;
@@ -325,7 +326,7 @@ export type SetContext = {
 		bonusOff?: Array<{ setId: number; threshold: SetThreshold }>;
 		/** The partner choice needed a worn bonus whose value is unmeasured. */
 		partnerUnmeasured?: 'break-unmeasured';
-		/** The rule that chose `pieces`, with `stepRanking`. */
+		/** The rule that chose `pieces`, with `bonusGearMeasured`. */
 		partnerRule?: PartnerRule;
 		breaks?: Array<{
 			setId: number;
@@ -398,7 +399,7 @@ export type CrossingCheck = {
 	cleared: boolean;
 };
 
-export type SetStepSims = {
+export type BonusGearSims = {
 	partnerRule: PartnerRule;
 	/** Distinct gears simmed, across every row and future bonus. */
 	gears: number;
@@ -527,10 +528,10 @@ export type Ranking = {
 	 * number of distinct gears, and how many sims ran or came from the store.
 	 * Its presence marks a ranking whose set rows are valued by those sims.
 	 */
-	setStepSims?: SetStepSims;
+	bonusGearSims?: BonusGearSims;
 	/**
 	 * The bonus-off sims that put a shown bonus's worn-bonus losses on their
-	 * own popover line. Present whenever `setStepSims` is.
+	 * own popover line. Present whenever `bonusGearSims` is.
 	 */
 	setBonusOffSims?: SetBonusOffSims;
 	/**
@@ -1336,7 +1337,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		let setBonuses = setBonusResult.bonuses;
 		// With `measureSetBonuses`, a set row's future bonuses are valued by
 		// one sim of the row plus its partner pieces.
-		const stepPath = (deps.measureSetBonuses ?? false) && !aborted;
+		const simBonusGear = (deps.measureSetBonuses ?? false) && !aborted;
 		const hasSetContext = setBonuses.length > 0 || setBonusResult.setIdsNotValued.length > 0;
 		if (hasSetContext) {
 			applySetContext(
@@ -1347,16 +1348,16 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				setBonusResult.firstSlotIndexByItemId,
 				ownDeltasByItemId,
 				countsAsBreak,
-				stepPath ? { crossingChecks: setBonusResult.crossingChecks } : undefined,
+				simBonusGear ? { crossingChecks: setBonusResult.crossingChecks } : undefined,
 				setBonusResult.setIdsNotValued,
 			);
 		}
 		// After the future bonuses are filled in and before replication rewrites
 		// the top rows' `deltaDps`: one sim per distinct gear of a row plus its
 		// partner pieces.
-		let steps =
-			stepPath && hasSetContext && countsAsBreak
-				? await measureSetSteps({
+		let bonusGearResult =
+			simBonusGear && hasSetContext && countsAsBreak
+				? await measureBonusGear({
 						deps: guardedDeps,
 						ranked,
 						setBonuses,
@@ -1412,7 +1413,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			setBonusResult = emptySetPhase();
 			countsAsBreak = deps.measureSetBonuses ? countsAsBreakFrom(setBonusResult.wornSetLadder) : undefined;
 			setBonuses = setBonusResult.bonuses;
-			steps = undefined;
+			bonusGearResult = undefined;
 			setBonusNotes.length = 0;
 			setCheckNotes.length = 0;
 			for (const item of ranked) delete item.setContext;
@@ -1489,9 +1490,9 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			...(setBonusResult.brokenSetValues.length > 0 ? { brokenSetValues: setBonusResult.brokenSetValues } : {}),
 			...(setBonusResult.wornSetLadder.length > 0 ? { wornSetLadder: setBonusResult.wornSetLadder } : {}),
 			...(setBonusResult.crossingChecks.length > 0 ? { crossingChecks: setBonusResult.crossingChecks } : {}),
-			...(steps ? { setStepSims: steps.setStepSims } : {}),
-			...(steps ? { setBonusOffSims: steps.bonusOffSims } : {}),
-			...(steps?.partnerAudit ? { partnerAudit: steps.partnerAudit } : {}),
+			...(bonusGearResult ? { bonusGearSims: bonusGearResult.bonusGearSims } : {}),
+			...(bonusGearResult ? { setBonusOffSims: bonusGearResult.bonusOffSims } : {}),
+			...(bonusGearResult?.partnerAudit ? { partnerAudit: bonusGearResult.partnerAudit } : {}),
 			...(setBonusResult.setScreen ? { setScreen: setBonusResult.setScreen } : {}),
 			...(warnings.length > 0 ? { plausibilityWarnings: warnings } : {}),
 		};
@@ -2335,11 +2336,11 @@ async function buildSetBonuses(
  * For each bonus above noise, `choosePartners` picks the other set pieces,
  * and the current gear plus the row plus those pieces (swapped in slot order,
  * with the usual gem repairs) is simmed once per distinct gear; its
- * `stepGearDps` is that sim minus the baseline. A failed choice, repair or
+ * `bonusGearDps` is that sim minus the baseline. A failed choice, repair or
  * sim leaves the row unmeasured and never fails the ranking. Then the
  * bonus-off sims run for the bonuses the popover shows.
  */
-async function measureSetSteps(args: {
+async function measureBonusGear(args: {
 	deps: Deps;
 	ranked: RankedItem[];
 	setBonuses: readonly SetBonusValue[];
@@ -2359,7 +2360,7 @@ async function measureSetSteps(args: {
 	/** A line, with the sim's error, for each bonus whose partner or bonus-off sim failed. */
 	bonusNotes: RunNote[];
 }): Promise<{
-	setStepSims: SetStepSims;
+	bonusGearSims: BonusGearSims;
 	bonusOffSims: SetBonusOffSims;
 	partnerAudit?: PartnerAuditEntry[];
 }> {
@@ -2371,8 +2372,8 @@ async function measureSetSteps(args: {
 	}
 	const nameOf = new Map(args.ranked.map(r => [r.itemId, r.name]));
 	type SimCounter = { simmed: number; fromStore: number };
-	const stepCounter: SimCounter = { simmed: 0, fromStore: 0 };
-	const stepFailure = '[upgrades] set step gear not measured: the sim failed';
+	const bonusGearCounter: SimCounter = { simmed: 0, fromStore: 0 };
+	const bonusGearFailure = '[upgrades] set bonus gear not measured: the sim failed';
 
 	const runCounted = async (request: RaidSimRequest, counter: SimCounter, failure: string): Promise<{ deltaDps: number; se: number } | SimFailure> => {
 		let obs = await readCachedSim(deps, request, args.simVersion, runOpts);
@@ -2402,7 +2403,7 @@ async function measureSetSteps(args: {
 
 	const inSlotOrder = (swaps: readonly PlacedItem[]) => [...swaps].sort((a, b) => a.slotIndex - b.slotIndex);
 	/** The row-and-partners gear, or the error of its failed gem repair. */
-	const stepChain = (swaps: readonly PlacedItem[]): ChainBuild | MetaRepairError => {
+	const bonusGearChain = (swaps: readonly PlacedItem[]): ChainBuild | MetaRepairError => {
 		try {
 			return chainSwapsWithRepairs(equipment, inSlotOrder(swaps), gems);
 		} catch (err) {
@@ -2411,22 +2412,22 @@ async function measureSetSteps(args: {
 		}
 	};
 	/** The row-and-partners gear, or undefined when a gem repair fails. */
-	const stepBuild = (swaps: readonly PlacedItem[]): ChainBuild | undefined => {
-		const chain = stepChain(swaps);
+	const bonusGearBuild = (swaps: readonly PlacedItem[]): ChainBuild | undefined => {
+		const chain = bonusGearChain(swaps);
 		return chain instanceof MetaRepairError ? undefined : chain;
 	};
-	const stepRebuild = (swaps: readonly PlacedItem[]) => (g: GemContext) => chainSwapsWithRepairs(equipment, inSlotOrder(swaps), g);
+	const bonusGearRebuild = (swaps: readonly PlacedItem[]) => (g: GemContext) => chainSwapsWithRepairs(equipment, inSlotOrder(swaps), g);
 
 	/**
 	 * With its own gem repair, or why it could not be built: a failed gem repair
 	 * or a request build error.
 	 */
-	const stepRequest = async (swaps: readonly PlacedItem[]): Promise<RaidSimRequest | SkipReason> => {
-		const build = stepChain(swaps);
+	const bonusGearRequest = async (swaps: readonly PlacedItem[]): Promise<RaidSimRequest | SkipReason> => {
+		const build = bonusGearChain(swaps);
 		if (build instanceof MetaRepairError) {
 			return SET_BONUS_SKIP_REASONS.metaOff(build.message);
 		}
-		const entry = (await args.requestsPerLayout(stepRebuild(swaps), build, [{}]))[0]!;
+		const entry = (await args.requestsPerLayout(bonusGearRebuild(swaps), build, [{}]))[0]!;
 		if (isRepairFailure(entry)) {
 			return SET_BONUS_SKIP_REASONS.metaOff(entry.repairError.message);
 		}
@@ -2499,12 +2500,12 @@ async function measureSetSteps(args: {
 					breakDps: (s, c) => brokenBonusDpsByKey.get(`${s}:${c}`),
 					...(pathPieces ? { pathPieces } : {}),
 					simGear: async partners => {
-						const request = await stepRequest([rowSwap, ...partners]);
+						const request = await bonusGearRequest([rowSwap, ...partners]);
 						if (isSkipReason(request)) {
 							partnerSimFailure ??= request;
 							return undefined;
 						}
-						const delta = await runCounted(request, stepCounter, stepFailure);
+						const delta = await runCounted(request, bonusGearCounter, bonusGearFailure);
 						if (!isSimFailure(delta)) return delta;
 						partnerSimFailure ??= SET_BONUS_SKIP_REASONS.rowSimsFailed(delta.simError);
 						return undefined;
@@ -2560,7 +2561,7 @@ async function measureSetSteps(args: {
 					};
 				});
 			}
-			const request = await stepRequest([rowSwap, ...partners]);
+			const request = await bonusGearRequest([rowSwap, ...partners]);
 			if (isSkipReason(request)) {
 				skipOnSomeRows(ctx.setName, f.threshold, request);
 				continue;
@@ -2574,25 +2575,25 @@ async function measureSetSteps(args: {
 	// Identical gears are simmed once. Each task handles its own sim failure,
 	// so one failed sim leaves only its own future bonuses unmeasured.
 	const deltas = new Map<string, { deltaDps: number; se: number }>();
-	const stepErrors = new Map<string, string>();
+	const bonusGearErrors = new Map<string, string>();
 	const keys = [...requests.keys()];
 	await promisePool(
 		keys.map(key => async () => {
-			const delta = await runCounted(requests.get(key)!, stepCounter, stepFailure);
-			if (isSimFailure(delta)) stepErrors.set(key, delta.simError);
+			const delta = await runCounted(requests.get(key)!, bonusGearCounter, bonusGearFailure);
+			if (isSimFailure(delta)) bonusGearErrors.set(key, delta.simError);
 			else deltas.set(key, delta);
 		}),
 		deps.concurrency ?? 1,
 	);
 	for (const { future, key, setName } of pending) {
-		const simError = stepErrors.get(key);
+		const simError = bonusGearErrors.get(key);
 		if (simError !== undefined) {
 			skipOnSomeRows(setName, future.threshold, SET_BONUS_SKIP_REASONS.rowSimsFailed(simError));
 		}
 		const delta = deltas.get(key);
 		if (!delta) continue;
-		future.stepGearDps = delta.deltaDps;
-		future.stepGearSe = delta.se;
+		future.bonusGearDps = delta.deltaDps;
+		future.bonusGearSe = delta.se;
 	}
 
 	// The bonus-off sims run for exactly the bonuses the popover shows, so this
@@ -2619,9 +2620,9 @@ async function measureSetSteps(args: {
 		lost: Array<{ setId: number; threshold: SetThreshold }>,
 		firstStep: boolean,
 	): Promise<boolean> => {
-		const beforeBuild = stepBuild(prevSwaps);
+		const beforeBuild = bonusGearBuild(prevSwaps);
 		const before = beforeBuild?.equipment;
-		const after = stepBuild(swaps)?.equipment;
+		const after = bonusGearBuild(swaps)?.equipment;
 		if (!beforeBuild || !before || !after) return false;
 		const lostSets = new Set(lost.map(b => b.setId));
 		const prevIds = new Set(prevSwaps.map(p => p.itemId));
@@ -2645,17 +2646,20 @@ async function measureSetSteps(args: {
 		// request its pair, so both come from one call. For later bonuses entry 0
 		// is the previous bonus's own request (the gear build is deterministic and
 		// its read is cached).
-		const beforeAndOffEntries = repairErrorOr(await args.requestsPerLayout(stepRebuild(prevSwaps), beforeBuild, [{}, { setLess: replaced }]));
+		const beforeAndOffEntries = repairErrorOr(await args.requestsPerLayout(bonusGearRebuild(prevSwaps), beforeBuild, [{}, { setLess: replaced }]));
 		// As when the gear before or after fails its repair above: the split is
 		// skipped, with no line, since no call failed.
 		if (beforeAndOffEntries instanceof MetaRepairError) {
-			console.warn('[upgrades] set step break not split: the gem repair of the gear before or the bonus-off gear failed', beforeAndOffEntries);
+			console.warn(
+				'[upgrades] increment not split into breaks and pieces: the gem repair of the gear before or the bonus-off gear failed',
+				beforeAndOffEntries,
+			);
 			return false;
 		}
 		const [plainEntry, offEntry] = beforeAndOffEntries;
 		if (!plainEntry || !offEntry || isBuildFailure(plainEntry) || isBuildFailure(offEntry)) {
 			const error = [plainEntry, offEntry].find(isBuildFailure)?.buildError;
-			console.warn('[upgrades] set step break not split: its request could not be built', error);
+			console.warn('[upgrades] increment not split into breaks and pieces: its request could not be built', error);
 			if (error !== undefined) {
 				for (const b of lost) {
 					args.bonusNotes.push(
@@ -2690,7 +2694,7 @@ async function measureSetSteps(args: {
 	for (const item of args.ranked) {
 		const ctx = item.setContext;
 		const rowSwap = rowSwapOf.get(item);
-		if (!ctx?.stepRanking || !rowSwap || setCreditUnmeasured(ctx)) continue;
+		if (!ctx?.bonusGearMeasured || !rowSwap || setCreditUnmeasured(ctx)) continue;
 		const steps = setPotentialSteps(ctx, args.cutoff);
 		if (!steps) continue;
 		let prevSwaps: PlacedItem[] | undefined = [rowSwap];
@@ -2727,7 +2731,7 @@ async function measureSetSteps(args: {
 	let failedGears = 0;
 	await promisePool(
 		[...paired].map(key => async () => {
-			const delta = await runCounted(offRequests.get(key)!.request, offCounter, '[upgrades] set step break not split: the sim failed');
+			const delta = await runCounted(offRequests.get(key)!.request, offCounter, '[upgrades] increment not split into breaks and pieces: the sim failed');
 			if (isSimFailure(delta)) {
 				offErrors.set(key, delta.simError);
 				failedGears += 1;
@@ -2760,11 +2764,11 @@ async function measureSetSteps(args: {
 	}
 
 	return {
-		setStepSims: {
+		bonusGearSims: {
 			partnerRule: rule,
 			gears: keys.length,
-			simmed: stepCounter.simmed,
-			fromStore: stepCounter.fromStore,
+			simmed: bonusGearCounter.simmed,
+			fromStore: bonusGearCounter.fromStore,
 		},
 		bonusOffSims: {
 			gears: offRequests.size,
@@ -3081,7 +3085,7 @@ function applySetContext(
 	 * `isBonusImplemented` table, and every entry above the swap's count
 	 * becomes a future bonus.
 	 */
-	stepPath?: { crossingChecks: readonly CrossingCheck[] },
+	measured?: { crossingChecks: readonly CrossingCheck[] },
 	setIdsNotValued: readonly number[] = [],
 ): void {
 	const wornCounts = setCounts(equipment);
@@ -3110,16 +3114,16 @@ function applySetContext(
 		// With `measureSetBonuses`, one more piece reaches a bonus only when
 		// that count's `crossingChecks` entry cleared, and the next bonus is the
 		// next count above noise. No table is read.
-		const crossingCleared = stepPath?.crossingChecks.some(g => g.setId === setId && g.count === piecesWornBefore + 1 && g.cleared) ?? false;
-		const nextThresholdBeforeSwap = stepPath
+		const crossingCleared = measured?.crossingChecks.some(g => g.setId === setId && g.count === piecesWornBefore + 1 && g.cleared) ?? false;
+		const nextThresholdBeforeSwap = measured
 			? crossingCleared
 				? piecesWornBefore + 1
 				: nextClearedThreshold(bonusesForSet, piecesWornBefore)
 			: nextImplementedThreshold(setId, piecesWornBefore);
-		const crossesThreshold = stepPath
+		const crossesThreshold = measured
 			? !item.owned && piecesAfterSwap === piecesWornBefore + 1 && crossingCleared
 			: nextThresholdBeforeSwap !== null && piecesAfterSwap >= nextThresholdBeforeSwap;
-		const nextThreshold = stepPath ? nextClearedThreshold(bonusesForSet, piecesAfterSwap) : nextImplementedThreshold(setId, piecesAfterSwap);
+		const nextThreshold = measured ? nextClearedThreshold(bonusesForSet, piecesAfterSwap) : nextImplementedThreshold(setId, piecesAfterSwap);
 
 		const setContext: SetContext = {
 			setId,
@@ -3128,7 +3132,7 @@ function applySetContext(
 			piecesAfterSwap,
 			nextThreshold,
 			crossesThreshold,
-			...(stepPath ? { stepRanking: true as const } : {}),
+			...(measured ? { bonusGearMeasured: true as const } : {}),
 		};
 
 		const slotIndex = firstSlotIndexByItemId.get(item.itemId);
@@ -3157,7 +3161,7 @@ function applySetContext(
 		const advancesPieceCount = piecesAfterSwap > piecesWornBefore;
 		// The view never adds a `belowNoise` bonus (`stepEligible`), but it is
 		// listed so the row can say the count was tried.
-		const futureThresholds = stepPath
+		const futureThresholds = measured
 			? bonusesForSet
 					.filter(b => advancesPieceCount && b.threshold > piecesAfterSwap && (b.packageItemIds.length > 0 || b.belowNoise === true))
 					.map(b => b.threshold)
