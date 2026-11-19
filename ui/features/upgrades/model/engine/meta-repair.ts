@@ -42,10 +42,10 @@ export class MetaInfeasibleError extends MetaRepairError {
 	}
 }
 
-export class MetaStepLimitExceededError extends MetaRepairError {
+export class MetaRecolorLimitExceededError extends MetaRepairError {
 	constructor(message: string) {
 		super(message);
-		this.name = 'MetaStepLimitExceededError';
+		this.name = 'MetaRecolorLimitExceededError';
 	}
 }
 
@@ -143,12 +143,12 @@ export function greedyRepairMeta(opts: {
 
 	const model = valueModel(opts.epWeights, opts.hitCap);
 	const recolours: GemRecolour[] = [];
-	const maxSteps = 32;
+	const maxRecolors = 32;
 	// The hit change from the gear before repair, so each move's hit is priced
 	// against the budget the earlier moves left.
 	let dH = 0;
 
-	for (let step = 0; step < maxSteps; step++) {
+	for (let i = 0; i < maxRecolors; i++) {
 		const status = metaStatus(headItem.sockets, allGemIds(items));
 		if (status.kind === 'active') {
 			return { items, metaAdjusted: recolours.length > 0, recolours };
@@ -177,7 +177,7 @@ export function greedyRepairMeta(opts: {
 		});
 	}
 
-	throw new MetaStepLimitExceededError('meta repair exceeded step budget');
+	throw new MetaRecolorLimitExceededError('meta repair exceeded its recolor limit');
 }
 
 /**
