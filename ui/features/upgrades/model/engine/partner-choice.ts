@@ -34,7 +34,7 @@ export const CLOSE_CALL_MARGIN_DPS = 31.866872635956497;
 export type PartnerPiece = {
 	itemId: number;
 	slotIndex: number;
-	singleDeltaDps: number;
+	ownDeltaDps: number;
 };
 
 /**
@@ -48,7 +48,7 @@ export function partnerPool(args: { pieces: readonly PartnerPiece[]; wornSetSlot
 		if (piece.slotIndex === args.rowSlotIndex) continue;
 		if (args.wornSetSlots.has(piece.slotIndex)) continue;
 		const current = bestPerSlot.get(piece.slotIndex);
-		if (!current || piece.singleDeltaDps > current.singleDeltaDps || (piece.singleDeltaDps === current.singleDeltaDps && piece.itemId < current.itemId)) {
+		if (!current || piece.ownDeltaDps > current.ownDeltaDps || (piece.ownDeltaDps === current.ownDeltaDps && piece.itemId < current.itemId)) {
 			bestPerSlot.set(piece.slotIndex, piece);
 		}
 	}
@@ -56,7 +56,7 @@ export function partnerPool(args: { pieces: readonly PartnerPiece[]; wornSetSlot
 }
 
 export type PartnerQuery = {
-	row: { itemId: number; slotIndex: number; singleDeltaDps: number };
+	row: { itemId: number; slotIndex: number; ownDeltaDps: number };
 	setId: number;
 	/** The bonus's piece count. */
 	count: number;
@@ -118,7 +118,7 @@ export function sumOfSinglesEstimate(query: PartnerQuery, set: readonly PartnerP
 		keys.set(key, b);
 		lostTogether.add(key);
 	}
-	let est = query.row.singleDeltaDps + set.reduce((s, p) => s + p.singleDeltaDps, 0);
+	let est = query.row.ownDeltaDps + set.reduce((s, p) => s + p.ownDeltaDps, 0);
 	for (const [key, b] of keys) {
 		const m = lostAlone.get(key) ?? 0;
 		const lost = lostTogether.has(key) ? 1 : 0;

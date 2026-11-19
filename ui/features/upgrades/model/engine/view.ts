@@ -252,7 +252,7 @@ export type SwapBreak = {
  * `brokenSetBonuses` on the values in `brokenSetValues` at render time, so a
  * stored ranking shows the breaks too.
  */
-export function singleSwapBreaks(
+export function ownSwapBreaks(
 	row: Pick<RankedItem, 'itemId' | 'slot' | 'slotChoice' | 'removedItems' | 'owned' | 'simmed' | 'setContext'>,
 	brokenSetValues: Ranking['brokenSetValues'],
 	wornItemIds: readonly number[] | undefined,
@@ -400,11 +400,11 @@ export function stepEligible(future: Pick<FutureLike, 'belowGate' | 'sameGearDps
  * four-sim floor.
  */
 function walkSteps(ctx: SetContextLike, cutoff: Cutoff, rule: SetCreditRule): CreditWalk {
-	const singleDeltaDps = ctx.singleDeltaDps;
+	const ownDeltaDps = ctx.singleDeltaDps;
 	const eligible = [...(ctx.futureBonuses ?? [])]
 		.filter(f => f.stepGearDps !== undefined && stepEligible(f, cutoff))
 		.sort((a, b) => a.threshold - b.threshold);
-	if (singleDeltaDps === undefined || eligible.length === 0) {
+	if (ownDeltaDps === undefined || eligible.length === 0) {
 		return { credit: 0, split: 0, stopThreshold: 0, terms: [] };
 	}
 	const floored = (v: number): number => (v > cutoff.absDps ? v : 0);
@@ -420,7 +420,7 @@ function walkSteps(ctx: SetContextLike, cutoff: Cutoff, rule: SetCreditRule): Cr
 			splitLoss += floored(brk.dps ?? 0);
 		}
 		splitRunning += floored(f.sameGearDps! / f.threshold) - splitLoss;
-		const c = f.stepGearDps! - singleDeltaDps;
+		const c = f.stepGearDps! - ownDeltaDps;
 		if (rule === 'full-path' || c > best.credit) {
 			best = { credit: c, split: splitRunning, stopThreshold: f.threshold };
 		}

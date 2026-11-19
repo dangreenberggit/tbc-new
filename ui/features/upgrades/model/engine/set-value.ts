@@ -107,7 +107,7 @@ export type PackageSelectionResult = { ok: true; piecesWorn: number; addedPieces
  * baseline from the same run, so the offset both readings share cancels in
  * `computeSynergy`; moving it onto another baseline would bring the offset back.
  */
-export type IndividualDelta = {
+export type OwnDelta = {
 	itemId: number;
 	slotIndex: number;
 	deltaDps: number;
@@ -119,7 +119,7 @@ export function selectPackage(
 	threshold: SetThreshold,
 	equipment: readonly SimItemSpec[],
 	poolCandidates: readonly PoolEntry[],
-	individualDeltas: readonly IndividualDelta[],
+	ownDeltas: readonly OwnDelta[],
 	slotIndexForPoolEntry: (entry: PoolEntry) => number | undefined,
 ): PackageSelectionResult {
 	const wornSlotIndices = new Set<number>();
@@ -138,9 +138,9 @@ export function selectPackage(
 		return { ok: true, piecesWorn, addedPieces: [] };
 	}
 
-	const deltaByItemId = new Map(individualDeltas.map(d => [d.itemId, d] as const));
+	const deltaByItemId = new Map(ownDeltas.map(d => [d.itemId, d] as const));
 
-	const bestPerSlot = new Map<number, IndividualDelta & { itemId: number }>();
+	const bestPerSlot = new Map<number, OwnDelta & { itemId: number }>();
 	for (const entry of poolCandidates) {
 		const item = getItem(entry.itemId);
 		if (item?.setId !== setId) continue;
@@ -250,7 +250,7 @@ export type InflationKey = {
 /**
  * How much a raw `bonusDps` overstates the bonus because of worn bonuses the added pieces
  * break. Each broken bonus costs `brokenBonusDps` in the gain of the added pieces, in each
- * single swap and in the raw 2pc value, and `computeSynergy` subtracts the last two. At
+ * own swap and in the raw 2pc value, and `computeSynergy` subtracts the last two. At
  * worn 4 a wrong sign on `allTwoPcPiecesBreak` gives the same answer, so it shows only at
  * other worn counts.
  */
@@ -296,8 +296,8 @@ export type SelfSetConfound = {
 
 export function computeSynergy(input: SynergyInput): SynergyResult {
 	const packageDeltaDps = input.packageSample.dps - input.baseline.dps;
-	const sumSingles = input.addedPieceSamples.reduce((sum, s) => sum + s.deltaDps, 0);
-	const bonusDps = packageDeltaDps - sumSingles - (input.twoPieceBonus ?? 0);
+	const sumOfOwnDeltas = input.addedPieceSamples.reduce((sum, s) => sum + s.deltaDps, 0);
+	const bonusDps = packageDeltaDps - sumOfOwnDeltas - (input.twoPieceBonus ?? 0);
 	const se = combineSe([input.baseline, input.packageSample, ...input.addedPieceSamples.map(s => ({ dps: 0, se: s.se }))]);
 	return { packageDeltaDps, bonusDps, se };
 }

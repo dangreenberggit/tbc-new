@@ -82,7 +82,7 @@ import {
 	combineSe,
 	computeSynergy,
 	type DpsSample,
-	type IndividualDelta,
+	type OwnDelta,
 	type InflationKey,
 	isBonusImplemented,
 	netInflation,
@@ -1015,7 +1015,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		const ranked: RankedItem[] = [];
 		const winningRequests = new Map<number, RaidSimRequest>();
 		const candidateSkips: CandidateSkip[] = [];
-		const individualDeltasByItemId = new Map<number, IndividualDelta>();
+		const ownDeltasByItemId = new Map<number, OwnDelta>();
 
 		/**
 		 * Which `(item, slot)` attempts may be priced. It returns why an attempt
@@ -1158,7 +1158,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 
 			if (!best) return;
 
-			individualDeltasByItemId.set(entry.itemId, {
+			ownDeltasByItemId.set(entry.itemId, {
 				itemId: entry.itemId,
 				slotIndex: best.slotIndex,
 				deltaDps: best.deltaDps,
@@ -1256,7 +1256,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		// `substitutions`, and never reaches `individualDeltasByItemId`, so
 		// filtering on that map alone would re-add it as a Stop placeholder.
 		const skippedIds = new Set(candidateSkips.map(s => s.itemId));
-		const unsimmedCandidates = aborted ? simCandidates.filter(c => !individualDeltasByItemId.has(c.itemId) && !skippedIds.has(c.itemId)) : [];
+		const unsimmedCandidates = aborted ? simCandidates.filter(c => !ownDeltasByItemId.has(c.itemId) && !skippedIds.has(c.itemId)) : [];
 		for (const entry of unsimmedCandidates) {
 			const slotChoice = placeholderSlotChoice(entry);
 			// A row Stop never reached: placeholder numbers keep it a RankedItem,
@@ -1305,7 +1305,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 					race,
 					input,
 					composeFor,
-					individualDeltasByItemId,
+					ownDeltasByItemId,
 					{ dps: baselineDps, se: observation.stdev / Math.sqrt(iterations) },
 					simVersion,
 					runOpts,
@@ -1333,7 +1333,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				equipment,
 				setBonusResult.brokenSetValues,
 				setBonusResult.bestSlotIndexByItemId,
-				individualDeltasByItemId,
+				ownDeltasByItemId,
 				counts,
 				stepPath ? { crossingGates: setBonusResult.crossingGates } : undefined,
 				setBonusResult.setIdsWithoutBonuses,
@@ -1351,7 +1351,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 						equipment,
 						gems,
 						composeFor,
-						individualDeltasByItemId,
+						ownDeltasByItemId,
 						brokenSetValues: setBonusResult.brokenSetValues,
 						bestSlotIndexByItemId: setBonusResult.bestSlotIndexByItemId,
 						counts,
@@ -1586,7 +1586,7 @@ async function buildSetBonuses(
 	 * its own equipment needs.
 	 */
 	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
-	individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>,
+	ownDeltasByItemId: ReadonlyMap<number, OwnDelta>,
 	baseline: DpsSample,
 	simVersion: string,
 	runOpts: SimRunOpts,
@@ -1690,7 +1690,7 @@ async function buildSetBonuses(
 	};
 
 	const selectFor = (setId: number, threshold: SetThreshold) =>
-		selectPackage(setId, threshold, equipment, candidates, [...individualDeltasByItemId.values()], slotIndexForPoolEntry);
+		selectPackage(setId, threshold, equipment, candidates, [...ownDeltasByItemId.values()], slotIndexForPoolEntry);
 	// Every count from one above the worn count up to the most pieces the pool
 	// can fill, each with the pieces added to reach it.
 	const packagesInReach = (setId: number, piecesWorn: number) => {
@@ -1817,12 +1817,12 @@ async function buildSetBonuses(
 		if (!selection.ok) return undefined;
 		const pieces: PartnerPiece[] = [];
 		for (const piece of selection.addedPieces) {
-			const single = individualDeltasByItemId.get(piece.itemId)?.deltaDps;
-			if (single === undefined) return undefined;
+			const ownDelta = ownDeltasByItemId.get(piece.itemId)?.deltaDps;
+			if (ownDelta === undefined) return undefined;
 			pieces.push({
 				itemId: piece.itemId,
 				slotIndex: piece.slotIndex,
-				singleDeltaDps: single,
+				ownDeltaDps: ownDelta,
 			});
 		}
 		const [row, ...rest] = pieces;
@@ -2078,10 +2078,10 @@ async function buildSetBonuses(
 			}
 
 			const addedPieceSamples = addedPieces.map(p => {
-				const individual = individualDeltasByItemId.get(p.itemId);
+				const ownDelta = ownDeltasByItemId.get(p.itemId);
 				return {
-					deltaDps: individual?.deltaDps ?? 0,
-					se: individual?.se ?? 0,
+					deltaDps: ownDelta?.deltaDps ?? 0,
+					se: ownDelta?.se ?? 0,
 				};
 			});
 			const packageSample: DpsSample = {
@@ -2108,7 +2108,7 @@ async function buildSetBonuses(
 				// that each keep worn Malorne 3 at 2 take it to 1 together. With no
 				// such pair `bonusDpsNet` stays unset.
 				const breakFree = addedPieces.filter(
-					p => brokenSetBonuses(equipment, [p], setId, counts).length === 0 && individualDeltasByItemId.has(p.itemId),
+					p => brokenSetBonuses(equipment, [p], setId, counts).length === 0 && ownDeltasByItemId.has(p.itemId),
 				);
 				const pair = breakFree
 					.flatMap((a, i) => breakFree.slice(i + 1).map(b => [a, b]))
@@ -2122,7 +2122,7 @@ async function buildSetBonuses(
 								equipment,
 								gems,
 								composeFor,
-								individualDeltasByItemId,
+								ownDeltasByItemId,
 								baseline,
 								simVersion,
 								runOpts,
@@ -2177,13 +2177,13 @@ async function buildSetBonuses(
 			// One more piece reaches no bonus the sim lists.
 			if (bonusCounts.get(setId)?.has(worn + 1) === false) continue;
 			const wornSlots = new Set(equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])));
-			let best: IndividualDelta | undefined;
+			let best: OwnDelta | undefined;
 			for (const entry of candidates) {
 				if (getItem(entry.itemId)?.setId !== setId) continue;
-				const single = individualDeltasByItemId.get(entry.itemId);
-				if (!single || wornSlots.has(single.slotIndex)) continue;
-				if (!best || single.deltaDps > best.deltaDps || (single.deltaDps === best.deltaDps && single.itemId < best.itemId)) {
-					best = single;
+				const ownDelta = ownDeltasByItemId.get(entry.itemId);
+				if (!ownDelta || wornSlots.has(ownDelta.slotIndex)) continue;
+				if (!best || ownDelta.deltaDps > best.deltaDps || (ownDelta.deltaDps === best.deltaDps && ownDelta.itemId < best.itemId)) {
+					best = ownDelta;
 				}
 			}
 			if (!best) continue;
@@ -2256,7 +2256,7 @@ async function buildSetBonuses(
 	// formula whole if `selectPackage` changes.
 	const bBy = new Map<string, number | undefined>();
 	for (const v of brokenSetValues) bBy.set(bonusKey(v), v.dps);
-	const memberSingleBreaks = (pkg: SetBonusValue): BrokenSetBonus[] =>
+	const memberOwnBreaks = (pkg: SetBonusValue): BrokenSetBonus[] =>
 		pkg.packageItemIds.flatMap(itemId => {
 			const slotIndex = bestSlotIndexByItemId.get(itemId);
 			const memberSetId = getItem(itemId)?.setId;
@@ -2277,7 +2277,7 @@ async function buildSetBonuses(
 				? results.find(r => r.setId === b.setId && r.threshold === 2 && r.unmeasured === undefined && r.bonusDps !== undefined)
 				: undefined;
 		const union = new Map<string, BrokenSetBonus>();
-		for (const brk of [...(b.breaks ?? []), ...(two?.breaks ?? []), ...memberSingleBreaks(b), ...(two ? memberSingleBreaks(two) : [])]) {
+		for (const brk of [...(b.breaks ?? []), ...(two?.breaks ?? []), ...memberOwnBreaks(b), ...(two ? memberOwnBreaks(two) : [])]) {
 			union.set(bonusKey(brk), brk);
 		}
 		const pkgEnd = new Set((b.breaks ?? []).map(bonusKey));
@@ -2328,7 +2328,7 @@ async function measureSetSteps(args: {
 	equipment: readonly SimItemSpec[];
 	gems: GemContext;
 	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest;
-	individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>;
+	ownDeltasByItemId: ReadonlyMap<number, OwnDelta>;
 	brokenSetValues: readonly BrokenSetValue[];
 	bestSlotIndexByItemId: ReadonlyMap<number, number>;
 	counts: BonusCountPredicate;
@@ -2426,9 +2426,9 @@ async function measureSetSteps(args: {
 	for (const item of args.ranked) {
 		const ctx = item.setContext;
 		if (!ctx) continue;
-		const single = args.individualDeltasByItemId.get(item.itemId);
-		if (!single) continue;
-		ctx.singleDeltaDps = single.deltaDps;
+		const ownDelta = args.ownDeltasByItemId.get(item.itemId);
+		if (!ownDelta) continue;
+		ctx.singleDeltaDps = ownDelta.deltaDps;
 		const eligible = (ctx.futureBonuses ?? []).filter(
 			f => !f.belowGate && f.sameGearDps !== undefined && clearsSameGearGate(f.sameGearDps, f.sameGearSe ?? 0, args.cutoff),
 		);
@@ -2439,18 +2439,18 @@ async function measureSetSteps(args: {
 		const pieces: PartnerPiece[] = [];
 		for (const [itemId, slotIndex] of args.bestSlotIndexByItemId) {
 			if (itemId === item.itemId || getItem(itemId)?.setId !== setId) continue;
-			const delta = args.individualDeltasByItemId.get(itemId);
+			const delta = args.ownDeltasByItemId.get(itemId);
 			if (!delta) continue;
-			pieces.push({ itemId, slotIndex, singleDeltaDps: delta.deltaDps });
+			pieces.push({ itemId, slotIndex, ownDeltaDps: delta.deltaDps });
 		}
 		const pool = partnerPool({
 			pieces,
 			wornSetSlots,
-			rowSlotIndex: single.slotIndex,
+			rowSlotIndex: ownDelta.slotIndex,
 		});
 		const rowSwap: PackagePiece = {
 			itemId: item.itemId,
-			slotIndex: single.slotIndex,
+			slotIndex: ownDelta.slotIndex,
 		};
 		rowSwapOf.set(item, rowSwap);
 		const lostBy = (swaps: readonly PackagePiece[]) => brokenSetBonuses(equipment, swaps, setId, counts);
@@ -2460,7 +2460,7 @@ async function measureSetSteps(args: {
 			const pathSlot = args.bestSlotIndexByItemId.get(item.itemId);
 			const pathPieces =
 				entry && entry.packageItemIds.length > 0 && pathSlot !== undefined
-					? pathToThreshold(item.itemId, pathSlot, entry, args.bestSlotIndexByItemId, args.individualDeltasByItemId).filter(
+					? pathToThreshold(item.itemId, pathSlot, entry, args.bestSlotIndexByItemId, args.ownDeltasByItemId).filter(
 							p => p.itemId !== item.itemId,
 						)
 					: undefined;
@@ -2472,8 +2472,8 @@ async function measureSetSteps(args: {
 				{
 					row: {
 						itemId: item.itemId,
-						slotIndex: single.slotIndex,
-						singleDeltaDps: single.deltaDps,
+						slotIndex: ownDelta.slotIndex,
+						ownDeltaDps: ownDelta.deltaDps,
 					},
 					setId,
 					count: f.threshold,
@@ -2810,7 +2810,7 @@ async function measurePairTwoPiece(
 	equipment: readonly SimItemSpec[],
 	gems: GemContext,
 	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
-	individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>,
+	ownDeltasByItemId: ReadonlyMap<number, OwnDelta>,
 	baseline: DpsSample,
 	simVersion: string,
 	runOpts: SimRunOpts,
@@ -2855,14 +2855,14 @@ async function measurePairTwoPiece(
 		}
 		await cacheSimResult(deps, request, simVersion, runOpts, obs);
 	}
-	const singles = pair.map(p => individualDeltasByItemId.get(p.itemId)!);
+	const ownDeltas = pair.map(p => ownDeltasByItemId.get(p.itemId)!);
 	const pairSample: DpsSample = {
 		dps: obs.dps,
 		se: obs.stdev / Math.sqrt(runOpts.iterations),
 	};
 	return {
-		dps: singles.reduce((sum, s) => sum + s.deltaDps, 0) - (pairSample.dps - baseline.dps),
-		se: combineSe([baseline, pairSample, ...singles.map(s => ({ dps: 0, se: s.se }))]),
+		dps: ownDeltas.reduce((sum, s) => sum + s.deltaDps, 0) - (pairSample.dps - baseline.dps),
+		se: combineSe([baseline, pairSample, ...ownDeltas.map(s => ({ dps: 0, se: s.se }))]),
 	};
 }
 
@@ -2877,7 +2877,7 @@ function pathToThreshold(
 	slotIndex: number,
 	pkg: SetBonusValue,
 	bestSlotIndexByItemId: ReadonlyMap<number, number>,
-	individualDeltasByItemId: ReadonlyMap<number, IndividualDelta>,
+	ownDeltasByItemId: ReadonlyMap<number, OwnDelta>,
 ): PackagePiece[] {
 	const members = pkg.packageItemIds
 		.map(pieceItemId => ({
@@ -2886,7 +2886,7 @@ function pathToThreshold(
 		}))
 		.filter((p): p is PackagePiece => p.slotIndex !== undefined);
 	if (pkg.packageItemIds.includes(itemId)) return members;
-	const deltaOf = (id: number) => individualDeltasByItemId.get(id)?.deltaDps ?? -Infinity;
+	const deltaOf = (id: number) => ownDeltasByItemId.get(id)?.deltaDps ?? -Infinity;
 	const rest = members
 		.filter(p => p.slotIndex !== slotIndex)
 		.sort((a, b) => (deltaOf(b.itemId) !== deltaOf(a.itemId) ? deltaOf(b.itemId) - deltaOf(a.itemId) : a.itemId - b.itemId))
@@ -3059,7 +3059,7 @@ function applySetContext(
 	equipment: readonly SimItemSpec[],
 	brokenSetValues: readonly BrokenSetValue[] = [],
 	bestSlotIndexByItemId: ReadonlyMap<number, number> = new Map(),
-	individualDeltasByItemId: ReadonlyMap<number, IndividualDelta> = new Map(),
+	ownDeltasByItemId: ReadonlyMap<number, OwnDelta> = new Map(),
 	counts: BonusCountPredicate = isBonusImplemented,
 	/**
 	 * Present exactly with `measureSetBonuses`: the `crossingGates`, so the
@@ -3122,9 +3122,9 @@ function applySetContext(
 		// singleBreaks: worn bonuses this piece loses by itself, already inside
 		// deltaDps; dps is their measured value when there is one.
 		if (slotIndex !== undefined) {
-			const single = brokenSetBonuses(equipment, [{ itemId: item.itemId, slotIndex }], setId, counts);
-			if (single.length > 0) {
-				setContext.singleBreaks = single.map(brk => {
+			const ownBreaks = brokenSetBonuses(equipment, [{ itemId: item.itemId, slotIndex }], setId, counts);
+			if (ownBreaks.length > 0) {
+				setContext.singleBreaks = ownBreaks.map(brk => {
 					const dps = dpsForBreak(brk);
 					return {
 						setId: brk.setId,
@@ -3149,7 +3149,7 @@ function applySetContext(
 					.map(b => b.threshold)
 					.sort((a, b) => a - b)
 			: [...SET_THRESHOLDS].filter(t => advancesPieceCount && t > piecesAfterSwap && isBonusImplemented(setId, t));
-		const singleKeys = new Set((setContext.singleBreaks ?? []).map(bonusKey));
+		const ownBreakKeys = new Set((setContext.singleBreaks ?? []).map(bonusKey));
 		const withDps = (brk: BrokenSetBonus) => {
 			const dps = dpsForBreak(brk);
 			return {
@@ -3166,9 +3166,9 @@ function applySetContext(
 		// because the row's own gain already holds it. Undefined when any input
 		// was unmeasured.
 		const ownGain = (p: PackagePiece): number | undefined => {
-			const single = individualDeltasByItemId.get(p.itemId)?.deltaDps;
-			if (single === undefined) return undefined;
-			let own = single;
+			const ownDelta = ownDeltasByItemId.get(p.itemId)?.deltaDps;
+			if (ownDelta === undefined) return undefined;
+			let own = ownDelta;
 			for (const brk of brokenSetBonuses(equipment, [p], setId, counts)) {
 				const dps = dpsForBreak(brk);
 				if (dps === undefined) return undefined;
@@ -3188,11 +3188,11 @@ function applySetContext(
 			// No path through a `belowGate` entry: its pieces were never simmed.
 			const path =
 				bonus && bonus.unmeasured === undefined && !bonus.belowGate && bonus.packageItemIds.length > 0 && slotIndex !== undefined
-					? pathToThreshold(item.itemId, slotIndex, bonus, bestSlotIndexByItemId, individualDeltasByItemId)
+					? pathToThreshold(item.itemId, slotIndex, bonus, bestSlotIndexByItemId, ownDeltasByItemId)
 					: undefined;
 			// The worn bonuses this path loses beyond the row's own loss. Ones a
 			// lower future bonus already lists stay; the view charges each once.
-			const pathBreaks = path ? brokenSetBonuses(equipment, path, setId, counts).filter(brk => !singleKeys.has(bonusKey(brk))) : [];
+			const pathBreaks = path ? brokenSetBonuses(equipment, path, setId, counts).filter(brk => !ownBreakKeys.has(bonusKey(brk))) : [];
 			// The path's other pieces. Ones a lower future bonus already lists stay;
 			// the view counts each once.
 			const pieces = path
@@ -3226,7 +3226,7 @@ function applySetContext(
 		const topPackage = topMeasuredPackage(bonusesForSet);
 		if (topPackage && slotIndex !== undefined) {
 			const commitAll = substitutedPackageBreaks(item.itemId, setId, slotIndex, topPackage, bestSlotIndexByItemId, equipment, counts);
-			const commitOnly = commitAll.filter(brk => !singleKeys.has(bonusKey(brk)));
+			const commitOnly = commitAll.filter(brk => !ownBreakKeys.has(bonusKey(brk)));
 			if (commitOnly.length > 0) {
 				setContext.commitBreaks = commitOnly.map(withDps);
 			}

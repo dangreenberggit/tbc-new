@@ -19,7 +19,7 @@ import {
 	setPotentialSteps,
 	type SetPotentialTerm,
 	setPotentialTerms,
-	singleSwapBreaks,
+	ownSwapBreaks,
 	stepEligible,
 	stepFutureUnmeasured,
 } from './engine/view';
@@ -270,7 +270,7 @@ export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = 
 	const credit = on ? rankableSetPotential(row, cutoff, 'full') : 0;
 	// A row with no `setContext` still lists the worn bonuses its own swap breaks.
 	const ownBreaks =
-		ctx || !context.ranking || !context.specId ? [] : singleSwapBreaks(row, context.ranking.brokenSetValues, context.wornItemIds, context.specId);
+		ctx || !context.ranking || !context.specId ? [] : ownSwapBreaks(row, context.ranking.brokenSetValues, context.wornItemIds, context.specId);
 	if (!ctx && ownBreaks.length === 0) return null;
 
 	const screened = ctx ? screenedLine(ctx, context.ranking) : null;

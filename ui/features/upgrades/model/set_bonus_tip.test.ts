@@ -239,9 +239,9 @@ describe('setBonusTipLines', () => {
 			expect(on?.subLine).toBe('hover_hint');
 		});
 
-		it('values a reachable bonus against the row’s single swap, not against its figure after replication', () => {
+		it('values a reachable bonus against the row’s own swap, not against its figure after replication', () => {
 			const tip = setBonusTipLines(stepRow({ singleDeltaDps: 2, futureBonuses: [future()] }), context);
-			// 30.5 step gear DPS less the 2 DPS single swap; the row's 4.5 DPS figure would give 26.
+			// 30.5 step gear DPS less the 2 DPS own swap; the row's 4.5 DPS figure would give 26.
 			expect(lines(tip).at(-1)).toEqual(reachable(28.5));
 		});
 

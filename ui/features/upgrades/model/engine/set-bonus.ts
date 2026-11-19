@@ -1,5 +1,5 @@
 /**
- * Detect single-item swaps that break a 2-piece or 4-piece set bonus.
+ * Detect an item's own swap breaking a 2-piece or 4-piece set bonus.
  */
 
 import { getItem } from './items';
