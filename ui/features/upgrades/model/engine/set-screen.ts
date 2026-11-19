@@ -151,11 +151,11 @@ export type SetScreenInput = {
 	/** Each set's pieces worn and the count the pool can reach. */
 	sets: ReadonlyArray<{ setId: number; worn: number; reach: number }>;
 	/**
-	 * The gear with `setId`'s chosen pieces swapped in up to `count`, built the
+	 * The gear with `setId`'s chosen pieces swapped in up to `threshold`, built the
 	 * same way as the later set sims (pieces swapped in with meta repair, then
 	 * the request composed). Undefined when it cannot be built.
 	 */
-	gearAt: (setId: number, count: number) => ScreenGear | undefined;
+	gearAt: (setId: number, threshold: number) => ScreenGear | undefined;
 	/** A store-cached sim with explicit options. Throws when the sim fails. */
 	runSimAt: (request: RaidSimRequest, opts: SimRunOpts) => Promise<{ observation: SimObservation; fromStore: boolean }>;
 	seed: number;
@@ -177,7 +177,7 @@ export type SetScreenOnInput = Omit<SetScreenInput, 'pairIterations' | 'countIte
 	 * The `'sum-of-singles'` partner rule's estimate for `setId`'s pieces at
 	 * `count`, which needs no extra sim. Undefined when an input is missing.
 	 */
-	sumOfSinglesDpsAt: (setId: number, count: number) => number | undefined;
+	sumOfSinglesDpsAt: (setId: number, threshold: number) => number | undefined;
 	/** The baseline sim's per-iteration standard deviation. */
 	baselineStdev: number;
 };

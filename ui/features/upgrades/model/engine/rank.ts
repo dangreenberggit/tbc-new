@@ -419,7 +419,7 @@ export type SetBonusOffSims = {
 export type PartnerAuditEntry = {
 	itemId: number;
 	setId: number;
-	count: number;
+	threshold: number;
 	audit: PartnerAudit;
 };
 
@@ -1757,8 +1757,8 @@ async function buildSetBonuses(
 								reach: reachable[reachable.length - 1] ?? worn,
 							};
 						}),
-					gearAt: (setId, count) => {
-						const selection = selectFor(setId, count);
+					gearAt: (setId, threshold) => {
+						const selection = selectFor(setId, threshold);
 						if (!selection.ok) return undefined;
 						// The same swaps as the loop below, so the screen sims the gear
 						// that loop would build for this count.
@@ -1812,8 +1812,8 @@ async function buildSetBonuses(
 	// The "on" screen estimates a count's value with `sumOfSinglesEstimate`,
 	// taking the first added piece as the row.
 	const breakDpsBy = new Map(brokenSetValues.map(v => [bonusKey(v), v.dps] as const));
-	const sumOfSinglesDpsAt = (setId: number, count: number): number | undefined => {
-		const selection = selectFor(setId, count);
+	const sumOfSinglesDpsAt = (setId: number, threshold: number): number | undefined => {
+		const selection = selectFor(setId, threshold);
 		if (!selection.ok) return undefined;
 		const pieces: PartnerPiece[] = [];
 		for (const piece of selection.addedPieces) {
@@ -1831,7 +1831,7 @@ async function buildSetBonuses(
 			{
 				row,
 				setId,
-				count,
+				threshold,
 				needed: rest.length,
 				pool: [],
 				lostBy: swaps => brokenSetBonuses(equipment, swaps, setId, countsAsBreak),
@@ -2476,7 +2476,7 @@ async function measureSetSteps(args: {
 						ownDeltaDps: ownDelta.deltaDps,
 					},
 					setId,
-					count: f.threshold,
+					threshold: f.threshold,
 					needed: f.threshold - ctx.piecesAfterSwap,
 					pool,
 					lostBy,
@@ -2514,7 +2514,7 @@ async function measureSetSteps(args: {
 				audits.push({
 					itemId: item.itemId,
 					setId,
-					count: f.threshold,
+					threshold: f.threshold,
 					audit: choice.audit,
 				});
 			}

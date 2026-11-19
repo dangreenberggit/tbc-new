@@ -58,15 +58,15 @@ export function partnerPool(args: { pieces: readonly PartnerPiece[]; wornSetSlot
 export type PartnerQuery = {
 	row: { itemId: number; slotIndex: number; ownDeltaDps: number };
 	setId: number;
-	/** The bonus's piece count. */
-	count: number;
-	/** How many partner pieces reach `count` with the row worn. */
+	/** The piece count the bonus turns on at. */
+	threshold: number;
+	/** How many partner pieces reach `threshold` with the row worn. */
 	needed: number;
 	pool: readonly PartnerPiece[];
 	/** The worn bonuses that count as lost when every listed swap is made. */
 	lostBy: (swaps: readonly PlacedItem[]) => readonly Pick<BrokenSetBonus, 'setId' | 'threshold'>[];
 	/** A worn bonus's measured value; undefined when unmeasured. */
-	breakDps: (setId: number, count: number) => number | undefined;
+	breakDps: (setId: number, threshold: number) => number | undefined;
 	/** Used by 'single-swap'. */
 	pathPieces?: readonly PlacedItem[];
 	/** Sims current gear plus the row plus `partners`; the total is over current gear. */
