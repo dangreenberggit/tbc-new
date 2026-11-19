@@ -49,8 +49,8 @@ describe('RunControls', () => {
 		expect(field.value).toBe('900');
 	});
 
-	// A ring rewrites the field from the store, which would wipe text the user has typed but not committed.
-	it('is not rung by a run writing the store', () => {
+	// A notification rewrites the field from the store, which would wipe text the user has typed but not committed.
+	it('is not notified by a run writing the store', () => {
 		const { store, field } = mount();
 		field.value = '12';
 		act(() => {

@@ -2,7 +2,7 @@ import i18n from '@i18n/config';
 import { BooleanPicker } from '@ui-kit/BooleanPicker';
 import { useId } from 'react';
 
-import { offeredSourceKeys, type ViewToggles as Toggles } from '../../model/results_view';
+import { offeredSourceKeys, type ViewToggleState } from '../../model/results_view';
 import { ViewSourcesButton, type ViewSourcesButtonProps } from '../ViewSources';
 
 interface ViewToggleProps {
@@ -24,15 +24,15 @@ const ViewToggle = ({ testId, label, tooltip, checked, onChange }: ViewTogglePro
 
 export interface ViewTogglesProps {
 	/** The toggles the run offers; nothing renders when it offers none. */
-	offered: Toggles;
-	toggles: Toggles;
+	offered: ViewToggleState;
+	toggles: ViewToggleState;
 	rankedPhase: number;
 	/**
 	 * The phase the BiS tags come from, earlier than `rankedPhase` when wowsims
 	 * has no set for the ranked phase; `undefined` when no set is a BiS set.
 	 */
 	bisTagPhase?: number;
-	onChange: (toggle: keyof Toggles, on: boolean) => void;
+	onChange: (toggle: keyof ViewToggleState, on: boolean) => void;
 	/** "Filter by source", shown when the settled table has a source to filter. */
 	sources: ViewSourcesButtonProps;
 }

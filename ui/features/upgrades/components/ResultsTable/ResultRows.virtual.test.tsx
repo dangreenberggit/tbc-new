@@ -86,7 +86,7 @@ const ownRows = (indexes: readonly (string | undefined)[]) => indexes.map(index 
 const spacers = (container: HTMLElement) => container.querySelectorAll('[data-testid="upgrades-row-spacer"]');
 
 /** `count` consecutive indexes from `first`, as strings, the way `data-index` reads. */
-const run = (first: number, count: number) => Array.from({ length: count }, (_unused, offset) => String(first + offset));
+const consecutiveIndexes = (first: number, count: number) => Array.from({ length: count }, (_unused, offset) => String(first + offset));
 
 describe('ResultRows windowed by useVirtualRows', () => {
 	it('counts every ranked row on the tbody while it renders only the first screen of them', () => {
@@ -96,7 +96,7 @@ describe('ResultRows windowed by useVirtualRows', () => {
 		expect(tbodyOf(container).dataset.rowCount).toBe(String(RANKED));
 		expect(indexes.length).toBeGreaterThan(0);
 		expect(indexes.length).toBeLessThan(RANKED);
-		expect(indexes).toEqual(run(0, indexes.length));
+		expect(indexes).toEqual(consecutiveIndexes(0, indexes.length));
 		// A row's content is read by its `data-index`, so the row there must be that ranked row.
 		expect(renderedPairs(container)).toEqual(ownRows(indexes));
 		// The rows not rendered below the screen keep the table's full height.
@@ -115,7 +115,7 @@ describe('ResultRows windowed by useVirtualRows', () => {
 		expect(tbodyOf(container).dataset.rowCount).toBe(String(RANKED));
 		expect(Number(indexes[0])).toBeGreaterThan(0);
 		expect(Number(indexes.at(-1))).toBeLessThan(RANKED - 1);
-		expect(indexes).toEqual(run(Number(indexes[0]), indexes.length));
+		expect(indexes).toEqual(consecutiveIndexes(Number(indexes[0]), indexes.length));
 		expect(renderedPairs(container)).toEqual(ownRows(indexes));
 		expect(spacers(container)).toHaveLength(2);
 	});

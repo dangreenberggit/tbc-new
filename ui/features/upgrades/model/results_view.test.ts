@@ -14,18 +14,18 @@ import {
 	effectiveSlot,
 	hasBisRows,
 	hiddenOfferedSourcesOf,
-	landedRows,
 	NO_VIEW_TOGGLES,
 	offeredSourceKeys,
 	offeredToggles,
 	paneRows,
 	resultsViewFor,
 	rowKey,
+	simmedBestFirst,
 	slotTabs,
 	sourcesView,
 	stoppedView,
 	type ViewSourceOptions,
-	type ViewToggles,
+	type ViewToggleState,
 	withHiddenSourceToggled,
 	withOfferedSourcesHidden,
 } from './results_view';
@@ -88,7 +88,7 @@ describe('paneRows', () => {
 		const pane = paneRows(VIEW, ALL_SLOTS_PANE);
 		expect(ids(pane.main)).toEqual([32332, 30902, 32235, 33688, 28830, 30989, 29993, 30990, 30993, 30905]);
 		expect(ids(pane.belowCutoff)).toEqual([32373]);
-		expect(pane.notUpgrades.size).toBe(0);
+		expect(pane.notUpgradeKeys.size).toBe(0);
 	});
 
 	it('splits a slot pane the same way over that slot’s rows', () => {
@@ -119,7 +119,7 @@ describe('BiS-list rows below the cutoff', () => {
 	it('show in the main table in gain order, marked as not upgrades, and leave the below-cutoff group', () => {
 		const pane = paneRows(view, ALL_SLOTS_PANE);
 		expect(ids(pane.main)).toEqual([32332, 30902, 32235, 33688, 28830, 30989, 29993, 30990, 30993, 32373, 30905]);
-		expect([...pane.notUpgrades]).toEqual(['32373:head', '30905:chest']);
+		expect([...pane.notUpgradeKeys]).toEqual(['32373:head', '30905:chest']);
 		expect(pane.belowCutoff).toEqual([]);
 		expect(ids(paneRows(view, 'head').main)).toEqual([32235, 30989, 32373]);
 	});
@@ -146,7 +146,7 @@ describe('BiS-list rows below the cutoff', () => {
 		const bisOnly = resultsViewFor(done(WITH_BIS_BELOW), ONLY_BIS)!;
 		const bisPane = paneRows(bisOnly, ALL_SLOTS_PANE);
 		expect(ids(bisPane.main)).toEqual([32332, 32235, 28830, 32373, 30905]);
-		expect([...bisPane.notUpgrades]).toEqual(['32373:head', '30905:chest']);
+		expect([...bisPane.notUpgradeKeys]).toEqual(['32373:head', '30905:chest']);
 		expect(slotTabs(bisOnly).find(tab => tab.id === 'head')).toEqual({ id: 'head', count: 1 });
 
 		// A made-up Lightbringer Battlegear chest in place of Midnight Chestguard, which is in no set. Given Lightbringer
@@ -163,15 +163,15 @@ describe('BiS-list rows below the cutoff', () => {
 			SET_POTENTIAL,
 		)!;
 		const pane = paneRows(withPotential, ALL_SLOTS_PANE);
-		expect([...pane.notUpgrades]).toEqual(['32373:head']);
+		expect([...pane.notUpgradeKeys]).toEqual(['32373:head']);
 		expect(ids(withPotential.shortlist)).toContain(credited.itemId);
 	});
 });
 
-describe('landedRows', () => {
+describe('simmedBestFirst', () => {
 	it('drops rows Stop never simmed and orders the rest by ΔDPS, highest first', () => {
 		const rows = [fixtureRow(4), STOPPED_FIXTURE.items.at(-1)!, fixtureRow(1), fixtureRow(9)];
-		expect(ids(landedRows(rows))).toEqual([30902, 30990, 30993]);
+		expect(ids(simmedBestFirst(rows))).toEqual([30902, 30990, 30993]);
 	});
 });
 
@@ -204,7 +204,7 @@ const done = (result: Ranking) => ({ status: 'done' as const, runId: 1, result }
 const SET_POTENTIAL = { ...NO_VIEW_TOGGLES, withSetPotential: true };
 const ONLY_BIS = { ...NO_VIEW_TOGGLES, onlyBis: true };
 /** A settled run's view with "Filter by source" applied, composed as `useResultsView` composes it. */
-const bySource = (run: RunState, toggles: ViewToggles, hidden: readonly string[]) => sourcesView(resultsViewFor(run, toggles)!, hidden);
+const bySource = (run: RunState, toggles: ViewToggleState, hidden: readonly string[]) => sourcesView(resultsViewFor(run, toggles)!, hidden);
 
 describe('resultsViewFor', () => {
 	it('views a finished run through applyView', () => {
@@ -248,7 +248,7 @@ describe('resultsViewFor', () => {
 		]);
 		expect(paneRows(view, 'chest')).toEqual({
 			main: [],
-			notUpgrades: new Set(),
+			notUpgradeKeys: new Set(),
 			belowCutoff: [],
 			emptyReason: 'no-upgrades',
 		});
@@ -400,7 +400,7 @@ describe('sourcesView over resultsViewFor', () => {
 	it('says a pane has no row from the shown sources when the filter emptied it', () => {
 		expect(paneRows(hidingBlackTemple, 'legs')).toEqual({
 			main: [],
-			notUpgrades: new Set(),
+			notUpgradeKeys: new Set(),
 			belowCutoff: [],
 			emptyReason: 'no-source-row',
 		});
@@ -411,7 +411,7 @@ describe('sourcesView over resultsViewFor', () => {
 		const allHidden = bySource(done(RANKING_FIXTURE), NO_VIEW_TOGGLES, everySource);
 		expect(paneRows(allHidden, ALL_SLOTS_PANE)).toEqual({
 			main: [],
-			notUpgrades: new Set(),
+			notUpgradeKeys: new Set(),
 			belowCutoff: [],
 			emptyReason: 'no-source-row',
 		});

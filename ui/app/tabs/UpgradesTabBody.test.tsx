@@ -51,7 +51,7 @@ vi.mock('@features/upgrades/model/data/data', async importOriginal => ({
 
 /**
  * The page's change source: every listener hears every page edit. The tab store's phase listener hears them too,
- * and a phase set with `patchSlice` rings none of them, so `useUpgradesSettings.test.tsx`, on real subscriptions,
+ * and a phase set with `patchSlice` notifies none of them, so `useUpgradesSettings.test.tsx`, on real subscriptions,
  * is the test of the picks a phase change resets.
  */
 const listeners = new Set<() => void>();
@@ -373,7 +373,7 @@ describe('UpgradesTabBody before its tab is first opened', () => {
 				</div>
 			</SimHostProvider>,
 		);
-	/** Phase 3 to 4 and back on another tab, after the page has started up; each write rings the page's listeners as the real store would. */
+	/** Phase 3 to 4 and back on another tab, after the page has started up; each write notifies the page's listeners as the real store would. */
 	const roundTripThroughPhase4 = async () => {
 		await act(flushPromises);
 		act(() => {

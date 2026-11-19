@@ -43,7 +43,7 @@ export const ExportPanel = ({ rows }: ExportPanelProps) => {
 					label: i18n.t('upgrades_tab.export.flavour_toggle', { ns: 'upgrades' }),
 					layout: 'inline',
 					value: flavour === 'token',
-					onChange: tokens => setExportFlavour(tokens ? 'token' : 'gear'),
+					onChange: useTokenIds => setExportFlavour(useTokenIds ? 'token' : 'gear'),
 				}}
 			/>
 			<p className="mb-2 text-muted">

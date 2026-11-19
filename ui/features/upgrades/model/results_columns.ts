@@ -16,9 +16,9 @@ export type DpsSortKey = (row: RankedItem) => number;
 /** In header order; each id is also the `upgrades-sort-<id>` test id. */
 export const SORT_COLUMN_IDS = ['item', 'delta_dps', 'slot', 'source'] as const;
 
-export type ResultsSortKey = (typeof SORT_COLUMN_IDS)[number];
+export type SortColumnId = (typeof SORT_COLUMN_IDS)[number];
 
-export const sortValue = (key: ResultsSortKey, row: RankedItem, labels: SortLabels<RankedItem>, dpsKey: DpsSortKey | undefined): string | number => {
+export const sortValue = (key: SortColumnId, row: RankedItem, labels: SortLabels<RankedItem>, dpsKey: DpsSortKey | undefined): string | number => {
 	switch (key) {
 		case 'item':
 			return row.name.toLowerCase();

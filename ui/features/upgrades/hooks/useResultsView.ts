@@ -11,7 +11,7 @@ import {
 	type ResultsViewResult,
 	sourcesView,
 	type ViewSourceOptions,
-	type ViewToggles,
+	type ViewToggleState,
 } from '../model/results_view';
 import type { RunState } from '../model/run_state';
 import { type GearSetOption, rowBadgeIndex, sourceOptions } from '../model/settings_pool';
@@ -22,9 +22,9 @@ const NO_GEAR_SETS: readonly GearSetOption[] = [];
 
 export type ResultsView = {
 	/** The view toggles as the user set them, and the ones the tab shows for this run. */
-	toggles: ViewToggles;
-	offered: ViewToggles;
-	setToggle: (toggle: keyof ViewToggles, on: boolean) => void;
+	toggles: ViewToggleState;
+	offered: ViewToggleState;
+	setToggle: (toggle: keyof ViewToggleState, on: boolean) => void;
 	/** The sources "Filter by source" offers: those of the settled view's rows before that filter applies; none before a run settles. */
 	sourceOptions: ViewSourceOptions;
 	/** The hidden sources as stored, which may name one this view does not offer. */

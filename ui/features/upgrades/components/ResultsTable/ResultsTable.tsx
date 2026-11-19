@@ -3,9 +3,9 @@ import { type ComponentPropsWithoutRef, useMemo, useRef } from 'react';
 import { type ResultsTableModel, useResultsTable } from '../../hooks/useResultsTable';
 import { useVirtualRows } from '../../hooks/useVirtualRows';
 import type { RankedItem } from '../../model/engine/rank';
-import { landedRows as bestFirst } from '../../model/results_view';
+import { simmedBestFirst } from '../../model/results_view';
 import { ResultRow, type RowContext } from './ResultRow';
-import { PlainResultsHead, RESULTS_COLGROUP, RESULTS_COLUMN_COUNT } from './ResultsTableHead';
+import { RESULTS_COLGROUP, RESULTS_COLUMN_COUNT, UnsortableResultsHead } from './ResultsTableHead';
 
 /** Table attributes pass through, so a variant can mark itself; the testid is set after them so it cannot be overridden. */
 export type ResultsTableProps = Omit<ComponentPropsWithoutRef<'table'>, 'className'>;
@@ -32,7 +32,7 @@ export interface ResultRowsProps {
 	table: ResultsTableModel;
 	rowContext: RowContext;
 	/** The row ids (`rowKey`) to mark as not an upgrade: a main table's rows that miss the cutoff (`paneRows`). */
-	notUpgrades?: ReadonlySet<string>;
+	notUpgradeKeys?: ReadonlySet<string>;
 }
 
 export interface ProvisionalResultsTableProps {
@@ -44,11 +44,11 @@ export interface ProvisionalResultsTableProps {
 /** The table of a run in flight: the rows so far, best first, under a head with nothing to click, so the stored sort does not apply. */
 export const ProvisionalResultsTable = ({ landedRows, rowContext }: ProvisionalResultsTableProps) => {
 	// Memoised on the run's array, which changes only when a row finishes: TanStack rebuilds every row on new data.
-	const rows = useMemo(() => bestFirst(landedRows), [landedRows]);
+	const rows = useMemo(() => simmedBestFirst(landedRows), [landedRows]);
 	const table = useResultsTable(rows, rowContext, { sortable: false });
 	return (
 		<ResultsTable data-provisional="true">
-			<PlainResultsHead />
+			<UnsortableResultsHead />
 			<ResultRows table={table} rowContext={rowContext} />
 		</ResultsTable>
 	);
@@ -66,7 +66,7 @@ const RowSpacer = ({ height }: { height: number }) => (
  * the rows in or near the view are rendered, so the tbody carries the full row count in
  * `data-row-count`.
  */
-export const ResultRows = ({ table, rowContext, notUpgrades }: ResultRowsProps) => {
+export const ResultRows = ({ table, rowContext, notUpgradeKeys }: ResultRowsProps) => {
 	const rows = table.getRowModel().rows;
 	const tbodyRef = useRef<HTMLTableSectionElement>(null);
 	// Memoised on the row model, which TanStack keeps while the data and sort hold: a new array is a new
@@ -86,7 +86,7 @@ export const ResultRows = ({ table, rowContext, notUpgrades }: ResultRowsProps) 
 						row={row.original}
 						position={index + 1}
 						context={rowContext}
-						notUpgrade={notUpgrades?.has(row.id) ?? false}
+						notUpgrade={notUpgradeKeys?.has(row.id) ?? false}
 					/>
 				);
 			})}

@@ -7,4 +7,4 @@ export {
 	ResultsTable,
 	type ResultsTableProps,
 } from './ResultsTable';
-export { PlainResultsHead, ScreenReaderResultsHead, SortableResultsHead, type SortableResultsHeadProps } from './ResultsTableHead';
+export { UnsortableResultsHead, ScreenReaderResultsHead, SortableResultsHead, type SortableResultsHeadProps } from './ResultsTableHead';

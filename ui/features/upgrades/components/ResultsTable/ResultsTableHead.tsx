@@ -4,13 +4,13 @@ import clsx from 'clsx';
 import type { ReactNode } from 'react';
 
 import type { ResultsTableModel } from '../../hooks/useResultsTable';
-import { type ResultsSortKey, SORT_COLUMN_IDS } from '../../model/results_columns';
+import { SORT_COLUMN_IDS, type SortColumnId } from '../../model/results_columns';
 
-const SORT_COLUMNS: readonly ResultsSortKey[] = SORT_COLUMN_IDS;
+const SORT_COLUMNS: readonly SortColumnId[] = SORT_COLUMN_IDS;
 
 type SortDir = 'asc' | 'desc';
 
-type Column = 'rank' | ResultsSortKey | 'favorite' | 'batch';
+type Column = 'rank' | SortColumnId | 'favorite' | 'batch';
 
 /** Every column in head order: `HeadRow`'s Rank, the sortable columns, then its two toggle columns. */
 const COLUMNS: readonly Column[] = ['rank', ...SORT_COLUMNS, 'favorite', 'batch'];
@@ -45,10 +45,10 @@ export const RESULTS_COLGROUP = (
 
 const columnName = (column: Column) => i18n.t(`upgrades_tab.results.${column}`, { ns: 'upgrades' });
 
-const columnClass = (key: ResultsSortKey) => clsx('py-1 pr-3', key === 'delta_dps' && 'text-right');
+const columnClass = (column: SortColumnId) => clsx('py-1 pr-3', column === 'delta_dps' && 'text-right');
 
 /** How the table sorts on `key`: its direction, or false when another column (or none) sorts it. */
-const sortDirOf = (table: ResultsTableModel, key: ResultsSortKey): SortDir | false => table.getColumn(key)?.getIsSorted() ?? false;
+const sortDirOf = (table: ResultsTableModel, column: SortColumnId): SortDir | false => table.getColumn(column)?.getIsSorted() ?? false;
 
 const ariaSort = (dir: SortDir | false) => {
 	if (!dir) return 'none';
@@ -84,17 +84,17 @@ const HeadRow = ({ children }: { children: ReactNode }) => (
 );
 
 /** The head of a table in flight: nothing to click, because its rows are not the ranking yet. */
-export const PlainResultsHead = () => (
+export const UnsortableResultsHead = () => (
 	<HeadRow>
-		{SORT_COLUMNS.map(key => (
-			<th key={key} className={columnClass(key)}>
-				{columnName(key)}
+		{SORT_COLUMNS.map(column => (
+			<th key={column} className={columnClass(column)}>
+				{columnName(column)}
 			</th>
 		))}
 	</HeadRow>
 );
 
-const isSortColumn = (column: Column): column is ResultsSortKey => (SORT_COLUMNS as readonly Column[]).includes(column);
+const isSortColumn = (column: Column): column is SortColumnId => (SORT_COLUMNS as readonly Column[]).includes(column);
 
 /**
  * A head only screen readers get, for a table under another table's visible head
@@ -121,16 +121,16 @@ export interface SortableResultsHeadProps {
 /** The head of a settled table: each data column sorts on a click, and says how it is sorted. */
 export const SortableResultsHead = ({ table }: SortableResultsHeadProps) => (
 	<HeadRow>
-		{SORT_COLUMNS.map(key => {
-			const dir = sortDirOf(table, key);
+		{SORT_COLUMNS.map(column => {
+			const dir = sortDirOf(table, column);
 			return (
-				<th key={key} className={columnClass(key)} aria-sort={ariaSort(dir)}>
+				<th key={column} className={columnClass(column)} aria-sort={ariaSort(dir)}>
 					<Button
 						variant="unstyled"
 						className="text-inherit [font:inherit] focus-visible:focus-ring"
-						data-testid={`upgrades-sort-${key}`}
-						onClick={() => table.getColumn(key)?.toggleSorting()}>
-						{columnName(key)}
+						data-testid={`upgrades-sort-${column}`}
+						onClick={() => table.getColumn(column)?.toggleSorting()}>
+						{columnName(column)}
 						{dir && <SortIndicator dir={dir} />}
 					</Button>
 				</th>

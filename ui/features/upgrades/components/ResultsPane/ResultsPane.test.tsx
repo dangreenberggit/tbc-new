@@ -40,7 +40,7 @@ const Pane = (props: PaneProps) => {
 /** A pane's rows as `paneRows` returns them, with no row in the main table marked as not an upgrade. */
 const paneRowsOf = (main: readonly RankedItem[], belowCutoff: readonly RankedItem[]): PaneRows => ({
 	main: main.map(row => ({ ...row, belowCutoffInView: false })),
-	notUpgrades: new Set(),
+	notUpgradeKeys: new Set(),
 	belowCutoff: belowCutoff.map(row => ({ ...row, belowCutoffInView: true })),
 	emptyReason: 'no-upgrades',
 });

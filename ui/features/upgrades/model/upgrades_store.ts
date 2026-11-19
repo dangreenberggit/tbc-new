@@ -10,7 +10,7 @@ import { createStore } from 'zustand/vanilla';
 import type { RankedItem, Ranking } from './engine/rank';
 import type { ContentPhase } from './engine/types';
 import type { ExportFlavour } from './export';
-import { NO_VIEW_TOGGLES, type ViewToggles, withHiddenSourceToggled } from './results_view';
+import { NO_VIEW_TOGGLES, type ViewToggleState, withHiddenSourceToggled } from './results_view';
 import {
 	fixtureLoaded,
 	IDLE_RUN,
@@ -52,7 +52,7 @@ export type UpgradesData = {
 	run: RunState;
 	settings: SettingsState;
 	sort: ResultsSort;
-	view: ViewToggles;
+	view: ViewToggleState;
 	hiddenSources: readonly string[];
 	exportFlavour: ExportFlavour;
 };
@@ -83,7 +83,7 @@ export type UpgradesActions = {
 	resetForNewPhase: (poolSourceKeys: readonly string[]) => void;
 	dropUnofferedExclusions: (poolSourceKeys: readonly string[]) => void;
 	setSort: (sort: ResultsSort) => void;
-	setViewToggle: (toggle: keyof ViewToggles, on: boolean) => void;
+	setViewToggle: (toggle: keyof ViewToggleState, on: boolean) => void;
 	toggleHiddenSource: (key: string) => void;
 	setHiddenSources: (keys: readonly string[]) => void;
 	setExportFlavour: (flavour: ExportFlavour) => void;
@@ -98,7 +98,7 @@ export type InitialSettings = { iterations: number };
 export type RestoredTab = {
 	settings?: Partial<SettingsState>;
 	sort?: ResultsSort;
-	view?: Partial<ViewToggles>;
+	view?: Partial<ViewToggleState>;
 	hiddenSources?: readonly string[];
 	exportFlavour?: ExportFlavour;
 };
@@ -164,7 +164,7 @@ export function createUpgradesStore(initial: InitialSettings, restored: Restored
 
 export const selectRun = (state: UpgradesState): RunState => state.run;
 export const selectSort = (state: UpgradesState): ResultsSort => state.sort;
-export const selectViewToggles = (state: UpgradesState): ViewToggles => state.view;
+export const selectViewToggles = (state: UpgradesState): ViewToggleState => state.view;
 export const selectHiddenSources = (state: UpgradesState): readonly string[] => state.hiddenSources;
 export const selectExportFlavour = (state: UpgradesState): ExportFlavour => state.exportFlavour;
 export const selectRunStatus = (state: UpgradesState): RunState['status'] => state.run.status;

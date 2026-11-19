@@ -27,7 +27,7 @@ export interface ResultsPaneProps {
  * all, since beside the group it would be false.
  */
 export const ResultsPane = ({ rows, rowContext, groupOpen, onGroupOpenChange }: ResultsPaneProps) => {
-	const { main, notUpgrades, belowCutoff, emptyReason } = rows;
+	const { main, notUpgradeKeys, belowCutoff, emptyReason } = rows;
 	const mainTable = useResultsTable(main, rowContext);
 	const groupTable = useResultsTable(belowCutoff, rowContext);
 	return (
@@ -35,7 +35,7 @@ export const ResultsPane = ({ rows, rowContext, groupOpen, onGroupOpenChange }: 
 			{main.length > 0 ? (
 				<ResultsTable>
 					<SortableResultsHead table={mainTable} />
-					<ResultRows table={mainTable} rowContext={rowContext} notUpgrades={notUpgrades} />
+					<ResultRows table={mainTable} rowContext={rowContext} notUpgradeKeys={notUpgradeKeys} />
 				</ResultsTable>
 			) : belowCutoff.length > 0 ? null : emptyReason === 'no-upgrades' ? (
 				<EmptyState

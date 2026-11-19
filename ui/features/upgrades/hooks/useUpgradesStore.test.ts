@@ -103,7 +103,7 @@ describe('upgradesStoreFor and the page’s phase (ticket 587)', () => {
 });
 
 describe('numberSettingSource', () => {
-	it('rings once, at the end of a batch, however many writes the batch makes', () => {
+	it('notifies once, at the end of a batch, however many writes the batch makes', () => {
 		const store = createUpgradesStore({ iterations: 1000 });
 		const listener = vi.fn();
 		const unsubscribe = numberSettingSource('iterations').storeSubscribe(store)(listener);
@@ -122,7 +122,7 @@ describe('numberSettingSource', () => {
 		unsubscribe();
 	});
 
-	it('does not ring after unsubscribe for a write queued in a batch', () => {
+	it('does not notify after unsubscribe for a write queued in a batch', () => {
 		const store = createUpgradesStore({ iterations: 1000 });
 		const listener = vi.fn();
 		const unsubscribe = numberSettingSource('iterations').storeSubscribe(store)(listener);

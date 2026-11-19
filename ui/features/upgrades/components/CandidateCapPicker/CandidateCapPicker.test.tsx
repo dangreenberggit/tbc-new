@@ -34,8 +34,8 @@ describe('CandidateCapPicker', () => {
 		expect(input().value).toBe('10');
 	});
 
-	// A ring rewrites the field from the store, which would wipe text the user has typed but not committed.
-	it('is not rung by a run writing the store', () => {
+	// A notification rewrites the field from the store, which would wipe text the user has typed but not committed.
+	it('is not notified by a run writing the store', () => {
 		const store = mount(10);
 		input().value = '7';
 		act(() => {

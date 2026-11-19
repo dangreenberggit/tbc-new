@@ -57,7 +57,7 @@ const inMainTable = (row: ViewRow): boolean => !row.belowCutoffInView || (!row.o
 
 export type PaneRows = {
 	main: ViewRow[];
-	notUpgrades: ReadonlySet<string>;
+	notUpgradeKeys: ReadonlySet<string>;
 	belowCutoff: ViewRow[];
 	emptyReason: PaneEmptyReason;
 };
@@ -67,7 +67,7 @@ export type PaneEmptyReason = 'no-source-row' | 'no-upgrades';
 
 /**
  * The main table also shows BiS-list rows below the cutoff, listed in
- * `notUpgrades`. Worn rows below the cutoff are dropped: the player already
+ * `notUpgradeKeys`. Worn rows below the cutoff are dropped: the player already
  * wears the item, so its gain is about 0. There is no empty text for "no BiS-list
  * item", because the run may have left such an item out before simming.
  */
@@ -82,13 +82,13 @@ export function paneRows(view: ResultsViewResult, pane: PaneId): PaneRows {
 	const emptyReason: PaneEmptyReason = view.sourcesHidden === true && sourceFilterEmptied ? 'no-source-row' : 'no-upgrades';
 	return {
 		main,
-		notUpgrades: new Set(shownAnyway.map(rowKey)),
+		notUpgradeKeys: new Set(shownAnyway.map(rowKey)),
 		belowCutoff: missed.filter(row => !onBisList(row)),
 		emptyReason,
 	};
 }
 
-export const landedRows = (rows: readonly RankedItem[]): RankedItem[] => rows.filter(row => row.simmed !== false).sort((a, b) => b.deltaDps - a.deltaDps);
+export const simmedBestFirst = (rows: readonly RankedItem[]): RankedItem[] => rows.filter(row => row.simmed !== false).sort((a, b) => b.deltaDps - a.deltaDps);
 
 /** `applyView` takes only a complete ranking, so a stopped run builds its view here. */
 export function stoppedView(result: StoppedRanking): ViewResult {
@@ -98,17 +98,17 @@ export function stoppedView(result: StoppedRanking): ViewResult {
 }
 
 /** These only reshape a measured ranking, so changing one never marks a result stale. */
-export type ViewToggles = { withSetPotential: boolean; onlyBis: boolean };
+export type ViewToggleState = { withSetPotential: boolean; onlyBis: boolean };
 
-export const NO_VIEW_TOGGLES: ViewToggles = { withSetPotential: false, onlyBis: false };
+export const NO_VIEW_TOGGLES: ViewToggleState = { withSetPotential: false, onlyBis: false };
 
 export const hasBisRows = (ranking: Pick<Ranking, 'items'>): boolean => ranking.items.some(onBisList);
 
-export const offeredToggles = (run: RunState): ViewToggles =>
+export const offeredToggles = (run: RunState): ViewToggleState =>
 	run.status === 'done' ? { withSetPotential: true, onlyBis: hasBisRows(run.result) } : NO_VIEW_TOGGLES;
 
 /** A toggle the tab does not show changes nothing, so a hidden control never filters rows. */
-export const appliedToggles = (offered: ViewToggles, toggles: ViewToggles): ViewToggles => ({
+export const appliedToggles = (offered: ViewToggleState, toggles: ViewToggleState): ViewToggleState => ({
 	withSetPotential: offered.withSetPotential && toggles.withSetPotential,
 	onlyBis: offered.onlyBis && toggles.onlyBis,
 });
@@ -162,7 +162,7 @@ export function sourcesView(view: ResultsViewResult, hidden: readonly string[]):
 }
 
 /** Takes the toggles from `appliedToggles`. "Filter by source" applies after this, in `sourcesView`. */
-export function resultsViewFor(run: RunState, { withSetPotential, onlyBis }: ViewToggles): ResultsViewResult | undefined {
+export function resultsViewFor(run: RunState, { withSetPotential, onlyBis }: ViewToggleState): ResultsViewResult | undefined {
 	switch (run.status) {
 		case 'done': {
 			const view = applyView(run.result, { withSetPotential });
