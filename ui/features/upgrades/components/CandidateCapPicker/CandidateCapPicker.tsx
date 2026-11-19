@@ -15,9 +15,9 @@ export interface CandidateCapPickerProps {
 export const CandidateCapPicker = ({ store, onCapChange }: CandidateCapPickerProps) => (
 	<NumberPicker
 		modObject={store}
-		testId="upgrades-candidates-picker"
+		testId="upgrades-candidate-cap-picker"
 		config={{
-			id: 'upgrades-candidates',
+			id: 'upgrades-candidate-cap',
 			label: i18n.t('upgrades_tab.candidates_label', { ns: 'upgrades' }),
 			positive: true,
 			showZeroes: false,

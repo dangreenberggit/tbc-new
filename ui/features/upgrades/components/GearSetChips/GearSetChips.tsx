@@ -32,14 +32,14 @@ const ChipRow = ({ options, selectedKeys, tooltipId, onToggleGearSet }: ChipRowP
 			return (
 				<Chip
 					key={option.key}
-					testId="upgrades-set-chip"
+					testId="upgrades-gear-set-chip"
 					label={option.label}
 					active={selected}
 					disabled={unavailable}
 					onSelect={unavailable ? undefined : () => onToggleGearSet(option.key)}
 					chipTooltipId={tooltipId}
 					tooltip={i18n.t('upgrades_tab.settings.sets_in_pool', { ns: 'upgrades', n: option.inPoolCount, m: option.itemIds.length })}
-					rootProps={{ 'data-set-key': option.key }}
+					rootProps={{ 'data-gear-set-key': option.key }}
 					nameProps={{ 'aria-pressed': selected, 'aria-disabled': unavailable || undefined }}
 				/>
 			);

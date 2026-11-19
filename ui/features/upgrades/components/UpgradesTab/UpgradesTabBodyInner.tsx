@@ -2,7 +2,7 @@ import { RunProgressDialog } from '@features/upgrades/components/RunProgress';
 import { RunSettingsPanel } from '@features/upgrades/components/RunSettingsPanel';
 import { StaleNotice, StatusLine } from '@features/upgrades/components/StatusLine';
 import { UpgradesResults } from '@features/upgrades/components/UpgradesResults';
-import { useFixtureAutoload } from '@features/upgrades/hooks/useFixtureAutoload';
+import { useFixtureWindowHooks } from '@features/upgrades/hooks/useFixtureWindowHooks';
 import { useRunStale } from '@features/upgrades/hooks/useRunStale';
 import { useUpgradesRun } from '@features/upgrades/hooks/useUpgradesRun';
 import { useUpgradesSettings } from '@features/upgrades/hooks/useUpgradesSettings';
@@ -11,14 +11,14 @@ import { specIdFor } from '@features/upgrades/model/run';
 import { inputsSignature, pageInputsSignature } from '@features/upgrades/model/run_inputs';
 import { finishedRanking, measuredOnOf } from '@features/upgrades/model/run_state';
 import { DEV_FLAGS } from '@features/upgrades/utils/dev_flags';
-import { selectRunFn } from '@features/upgrades/utils/select_run_fn';
+import { runFnForFlags } from '@features/upgrades/utils/run_fn_for_flags';
 import { usePlayer, useSim } from '@sim/context/SimHostContext';
 import { useSimReady } from '@sim/hooks/useSimReady';
 import { TabPanelColumns } from '@ui-kit/TabPanelColumns';
 import { useCallback } from 'react';
 
 // Chosen once: the flags are read once per page load, and a production build always gets the live run.
-const RUN_FN = selectRunFn(DEV_FLAGS);
+const RUN_FN = runFnForFlags(DEV_FLAGS);
 
 export const UpgradesTabBodyInner = () => {
 	const sim = useSim();
@@ -35,7 +35,7 @@ export const UpgradesTabBodyInner = () => {
 	const { selectedGearSets } = settings;
 	const onStart = useCallback(() => start(runSettings, signatureNow(), selectedGearSets), [start, runSettings, signatureNow, selectedGearSets]);
 	const specId = measuredOnOf(run)?.specId ?? specIdFor(player.getSpec());
-	useFixtureAutoload({ onLoaded: ranking => loadFixture(ranking, signatureNow(), selectedGearSets), currentRanking: () => finishedRanking(run) });
+	useFixtureWindowHooks({ onLoaded: ranking => loadFixture(ranking, signatureNow(), selectedGearSets), currentRanking: () => finishedRanking(run) });
 
 	return (
 		// `contents`, so the two columns stay the pane's own flex items.

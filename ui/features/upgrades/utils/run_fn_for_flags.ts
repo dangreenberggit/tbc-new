@@ -9,4 +9,4 @@ export const replayFixture =
 	async (host, settings, deps) =>
 		replayRows((await fetchFixture(name)).ranking)(host, settings, deps);
 
-export const selectRunFn = (flags: DevFlags): RunFn => (FIXTURES_ENABLED && flags.replay ? replayFixture(flags.replay) : rankForPlayer);
+export const runFnForFlags = (flags: DevFlags): RunFn => (FIXTURES_ENABLED && flags.replay ? replayFixture(flags.replay) : rankForPlayer);

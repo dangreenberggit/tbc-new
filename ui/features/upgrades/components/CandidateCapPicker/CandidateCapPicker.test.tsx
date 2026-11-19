@@ -8,7 +8,7 @@ import { CandidateCapPicker } from './CandidateCapPicker';
 
 loadEnglishBundles();
 
-const input = () => within(screen.getByTestId('upgrades-candidates-picker')).getByRole('textbox') as HTMLInputElement;
+const input = () => within(screen.getByTestId('upgrades-candidate-cap-picker')).getByRole('textbox') as HTMLInputElement;
 
 /** The settings hook's contract in small: the change writes the tab store, which the picker reads back. */
 const mount = (candidateCap?: number) => {

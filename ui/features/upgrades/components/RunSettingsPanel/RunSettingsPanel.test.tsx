@@ -72,11 +72,11 @@ describe('RunSettingsPanel', () => {
 
 	it('hides the candidate cap unless the dev flag is on', () => {
 		mount();
-		expect(screen.getByTestId('upgrades-candidates-picker').parentElement?.hidden).toBe(true);
+		expect(screen.getByTestId('upgrades-candidate-cap-picker').parentElement?.hidden).toBe(true);
 	});
 
 	it('shows the candidate cap under the dev flag', () => {
 		mount(true);
-		expect(screen.getByTestId('upgrades-candidates-picker').parentElement?.hidden).toBe(false);
+		expect(screen.getByTestId('upgrades-candidate-cap-picker').parentElement?.hidden).toBe(false);
 	});
 });

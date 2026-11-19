@@ -36,13 +36,13 @@ export type FixtureLoadResult = { ok: true; rows: number } | { ok: false; reason
 
 export const FIXTURE_NOT_JSON = 'not_json';
 
-/** What `window.__upgradesRanking` hands the recorder: the ranking plus what it was measured against. */
+/** What `window.__upgradesRecording` hands the recorder: the ranking plus what it was measured against. */
 export type FixtureRecording = { ranking: Ranking; spec: SpecId | undefined; phase: number; gear: unknown };
 
 declare global {
 	interface Window {
 		__upgradesFixture?: (payload: unknown) => Promise<FixtureLoadResult>;
-		__upgradesRanking?: () => FixtureRecording | null;
+		__upgradesRecording?: () => FixtureRecording | null;
 	}
 }
 

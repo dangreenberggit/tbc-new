@@ -26,7 +26,7 @@ const mount = (props: Partial<GearSetChipsProps> = {}) => {
 };
 
 const chip = (key: string) => {
-	const found = screen.getAllByTestId('upgrades-set-chip').find(element => element.dataset.setKey === key);
+	const found = screen.getAllByTestId('upgrades-gear-set-chip').find(element => element.dataset.gearSetKey === key);
 	if (!found) throw new Error(`no chip ${key}`);
 	return within(found).getByRole('button');
 };

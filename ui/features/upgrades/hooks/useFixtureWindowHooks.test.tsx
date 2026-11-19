@@ -34,10 +34,10 @@ const importHook = async (enabled: boolean) => {
 	vi.resetModules();
 	vi.stubEnv('DEV', enabled);
 	vi.stubEnv('VITE_TBC_TAB_FIXTURES', '');
-	const { useFixtureAutoload } = await import('./useFixtureAutoload');
+	const { useFixtureWindowHooks } = await import('./useFixtureWindowHooks');
 	const { SimHostProvider } = await import('@sim/context/SimHostContext');
 	const wrapper = ({ children }: { children: ReactNode }) => <SimHostProvider host={host}>{children}</SimHostProvider>;
-	return (options: Options) => renderHook((props: Options) => useFixtureAutoload(props), { wrapper, initialProps: options });
+	return (options: Options) => renderHook((props: Options) => useFixtureWindowHooks(props), { wrapper, initialProps: options });
 };
 
 const installedLoader = () => {
@@ -50,15 +50,15 @@ afterEach(() => {
 	vi.unstubAllEnvs();
 });
 
-describe('useFixtureAutoload on a dev build', () => {
+describe('useFixtureWindowHooks on a dev build', () => {
 	it('installs both page hooks and removes them on unmount', async () => {
 		const { unmount } = (await importHook(true))({ onLoaded: () => {}, currentRanking: () => undefined });
 		expect(window.__upgradesFixture).toBeTypeOf('function');
-		expect(window.__upgradesRanking).toBeTypeOf('function');
+		expect(window.__upgradesRecording).toBeTypeOf('function');
 
 		unmount();
 		expect(window.__upgradesFixture).toBeUndefined();
-		expect(window.__upgradesRanking).toBeUndefined();
+		expect(window.__upgradesRecording).toBeUndefined();
 	});
 
 	it('loads a fixture into the page and hands its ranking to onLoaded', async () => {
@@ -89,14 +89,14 @@ describe('useFixtureAutoload on a dev build', () => {
 		await installedLoader()(FIXTURE);
 		expect(first).not.toHaveBeenCalled();
 		expect(latest).toHaveBeenCalledOnce();
-		expect(window.__upgradesRanking?.()).toMatchObject({ ranking: RANKING_FIXTURE, spec: 'ret', phase: 2 });
+		expect(window.__upgradesRecording?.()).toMatchObject({ ranking: RANKING_FIXTURE, spec: 'ret', phase: 2 });
 	});
 });
 
-describe('useFixtureAutoload on a production build', () => {
+describe('useFixtureWindowHooks on a production build', () => {
 	it('installs nothing', async () => {
 		(await importHook(false))({ onLoaded: () => {}, currentRanking: () => RANKING_FIXTURE });
 		expect(window.__upgradesFixture).toBeUndefined();
-		expect(window.__upgradesRanking).toBeUndefined();
+		expect(window.__upgradesRecording).toBeUndefined();
 	});
 });

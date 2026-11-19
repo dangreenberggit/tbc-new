@@ -1,5 +1,5 @@
 import type { EligibleCountProps } from '@features/upgrades/components/EligibleCount';
-import type { FixtureAutoloadOptions } from '@features/upgrades/hooks/useFixtureAutoload';
+import type { FixtureWindowHooksOptions } from '@features/upgrades/hooks/useFixtureWindowHooks';
 import type { PoolEntry } from '@features/upgrades/model/engine/pool';
 import type { RunDeps } from '@features/upgrades/model/run';
 import type { RunOutcome, RunSettings } from '@features/upgrades/model/run_state';
@@ -64,8 +64,10 @@ vi.mock('@sim/state/subscriptions', async () =>
 );
 
 /** The fixture hooks install nothing under vitest, so the test calls the loader the body hands them. */
-const autoload: { current?: FixtureAutoloadOptions } = {};
-vi.mock('@features/upgrades/hooks/useFixtureAutoload', () => ({ useFixtureAutoload: (options: FixtureAutoloadOptions) => (autoload.current = options) }));
+const fixtureHooks: { current?: FixtureWindowHooksOptions } = {};
+vi.mock('@features/upgrades/hooks/useFixtureWindowHooks', () => ({
+	useFixtureWindowHooks: (options: FixtureWindowHooksOptions) => (fixtureHooks.current = options),
+}));
 vi.mock('@sim/hooks/useSimReady', () => ({ useSimReady: () => true }));
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
 vi.mock('@features/upgrades/components/RowToggles', () => ({ FavoriteToggle: () => null, BatchToggle: () => null }));
@@ -176,9 +178,9 @@ const RankedSetsProbe = () => {
 /** The sets the tab's chips show as selected. */
 const tabSetKeys = () =>
 	screen
-		.getAllByTestId('upgrades-set-chip')
+		.getAllByTestId('upgrades-gear-set-chip')
 		.filter(chip => chip.querySelector('[aria-pressed="true"]'))
-		.map(chip => chip.dataset.setKey)
+		.map(chip => chip.dataset.gearSetKey)
 		.sort()
 		.join(',');
 const tabIterations = () => (within(screen.getByTestId('upgrades-iterations-picker')).getByRole('textbox') as HTMLInputElement).value;
@@ -268,7 +270,7 @@ describe('UpgradesTabBody', () => {
 		expect(probe('ranked-sets')).toBe('preset:3:P3');
 
 		act(() => patchSlice(current.store, 'sim', { phase: 4 }));
-		act(() => autoload.current?.onLoaded(RANKING_FIXTURE));
+		act(() => fixtureHooks.current?.onLoaded(RANKING_FIXTURE));
 		expect(probe('ranked-sets')).toBe('preset:4:P4');
 	});
 
@@ -290,13 +292,13 @@ describe('UpgradesTabBody', () => {
 
 	it('shows a loaded fixture as current with no runner, and as stale once a setting changes', () => {
 		mount();
-		act(() => autoload.current?.onLoaded(RANKING_FIXTURE));
+		act(() => fixtureHooks.current?.onLoaded(RANKING_FIXTURE));
 
 		expect(screen.getByTestId('upgrades-baseline-summary').textContent).toBe('Your current gear: 2,084.2 DPS.');
 		expect(tabRoot().dataset.runner).toBeUndefined();
 		expect(screen.queryByTestId('upgrades-stale')).toBeNull();
 
-		const chip = screen.getAllByTestId('upgrades-set-chip').find(element => element.dataset.setKey === 'preset:3:P3');
+		const chip = screen.getAllByTestId('upgrades-gear-set-chip').find(element => element.dataset.gearSetKey === 'preset:3:P3');
 		if (!chip) throw new Error('no P3 chip');
 		fireEvent.click(within(chip).getByRole('button'));
 		expect(screen.getByTestId('upgrades-stale')).not.toBeNull();
