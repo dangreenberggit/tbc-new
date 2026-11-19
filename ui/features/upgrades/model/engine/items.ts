@@ -47,7 +47,7 @@ export function socketsFor(itemId: number): number[] {
 }
 
 /**
- * Whether the slot takes a permanent enchant at all. Approximate: callers gate on
+ * Whether the slot takes a permanent enchant at all. Approximate: callers rely on
  * `enchantAppliesToItem` (enchants.ts), not on this.
  */
 export function isEnchantable(itemId: number): boolean {

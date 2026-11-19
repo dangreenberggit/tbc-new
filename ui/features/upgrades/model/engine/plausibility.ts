@@ -32,11 +32,11 @@ export type DeadSlotWarning = {
 
 export type PlausibilityWarning = ImplausibleSetBonusWarning | DeadSlotWarning;
 
-export type MagnitudeGateOptions = {
+export type MagnitudeWarningOptions = {
 	baselineDps: number;
 };
 
-export function setBonusMagnitudeWarnings(bonuses: readonly SetBonusValue[], options: MagnitudeGateOptions): ImplausibleSetBonusWarning[] {
+export function setBonusMagnitudeWarnings(bonuses: readonly SetBonusValue[], options: MagnitudeWarningOptions): ImplausibleSetBonusWarning[] {
 	if (!(options.baselineDps > 0)) return [];
 
 	const warnings: ImplausibleSetBonusWarning[] = [];

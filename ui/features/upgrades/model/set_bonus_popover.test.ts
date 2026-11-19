@@ -88,7 +88,7 @@ describe('setBonusPopoverLines', () => {
 	});
 
 	it('gives nothing for a set row whose only line would repeat the figure', () => {
-		// Lightbringer Breastplate as a ranking that did not measure steps: its future bonuses are below the gate and it breaks nothing.
+		// Lightbringer Breastplate as a ranking that did not measure steps: its future bonuses are within the noise and it breaks nothing.
 		const { stepRanking: _, ...notStepped } = fixtureRow(4).setContext!;
 		const row: RankedItem = { ...fixtureRow(4), setContext: notStepped };
 		expect(setBonusPopoverLines(row, context)).toBeNull();
@@ -288,11 +288,11 @@ describe('setBonusPopoverLines', () => {
 			expect(popover?.entries).toContainEqual({ type: 'line', label: { kind: 'screened', set: LIGHTBRINGER, reason: 'exact-zero' }, dps: undefined });
 		});
 
-		it('names each bonus within the noise gate, with no figure, in both states', () => {
+		it('names each bonus within the noise, with no figure, in both states', () => {
 			const row = stepRow({
 				futureBonuses: [
-					future({ belowGate: true, stepGearDps: undefined }),
-					future({ threshold: 4, piecesNeeded: 3, sameGearDps: 0, belowGate: true, stepGearDps: undefined }),
+					future({ belowNoise: true, stepGearDps: undefined }),
+					future({ threshold: 4, piecesNeeded: 3, sameGearDps: 0, belowNoise: true, stepGearDps: undefined }),
 				],
 			});
 			const noise = (threshold: number) => ({ type: 'line', label: { kind: 'noise', set: LIGHTBRINGER, threshold }, dps: undefined });
@@ -304,8 +304,8 @@ describe('setBonusPopoverLines', () => {
 			}
 		});
 
-		it('names no bonus within the noise when another bonus of the set clears the gate', () => {
-			const row = stepRow({ futureBonuses: [future(), future({ threshold: 4, piecesNeeded: 3, belowGate: true, stepGearDps: undefined })] });
+		it('names no bonus within the noise when another bonus of the set clears the noise check', () => {
+			const row = stepRow({ futureBonuses: [future(), future({ threshold: 4, piecesNeeded: 3, belowNoise: true, stepGearDps: undefined })] });
 			expect(setBonusPopoverLines(row, context)?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_off' }, reachable(26)]);
 		});
 
@@ -371,7 +371,7 @@ describe('setBonusPopoverLines', () => {
 			});
 
 			it('compares the gap with twice the two step gears’ standard errors added in quadrature', () => {
-				// A 10.5 gap. Either error alone at 6 hides it (2 × 6 = 12), so a gate that read only the other one would show it.
+				// A 10.5 gap. Either error alone at 6 hides it (2 × 6 = 12), so a check that read only the other one would show it.
 				// Both at 4 hide it only together: 2 × √32 = 11.31, but 2 × 4 = 8. At 3, the cutoff 3 and 2 × √18 = 8.49 do not.
 				for (const [stopSe, stepSe, expected] of [
 					[6, 0, pastStop4(undefined)],

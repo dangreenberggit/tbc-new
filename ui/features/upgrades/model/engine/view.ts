@@ -14,7 +14,7 @@ import { type Cutoff, meetsCutoff, setBonusNoiseFloorDps } from './cutoff';
 import { getItem } from './items';
 import { type ItemSource, simSlotsForPoolSlot, sourceMatchesBoss } from './pool';
 import type { RankedItem, Ranking, SetContext } from './rank';
-import { clearsSameGearGate } from './set-less-copies';
+import { clearsSameGearNoise } from './set-less-copies';
 import { bonusKey, brokenSetBonuses, nextImplementedThreshold, type SetThreshold } from './set-value';
 import { SIM_ORDER } from './slots';
 import type { SpecId } from './types';
@@ -209,14 +209,14 @@ export function setCreditUnmeasured(ctx: SetContextLike | undefined): boolean {
 
 /**
  * With `stepRanking`, whether one bonus makes the row's credit 0: it has no
- * `sameGearDps` and is not `belowGate`, or it has one but lacks `stepGearDps` or
+ * `sameGearDps` and is not `belowNoise`, or it has one but lacks `stepGearDps` or
  * its partner pieces (`partnerUnmeasured`). Exported so the tab's popover lists
  * the same bonuses.
  */
 export function stepFutureUnmeasured(
-	f: Pick<NonNullable<SetContext['futureBonuses']>[number], 'belowGate' | 'sameGearDps' | 'stepGearDps' | 'partnerUnmeasured'>,
+	f: Pick<NonNullable<SetContext['futureBonuses']>[number], 'belowNoise' | 'sameGearDps' | 'stepGearDps' | 'partnerUnmeasured'>,
 ): boolean {
-	if (f.belowGate) return false;
+	if (f.belowNoise) return false;
 	if (f.sameGearDps === undefined) return true;
 	return f.stepGearDps === undefined || f.partnerUnmeasured !== undefined;
 }
@@ -380,11 +380,11 @@ function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: 
 
 /**
  * With `stepRanking`, whether a bonus can be the stopping point: it has a
- * `sameGearDps` that passes `clearsSameGearGate`.
+ * `sameGearDps` that passes `clearsSameGearNoise`.
  */
-export function stepEligible(future: Pick<FutureBonus, 'belowGate' | 'sameGearDps' | 'sameGearSe'>, cutoff: Cutoff): boolean {
-	if (future.belowGate || future.sameGearDps === undefined) return false;
-	return clearsSameGearGate(future.sameGearDps, future.sameGearSe ?? 0, cutoff);
+export function stepEligible(future: Pick<FutureBonus, 'belowNoise' | 'sameGearDps' | 'sameGearSe'>, cutoff: Cutoff): boolean {
+	if (future.belowNoise || future.sameGearDps === undefined) return false;
+	return clearsSameGearNoise(future.sameGearDps, future.sameGearSe ?? 0, cutoff);
 }
 
 /**

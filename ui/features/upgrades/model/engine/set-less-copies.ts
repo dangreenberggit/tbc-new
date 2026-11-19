@@ -212,6 +212,6 @@ export async function measureWornSetCounts(
  * is held to the cutoff itself, not to `setBonusNoiseFloorDps`, which is for a four-sim
  * figure. It takes the `Cutoff`, not a number, so that floor cannot be passed in.
  */
-export function clearsSameGearGate(dps: number, se: number, cutoff: Cutoff): boolean {
+export function clearsSameGearNoise(dps: number, se: number, cutoff: Cutoff): boolean {
 	return dps > Math.max(cutoff.absDps, 2 * se);
 }

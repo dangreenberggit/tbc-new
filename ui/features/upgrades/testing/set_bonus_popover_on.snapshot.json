@@ -35,7 +35,7 @@
 					"packageDeltaDps": 0,
 					"sameGearDps": 0,
 					"sameGearSe": 1.9164516861791208,
-					"belowGate": true
+					"belowNoise": true
 				},
 				{
 					"setId": 676,
@@ -60,7 +60,7 @@
 					"packageDeltaDps": 0,
 					"sameGearDps": 0,
 					"sameGearSe": 2.2004507200038064,
-					"belowGate": true
+					"belowNoise": true
 				},
 				{
 					"setId": 641,
@@ -71,7 +71,7 @@
 					"packageDeltaDps": 0,
 					"sameGearDps": 0,
 					"sameGearSe": 2.0272436471821083,
-					"belowGate": true
+					"belowNoise": true
 				},
 				{
 					"setId": 641,
@@ -82,7 +82,7 @@
 					"packageDeltaDps": 0,
 					"sameGearDps": 0,
 					"sameGearSe": 1.9186834027176658,
-					"belowGate": true
+					"belowNoise": true
 				},
 				{
 					"setId": 641,
@@ -107,7 +107,7 @@
 					"packageDeltaDps": 0,
 					"sameGearDps": 0,
 					"sameGearSe": 2.0662743664075025,
-					"belowGate": true
+					"belowNoise": true
 				},
 				{
 					"setId": 640,
@@ -140,7 +140,7 @@
 					"packageDeltaDps": 0,
 					"sameGearDps": 0,
 					"sameGearSe": 2.231431378136164,
-					"belowGate": true
+					"belowNoise": true
 				},
 				{
 					"setId": 619,
@@ -290,7 +290,7 @@
 								"stepGearDps": 56.53021214104638,
 								"stepGearSe": 2.0330120899646245
 							},
-							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowGate": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowNoise": true },
 							{
 								"threshold": 4,
 								"piecesNeeded": 4,
@@ -310,7 +310,7 @@
 								"bonusOffSe": 1.9875481864130171,
 								"bonusOff": [{ "setId": 640, "threshold": 2 }]
 							},
-							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowNoise": true }
 						],
 						"commitBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
 						"commitPackageDeltaDps": 107.66643865691367,
@@ -400,7 +400,7 @@
 								"stepGearDps": 56.53021214104638,
 								"stepGearSe": 2.0330120899646245
 							},
-							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowGate": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowNoise": true },
 							{
 								"threshold": 4,
 								"piecesNeeded": 4,
@@ -420,7 +420,7 @@
 								"bonusOffSe": 1.9875481864130171,
 								"bonusOff": [{ "setId": 640, "threshold": 2 }]
 							},
-							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowNoise": true }
 						],
 						"commitBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
 						"commitPackageDeltaDps": 107.66643865691367,
@@ -513,7 +513,7 @@
 								"stepGearDps": 42.3023871494147,
 								"stepGearSe": 1.9773341621342062
 							},
-							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowGate": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowNoise": true },
 							{
 								"threshold": 4,
 								"piecesNeeded": 4,
@@ -530,7 +530,7 @@
 								"stepGearDps": 107.66643865691367,
 								"stepGearSe": 2.0209983760134684
 							},
-							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowNoise": true }
 						],
 						"commitPackageDeltaDps": 107.66643865691367,
 						"packages": [
@@ -622,7 +622,7 @@
 								"stepGearDps": 42.3023871494147,
 								"stepGearSe": 1.9773341621342062
 							},
-							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowGate": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowNoise": true },
 							{
 								"threshold": 4,
 								"piecesNeeded": 4,
@@ -639,7 +639,7 @@
 								"stepGearDps": 107.66643865691367,
 								"stepGearSe": 2.0209983760134684
 							},
-							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowNoise": true }
 						],
 						"commitPackageDeltaDps": 107.66643865691367,
 						"packages": [
@@ -717,8 +717,8 @@
 						"stepRanking": true,
 						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
 						"futureBonuses": [
-							{ "threshold": 2, "piecesNeeded": 2, "sameGearDps": 0, "sameGearSe": 2.0272436471821083, "belowGate": true },
-							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9186834027176658, "belowGate": true },
+							{ "threshold": 2, "piecesNeeded": 2, "sameGearDps": 0, "sameGearSe": 2.0272436471821083, "belowNoise": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9186834027176658, "belowNoise": true },
 							{
 								"threshold": 4,
 								"piecesNeeded": 4,
@@ -735,7 +735,7 @@
 								"stepGearDps": -54.137911085680116,
 								"stepGearSe": 2.0116419279743196
 							},
-							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.0662743664075025, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.0662743664075025, "belowNoise": true }
 						],
 						"commitPackageDeltaDps": -54.137911085680116,
 						"packages": [{ "threshold": 4, "deltaDps": -54.137911085680116, "itemIds": [30230, 30222, 30223, 30229], "piecesNeeded": 4 }],
@@ -805,8 +805,8 @@
 						"stepRanking": true,
 						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
 						"futureBonuses": [
-							{ "threshold": 2, "piecesNeeded": 2, "sameGearDps": 0, "sameGearSe": 2.0272436471821083, "belowGate": true },
-							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9186834027176658, "belowGate": true },
+							{ "threshold": 2, "piecesNeeded": 2, "sameGearDps": 0, "sameGearSe": 2.0272436471821083, "belowNoise": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9186834027176658, "belowNoise": true },
 							{
 								"threshold": 4,
 								"piecesNeeded": 4,
@@ -823,7 +823,7 @@
 								"stepGearDps": -54.137911085680116,
 								"stepGearSe": 2.0116419279743196
 							},
-							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.0662743664075025, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.0662743664075025, "belowNoise": true }
 						],
 						"commitPackageDeltaDps": -54.137911085680116,
 						"packages": [{ "threshold": 4, "deltaDps": -54.137911085680116, "itemIds": [30230, 30222, 30223, 30229], "piecesNeeded": 4 }],
@@ -903,7 +903,7 @@
 								"stepGearDps": -12.672186871306167,
 								"stepGearSe": 2.076556306689719
 							},
-							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowGate": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 1.9164516861791208, "belowNoise": true },
 							{
 								"threshold": 4,
 								"piecesNeeded": 4,
@@ -923,7 +923,7 @@
 								"bonusOffSe": 2.0735327361612605,
 								"bonusOff": [{ "setId": 640, "threshold": 2 }]
 							},
-							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.2004507200038064, "belowNoise": true }
 						],
 						"commitBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
 						"commitPackageDeltaDps": 107.66643865691367,
@@ -1008,7 +1008,7 @@
 								"stepGearDps": -184.160238547875,
 								"stepGearSe": 2.1529762990387282
 							},
-							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowNoise": true }
 						],
 						"commitPackageDeltaDps": -44.47604913598707,
 						"singleDeltaDps": -191.34549140617764
@@ -1076,7 +1076,7 @@
 					"packageDeltaDps": 0,
 					"sameGearDps": 0,
 					"sameGearSe": 2.191645723187992,
-					"belowGate": true
+					"belowNoise": true
 				},
 				{
 					"setId": 641,
@@ -1109,7 +1109,7 @@
 					"packageDeltaDps": 0,
 					"sameGearDps": 0,
 					"sameGearSe": 2.0753931415199642,
-					"belowGate": true
+					"belowNoise": true
 				},
 				{
 					"setId": 640,
@@ -1138,7 +1138,7 @@
 					"packageDeltaDps": 0,
 					"sameGearDps": 0,
 					"sameGearSe": 2.231431378136164,
-					"belowGate": true
+					"belowNoise": true
 				},
 				{
 					"setId": 619,
@@ -1288,7 +1288,7 @@
 								"stepGearDps": 100.36788461793321,
 								"stepGearSe": 1.9477160217590683
 							},
-							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.191645723187992, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.191645723187992, "belowNoise": true }
 						],
 						"commitPackageDeltaDps": 100.36788461793321,
 						"packages": [{ "threshold": 4, "deltaDps": 100.36788461793321, "itemIds": [31048, 31042], "piecesNeeded": 2 }],
@@ -1361,7 +1361,7 @@
 								"stepGearDps": 50.1827615253992,
 								"stepGearSe": 1.9601647644814157
 							},
-							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowGate": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowNoise": true },
 							{
 								"threshold": 4,
 								"piecesNeeded": 4,
@@ -1378,7 +1378,7 @@
 								"stepGearDps": -32.8140865720552,
 								"stepGearSe": 1.9593184508791375
 							},
-							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowNoise": true }
 						],
 						"commitBreaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
 						"commitPackageDeltaDps": -177.20656475370288,
@@ -1456,7 +1456,7 @@
 								"stepGearDps": 100.36788461793321,
 								"stepGearSe": 1.9477160217590683
 							},
-							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.191645723187992, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.191645723187992, "belowNoise": true }
 						],
 						"commitPackageDeltaDps": 100.36788461793321,
 						"packages": [{ "threshold": 4, "deltaDps": 100.36788461793321, "itemIds": [31048, 31042], "piecesNeeded": 2 }],
@@ -1529,7 +1529,7 @@
 								"stepGearDps": 50.1827615253992,
 								"stepGearSe": 1.9601647644814157
 							},
-							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowGate": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowNoise": true },
 							{
 								"threshold": 4,
 								"piecesNeeded": 4,
@@ -1546,7 +1546,7 @@
 								"stepGearDps": -32.8140865720552,
 								"stepGearSe": 1.9593184508791375
 							},
-							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowNoise": true }
 						],
 						"commitBreaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
 						"commitPackageDeltaDps": -177.20656475370288,
@@ -1626,7 +1626,7 @@
 								"stepGearDps": 38.20534530414989,
 								"stepGearSe": 2.04742586342232
 							},
-							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.191645723187992, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.191645723187992, "belowNoise": true }
 						],
 						"commitPackageDeltaDps": 100.36788461793321,
 						"singleDeltaDps": -69.850955606345
@@ -1701,7 +1701,7 @@
 								"stepGearDps": -14.990957059491393,
 								"stepGearSe": 1.9886066507101476
 							},
-							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowGate": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowNoise": true },
 							{
 								"threshold": 4,
 								"piecesNeeded": 4,
@@ -1718,7 +1718,7 @@
 								"stepGearDps": -177.20656475370288,
 								"stepGearSe": 2.0686890231629573
 							},
-							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowNoise": true }
 						],
 						"commitBreaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
 						"commitPackageDeltaDps": -177.20656475370288,
@@ -1797,7 +1797,7 @@
 								"stepGearDps": -24.325749199125312,
 								"stepGearSe": 1.9617915354895448
 							},
-							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowGate": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowNoise": true },
 							{
 								"threshold": 4,
 								"piecesNeeded": 4,
@@ -1814,7 +1814,7 @@
 								"stepGearDps": -32.8140865720552,
 								"stepGearSe": 1.9593184508791375
 							},
-							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowNoise": true }
 						],
 						"commitPackageDeltaDps": -177.20656475370288,
 						"packages": [
@@ -1893,7 +1893,7 @@
 								"stepGearDps": -21.193620341134647,
 								"stepGearSe": 1.9617481906341554
 							},
-							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowGate": true },
+							{ "threshold": 3, "piecesNeeded": 3, "sameGearDps": 0, "sameGearSe": 2.0753931415199642, "belowNoise": true },
 							{
 								"threshold": 4,
 								"piecesNeeded": 4,
@@ -1910,7 +1910,7 @@
 								"stepGearDps": -32.8140865720552,
 								"stepGearSe": 1.9593184508791375
 							},
-							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowGate": true }
+							{ "threshold": 5, "piecesNeeded": 5, "sameGearDps": 0, "sameGearSe": 2.231431378136164, "belowNoise": true }
 						],
 						"commitPackageDeltaDps": -177.20656475370288,
 						"singleDeltaDps": -111.39438168644483

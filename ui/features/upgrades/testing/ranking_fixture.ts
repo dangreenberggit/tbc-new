@@ -113,8 +113,8 @@ export const RANKING_FIXTURE: Ranking = {
 				crossesThreshold: false,
 				stepRanking: true,
 				futureBonuses: [
-					{ threshold: 2, piecesNeeded: 2, sameGearDps: -2.6294543346361934, sameGearSe: 3.181413317205621, belowGate: true },
-					{ threshold: 4, piecesNeeded: 4, sameGearDps: 0, sameGearSe: 3.2085991552325717, belowGate: true },
+					{ threshold: 2, piecesNeeded: 2, sameGearDps: -2.6294543346361934, sameGearSe: 3.181413317205621, belowNoise: true },
+					{ threshold: 4, piecesNeeded: 4, sameGearDps: 0, sameGearSe: 3.2085991552325717, belowNoise: true },
 				],
 				singleDeltaDps: 3.947966739203366,
 			},

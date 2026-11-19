@@ -7,7 +7,7 @@
 
 import type { Cutoff } from './engine/cutoff';
 import type { RankedItem, Ranking, SetContext } from './engine/rank';
-import { clearsSameGearGate } from './engine/set-less-copies';
+import { clearsSameGearNoise } from './engine/set-less-copies';
 import type { ScreenReason } from './engine/set-screen';
 import { bonusKey } from './engine/set-value';
 import type { SpecId } from './engine/types';
@@ -194,7 +194,7 @@ function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopTh
 			// `Math.hypot` of their errors counts the baseline's error twice. The test
 			// leans toward "too small to measure".
 			const belowNoise =
-				stop !== undefined && dps !== undefined && !clearsSameGearGate(Math.abs(dps), Math.hypot(f.stepGearSe ?? 0, stop.stepGearSe ?? 0), cutoff);
+				stop !== undefined && dps !== undefined && !clearsSameGearNoise(Math.abs(dps), Math.hypot(f.stepGearSe ?? 0, stop.stepGearSe ?? 0), cutoff);
 			return {
 				type: 'line',
 				label: {
@@ -221,7 +221,7 @@ function noiseLines(ctx: SetContext, cutoff: Cutoff): PopoverEntry[] {
 	const futureBonuses = ctx.futureBonuses ?? [];
 	if (!ctx.stepRanking || futureBonuses.some(f => stepEligible(f, cutoff))) return [];
 	return futureBonuses
-		.filter(f => f.belowGate)
+		.filter(f => f.belowNoise)
 		.sort((a, b) => a.threshold - b.threshold)
 		.map(f => line({ kind: 'noise', set: ctx.setName, threshold: f.threshold }, undefined));
 }

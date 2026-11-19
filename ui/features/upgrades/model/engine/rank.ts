@@ -65,7 +65,7 @@ import {
 	applyCopies,
 	applySetLessCopies,
 	type BuildFailure,
-	clearsSameGearGate,
+	clearsSameGearNoise,
 	errorText,
 	isBuildFailure,
 	isSimFailure,
@@ -303,7 +303,7 @@ export type SetContext = {
 		sameGearDps?: number;
 		sameGearSe?: number;
 		/** Not above noise on its own gear, so no other sim ran for it. */
-		belowGate?: true;
+		belowNoise?: true;
 		/**
 		 * The sim of the current gear plus this row plus its partner pieces, minus
 		 * the sim of the current gear, and that difference's standard error.
@@ -386,7 +386,8 @@ export type WornSetCountEntry = {
 	counted: boolean;
 };
 
-export type CrossingGate = {
+/** Whether one more piece of a worn set reaches a bonus: the bonus at that count, measured on one candidate's own swap, and whether it clears the noise check. */
+export type CrossingCheck = {
 	setId: number;
 	/** One more than the worn count: the count a one-item swap reaches. */
 	count: number;
@@ -468,7 +469,7 @@ export type SetBonusValue = {
 	 * `sameGearDps` is not above noise, so this count is no bonus here and no
 	 * other sim ran for it: `packageDeltaDps` is 0 and `bonusDps` is absent.
 	 */
-	belowGate?: true;
+	belowNoise?: true;
 	unmeasured?: UnmeasuredReason;
 	breaks?: BrokenSetBonus[];
 	selfConfound?: SelfSetConfound;
@@ -520,7 +521,7 @@ export type Ranking = {
 	 * candidate's own swap. A row reaches a bonus only when its count's check
 	 * `cleared`. Present only with `measureSetBonuses`.
 	 */
-	crossingGates?: CrossingGate[];
+	crossingChecks?: CrossingCheck[];
 	/**
 	 * The sims of each set row plus its partner pieces: the partner rule, the
 	 * number of distinct gears, and how many sims ran or came from the store.
@@ -1346,7 +1347,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				setBonusResult.firstSlotIndexByItemId,
 				ownDeltasByItemId,
 				countsAsBreak,
-				stepPath ? { crossingGates: setBonusResult.crossingGates } : undefined,
+				stepPath ? { crossingChecks: setBonusResult.crossingChecks } : undefined,
 				setBonusResult.setIdsNotValued,
 			);
 		}
@@ -1487,7 +1488,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			...(setBonuses.length > 0 ? { setBonuses } : {}),
 			...(setBonusResult.brokenSetValues.length > 0 ? { brokenSetValues: setBonusResult.brokenSetValues } : {}),
 			...(setBonusResult.wornSetLadder.length > 0 ? { wornSetLadder: setBonusResult.wornSetLadder } : {}),
-			...(setBonusResult.crossingGates.length > 0 ? { crossingGates: setBonusResult.crossingGates } : {}),
+			...(setBonusResult.crossingChecks.length > 0 ? { crossingChecks: setBonusResult.crossingChecks } : {}),
 			...(steps ? { setStepSims: steps.setStepSims } : {}),
 			...(steps ? { setBonusOffSims: steps.bonusOffSims } : {}),
 			...(steps?.partnerAudit ? { partnerAudit: steps.partnerAudit } : {}),
@@ -1623,7 +1624,7 @@ async function buildSetBonuses(
 	brokenSetValues: BrokenSetValue[];
 	/** The worn sets' DPS at each piece count. Stored name: "ladder" is the list of counts. */
 	wornSetLadder: WornSetCountEntry[];
-	crossingGates: CrossingGate[];
+	crossingChecks: CrossingCheck[];
 	/**
 	 * The first SIM_ORDER slot each item fits; nothing is compared. For
 	 * `applySetContext` to find each row's losses.
@@ -1869,7 +1870,7 @@ async function buildSetBonuses(
 			bonuses: [],
 			brokenSetValues,
 			wornSetLadder,
-			crossingGates: [],
+			crossingChecks: [],
 			firstSlotIndexByItemId: new Map(),
 			setIdsNotValued: [],
 			...(setScreen ? { setScreen } : {}),
@@ -2029,7 +2030,7 @@ async function buildSetBonuses(
 					continue;
 				}
 				sameGear = measured;
-				if (!clearsSameGearGate(sameGear.dps, sameGear.se, cutoff)) {
+				if (!clearsSameGearNoise(sameGear.dps, sameGear.se, cutoff)) {
 					results.push({
 						setId,
 						setName: label,
@@ -2039,12 +2040,12 @@ async function buildSetBonuses(
 						packageDeltaDps: 0,
 						sameGearDps: sameGear.dps,
 						sameGearSe: sameGear.se,
-						belowGate: true,
+						belowNoise: true,
 					});
 					continue;
 				}
 			}
-			const gateFields = sameGear ? { sameGearDps: sameGear.dps, sameGearSe: sameGear.se } : {};
+			const sameGearFields = sameGear ? { sameGearDps: sameGear.dps, sameGearSe: sameGear.se } : {};
 			const addedPiecesNotMeasured = (reason: SkipReason) => {
 				bonusNotMeasured(label, threshold, reason);
 				results.push({
@@ -2054,7 +2055,7 @@ async function buildSetBonuses(
 					piecesWorn,
 					packageItemIds: addedPieces.map(p => p.itemId),
 					packageDeltaDps: 0,
-					...gateFields,
+					...sameGearFields,
 					unmeasured: 'sim-failed',
 				});
 				if (threshold === 2) twoPieceFailed = true;
@@ -2162,7 +2163,7 @@ async function buildSetBonuses(
 				packageItemIds: addedPieces.map(p => p.itemId),
 				packageDeltaDps: bonusValue.packageDeltaDps,
 				...(missingTwoPiece ? {} : { bonusDps: bonusValue.bonusDps, se: bonusValue.se }),
-				...gateFields,
+				...sameGearFields,
 				...(breaks.length > 0 ? { breaks } : {}),
 				...(selfConfound ? { selfConfound } : {}),
 				...(gearRepairRecolours.length > 0
@@ -2185,7 +2186,7 @@ async function buildSetBonuses(
 	// candidate in a slot the set does not fill, on that set's best such
 	// candidate's own swap, so `crossesThreshold` reads a measurement rather
 	// than the fixed table in `isBonusImplemented`.
-	const crossingGates: CrossingGate[] = [];
+	const crossingChecks: CrossingCheck[] = [];
 	if (measureSetBonuses) {
 		for (const setId of [...setIdsWithCandidates].sort((a, b) => a - b)) {
 			const worn = wornCounts.get(setId) ?? 0;
@@ -2215,9 +2216,9 @@ async function buildSetBonuses(
 			// A copy's failed gem repair leaves this check unmeasured with no line,
 			// as a failed repair of the swap itself does above.
 			let layoutRepairFailed = false;
-			const gateResult = crossingBuild
+			const nextPieceMeasured = crossingBuild
 				? await measureSameGearBonus(
-						cachedSampleRun(`${crossingLabel} ${worn + 1}pc crossing gate`),
+						cachedSampleRun(`${crossingLabel} ${worn + 1}pc crossing check`),
 						composeFor(crossingBuild.equipment),
 						crossingBuild.equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])),
 						worn,
@@ -2236,7 +2237,7 @@ async function buildSetBonuses(
 						},
 					)
 				: undefined;
-			const measured = layoutRepairFailed ? undefined : gateResult;
+			const measured = layoutRepairFailed ? undefined : nextPieceMeasured;
 			if (isSimFailure(measured)) {
 				bonusNotMeasured(crossingLabel, worn + 1, SET_BONUS_SKIP_REASONS.simFailed(measured.simError));
 			}
@@ -2244,12 +2245,12 @@ async function buildSetBonuses(
 				bonusNotMeasured(crossingLabel, worn + 1, SET_BONUS_SKIP_REASONS.notBuilt(measured.buildError));
 			}
 			const value = isSimFailure(measured) || isBuildFailure(measured) ? undefined : measured;
-			crossingGates.push({
+			crossingChecks.push({
 				setId,
 				count: worn + 1,
 				itemId: best.itemId,
 				...(value ? { dps: value.dps, se: value.se } : {}),
-				cleared: value !== undefined && clearsSameGearGate(value.dps, value.se, cutoff),
+				cleared: value !== undefined && clearsSameGearNoise(value.dps, value.se, cutoff),
 			});
 		}
 	}
@@ -2322,7 +2323,7 @@ async function buildSetBonuses(
 		bonuses: results,
 		brokenSetValues,
 		wornSetLadder,
-		crossingGates,
+		crossingChecks,
 		firstSlotIndexByItemId,
 		setIdsNotValued,
 		...(setScreen ? { setScreen } : {}),
@@ -2447,7 +2448,7 @@ async function measureSetSteps(args: {
 		if (!ownDelta) continue;
 		ctx.singleDeltaDps = ownDelta.deltaDps;
 		const eligible = (ctx.futureBonuses ?? []).filter(
-			f => !f.belowGate && f.sameGearDps !== undefined && clearsSameGearGate(f.sameGearDps, f.sameGearSe ?? 0, args.cutoff),
+			f => !f.belowNoise && f.sameGearDps !== undefined && clearsSameGearNoise(f.sameGearDps, f.sameGearSe ?? 0, args.cutoff),
 		);
 		if (eligible.length === 0) continue;
 
@@ -2779,9 +2780,9 @@ async function measureSetSteps(args: {
 
 /** The highest-count measured entry with added pieces, for `commitBreaks`. */
 function topMeasuredBonus(bonusesForSet: readonly SetBonusValue[]): SetBonusValue | undefined {
-	// A `belowGate` entry lists added pieces but never simmed them.
+	// A `belowNoise` entry lists added pieces but never simmed them.
 	return [...bonusesForSet]
-		.filter(b => b.unmeasured === undefined && !b.belowGate && b.packageItemIds.length > 0)
+		.filter(b => b.unmeasured === undefined && !b.belowNoise && b.packageItemIds.length > 0)
 		.sort((a, b) => b.threshold - a.threshold)[0];
 }
 
@@ -2976,7 +2977,7 @@ async function measureWornSets(
 			const counted =
 				countValue.unmeasured !== undefined
 					? (bonusCounts?.has(countValue.count) ?? true)
-					: countValue.dps !== undefined && clearsSameGearGate(countValue.dps, countValue.se ?? 0, cutoff);
+					: countValue.dps !== undefined && clearsSameGearNoise(countValue.dps, countValue.se ?? 0, cutoff);
 			entries.push({ setId, setName, ...countValue, counted });
 		}
 	}
@@ -3040,18 +3041,18 @@ function countsAsBreakFrom(wornSetCounts: readonly WornSetCountEntry[]): CountsA
 
 /**
  * The smallest entry count above `after` whose bonus was above noise on its
- * own gear, or null. An entry has `sameGearDps` without `belowGate` exactly
+ * own gear, or null. An entry has `sameGearDps` without `belowNoise` exactly
  * when it was.
  */
 function nextClearedThreshold(bonusesForSet: readonly SetBonusValue[], after: number): SetThreshold | null {
-	const counts = bonusesForSet.filter(b => b.threshold > after && b.sameGearDps !== undefined && !b.belowGate).map(b => b.threshold);
+	const counts = bonusesForSet.filter(b => b.threshold > after && b.sameGearDps !== undefined && !b.belowNoise).map(b => b.threshold);
 	return counts.length > 0 ? Math.min(...counts) : null;
 }
 
 export function bonusesWithItem(itemId: number, bonusesForSet: readonly SetBonusValue[]): AddedPiecesContext[] | undefined {
-	// A `belowGate` entry's pieces were never simmed, so its `packageDeltaDps`
+	// A `belowNoise` entry's pieces were never simmed, so its `packageDeltaDps`
 	// of 0 is not a measurement.
-	const measured = bonusesForSet.filter(b => b.unmeasured === undefined && !b.belowGate);
+	const measured = bonusesForSet.filter(b => b.unmeasured === undefined && !b.belowNoise);
 	if (!measured.some(b => b.packageItemIds.includes(itemId))) {
 		return undefined;
 	}
@@ -3075,12 +3076,12 @@ function applySetContext(
 	ownDeltasByItemId: ReadonlyMap<number, OwnDelta> = new Map(),
 	countsAsBreak: CountsAsBreak = isBonusImplemented,
 	/**
-	 * Present exactly with `measureSetBonuses`: the `crossingGates`, so the
+	 * Present exactly with `measureSetBonuses`: the `crossingChecks`, so the
 	 * reached and next counts read measurements instead of the
 	 * `isBonusImplemented` table, and every entry above the swap's count
 	 * becomes a future bonus.
 	 */
-	stepPath?: { crossingGates: readonly CrossingGate[] },
+	stepPath?: { crossingChecks: readonly CrossingCheck[] },
 	setIdsNotValued: readonly number[] = [],
 ): void {
 	const wornCounts = setCounts(equipment);
@@ -3107,9 +3108,9 @@ function applySetContext(
 		const piecesWornBefore = wornCounts.get(setId) ?? 0;
 		const piecesAfterSwap = item.owned ? piecesWornBefore : piecesWornBefore + 1;
 		// With `measureSetBonuses`, one more piece reaches a bonus only when
-		// that count's `crossingGates` entry cleared, and the next bonus is the
+		// that count's `crossingChecks` entry cleared, and the next bonus is the
 		// next count above noise. No table is read.
-		const crossingCleared = stepPath?.crossingGates.some(g => g.setId === setId && g.count === piecesWornBefore + 1 && g.cleared) ?? false;
+		const crossingCleared = stepPath?.crossingChecks.some(g => g.setId === setId && g.count === piecesWornBefore + 1 && g.cleared) ?? false;
 		const nextThresholdBeforeSwap = stepPath
 			? crossingCleared
 				? piecesWornBefore + 1
@@ -3154,11 +3155,11 @@ function applySetContext(
 		// adds a set piece: a worn row's swap changes nothing, so a future bonus
 		// would rank "keep what you wear" on value the swap cannot bring.
 		const advancesPieceCount = piecesAfterSwap > piecesWornBefore;
-		// The view never adds a `belowGate` bonus (`stepEligible`), but it is
+		// The view never adds a `belowNoise` bonus (`stepEligible`), but it is
 		// listed so the row can say the count was tried.
 		const futureThresholds = stepPath
 			? bonusesForSet
-					.filter(b => advancesPieceCount && b.threshold > piecesAfterSwap && (b.packageItemIds.length > 0 || b.belowGate === true))
+					.filter(b => advancesPieceCount && b.threshold > piecesAfterSwap && (b.packageItemIds.length > 0 || b.belowNoise === true))
 					.map(b => b.threshold)
 					.sort((a, b) => a - b)
 			: [...SET_THRESHOLDS].filter(t => advancesPieceCount && t > piecesAfterSwap && isBonusImplemented(setId, t));
@@ -3198,9 +3199,9 @@ function applySetContext(
 		const futureBonuses = futureThresholds.map(t => {
 			const bonus = bonusesForSet.find(b => b.threshold === t);
 			const net = bonus?.bonusDpsNet;
-			// No path through a `belowGate` entry: its pieces were never simmed.
+			// No path through a `belowNoise` entry: its pieces were never simmed.
 			const path =
-				bonus && bonus.unmeasured === undefined && !bonus.belowGate && bonus.packageItemIds.length > 0 && slotIndex !== undefined
+				bonus && bonus.unmeasured === undefined && !bonus.belowNoise && bonus.packageItemIds.length > 0 && slotIndex !== undefined
 					? pathToThreshold(item.itemId, slotIndex, bonus, firstSlotIndexByItemId, ownDeltasByItemId)
 					: undefined;
 			// The worn bonuses this path loses beyond the row's own loss. Ones a
@@ -3226,7 +3227,7 @@ function applySetContext(
 				piecesNeeded: t - piecesWornBefore,
 				...(net !== undefined ? { dps: net } : {}),
 				...(bonus?.sameGearDps !== undefined && bonus.sameGearSe !== undefined ? { sameGearDps: bonus.sameGearDps, sameGearSe: bonus.sameGearSe } : {}),
-				...(bonus?.belowGate ? { belowGate: true as const } : {}),
+				...(bonus?.belowNoise ? { belowNoise: true as const } : {}),
 				...(pathBreaks.length > 0 ? { breaks: pathBreaks.map(withDps) } : {}),
 				...(pieces ? { pieces } : {}),
 			};
@@ -3452,7 +3453,7 @@ function stopGuardedDeps(deps: Deps): Deps {
  * gear, so no set name has to match one the tab keeps.
  *
  * When those pieces fail gem repair or a read fails, the set gets no counts:
- * no reachable bonus or `crossingGates` check is simmed for it, a console
+ * no reachable bonus or `crossingChecks` entry is simmed for it, a console
  * warning names the set, and `onNotRead` gets the reason. When Stop refuses a
  * read the set gets no counts and no warning, and `rankUpgrades` drops the
  * whole set phase. A runner that cannot read bonuses gives an empty map, and
@@ -3511,7 +3512,7 @@ function emptySetPhase(): Awaited<ReturnType<typeof buildSetBonuses>> {
 		bonuses: [],
 		brokenSetValues: [],
 		wornSetLadder: [],
-		crossingGates: [],
+		crossingChecks: [],
 		firstSlotIndexByItemId: new Map(),
 		setIdsNotValued: [],
 	};
