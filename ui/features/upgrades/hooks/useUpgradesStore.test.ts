@@ -7,7 +7,7 @@ import { poolFor } from '../model/data/data';
 import { SAVED_VERSION, UPGRADES_SETTINGS_STORAGE_KEY } from '../model/saved_entry';
 import { poolSourceKeysOf } from '../model/settings_pool';
 import { createUpgradesStore } from '../model/upgrades_store';
-import { fakeTabHost, memoryStorage, settled } from '../testing/fake_tab_host';
+import { fakeTabHost, flushPromises, memoryStorage } from '../testing/fake_tab_host';
 import { numberSettingSource, upgradesStoreFor } from './useUpgradesStore';
 
 // The pool is built from the page's item database, which a unit test does not load (`pool_source.test.ts` covers the real one).
@@ -60,7 +60,7 @@ describe('upgradesStoreFor and the page’s phase (ticket 587)', () => {
 		const host = fakeTabHost({ sim, player: { getSpec: () => Spec.SpecRetributionPaladin } });
 		const finishInit = async () => {
 			finish();
-			await settled();
+			await flushPromises();
 		};
 		return { host, setPhase, finishInit };
 	};

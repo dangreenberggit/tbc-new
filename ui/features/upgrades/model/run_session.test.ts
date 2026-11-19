@@ -4,7 +4,7 @@ import { toastManager } from '@ui-kit/Toast';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { dbPoolHost } from '../testing/db_pool';
-import { settled } from '../testing/fake_tab_host';
+import { flushPromises } from '../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
 import { candidateSkipNote, hitCapUnknownNote, type PartialRanking, RankError, SET_BONUS_SKIP_REASONS, setBonusSkipNote } from './engine/rank';
@@ -128,7 +128,7 @@ describe('createRunSession', () => {
 
 		call(0).deps.onLanded(rowA);
 		call(0).settle(partialOf());
-		await settled();
+		await flushPromises();
 		call(1).deps.onLanded(rowB);
 		expect(run()).toMatchObject({ status: 'running', runId: 2, landedRows: [rowB] });
 		expect(console.info).not.toHaveBeenCalled();
@@ -168,7 +168,7 @@ describe('createRunSession', () => {
 		session.start(SETTINGS, SIGNATURE, []);
 		session.start(SETTINGS, SIGNATURE, []);
 		call(1).fail(new Error('superseded'));
-		await settled();
+		await flushPromises();
 		expect(toast).not.toHaveBeenCalled();
 	});
 
@@ -228,7 +228,7 @@ describe('createRunSession', () => {
 			session.start(SETTINGS, SIGNATURE, []);
 			call(2).settle(ranking(failures));
 			session.loadFixture(ranking(failures), SIGNATURE, []);
-			await settled();
+			await flushPromises();
 			expect(toast).not.toHaveBeenCalled();
 		});
 	});
@@ -241,7 +241,7 @@ describe('createRunSession', () => {
 		session.loadFixture(RANKING_FIXTURE, 'sig-at-load', []);
 		expect(call(0).deps.signal.aborted).toBe(true);
 		call(0).settle(partialOf());
-		await settled();
+		await flushPromises();
 		expect(run()).toMatchObject({
 			status: 'done',
 			runId: 2,

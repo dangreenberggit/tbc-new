@@ -94,11 +94,11 @@ describe('a results column click', () => {
 describe('a table of a run in flight', () => {
 	it('keeps the order it is given whatever the stored sort, and a sort click elsewhere does not re-render it', () => {
 		const inFlight = renderTable(ROWS, [{ id: 'item', desc: false }], { sortable: false });
-		const settled = renderTable(ROWS, []);
+		const sortable = renderTable(ROWS, []);
 		expect(inFlight.ids()).toEqual([32332, 32235, 30905, 33688]);
 
 		const before = inFlight.renders();
-		settled.click('slot');
+		sortable.click('slot');
 		expect(inFlight.renders()).toBe(before);
 		expect(inFlight.ids()).toEqual([32332, 32235, 30905, 33688]);
 	});

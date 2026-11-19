@@ -1,5 +1,5 @@
 import { SAVED_VERSION } from '@features/upgrades/model/saved_entry';
-import { memoryStorage, settled } from '@features/upgrades/testing/fake_tab_host';
+import { flushPromises, memoryStorage } from '@features/upgrades/testing/fake_tab_host';
 import { Spec } from '@generated/proto/common';
 import { act, render } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -75,7 +75,7 @@ const closedPage = async (
 		setPhase,
 		finishInit: async () => {
 			finish();
-			await act(settled);
+			await act(flushPromises);
 		},
 	};
 };
@@ -91,7 +91,7 @@ describe('UpgradesTabBody while its tab has not been opened (ticket 589)', () =>
 			await page.finishInit();
 
 			act(() => page.setPhase(4));
-			await act(settled);
+			await act(flushPromises);
 			await vi.dynamicImportSettled();
 
 			expect(loaded.data).toBe(false);
@@ -146,7 +146,7 @@ describe('UpgradesTabBody while its tab has not been opened (ticket 589)', () =>
 		await page.finishInit();
 
 		act(() => page.setPhase(4));
-		await act(settled);
+		await act(flushPromises);
 		await vi.dynamicImportSettled();
 
 		expect(storage.entries.size).toBe(0);

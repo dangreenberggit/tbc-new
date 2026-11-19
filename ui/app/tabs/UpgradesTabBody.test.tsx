@@ -4,7 +4,7 @@ import type { PoolEntry } from '@features/upgrades/model/engine/pool';
 import type { RunDeps } from '@features/upgrades/model/run';
 import type { RunOutcome, RunSettings } from '@features/upgrades/model/run_state';
 import { SAVED_VERSION } from '@features/upgrades/model/saved_entry';
-import { fakeTabHost, memoryStorage, settled } from '@features/upgrades/testing/fake_tab_host';
+import { fakeTabHost, flushPromises, memoryStorage } from '@features/upgrades/testing/fake_tab_host';
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { fixtureRow, RANKING_FIXTURE } from '@features/upgrades/testing/ranking_fixture';
 import { Raid as RaidProto } from '@generated/proto/api';
@@ -375,14 +375,14 @@ describe('UpgradesTabBody before its tab is first opened', () => {
 		);
 	/** Phase 3 to 4 and back on another tab, after the page has started up; each write rings the page's listeners as the real store would. */
 	const roundTripThroughPhase4 = async () => {
-		await act(settled);
+		await act(flushPromises);
 		act(() => {
 			patchSlice(current.store, 'sim', { phase: 4 });
 			pageChanged();
 			patchSlice(current.store, 'sim', { phase: 3 });
 			pageChanged();
 		});
-		await act(settled);
+		await act(flushPromises);
 	};
 
 	// A phase change resets the tab to that phase's defaults whether or not the tab is on screen.

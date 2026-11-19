@@ -4,7 +4,7 @@ import { fakeHost } from '@sim/testing';
 import { describe, expect, it } from 'vitest';
 
 import { dbPoolHost } from '../testing/db_pool';
-import { settled } from '../testing/fake_tab_host';
+import { flushPromises } from '../testing/fake_tab_host';
 import { poolFor } from './data/data';
 import { followPhase } from './follow_phase';
 import { effectiveExcludedSources, poolSourceKeysOf } from './settings_pool';
@@ -25,7 +25,7 @@ const pageAt3 = async (spec: Spec) => {
 	});
 	const store = createUpgradesStore({ iterations: 1000 });
 	followPhase(store, host);
-	await settled();
+	await flushPromises();
 	const offeredAt3 = poolSourceKeysOf(poolFor(host, host.individualConfig.presets.gear, 3));
 	const offeredAt4 = poolSourceKeysOf(poolFor(host, host.individualConfig.presets.gear, 4));
 	const onlyAt4 = offeredAt4.find(key => !offeredAt3.includes(key));
