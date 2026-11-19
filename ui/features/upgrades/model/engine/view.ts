@@ -23,13 +23,13 @@ export type SetCreditView = 'full' | 'split';
 
 /**
  * How far the set-potential credit assumes a player collects a set.
- * `'best-stop'`: up to the bonus where collecting pays most, or not at all; only
+ * `'highest-credit'`: up to the bonus where collecting pays most, or not at all; only
  * a bonus above the noise floor can be that point. `'full-path'`: every counted
  * bonus, with every piece and break on the way. This is a player's choice, not a
- * game rule; the default is `'best-stop'`.
+ * game rule; the default is `'highest-credit'`.
  */
-export type SetCreditRule = 'best-stop' | 'full-path';
-export const DEFAULT_SET_CREDIT_RULE: SetCreditRule = 'best-stop';
+export type SetCreditRule = 'highest-credit' | 'full-path';
+export const DEFAULT_SET_CREDIT_RULE: SetCreditRule = 'highest-credit';
 
 type SetContextLike = Partial<
 	Pick<
@@ -57,11 +57,11 @@ export type SetPotentialTerm =
 	/**
 	 * One eligible bonus with `bonusGearMeasured`: the DPS of its full gear over the
 	 * current gear, the partner pieces it adds (in sim slot order) and the worn
-	 * bonuses it loses. These are whole-gear gains, not parts of the credit; `isStop` marks
+	 * bonuses it loses. These are whole-gear gains, not parts of the credit; `isCredited` marks
 	 * the bonus the credit counts up to.
 	 */
 	| {
-			kind: 'stop';
+			kind: 'outcome';
 			threshold: number;
 			setName: string;
 			pieces: Array<{ itemId: number; name: string }>;
@@ -72,7 +72,7 @@ export type SetPotentialTerm =
 				dps?: number;
 			}>;
 			bonusGearDps: number;
-			isStop: boolean;
+			isCredited: boolean;
 	  };
 
 export type ViewOptions = {
@@ -290,7 +290,7 @@ export function ownSwapBreaks(
 type CreditBreakdown = {
 	credit: number;
 	split: number;
-	stopThreshold: number;
+	creditedThreshold: number;
 	terms: SetPotentialTerm[];
 };
 
@@ -301,13 +301,13 @@ type CreditBreakdown = {
  * not floored: each piece's stats add the same amount back, so a row inside a
  * fully measured set of pieces sums to the gain of swapping them all.
  *
- * `'best-stop'` stops where the running total is highest, or nowhere when no
- * total is positive; `'full-path'` stops at the last bonus. Only a bonus above
+ * `'highest-credit'` credits the bonus where the running total is highest, or none when no
+ * total is positive; `'full-path'` credits the last bonus. Only a bonus above
  * the floor (`setBonusNoiseFloorDps`, as each bonus comes from four sims) can be
- * the stopping point, or a row would be credited with another item's stats and
+ * the credited bonus, or a row would be credited with another item's stats and
  * no bonus. The pieces and breaks of a bonus below it still count toward a later
  * one. The `'split'` view takes each bonus per piece, minus floored breaks, at
- * the same point, and may go negative, since where to stop is the player's
+ * the same point, and may go negative, since which bonus to count is the player's
  * choice. `commitBreaks` are not charged: they belong to the pieces of the
  * largest measured bonus, and a row whose own pieces keep that bonus should not
  * pay for them.
@@ -325,13 +325,13 @@ function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: 
 	let best: Omit<CreditBreakdown, 'terms'> & { keep: number } = {
 		credit: 0,
 		split: 0,
-		stopThreshold: 0,
+		creditedThreshold: 0,
 		keep: 0,
 	};
 	for (const f of future) {
 		const bonus = floored(f.dps!);
 		if (rule === 'full-path' && bonus === 0) continue;
-		const add = (term: Exclude<SetPotentialTerm, { kind: 'stop' }>) => {
+		const add = (term: Exclude<SetPotentialTerm, { kind: 'outcome' }>) => {
 			terms.push(term);
 			running += term.dps;
 		};
@@ -368,7 +368,7 @@ function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: 
 			best = {
 				credit: running,
 				split: splitRunning,
-				stopThreshold: f.threshold,
+				creditedThreshold: f.threshold,
 				keep: terms.length,
 			};
 		}
@@ -376,44 +376,44 @@ function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: 
 	return {
 		credit: best.credit,
 		split: best.split,
-		stopThreshold: best.stopThreshold,
+		creditedThreshold: best.creditedThreshold,
 		terms: terms.slice(0, best.keep),
 	};
 }
 
 /**
- * With `bonusGearMeasured`, whether a bonus can be the stopping point: it has a
+ * With `bonusGearMeasured`, whether a bonus can be the credited bonus: it has a
  * `sameGearDps` that passes `clearsSameGearNoise`.
  */
-export function stepEligible(future: Pick<FutureBonus, 'belowNoise' | 'sameGearDps' | 'sameGearSe'>, cutoff: Cutoff): boolean {
+export function canBeCredited(future: Pick<FutureBonus, 'belowNoise' | 'sameGearDps' | 'sameGearSe'>, cutoff: Cutoff): boolean {
 	if (future.belowNoise || future.sameGearDps === undefined) return false;
 	return clearsSameGearNoise(future.sameGearDps, future.sameGearSe ?? 0, cutoff);
 }
 
 /**
  * The credit with `bonusGearMeasured`. For each eligible bonus by piece count,
- * c = `bonusGearDps` − `singleDeltaDps`. `'best-stop'` stops at the first bonus
- * with the highest c above 0 and credits that c; `'full-path'` stops at the last
+ * c = `bonusGearDps` − `singleDeltaDps`. `'highest-credit'` credits the first bonus
+ * with the highest c above 0, and that c; `'full-path'` credits the last
  * eligible bonus. So a credited row's `deltaDps` + credit is the sim of its full
  * gear, unless paired replication rewrote `deltaDps`.
  *
  * The `'split'` view uses `sameGearDps` per piece instead, minus each newly lost
- * worn bonus beyond the row's own breaks, floored, up to the stopping point.
+ * worn bonus beyond the row's own breaks, floored, up to the credited bonus.
  * Each value is one sim minus another, so the floor is `cutoff.absDps`, not the
  * four-sim floor.
  */
 function bonusGearCredit(ctx: SetContextLike, cutoff: Cutoff, rule: SetCreditRule): CreditBreakdown {
 	const ownDeltaDps = ctx.singleDeltaDps;
 	const eligible = [...(ctx.futureBonuses ?? [])]
-		.filter(f => f.bonusGearDps !== undefined && stepEligible(f, cutoff))
+		.filter(f => f.bonusGearDps !== undefined && canBeCredited(f, cutoff))
 		.sort((a, b) => a.threshold - b.threshold);
 	if (ownDeltaDps === undefined || eligible.length === 0) {
-		return { credit: 0, split: 0, stopThreshold: 0, terms: [] };
+		return { credit: 0, split: 0, creditedThreshold: 0, terms: [] };
 	}
 	const floored = (v: number): number => (v > cutoff.absDps ? v : 0);
 	const charged = new Set((ctx.singleBreaks ?? []).map(bonusKey));
 	let splitRunning = 0;
-	let best = { credit: 0, split: 0, stopThreshold: 0 };
+	let best = { credit: 0, split: 0, creditedThreshold: 0 };
 	for (const f of eligible) {
 		let splitLoss = 0;
 		for (const brk of f.breaks ?? []) {
@@ -425,11 +425,11 @@ function bonusGearCredit(ctx: SetContextLike, cutoff: Cutoff, rule: SetCreditRul
 		splitRunning += floored(f.sameGearDps! / f.threshold) - splitLoss;
 		const c = f.bonusGearDps! - ownDeltaDps;
 		if (rule === 'full-path' || c > best.credit) {
-			best = { credit: c, split: splitRunning, stopThreshold: f.threshold };
+			best = { credit: c, split: splitRunning, creditedThreshold: f.threshold };
 		}
 	}
 	const terms: SetPotentialTerm[] = eligible.map(f => ({
-		kind: 'stop',
+		kind: 'outcome',
 		threshold: f.threshold,
 		setName: ctx.setName ?? '',
 		pieces: (f.pieces ?? []).map(p => ({ itemId: p.itemId, name: p.name })),
@@ -440,7 +440,7 @@ function bonusGearCredit(ctx: SetContextLike, cutoff: Cutoff, rule: SetCreditRul
 			...(b.dps !== undefined ? { dps: b.dps } : {}),
 		})),
 		bonusGearDps: f.bonusGearDps!,
-		isStop: f.threshold === best.stopThreshold,
+		isCredited: f.threshold === best.creditedThreshold,
 	}));
 	return { ...best, terms };
 }
@@ -461,29 +461,29 @@ export function crossingLabelCount(
 }
 
 /**
- * The full-view credit and its breakdown up to the stopping point, for the tab's
+ * The full-view credit and its breakdown up to the credited bonus, for the tab's
  * popover: each counted bonus (none when floored to 0), then the pieces it adds,
  * then the breaks it charges; the lines add up to `credit`. With `bonusGearMeasured`
- * there is one `"stop"` total per eligible bonus instead, and those do not add
+ * there is one `"outcome"` total per eligible bonus instead, and those do not add
  * up to `credit`. Call it only when `setCreditUnmeasured` is false.
  */
 export function setPotentialTerms(
 	ctx: SetContextLike | undefined,
 	cutoff: Cutoff,
 	rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE,
-): { credit: number; stopThreshold: number; terms: SetPotentialTerm[] } {
-	const { credit, stopThreshold, terms } = creditBreakdown(ctx, cutoff, rule);
-	return { credit, stopThreshold, terms };
+): { credit: number; creditedThreshold: number; terms: SetPotentialTerm[] } {
+	const { credit, creditedThreshold, terms } = creditBreakdown(ctx, cutoff, rule);
+	return { credit, creditedThreshold, terms };
 }
 
 /**
- * One step of a `bonusGearMeasured` row: the partner pieces it adds to the previous
- * step's gear, the bonus it reaches, the worn bonuses it newly loses, and `dps`,
- * its total minus the previous step's (for the first step, minus the row's own
- * swap).
+ * One increment of a `bonusGearMeasured` row: the partner pieces it adds to the
+ * previous increment's gear, the bonus it reaches, the worn bonuses it newly loses,
+ * and `dps`, its total minus the previous increment's (for the first increment,
+ * minus the row's own swap).
  */
-export type SetPotentialStep = {
-	kind: 'step';
+export type SetPotentialIncrement = {
+	kind: 'increment';
 	threshold: number;
 	setName: string;
 	pieces: Array<{ itemId: number; name: string }>;
@@ -494,10 +494,10 @@ export type SetPotentialStep = {
 		dps?: number;
 	}>;
 	dps: number;
-	isStop: boolean;
+	isCredited: boolean;
 	/**
-	 * A step that newly loses a worn bonus shows as two lines: Breaks, the sim
-	 * with that bonus turned off minus the previous total, and pieces, the step's
+	 * An increment that newly loses a worn bonus shows as two lines: Breaks, the
+	 * sim with that bonus turned off minus the previous total, and pieces, the increment's
 	 * total minus that sim. Both are set or neither is, and they add up to `dps`.
 	 */
 	breaksLineDps?: number;
@@ -505,24 +505,28 @@ export type SetPotentialStep = {
 };
 
 /**
- * Turns a `bonusGearMeasured` row's `"stop"` totals, up to the stopping point, into
- * steps whose `dps` add up to the credit. Null when there is no stopping point,
- * or when a step's partner pieces do not include the previous step's, because
- * then no step builds on the one before. The first step leaves out the row's own
- * breaks, which the popover lists above the steps. A step gets its two line
- * values only when its `bonusOff` sim turned off exactly the bonuses it newly
- * loses; otherwise it stays one line.
+ * Turns a `bonusGearMeasured` row's `"outcome"` totals, up to the credited bonus,
+ * into increments whose `dps` add up to the credit. Null when no bonus is credited,
+ * or when an increment's partner pieces do not include the previous increment's,
+ * because then no increment builds on the one before. The first increment leaves
+ * out the row's own breaks, which the popover lists above the increments. An
+ * increment gets its two line values only when its `bonusOff` sim turned off
+ * exactly the bonuses it newly loses; otherwise it stays one line.
  */
-export function setPotentialSteps(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE): SetPotentialStep[] | null {
+export function setPotentialIncrements(
+	ctx: SetContextLike | undefined,
+	cutoff: Cutoff,
+	rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE,
+): SetPotentialIncrement[] | null {
 	if (!ctx?.bonusGearMeasured || ctx.singleDeltaDps === undefined) return null;
-	const stops = bonusGearCredit(ctx, cutoff, rule).terms.filter((t): t is Extract<SetPotentialTerm, { kind: 'stop' }> => t.kind === 'stop');
-	const last = stops.findIndex(t => t.isStop);
+	const outcomes = bonusGearCredit(ctx, cutoff, rule).terms.filter((t): t is Extract<SetPotentialTerm, { kind: 'outcome' }> => t.kind === 'outcome');
+	const last = outcomes.findIndex(t => t.isCredited);
 	if (last < 0) return null;
 	let prevIds = new Set<number>();
 	let prevBroken = new Set((ctx.singleBreaks ?? []).map(bonusKey));
 	let prevBonusGearDps = ctx.singleDeltaDps;
-	const steps: SetPotentialStep[] = [];
-	for (const term of stops.slice(0, last + 1)) {
+	const increments: SetPotentialIncrement[] = [];
+	for (const term of outcomes.slice(0, last + 1)) {
 		const ids = new Set(term.pieces.map(p => p.itemId));
 		if ([...prevIds].some(id => !ids.has(id))) return null;
 		const broken = term.broken.filter(b => !prevBroken.has(bonusKey(b)));
@@ -530,14 +534,14 @@ export function setPotentialSteps(ctx: SetContextLike | undefined, cutoff: Cutof
 		const offKeys = new Set((bonus?.bonusOff ?? []).map(bonusKey));
 		const offDps = bonus?.bonusOffDps;
 		const split = broken.length > 0 && offDps !== undefined && offKeys.size === broken.length && broken.every(b => offKeys.has(bonusKey(b)));
-		steps.push({
-			kind: 'step',
+		increments.push({
+			kind: 'increment',
 			threshold: term.threshold,
 			setName: term.setName,
 			pieces: term.pieces.filter(p => !prevIds.has(p.itemId)),
 			broken,
 			dps: term.bonusGearDps - prevBonusGearDps,
-			isStop: term.isStop,
+			isCredited: term.isCredited,
 			...(split
 				? {
 						breaksLineDps: offDps - prevBonusGearDps,
@@ -549,7 +553,7 @@ export function setPotentialSteps(ctx: SetContextLike | undefined, cutoff: Cutof
 		prevBroken = new Set([...prevBroken, ...term.broken.map(bonusKey)]);
 		prevBonusGearDps = term.bonusGearDps;
 	}
-	return steps;
+	return increments;
 }
 
 /** `creditBreakdown`'s credit for the full or the `'split'` view. */

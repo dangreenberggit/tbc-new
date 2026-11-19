@@ -149,7 +149,7 @@ describe('SetBonusPopover', () => {
 		});
 	});
 
-	it('marks the outcome a step ranking row’s figure uses, and adds no total', () => {
+	it('marks the outcome a bonus-gear ranking row’s figure uses, and adds no total', () => {
 		const popover: SetBonusPopoverContent = {
 			subLine: 'hover_hint',
 			kind: 'outcomes',
@@ -158,7 +158,7 @@ describe('SetBonusPopover', () => {
 				{ type: 'line', label: { kind: 'item_alone', name: 'Lightbringer Faceguard', broken: [] }, dps: 4.4 },
 				{
 					type: 'line',
-					label: { kind: 'pieces', form: 'stop', pieces: ['Lightbringer Chestguard'], threshold: 2, broken: [] },
+					label: { kind: 'pieces', form: 'outcome', pieces: ['Lightbringer Chestguard'], threshold: 2, broken: [] },
 					dps: 30.1,
 					marker: true,
 				},

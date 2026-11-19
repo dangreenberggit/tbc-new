@@ -329,7 +329,7 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Leggings"], "threshold": 2, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Thunderheart Leggings"], "threshold": 2, "broken": [] },
 							"dps": 55.1
 						},
 						{ "type": "line", "label": { "kind": "breaks", "broken": [{ "setName": "Malorne Harness", "threshold": 2 }] }, "dps": -58.5 },
@@ -337,7 +337,7 @@
 							"type": "line",
 							"label": {
 								"kind": "pieces",
-								"form": "step",
+								"form": "increment",
 								"pieces": ["Thunderheart Pauldrons", "Thunderheart Chestguard"],
 								"threshold": 4,
 								"broken": []
@@ -439,7 +439,7 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Gauntlets"], "threshold": 2, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Thunderheart Gauntlets"], "threshold": 2, "broken": [] },
 							"dps": 69.9
 						},
 						{ "type": "line", "label": { "kind": "breaks", "broken": [{ "setName": "Malorne Harness", "threshold": 2 }] }, "dps": -58.4 },
@@ -447,7 +447,7 @@
 							"type": "line",
 							"label": {
 								"kind": "pieces",
-								"form": "step",
+								"form": "increment",
 								"pieces": ["Thunderheart Pauldrons", "Thunderheart Chestguard"],
 								"threshold": 4,
 								"broken": []
@@ -549,14 +549,14 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Pauldrons"], "threshold": 2, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Thunderheart Pauldrons"], "threshold": 2, "broken": [] },
 							"dps": 110.8
 						},
 						{
 							"type": "line",
 							"label": {
 								"kind": "pieces",
-								"form": "step",
+								"form": "increment",
 								"pieces": ["Thunderheart Gauntlets", "Thunderheart Leggings"],
 								"threshold": 4,
 								"broken": []
@@ -658,14 +658,14 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Chestguard"], "threshold": 2, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Thunderheart Chestguard"], "threshold": 2, "broken": [] },
 							"dps": 113.6
 						},
 						{
 							"type": "line",
 							"label": {
 								"kind": "pieces",
-								"form": "step",
+								"form": "increment",
 								"pieces": ["Thunderheart Gauntlets", "Thunderheart Leggings"],
 								"threshold": 4,
 								"broken": []
@@ -753,7 +753,7 @@
 							"type": "line",
 							"label": {
 								"kind": "pieces",
-								"form": "step",
+								"form": "increment",
 								"pieces": ["Nordrassil Chestplate", "Nordrassil Handgrips", "Nordrassil Feral-Kilt"],
 								"threshold": 4,
 								"broken": []
@@ -841,7 +841,7 @@
 							"type": "line",
 							"label": {
 								"kind": "pieces",
-								"form": "step",
+								"form": "increment",
 								"pieces": ["Nordrassil Feral-Mantle", "Nordrassil Handgrips", "Nordrassil Feral-Kilt"],
 								"threshold": 4,
 								"broken": []
@@ -938,7 +938,7 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Gauntlets"], "threshold": 2, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Thunderheart Gauntlets"], "threshold": 2, "broken": [] },
 							"dps": 161.7
 						},
 						{ "type": "line", "label": { "kind": "breaks", "broken": [{ "setName": "Malorne Harness", "threshold": 2 }] }, "dps": -54.8 },
@@ -946,7 +946,7 @@
 							"type": "line",
 							"label": {
 								"kind": "pieces",
-								"form": "step",
+								"form": "increment",
 								"pieces": ["Thunderheart Pauldrons", "Thunderheart Chestguard"],
 								"threshold": 4,
 								"broken": []
@@ -1022,7 +1022,7 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Gauntlets of Malorne"], "threshold": 4, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Gauntlets of Malorne"], "threshold": 4, "broken": [] },
 							"dps": 7.1
 						},
 						{ "type": "line", "label": { "kind": "total" }, "dps": -184.160238547875 }
@@ -1303,7 +1303,7 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Pauldrons"], "threshold": 4, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Thunderheart Pauldrons"], "threshold": 4, "broken": [] },
 							"dps": 74.1
 						},
 						{ "type": "line", "label": { "kind": "total" }, "dps": 100.3720275194244 }
@@ -1397,7 +1397,7 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Mantle of Malorne"], "threshold": 2, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Mantle of Malorne"], "threshold": 2, "broken": [] },
 							"dps": 42.6
 						},
 						{ "type": "line", "label": { "kind": "total" }, "dps": 50.1827615253992 }
@@ -1471,7 +1471,7 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Chestguard"], "threshold": 4, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Thunderheart Chestguard"], "threshold": 4, "broken": [] },
 							"dps": 99.9
 						},
 						{ "type": "line", "label": { "kind": "total" }, "dps": 100.36788461793321 }
@@ -1565,7 +1565,7 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Breastplate of Malorne"], "threshold": 2, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Breastplate of Malorne"], "threshold": 2, "broken": [] },
 							"dps": 64.2
 						},
 						{ "type": "line", "label": { "kind": "total" }, "dps": 50.1827615253992 }
@@ -1640,7 +1640,7 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Thunderheart Chestguard"], "threshold": 4, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Thunderheart Chestguard"], "threshold": 4, "broken": [] },
 							"dps": 108.1
 						},
 						{ "type": "line", "label": { "kind": "total" }, "dps": 38.20534530414989 }
@@ -1737,7 +1737,7 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Breastplate of Malorne"], "threshold": 2, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Breastplate of Malorne"], "threshold": 2, "broken": [] },
 							"dps": 67.2
 						},
 						{ "type": "line", "label": { "kind": "total" }, "dps": -14.990957059491393 }
@@ -1833,7 +1833,7 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Breastplate of Malorne"], "threshold": 2, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Breastplate of Malorne"], "threshold": 2, "broken": [] },
 							"dps": 85.6
 						},
 						{ "type": "line", "label": { "kind": "total" }, "dps": -24.325749199125312 }
@@ -1925,7 +1925,7 @@
 						{ "type": "heading", "heading": "set_potential" },
 						{
 							"type": "line",
-							"label": { "kind": "pieces", "form": "step", "pieces": ["Breastplate of Malorne"], "threshold": 2, "broken": [] },
+							"label": { "kind": "pieces", "form": "increment", "pieces": ["Breastplate of Malorne"], "threshold": 2, "broken": [] },
 							"dps": 90.2
 						},
 						{ "type": "line", "label": { "kind": "total" }, "dps": -21.193620341134647 }

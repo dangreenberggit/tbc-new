@@ -98,7 +98,7 @@ import {
 } from './set-value';
 import { SIM_ORDER, type SimItemSpec } from './slots';
 import type { CharacterRef, ContentPhase, DetectedSpecId, FightRef, Race, SpecId } from './types';
-import { setCreditUnmeasured, setPotentialSteps } from './view';
+import { setCreditUnmeasured, setPotentialIncrements } from './view';
 
 export type RankInput = {
 	character: CharacterRef;
@@ -412,7 +412,7 @@ export type BonusGearSims = {
  * counts the requests and `failedGears` those whose sim failed.
  * `beforeInStore` counts requests whose gear before, without copies, was in
  * the store; the rest are never simmed, since their loss would not be a
- * paired difference. `skippedSteps` counts shown bonuses that newly lose a
+ * paired difference. `skippedIncrements` counts shown bonuses that newly lose a
  * worn bonus but got no value: no request could be built, or that gear was
  * not in the store.
  */
@@ -421,7 +421,7 @@ export type SetBonusOffSims = {
 	simmed: number;
 	fromStore: number;
 	failedGears: number;
-	skippedSteps: number;
+	skippedIncrements: number;
 	beforeInStore: number;
 };
 
@@ -2597,7 +2597,7 @@ async function measureBonusGear(args: {
 	}
 
 	// The bonus-off sims run for exactly the bonuses the popover shows, so this
-	// uses the view's own list of them (`setPotentialSteps`).
+	// uses the view's own list of them (`setPotentialIncrements`).
 	const offCounter: SimCounter = { simmed: 0, fromStore: 0 };
 	const offRequests = new Map<string, { request: RaidSimRequest; plain: RaidSimRequest }>();
 	const offPending: Array<{
@@ -2605,7 +2605,7 @@ async function measureBonusGear(args: {
 		key: string;
 		lost: Array<{ setId: number; threshold: SetThreshold }>;
 	}> = [];
-	let skippedSteps = 0;
+	let skippedIncrements = 0;
 	const setIdAt = (gear: readonly SimItemSpec[], slot: number): number | undefined => {
 		const id = gear[slot]?.id;
 		return (id ? getItem(id)?.setId : undefined) ?? undefined;
@@ -2618,7 +2618,7 @@ async function measureBonusGear(args: {
 		prevSwaps: readonly PlacedItem[],
 		swaps: readonly PlacedItem[],
 		lost: Array<{ setId: number; threshold: SetThreshold }>,
-		firstStep: boolean,
+		firstIncrement: boolean,
 	): Promise<boolean> => {
 		const beforeBuild = bonusGearBuild(prevSwaps);
 		const before = beforeBuild?.equipment;
@@ -2682,7 +2682,7 @@ async function measureBonusGear(args: {
 		// rather than paired with gear gemmed another way. The candidate loop repairs
 		// on the row's own stats read, so it may have simmed entry 0; this check
 		// does not look for that sim.
-		if (firstStep && stableStringify(plain) !== stableStringify(composeFor(before))) {
+		if (firstIncrement && stableStringify(plain) !== stableStringify(composeFor(before))) {
 			return false;
 		}
 		const key = simCacheKey(request, args.simVersion, runOpts);
@@ -2695,24 +2695,25 @@ async function measureBonusGear(args: {
 		const ctx = item.setContext;
 		const rowSwap = rowSwapOf.get(item);
 		if (!ctx?.bonusGearMeasured || !rowSwap || setCreditUnmeasured(ctx)) continue;
-		const steps = setPotentialSteps(ctx, args.cutoff);
-		if (!steps) continue;
+		const increments = setPotentialIncrements(ctx, args.cutoff);
+		if (!increments) continue;
 		let prevSwaps: PlacedItem[] | undefined = [rowSwap];
-		let firstStep = true;
-		for (const step of steps) {
-			const f = (ctx.futureBonuses ?? []).find(x => x.threshold === step.threshold);
+		let firstIncrement = true;
+		for (const increment of increments) {
+			const f = (ctx.futureBonuses ?? []).find(x => x.threshold === increment.threshold);
 			const partners = f ? partnersOf.get(f) : undefined;
 			const swaps = partners ? [rowSwap, ...partners] : undefined;
-			if (step.broken.length > 0) {
-				const lost = step.broken.map(b => ({
+			if (increment.broken.length > 0) {
+				const lost = increment.broken.map(b => ({
 					setId: b.setId,
 					threshold: b.threshold as SetThreshold,
 				}));
-				const queued = f !== undefined && swaps !== undefined && prevSwaps !== undefined && (await queueBonusOff(f, prevSwaps, swaps, lost, firstStep));
-				if (!queued) skippedSteps += 1;
+				const queued =
+					f !== undefined && swaps !== undefined && prevSwaps !== undefined && (await queueBonusOff(f, prevSwaps, swaps, lost, firstIncrement));
+				if (!queued) skippedIncrements += 1;
 			}
 			prevSwaps = swaps;
-			firstStep = false;
+			firstIncrement = false;
 		}
 	}
 
@@ -2741,7 +2742,7 @@ async function measureBonusGear(args: {
 	);
 	for (const { future, key, lost } of offPending) {
 		if (!paired.has(key)) {
-			skippedSteps += 1;
+			skippedIncrements += 1;
 			continue;
 		}
 		const simError = offErrors.get(key);
@@ -2775,7 +2776,7 @@ async function measureBonusGear(args: {
 			simmed: offCounter.simmed,
 			fromStore: offCounter.fromStore,
 			failedGears,
-			skippedSteps,
+			skippedIncrements,
 			beforeInStore: paired.size,
 		},
 		...(rule === 'every-combination' ? { partnerAudit: audits } : {}),
@@ -3159,7 +3160,7 @@ function applySetContext(
 		// adds a set piece: a worn row's swap changes nothing, so a future bonus
 		// would rank "keep what you wear" on value the swap cannot bring.
 		const advancesPieceCount = piecesAfterSwap > piecesWornBefore;
-		// The view never adds a `belowNoise` bonus (`stepEligible`), but it is
+		// The view never adds a `belowNoise` bonus (`canBeCredited`), but it is
 		// listed so the row can say the count was tried.
 		const futureThresholds = measured
 			? bonusesForSet

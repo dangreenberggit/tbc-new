@@ -353,16 +353,16 @@
 						"popover_screened_loss": {
 							"type": "string"
 						},
-						"popover_stop": {
+						"popover_outcome": {
 							"type": "string"
 						},
-						"popover_stop_breaks": {
+						"popover_outcome_breaks": {
 							"type": "string"
 						},
-						"popover_step": {
+						"popover_increment": {
 							"type": "string"
 						},
-						"popover_step_breaks": {
+						"popover_increment_breaks": {
 							"type": "string"
 						},
 						"popover_item_alone": {
@@ -412,10 +412,10 @@
 						"popover_screened_unmeasured",
 						"popover_screened_no_effect",
 						"popover_screened_loss",
-						"popover_stop",
-						"popover_stop_breaks",
-						"popover_step",
-						"popover_step_breaks",
+						"popover_outcome",
+						"popover_outcome_breaks",
+						"popover_increment",
+						"popover_increment_breaks",
 						"popover_item_alone",
 						"popover_item_alone_breaks",
 						"popover_dps_more",

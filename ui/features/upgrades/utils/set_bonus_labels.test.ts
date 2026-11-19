@@ -28,13 +28,13 @@ describe('setBonusPopoverText', () => {
 			entries: [
 				{ type: 'heading', heading: 'set_potential_totals' },
 				{ type: 'line', label: { kind: 'item_alone', name: 'Lightbringer Faceguard', broken: [] }, dps: -2.04 },
-				{ type: 'line', label: { kind: 'pieces', form: 'stop', pieces: ['A', 'B'], threshold: 4, broken: [] }, dps: 12.96, marker: true },
+				{ type: 'line', label: { kind: 'pieces', form: 'outcome', pieces: ['A', 'B'], threshold: 4, broken: [] }, dps: 12.96, marker: true },
 			],
 		});
 		expect(rows).toEqual([
 			{ type: 'heading', id: 'set_potential_totals', text: 'Separate outcomes with this item, not added' },
 			{ type: 'line', id: 'item_alone', label: 'Lightbringer Faceguard alone', value: '2.0 DPS less', total: false },
-			{ type: 'line', id: 'pieces:stop:4:A+B', label: 'With A and B (4pc)', value: '13.0 DPS more', marker: "this row's figure", total: false },
+			{ type: 'line', id: 'pieces:outcome:4:A+B', label: 'With A and B (4pc)', value: '13.0 DPS more', marker: "this row's figure", total: false },
 		]);
 	});
 
@@ -137,8 +137,8 @@ describe('the not-counted section (ticket 336)', () => {
 		]);
 	});
 
-	// A step past the stop shows the 4-piece's own amount, negative included.
-	it('prints a step past the stop as a signed figure like the receipt’s, and one within the noise in words', () => {
+	// A bonus past the credited bonus shows the 4-piece's own amount, negative included.
+	it('prints a bonus past the credited bonus as a signed figure like the receipt’s, and one within the noise in words', () => {
 		const malorne4 = reachable('Malorne Harness', 4, ['Mantle of Malorne', 'Breastplate of Malorne', 'Greaves of Malorne']);
 		const rows = setBonusPopoverText({
 			subLine: 'hover_hint',
@@ -146,8 +146,8 @@ describe('the not-counted section (ticket 336)', () => {
 			entries: [
 				{ type: 'line', label: { kind: 'total' }, dps: 30.5 },
 				{ type: 'heading', heading: 'not_counted' },
-				{ type: 'line', label: malorne4, dps: -11.54, outcome: true, againstStop: true },
-				{ type: 'line', label: malorne4, dps: undefined, outcome: true, againstStop: true, belowNoise: true },
+				{ type: 'line', label: malorne4, dps: -11.54, outcome: true, againstCreditedGear: true },
+				{ type: 'line', label: malorne4, dps: undefined, outcome: true, againstCreditedGear: true, belowNoise: true },
 			],
 		});
 		expect(rows.slice(2)).toEqual([
@@ -211,7 +211,7 @@ describe('popoverLabelText', () => {
 		[{ kind: 'breaks', broken: [crystalforge, lightbringer] }, `Breaks Crystalforge Battlegear${NBSP}2pc and Lightbringer Battlegear${NBSP}4pc`],
 		[{ kind: 'piece_stats', name: 'Lightbringer Greaves' }, 'Lightbringer Greaves stats'],
 		[
-			{ kind: 'pieces', form: 'step', pieces: ['A', 'B', 'C'], threshold: 4, broken: [crystalforge] },
+			{ kind: 'pieces', form: 'increment', pieces: ['A', 'B', 'C'], threshold: 4, broken: [crystalforge] },
 			`A, B and C (4pc, breaks Crystalforge Battlegear${NBSP}2pc)`,
 		],
 		[{ kind: 'item_alone', name: 'X', broken: [crystalforge] }, `X alone (breaks Crystalforge Battlegear${NBSP}2pc)`],

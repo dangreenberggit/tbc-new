@@ -13,15 +13,15 @@ import { bonusKey } from './engine/set-value';
 import type { SpecId } from './engine/types';
 import {
 	bonusGearUnmeasured,
+	canBeCredited,
 	crossingLabelCount,
 	ownSwapBreaks,
 	rankableSetPotential,
 	setBonusSubLine,
 	setCreditUnmeasured,
-	setPotentialSteps,
+	setPotentialIncrements,
 	type SetPotentialTerm,
 	setPotentialTerms,
-	stepEligible,
 } from './engine/view';
 import { shownTenths, tenthsOf } from './shown_figure';
 
@@ -34,8 +34,8 @@ export type PopoverLabel =
 	| { kind: 'breaks'; broken: BonusRef[] }
 	| { kind: 'bonus'; set: string; threshold: number; worn: number }
 	| { kind: 'piece_stats'; name: string }
-	/** One step toward a bonus: the other pieces needed, the bonus they reach and the worn bonuses lost. */
-	| { kind: 'pieces'; form: 'stop' | 'step'; pieces: string[]; threshold: number; broken: BonusRef[] }
+	/** One increment toward a bonus, or one outcome: the other pieces needed, the bonus they reach and the worn bonuses lost. */
+	| { kind: 'pieces'; form: 'outcome' | 'increment'; pieces: string[]; threshold: number; broken: BonusRef[] }
 	| { kind: 'item_alone'; name: string; broken: BonusRef[] }
 	/** A bonus the row can reach that its figure does not count, with the other pieces needed and the extra worn bonuses lost. */
 	| { kind: 'reachable'; set: string; threshold: number; worn: number; pieces: string[]; broken: BonusRef[] }
@@ -55,7 +55,7 @@ export type ScreenedReason = (typeof SCREENED_REASONS)[number];
  */
 export type PopoverEntry =
 	| { type: 'heading'; heading: 'set_potential' | 'set_potential_totals' | 'not_counted_off' | 'not_counted_no_gain' | 'not_counted' }
-	| { type: 'line'; label: PopoverLabel; dps: number | undefined; marker?: true; outcome?: true; againstStop?: true; belowNoise?: true };
+	| { type: 'line'; label: PopoverLabel; dps: number | undefined; marker?: true; outcome?: true; againstCreditedGear?: true; belowNoise?: true };
 
 export type SetBonusPopoverContent = { subLine: 'hover_hint' | 'not_counted'; kind: 'receipt' | 'outcomes'; entries: PopoverEntry[] };
 
@@ -97,7 +97,7 @@ const line = (label: PopoverLabel, dps: number | undefined, marker?: boolean): P
 	...(marker ? { marker: true as const } : {}),
 });
 const piecesLabel = (
-	form: 'stop' | 'step',
+	form: 'outcome' | 'increment',
 	term: { pieces: ReadonlyArray<{ name: string }>; threshold: number; broken: readonly BonusRef[] },
 ): PopoverLabel => ({
 	kind: 'pieces',
@@ -107,14 +107,14 @@ const piecesLabel = (
 	broken: term.broken.map(ref),
 });
 
-/** `stopThreshold` is the bonus a `steps` section stops at. */
-type SetPotentialSection = { lines: Line[]; kind: 'unmeasured' | 'none' | 'itemised' | 'steps' | 'outcomes'; stopThreshold?: number };
+/** `creditedThreshold` is the credited bonus of an `increments` section. */
+type SetPotentialSection = { lines: Line[]; kind: 'unmeasured' | 'none' | 'itemised' | 'increments' | 'outcomes'; creditedThreshold?: number };
 const NO_SET_POTENTIAL: SetPotentialSection = { lines: [], kind: 'none' };
 
 /**
  * The Set potential lines, with the toggle on. `unmeasured` lists each figure
- * missing from `credit`; `none` when `credit` is 0; `itemised` its parts; `steps`
- * each step up to `stopThreshold`, adding up to `credit`; `outcomes` one total per
+ * missing from `credit`; `none` when `credit` is 0; `itemised` its parts; `increments`
+ * each increment up to `creditedThreshold`, adding up to `credit`; `outcomes` one total per
  * bonus when the bonuses' pieces do not build on each other.
  */
 function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPotentialSection {
@@ -140,21 +140,21 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPot
 	}
 	if (credit === 0) return NO_SET_POTENTIAL;
 	if (ctx.bonusGearMeasured) {
-		const steps = setPotentialSteps(ctx, cutoff);
-		if (steps !== null) {
-			const lines = steps.flatMap((s): Line[] =>
+		const increments = setPotentialIncrements(ctx, cutoff);
+		if (increments !== null) {
+			const lines = increments.flatMap((s): Line[] =>
 				s.breaksLineDps === undefined || s.piecesLineDps === undefined
-					? [{ label: piecesLabel('step', s), dps: s.dps }]
+					? [{ label: piecesLabel('increment', s), dps: s.dps }]
 					: [
 							{ label: { kind: 'breaks', broken: s.broken.map(ref) }, dps: s.breaksLineDps },
-							{ label: piecesLabel('step', { ...s, broken: [] }), dps: s.piecesLineDps },
+							{ label: piecesLabel('increment', { ...s, broken: [] }), dps: s.piecesLineDps },
 						],
 			);
-			return { lines, kind: 'steps', stopThreshold: steps.at(-1)!.threshold };
+			return { lines, kind: 'increments', creditedThreshold: increments.at(-1)!.threshold };
 		}
 		const lines = setPotentialTerms(ctx, cutoff)
-			.terms.filter((term): term is Extract<SetPotentialTerm, { kind: 'stop' }> => term.kind === 'stop')
-			.map(term => ({ label: piecesLabel('stop', term), dps: term.bonusGearDps, marker: term.isStop }));
+			.terms.filter((term): term is Extract<SetPotentialTerm, { kind: 'outcome' }> => term.kind === 'outcome')
+			.map(term => ({ label: piecesLabel('outcome', term), dps: term.bonusGearDps, marker: term.isCredited }));
 		return { lines, kind: 'outcomes' };
 	}
 	const lines = setPotentialTerms(ctx, cutoff).terms.map((term): Line => {
@@ -165,8 +165,8 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPot
 				return { label: { kind: 'piece_stats', name: term.name }, dps: term.dps };
 			case 'break':
 				return { label: { kind: 'breaks', broken: [ref(term)] }, dps: term.dps };
-			case 'stop':
-				return { label: piecesLabel('stop', term), dps: term.bonusGearDps };
+			case 'outcome':
+				return { label: piecesLabel('outcome', term), dps: term.bonusGearDps };
 		}
 	});
 	return { lines, kind: 'itemised' };
@@ -174,27 +174,29 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPot
 
 /**
  * The bonuses a `bonusGearMeasured` row can reach that its figure does not count. Each
- * figure is how much the row's figure would change if it counted that step instead:
- * against the row alone, or for steps past `stopThreshold`, against the gear at
- * `stopThreshold`. A difference too small to tell from noise gets no figure. Without `bonusGearMeasured` a
+ * figure is how much the row's figure would change if it counted that bonus instead:
+ * against the row alone, or for bonuses past `creditedThreshold`, against the gear at
+ * `creditedThreshold`. A difference too small to tell from noise gets no figure. Without `bonusGearMeasured` a
  * future bonus's figure is the bonus alone, which these labels would misstate.
  */
-function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopThreshold?: number): PopoverEntry[] {
+function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, creditedThreshold?: number): PopoverEntry[] {
 	if (!ctx.bonusGearMeasured) return [];
 	const own = new Set((ctx.singleBreaks ?? []).map(bonusKey));
-	const stop = stopThreshold === undefined ? undefined : ctx.futureBonuses?.find(f => f.threshold === stopThreshold);
-	if (stopThreshold !== undefined && stop?.bonusGearDps === undefined) return [];
-	const reference = stop?.bonusGearDps ?? ctx.singleDeltaDps ?? row.deltaDps;
+	const credited = creditedThreshold === undefined ? undefined : ctx.futureBonuses?.find(f => f.threshold === creditedThreshold);
+	if (creditedThreshold !== undefined && credited?.bonusGearDps === undefined) return [];
+	const reference = credited?.bonusGearDps ?? ctx.singleDeltaDps ?? row.deltaDps;
 	return [...(ctx.futureBonuses ?? [])]
 		.sort((a, b) => a.threshold - b.threshold)
-		.filter(f => f.threshold > (stopThreshold ?? 0) && stepEligible(f, cutoff))
+		.filter(f => f.threshold > (creditedThreshold ?? 0) && canBeCredited(f, cutoff))
 		.map((f): PopoverEntry => {
 			const dps = f.bonusGearDps === undefined ? undefined : f.bonusGearDps - reference;
 			// Both `bonusGearDps` values are measured against the same baseline sim, so
 			// `Math.hypot` of their errors counts the baseline's error twice. The test
 			// leans toward "too small to measure".
 			const belowNoise =
-				stop !== undefined && dps !== undefined && !clearsSameGearNoise(Math.abs(dps), Math.hypot(f.bonusGearSe ?? 0, stop.bonusGearSe ?? 0), cutoff);
+				credited !== undefined &&
+				dps !== undefined &&
+				!clearsSameGearNoise(Math.abs(dps), Math.hypot(f.bonusGearSe ?? 0, credited.bonusGearSe ?? 0), cutoff);
 			return {
 				type: 'line',
 				label: {
@@ -207,7 +209,7 @@ function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopTh
 				},
 				dps: belowNoise ? undefined : dps,
 				outcome: true,
-				...(stop ? { againstStop: true as const } : {}),
+				...(credited ? { againstCreditedGear: true as const } : {}),
 				...(belowNoise ? { belowNoise: true as const } : {}),
 			};
 		});
@@ -219,7 +221,7 @@ function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopTh
  */
 function noiseLines(ctx: SetContext, cutoff: Cutoff): PopoverEntry[] {
 	const futureBonuses = ctx.futureBonuses ?? [];
-	if (!ctx.bonusGearMeasured || futureBonuses.some(f => stepEligible(f, cutoff))) return [];
+	if (!ctx.bonusGearMeasured || futureBonuses.some(f => canBeCredited(f, cutoff))) return [];
 	return futureBonuses
 		.filter(f => f.belowNoise)
 		.sort((a, b) => a.threshold - b.threshold)
@@ -303,7 +305,7 @@ export function setBonusPopoverLines(row: RankedItem, context: RankingContext = 
 	if (potential.kind !== 'none') entries.push({ type: 'heading', heading: 'set_potential' });
 	if (potential.kind === 'unmeasured') {
 		for (const l of potential.lines) entries.push(line(l.label, undefined));
-	} else if (potential.kind === 'itemised' || potential.kind === 'steps') {
+	} else if (potential.kind === 'itemised' || potential.kind === 'increments') {
 		// The toggle-off lines add up to the toggle-off figure, so these must add up to the difference.
 		const shown = spreadTenths(
 			potential.lines.map(l => l.dps ?? 0),
@@ -315,11 +317,12 @@ export function setBonusPopoverLines(row: RankedItem, context: RankingContext = 
 	// What the figure does not count goes after the total, so the toggle never decides whether the popover exists.
 	const notCounted: PopoverEntry[] = [];
 	if (ctx && cutoff !== undefined) {
-		const pastStop = setPotentialOn && potential.stopThreshold !== undefined;
-		const reachable = !setPotentialOn || potential.kind === 'none' || pastStop ? reachableLines(row, ctx, cutoff, potential.stopThreshold) : [];
+		const pastCredited = setPotentialOn && potential.creditedThreshold !== undefined;
+		const reachable = !setPotentialOn || potential.kind === 'none' || pastCredited ? reachableLines(row, ctx, cutoff, potential.creditedThreshold) : [];
 		const section = [...reachable, ...(screened ? [screened] : []), ...noiseLines(ctx, cutoff)];
-		// "No gain over the item alone" would misstate a step past `stopThreshold`, which is measured against that step.
-		if (section.length > 0) notCounted.push({ type: 'heading', heading: notCountedHeading(reachable.length > 0 && !pastStop, setPotentialOn) }, ...section);
+		// "No gain over the item alone" would misstate a bonus past `creditedThreshold`, which is measured against the credited bonus.
+		if (section.length > 0)
+			notCounted.push({ type: 'heading', heading: notCountedHeading(reachable.length > 0 && !pastCredited, setPotentialOn) }, ...section);
 	}
 	if (entries.length === 0 && notCounted.length === 0) return null;
 	entries.push(line({ kind: 'total' }, shownValue(total, cutoffDps)), ...notCounted);

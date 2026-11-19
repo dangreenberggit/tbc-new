@@ -38,14 +38,14 @@ const piecesText = (label: Extract<PopoverLabel, { kind: 'pieces' }>): string =>
 	const pieces = joinNames(label.pieces);
 	const { threshold } = label;
 	if (label.broken.length === 0) {
-		return label.form === 'stop'
-			? i18n.t('upgrades_tab.set_bonus.popover_stop', { ns: 'upgrades', pieces, threshold })
-			: i18n.t('upgrades_tab.set_bonus.popover_step', { ns: 'upgrades', pieces, threshold });
+		return label.form === 'outcome'
+			? i18n.t('upgrades_tab.set_bonus.popover_outcome', { ns: 'upgrades', pieces, threshold })
+			: i18n.t('upgrades_tab.set_bonus.popover_increment', { ns: 'upgrades', pieces, threshold });
 	}
 	const broken = brokenNames(label.broken);
-	return label.form === 'stop'
-		? i18n.t('upgrades_tab.set_bonus.popover_stop_breaks', { ns: 'upgrades', pieces, threshold, broken })
-		: i18n.t('upgrades_tab.set_bonus.popover_step_breaks', { ns: 'upgrades', pieces, threshold, broken });
+	return label.form === 'outcome'
+		? i18n.t('upgrades_tab.set_bonus.popover_outcome_breaks', { ns: 'upgrades', pieces, threshold, broken })
+		: i18n.t('upgrades_tab.set_bonus.popover_increment_breaks', { ns: 'upgrades', pieces, threshold, broken });
 };
 
 export function popoverLabelText(label: PopoverLabel): string {
@@ -100,7 +100,7 @@ const screenedValueText = (reason: ScreenedReason): string => {
 
 /**
  * A `receipt` line that is not an outcome is signed, with no unit (the column says DPS),
- * as is an `againstStop` line, which shows the piece's own amount even when negative.
+ * as is an `againstCreditedGear` line, which shows the piece's own amount even when negative.
  * Any other outcome is "N DPS more" or "N DPS less" with no sign, since outcomes are
  * not added up.
  */
@@ -109,7 +109,7 @@ const valueText = (kind: SetBonusPopoverContent['kind'], entry: Extract<PopoverE
 	if (entry.label.kind === 'screened') return screenedValueText(entry.label.reason);
 	if (entry.label.kind === 'noise' || entry.belowNoise) return i18n.t('upgrades_tab.set_bonus.popover_too_small', { ns: 'upgrades' });
 	if (dps === undefined) return i18n.t('upgrades_tab.set_bonus.popover_couldnt_measure', { ns: 'upgrades' });
-	if ((kind === 'receipt' && !entry.outcome) || entry.againstStop) return `${dps > 0 ? '+' : ''}${dps.toFixed(1)}`;
+	if ((kind === 'receipt' && !entry.outcome) || entry.againstCreditedGear) return `${dps > 0 ? '+' : ''}${dps.toFixed(1)}`;
 	const shown = Number(dps.toFixed(1));
 	const amount = Math.abs(shown).toFixed(1);
 	return shown < 0
