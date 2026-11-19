@@ -106,7 +106,10 @@ export type SetScreenOnSet = {
 	packageItemIds: number[];
 	/** DPS with all added pieces counted minus with none; absent if a sim failed. */
 	pair: { dps?: number; pairedSe?: number };
-	/** The highest `statsAt` estimate over the reachable counts, if any. */
+	/**
+	 * The highest `sumOfSinglesDpsAt` estimate over the reachable counts, if
+	 * any. DPS, not stats: the name stays because recordings store it.
+	 */
 	bestStats?: number;
 	/** `bestStats + pair.dps`, absent when either is. */
 	measure?: number;
@@ -171,12 +174,10 @@ export type SetScreenInput = {
 
 export type SetScreenOnInput = Omit<SetScreenInput, 'pairIterations' | 'ladderIterations'> & {
 	/**
-	 * An estimate for `setId`'s pieces at `count` with no extra sim: the sum of
-	 * each piece's own swap gain, corrected for worn bonuses they break together,
-	 * as the `'sum-of-singles'` partner rule does. Undefined when an input is
-	 * missing.
+	 * The `'sum-of-singles'` partner rule's estimate for `setId`'s pieces at
+	 * `count`, which needs no extra sim. Undefined when an input is missing.
 	 */
-	statsAt: (setId: number, count: number) => number | undefined;
+	sumOfSinglesDpsAt: (setId: number, count: number) => number | undefined;
 	/** The baseline sim's per-iteration standard deviation. */
 	baselineStdev: number;
 };
@@ -346,9 +347,9 @@ export async function runSetScreenOn(input: SetScreenOnInput): Promise<SetScreen
 
 		let bestStats: number | undefined;
 		for (let t = Math.max(2, worn + 1); t <= reach; t++) {
-			const stats = input.statsAt(setId, t);
-			if (stats !== undefined && (bestStats === undefined || stats > bestStats)) {
-				bestStats = stats;
+			const estimate = input.sumOfSinglesDpsAt(setId, t);
+			if (estimate !== undefined && (bestStats === undefined || estimate > bestStats)) {
+				bestStats = estimate;
 			}
 		}
 		const measure = bestStats !== undefined && pairDps !== undefined ? bestStats + pairDps : undefined;

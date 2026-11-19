@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { PartialRanking } from './engine/rank';
 import {
-	DEFAULT_ITERATIONS,
 	fixtureLoaded,
 	IDLE_RUN,
 	measuredOnOf,
@@ -15,6 +14,7 @@ import {
 	type RunState,
 	shownRanking,
 	stopRequested,
+	TAB_DEFAULT_ITERATIONS,
 	visibleRows,
 } from './run_state';
 
@@ -138,7 +138,7 @@ describe('runSettings', () => {
 	});
 
 	it('falls back to the default for an empty or zero field', () => {
-		expect(runSettings(0)).toEqual({ iterations: DEFAULT_ITERATIONS, candidateCap: undefined });
+		expect(runSettings(0)).toEqual({ iterations: TAB_DEFAULT_ITERATIONS, candidateCap: undefined });
 	});
 });
 

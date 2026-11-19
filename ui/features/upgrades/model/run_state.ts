@@ -24,10 +24,10 @@ export type RunSettings = {
 };
 
 /** The iteration count used when the field is empty or zero. */
-export const DEFAULT_ITERATIONS = 3000;
+export const TAB_DEFAULT_ITERATIONS = 3000;
 
 export const runSettings = (iterations: number, candidateCap?: number): RunSettings => ({
-	iterations: iterations > 0 ? Math.floor(iterations) : DEFAULT_ITERATIONS,
+	iterations: iterations > 0 ? Math.floor(iterations) : TAB_DEFAULT_ITERATIONS,
 	candidateCap,
 });
 

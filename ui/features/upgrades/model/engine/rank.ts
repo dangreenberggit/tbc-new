@@ -568,9 +568,9 @@ type BestSwap = {
 };
 
 /**
- * Flat and fixed: the ranking's published numbers come from a full
- * per-candidate sim at this count, not an adaptive one. The value is part of
- * every ranking cache key, so changing it invalidates every cached ranking.
+ * Used when a caller passes no count; the tab always passes its own
+ * (`TAB_DEFAULT_ITERATIONS`). Flat, not adaptive. The count is part of every
+ * ranking cache key.
  */
 const DEFAULT_ITERATIONS = 5000;
 /**
@@ -1812,7 +1812,7 @@ async function buildSetBonuses(
 	// The "on" screen estimates a count's value with `sumOfSinglesEstimate`,
 	// taking the first added piece as the row.
 	const breakDpsBy = new Map(brokenSetValues.map(v => [bonusKey(v), v.dps] as const));
-	const statsAt = (setId: number, count: number): number | undefined => {
+	const sumOfSinglesDpsAt = (setId: number, count: number): number | undefined => {
 		const selection = selectFor(setId, count);
 		if (!selection.ok) return undefined;
 		const pieces: PartnerPiece[] = [];
@@ -1845,7 +1845,7 @@ async function buildSetBonuses(
 		? undefined
 		: screenMode === 'record'
 			? await recordSetScreen(screenInput)
-			: await runSetScreenOn({ ...screenInput, statsAt, baselineStdev });
+			: await runSetScreenOn({ ...screenInput, sumOfSinglesDpsAt, baselineStdev });
 	const screenedOut = new Set(setScreen?.mode === 'on' ? setScreen.sets.filter(s => !s.kept).map(s => s.setId) : []);
 
 	if (setIdsWithCandidates.size === 0) {

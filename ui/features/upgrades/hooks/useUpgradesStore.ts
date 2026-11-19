@@ -7,7 +7,7 @@ import type { StoreSubscribe } from '@sim/state/subscriptions';
 import { useStore } from 'zustand';
 
 import { followPhase } from '../model/follow_phase';
-import { DEFAULT_ITERATIONS } from '../model/run_state';
+import { TAB_DEFAULT_ITERATIONS } from '../model/run_state';
 import { UPGRADES_SETTINGS_STORAGE_KEY } from '../model/saved_entry';
 import { type LinkedSettings, openSavedUpgradesStore } from '../model/saved_settings';
 import type { SettingsSeed, UpgradesState, UpgradesStore } from '../model/upgrades_store';
@@ -15,7 +15,7 @@ import { DEV_FLAGS } from '../utils/dev_flags';
 
 export { selectRun, selectRunStatus, selectSettledSignature, selectSort } from '../model/upgrades_store';
 
-const SETTINGS_SEED: SettingsSeed = { iterations: DEFAULT_ITERATIONS };
+const SETTINGS_SEED: SettingsSeed = { iterations: TAB_DEFAULT_ITERATIONS };
 
 /** The iterations and cap from the dev URL flags, read once per page load; a flag left out is absent, so the saved iterations stand and no cap is set. */
 const DEV_LINK: LinkedSettings = {
