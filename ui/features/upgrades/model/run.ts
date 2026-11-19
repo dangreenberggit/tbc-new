@@ -11,7 +11,7 @@ import { PlayerGearSource } from './adapters/player_gear_source';
 import { simDatabaseResolverFor } from './adapters/sim_database';
 import { currentPageSkeleton } from './adapters/skeleton';
 import { type RunnerEnv, workerCountFor, WorkerPoolSimRunner } from './adapters/worker_pool_sim_runner';
-import { epWeightsFileFor, epWeightsSetFor, poolFor } from './data/data';
+import { epWeightsFileFor, epWeightsPresetFor, poolFor } from './data/data';
 import { type Progress, type RankedItem, RankError, type RankInput, rankUpgrades } from './engine/rank';
 import { MemoryStore } from './engine/seams/store';
 import type { ContentPhase, SpecId } from './engine/types';
@@ -103,9 +103,9 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 		candidateCap: settings.candidateCap,
 	};
 
-	// The run picks its EP-weights set once: that set drives the engine and is the one the run returns.
-	const epWeightsSet = epWeightsSetFor(specId, host.player.getTalentTreePoints());
-	const weights = epWeightsFileFor(epWeightsSet);
+	// The run picks its EP-weights preset once: that preset drives the engine and is the one the run returns.
+	const epWeightsPreset = epWeightsPresetFor(specId, host.player.getTalentTreePoints());
+	const weights = epWeightsFileFor(epWeightsPreset);
 	const ranking = await rankUpgrades(
 		input,
 		{
@@ -131,5 +131,5 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 		onProgress,
 	);
 
-	return { ...ranking, durationMs: Date.now() - startedAt, runner: 'WorkerPoolSimRunner', epWeightsSet };
+	return { ...ranking, durationMs: Date.now() - startedAt, runner: 'WorkerPoolSimRunner', epWeightsPreset };
 };

@@ -96,7 +96,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 				// The store drops an older run's result, so it is not logged either.
 				if (id !== runId) return;
 				// The set the run says it ranked with; a replay names none, as it ranked nothing.
-				logAssumptions(result, { epWeightsSet: result.epWeightsSet, settings, host });
+				logAssumptions(result, { epWeightsPreset: result.epWeightsPreset, settings, host });
 				// The notes list's order: the first line whose call failed.
 				if (!current.signal.aborted) toastErrorMessage(result.substitutions.find(s => s.error?.trim())?.error);
 			},
@@ -123,7 +123,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		controller?.abort();
 		const measuredOn = measuredOnPage(host, inputsSignature, selectedGearSets);
 		store.getState().loadFixture(++runId, ranking, measuredOn);
-		// A fixture records no EP-weights set, and the page's talents now need not be the ones it was ranked with.
+		// A fixture records no EP-weights preset, and the page's talents now need not be the ones it was ranked with.
 		logAssumptions(ranking, { host });
 	};
 

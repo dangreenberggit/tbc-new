@@ -21,8 +21,8 @@ import warlockEpWeights from './warlock-fallback.ep-weights.json';
 import warriorArmsEpWeights from './warrior-arms-p3.ep-weights.json';
 import warriorEpWeights from './warrior-fallback.ep-weights.json';
 
-/** A bundled EP-weights set: one per spec, plus Survival on the hunter page and Arms on the warrior page. */
-export type EpWeightsSet = SpecId | 'hunter-sv' | 'warrior-arms';
+/** A bundled EP-weights preset: one per spec, plus Survival on the hunter page and Arms on the warrior page. */
+export type EpWeightsPreset = SpecId | 'hunter-sv' | 'warrior-arms';
 
 /**
  * The talent tree that switches a page to its second build's weights. Talents
@@ -31,17 +31,17 @@ export type EpWeightsSet = SpecId | 'hunter-sv' | 'warrior-arms';
  * talents string: hunter Beast Mastery, Marksmanship, Survival; warrior Arms, Fury,
  * Protection.
  */
-const TALENT_VARIANT_BY_SPEC: Partial<Record<SpecId, { set: EpWeightsSet; tree: number }>> = {
-	hunter: { set: 'hunter-sv', tree: 2 },
-	warrior: { set: 'warrior-arms', tree: 0 },
+const TALENT_VARIANT_BY_SPEC: Partial<Record<SpecId, { preset: EpWeightsPreset; tree: number }>> = {
+	hunter: { preset: 'hunter-sv', tree: 2 },
+	warrior: { preset: 'warrior-arms', tree: 0 },
 };
 
-export function epWeightsSetFor(spec: SpecId, talentPointsByTree: readonly number[]): EpWeightsSet {
+export function epWeightsPresetFor(spec: SpecId, talentPointsByTree: readonly number[]): EpWeightsPreset {
 	const variant = TALENT_VARIANT_BY_SPEC[spec];
 	if (!variant) return spec;
 	const own = talentPointsByTree[variant.tree] ?? 0;
 	const leads = own > 0 && talentPointsByTree.every((points, tree) => tree === variant.tree || points < own);
-	return leads ? variant.set : spec;
+	return leads ? variant.preset : spec;
 }
 
 // The files' shape is stated here, never derived from the JSON import.
@@ -51,7 +51,7 @@ export type EpWeightsFile = {
 	pseudoWeights?: Record<string, number>;
 };
 
-const EP_WEIGHTS_BY_SET: Record<EpWeightsSet, EpWeightsFile> = {
+const EP_WEIGHTS_BY_PRESET: Record<EpWeightsPreset, EpWeightsFile> = {
 	ret: retEpWeights as EpWeightsFile,
 	feral: feralEpWeights as EpWeightsFile,
 	balance: balanceEpWeights as EpWeightsFile,
@@ -71,7 +71,7 @@ const EP_WEIGHTS_BY_SET: Record<EpWeightsSet, EpWeightsFile> = {
 };
 
 /** `undefined` where the preset names no phase (elemental's "Default"); a run still reports it. */
-const EP_WEIGHTS_PHASE_BY_SET: Record<EpWeightsSet, number | undefined> = {
+const EP_WEIGHTS_PHASE_BY_PRESET: Record<EpWeightsPreset, number | undefined> = {
 	ret: 2,
 	feral: 1,
 	balance: undefined,
@@ -91,8 +91,8 @@ const EP_WEIGHTS_PHASE_BY_SET: Record<EpWeightsSet, number | undefined> = {
  * A phase mismatch makes the candidate order worse but changes no DPS figure, so
  * it is reported, not blocked.
  */
-export function epWeightsDisclosureFor(set: EpWeightsSet, maxPhase: ContentPhase): { from: string; requested: string } | undefined {
-	const phase = EP_WEIGHTS_PHASE_BY_SET[set];
+export function epWeightsDisclosureFor(preset: EpWeightsPreset, maxPhase: ContentPhase): { from: string; requested: string } | undefined {
+	const phase = EP_WEIGHTS_PHASE_BY_PRESET[preset];
 	if (phase === maxPhase) return undefined;
 	return {
 		from: phase === undefined ? 'an unphased default' : `P${phase}`,
@@ -143,10 +143,10 @@ export function unsourcedCountFor(pool: readonly PoolEntry[]): number {
 	return pool.filter(e => (e.sources ?? [e.source]).every(s => s.kind === 'unknown')).length;
 }
 
-export function epWeightsFileFor(set: EpWeightsSet): Readonly<EpWeightsFile> {
-	return EP_WEIGHTS_BY_SET[set];
+export function epWeightsFileFor(preset: EpWeightsPreset): Readonly<EpWeightsFile> {
+	return EP_WEIGHTS_BY_PRESET[preset];
 }
 
-export function epWeightsFor(set: EpWeightsSet): Readonly<Record<string, number>> {
-	return EP_WEIGHTS_BY_SET[set].weights;
+export function epWeightsFor(preset: EpWeightsPreset): Readonly<Record<string, number>> {
+	return EP_WEIGHTS_BY_PRESET[preset].weights;
 }

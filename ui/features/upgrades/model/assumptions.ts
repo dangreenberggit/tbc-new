@@ -4,21 +4,21 @@
  * console line is a diagnostic, not localised UI.
  */
 
-import { bisTagPhaseFor, epWeightsDisclosureFor, type EpWeightsSet, type PagePoolHost, poolFor, poolSourceFor, unsourcedCountFor } from './data/data';
+import { bisTagPhaseFor, epWeightsDisclosureFor, type EpWeightsPreset, type PagePoolHost, poolFor, poolSourceFor, unsourcedCountFor } from './data/data';
 import type { Substitution } from './engine/disclosure';
 import type { Ranking } from './engine/rank';
 import type { RunSettings } from './run_state';
 
 export type AssumptionsContext = {
 	/** Absent for a replay or a loaded fixture, which leaves out the EP-weights lines. */
-	epWeightsSet?: EpWeightsSet;
+	epWeightsPreset?: EpWeightsPreset;
 	/** Absent for a loaded fixture, which does not record its run settings. */
 	settings?: RunSettings;
 	/** Without it, or before the page's database loads, the pool lines are left out. */
 	host?: PagePoolHost;
 };
 
-export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>, { epWeightsSet, settings, host }: AssumptionsContext = {}): string {
+export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>, { epWeightsPreset, settings, host }: AssumptionsContext = {}): string {
 	const a = ranking.assumptions;
 	const lines = [`seeds: ${a.seeds.join(', ')}`, `iterations: ${a.iterations}`, `max phase: ${a.maxPhase}`, `cutoff: ${ranking.cutoff.absDps} DPS`];
 	if (settings) lines.push(`candidate pool: ${settings.prune ? `selected set items for phase ${a.maxPhase}` : 'every eligible item'}`);
@@ -27,9 +27,9 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
 	const pool = page ? poolFor(page, page.individualConfig.presets.gear, maxPhase) : undefined;
 	const poolSource = pool && poolSourceFor(pool);
 	if (poolSource) lines.push(`pool source: ${poolSource.name} (${poolSource.entries} entries)`);
-	if (epWeightsSet) {
-		lines.push(`EP weights set: ${epWeightsSet}`);
-		const ep = epWeightsDisclosureFor(epWeightsSet, maxPhase);
+	if (epWeightsPreset) {
+		lines.push(`EP weights set: ${epWeightsPreset}`);
+		const ep = epWeightsDisclosureFor(epWeightsPreset, maxPhase);
 		if (ep) lines.push(`EP weights: written for ${ep.from}, ranking ${ep.requested}`);
 	}
 	const tags = page && bisTagPhaseFor(page, page.individualConfig.presets.gear, maxPhase);

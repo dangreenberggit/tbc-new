@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { dbPoolHost } from '../testing/db_pool';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import { assumptionsLine, substitutionConsoleLines, substitutionFirstLine } from './assumptions';
-import { epWeightsSetFor } from './data/data';
+import { epWeightsPresetFor } from './data/data';
 
 describe('assumptionsLine', () => {
 	it('names the seeds, iterations, phase and cutoff of a ranking with nothing else known, as for a loaded fixture', () => {
@@ -12,7 +12,7 @@ describe('assumptionsLine', () => {
 
 	it('gives every spec the same flat cutoff, borrowed from no other spec (ADR-0037)', () => {
 		for (const specId of ['ret', 'feral', 'warlock'] as const) {
-			const line = assumptionsLine(RANKING_FIXTURE, { epWeightsSet: specId });
+			const line = assumptionsLine(RANKING_FIXTURE, { epWeightsPreset: specId });
 			expect(line).toContain(' · cutoff: 3 DPS');
 			expect(line).toContain(' · EP weights: written for ');
 			expect(line).not.toContain('borrowed');
@@ -22,8 +22,12 @@ describe('assumptionsLine', () => {
 	// The Arms set was written for P3 and Fury's for P1, so the phase in the line shows which set the talents picked.
 	it('says which phase an Arms or a Fury run’s EP weights were written for', () => {
 		const rankingP4 = { ...RANKING_FIXTURE, assumptions: { ...RANKING_FIXTURE.assumptions, maxPhase: 4 as const } };
-		expect(assumptionsLine(rankingP4, { epWeightsSet: epWeightsSetFor('warrior', [33, 28, 0]) })).toContain(' · EP weights: written for P3, ranking P4');
-		expect(assumptionsLine(rankingP4, { epWeightsSet: epWeightsSetFor('warrior', [21, 40, 0]) })).toContain(' · EP weights: written for P1, ranking P4');
+		expect(assumptionsLine(rankingP4, { epWeightsPreset: epWeightsPresetFor('warrior', [33, 28, 0]) })).toContain(
+			' · EP weights: written for P3, ranking P4',
+		);
+		expect(assumptionsLine(rankingP4, { epWeightsPreset: epWeightsPresetFor('warrior', [21, 40, 0]) })).toContain(
+			' · EP weights: written for P1, ranking P4',
+		);
 	});
 
 	it('names the run’s pool settings when the run is known', () => {
@@ -45,10 +49,10 @@ describe('assumptionsLine', () => {
 
 	// 1042: ret-p3 under include-unticked, measured as `pool_source.cells.fixture.json`'s _comment says; re-pin the same way.
 	it('names the page’s database and the size of the pool the run drew from', () => {
-		expect(assumptionsLine(RANKING_FIXTURE, { epWeightsSet: 'ret', host: dbPoolHost('ret') })).toContain(' · pool source: wowsims db (1042 entries)');
+		expect(assumptionsLine(RANKING_FIXTURE, { epWeightsPreset: 'ret', host: dbPoolHost('ret') })).toContain(' · pool source: wowsims db (1042 entries)');
 	});
 
-	// A replayed run and a loaded fixture record no EP-weights set, but the page's pool is still known.
+	// A replayed run and a loaded fixture record no EP-weights preset, but the page's pool is still known.
 	it('names the page’s pool and no EP weights when no set is known', () => {
 		const line = assumptionsLine(RANKING_FIXTURE, { host: dbPoolHost('ret') });
 		expect(line).toContain(' · pool source: wowsims db (1042 entries)');
@@ -56,7 +60,7 @@ describe('assumptionsLine', () => {
 	});
 
 	it('leaves the pool lines out when the page is not known', () => {
-		expect(assumptionsLine(RANKING_FIXTURE, { epWeightsSet: 'ret' })).not.toContain('pool source');
+		expect(assumptionsLine(RANKING_FIXTURE, { epWeightsPreset: 'ret' })).not.toContain('pool source');
 	});
 });
 

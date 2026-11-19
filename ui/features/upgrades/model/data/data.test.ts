@@ -1,9 +1,9 @@
 import { getTalentTreePoints } from '@sim/proto/utils';
 import { describe, expect, it } from 'vitest';
 
-import { epWeightsSetFor } from './data';
+import { epWeightsPresetFor } from './data';
 
-describe('epWeightsSetFor', () => {
+describe('epWeightsPresetFor', () => {
 	// A page with no talents yet, or a talents string with no points, must not count as Arms or Survival: the variant
 	// tree has to lead with at least one point.
 	it.each([
@@ -12,12 +12,12 @@ describe('epWeightsSetFor', () => {
 		['three empty trees', [0, 0, 0]],
 		['a tie between the variant tree and another', [30, 30, 1]],
 	])('keeps the spec’s own set for %s', (_case, points) => {
-		expect(epWeightsSetFor('warrior', points)).toBe('warrior');
-		expect(epWeightsSetFor('hunter', [...points].reverse())).toBe('hunter');
+		expect(epWeightsPresetFor('warrior', points)).toBe('warrior');
+		expect(epWeightsPresetFor('hunter', [...points].reverse())).toBe('hunter');
 	});
 
 	it('takes the variant set when its tree has strictly the most points', () => {
-		expect(epWeightsSetFor('warrior', [33, 28, 0])).toBe('warrior-arms');
-		expect(epWeightsSetFor('hunter', [7, 20, 34])).toBe('hunter-sv');
+		expect(epWeightsPresetFor('warrior', [33, 28, 0])).toBe('warrior-arms');
+		expect(epWeightsPresetFor('hunter', [7, 20, 34])).toBe('hunter-sv');
 	});
 });

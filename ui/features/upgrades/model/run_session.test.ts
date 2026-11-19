@@ -273,7 +273,7 @@ describe('createRunSession', () => {
 		for (const line of lines) expect(line).toMatch(/pool source: wowsims db \(\d+ entries\)/);
 	});
 
-	describe('the EP-weights set (ticket 811)', () => {
+	describe('the EP-weights preset (ticket 811)', () => {
 		// A Fury page: were the session to read the talents itself, its line would name Fury's set, not the run's.
 		const furyPage = () => {
 			const getTalentTreePoints = vi.fn(() => [21, 40, 0]);
@@ -289,7 +289,7 @@ describe('createRunSession', () => {
 		it('names the set the run returned, without reading the page’s talents', async () => {
 			const { session, call, getTalentTreePoints } = furyPage();
 			session.start(SETTINGS, SIGNATURE, []);
-			call(0).settle({ ...RANKING_FIXTURE, durationMs: 1200, runner: 'WorkerPoolSimRunner', epWeightsSet: 'warrior-arms' });
+			call(0).settle({ ...RANKING_FIXTURE, durationMs: 1200, runner: 'WorkerPoolSimRunner', epWeightsPreset: 'warrior-arms' });
 			await vi.waitFor(() => expect(console.info).toHaveBeenCalledOnce());
 
 			expect(infoLines()[0]).toContain(' · EP weights set: warrior-arms');
