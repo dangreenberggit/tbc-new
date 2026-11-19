@@ -25,7 +25,7 @@ import { isKaelTempLegendary } from './kael-temp';
 import { equipmentFromLoggedGear, socketedItemsFromLoggedGear } from './logged-gear';
 import { inactiveMeta, MetaRepairError, type MetaRepairSwap, REPAIR_SEARCH_WORK_LIMIT, repairAndMinimize, type SocketedItem } from './meta-repair';
 import { migrateGemsToItem } from './migrate-gems';
-import { choosePartnerSet, PARTNER_RULE, type PartnerAudit, type PartnerPiece, partnerPool, type PartnerRule, sumOfSinglesEstimate } from './partner-choice';
+import { choosePartners, PARTNER_RULE, type PartnerAudit, type PartnerPiece, partnerPool, type PartnerRule, sumOfSinglesEstimate } from './partner-choice';
 import { type PlausibilityWarning, plausibilityWarnings } from './plausibility';
 import {
 	filterPoolByPhase,
@@ -1838,7 +1838,7 @@ async function buildSetBonuses(
 				breakDps: (s, c) => breakDpsBy.get(`${s}:${c}`),
 			},
 			rest,
-			{ withCombinationOnly: true },
+			{ includeCombinationOnlyBreaks: true },
 		);
 	};
 	const setScreen: SetScreen | undefined = !screenInput
@@ -2314,7 +2314,7 @@ async function buildSetBonuses(
 
 /**
  * With `measureSetBonuses`, values each set row's future bonuses by sim.
- * For each bonus above noise, `choosePartnerSet` picks the other set pieces,
+ * For each bonus above noise, `choosePartners` picks the other set pieces,
  * and the current gear plus the row plus those pieces (swapped in slot order,
  * with the usual gem repairs) is simmed once per distinct gear; its
  * `stepGearDps` is that sim minus the baseline. A failed choice, repair or
@@ -2468,7 +2468,7 @@ async function measureSetSteps(args: {
 			// simmed below, so a failure counts for the row only when no set is
 			// chosen.
 			let comparisonFailure: SkipReason | undefined;
-			const choice = await choosePartnerSet(
+			const choice = await choosePartners(
 				{
 					row: {
 						itemId: item.itemId,
