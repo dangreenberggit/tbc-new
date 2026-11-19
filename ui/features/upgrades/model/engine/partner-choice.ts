@@ -98,7 +98,11 @@ export function partnerCombinations(query: PartnerQuery): PartnerPiece[][] {
  * The 'sum-of-singles' estimate of one combination, or 'sum-of-singles-plain' without
  * `includeCombinationOnlyBreaks`. Undefined when a bonus that changes the estimate is unmeasured.
  */
-export function estimateCombinedDelta(query: PartnerQuery, combination: readonly PartnerPiece[], opts: { includeCombinationOnlyBreaks: boolean }): number | undefined {
+export function estimateCombinedDelta(
+	query: PartnerQuery,
+	combination: readonly PartnerPiece[],
+	opts: { includeCombinationOnlyBreaks: boolean },
+): number | undefined {
 	const rowSwap: PlacedItem = {
 		itemId: query.row.itemId,
 		slotIndex: query.row.slotIndex,
@@ -206,7 +210,8 @@ export async function choosePartners(query: PartnerQuery, rule: PartnerRule): Pr
 				!best ||
 				sim.deltaDps > best.deltaDps ||
 				(sim.deltaDps === best.deltaDps &&
-					((estimate ?? -Infinity) > (best.estimate ?? -Infinity) || ((estimate ?? -Infinity) === (best.estimate ?? -Infinity) && compareIds(combination, best.combination) < 0)));
+					((estimate ?? -Infinity) > (best.estimate ?? -Infinity) ||
+						((estimate ?? -Infinity) === (best.estimate ?? -Infinity) && compareIds(combination, best.combination) < 0)));
 			if (better) best = { combination, deltaDps: sim.deltaDps, estimate };
 		}
 		if (!best) return undefined;

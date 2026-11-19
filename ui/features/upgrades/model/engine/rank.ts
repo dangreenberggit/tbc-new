@@ -2460,9 +2460,7 @@ async function measureSetSteps(args: {
 			const pathSlot = args.bestSlotIndexByItemId.get(item.itemId);
 			const pathPieces =
 				entry && entry.packageItemIds.length > 0 && pathSlot !== undefined
-					? pathToThreshold(item.itemId, pathSlot, entry, args.bestSlotIndexByItemId, args.ownDeltasByItemId).filter(
-							p => p.itemId !== item.itemId,
-						)
+					? pathToThreshold(item.itemId, pathSlot, entry, args.bestSlotIndexByItemId, args.ownDeltasByItemId).filter(p => p.itemId !== item.itemId)
 					: undefined;
 			// A partner set whose sim fails is skipped, and the chosen set's gear is
 			// simmed below, so a failure counts for the row only when no set is
@@ -2522,9 +2520,7 @@ async function measureSetSteps(args: {
 			for (const p of [...pool, ...(pathPieces ?? [])]) {
 				slotOf.set(p.itemId, p.slotIndex);
 			}
-			const partners: PlacedItem[] = choice.itemIds
-				.map(itemId => ({ itemId, slotIndex: slotOf.get(itemId)! }))
-				.sort((a, b) => a.slotIndex - b.slotIndex);
+			const partners: PlacedItem[] = choice.itemIds.map(itemId => ({ itemId, slotIndex: slotOf.get(itemId)! })).sort((a, b) => a.slotIndex - b.slotIndex);
 			partnersOf.set(f, partners);
 			f.partnerRule = rule;
 			f.pieces = partners.map(p => ({
