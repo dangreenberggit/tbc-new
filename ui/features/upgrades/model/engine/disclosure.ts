@@ -1,6 +1,6 @@
 /**
- * What every ranking assumes (`StandingAssumption`) and what one run had to change
- * (`Substitution`).
+ * What every ranking assumes (`StandingAssumption`) and the notes one run adds
+ * (`RunNote`).
  */
 
 import type { MetaRepairSwap } from './meta-repair';
@@ -23,7 +23,8 @@ export type Assumptions = {
 	standing: StandingAssumption[];
 };
 
-export type Substitution = {
+/** One line of the run's "Items left out and other notes" list. `field` and `detail` are stored names. */
+export type RunNote = {
 	field: string;
 	detail: string;
 	/**
@@ -59,11 +60,7 @@ export function buildStandingAssumptions(race: Race): StandingAssumption[] {
 	];
 }
 
-export function renderDisclosure(opts: {
-	standing: readonly StandingAssumption[];
-	substitutions: readonly Substitution[];
-	expandStanding?: boolean;
-}): string[] {
+export function renderDisclosure(opts: { standing: readonly StandingAssumption[]; substitutions: readonly RunNote[]; expandStanding?: boolean }): string[] {
 	const lines: string[] = [];
 	const { standing, substitutions } = opts;
 
@@ -113,7 +110,7 @@ export function setPotentialDisclosureLine(): string {
 	return "set potential is measured with the completion-package synergy method, shared seeds — see PLAN.md §14's 2026-08-09 amendment";
 }
 
-export function substitutionsFromMetaRepair(swaps: readonly MetaRepairSwap[]): Substitution[] {
+export function notesFromMetaRepair(swaps: readonly MetaRepairSwap[]): RunNote[] {
 	if (swaps.length === 0) return [];
 	return [
 		{

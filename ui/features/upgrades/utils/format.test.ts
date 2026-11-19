@@ -13,6 +13,7 @@ import {
 	formatDps,
 	formatSeconds,
 	keepMarkWithZone,
+	noteText,
 	progressBarOf,
 	progressLabel,
 	progressStageOf,
@@ -24,7 +25,6 @@ import {
 	sourceDetail,
 	sourceKeyLabel,
 	sourceLabel,
-	substitutionText,
 	zoneWithMark,
 } from './format';
 
@@ -226,23 +226,23 @@ describe('sortLabelsFor', () => {
 	});
 });
 
-describe('substitutionText', () => {
+describe('noteText', () => {
 	it('shows a crash trace’s first line only, and leaves a one-line reason whole', () => {
-		expect(substitutionText('panic: boom\ngoroutine 1')).toBe('panic: boom');
-		expect(substitutionText('Kept the worn hit gems.')).toBe('Kept the worn hit gems.');
+		expect(noteText('panic: boom\ngoroutine 1')).toBe('panic: boom');
+		expect(noteText('Kept the worn hit gems.')).toBe('Kept the worn hit gems.');
 	});
 
 	// The page adds no note about the console.
 	it('shows the sentence alone, in every state of the text after it', () => {
 		const sentence = 'The Justicar Battlegear 2-piece set bonus was not measured, because its sim failed.';
 		const cut = sentence;
-		expect(substitutionText(`${sentence}\nHTTP 500 from /raidSimAsync: injected failure`)).toBe(cut);
-		expect(substitutionText(`${sentence}\n${'x'.repeat(2000)}`)).toBe(cut);
-		expect(substitutionText(`${sentence}\npanic: boom\nStack Trace:\ngoroutine 7 [running]:`)).toBe(cut);
-		expect(substitutionText(`${sentence}\\npanic: boom`)).toBe(cut);
-		expect(substitutionText(`${sentence}\n`)).toBe(sentence);
-		expect(substitutionText(`${sentence}\n  \n`)).toBe(sentence);
-		expect(substitutionText(sentence)).toBe(sentence);
+		expect(noteText(`${sentence}\nHTTP 500 from /raidSimAsync: injected failure`)).toBe(cut);
+		expect(noteText(`${sentence}\n${'x'.repeat(2000)}`)).toBe(cut);
+		expect(noteText(`${sentence}\npanic: boom\nStack Trace:\ngoroutine 7 [running]:`)).toBe(cut);
+		expect(noteText(`${sentence}\\npanic: boom`)).toBe(cut);
+		expect(noteText(`${sentence}\n`)).toBe(sentence);
+		expect(noteText(`${sentence}\n  \n`)).toBe(sentence);
+		expect(noteText(sentence)).toBe(sentence);
 	});
 });
 

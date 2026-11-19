@@ -7,7 +7,7 @@ import { dbPoolHost } from '../testing/db_pool';
 import { settled } from '../testing/fake_tab_host';
 import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
-import { candidateSkipSubstitution, hitCapUnknownNote, type PartialRanking, RankError, SET_BONUS_SKIP_REASONS, setBonusSkipSubstitution } from './engine/rank';
+import { candidateSkipNote, hitCapUnknownNote, type PartialRanking, RankError, SET_BONUS_SKIP_REASONS, setBonusSkipNote } from './engine/rank';
 import type { RunDeps, RunFn } from './run';
 import type { RunOutcome, RunResult } from './run_state';
 import type { GearSetOption } from './settings_pool';
@@ -189,17 +189,17 @@ describe('createRunSession', () => {
 	describe('a run that ends with failed sims', () => {
 		const setBonus = { setName: 'Justicar Battlegear', threshold: 4 as const };
 		const failures = [
-			candidateSkipSubstitution({
+			candidateSkipNote({
 				kind: 'repair',
 				itemId: 32461,
 				name: 'Furious Gizmatic Goggles',
 				slot: 'head',
 				reason: 'no gem layout activates meta 32409',
 			}),
-			setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.metaOff('no gem layout activates meta 32409') }),
+			setBonusSkipNote({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.metaOff('no gem layout activates meta 32409') }),
 			hitCapUnknownNote(),
-			setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.simFailed('HTTP 500 from /raidSimAsync: first\nStack Trace:') }),
-			candidateSkipSubstitution({ kind: 'sim', itemId: 29283, name: 'Violet Signet of the Master Assassin', slot: 'finger1', reason: 'worker died' }),
+			setBonusSkipNote({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.simFailed('HTTP 500 from /raidSimAsync: first\nStack Trace:') }),
+			candidateSkipNote({ kind: 'sim', itemId: 29283, name: 'Violet Signet of the Master Assassin', slot: 'finger1', reason: 'worker died' }),
 		];
 		const ranking = (substitutions: RunResult['substitutions']) => ({ ...RANKING_FIXTURE, substitutions, durationMs: 9 });
 

@@ -4,8 +4,8 @@
  * console line is a diagnostic, not localised UI.
  */
 
-import { bisTagPhaseFor, epWeightsDisclosureFor, type EpWeightsPreset, type PagePoolHost, poolFor, poolSourceFor, unsourcedCountFor } from './data/data';
-import type { Substitution } from './engine/disclosure';
+import { bisTagPhaseFor, epWeightsPhaseMismatch, type EpWeightsPreset, type PagePoolHost, poolFor, poolSourceFor, unsourcedCountFor } from './data/data';
+import type { RunNote } from './engine/disclosure';
 import type { Ranking } from './engine/rank';
 import type { RunSettings } from './run_state';
 
@@ -29,7 +29,7 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
 	if (poolSource) lines.push(`pool source: ${poolSource.name} (${poolSource.entries} entries)`);
 	if (epWeightsPreset) {
 		lines.push(`EP weights set: ${epWeightsPreset}`);
-		const ep = epWeightsDisclosureFor(epWeightsPreset, maxPhase);
+		const ep = epWeightsPhaseMismatch(epWeightsPreset, maxPhase);
 		if (ep) lines.push(`EP weights: written for ${ep.from}, ranking ${ep.requested}`);
 	}
 	const tags = page && bisTagPhaseFor(page, page.individualConfig.presets.gear, maxPhase);
@@ -47,18 +47,16 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
 }
 
 /**
- * A sim crash's substitution carries the whole Go stack trace, whose first line
+ * A sim crash's note carries the whole Go stack trace, whose first line
  * says what went wrong. Its line breaks arrive as real newlines and as written-out
  * backslash-n pairs, because the sim's error object is stringified into the detail.
  */
-export function substitutionFirstLine(detail: string): { line: string; truncated: boolean } {
+export function noteFirstLine(detail: string): { line: string; truncated: boolean } {
 	const [line = detail, ...rest] = detail.split(/\r?\n|\\n/);
 	// An empty error after the line leaves nothing for the console to add.
 	return { line, truncated: rest.join('').trim() !== '' };
 }
 
 /** The full text of every reason the page shortens, and every failed call's error, which the page does not show. */
-export const substitutionConsoleLines = (substitutions: readonly Substitution[]): string[] =>
-	substitutions
-		.filter(s => substitutionFirstLine(s.detail).truncated || s.error?.trim())
-		.map(s => `[upgrades] ${s.field}: ${s.detail}${s.error ? `\n${s.error}` : ''}`);
+export const noteConsoleLines = (notes: readonly RunNote[]): string[] =>
+	notes.filter(s => noteFirstLine(s.detail).truncated || s.error?.trim()).map(s => `[upgrades] ${s.field}: ${s.detail}${s.error ? `\n${s.error}` : ''}`);

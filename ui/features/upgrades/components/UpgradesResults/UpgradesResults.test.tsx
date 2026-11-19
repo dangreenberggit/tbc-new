@@ -122,15 +122,15 @@ describe('UpgradesResults', () => {
 
 	it('lists the candidates the engine dropped under a finished or a stopped run, and not while one runs', () => {
 		const done = show({ status: 'done', runId: 1, result: RANKING_FIXTURE });
-		expect(within(done.container).getByTestId('upgrades-substitutions')).not.toBeNull();
+		expect(within(done.container).getByTestId('upgrades-run-notes')).not.toBeNull();
 		done.unmount();
 
 		const stopped = show({ status: 'stopped', runId: 1, result: STOPPED_FIXTURE });
-		expect(within(stopped.container).getByTestId('upgrades-substitutions')).not.toBeNull();
+		expect(within(stopped.container).getByTestId('upgrades-run-notes')).not.toBeNull();
 		stopped.unmount();
 
 		const running = show({ status: 'running', runId: 1, startedAt: 0, landedRows: [fixtureRow(0)], stopping: false });
-		expect(within(running.container).queryByTestId('upgrades-substitutions')).toBeNull();
+		expect(within(running.container).queryByTestId('upgrades-run-notes')).toBeNull();
 	});
 
 	describe('a finished run with no rows (ticket 515)', () => {

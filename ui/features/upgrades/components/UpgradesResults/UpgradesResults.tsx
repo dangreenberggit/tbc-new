@@ -9,7 +9,7 @@ import type { RunState } from '../../model/run_state';
 import { EmptyState } from '../EmptyState';
 import { ResultsPanes } from '../ResultsPanes';
 import { ProvisionalResultsTable } from '../ResultsTable';
-import { SubstitutionsList } from '../SubstitutionsList';
+import { RunNotesList } from '../RunNotesList';
 import { ViewToggles } from '../ViewToggles';
 
 export interface UpgradesResultsProps {
@@ -98,7 +98,7 @@ export const UpgradesResults = memo(({ run, bisHeadingsOf, specId }: UpgradesRes
 							body={i18n.t('upgrades_tab.results.empty_no_upgrades_body', { ns: 'upgrades' })}
 						/>
 					)}
-					{run.result.substitutions.length > 0 && <SubstitutionsList substitutions={run.result.substitutions} />}
+					{run.result.substitutions.length > 0 && <RunNotesList notes={run.result.substitutions} />}
 				</>
 			);
 		}

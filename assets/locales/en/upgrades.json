@@ -166,8 +166,8 @@
 			"batch_remove": "Remove from Batch Sim"
 		},
 		"assumptions": {
-			"substitutions_title": "Items left out and other notes ({{count}})",
-			"substitution_in_slot": "{{field}} ({{slot}})"
+			"notes_title": "Items left out and other notes ({{count}})",
+			"note_in_slot": "{{field}} ({{slot}})"
 		}
 	}
 }

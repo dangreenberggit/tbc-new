@@ -1,11 +1,11 @@
-import { candidateSkipSubstitution, type RankedItem, type Ranking } from '../model/engine/rank';
+import { candidateSkipNote, type RankedItem, type Ranking } from '../model/engine/rank';
 import type { StoppedRanking } from '../model/run_state';
 
 /**
  * A small finished ranking for the tab's unit tests. Rows 0-5, which tests read by
  * index, are trimmed from a recorded Retribution run with its real numbers: four
  * ranked rows, one set row (renumbered to 5) and one row below the cutoff. Rows
- * 6-10 and the substitution are made up so each results feature has a row to show;
+ * 6-10 and the note are made up so each results feature has a row to show;
  * they are not in engine order, which `applyView` does not need.
  */
 export const RANKING_FIXTURE: Ranking = {
@@ -22,7 +22,7 @@ export const RANKING_FIXTURE: Ranking = {
 		standing: [{ id: 'race', detail: 'Race assumed RaceBloodElf from the pinned preset.' }],
 	},
 	substitutions: [
-		candidateSkipSubstitution({
+		candidateSkipNote({
 			kind: 'sim',
 			itemId: 32837,
 			name: 'Warglaive of Azzinoth',

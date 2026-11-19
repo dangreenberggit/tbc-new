@@ -618,15 +618,15 @@
 				"assumptions": {
 					"type": "object",
 					"properties": {
-						"substitutions_title": {
+						"notes_title": {
 							"type": "string"
 						},
-						"substitution_in_slot": {
+						"note_in_slot": {
 							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["substitutions_title", "substitution_in_slot"]
+					"required": ["notes_title", "note_in_slot"]
 				}
 			},
 			"additionalProperties": false,

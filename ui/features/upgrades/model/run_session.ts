@@ -10,7 +10,7 @@ import { toastManager } from '@ui-kit/Toast';
 
 import { equippedItemIds } from './adapters/player_gear_source';
 import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
-import { type AssumptionsContext, assumptionsLine, substitutionConsoleLines } from './assumptions';
+import { type AssumptionsContext, assumptionsLine, noteConsoleLines } from './assumptions';
 import { RankError, type Ranking } from './engine/rank';
 import { clearProgress } from './progress_channel';
 import { createRunContext, type RunContext, type RunFn, specIdFor } from './run';
@@ -55,7 +55,7 @@ const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string, 
  */
 const logAssumptions = (result: Pick<Ranking, 'assumptions' | 'cutoff' | 'substitutions'>, context: AssumptionsContext) => {
 	console.info(assumptionsLine(result, context));
-	for (const line of substitutionConsoleLines(result.substitutions)) console.warn(line);
+	for (const line of noteConsoleLines(result.substitutions)) console.warn(line);
 };
 
 /**

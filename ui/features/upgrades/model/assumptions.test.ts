@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { dbPoolHost } from '../testing/db_pool';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
-import { assumptionsLine, substitutionConsoleLines, substitutionFirstLine } from './assumptions';
+import { assumptionsLine, noteConsoleLines, noteFirstLine } from './assumptions';
 import { epWeightsPresetFor } from './data/data';
 
 describe('assumptionsLine', () => {
@@ -64,30 +64,30 @@ describe('assumptionsLine', () => {
 	});
 });
 
-describe('substitutionFirstLine', () => {
+describe('noteFirstLine', () => {
 	it('keeps a crash trace’s first line, whether its breaks are real or written out as backslash-n', () => {
-		expect(substitutionFirstLine('panic: boom\ngoroutine 1')).toEqual({ line: 'panic: boom', truncated: true });
-		expect(substitutionFirstLine('panic: boom\\ngoroutine 1')).toEqual({ line: 'panic: boom', truncated: true });
-		expect(substitutionFirstLine('Kept the worn hit gems.')).toEqual({ line: 'Kept the worn hit gems.', truncated: false });
+		expect(noteFirstLine('panic: boom\ngoroutine 1')).toEqual({ line: 'panic: boom', truncated: true });
+		expect(noteFirstLine('panic: boom\\ngoroutine 1')).toEqual({ line: 'panic: boom', truncated: true });
+		expect(noteFirstLine('Kept the worn hit gems.')).toEqual({ line: 'Kept the worn hit gems.', truncated: false });
 	});
 
 	it('does not count an empty error after the first line as cut text', () => {
-		expect(substitutionFirstLine('Its sim failed.\n')).toEqual({ line: 'Its sim failed.', truncated: false });
-		expect(substitutionFirstLine('Its sim failed.\n \n')).toEqual({ line: 'Its sim failed.', truncated: false });
-		expect(substitutionConsoleLines([{ field: 'set', detail: 'Its sim failed.\n' }])).toEqual([]);
+		expect(noteFirstLine('Its sim failed.\n')).toEqual({ line: 'Its sim failed.', truncated: false });
+		expect(noteFirstLine('Its sim failed.\n \n')).toEqual({ line: 'Its sim failed.', truncated: false });
+		expect(noteConsoleLines([{ field: 'set', detail: 'Its sim failed.\n' }])).toEqual([]);
 	});
 });
 
-describe('substitutionConsoleLines', () => {
+describe('noteConsoleLines', () => {
 	it("gives the full text of each reason the page shortened, and every failed call's error, which the page does not show", () => {
-		expect(substitutionConsoleLines(RANKING_FIXTURE.substitutions)).toEqual([
+		expect(noteConsoleLines(RANKING_FIXTURE.substitutions)).toEqual([
 			'[upgrades] Warglaive of Azzinoth: This item was not ranked in this slot, because its sim failed.\nitem 32837, slot mainhand\npanic: runtime error\ngoroutine 1 [running]:\nmain.main()',
 		]);
-		expect(substitutionConsoleLines([{ field: 'hit cap', detail: 'Kept the worn hit gems.' }])).toEqual([]);
+		expect(noteConsoleLines([{ field: 'hit cap', detail: 'Kept the worn hit gems.' }])).toEqual([]);
 		// The page shows no error, so each failure's whole error goes to the console.
 		const failed = (error: string) => ({ field: 'set', detail: 'Its sim failed.', error });
-		expect(substitutionConsoleLines([failed('HTTP 500 from /raidSimAsync')])).toEqual(['[upgrades] set: Its sim failed.\nHTTP 500 from /raidSimAsync']);
-		expect(substitutionConsoleLines([failed(' \n')])).toEqual([]);
-		expect(substitutionConsoleLines([failed('panic: boom\ngoroutine 7')])).toEqual(['[upgrades] set: Its sim failed.\npanic: boom\ngoroutine 7']);
+		expect(noteConsoleLines([failed('HTTP 500 from /raidSimAsync')])).toEqual(['[upgrades] set: Its sim failed.\nHTTP 500 from /raidSimAsync']);
+		expect(noteConsoleLines([failed(' \n')])).toEqual([]);
+		expect(noteConsoleLines([failed('panic: boom\ngoroutine 7')])).toEqual(['[upgrades] set: Its sim failed.\npanic: boom\ngoroutine 7']);
 	});
 });

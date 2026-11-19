@@ -2,41 +2,41 @@ import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 
-import { substitutionsFromMetaRepair } from '../../model/engine/disclosure';
+import { notesFromMetaRepair } from '../../model/engine/disclosure';
 import {
-	breakSplitSkipSubstitution,
-	candidateSkipSubstitution,
+	breakSplitSkipNote,
+	candidateSkipNote,
 	hitCapFullWeightNote,
 	hitCapPerSpellTalentNote,
 	hitCapUnknownNote,
-	metaPreferenceDisclosure,
-	offHandBlockedDisclosure,
-	oneHandBlockedDisclosure,
+	metaPreferenceNotes,
+	offHandBlockedNotes,
+	oneHandBlockedNotes,
 	SET_BONUS_SKIP_REASONS,
-	setBonusesSkipSubstitution,
-	setBonusSkipSubstitution,
-	setScreenSkipSubstitution,
-	uniqueSubstitutions,
-	wornSetSkipSubstitution,
+	setBonusCountsSkipNote,
+	setBonusSkipNote,
+	setScreenSkipNote,
+	uniqueNotes,
+	wornSetSkipNote,
 } from '../../model/engine/rank';
 import type { DetectedSpecId } from '../../model/engine/types';
 import { RANKING_FIXTURE } from '../../testing/ranking_fixture';
-import { SubstitutionsList } from './SubstitutionsList';
+import { RunNotesList } from './RunNotesList';
 
 loadEnglishBundles({ character: true });
 
 const terms = () =>
-	within(screen.getByTestId('upgrades-substitutions'))
+	within(screen.getByTestId('upgrades-run-notes'))
 		.getAllByRole('term')
 		.map(term => term.textContent);
 const cells = () =>
-	within(screen.getByTestId('upgrades-substitutions'))
+	within(screen.getByTestId('upgrades-run-notes'))
 		.getAllByRole('definition')
 		.map(definition => definition.textContent);
 
-describe('SubstitutionsList', () => {
+describe('RunNotesList', () => {
 	it('lists each left-out item with the first line of the reason the engine gave', () => {
-		render(<SubstitutionsList substitutions={RANKING_FIXTURE.substitutions} />);
+		render(<RunNotesList notes={RANKING_FIXTURE.substitutions} />);
 
 		expect(screen.getByText(`Items left out and other notes (${RANKING_FIXTURE.substitutions.length})`)).toBeTruthy();
 		expect(terms()).toEqual(['Warglaive of Azzinoth (Main Hand)']);
@@ -57,31 +57,27 @@ describe('SubstitutionsList', () => {
 			undefined,
 		];
 		for (const error of errors) {
-			const { unmount } = render(<SubstitutionsList substitutions={[line(error)]} />);
+			const { unmount } = render(<RunNotesList notes={[line(error)]} />);
 			expect(cells()).toEqual([sentence]);
 			unmount();
 		}
 	});
 
 	it('cuts a trace whose line breaks are written out as backslash-n', () => {
-		render(
-			<SubstitutionsList
-				substitutions={[{ field: 'candidate 30900', detail: 'sim panicked: index out of range\ngoroutine 1 [running]:\nmain.go:12' }]}
-			/>,
-		);
+		render(<RunNotesList notes={[{ field: 'candidate 30900', detail: 'sim panicked: index out of range\ngoroutine 1 [running]:\nmain.go:12' }]} />);
 		expect(cells()).toEqual(['sim panicked: index out of range']);
 	});
 
 	// A Go panic's error ends in a stack trace whose goroutine number and argument addresses change from sim to sim.
 	it("shows a failed sim's line once when only the stack trace differs between the sims", () => {
 		const failed = (goroutine: number) =>
-			setBonusSkipSubstitution({
+			setBonusSkipNote({
 				setName: 'Justicar Battlegear',
 				threshold: 4,
 				reason: SET_BONUS_SKIP_REASONS.rowSimsFailed(`interface conversion: panic\nStack Trace:\ngoroutine ${goroutine} [running]:`),
 				onSomeRows: true,
 			});
-		render(<SubstitutionsList substitutions={uniqueSubstitutions([failed(41), failed(57)])} />);
+		render(<RunNotesList notes={uniqueNotes([failed(41), failed(57)])} />);
 		expect(cells()).toEqual(['The Justicar Battlegear 4-piece set bonus was not measured on some rows, because their sim failed.']);
 	});
 
@@ -89,16 +85,16 @@ describe('SubstitutionsList', () => {
 	// run's error toast need, so the one line kept must keep it, in the first one's place.
 	it("keeps a failed call's error when an earlier line with the same sentence has none", () => {
 		const setBonus = { setName: 'Justicar Battlegear', threshold: 4 as const };
-		const noError = setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt });
-		const withError = setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.notBuilt('the request database has no row for item 30987') });
+		const noError = setBonusSkipNote({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt });
+		const withError = setBonusSkipNote({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.notBuilt('the request database has no row for item 30987') });
 		const other = hitCapUnknownNote();
-		expect(uniqueSubstitutions([noError, other, withError])).toEqual([withError, other]);
-		expect(uniqueSubstitutions([withError, other, noError])).toEqual([withError, other]);
+		expect(uniqueNotes([noError, other, withError])).toEqual([withError, other]);
+		expect(uniqueNotes([withError, other, noError])).toEqual([withError, other]);
 	});
 
 	it('leaves a one-line reason whole', () => {
-		render(<SubstitutionsList substitutions={[{ field: 'hit cap', detail: 'Kept the worn hit gems.' }]} />);
-		expect(within(screen.getByTestId('upgrades-substitutions')).getByRole('definition').textContent).toBe('Kept the worn hit gems.');
+		render(<RunNotesList notes={[{ field: 'hit cap', detail: 'Kept the worn hit gems.' }]} />);
+		expect(within(screen.getByTestId('upgrades-run-notes')).getByRole('definition').textContent).toBe('Kept the worn hit gems.');
 	});
 
 	// Every line the engine writes, built by the engine's own
@@ -107,47 +103,47 @@ describe('SubstitutionsList', () => {
 		const ring = { itemId: 29283, name: 'Violet Signet of the Master Assassin', reason: 'panic: runtime error' };
 		const setBonus = { setName: 'Justicar Battlegear', threshold: 4 as const };
 		render(
-			<SubstitutionsList
-				substitutions={[
-					...substitutionsFromMetaRepair([{ itemId: 30987, itemIndex: 0, socketIndex: 1, from: 24027, to: 24054, cost: 1 }]),
+			<RunNotesList
+				notes={[
+					...notesFromMetaRepair([{ itemId: 30987, itemIndex: 0, socketIndex: 1, from: 24027, to: 24054, cost: 1 }]),
 					hitCapUnknownNote(),
 					hitCapFullWeightNote(),
 					hitCapPerSpellTalentNote('Suppression'),
 					// No real spec reaches this line; the cast stands in for a spec added without a meta gem entry.
-					...metaPreferenceDisclosure('unlisted-spec' as DetectedSpecId),
-					...oneHandBlockedDisclosure(2),
-					...offHandBlockedDisclosure(1),
-					candidateSkipSubstitution({ ...ring, kind: 'sim', slot: 'finger1' }),
-					candidateSkipSubstitution({ ...ring, kind: 'sim', slot: 'finger2' }),
-					candidateSkipSubstitution({
+					...metaPreferenceNotes('unlisted-spec' as DetectedSpecId),
+					...oneHandBlockedNotes(2),
+					...offHandBlockedNotes(1),
+					candidateSkipNote({ ...ring, kind: 'sim', slot: 'finger1' }),
+					candidateSkipNote({ ...ring, kind: 'sim', slot: 'finger2' }),
+					candidateSkipNote({
 						kind: 'repair',
 						itemId: 32461,
 						name: 'Furious Gizmatic Goggles',
 						slot: 'head',
 						reason: 'no gem layout activates meta 32409',
 					}),
-					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.simFailed('sim error: boom') }),
-					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.metaOff('no gem layout activates meta 32409') }),
-					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.rowSimsFailed('sim error: boom'), onSomeRows: true }),
-					breakSplitSkipSubstitution({ ...setBonus, error: 'sim error: boom' }),
-					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt }),
-					setScreenSkipSubstitution({ setName: 'Justicar Battlegear', error: 'sim error: boom' }),
-					wornSetSkipSubstitution({ setName: 'Justicar Battlegear', error: 'sim error: boom' }),
-					setBonusesSkipSubstitution({ setName: 'Justicar Battlegear', reason: SET_BONUS_SKIP_REASONS.bonusListFailed('computeStats error: boom') }),
-					setBonusesSkipSubstitution({
+					setBonusSkipNote({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.simFailed('sim error: boom') }),
+					setBonusSkipNote({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.metaOff('no gem layout activates meta 32409') }),
+					setBonusSkipNote({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.rowSimsFailed('sim error: boom'), onSomeRows: true }),
+					breakSplitSkipNote({ ...setBonus, error: 'sim error: boom' }),
+					setBonusSkipNote({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.measuringSimsNotBuilt }),
+					setScreenSkipNote({ setName: 'Justicar Battlegear', error: 'sim error: boom' }),
+					wornSetSkipNote({ setName: 'Justicar Battlegear', error: 'sim error: boom' }),
+					setBonusCountsSkipNote({ setName: 'Justicar Battlegear', reason: SET_BONUS_SKIP_REASONS.bonusListFailed('computeStats error: boom') }),
+					setBonusCountsSkipNote({
 						setName: 'Justicar Battlegear',
 						reason: SET_BONUS_SKIP_REASONS.metaOff('no gem layout activates meta 32409'),
 					}),
-					setBonusSkipSubstitution({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.notBuilt('the request database has no row for item 30987') }),
-					setScreenSkipSubstitution({ setName: 'Justicar Battlegear', error: 'the request database has no row for item 30987', notBuilt: true }),
-					setBonusSkipSubstitution({
+					setBonusSkipNote({ ...setBonus, reason: SET_BONUS_SKIP_REASONS.notBuilt('the request database has no row for item 30987') }),
+					setScreenSkipNote({ setName: 'Justicar Battlegear', error: 'the request database has no row for item 30987', notBuilt: true }),
+					setBonusSkipNote({
 						...setBonus,
 						reason: SET_BONUS_SKIP_REASONS.rowsNotBuilt('the request database has no row for item 30987'),
 						onSomeRows: true,
 					}),
-					breakSplitSkipSubstitution({ ...setBonus, error: 'the request database has no row for item 30987', notBuilt: true }),
-					wornSetSkipSubstitution({ setName: 'Justicar Battlegear', error: 'the request database has no row for item 30987', notBuilt: true }),
-					setBonusesSkipSubstitution({
+					breakSplitSkipNote({ ...setBonus, error: 'the request database has no row for item 30987', notBuilt: true }),
+					wornSetSkipNote({ setName: 'Justicar Battlegear', error: 'the request database has no row for item 30987', notBuilt: true }),
+					setBonusCountsSkipNote({
 						setName: 'Justicar Battlegear',
 						reason: SET_BONUS_SKIP_REASONS.bonusListNotBuilt('the request database has no row for item 30987'),
 					}),

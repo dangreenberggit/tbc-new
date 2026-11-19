@@ -17,7 +17,7 @@ import { gearHitRating } from './caps';
 import { compose } from './compose';
 import { canonicalJson, ENGINE_VERSION, type HashedGearItem } from './content-hash';
 import { CUTOFF, type Cutoff, meetsCutoff } from './cutoff';
-import { type Assumptions, buildStandingAssumptions, type Substitution, substitutionsFromMetaRepair } from './disclosure';
+import { type Assumptions, buildStandingAssumptions, notesFromMetaRepair, type RunNote } from './disclosure';
 import { enchantAppliesToItem } from './enchants';
 import { findMetaGemId, type GemEntry, gemsForPhase, getGem } from './gems';
 import { getItem } from './items';
@@ -231,6 +231,7 @@ export type RankedItem = {
 	curatedSets?: string[];
 	bisSets?: string[];
 	setBonusNote?: string;
+	/** Gems the run put in place of the worn ones. */
 	gemSubstitutions?: Array<{
 		itemId: number;
 		socketIndex: number;
@@ -488,7 +489,8 @@ export type Ranking = {
 	fight: ResolvedFight;
 	baseline: { dps: number; stdev: number; metaAdjusted: boolean };
 	assumptions: Assumptions;
-	substitutions: Substitution[];
+	/** The run's notes (RunNote); the stored name says "substitutions". */
+	substitutions: RunNote[];
 	items: RankedItem[];
 	setBonuses?: SetBonusValue[];
 	/**
@@ -654,7 +656,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 	 * (a full-weight spec, or a target not at level 73), or a per-spell hit
 	 * talent the cap leaves out.
 	 */
-	const hitCapNotes: Substitution[] = [];
+	const hitCapNotes: RunNote[] = [];
 	/**
 	 * One stats read of `request`: its hit percent and the `HitCapBudget` it
 	 * gives. A spell-hit budget also needs a sim result's spell damage by
@@ -744,7 +746,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 	 * two-item swap, which `attemptEligibility` rejects. They leave before
 	 * ordering, not at that guard: the EP order would price them against an
 	 * empty off hand, they would use up `candidateCap` places, and a Stop would
-	 * bring them back as unsimmed placeholders. One substitution line counts them.
+	 * bring them back as unsimmed placeholders. One note counts them.
 	 */
 	const blockedOffHand = offHandBlockedEntries(phaseEligible, input.spec, wornMainHandId);
 	// One-handed weapons beside the worn two-hander: priced alone, each would
@@ -1289,8 +1291,8 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		// A line for every set bonus the set phase could not measure, and for
 		// every set screen or worn-set value sim that failed, most with the sim's
 		// error.
-		const setBonusLines: Substitution[] = [];
-		const setCheckLines: Substitution[] = [];
+		const setBonusNotes: RunNote[] = [];
+		const setCheckNotes: RunNote[] = [];
 
 		// The set-bonus sims and paired replication only refine the ranking, so
 		// once Stop fires neither runs: what already simmed stands and the
@@ -1309,8 +1311,8 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 					{ dps: baselineDps, se: observation.stdev / Math.sqrt(iterations) },
 					simVersion,
 					runOpts,
-					setBonusLines,
-					setCheckLines,
+					setBonusNotes,
+					setCheckNotes,
 					deps.measureSetBonuses ?? false,
 					cutoff,
 					observation.stdev,
@@ -1363,7 +1365,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 						runOpts,
 						cutoff,
 						requestsPerLayout,
-						bonusLines: setBonusLines,
+						bonusNotes: setBonusNotes,
 					})
 				: undefined;
 		if (signal?.aborted) aborted = true;
@@ -1401,8 +1403,8 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			countsAsBreak = deps.measureSetBonuses ? countsAsBreakFrom(setBonusResult.wornSetLadder) : undefined;
 			setBonuses = setBonusResult.bonuses;
 			steps = undefined;
-			setBonusLines.length = 0;
-			setCheckLines.length = 0;
+			setBonusNotes.length = 0;
+			setCheckNotes.length = 0;
 			for (const item of ranked) delete item.setContext;
 		}
 		if (!aborted) {
@@ -1464,13 +1466,13 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				standing: buildStandingAssumptions(race),
 			},
 			substitutions: [
-				...substitutionsFromMetaRepair(metaSwaps),
+				...notesFromMetaRepair(metaSwaps),
 				...hitCapNotes,
-				...metaPreferenceDisclosure(gems.spec),
-				...offHandBlockedDisclosure(blockedOffHand.length),
-				...oneHandBlockedDisclosure(blockedOneHand.length),
-				...candidateSkips.map(candidateSkipSubstitution),
-				...uniqueSubstitutions([...setCheckLines, ...setBonusLines]),
+				...metaPreferenceNotes(gems.spec),
+				...offHandBlockedNotes(blockedOffHand.length),
+				...oneHandBlockedNotes(blockedOneHand.length),
+				...candidateSkips.map(candidateSkipNote),
+				...uniqueNotes([...setCheckNotes, ...setBonusNotes]),
 			],
 			items: ranked,
 			...(setBonuses.length > 0 ? { setBonuses } : {}),
@@ -1590,8 +1592,8 @@ async function buildSetBonuses(
 	baseline: DpsSample,
 	simVersion: string,
 	runOpts: SimRunOpts,
-	setBonusLines: Substitution[],
-	setCheckLines: Substitution[],
+	setBonusNotes: RunNote[],
+	setCheckNotes: RunNote[],
 	/**
 	 * When set, measure every worn set's bonuses on the player's gear, charge
 	 * only the counted ones as losses, and check each reachable bonus against
@@ -1622,7 +1624,7 @@ async function buildSetBonuses(
 	setScreen?: SetScreen;
 }> {
 	const bonusNotMeasured = (setName: string, threshold: SetThreshold, reason: SkipReason) =>
-		setBonusLines.push(setBonusSkipSubstitution({ setName, threshold, reason }));
+		setBonusNotes.push(setBonusSkipNote({ setName, threshold, reason }));
 
 	// The set sims' store-cached run; the caller decides what a failed sim
 	// costs.
@@ -1657,7 +1659,7 @@ async function buildSetBonuses(
 				composeFor,
 				cachedSampleRun,
 				cutoff,
-				setCheckLines,
+				setCheckNotes,
 				deps.sim.activeSetBonuses ? request => deps.sim.activeSetBonuses!(request) : undefined,
 			)
 		: [];
@@ -1717,8 +1719,8 @@ async function buildSetBonuses(
 				gems,
 				composeFor,
 				(setId, reason) =>
-					setCheckLines.push(
-						setBonusesSkipSubstitution({
+					setCheckNotes.push(
+						setBonusCountsSkipNote({
 							setName: setNameOf(
 								equipment,
 								setId,
@@ -1785,8 +1787,8 @@ async function buildSetBonuses(
 					seed: runOpts.seed,
 					...(deps.signal ? { signal: deps.signal } : {}),
 					onSimFailed: (setId, error) =>
-						setCheckLines.push(
-							setScreenSkipSubstitution({
+						setCheckNotes.push(
+							setScreenSkipNote({
 								setName: setNameOf(
 									equipment,
 									setId,
@@ -1796,8 +1798,8 @@ async function buildSetBonuses(
 							}),
 						),
 					onRequestNotBuilt: (setId, error) =>
-						setCheckLines.push(
-							setScreenSkipSubstitution({
+						setCheckNotes.push(
+							setScreenSkipNote({
 								setName: setNameOf(
 									equipment,
 									setId,
@@ -2339,7 +2341,7 @@ async function measureSetSteps(args: {
 	/** Every request here comes from it. */
 	requestsPerLayout: RequestsPerLayout;
 	/** A line, with the sim's error, for each bonus whose partner or bonus-off sim failed. */
-	bonusLines: Substitution[];
+	bonusNotes: RunNote[];
 }): Promise<{
 	setStepSims: SetStepSims;
 	bonusOffSims: SetBonusOffSims;
@@ -2380,7 +2382,7 @@ async function measureSetSteps(args: {
 
 	/** A bonus some rows could not measure, and why. */
 	const skipOnSomeRows = (setName: string, threshold: SetThreshold, reason: SkipReason) =>
-		args.bonusLines.push(setBonusSkipSubstitution({ setName, threshold, reason, onSomeRows: true }));
+		args.bonusNotes.push(setBonusSkipNote({ setName, threshold, reason, onSomeRows: true }));
 
 	const inSlotOrder = (swaps: readonly PlacedItem[]) => [...swaps].sort((a, b) => a.slotIndex - b.slotIndex);
 	/** The row-and-partners gear, or the error of its failed gem repair. */
@@ -2640,8 +2642,8 @@ async function measureSetSteps(args: {
 			console.warn('[upgrades] set step break not split: its request could not be built', error);
 			if (error !== undefined) {
 				for (const b of lost) {
-					args.bonusLines.push(
-						breakSplitSkipSubstitution({
+					args.bonusNotes.push(
+						breakSplitSkipNote({
 							setName: setNameOf(equipment, b.setId),
 							threshold: b.threshold,
 							error,
@@ -2725,8 +2727,8 @@ async function measureSetSteps(args: {
 		const simError = offErrors.get(key);
 		if (simError !== undefined) {
 			for (const b of lost) {
-				args.bonusLines.push(
-					breakSplitSkipSubstitution({
+				args.bonusNotes.push(
+					breakSplitSkipNote({
 						setName: setNameOf(equipment, b.setId),
 						threshold: b.threshold,
 						error: simError,
@@ -2929,7 +2931,7 @@ async function measureWornSets(
 	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
 	cachedSampleRun: (what: string) => (request: RaidSimRequest) => Promise<DpsSample>,
 	cutoff: Cutoff,
-	lines: Substitution[],
+	notes: RunNote[],
 	readBonuses?: (request: RaidSimRequest) => Promise<readonly string[]>,
 ): Promise<WornSetCountEntry[]> {
 	const worn = [...setCounts(equipment)]
@@ -2943,8 +2945,8 @@ async function measureWornSets(
 		const setName = setNameOf(equipment, setId);
 		const slots = equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : []));
 		const countValues = await measureWornSetCounts(cachedSampleRun(`${setName} worn-set counts`), request, slots, (error, notBuilt) =>
-			lines.push(
-				wornSetSkipSubstitution({
+			notes.push(
+				wornSetSkipNote({
 					setName,
 					error,
 					...(notBuilt ? { notBuilt } : {}),
@@ -2953,7 +2955,7 @@ async function measureWornSets(
 		);
 		const bonusCounts =
 			readBonuses && countValues.some(countValue => countValue.unmeasured !== undefined)
-				? await wornSetBonusCounts(readBonuses, request, slots, setName, lines)
+				? await wornSetBonusCounts(readBonuses, request, slots, setName, notes)
 				: undefined;
 		for (const countValue of countValues) {
 			const counted =
@@ -2977,15 +2979,15 @@ async function wornSetBonusCounts(
 	request: RaidSimRequest,
 	slots: readonly number[],
 	setName: string,
-	lines: Substitution[],
+	notes: RunNote[],
 ): Promise<ReadonlySet<number> | undefined> {
 	let setLess: RaidSimRequest;
 	try {
 		setLess = applySetLessCopies(request, slots);
 	} catch (err) {
 		console.warn(`[upgrades] ${setName}: its bonus counts were not read`, err);
-		lines.push(
-			setBonusesSkipSubstitution({
+		notes.push(
+			setBonusCountsSkipNote({
 				setName,
 				reason: SET_BONUS_SKIP_REASONS.bonusListNotBuilt(errorText(err)),
 			}),
@@ -3005,8 +3007,8 @@ async function wornSetBonusCounts(
 	} catch (err) {
 		if (err instanceof StopRefusedSim) return undefined;
 		console.warn(`[upgrades] ${setName}: its bonus counts were not read`, err);
-		lines.push(
-			setBonusesSkipSubstitution({
+		notes.push(
+			setBonusCountsSkipNote({
 				setName,
 				reason: SET_BONUS_SKIP_REASONS.bonusListFailed(errorText(err)),
 			}),
@@ -3638,7 +3640,7 @@ type LayoutRequest = {
  * An entry whose gear, repaired again on its own hit budget, failed the gem
  * repair. It is no failed call, so a caller treats it like the same failure
  * on the first build, never as a request that could not be built: a build
- * error's line carries `Substitution.error`, which the run's error toast
+ * error's line carries `RunNote.error`, which the run's error toast
  * shows.
  */
 type RepairFailure = { repairError: MetaRepairError };
@@ -3743,7 +3745,7 @@ function swapItemAt(equipment: readonly SimItemSpec[], slotIndex: number, itemId
 	});
 }
 
-export function metaPreferenceDisclosure(spec: DetectedSpecId | undefined): Substitution[] {
+export function metaPreferenceNotes(spec: DetectedSpecId | undefined): RunNote[] {
 	const note = missingMetaPreferenceNote(spec);
 	return note ? [{ field: 'Meta gem for your spec', detail: note }] : [];
 }
@@ -3752,7 +3754,7 @@ export function metaPreferenceDisclosure(spec: DetectedSpecId | undefined): Subs
  * One line for every one-handed weapon the worn two-hander kept out of the
  * run (`oneHandBlockedEntries`).
  */
-export function oneHandBlockedDisclosure(count: number): Substitution[] {
+export function oneHandBlockedNotes(count: number): RunNote[] {
 	if (count === 0) return [];
 	return [
 		{
@@ -3766,7 +3768,7 @@ export function oneHandBlockedDisclosure(count: number): Substitution[] {
 }
 
 /** One line for every off-hand item the worn two-hander kept out of the run. */
-export function offHandBlockedDisclosure(count: number): Substitution[] {
+export function offHandBlockedNotes(count: number): RunNote[] {
 	if (count === 0) return [];
 	return [
 		{
@@ -3793,7 +3795,7 @@ export type CandidateSkip = {
  * only "this slot" and carries the slot as data for the page to name: the
  * same item can still rank from its other slot.
  */
-export function candidateSkipSubstitution(skip: CandidateSkip): Substitution {
+export function candidateSkipNote(skip: CandidateSkip): RunNote {
 	// After the sentence, so for the console only: the page shows a line's
 	// first line, and names the item and slot.
 	const where = `item ${skip.itemId}, slot ${skip.slot}`;
@@ -3859,7 +3861,7 @@ export const SET_BONUS_SKIP_REASONS = {
 	}),
 } as const;
 
-const withError = (line: { field: string; detail: string }, error: string | undefined): Substitution => (error === undefined ? line : { ...line, error });
+const withError = (line: { field: string; detail: string }, error: string | undefined): RunNote => (error === undefined ? line : { ...line, error });
 
 /** One set bonus the set phase could not measure, for the run or `onSomeRows` only. */
 export type SetBonusSkip = {
@@ -3869,7 +3871,7 @@ export type SetBonusSkip = {
 	onSomeRows?: true;
 };
 
-export function setBonusSkipSubstitution(skip: SetBonusSkip): Substitution {
+export function setBonusSkipNote(skip: SetBonusSkip): RunNote {
 	return withError(
 		{
 			field: `${skip.setName} ${skip.threshold}-piece set bonus`,
@@ -3884,7 +3886,7 @@ export function setBonusSkipSubstitution(skip: SetBonusSkip): Substitution {
  * for it, so its bonuses in reach get no figure; its worn bonuses are measured
  * separately, on the player's own gear (`wornSetLadder`).
  */
-export function setBonusesSkipSubstitution(skip: { setName: string; reason: SkipReason }): Substitution {
+export function setBonusCountsSkipNote(skip: { setName: string; reason: SkipReason }): RunNote {
 	return withError(
 		{
 			field: `${skip.setName} set`,
@@ -3898,13 +3900,13 @@ export function setBonusesSkipSubstitution(skip: { setName: string; reason: Skip
  * A shown bonus's bonus-off sim that failed or could not be built. The bonus
  * is still shown as one line; only its worn-bonus loss is not split out.
  */
-export function breakSplitSkipSubstitution(skip: {
+export function breakSplitSkipNote(skip: {
 	setName: string;
 	threshold: SetThreshold;
 	error: string;
 	/** The bonus-off request could not be built, so no sim ran. */
 	notBuilt?: true;
-}): Substitution {
+}): RunNote {
 	return {
 		field: `${skip.setName} ${skip.threshold}-piece set bonus`,
 		detail: `On some rows, the cost of breaking the ${skip.setName} ${skip.threshold}-piece set bonus was not measured apart from the pieces that break it, because their sim ${skip.notBuilt ? 'could not be built' : 'failed'}.`,
@@ -3923,7 +3925,7 @@ export type SetScreenSkip = {
 	notBuilt?: true;
 };
 
-export function setScreenSkipSubstitution(skip: SetScreenSkip): Substitution {
+export function setScreenSkipNote(skip: SetScreenSkip): RunNote {
 	return {
 		field: `${skip.setName} set`,
 		detail: `The ${skip.setName} set was kept without the quick check that can skip it, because the check's sim ${skip.notBuilt ? 'could not be built' : 'failed'}.`,
@@ -3936,12 +3938,12 @@ export function setScreenSkipSubstitution(skip: SetScreenSkip): Substitution {
  * those sims do not know which counts hold a bonus, and a sim's piece count
  * (1 for the first) is not a count the player wears.
  */
-export function wornSetSkipSubstitution(skip: {
+export function wornSetSkipNote(skip: {
 	setName: string;
 	error: string;
 	/** The sim's request could not be built, so no sim ran. */
 	notBuilt?: true;
-}): Substitution {
+}): RunNote {
 	return {
 		field: `${skip.setName} set`,
 		detail: `The value of the ${skip.setName} set on your gear was not fully measured, because its sim ${skip.notBuilt ? 'could not be built' : 'failed'}.`,
@@ -3950,17 +3952,17 @@ export function wornSetSkipSubstitution(skip: {
 }
 
 /**
- * Each substitution once, keyed by what the page shows: field, slot and the
+ * Each note once, keyed by what the page shows: field, slot and the
  * first line of the detail. Many rows' sims can fail for one cause, and a Go
  * panic's stack trace differs from sim to sim, so a key on the whole detail
  * would repeat one sentence. The first one stays in its place, unless it has
  * no `error` and a later one does: that one takes the place, so the console
  * and the run's error toast keep the failed call's error.
  */
-export function uniqueSubstitutions(substitutions: readonly Substitution[]): Substitution[] {
+export function uniqueNotes(notes: readonly RunNote[]): RunNote[] {
 	const placeOf = new Map<string, number>();
-	const out: Substitution[] = [];
-	for (const s of substitutions) {
+	const out: RunNote[] = [];
+	for (const s of notes) {
 		const key = `${s.field}|${s.slot ?? ''}|${s.detail.split('\n', 1)[0]}`;
 		const at = placeOf.get(key);
 		if (at === undefined) {
@@ -3977,7 +3979,7 @@ export function uniqueSubstitutions(substitutions: readonly Substitution[]): Sub
  * The hit-cap notes are written before any candidate is priced, so they say
  * "If gems were swapped": a run whose meta gem stays on swaps nothing.
  */
-export function hitCapUnknownNote(): Substitution {
+export function hitCapUnknownNote(): RunNote {
 	return {
 		field: 'Meta gem swaps and the hit cap',
 		detail:
@@ -3993,7 +3995,7 @@ export function hitCapUnknownNote(): Substitution {
  * hunter's melee weave, a talent's hit inside the stats read for balance and
  * elemental), and the warrior page serves Arms and Fury under one spec id.
  */
-export function hitCapFullWeightNote(): Substitution {
+export function hitCapFullWeightNote(): RunNote {
 	return {
 		field: 'Meta gem swaps and the hit cap',
 		detail: 'If gems were swapped to turn your meta gem on, hit rating was ' + 'counted at full value, with no hit cap applied for this spec.',
@@ -4005,7 +4007,7 @@ export function hitCapFullWeightNote(): Substitution {
  * hit talent: the budget leaves that talent's hit out, so the spells it covers
  * reach the cap sooner than the budget counts.
  */
-export function hitCapPerSpellTalentNote(talent: string): Substitution {
+export function hitCapPerSpellTalentNote(talent: string): RunNote {
 	return {
 		field: 'Meta gem swaps and the hit cap',
 		detail:

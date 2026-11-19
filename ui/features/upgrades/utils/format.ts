@@ -6,8 +6,8 @@ import { difficultyNames } from '@sim/proto/names';
 import { formatToNumber } from '@sim/utils/format';
 import type { ProgressTrackerProgress } from '@ui-kit/ProgressTrackerDialog';
 
-import { substitutionFirstLine } from '../model/assumptions';
-import type { Substitution } from '../model/engine/disclosure';
+import { noteFirstLine } from '../model/assumptions';
+import type { RunNote } from '../model/engine/disclosure';
 import type { ItemSource } from '../model/engine/pool';
 import { type RankedItem, RankError } from '../model/engine/rank';
 import type { SimOrderName } from '../model/engine/slots';
@@ -157,13 +157,11 @@ export const fixtureOutcomeText = (outcome: FixtureLoadResult): string => {
 };
 
 /** A label in the list of left-out items. An item line adds the slot it was tried in, because its text says only "this slot". */
-export const substitutionLabel = (substitution: Substitution): string =>
-	substitution.slot
-		? i18n.t('upgrades_tab.assumptions.substitution_in_slot', { ns: 'upgrades', field: substitution.field, slot: simSlotLabel(substitution.slot) })
-		: substitution.field;
+export const noteLabel = (note: RunNote): string =>
+	note.slot ? i18n.t('upgrades_tab.assumptions.note_in_slot', { ns: 'upgrades', field: note.field, slot: simSlotLabel(note.slot) }) : note.field;
 
 /** A reason in the run's notes, as shown: its first line. The run logs the whole text to the console. */
-export const substitutionText = (detail: string): string => substitutionFirstLine(detail).line;
+export const noteText = (detail: string): string => noteFirstLine(detail).line;
 
 /** The status line names no error: `run_session.ts` shows the error's own message in a toast. */
 export const describeRunError = (error: unknown): string => {

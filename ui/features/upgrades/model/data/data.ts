@@ -91,7 +91,7 @@ const EP_WEIGHTS_PHASE_BY_PRESET: Record<EpWeightsPreset, number | undefined> = 
  * A phase mismatch makes the candidate order worse but changes no DPS figure, so
  * it is reported, not blocked.
  */
-export function epWeightsDisclosureFor(preset: EpWeightsPreset, maxPhase: ContentPhase): { from: string; requested: string } | undefined {
+export function epWeightsPhaseMismatch(preset: EpWeightsPreset, maxPhase: ContentPhase): { from: string; requested: string } | undefined {
 	const phase = EP_WEIGHTS_PHASE_BY_PRESET[preset];
 	if (phase === maxPhase) return undefined;
 	return {
