@@ -80,7 +80,7 @@ export type SetScreenSet = {
 	setId: number;
 	worn: number;
 	reach: number;
-	/** The pieces added up to `reach`, in slot order. */
+	/** The pieces added up to `reach`, in slot order. Stored name: "package" means these added pieces. */
 	packageItemIds: number[];
 	pairs: SetScreenPair[];
 	/** Grouped by iteration count, then in count order. */
@@ -102,13 +102,14 @@ export type SetScreenOnSet = {
 	setId: number;
 	worn: number;
 	reach: number;
-	/** The pieces added up to `reach`, in slot order. */
+	/** The pieces added up to `reach`, in slot order. Stored name: "package" means these added pieces. */
 	packageItemIds: number[];
 	/** DPS with all added pieces counted minus with none; absent if a sim failed. */
 	pair: { dps?: number; pairedSe?: number };
 	/**
 	 * The highest `estimatedDeltaAt` estimate over the reachable counts, if
-	 * any. DPS, not stats: the name stays because recordings store it.
+	 * any: the added pieces' DPS gain with no term for this set's bonuses,
+	 * which `measure` adds as the pair's DPS. Recordings store the name.
 	 */
 	bestStats?: number;
 	/** `bestStats + pair.dps`, absent when either is. */
@@ -176,7 +177,8 @@ export type SetScreenOnInput = Omit<SetScreenInput, 'pairIterations' | 'countIte
 	/**
 	 * The estimated delta of `setId`'s chosen pieces at `threshold`: their own
 	 * deltas added up with the break corrections, as the `'sum-of-singles'`
-	 * partner rule does, so it needs no extra sim. Undefined when an input is
+	 * partner rule does, so it needs no extra sim. It has no term for this
+	 * set's bonuses; the pair's DPS adds them. Undefined when an input is
 	 * missing.
 	 */
 	estimatedDeltaAt: (setId: number, threshold: number) => number | undefined;

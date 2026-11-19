@@ -1826,7 +1826,8 @@ async function buildSetBonuses(
 						),
 				}
 			: undefined;
-	// The "on" screen estimates a count's value with `estimateCombinedDelta`.
+	// The "on" screen estimates the added pieces' gain at each count with
+	// `estimateCombinedDelta`, which has no term for the set's own bonuses.
 	// The estimate treats the row like any other added piece, so which piece is
 	// the row does not matter.
 	const screenBrokenBonusDpsByKey = new Map(brokenSetValues.map(v => [bonusKey(v), v.dps] as const));

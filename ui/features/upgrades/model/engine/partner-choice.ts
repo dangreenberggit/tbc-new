@@ -3,19 +3,24 @@
  * one bonus. `choosePartners` is the only place they are picked, so the rule can be
  * swapped here alone.
  *
- * 'sum-of-singles' adds up each piece's DPS change when swapped in alone. A worn bonus
- * that several pieces each break alone is then charged more than once, and one that only
- * the full swap breaks is not charged at all, so the estimate corrects both. Ties go to
- * the lowest sorted item ids. 'close-calls', the tab's rule, sims every combination whose estimate
- * is within `CLOSE_CALL_MARGIN_DPS` of the best and keeps the highest delta.
+ * The tab's rule, 'close-calls', ranks every combination by the 'sum-of-singles' estimate,
+ * then sims those within `CLOSE_CALL_MARGIN_DPS` of the best and keeps the highest delta.
+ *
+ * The estimate adds up each piece's DPS change when swapped in alone, then fixes the worn
+ * bonuses that sum gets wrong. A bonus several pieces each break alone is charged once per
+ * piece, so the extra charges are added back. A bonus only the full swap breaks was never
+ * charged, so it is taken off. It has no term for the bonus being reached, which every
+ * combination reaches alike. Rules that rank by the estimate break ties to the lowest
+ * sorted item ids.
+ *
  * 'every-combination' sims every combination and is the reference the others are scored against.
- * 'sum-of-singles-plain' (without the second correction) and 'single-swap' (the pieces
- * `pathToThreshold` picks) are kept only for that scoring.
+ * 'sum-of-singles-plain' (the estimate without taking off bonuses only the full swap breaks)
+ * and 'single-swap' (the pieces `pathToThreshold` picks) are kept only for that scoring.
  */
 
 import { bonusKey, type BrokenSetBonus, type PlacedItem } from './set-value';
 
-/** Hashed into the cache key, so the strings keep old words: "singles" are own deltas, "single-swap" is the row's own swap. */
+/** Hashed into the cache key, so the strings keep old words: "singles" are own deltas, and 'single-swap' takes the pieces `pathToThreshold` picks. */
 export type PartnerRule = 'close-calls' | 'sum-of-singles' | 'sum-of-singles-plain' | 'single-swap' | 'every-combination';
 
 /**
@@ -97,6 +102,9 @@ export function partnerCombinations(query: PartnerQuery): PartnerPiece[][] {
 /**
  * The 'sum-of-singles' estimate of one combination, or 'sum-of-singles-plain' without
  * `includeCombinationOnlyBreaks`. Undefined when a bonus that changes the estimate is unmeasured.
+ * It has no term for the bonus the swaps reach: the callers' `brokenBy` leaves that set out.
+ * Partner choice compares combinations that reach the same bonus, and the set screen adds
+ * the set's bonuses as its pair's DPS.
  */
 export function estimateCombinedDelta(
 	query: PartnerQuery,
@@ -126,9 +134,9 @@ export function estimateCombinedDelta(
 	let estimate = query.row.ownDeltaDps + combination.reduce((s, p) => s + p.ownDeltaDps, 0);
 	for (const [key, b] of keys) {
 		const brokenAloneCount = brokenAlone.get(key) ?? 0;
-		const lost = brokenTogether.has(key) ? 1 : 0;
+		const brokenTogetherCount = brokenTogether.has(key) ? 1 : 0;
 		if (brokenAloneCount === 0 && !opts.includeCombinationOnlyBreaks) continue;
-		const coefficient = brokenAloneCount - lost;
+		const coefficient = brokenAloneCount - brokenTogetherCount;
 		if (coefficient === 0) continue;
 		const bonusDps = query.breakDps(b.setId, b.threshold);
 		if (bonusDps === undefined) return undefined;
