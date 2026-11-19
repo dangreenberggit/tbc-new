@@ -3265,7 +3265,7 @@ function summaryToResolved(f: FightSummary): ResolvedFight {
 	};
 }
 
-/** Namespaced so a ranking blob cannot collide with another content-addressed value. */
+/** Namespaced so a ranking cannot collide with another stored value. */
 function rankingCacheKey(contentHash: string): string {
 	return `ranking:${contentHash}`;
 }

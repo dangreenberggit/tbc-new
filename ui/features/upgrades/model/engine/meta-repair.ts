@@ -1,6 +1,6 @@
 /**
  * Meta repair: the gem recolours that switch an inactive meta gem back on. An exact search
- * over the smallest sets of recolours, counting socket bonuses gained and lost and, with a
+ * over the minimal sets of recolours, counting socket bonuses gained and lost and, with a
  * hit budget, valuing hit only up to the cap. Past a work limit it falls back to a greedy
  * search that values layouts the same way.
  */
@@ -320,12 +320,12 @@ const colourChangeKind = (dRed: number, dYellow: number, dBlue: number): number 
 const NO_COLOUR_CHANGE = colourChangeKind(0, 0, 0);
 
 /**
- * The best smallest set of recolours that switches the meta on; undefined when there is
- * none. Smallest: each change places a non-meta palette gem of another colour, undoing
- * any one leaves the meta off, no unique gem repeats or duplicates a worn one, and there
- * are at most `maxChanges`. The value is the gems' EP change, plus bonuses switched on,
- * minus bonuses switched off, plus the hit term of `valueModel`. Ties go to the first
- * layout in SIM_ORDER, socket and allowed-gems order.
+ * The best minimal set of recolours that switches the meta on: undoing any one leaves it
+ * off. Undefined when there is none. Each change places a non-meta allowed gem of another
+ * colour, no unique gem repeats or duplicates a worn one, and there are at most
+ * `maxChanges`. The value is the gems' EP change, plus bonuses switched on, minus
+ * bonuses switched off, plus the hit term of `valueModel`. Ties go to the first layout
+ * in SIM_ORDER, socket and allowed-gems order.
  *
  * A dynamic program over the items that keeps the best value per state (which colour
  * changes, hit change, unique gems placed). This is exact because the value is a sum

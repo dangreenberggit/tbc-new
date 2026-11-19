@@ -1,6 +1,6 @@
 /**
- * Store: a cache of blobs keyed by their content, plus job rows. `MemoryStore` keeps them
- * for the page session only.
+ * Store: values keyed by the inputs that made them (a ranking, a sim result, a gear read),
+ * plus job rows. `MemoryStore` keeps them for the page session only.
  */
 
 export type JobStatus = 'queued' | 'running' | 'done' | 'error';
