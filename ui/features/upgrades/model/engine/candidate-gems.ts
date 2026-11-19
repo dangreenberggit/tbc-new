@@ -161,7 +161,7 @@ export function metaSocketUnpriced(itemId: number, gems: readonly number[], spec
 }
 
 export type FillEmptyOpts = {
-	/** Unique gem ids already socketed elsewhere on the set. */
+	/** Unique gem ids already socketed elsewhere on the gear. */
 	usedUnique?: ReadonlySet<number>;
 	/**
 	 * The meta gem and the gems on **other slots only**. The filler counts this
@@ -241,7 +241,7 @@ function fillEmpties(
 			opts.meta
 				? {
 						metaId: opts.meta.metaId,
-						setGemIds: [...opts.meta.otherGemIds, ...placed],
+						gearGemIds: [...opts.meta.otherGemIds, ...placed],
 					}
 				: undefined,
 			opts.spec,
@@ -263,7 +263,7 @@ function bestGemForSocket(
 	epWeights: EpWeightRecord,
 	usedUnique: ReadonlySet<number>,
 	matchColors: boolean,
-	metaCtx: { metaId: number; setGemIds: readonly number[] } | undefined,
+	metaCtx: { metaId: number; gearGemIds: readonly number[] } | undefined,
 	spec: DetectedSpecId | undefined,
 ): GemEntry | undefined {
 	const eligible: { gem: GemEntry; ep: number }[] = [];
@@ -309,7 +309,7 @@ function bestGemForSocket(
 
 	let best: { gem: GemEntry; ep: number; deficit: number } | undefined;
 	for (const e of pool) {
-		const afterDeficit = metaDeficit(metaCtx.metaId, gemColorCounts([...metaCtx.setGemIds, e.gem.id]));
+		const afterDeficit = metaDeficit(metaCtx.metaId, gemColorCounts([...metaCtx.gearGemIds, e.gem.id]));
 		if (!best || afterDeficit < best.deficit || (afterDeficit === best.deficit && e.ep > best.ep)) {
 			best = { gem: e.gem, ep: e.ep, deficit: afterDeficit };
 		}
