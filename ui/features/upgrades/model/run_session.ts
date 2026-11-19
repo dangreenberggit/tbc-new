@@ -15,7 +15,7 @@ import { RankError, type Ranking } from './engine/rank';
 import { clearProgress } from './progress_channel';
 import { createRunContext, type RunContext, type RunFn, specIdFor } from './run';
 import type { MeasuredOn, RunSettings } from './run_state';
-import type { SetOption } from './settings_pool';
+import type { GearSetOption } from './settings_pool';
 import type { UpgradesStore } from './upgrades_store';
 
 /**
@@ -30,11 +30,11 @@ export type RunSessionEnv = {
 export type RunSession = {
 	/**
 	 * A run starts only from the user's Run click. The settings live with the caller,
-	 * so it passes the inputs signature (`run_inputs.ts`) and the sets picked.
+	 * so it passes the inputs signature (`run_inputs.ts`) and the gear sets picked.
 	 */
-	start: (settings: RunSettings, inputsSignature: string, selectedSets: readonly SetOption[]) => void;
+	start: (settings: RunSettings, inputsSignature: string, selectedGearSets: readonly GearSetOption[]) => void;
 	stop: () => void;
-	loadFixture: (ranking: Ranking, inputsSignature: string, selectedSets: readonly SetOption[]) => void;
+	loadFixture: (ranking: Ranking, inputsSignature: string, selectedGearSets: readonly GearSetOption[]) => void;
 	dispose: () => void;
 };
 
@@ -42,11 +42,11 @@ export type RunSession = {
  * Read at the click: the progress dialog blocks gear edits until the run settles,
  * so this is the gear the engine reads. A fixture sets the page gear before this.
  */
-const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string, selectedSets: readonly SetOption[]): MeasuredOn => ({
+const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string, selectedGearSets: readonly GearSetOption[]): MeasuredOn => ({
 	wornItemIds: equippedItemIds(host.player),
 	specId: specIdFor(host.player.getSpec()),
 	inputsSignature,
-	selectedSets,
+	selectedGearSets,
 });
 
 /**
@@ -77,14 +77,14 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 	let runId = stored.status === 'idle' ? 0 : stored.runId;
 	let context: RunContext | null = null;
 
-	const start = (settings: RunSettings, inputsSignature: string, selectedSets: readonly SetOption[]) => {
+	const start = (settings: RunSettings, inputsSignature: string, selectedGearSets: readonly GearSetOption[]) => {
 		controller?.abort();
 		const current = new AbortController();
 		controller = current;
 		const id = ++runId;
 
 		clearProgress(host.player);
-		const measuredOn = measuredOnPage(host, inputsSignature, selectedSets);
+		const measuredOn = measuredOnPage(host, inputsSignature, selectedGearSets);
 		store.getState().startRun(id, Date.now(), measuredOn);
 		runFn(host, settings, {
 			signal: current.signal,
@@ -119,9 +119,9 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		store.getState().requestStop(runId);
 	};
 
-	const loadFixture = (ranking: Ranking, inputsSignature: string, selectedSets: readonly SetOption[]) => {
+	const loadFixture = (ranking: Ranking, inputsSignature: string, selectedGearSets: readonly GearSetOption[]) => {
 		controller?.abort();
-		const measuredOn = measuredOnPage(host, inputsSignature, selectedSets);
+		const measuredOn = measuredOnPage(host, inputsSignature, selectedGearSets);
 		store.getState().loadFixture(++runId, ranking, measuredOn);
 		// A fixture records no EP-weights set, and the page's talents now need not be the ones it was ranked with.
 		logAssumptions(ranking, { host });

@@ -26,7 +26,7 @@ export type HeroicFiveManPolicy = 'exclude' | 'include' | 'include-unticked';
 export const HEROIC_FIVE_MAN: HeroicFiveManPolicy = 'include-unticked';
 
 /** `group` tells apart presets that reuse a name within a phase, such as hunter's Beast Mastery and Survival. */
-export type PresetSet = { name: string; phase?: number; group?: string; itemIds: readonly number[] };
+export type PresetGearSet = { name: string; phase?: number; group?: string; itemIds: readonly number[] };
 
 /**
  * The minimum every non-preset candidate meets: epic or better, and item level 100
@@ -77,31 +77,31 @@ export function isHeroicFiveManOnly(item: Pick<UIItem, 'sources'>): boolean {
 }
 
 /**
- * Its declared `phase`, else the highest known phase among its items. A set with
- * no known item has no phase, so it is never a phase's BiS set.
+ * Its declared `phase`, else the highest known phase among its items. A gear set with
+ * no known item has no phase, so it is never a phase's BiS gear set.
  */
-export function presetPhase(preset: Pick<PresetSet, 'phase' | 'itemIds'>, itemPhaseOf: (id: number) => number | undefined): number | undefined {
+export function presetPhase(preset: Pick<PresetGearSet, 'phase' | 'itemIds'>, itemPhaseOf: (id: number) => number | undefined): number | undefined {
 	if (preset.phase !== undefined) return preset.phase;
 	const phases = preset.itemIds.map(itemPhaseOf).filter((p): p is number => p !== undefined);
 	return phases.length > 0 ? Math.max(...phases) : undefined;
 }
 
 /**
- * The BiS sets are every preset of the newest preset phase at or below `maxPhase`.
- * wowsims' `PresetGear` has no BiS field, and an alternative set ("Bulwark",
+ * The BiS gear sets are every preset of the newest preset phase at or below `maxPhase`.
+ * wowsims' `PresetGear` has no BiS field, and an alternative gear set ("Bulwark",
  * "Alt 6%") counts like any other, so names are not checked.
  */
-export function bisSetsFor(
-	presets: readonly PresetSet[],
+export function bisGearSetsFor(
+	presets: readonly PresetGearSet[],
 	maxPhase: number,
 	itemPhaseOf: (id: number) => number | undefined,
-): { phase: number; sets: PresetSet[] } | undefined {
+): { phase: number; gearSets: PresetGearSet[] } | undefined {
 	const phased = presets
 		.map(p => ({ preset: p, phase: presetPhase(p, itemPhaseOf) }))
-		.filter((p): p is { preset: PresetSet; phase: number } => p.phase !== undefined && p.phase <= maxPhase);
+		.filter((p): p is { preset: PresetGearSet; phase: number } => p.phase !== undefined && p.phase <= maxPhase);
 	if (phased.length === 0) return undefined;
 	const phase = Math.max(...phased.map(p => p.phase));
-	return { phase, sets: phased.filter(p => p.phase === phase).map(p => p.preset) };
+	return { phase, gearSets: phased.filter(p => p.phase === phase).map(p => p.preset) };
 }
 
 /**
@@ -112,7 +112,7 @@ export function bisSetsFor(
 export function selectPool(
 	items: readonly UIItem[],
 	canEquip: (item: UIItem) => boolean,
-	presets: readonly PresetSet[],
+	presets: readonly PresetGearSet[],
 	missingIds: ReadonlySet<number>,
 	maxPhase: number,
 	policy: HeroicFiveManPolicy,
@@ -128,8 +128,8 @@ export function selectPool(
 	const meetsFloor = (item: UIItem) =>
 		phaseOf(item) <= maxPhase && item.quality >= MIN_QUALITY && (ilvlOf(item) >= MIN_ILVL || hasEffectRecord(item, missingIds));
 
-	const bis = bisSetsFor(presets, maxPhase, itemPhaseOf);
-	const setNamesHolding = (sets: readonly PresetSet[], id: number) => sets.filter(s => s.itemIds.includes(id)).map(s => s.name);
+	const bis = bisGearSetsFor(presets, maxPhase, itemPhaseOf);
+	const gearSetNamesHolding = (sets: readonly PresetGearSet[], id: number) => sets.filter(s => s.itemIds.includes(id)).map(s => s.name);
 
 	const pool: PoolEntry[] = [];
 	for (const item of items) {
@@ -137,8 +137,8 @@ export function selectPool(
 		if (slot === undefined || isKaelTempLegendary(item.id) || missingIds.has(item.id) || !canEquip(item)) continue;
 		if (!meetsFloor(item) && !presetIds.has(item.id)) continue;
 		if (policy === 'exclude' && isHeroicFiveManOnly(item)) continue;
-		const bisSets = bis ? setNamesHolding(bis.sets, item.id) : [];
-		const curatedSets = setNamesHolding(presets, item.id);
+		const bisSets = bis ? gearSetNamesHolding(bis.gearSets, item.id) : [];
+		const curatedSets = gearSetNamesHolding(presets, item.id);
 		const sources = sourcesFor(item);
 		pool.push({
 			itemId: item.id,
@@ -186,8 +186,8 @@ function offerTwinsOnce(pool: readonly PoolEntry[], byId: ReadonlyMap<number, UI
 }
 
 /**
- * The pool offers one id per group (`offerTwinsOnce`), so the settings match set
- * items through this map and a set naming another id still holds the item.
+ * The pool offers one id per group (`offerTwinsOnce`), so the settings match gear set
+ * items through this map and a gear set naming another id still holds the item.
  */
 export function twinIdsOf(items: readonly UIItem[]): ReadonlyMap<number, readonly number[]> {
 	const twins = new Map<number, readonly number[]>();
@@ -220,7 +220,7 @@ const missingIds = (): ReadonlySet<number> => (missingIdsCache ??= new Set(MISSI
 let exchangeCache: ExchangeIndex | undefined;
 const exchange = () => (exchangeCache ??= indexExchange(tierExchange as TierExchange));
 
-export const presetSetOf = ({
+export const presetGearSetOf = ({
 	name,
 	phase,
 	group,
@@ -230,7 +230,7 @@ export const presetSetOf = ({
 	phase?: number;
 	group?: string;
 	gear: { items: readonly { id: number }[] };
-}): PresetSet => ({
+}): PresetGearSet => ({
 	name,
 	...(phase !== undefined ? { phase } : {}),
 	...(group !== undefined ? { group } : {}),
@@ -248,7 +248,7 @@ export const itemPhaseLookup =
 	};
 
 /** Empty until the sim's database has loaded. */
-export function buildPool(host: PoolHost, presets: readonly PresetSet[], maxPhase: number): PoolEntry[] {
+export function buildPool(host: PoolHost, presets: readonly PresetGearSet[], maxPhase: number): PoolEntry[] {
 	const db = host.sim.db;
 	if (!db) return [];
 	const playerSpec = host.player.getPlayerSpec();

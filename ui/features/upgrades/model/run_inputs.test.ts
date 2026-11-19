@@ -52,14 +52,14 @@ describe('inputsSignature', () => {
 	const settings: RunSettings = {
 		iterations: 3000,
 		excludedSources: ['Crafted', 'Black Temple'],
-		guaranteedSetKeys: ['preset:3:P3'],
-		guaranteedSetItemIds: [30129, 1],
+		selectedGearSetKeys: ['preset:3:P3'],
+		selectedGearSetItemIds: [30129, 1],
 		prune: false,
 	};
 	const signature = (overrides: Partial<RunSettings> = {}, liveKey = 'page') => inputsSignature({ liveKey, settings: { ...settings, ...overrides } });
 
 	it('is equal for equal parts, whatever order the lists were built in', () => {
-		expect(signature()).toBe(signature({ excludedSources: ['Black Temple', 'Crafted'], guaranteedSetItemIds: [1, 30129] }));
+		expect(signature()).toBe(signature({ excludedSources: ['Black Temple', 'Crafted'], selectedGearSetItemIds: [1, 30129] }));
 	});
 
 	it('changes when the page changes', () => {
@@ -70,7 +70,7 @@ describe('inputsSignature', () => {
 		['iterations', { iterations: 500 }],
 		['cap', { candidateCap: 40 }],
 		['an excluded source', { excludedSources: ['Crafted'] }],
-		['a selected set', { guaranteedSetKeys: [] }],
+		['a selected set', { selectedGearSetKeys: [] }],
 		['prune', { prune: true }],
 	])('changes when %s changes', (_name, overrides) => {
 		expect(signature(overrides)).not.toBe(signature());

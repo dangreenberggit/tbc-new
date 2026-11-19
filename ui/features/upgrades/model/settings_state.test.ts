@@ -8,9 +8,9 @@ import {
 	type SettingsState,
 	toRunSettings,
 	withCandidateCap,
+	withGearSetToggled,
 	withIterations,
 	withPrune,
-	withSetToggled,
 	withSourceToggled,
 } from './settings_state';
 
@@ -36,9 +36,9 @@ describe('the settings changes', () => {
 	});
 
 	it('selects and deselects a set', () => {
-		const once = withSetToggled(seeded(), 'preset:3:P3');
+		const once = withGearSetToggled(seeded(), 'preset:3:P3');
 		expect(once.selectedSetKeys).toEqual(['preset:3:P3']);
-		expect(withSetToggled(once, 'preset:3:P3').selectedSetKeys).toEqual([]);
+		expect(withGearSetToggled(once, 'preset:3:P3').selectedSetKeys).toEqual([]);
 	});
 
 	it('sets prune', () => {
@@ -68,30 +68,30 @@ describe('the settings changes', () => {
 	});
 
 	it('applies the default sets once per spec and phase, so a later deselect survives', () => {
-		const scope = { specPhase: 'ret:3', defaultSetKeys: ['preset:3:P3'], poolSourceKeys: [] };
+		const scope = { specPhase: 'ret:3', defaultGearSetKeys: ['preset:3:P3'], poolSourceKeys: [] };
 		const first = appliedSettings(seeded(), scope);
 		expect(first).toMatchObject({ selectedSetKeys: ['preset:3:P3'], defaultsFor: 'ret:3' });
 
-		const deselected = withSetToggled(first, 'preset:3:P3');
+		const deselected = withGearSetToggled(first, 'preset:3:P3');
 		const again = appliedSettings(deselected, scope);
 		expect(again).toBe(deselected);
 	});
 
 	it('re-applies the defaults when the spec or phase changes', () => {
-		const p3 = appliedSettings(seeded(), { specPhase: 'ret:3', defaultSetKeys: ['preset:3:P3'], poolSourceKeys: [] });
-		const p4 = appliedSettings(p3, { specPhase: 'ret:4', defaultSetKeys: [], poolSourceKeys: [] });
+		const p3 = appliedSettings(seeded(), { specPhase: 'ret:3', defaultGearSetKeys: ['preset:3:P3'], poolSourceKeys: [] });
+		const p4 = appliedSettings(p3, { specPhase: 'ret:4', defaultGearSetKeys: [], poolSourceKeys: [] });
 		expect(p4).toMatchObject({ selectedSetKeys: [], defaultsFor: 'ret:4' });
 	});
 
 	it('drops an exclusion whose source the new pool no longer offers', () => {
 		const excluded = withSourceToggled(withSourceToggled(seeded(), 'Black Temple'), 'Crafted');
-		const next = appliedSettings(excluded, { specPhase: 'ret:2', defaultSetKeys: [], poolSourceKeys: ['Crafted', 'Badge vendor'] });
+		const next = appliedSettings(excluded, { specPhase: 'ret:2', defaultGearSetKeys: [], poolSourceKeys: ['Crafted', 'Badge vendor'] });
 		expect(next.excludedSources).toEqual(['Crafted']);
 	});
 
 	it('forgets the applied defaults and the picked sets when the scope changes, so the new scope’s defaults apply even after a deselect', () => {
-		const scope = { specPhase: 'ret:3', defaultSetKeys: ['preset:3:P3'], poolSourceKeys: [] };
-		const deselected = withSetToggled(appliedSettings(seeded(), scope), 'preset:3:P3');
+		const scope = { specPhase: 'ret:3', defaultGearSetKeys: ['preset:3:P3'], poolSourceKeys: [] };
+		const deselected = withGearSetToggled(appliedSettings(seeded(), scope), 'preset:3:P3');
 		const changed = afterScopeChange(deselected, []);
 		expect(changed).toMatchObject({ selectedSetKeys: [], defaultsFor: undefined });
 
@@ -107,7 +107,7 @@ describe('the settings changes', () => {
 	});
 
 	it('forgets the picked sets on a scope change even when no defaults were applied', () => {
-		const picked = withSetToggled(seeded(), 'preset:3:P3');
+		const picked = withGearSetToggled(seeded(), 'preset:3:P3');
 		expect(picked.defaultsFor).toBeUndefined();
 		expect(afterScopeChange(picked, [])).toMatchObject({ selectedSetKeys: [], defaultsFor: undefined });
 	});
@@ -121,21 +121,21 @@ describe('the settings changes', () => {
 describe('pruneEffective', () => {
 	it('is on only while prune is ticked and a set is selected', () => {
 		expect(pruneEffective(withPrune(seeded(), true))).toBe(false);
-		expect(pruneEffective(withSetToggled(seeded(), 'preset:3:P3'))).toBe(false);
-		expect(pruneEffective(withPrune(withSetToggled(seeded(), 'preset:3:P3'), true))).toBe(true);
+		expect(pruneEffective(withGearSetToggled(seeded(), 'preset:3:P3'))).toBe(false);
+		expect(pruneEffective(withPrune(withGearSetToggled(seeded(), 'preset:3:P3'), true))).toBe(true);
 	});
 });
 
 describe('toRunSettings', () => {
 	it('carries every setting the run reads', () => {
 		const capped = withCandidateCap(initialSettings({ iterations: 500 }), 10);
-		const state = withPrune(withSetToggled(withSourceToggled(capped, 'Crafted'), 'preset:3:P3'), true);
+		const state = withPrune(withGearSetToggled(withSourceToggled(capped, 'Crafted'), 'preset:3:P3'), true);
 		expect(toRunSettings(state, [30129, 32461])).toEqual({
 			iterations: 500,
 			candidateCap: 10,
 			excludedSources: ['Crafted'],
-			guaranteedSetKeys: ['preset:3:P3'],
-			guaranteedSetItemIds: [30129, 32461],
+			selectedGearSetKeys: ['preset:3:P3'],
+			selectedGearSetItemIds: [30129, 32461],
 			prune: true,
 		});
 	});
@@ -145,7 +145,7 @@ describe('toRunSettings', () => {
 	});
 
 	it('never prunes to an empty pool when the selected sets hold no items', () => {
-		const state = withPrune(withSetToggled(seeded(), 'saved:empty'), true);
+		const state = withPrune(withGearSetToggled(seeded(), 'saved:empty'), true);
 		expect(toRunSettings(state, []).prune).toBe(false);
 	});
 });

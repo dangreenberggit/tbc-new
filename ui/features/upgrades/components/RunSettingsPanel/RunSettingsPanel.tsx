@@ -7,9 +7,9 @@ import type { UpgradesSettings } from '../../hooks/useUpgradesSettings';
 import { CandidateCapPicker } from '../CandidateCapPicker';
 import { FixtureFileInput } from '../DevTools';
 import { EligibleCount } from '../EligibleCount';
+import { GearSetChips } from '../GearSetChips';
 import { PhaseSelector } from '../PhaseSelector';
 import { RunControls } from '../RunControls';
-import { SetChips } from '../SetChips';
 import { SourcesButton } from '../SourcesDialog';
 
 export interface RunSettingsPanelProps {
@@ -43,11 +43,11 @@ export const RunSettingsPanel = memo(({ settings, ready, running, devVisible, on
 			<div id={bodyId} className={clsx(open ? 'grid' : 'hidden', 'gap-6 xl:grid')} data-testid="upgrades-run-settings-body">
 				<PhaseSelector />
 				<SourcesButton sources={settings.sources} excluded={settings.excludedSources} onToggle={settings.toggleSource} />
-				<SetChips
+				<GearSetChips
 					chips={settings.chips}
 					selectedKeys={settings.selectedKeys}
 					prune={settings.prune}
-					onToggleSet={settings.toggleSet}
+					onToggleGearSet={settings.toggleGearSet}
 					onPruneChange={settings.setPrune}
 				/>
 				{/* Always in the page, so a test driving a production build can set the cap. Hidden without

@@ -16,10 +16,10 @@ import { type SettingsState, toRunSettings } from './settings_state';
 /** The page turns the key into a label with `sourceKeyLabel` (`utils/format.ts`). */
 export type SourceOption = { key: string; count: number };
 
-/** Both a preset's `gear` and a saved set's `gear` fit this. */
+/** Both a preset's `gear` and a saved gear set's `gear` fit this. */
 type GearItems = { items: readonly { id: number }[] };
 
-export type SetOption = {
+export type GearSetOption = {
 	key: string;
 	name: string;
 	label: string;
@@ -27,25 +27,25 @@ export type SetOption = {
 	/** wowsims' preset `group`, which tells apart two presets of one phase that share a name. */
 	group?: string;
 	/**
-	 * The heading wowsims' gear tab shows over the set (its `group`). Set only on a page with more than one heading,
-	 * such as warrior's Fury and Arms, where every badge for the set names it.
+	 * The heading wowsims' gear tab shows over the gear set (its `group`). Set only on a page with more than one heading,
+	 * such as warrior's Fury and Arms, where every badge for the gear set names it.
 	 */
 	heading?: string;
 	kind: 'preset' | 'saved';
 	itemIds: readonly number[];
-	/** The pool offers only one id of an item with twins (`twinIdsOf`), and it may not be the one the set names. */
+	/** The pool offers only one id of an item with twins (`twinIdsOf`), and it may not be the one the gear set names. */
 	twinIds?: readonly number[];
 	/** Counts an item as in the pool under any of its ids. */
 	inPool: number;
 };
 
-const heldIds = (o: Pick<SetOption, 'itemIds' | 'twinIds'>): readonly number[] => (o.twinIds ? [...o.itemIds, ...o.twinIds] : o.itemIds);
+const heldIds = (o: Pick<GearSetOption, 'itemIds' | 'twinIds'>): readonly number[] => (o.twinIds ? [...o.itemIds, ...o.twinIds] : o.itemIds);
 
 const NO_TWINS: ReadonlyMap<number, readonly number[]> = new Map();
 
 export type PoolFilter = {
 	excludedSources: readonly string[];
-	selectedSetItemIds: readonly number[];
+	selectedGearSetItemIds: readonly number[];
 	prune: boolean;
 };
 
@@ -114,21 +114,21 @@ function presetLabel(name: string, phase: number | undefined): string {
 }
 
 /** True when another option has the same phase and name, so this one needs its group to tell them apart. */
-const sharesPhaseAndName = (o: SetOption, options: readonly SetOption[]): boolean =>
+const sharesPhaseAndName = (o: GearSetOption, options: readonly GearSetOption[]): boolean =>
 	o.group !== undefined && options.some(other => other !== o && other.phase === o.phase && other.name === o.name);
 
-export function setOptions({
+export function gearSetOptions({
 	presets,
-	savedSets,
+	savedGearSets,
 	pool,
 	twins = NO_TWINS,
 }: {
 	presets: readonly PagePreset[];
-	savedSets: readonly { name: string; gear?: GearItems }[];
+	savedGearSets: readonly { name: string; gear?: GearItems }[];
 	pool: readonly PoolEntry[];
 	/** `twinIdsOf` over the page's database. */
 	twins?: ReadonlyMap<number, readonly number[]>;
-}): SetOption[] {
+}): GearSetOption[] {
 	const poolIds = new Set(pool.map(e => e.itemId));
 	const inPool = (itemIds: readonly number[]) => itemIds.filter(id => (twins.get(id) ?? [id]).some(t => poolIds.has(t))).length;
 	const withTwinIds = (itemIds: readonly number[]) => {
@@ -137,7 +137,7 @@ export function setOptions({
 	};
 	const headed = new Set(presets.flatMap(p => (p.group ? [p.group] : []))).size > 1;
 	// The group enters the key only where wowsims gives one, so the saved picks of ungrouped presets still match.
-	const presetOptions = presets.map(({ name, phase, group, gear }): SetOption => {
+	const presetOptions = presets.map(({ name, phase, group, gear }): GearSetOption => {
 		const itemIds = itemIdsOf(gear);
 		return {
 			key: `preset:${phase ?? ''}:${group ? `${group}/` : ''}${name}`,
@@ -152,7 +152,7 @@ export function setOptions({
 		};
 	});
 	const fromPresets = presetOptions.map(o => (sharesPhaseAndName(o, presetOptions) ? { ...o, label: `${o.label} (${o.group})` } : o));
-	const fromSaved = savedSets.map(({ name, gear }): SetOption => {
+	const fromSaved = savedGearSets.map(({ name, gear }): GearSetOption => {
 		const itemIds = itemIdsOf(gear);
 		return { key: `saved:${name}`, name, label: name, kind: 'saved', ...withTwinIds(itemIds), inPool: inPool(itemIds) };
 	});
@@ -160,11 +160,11 @@ export function setOptions({
 }
 
 /**
- * The sets selected by default: presets of `bisTagPhase` with at least one item in
+ * The gear sets selected by default: presets of `bisTagPhase` with at least one item in
  * the pool and every such item tagged BiS. The phase check is needed: by ids alone,
- * feral's P3 set would also pass against the P4 BiS tags.
+ * feral's P3 gear set would also pass against the P4 BiS tags.
  */
-export function defaultSetKeys(options: readonly SetOption[], pool: readonly PoolEntry[], bisTagPhase: number | undefined): string[] {
+export function defaultGearSetKeys(options: readonly GearSetOption[], pool: readonly PoolEntry[], bisTagPhase: number | undefined): string[] {
 	if (bisTagPhase === undefined) return [];
 	const poolIds = new Set(pool.map(e => e.itemId));
 	const bisIds = new Set(pool.filter(e => e.bisTags?.includes('BiS')).map(e => e.itemId));
@@ -178,24 +178,28 @@ export function defaultSetKeys(options: readonly SetOption[], pool: readonly Poo
 }
 
 /** Current-phase, phaseless and selected chips are always shown; the rest sit behind "Other phases (n)". */
-export function splitSetChips(options: readonly SetOption[], selectedKeys: readonly string[], maxPhase: number): { main: SetOption[]; other: SetOption[] } {
-	const shown = (o: SetOption) => o.phase === undefined || o.phase === maxPhase || selectedKeys.includes(o.key);
-	return { main: options.filter(shown), other: options.filter(o => !shown(o)) };
+export function splitGearSetChips(
+	options: readonly GearSetOption[],
+	selectedKeys: readonly string[],
+	maxPhase: number,
+): { thisPhase: GearSetOption[]; otherPhases: GearSetOption[] } {
+	const shown = (o: GearSetOption) => o.phase === undefined || o.phase === maxPhase || selectedKeys.includes(o.key);
+	return { thisPhase: options.filter(shown), otherPhases: options.filter(o => !shown(o)) };
 }
 
-export const selectedSetItemIds = (options: readonly SetOption[], selectedKeys: readonly string[]): number[] => [
+export const selectedGearSetItemIds = (options: readonly GearSetOption[], selectedKeys: readonly string[]): number[] => [
 	...new Set(options.filter(o => selectedKeys.includes(o.key)).flatMap(heldIds)),
 ];
 
 /**
  * An entry stays while any of its sources is ticked, so an item from two raids
- * survives one being excluded. `prune` keeps only the selected sets' items; the
- * sets never add back an item the Sources filter removed.
+ * survives one being excluded. `prune` keeps only the selected gear sets' items; the
+ * gear sets never add back an item the Sources filter removed.
  */
-export function effectivePool(pool: readonly PoolEntry[], { excludedSources, selectedSetItemIds, prune }: PoolFilter): PoolEntry[] {
+export function effectivePool(pool: readonly PoolEntry[], { excludedSources, selectedGearSetItemIds, prune }: PoolFilter): PoolEntry[] {
 	const excluded = new Set(excludedSources);
 	const ticked = poolSourceKeysOf(pool).filter(key => !excluded.has(key));
-	const inSets = new Set(selectedSetItemIds);
+	const inSets = new Set(selectedGearSetItemIds);
 	return pool.filter(e => ticked.some(key => sourceMatches(e, key)) && (!prune || inSets.has(e.itemId)));
 }
 
@@ -219,13 +223,13 @@ export type RowTag = { key: string; label: string };
 export const withHeading = (label: string, heading: string): string => `${label} (${heading})`;
 
 /**
- * One badge per selected set that holds the item. The heading is added so a
+ * One badge per selected gear set that holds the item. The heading is added so a
  * Fury-only item reads "BIS (Fury)", not a "BIS" that Arms could take for its own.
  * Badges that would still read the same get their phase in front; without a
  * heading, those that share the phase too get their group.
  */
-export function rowTags(itemId: number, selectedOptions: readonly SetOption[]): RowTag[] {
-	const holding = selectedOptions.filter(o => heldIds(o).includes(itemId));
+export function rowTags(itemId: number, selectedGearSets: readonly GearSetOption[]): RowTag[] {
+	const holding = selectedGearSets.filter(o => heldIds(o).includes(itemId));
 	return holding.map(o => {
 		const shared = holding.some(other => other !== o && other.name === o.name && other.heading === o.heading);
 		const label = shared && o.phase !== undefined ? `P${o.phase} ${o.name}` : o.name;
@@ -236,8 +240,8 @@ export function rowTags(itemId: number, selectedOptions: readonly SetOption[]): 
 
 const NO_HEADINGS: readonly string[] = [];
 
-/** Lets the pool's "BiS" badge on a row in no selected set name the build it is BiS for, on a page with headings. */
-export function bisHeadingIndex(options: readonly SetOption[], bisTagPhase: number | undefined): (itemId: number) => readonly string[] {
+/** Lets the pool's "BiS" badge on a row in no selected gear set name the build it is BiS for, on a page with headings. */
+export function bisHeadingIndex(options: readonly GearSetOption[], bisTagPhase: number | undefined): (itemId: number) => readonly string[] {
 	const byItem = new Map<number, string[]>();
 	if (bisTagPhase === undefined) return () => NO_HEADINGS;
 	for (const o of options) {
@@ -254,68 +258,68 @@ export function bisHeadingIndex(options: readonly SetOption[], bisTagPhase: numb
 const NO_TAGS: readonly RowTag[] = [];
 
 /** Each item keeps one array while the selection stands, so a memoised name cell does not re-render when its row moves. */
-export function rowTagIndex(selectedOptions: readonly SetOption[]): (itemId: number) => readonly RowTag[] {
+export function rowTagIndex(selectedGearSets: readonly GearSetOption[]): (itemId: number) => readonly RowTag[] {
 	const byItem = new Map<number, readonly RowTag[]>();
-	for (const itemId of new Set(selectedOptions.flatMap(heldIds))) byItem.set(itemId, rowTags(itemId, selectedOptions));
+	for (const itemId of new Set(selectedGearSets.flatMap(heldIds))) byItem.set(itemId, rowTags(itemId, selectedGearSets));
 	return itemId => byItem.get(itemId) ?? NO_TAGS;
 }
 
-type SavedSet = { name: string; gear?: GearItems };
+type SavedGearSetEntry = { name: string; gear?: GearItems };
 
 /** Everything a spec and phase offer that does not depend on what the user picked. */
 export type SettingsOffer = {
 	pool: readonly PoolEntry[];
 	sources: { raids: SourceOption[]; other: SourceOption[] };
 	sourceKeys: readonly string[];
-	options: readonly SetOption[];
-	defaultKeys: readonly string[];
+	gearSetOptions: readonly GearSetOption[];
+	defaultGearSetKeys: readonly string[];
 };
 
 export function settingsOffer({
 	pool,
 	presets,
-	savedSets,
+	savedGearSets,
 	bisTagPhase,
 	twins,
 }: {
 	pool: readonly PoolEntry[];
 	presets: readonly PagePreset[];
-	savedSets: readonly SavedSet[];
+	savedGearSets: readonly SavedGearSetEntry[];
 	bisTagPhase: number | undefined;
-	/** `twinIdsOf` over the page's database, so a set naming another id of an item the pool offers once still holds it. */
+	/** `twinIdsOf` over the page's database, so a gear set naming another id of an item the pool offers once still holds it. */
 	twins?: ReadonlyMap<number, readonly number[]>;
 }): SettingsOffer {
-	const options = setOptions({ presets, savedSets, pool, twins });
+	const options = gearSetOptions({ presets, savedGearSets, pool, twins });
 	return {
 		pool,
 		sources: sourceOptions(pool),
 		sourceKeys: poolSourceKeysOf(pool),
-		options,
-		defaultKeys: defaultSetKeys(options, pool, bisTagPhase),
+		gearSetOptions: options,
+		defaultGearSetKeys: defaultGearSetKeys(options, pool, bisTagPhase),
 	};
 }
 
 /** Kept apart from the other settings so it can outlive changes to them. */
-export type SetSelection = {
-	selectedOptions: readonly SetOption[];
+export type GearSetSelection = {
+	selectedGearSets: readonly GearSetOption[];
 	selectedKeys: readonly string[];
 	selectedItemIds: readonly number[];
-	chips: { main: SetOption[]; other: SetOption[] };
+	chips: { thisPhase: GearSetOption[]; otherPhases: GearSetOption[] };
 };
 
-export function setSelection(offer: SettingsOffer, selectedSetKeys: readonly string[], maxPhase: number): SetSelection {
-	// A saved set deleted since it was picked is no longer a pick.
-	const selectedOptions = offer.options.filter(o => selectedSetKeys.includes(o.key));
-	const selectedKeys = selectedOptions.map(o => o.key);
+export function gearSetSelection(offer: SettingsOffer, selectedSetKeys: readonly string[], maxPhase: number): GearSetSelection {
+	// A saved gear set deleted since it was picked is no longer a pick.
+	const selectedGearSets = offer.gearSetOptions.filter(o => selectedSetKeys.includes(o.key));
+	const selectedKeys = selectedGearSets.map(o => o.key);
 	return {
-		selectedOptions,
+		selectedGearSets,
 		selectedKeys,
-		selectedItemIds: selectedSetItemIds(selectedOptions, selectedKeys),
-		chips: splitSetChips(offer.options, selectedKeys, maxPhase),
+		selectedItemIds: selectedGearSetItemIds(selectedGearSets, selectedKeys),
+		chips: splitGearSetChips(offer.gearSetOptions, selectedKeys, maxPhase),
 	};
 }
 
-export const runSettingsOf = (selection: SetSelection, state: SettingsState): RunSettings =>
+export const runSettingsOf = (selection: GearSetSelection, state: SettingsState): RunSettings =>
 	toRunSettings({ ...state, selectedSetKeys: selection.selectedKeys }, selection.selectedItemIds);
 
 /** Separate from `runSettingsOf`, so an iterations edit does not filter the pool again. */

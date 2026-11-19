@@ -230,7 +230,7 @@ describe('rankForPlayer', () => {
 
 	it('with prune, ranks only the selected sets’ items', async () => {
 		const [a, b] = poolFor(fakeHost(), [], 3);
-		await rankForPlayer(fakeHost(), { ...SETTINGS, guaranteedSetItemIds: [a!.itemId, b!.itemId], prune: true }, depsFor());
+		await rankForPlayer(fakeHost(), { ...SETTINGS, selectedGearSetItemIds: [a!.itemId, b!.itemId], prune: true }, depsFor());
 		expect((rankCalls[0]!.deps.pool ?? []).map(e => e.itemId)).toEqual([a!.itemId, b!.itemId]);
 	});
 

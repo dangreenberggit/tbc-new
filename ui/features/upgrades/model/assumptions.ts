@@ -40,7 +40,7 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
 		if (settings.candidateCap !== undefined) lines.push(`candidate cap: top ${settings.candidateCap} simmed in full, plus anything you already own`);
 		const excluded = settings.excludedSources ?? [];
 		lines.push(excluded.length === 0 ? 'sources: all' : `sources: excluded ${excluded.join(', ')}`);
-		const sets = settings.guaranteedSetKeys ?? [];
+		const sets = settings.selectedGearSetKeys ?? [];
 		lines.push(sets.length === 0 ? 'sets: none' : `sets: ${sets.join(', ')}`);
 	}
 	return `[upgrades] assumptions — ${lines.join(' · ')}`;

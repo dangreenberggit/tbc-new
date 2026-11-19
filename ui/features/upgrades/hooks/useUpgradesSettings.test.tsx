@@ -67,14 +67,14 @@ const mount = (spec = Spec.SpecRetributionPaladin, presets: readonly unknown[] =
 	};
 };
 
-const selectedKeys = (settings: { selectedOptions: readonly { key: string }[] }) => settings.selectedOptions.map(o => o.key);
+const selectedKeys = (settings: { selectedGearSets: readonly { key: string }[] }) => settings.selectedGearSets.map(o => o.key);
 
 describe('useUpgradesSettings', () => {
 	it('selects the phase’s default sets on the first render, and keeps a deselection through later renders', () => {
 		const { view } = mount();
 		expect(selectedKeys(view.result.current)).toEqual(['preset:3:P3']);
 
-		act(() => view.result.current.toggleSet('preset:3:P3'));
+		act(() => view.result.current.toggleGearSet('preset:3:P3'));
 		view.rerender();
 		expect(selectedKeys(view.result.current)).toEqual([]);
 	});
@@ -98,7 +98,7 @@ describe('useUpgradesSettings', () => {
 		expect(view.result.current.runSettings.prune).toBe(true);
 		expect(view.result.current.eligibleCount).toBe(1);
 
-		act(() => view.result.current.toggleSet('preset:3:P3'));
+		act(() => view.result.current.toggleGearSet('preset:3:P3'));
 		expect(view.result.current.runSettings.prune).toBe(false);
 		expect(view.result.current.eligibleCount).toBe(3);
 	});
@@ -119,7 +119,7 @@ describe('useUpgradesSettings', () => {
 	it('shows the phase’s default sets before any write, though the store holds none yet', () => {
 		const { view, tabStore } = mount();
 		expect(selectedKeys(view.result.current)).toEqual(['preset:3:P3']);
-		expect(view.result.current.runSettings.guaranteedSetKeys).toEqual(['preset:3:P3']);
+		expect(view.result.current.runSettings.selectedGearSetKeys).toEqual(['preset:3:P3']);
 		expect(tabStore.getState().settings.selectedSetKeys).toEqual([]);
 		expect(tabStore.getState().settings.defaultsFor).toBeUndefined();
 	});
@@ -154,7 +154,7 @@ describe('useUpgradesSettings', () => {
 		const outside = render();
 		const expectAgreement = () => expect(outside.result.current.runSettings).toEqual(view.result.current.runSettings);
 		act(() => {
-			view.result.current.toggleSet('preset:3:P3');
+			view.result.current.toggleGearSet('preset:3:P3');
 			view.result.current.toggleSource('Hyjal Summit');
 			view.result.current.toggleSource('Black Temple');
 		});
@@ -176,15 +176,15 @@ describe('useUpgradesSettings', () => {
 
 	it('keeps the selected sets’ identity while only other settings change, so the row badges do not render again', () => {
 		const { view } = mount();
-		const before = view.result.current.selectedOptions;
+		const before = view.result.current.selectedGearSets;
 
 		act(() => view.result.current.setPrune(true));
 		act(() => view.result.current.setIterations(2000));
 		act(() => view.result.current.toggleSource('Hyjal Summit'));
-		expect(view.result.current.selectedOptions).toBe(before);
+		expect(view.result.current.selectedGearSets).toBe(before);
 
-		act(() => view.result.current.toggleSet('preset:3:P3'));
-		expect(view.result.current.selectedOptions).not.toBe(before);
+		act(() => view.result.current.toggleGearSet('preset:3:P3'));
+		expect(view.result.current.selectedGearSets).not.toBe(before);
 	});
 
 	it('offers nothing and counts nothing for a spec with no ranking data', () => {

@@ -18,7 +18,7 @@ import type { PagePoolHost } from '../model/data/data';
 import tierExchange from '../model/data/tier-exchange.json';
 import type { PoolEntry } from '../model/engine/pool';
 import type { SpecId } from '../model/engine/types';
-import { HEROIC_FIVE_MAN, type HeroicFiveManPolicy, type PresetSet, selectPool } from '../model/pool_source';
+import { HEROIC_FIVE_MAN, type HeroicFiveManPolicy, type PresetGearSet, selectPool } from '../model/pool_source';
 import presetsFixture from '../model/pool_source.presets.fixture.json';
 import { specIdFor } from '../model/run';
 import { indexExchange, type SourceDb, sourcesOf, type TierExchange } from '../utils/item_sources';
@@ -44,7 +44,7 @@ export const TEST_EXCHANGE = indexExchange(tierExchange as TierExchange);
 export const testSourcesOf = (item: UIItem) => sourcesOf(item, TEST_SOURCE_DB, TEST_EXCHANGE);
 
 // JSON values only: the fixture's shape is asserted here, never derived from the import.
-export const TEST_PRESETS = (presetsFixture as { specs: Record<string, PresetSet[]> }).specs;
+export const TEST_PRESETS = (presetsFixture as { specs: Record<string, PresetGearSet[]> }).specs;
 
 /** Built by inverting `specIdFor` from `run.ts`, so the two cannot drift; `pool_source.test.ts` checks it covers every preset spec. */
 export const PROTO_SPEC = Object.fromEntries(

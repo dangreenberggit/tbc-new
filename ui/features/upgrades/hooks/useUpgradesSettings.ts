@@ -15,9 +15,9 @@ import {
 	bisHeadingIndex,
 	effectiveExcludedSources,
 	eligibleCountOf,
+	type GearSetSelection,
+	gearSetSelection,
 	runSettingsOf,
-	type SetSelection,
-	setSelection,
 	type SettingsOffer,
 	settingsOffer,
 } from '../model/settings_pool';
@@ -25,10 +25,10 @@ import { appliedSettings, type SettingsScope } from '../model/settings_state';
 import { selectSettledPhase, type UpgradesStore } from '../model/upgrades_store';
 import { useUpgradesStoreApi } from './useUpgradesStore';
 
-export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
+export type UpgradesSettings = Omit<GearSetSelection, 'selectedItemIds'> & {
 	runSettings: RunSettings;
 	sources: SettingsOffer['sources'];
-	/** The headings a row's "BiS" badge names when the row is in no selected set, for the phase the ranking on screen ran at. */
+	/** The headings a row's "BiS" badge names when the row is in no selected gear set, for the phase the ranking on screen ran at. */
 	bisHeadingsOf: (itemId: number) => readonly string[];
 	excludedSources: readonly string[];
 	prune: boolean;
@@ -36,7 +36,7 @@ export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
 	eligibleCount: number | undefined;
 	store: UpgradesStore;
 	toggleSource: (key: string) => void;
-	toggleSet: (key: string) => void;
+	toggleGearSet: (key: string) => void;
 	setPrune: (prune: boolean) => void;
 	setIterations: (iterations: number) => void;
 	setCandidateCap: (cap: number) => void;
@@ -44,7 +44,7 @@ export type UpgradesSettings = Omit<SetSelection, 'selectedItemIds'> & {
 
 /**
  * The tab's effective run settings over the page's spec, phase, gear presets and
- * saved gear sets. The default sets are derived over the stored settings, so every
+ * saved gear sets. The default gear sets are derived over the stored settings, so every
  * caller shows them from the first render and right after a phase change; the
  * first write stores them along with the user's change.
  */
@@ -61,7 +61,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 	const store = useUpgradesStoreApi();
 	const stored = useStore(store, state => state.settings);
 	const toggleSource = useStore(store, state => state.toggleSource);
-	const toggleSet = useStore(store, state => state.toggleSet);
+	const toggleGearSet = useStore(store, state => state.toggleGearSet);
 	const setPrune = useStore(store, state => state.setPrune);
 	const setIterations = useStore(store, state => state.setIterations);
 	const setCandidateCap = useStore(store, state => state.setCandidateCap);
@@ -73,7 +73,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 			settingsOffer({
 				pool: specId && ready ? poolFor(host, phasedPresets, phase) : [],
 				presets: phasedPresets,
-				savedSets: saved.map(entry => ({ name: entry.name, gear: entry.data.gear })),
+				savedGearSets: saved.map(entry => ({ name: entry.name, gear: entry.data.gear })),
 				bisTagPhase: specId && ready ? bisTagPhaseFor(host, phasedPresets, phase)?.tagsFromPhase : undefined,
 				twins: specId && ready ? twinIdsFor(host) : undefined,
 			}),
@@ -83,12 +83,12 @@ export function useUpgradesSettings(): UpgradesSettings {
 	// While a run is in flight the page's phase is the run's: the progress dialog blocks the page until it settles.
 	const rankedPhase = useStore(store, selectSettledPhase) ?? phase;
 	const bisHeadingsOf = useMemo(
-		() => bisHeadingIndex(offer.options, specId && ready ? bisTagPhaseFor(host, phasedPresets, rankedPhase)?.tagsFromPhase : undefined),
-		[offer.options, specId, ready, host, phasedPresets, rankedPhase],
+		() => bisHeadingIndex(offer.gearSetOptions, specId && ready ? bisTagPhaseFor(host, phasedPresets, rankedPhase)?.tagsFromPhase : undefined),
+		[offer.gearSetOptions, specId, ready, host, phasedPresets, rankedPhase],
 	);
 	const scope = useMemo(
 		(): SettingsScope | undefined =>
-			specId ? { specPhase: `${specId}:${phase}`, defaultSetKeys: offer.defaultKeys, poolSourceKeys: offer.sourceKeys } : undefined,
+			specId ? { specPhase: `${specId}:${phase}`, defaultGearSetKeys: offer.defaultGearSetKeys, poolSourceKeys: offer.sourceKeys } : undefined,
 		[specId, phase, offer],
 	);
 	// Until a write stores the defaults, `appliedSettings` builds a new state on each call, and the selection and
@@ -99,9 +99,9 @@ export function useUpgradesSettings(): UpgradesSettings {
 		() => ({ ...applied, excludedSources: effectiveExcludedSources(applied.excludedSources, offer.sourceKeys) }),
 		[applied, offer.sourceKeys],
 	);
-	// On the picked sets alone, so it keeps its identity while other settings change: the run settings and the
+	// On the picked gear sets alone, so it keeps its identity while other settings change: the run settings and the
 	// eligible count key on it.
-	const selection = useMemo(() => setSelection(offer, state.selectedSetKeys, phase), [offer, state.selectedSetKeys, phase]);
+	const selection = useMemo(() => gearSetSelection(offer, state.selectedSetKeys, phase), [offer, state.selectedSetKeys, phase]);
 	// As is the result below, so a render that changes no setting hands `RunSettingsPanel` the same settings and
 	// its `memo` skips the render.
 	const runSettings = useMemo(() => runSettingsOf(selection, state), [selection, state]);
@@ -110,7 +110,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 	// On the pool filters alone: filtering the whole pool must not rerun on an iterations or cap keystroke.
 	const eligibleCount = useMemo(
 		() =>
-			eligibleCountOf(offer, { excludedSources, selectedSetItemIds: selection.selectedItemIds, prune: effectivePrune }, phase, {
+			eligibleCountOf(offer, { excludedSources, selectedGearSetItemIds: selection.selectedItemIds, prune: effectivePrune }, phase, {
 				spec: specId,
 				wornMainHandId,
 			}),
@@ -119,7 +119,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 
 	return useMemo(
 		(): UpgradesSettings => ({
-			selectedOptions: selection.selectedOptions,
+			selectedGearSets: selection.selectedGearSets,
 			selectedKeys: selection.selectedKeys,
 			chips: selection.chips,
 			runSettings,
@@ -130,7 +130,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 			eligibleCount: specId ? eligibleCount : undefined,
 			store,
 			toggleSource: key => toggleSource(key, scope),
-			toggleSet: key => toggleSet(key, scope),
+			toggleGearSet: key => toggleGearSet(key, scope),
 			setPrune: prune => setPrune(prune, scope),
 			setIterations: iterations => setIterations(iterations, scope),
 			setCandidateCap: cap => setCandidateCap(cap, scope),
@@ -147,7 +147,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 			store,
 			scope,
 			toggleSource,
-			toggleSet,
+			toggleGearSet,
 			setPrune,
 			setIterations,
 			setCandidateCap,

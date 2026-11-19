@@ -4,7 +4,7 @@ import { render, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { RankedItem } from '../../model/engine/rank';
-import { type RowTag, rowTagIndex, type SetOption } from '../../model/settings_pool';
+import { type GearSetOption, type RowTag, rowTagIndex } from '../../model/settings_pool';
 import { fixtureRow } from '../../testing/ranking_fixture';
 
 // The icon lookup fetches from wowhead; the cell's text is under test.
@@ -14,7 +14,7 @@ const { ItemNameCell } = await import('./ItemNameCell');
 
 loadEnglishBundles();
 
-const set = (key: string, name: string, phase: number | undefined, itemIds: number[]): SetOption => ({
+const set = (key: string, name: string, phase: number | undefined, itemIds: number[]): GearSetOption => ({
 	key,
 	name,
 	label: name,

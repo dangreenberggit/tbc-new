@@ -6,7 +6,7 @@
 
 import type { PoolEntry } from '../engine/pool';
 import type { ContentPhase, SpecId } from '../engine/types';
-import { bisSetsFor, buildPool, itemPhaseLookup, type PoolHost, presetPhase, presetSetOf, twinIdsOf } from '../pool_source';
+import { bisGearSetsFor, buildPool, itemPhaseLookup, type PoolHost, presetGearSetOf, presetPhase, twinIdsOf } from '../pool_source';
 import balanceEpWeights from './balance-fallback.ep-weights.json';
 import eleEpWeights from './ele-fallback.ep-weights.json';
 import enhEpWeights from './enh-fallback.ep-weights.json';
@@ -107,7 +107,7 @@ export type PagePoolHost = PoolHost & { individualConfig: { presets: { gear: rea
 
 export function poolFor(host: PoolHost, presets: readonly PagePreset[], maxPhase: ContentPhase): readonly PoolEntry[] {
 	if (!host.sim.db) return [];
-	return buildPool(host, presets.map(presetSetOf), maxPhase);
+	return buildPool(host, presets.map(presetGearSetOf), maxPhase);
 }
 
 export const twinIdsFor = (host: PoolHost): ReadonlyMap<number, readonly number[]> => (host.sim.db ? twinIdsOf(host.sim.db.getAllItems()) : new Map());
@@ -121,7 +121,7 @@ export function poolSourceFor(pool: readonly PoolEntry[]): { name: string; entri
 export function presetsWithPhase<P extends PagePreset>(host: PoolHost, presets: readonly P[]): P[] {
 	const itemPhaseOf = itemPhaseLookup(host);
 	return presets.map(preset => {
-		const phase = presetPhase(presetSetOf(preset), itemPhaseOf);
+		const phase = presetPhase(presetGearSetOf(preset), itemPhaseOf);
 		return phase === preset.phase ? preset : { ...preset, phase };
 	});
 }
@@ -135,7 +135,7 @@ export function bisTagPhaseFor(
 	presets: readonly PagePreset[],
 	maxPhase: ContentPhase,
 ): { tagsFromPhase: number; requestedPhase: number } | undefined {
-	const bis = bisSetsFor(presets.map(presetSetOf), maxPhase, itemPhaseLookup(host));
+	const bis = bisGearSetsFor(presets.map(presetGearSetOf), maxPhase, itemPhaseLookup(host));
 	return bis ? { tagsFromPhase: bis.phase, requestedPhase: maxPhase } : undefined;
 }
 

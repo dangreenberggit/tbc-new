@@ -118,7 +118,7 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 			itemEp: itemEpFor(weights),
 			pool: effectivePool(poolFor(host, host.individualConfig.presets.gear, maxPhase), {
 				excludedSources: settings.excludedSources ?? [],
-				selectedSetItemIds: settings.guaranteedSetItemIds ?? [],
+				selectedGearSetItemIds: settings.selectedGearSetItemIds ?? [],
 				prune: settings.prune ?? false,
 			}),
 			simDatabaseFor: simDatabaseResolverFor(host.player, skeleton),

@@ -7,19 +7,19 @@
 import type { EpWeightsSet } from './data/data';
 import type { PartialRanking, RankedItem, Ranking } from './engine/rank';
 import type { SpecId } from './engine/types';
-import type { SetOption } from './settings_pool';
+import type { GearSetOption } from './settings_pool';
 
 export type RunSettings = {
 	iterations: number;
 	/** Keep the first N candidates of the EP ordering that the player does not wear; undefined is no cap. */
 	candidateCap?: number;
 	/**
-	 * The pool filters: excluded sources and, with `prune`, only the selected sets'
-	 * items, applied through `effectivePool`. The set keys are for the assumptions line.
+	 * The pool filters: excluded sources and, with `prune`, only the selected gear sets'
+	 * items, applied through `effectivePool`. The gear set keys are for the assumptions line.
 	 */
 	excludedSources?: readonly string[];
-	guaranteedSetKeys?: readonly string[];
-	guaranteedSetItemIds?: readonly number[];
+	selectedGearSetKeys?: readonly string[];
+	selectedGearSetItemIds?: readonly number[];
 	prune?: boolean;
 };
 
@@ -48,15 +48,15 @@ export type RunOutcome = RunResult & { runner?: RunnerName; epWeightsSet?: EpWei
 /**
  * The ranking holds no gear, and the set bonuses a row's swap breaks are worked out
  * from the gear it was measured on. The result is stale once an `inputsSignature`
- * built now differs (`run_inputs.ts`). `selectedSets` is a copy because a later
- * phase change picks other sets.
+ * built now differs (`run_inputs.ts`). `selectedGearSets` is a copy because a later
+ * phase change picks other gear sets.
  */
 export type MeasuredOn = {
 	wornItemIds?: readonly number[];
 	specId?: SpecId;
 	inputsSignature?: string;
 	runner?: RunnerName;
-	selectedSets?: readonly SetOption[];
+	selectedGearSets?: readonly GearSetOption[];
 };
 
 export type RunState =

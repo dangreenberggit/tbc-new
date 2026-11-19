@@ -17,7 +17,7 @@ describe('openSavedUpgradesStore', () => {
 		first.getState().setIterations(5000, undefined);
 		first.getState().toggleSource('raid:hyjal', undefined);
 		// A write with a scope is what stores that scope's defaults, as in production.
-		first.getState().setPrune(true, { specPhase: 'feral:3', defaultSetKeys: ['preset:P3'], poolSourceKeys: ['raid:hyjal'] });
+		first.getState().setPrune(true, { specPhase: 'feral:3', defaultGearSetKeys: ['preset:P3'], poolSourceKeys: ['raid:hyjal'] });
 		first.getState().setSort([{ id: 'slot', desc: false }]);
 
 		const reloaded = openSavedUpgradesStore(SEED, storage, KEY);

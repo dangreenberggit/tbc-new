@@ -30,10 +30,10 @@ import {
 	type SettingsScope,
 	type SettingsState,
 	withCandidateCap,
+	withGearSetToggled,
 	withIterations,
 	withoutUnofferedSources,
 	withPrune,
-	withSetToggled,
 	withSourceToggled,
 } from './settings_state';
 
@@ -70,12 +70,12 @@ export type UpgradesActions = {
 	settleRun: (runId: number, outcome: RunOutcome) => void;
 	failRun: (runId: number, message: string) => void;
 	/**
-	 * The user's settings changes. Each applies the default sets for `scope` first, so the stored state matches what the
+	 * The user's settings changes. Each applies the default gear sets for `scope` first, so the stored state matches what the
 	 * tab showed (`appliedSettings`), in one notification. `scope` is required, though it may be undefined, so a caller
 	 * cannot forget it and store a change the next render's defaults would overwrite.
 	 */
 	toggleSource: (key: string, scope: SettingsScope | undefined) => void;
-	toggleSet: (key: string, scope: SettingsScope | undefined) => void;
+	toggleGearSet: (key: string, scope: SettingsScope | undefined) => void;
 	setPrune: (prune: boolean, scope: SettingsScope | undefined) => void;
 	setIterations: (iterations: number, scope: SettingsScope | undefined) => void;
 	setCandidateCap: (cap: number | undefined, scope: SettingsScope | undefined) => void;
@@ -140,7 +140,7 @@ export function createUpgradesStore(seed: SettingsSeed, restored: RestoredTab = 
 				failRun: (runId, message) => setRun(run => runFailed(run, runId, message)),
 
 				toggleSource: (key, scope) => changeInScope(scope, settings => withSourceToggled(settings, key)),
-				toggleSet: (key, scope) => changeInScope(scope, settings => withSetToggled(settings, key)),
+				toggleGearSet: (key, scope) => changeInScope(scope, settings => withGearSetToggled(settings, key)),
 				setPrune: (prune, scope) => changeInScope(scope, settings => withPrune(settings, prune)),
 				setIterations: (iterations, scope) => changeInScope(scope, settings => withIterations(settings, iterations)),
 				setCandidateCap: (cap, scope) => changeInScope(scope, settings => withCandidateCap(settings, cap)),

@@ -39,7 +39,7 @@ describe('arena gear in the ret phase-4 pool', () => {
 	});
 
 	it('removes every piece when "PvP vendor" is unticked, and nothing else', () => {
-		const kept = effectivePool(pool, { excludedSources: ['PvP vendor'], selectedSetItemIds: [], prune: false });
+		const kept = effectivePool(pool, { excludedSources: ['PvP vendor'], selectedGearSetItemIds: [], prune: false });
 		const keptIds = new Set(kept.map(e => e.itemId));
 		expect(arena.filter(e => keptIds.has(e.itemId))).toEqual([]);
 		expect(kept).toHaveLength(pool.length - arena.length);

@@ -32,10 +32,10 @@ export const UpgradesTabBodyInner = () => {
 	// Read when Run is clicked or a fixture loads, so it records the page as it is then. Memoised with `onStart`, so
 	// each row a run finishes still hands the memoised `RunSettingsPanel` the same handler.
 	const signatureNow = useCallback(() => inputsSignature({ liveKey: liveInputsKey(sim), settings: runSettings }), [sim, runSettings]);
-	const { selectedOptions } = settings;
-	const onStart = useCallback(() => start(runSettings, signatureNow(), selectedOptions), [start, runSettings, signatureNow, selectedOptions]);
+	const { selectedGearSets } = settings;
+	const onStart = useCallback(() => start(runSettings, signatureNow(), selectedGearSets), [start, runSettings, signatureNow, selectedGearSets]);
 	const specId = measuredOnOf(run)?.specId ?? specIdFor(player.getSpec());
-	useFixtureAutoload({ onLoaded: ranking => loadFixture(ranking, signatureNow(), selectedOptions), currentRanking: () => shownRanking(run) });
+	useFixtureAutoload({ onLoaded: ranking => loadFixture(ranking, signatureNow(), selectedGearSets), currentRanking: () => shownRanking(run) });
 
 	return (
 		// `contents`, so the two columns stay the pane's own flex items.

@@ -10,7 +10,7 @@ import type { RunnerEnv } from './adapters/worker_pool_sim_runner';
 import { candidateSkipSubstitution, hitCapUnknownNote, type PartialRanking, RankError, SET_BONUS_SKIP_REASONS, setBonusSkipSubstitution } from './engine/rank';
 import type { RunDeps, RunFn } from './run';
 import type { RunOutcome, RunResult } from './run_state';
-import type { SetOption } from './settings_pool';
+import type { GearSetOption } from './settings_pool';
 import { createUpgradesStore } from './upgrades_store';
 
 const contexts: Array<object> = [];
@@ -89,17 +89,17 @@ describe('createRunSession', () => {
 
 	it('keeps the sets picked at the click and at a fixture load through a later phase change (ticket 865)', async () => {
 		const { store, session, call, run } = setup();
-		const p3: SetOption = { key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [32332], inPool: 1 };
+		const p3: GearSetOption = { key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [32332], inPool: 1 };
 		session.start(SETTINGS, SIGNATURE, [p3]);
 		call(0).settle({ ...RANKING_FIXTURE, durationMs: 1200 });
 		await vi.waitFor(() => expect(run().status).toBe('done'));
 		store.getState().changeScope([]);
 		expect(store.getState().settings.selectedSetKeys).toEqual([]);
-		expect(run()).toMatchObject({ measuredOn: { selectedSets: [p3] } });
+		expect(run()).toMatchObject({ measuredOn: { selectedGearSets: [p3] } });
 
 		session.loadFixture(RANKING_FIXTURE, SIGNATURE, [p3]);
 		store.getState().changeScope([]);
-		expect(run()).toMatchObject({ status: 'done', measuredOn: { selectedSets: [p3] } });
+		expect(run()).toMatchObject({ status: 'done', measuredOn: { selectedGearSets: [p3] } });
 	});
 
 	it('aborts the run on stop and shows the partial ranking it returns', async () => {

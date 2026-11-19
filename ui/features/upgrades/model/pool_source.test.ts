@@ -3,7 +3,16 @@ import { describe, expect, it } from 'vitest';
 
 import { dbPoolFor, PROTO_SPEC, TEST_DB, TEST_MISSING_IDS, TEST_PRESETS, testItem, testItemPhase } from '../testing/db_pool';
 import type { SpecId } from './engine/types';
-import { bisSetsFor, hasEffectRecord, type HeroicFiveManPolicy, isHeroicFiveManOnly, presetPhase, type PresetSet, selectPool, twinIdsOf } from './pool_source';
+import {
+	bisGearSetsFor,
+	hasEffectRecord,
+	type HeroicFiveManPolicy,
+	isHeroicFiveManOnly,
+	type PresetGearSet,
+	presetPhase,
+	selectPool,
+	twinIdsOf,
+} from './pool_source';
 import cellsFixture from './pool_source.cells.fixture.json';
 import { effectiveExcludedSources, effectivePool, poolSourceKeysOf } from './settings_pool';
 
@@ -54,7 +63,7 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 		const [spec, phase] = name.split('-p') as [SpecId, string];
 		const pool = poolOf(spec, Number(phase), 'include-unticked');
 		const excluded = effectiveExcludedSources([], poolSourceKeysOf(pool));
-		const ranked = effectivePool(pool, { excludedSources: excluded, selectedSetItemIds: [], prune: false }).map(e => e.itemId);
+		const ranked = effectivePool(pool, { excludedSources: excluded, selectedGearSetItemIds: [], prune: false }).map(e => e.itemId);
 		const exclude = poolOf(spec, Number(phase), 'exclude').map(e => e.itemId);
 		expect(ranked.sort()).toEqual(exclude.sort());
 	});
@@ -109,8 +118,8 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 	describe('keeps the id the player wears, else one a preset holds, with the group’s tags', () => {
 		const capes = [testItem(28378)!, testItem(28379)!];
 		const cloaks = [testItem(28377)!, testItem(28380)!];
-		const presets: PresetSet[] = [{ name: 'P1', phase: 1, itemIds: [28380] }];
-		const kept = (items: UIItem[], wornIds: number[], sets: PresetSet[] = []) =>
+		const presets: PresetGearSet[] = [{ name: 'P1', phase: 1, itemIds: [28380] }];
+		const kept = (items: UIItem[], wornIds: number[], sets: PresetGearSet[] = []) =>
 			selectPool(items, () => true, sets, TEST_MISSING_IDS, 5, 'include', undefined, new Set(wornIds)).map(e => ({
 				itemId: e.itemId,
 				bisSets: e.bisSets,
@@ -126,7 +135,7 @@ describe('selectPool over the fork db.json and the wowsims presets', () => {
 		});
 
 		it('a worn 28380 over the preset’s 28377, keeping the preset’s tags', () => {
-			const lowInPreset: PresetSet[] = [{ name: 'P1', phase: 1, itemIds: [28377] }];
+			const lowInPreset: PresetGearSet[] = [{ name: 'P1', phase: 1, itemIds: [28377] }];
 			expect(kept(cloaks, [28380], lowInPreset)).toEqual([{ itemId: 28380, bisSets: ['P1'], curatedSets: ['P1'] }]);
 		});
 	});
@@ -145,9 +154,9 @@ describe('presetPhase', () => {
 	});
 });
 
-describe('bisSetsFor', () => {
+describe('bisGearSetsFor', () => {
 	it('takes every set of the newest preset phase at or below the phase, whatever its name', () => {
-		const sets: PresetSet[] = [
+		const sets: PresetGearSet[] = [
 			{ name: 'Pre-Raid', phase: 1, itemIds: [1] },
 			{ name: 'P2', phase: 2, itemIds: [2] },
 			{ name: 'P3', phase: 3, itemIds: [3] },
@@ -155,9 +164,9 @@ describe('bisSetsFor', () => {
 			{ name: 'P3 Alt', phase: 3, itemIds: [5] },
 			{ name: 'P4', phase: 4, itemIds: [6] },
 		];
-		expect(bisSetsFor(sets, 3, () => undefined)).toEqual({ phase: 3, sets: [sets[2], sets[3], sets[4]] });
-		expect(bisSetsFor(sets, 1, () => undefined)).toEqual({ phase: 1, sets: [sets[0]] });
-		expect(bisSetsFor(sets.slice(1), 1, () => undefined)).toBeUndefined();
+		expect(bisGearSetsFor(sets, 3, () => undefined)).toEqual({ phase: 3, gearSets: [sets[2], sets[3], sets[4]] });
+		expect(bisGearSetsFor(sets, 1, () => undefined)).toEqual({ phase: 1, gearSets: [sets[0]] });
+		expect(bisGearSetsFor(sets.slice(1), 1, () => undefined)).toBeUndefined();
 	});
 
 	// The items each cell gained when the name rule went; the cells fixture's _comment lists them too.

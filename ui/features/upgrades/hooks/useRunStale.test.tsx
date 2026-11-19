@@ -22,7 +22,7 @@ const { selectRunStatus, useUpgradesStore } = await import('./useUpgradesStore')
 
 /** The page the key reads: one player's raid proto, which a test edits. */
 let raidName = 'worn gear A';
-const SETTINGS: RunSettings = { iterations: 500, excludedSources: [], guaranteedSetKeys: [], guaranteedSetItemIds: [], prune: false };
+const SETTINGS: RunSettings = { iterations: 500, excludedSources: [], selectedGearSetKeys: [], selectedGearSetItemIds: [], prune: false };
 const PLAYER_KEY = 1;
 
 /**

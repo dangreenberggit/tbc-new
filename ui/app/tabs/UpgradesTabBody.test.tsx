@@ -169,7 +169,7 @@ const probe = (field: string) => screen.getByTestId(`probe-${field}`).textConten
 /** The sets the shown result was ranked with, which its rows' set badges name. */
 const RankedSetsProbe = () => {
 	const run = useUpgradesStore(selectRun);
-	const keys = (measuredOnOf(run)?.selectedSets ?? []).map(set => set.key);
+	const keys = (measuredOnOf(run)?.selectedGearSets ?? []).map(set => set.key);
 	return <span data-testid="probe-ranked-sets">{keys.sort().join(',')}</span>;
 };
 
@@ -253,8 +253,8 @@ describe('UpgradesTabBody', () => {
 			iterations: 750,
 			candidateCap: undefined,
 			excludedSources: ['Hyjal Summit'],
-			guaranteedSetKeys: ['preset:3:P3'],
-			guaranteedSetItemIds: [1],
+			selectedGearSetKeys: ['preset:3:P3'],
+			selectedGearSetItemIds: [1],
 			prune: false,
 		});
 	});

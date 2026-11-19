@@ -3,29 +3,29 @@ import { describe, expect, it } from 'vitest';
 import { dbPoolFor, dbPoolHost, TEST_DB, TEST_MISSING_IDS, testItem } from '../testing/db_pool';
 import { bisTagPhaseFor, poolFor, presetsWithPhase } from './data/data';
 import type { PoolEntry } from './engine/pool';
-import { type PresetSet, presetSetOf, selectPool, twinIdsOf } from './pool_source';
+import { type PresetGearSet, presetGearSetOf, selectPool, twinIdsOf } from './pool_source';
 import {
 	bisHeadingIndex,
 	DEFAULT_OFF_SOURCE_KEYS,
-	defaultSetKeys,
+	defaultGearSetKeys,
 	effectiveExcludedSources,
 	effectivePool,
 	eligibleCount,
 	eligibleCountOf,
+	type GearSetOption,
+	gearSetOptions,
+	gearSetSelection,
 	poolSourceKeysOf,
 	rowTagIndex,
 	rowTags,
 	runSettingsOf,
-	selectedSetItemIds,
-	type SetOption,
-	setOptions,
-	setSelection,
+	selectedGearSetItemIds,
 	settingsOffer,
 	sourceKeyOf,
 	sourceOptions,
-	splitSetChips,
+	splitGearSetChips,
 } from './settings_pool';
-import { afterScopeChange, initialSettings, withPrune, withSetToggled, withSourceToggled } from './settings_state';
+import { afterScopeChange, initialSettings, withGearSetToggled, withPrune, withSourceToggled } from './settings_state';
 
 const entry = (itemId: number, source: PoolEntry['source'], extra: Partial<PoolEntry> = {}): PoolEntry => ({
 	itemId,
@@ -109,7 +109,7 @@ describe('poolSourceKeysOf', () => {
 });
 
 const ids = (pool: readonly PoolEntry[]) => pool.map(e => e.itemId);
-const NO_FILTER = { excludedSources: [], selectedSetItemIds: [], prune: false };
+const NO_FILTER = { excludedSources: [], selectedGearSetItemIds: [], prune: false };
 
 describe('effectivePool', () => {
 	it('keeps the whole pool when nothing is excluded', () => {
@@ -132,12 +132,12 @@ describe('effectivePool', () => {
 	});
 
 	it('with prune, keeps only the selected sets’ items', () => {
-		expect(ids(effectivePool(POOL, { ...NO_FILTER, selectedSetItemIds: [1, 4, 99], prune: true }))).toEqual([1, 4]);
+		expect(ids(effectivePool(POOL, { ...NO_FILTER, selectedGearSetItemIds: [1, 4, 99], prune: true }))).toEqual([1, 4]);
 	});
 
 	it('never adds a set item back past the Sources filter', () => {
-		expect(ids(effectivePool(POOL, { excludedSources: ['Badge vendor'], selectedSetItemIds: [1, 4], prune: true }))).toEqual([1]);
-		expect(ids(effectivePool(POOL, { excludedSources: ['Badge vendor'], selectedSetItemIds: [1, 4], prune: false }))).not.toContain(4);
+		expect(ids(effectivePool(POOL, { excludedSources: ['Badge vendor'], selectedGearSetItemIds: [1, 4], prune: true }))).toEqual([1]);
+		expect(ids(effectivePool(POOL, { excludedSources: ['Badge vendor'], selectedGearSetItemIds: [1, 4], prune: false }))).not.toContain(4);
 	});
 });
 
@@ -155,15 +155,15 @@ describe('eligibleCount', () => {
 	});
 });
 
-describe('setOptions', () => {
-	const options = setOptions({
+describe('gearSetOptions', () => {
+	const options = gearSetOptions({
 		presets: [
 			{ name: 'P2', phase: 2, gear: gear(1, 4, 0) },
 			{ name: 'P3', phase: 3, gear: gear(1, 3, 77) },
 			{ name: 'Bulwark', phase: 3, gear: gear(5) },
 			{ name: 'Pre-raid', gear: gear(88) },
 		],
-		savedSets: [{ name: 'Mine', gear: gear(2, 3) }, { name: 'Empty' }],
+		savedGearSets: [{ name: 'Mine', gear: gear(2, 3) }, { name: 'Empty' }],
 		pool: POOL,
 	});
 
@@ -180,31 +180,31 @@ describe('setOptions', () => {
 
 	it('defaults to the presets of the BiS-tag phase whose in-pool items are all BiS-tagged', () => {
 		// P3's in-pool items 1 and 3 are BiS; Bulwark's 5 is only Alt; P2 is another phase.
-		expect(defaultSetKeys(options, POOL, 3)).toEqual(['preset:3:P3']);
-		expect(defaultSetKeys(options, POOL, undefined)).toEqual([]);
+		expect(defaultGearSetKeys(options, POOL, 3)).toEqual(['preset:3:P3']);
+		expect(defaultGearSetKeys(options, POOL, undefined)).toEqual([]);
 	});
 
 	it('shows current-phase, phaseless and selected chips, and puts the rest behind the disclosure', () => {
-		const { main, other } = splitSetChips(options, ['preset:2:P2'], 3);
+		const { thisPhase: main, otherPhases: other } = splitGearSetChips(options, ['preset:2:P2'], 3);
 		expect(main.map(o => o.key)).toEqual(['preset:2:P2', 'preset:3:P3', 'preset:3:Bulwark', 'preset::Pre-raid', 'saved:Mine', 'saved:Empty']);
 		expect(other).toEqual([]);
-		expect(splitSetChips(options, [], 3).other.map(o => o.key)).toEqual(['preset:2:P2']);
+		expect(splitGearSetChips(options, [], 3).otherPhases.map(o => o.key)).toEqual(['preset:2:P2']);
 	});
 
 	it('unions the selected sets’ item ids', () => {
-		expect(selectedSetItemIds(options, ['preset:2:P2', 'preset:3:P3'])).toEqual([1, 4, 3, 77]);
+		expect(selectedGearSetItemIds(options, ['preset:2:P2', 'preset:3:P3'])).toEqual([1, 4, 3, 77]);
 	});
 });
 
 // Hunter's "DW - 6% hit" exists once per wowsims group in a phase.
-describe('setOptions over presets that share a phase and a name', () => {
-	const options = setOptions({
+describe('gearSetOptions over presets that share a phase and a name', () => {
+	const options = gearSetOptions({
 		presets: [
 			{ name: 'DW - 6% hit', phase: 2, group: 'Beast Mastery', gear: gear(1) },
 			{ name: 'DW - 6% hit', phase: 2, group: 'Survival', gear: gear(3) },
 			{ name: 'DW - 6% hit', phase: 3, group: 'Beast Mastery', gear: gear(4) },
 		],
-		savedSets: [],
+		savedGearSets: [],
 		pool: POOL,
 	});
 
@@ -217,19 +217,19 @@ describe('setOptions over presets that share a phase and a name', () => {
 	});
 
 	it('selects only the twin that was ticked', () => {
-		const offer = settingsOffer({ pool: POOL, presets: [], savedSets: [], bisTagPhase: undefined });
-		const selection = setSelection({ ...offer, options }, ['preset:2:Survival/DW - 6% hit'], 2);
-		expect(selection.selectedOptions.map(o => o.itemIds)).toEqual([[3]]);
+		const offer = settingsOffer({ pool: POOL, presets: [], savedGearSets: [], bisTagPhase: undefined });
+		const selection = gearSetSelection({ ...offer, gearSetOptions: options }, ['preset:2:Survival/DW - 6% hit'], 2);
+		expect(selection.selectedGearSets.map(o => o.itemIds)).toEqual([[3]]);
 	});
 
 	it('restores a saved pick of an ungrouped preset by its old key', () => {
-		const offer = settingsOffer({ pool: POOL, presets: [{ name: 'P3', phase: 3, gear: gear(1, 3) }], savedSets: [], bisTagPhase: 3 });
-		expect(setSelection(offer, ['preset:3:P3'], 3).selectedKeys).toEqual(['preset:3:P3']);
+		const offer = settingsOffer({ pool: POOL, presets: [{ name: 'P3', phase: 3, gear: gear(1, 3) }], savedGearSets: [], bisTagPhase: 3 });
+		expect(gearSetSelection(offer, ['preset:3:P3'], 3).selectedKeys).toEqual(['preset:3:P3']);
 	});
 });
 
 describe('rowTags', () => {
-	const option = (key: string, name: string, phase: number | undefined, itemIds: number[]): SetOption => ({
+	const option = (key: string, name: string, phase: number | undefined, itemIds: number[]): GearSetOption => ({
 		key,
 		name,
 		label: name,
@@ -271,18 +271,18 @@ describe('badges on a page whose sets sit under more than one heading', () => {
 		const host = dbPoolHost(spec);
 		const presets = presetsWithPhase(host, host.individualConfig.presets.gear);
 		const bisTagPhase = bisTagPhaseFor(host, presets, phase)?.tagsFromPhase;
-		const offer = settingsOffer({ pool: poolFor(host, presets, phase), presets, savedSets: [], bisTagPhase });
-		const { selectedOptions } = setSelection(offer, offer.defaultKeys, phase);
+		const offer = settingsOffer({ pool: poolFor(host, presets, phase), presets, savedGearSets: [], bisTagPhase });
+		const { selectedGearSets } = gearSetSelection(offer, offer.defaultGearSetKeys, phase);
 		return {
 			offer,
-			bisHeadingsOf: bisHeadingIndex(offer.options, bisTagPhase),
-			labelsOf: (itemId: number) => rowTags(itemId, selectedOptions).map(tag => tag.label),
+			bisHeadingsOf: bisHeadingIndex(offer.gearSetOptions, bisTagPhase),
+			labelsOf: (itemId: number) => rowTags(itemId, selectedGearSets).map(tag => tag.label),
 		};
 	};
 
 	it('names Fury or Arms on every warrior badge, for an item in one build’s set or in both', () => {
 		const { offer, bisHeadingsOf, labelsOf } = pageAt('warrior', 4);
-		expect(offer.defaultKeys).toEqual(['preset:4:Fury/BIS', 'preset:4:Arms/BIS']);
+		expect(offer.defaultGearSetKeys).toEqual(['preset:4:Fury/BIS', 'preset:4:Arms/BIS']);
 		expect(labelsOf(32345)).toEqual(['BIS (Fury)']); // Dreadboots of the Legion
 		expect(labelsOf(32497)).toEqual(['BIS (Fury)', 'BIS (Arms)']); // Stormrage Signet Ring
 		expect(bisHeadingsOf(32345)).toEqual(['Fury']);
@@ -298,7 +298,7 @@ describe('badges on a page whose sets sit under more than one heading', () => {
 
 	it('keeps the phase in front of two picked sets of one heading that share a name', () => {
 		const { offer } = pageAt('warrior', 4);
-		const furyBis = offer.options.filter(o => o.heading === 'Fury' && o.name === 'BIS' && (o.phase === 3 || o.phase === 4));
+		const furyBis = offer.gearSetOptions.filter(o => o.heading === 'Fury' && o.name === 'BIS' && (o.phase === 3 || o.phase === 4));
 		const sharedId = furyBis[0]!.itemIds.find(id => furyBis[1]!.itemIds.includes(id))!;
 		expect(rowTags(sharedId, furyBis).map(tag => tag.label)).toEqual(['P3 BIS (Fury)', 'P4 BIS (Fury)']);
 	});
@@ -311,7 +311,7 @@ describe('badges on a page whose sets sit under more than one heading', () => {
 });
 
 describe('rowTagIndex', () => {
-	const selected: SetOption[] = [
+	const selected: GearSetOption[] = [
 		{ key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [1, 2], inPool: 2 },
 		{ key: 'saved:Mine', name: 'Mine', label: 'Mine', kind: 'saved', itemIds: [2], inPool: 1 },
 	];
@@ -335,7 +335,7 @@ describe('rowTagIndex', () => {
 describe('a set that names the other id of an item the pool offers once', () => {
 	const twins = twinIdsOf(TEST_DB.items);
 	const cloaks = [testItem(28377)!, testItem(28380)!];
-	const poolWearing = (worn: number[], presets: PresetSet[] = []) =>
+	const poolWearing = (worn: number[], presets: PresetGearSet[] = []) =>
 		selectPool(cloaks, () => true, presets, TEST_MISSING_IDS, 5, 'include', undefined, new Set(worn));
 
 	it.each([
@@ -343,12 +343,12 @@ describe('a set that names the other id of an item the pool offers once', () => 
 		{ named: 28377, worn: [28380], offered: 28380 },
 	])('a saved set naming $named, the pool offering $offered: counted in the pool, kept by prune, badged', ({ named, worn, offered }) => {
 		const pool = poolWearing(worn);
-		const offer = settingsOffer({ pool, presets: [], savedSets: [{ name: 'Mine', gear: gear(named) }], bisTagPhase: undefined, twins });
-		const { selectedOptions, selectedItemIds } = setSelection(offer, ['saved:Mine'], 5);
+		const offer = settingsOffer({ pool, presets: [], savedGearSets: [{ name: 'Mine', gear: gear(named) }], bisTagPhase: undefined, twins });
+		const { selectedGearSets, selectedItemIds } = gearSetSelection(offer, ['saved:Mine'], 5);
 		expect(pool.map(e => e.itemId)).toEqual([offered]);
-		expect(offer.options[0]).toMatchObject({ itemIds: [named], inPool: 1 });
-		expect(effectivePool(pool, { excludedSources: [], selectedSetItemIds: selectedItemIds, prune: true }).map(e => e.itemId)).toEqual([offered]);
-		expect(rowTagIndex(selectedOptions)(offered)).toEqual([{ key: 'saved:Mine', label: 'Mine' }]);
+		expect(offer.gearSetOptions[0]).toMatchObject({ itemIds: [named], inPool: 1 });
+		expect(effectivePool(pool, { excludedSources: [], selectedGearSetItemIds: selectedItemIds, prune: true }).map(e => e.itemId)).toEqual([offered]);
+		expect(rowTagIndex(selectedGearSets)(offered)).toEqual([{ key: 'saved:Mine', label: 'Mine' }]);
 	});
 
 	it('selects a BiS preset that names the other id by default and names its heading on the offered row', () => {
@@ -356,35 +356,35 @@ describe('a set that names the other id of an item the pool offers once', () => 
 			{ name: 'BIS', phase: 5, group: 'Fury', gear: gear(28377) },
 			{ name: 'BIS', phase: 5, group: 'Arms', gear: gear() },
 		];
-		const pool = poolWearing([28380], presets.map(presetSetOf));
-		const offer = settingsOffer({ pool, presets, savedSets: [], bisTagPhase: 5, twins });
-		expect(offer.defaultKeys).toEqual(['preset:5:Fury/BIS']);
-		expect(bisHeadingIndex(offer.options, 5)(28380)).toEqual(['Fury']);
+		const pool = poolWearing([28380], presets.map(presetGearSetOf));
+		const offer = settingsOffer({ pool, presets, savedGearSets: [], bisTagPhase: 5, twins });
+		expect(offer.defaultGearSetKeys).toEqual(['preset:5:Fury/BIS']);
+		expect(bisHeadingIndex(offer.gearSetOptions, 5)(28380)).toEqual(['Fury']);
 	});
 });
 
-describe('setSelection, runSettingsOf and eligibleCountOf', () => {
+describe('gearSetSelection, runSettingsOf and eligibleCountOf', () => {
 	const offer = settingsOffer({
 		pool: POOL,
 		presets: [
 			{ name: 'P2', phase: 2, gear: gear(1, 4) },
 			{ name: 'P3', phase: 3, gear: gear(1, 3) },
 		],
-		savedSets: [{ name: 'Mine', gear: gear(2) }],
+		savedGearSets: [{ name: 'Mine', gear: gear(2) }],
 		bisTagPhase: 3,
 	});
 	const fresh = initialSettings({ iterations: 500 });
 	const viewOf = (state: typeof fresh) => {
-		const selection = setSelection(offer, state.selectedSetKeys, 3);
+		const selection = gearSetSelection(offer, state.selectedSetKeys, 3);
 		const runSettings = runSettingsOf(selection, state);
-		const filter = { excludedSources: state.excludedSources, selectedSetItemIds: selection.selectedItemIds, prune: runSettings.prune ?? false };
+		const filter = { excludedSources: state.excludedSources, selectedGearSetItemIds: selection.selectedItemIds, prune: runSettings.prune ?? false };
 		return { ...selection, runSettings, eligibleCount: eligibleCountOf(offer, filter, 3, NO_WEAPON) };
 	};
 
 	it('offers the pool’s sources and sets, and the BiS-tag phase’s preset as the default', () => {
 		expect(offer.sourceKeys).toEqual(['Black Temple', 'Hyjal Summit', 'Tempest Keep', 'Badge vendor', 'Crafted']);
-		expect(offer.options.map(o => o.key)).toEqual(['preset:2:P2', 'preset:3:P3', 'saved:Mine']);
-		expect(offer.defaultKeys).toEqual(['preset:3:P3']);
+		expect(offer.gearSetOptions.map(o => o.key)).toEqual(['preset:2:P2', 'preset:3:P3', 'saved:Mine']);
+		expect(offer.defaultGearSetKeys).toEqual(['preset:3:P3']);
 	});
 
 	it('runs the whole phase pool with nothing picked', () => {
@@ -393,28 +393,28 @@ describe('setSelection, runSettingsOf and eligibleCountOf', () => {
 			iterations: 500,
 			candidateCap: undefined,
 			excludedSources: [],
-			guaranteedSetKeys: [],
-			guaranteedSetItemIds: [],
+			selectedGearSetKeys: [],
+			selectedGearSetItemIds: [],
 			prune: false,
 		});
 		expect(view.eligibleCount).toBe(5);
-		expect(view.chips.other.map(o => o.key)).toEqual(['preset:2:P2']);
+		expect(view.chips.otherPhases.map(o => o.key)).toEqual(['preset:2:P2']);
 	});
 
 	it('narrows the count when a source is excluded and, with prune, to the selected sets’ items', () => {
 		const excluded = withSourceToggled(fresh, 'Badge vendor');
 		expect(viewOf(excluded).eligibleCount).toBe(4);
 
-		const pruned = withPrune(withSetToggled(fresh, 'preset:3:P3'), true);
+		const pruned = withPrune(withGearSetToggled(fresh, 'preset:3:P3'), true);
 		const view = viewOf(pruned);
-		expect(view.selectedOptions.map(o => o.key)).toEqual(['preset:3:P3']);
-		expect(view.runSettings).toMatchObject({ guaranteedSetKeys: ['preset:3:P3'], guaranteedSetItemIds: [1, 3], prune: true });
+		expect(view.selectedGearSets.map(o => o.key)).toEqual(['preset:3:P3']);
+		expect(view.runSettings).toMatchObject({ selectedGearSetKeys: ['preset:3:P3'], selectedGearSetItemIds: [1, 3], prune: true });
 		expect(view.eligibleCount).toBe(2);
 	});
 
 	it('drops a picked set the offer no longer has, such as a deleted saved set', () => {
-		const picked = withSetToggled(fresh, 'saved:Gone');
-		expect(viewOf(picked).runSettings.guaranteedSetKeys).toEqual([]);
+		const picked = withGearSetToggled(fresh, 'saved:Gone');
+		expect(viewOf(picked).runSettings.selectedGearSetKeys).toEqual([]);
 	});
 });
 

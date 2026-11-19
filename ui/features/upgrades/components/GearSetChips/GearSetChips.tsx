@@ -6,25 +6,25 @@ import { FieldLabel } from '@ui-kit/FormControl';
 import { Tooltip } from '@ui-kit/Tooltip';
 import { useId, useState } from 'react';
 
-import type { SetOption } from '../../model/settings_pool';
+import type { GearSetOption } from '../../model/settings_pool';
 
-export interface SetChipsProps {
-	chips: { main: readonly SetOption[]; other: readonly SetOption[] };
+export interface GearSetChipsProps {
+	chips: { thisPhase: readonly GearSetOption[]; otherPhases: readonly GearSetOption[] };
 	selectedKeys: readonly string[];
 	prune: boolean;
-	onToggleSet: (key: string) => void;
+	onToggleGearSet: (key: string) => void;
 	onPruneChange: (prune: boolean) => void;
 }
 
 interface ChipRowProps {
-	options: readonly SetOption[];
+	options: readonly GearSetOption[];
 	selectedKeys: readonly string[];
 	tooltipId: string;
-	onToggleSet: (key: string) => void;
+	onToggleGearSet: (key: string) => void;
 }
 
-/** A set with nothing in this phase's pool stays visible and muted, so its "0/m in pool" reason can be read. */
-const ChipRow = ({ options, selectedKeys, tooltipId, onToggleSet }: ChipRowProps) => (
+/** A gear set with nothing in this phase's pool stays visible and muted, so its "0/m in pool" reason can be read. */
+const ChipRow = ({ options, selectedKeys, tooltipId, onToggleGearSet }: ChipRowProps) => (
 	<div className="flex flex-wrap gap-2">
 		{options.map(option => {
 			const unavailable = option.inPool === 0;
@@ -36,7 +36,7 @@ const ChipRow = ({ options, selectedKeys, tooltipId, onToggleSet }: ChipRowProps
 					label={option.label}
 					active={selected}
 					disabled={unavailable}
-					onSelect={unavailable ? undefined : () => onToggleSet(option.key)}
+					onSelect={unavailable ? undefined : () => onToggleGearSet(option.key)}
 					chipTooltipId={tooltipId}
 					tooltip={i18n.t('upgrades_tab.settings.sets_in_pool', { ns: 'upgrades', n: option.inPool, m: option.itemIds.length })}
 					rootProps={{ 'data-set-key': option.key }}
@@ -48,7 +48,7 @@ const ChipRow = ({ options, selectedKeys, tooltipId, onToggleSet }: ChipRowProps
 );
 
 /** The gear sets a run can be limited to: this phase's chips, the other phases' behind a disclosure, and the prune toggle. */
-export const SetChips = ({ chips, selectedKeys, prune, onToggleSet, onPruneChange }: SetChipsProps) => {
+export const GearSetChips = ({ chips, selectedKeys, prune, onToggleGearSet, onPruneChange }: GearSetChipsProps) => {
 	const [otherOpen, setOtherOpen] = useState(false);
 	const titleId = useId();
 	const otherId = useId();
@@ -59,8 +59,8 @@ export const SetChips = ({ chips, selectedKeys, prune, onToggleSet, onPruneChang
 			<FieldLabel as="span" id={titleId}>
 				{i18n.t('upgrades_tab.settings.sets_title', { ns: 'upgrades' })}
 			</FieldLabel>
-			<ChipRow options={chips.main} selectedKeys={selectedKeys} tooltipId={tooltipId} onToggleSet={onToggleSet} />
-			{chips.other.length > 0 && (
+			<ChipRow options={chips.thisPhase} selectedKeys={selectedKeys} tooltipId={tooltipId} onToggleGearSet={onToggleGearSet} />
+			{chips.otherPhases.length > 0 && (
 				<>
 					<Button
 						variant="link"
@@ -69,10 +69,10 @@ export const SetChips = ({ chips, selectedKeys, prune, onToggleSet, onPruneChang
 						aria-expanded={otherOpen}
 						aria-controls={otherId}
 						onClick={() => setOtherOpen(open => !open)}>
-						{i18n.t('upgrades_tab.settings.sets_other_phases', { ns: 'upgrades', n: chips.other.length })}
+						{i18n.t('upgrades_tab.settings.sets_other_phases', { ns: 'upgrades', n: chips.otherPhases.length })}
 					</Button>
 					<div id={otherId} hidden={!otherOpen}>
-						<ChipRow options={chips.other} selectedKeys={selectedKeys} tooltipId={tooltipId} onToggleSet={onToggleSet} />
+						<ChipRow options={chips.otherPhases} selectedKeys={selectedKeys} tooltipId={tooltipId} onToggleGearSet={onToggleGearSet} />
 					</div>
 				</>
 			)}

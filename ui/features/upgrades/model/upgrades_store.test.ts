@@ -7,7 +7,7 @@ import { createUpgradesStore, selectHiddenSources, selectRunStatus, selectSettle
 
 const [rowA] = RANKING_FIXTURE.items;
 const SEED = { iterations: 1000 };
-const SCOPE = { specPhase: 'ret:3', defaultSetKeys: ['preset:P3'], poolSourceKeys: ['raid:hyjal'] };
+const SCOPE = { specPhase: 'ret:3', defaultGearSetKeys: ['preset:P3'], poolSourceKeys: ['raid:hyjal'] };
 const MEASURED = { inputsSignature: 'sig-at-click' };
 
 describe('createUpgradesStore', () => {
@@ -117,14 +117,14 @@ describe('the user’s settings actions', () => {
 		const listener = vi.fn();
 		store.subscribe(listener);
 
-		store.getState().toggleSet('saved:Tier 5', SCOPE);
+		store.getState().toggleGearSet('saved:Tier 5', SCOPE);
 		expect(listener).toHaveBeenCalledOnce();
 		expect(store.getState().settings).toMatchObject({ selectedSetKeys: ['preset:P3', 'saved:Tier 5'], defaultsFor: 'ret:3' });
 	});
 
 	it('keeps a set the user deselected deselected on the next write in the same scope', () => {
 		const store = createUpgradesStore(SEED);
-		store.getState().toggleSet('preset:P3', SCOPE);
+		store.getState().toggleGearSet('preset:P3', SCOPE);
 		store.getState().setIterations(2000, SCOPE);
 		expect(store.getState().settings).toMatchObject({ selectedSetKeys: [], iterations: 2000 });
 	});

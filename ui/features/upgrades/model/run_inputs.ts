@@ -39,7 +39,7 @@ export const inputsSignature = ({ liveKey, settings }: { liveKey: string; settin
 		iterations: settings.iterations,
 		candidateCap: settings.candidateCap ?? null,
 		excludedSources: sortedStrings(settings.excludedSources),
-		guaranteedSetKeys: sortedStrings(settings.guaranteedSetKeys),
-		guaranteedSetItemIds: sortedNumbers(settings.guaranteedSetItemIds),
+		selectedGearSetKeys: sortedStrings(settings.selectedGearSetKeys),
+		selectedGearSetItemIds: sortedNumbers(settings.selectedGearSetItemIds),
 		prune: settings.prune ?? false,
 	});
