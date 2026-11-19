@@ -97,9 +97,9 @@ describe('paneRows', () => {
 		expect(ids(pane.belowCutoff)).toEqual([32373]);
 	});
 
-	it('leaves owned rows out of the below-cutoff group', () => {
-		const ownedHelm = { ...helm, itemId: 30987, owned: true };
-		const pane = paneRows(applyView({ ...RANKING_FIXTURE, items: [helm, ownedHelm] }), 'head');
+	it('leaves worn rows out of the below-cutoff group', () => {
+		const wornHelm = { ...helm, itemId: 30987, owned: true };
+		const pane = paneRows(applyView({ ...RANKING_FIXTURE, items: [helm, wornHelm] }), 'head');
 		expect(ids(pane.belowCutoff)).toEqual([32373]);
 	});
 });
@@ -136,7 +136,7 @@ describe('BiS-list rows below the cutoff', () => {
 		expect(ids(view.shortlist)).not.toContain(30905);
 	});
 
-	it('stay out of the main table when owned, as an owned row stays out of the below-cutoff group', () => {
+	it('stay out of the main table when worn, as a worn row stays out of the below-cutoff group', () => {
 		const pane = paneRows(applyView({ ...RANKING_FIXTURE, items: [{ ...bisHelm, owned: true }] }), 'head');
 		expect(pane.main).toEqual([]);
 		expect(pane.belowCutoff).toEqual([]);

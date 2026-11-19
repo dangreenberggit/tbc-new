@@ -26,7 +26,7 @@ export function exportIdForRow(row: Pick<RankedItem, 'itemId' | 'source' | 'sour
 }
 
 /**
- * Owned rows are left out: the player has the item. Rows are deduplicated on
+ * Worn rows are left out: the player has the item. Rows are deduplicated on
  * the id they emit, so two rows that resolve to one token are one line.
  */
 export function exportPayload(rows: readonly RankedItem[], flavour: ExportFlavour): ExportPayload {

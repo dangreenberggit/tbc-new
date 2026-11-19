@@ -59,7 +59,7 @@ export const ResultRow = memo(({ row, position, context, notUpgrade = false, ref
 			data-testid="upgrades-result-row"
 			data-index={position - 1}
 			data-item-id={row.itemId}
-			data-owned={row.owned ? 'true' : undefined}
+			data-worn={row.owned ? 'true' : undefined}
 			data-not-upgrade={notUpgrade ? 'true' : undefined}>
 			<td className="py-1 pr-3 tabular-nums">{position}</td>
 			<ItemNameCell

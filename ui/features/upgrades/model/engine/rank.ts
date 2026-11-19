@@ -110,7 +110,7 @@ export type RankInput = {
 	seeds?: number[];
 	/**
 	 * Keeps the first N candidates of the EP ordering that the player does not
-	 * wear, plus every owned row. `undefined` means no cap, and hashes the
+	 * wear, plus every worn row. `undefined` means no cap, and hashes the
 	 * same as a cap equal to the eligible set's size.
 	 */
 	candidateCap?: number;
@@ -240,6 +240,7 @@ export type RankedItem = {
 	}>;
 	removedItems?: Array<{ itemId: number; slot: SimSlotName }>;
 	emptyMetaSocket?: boolean;
+	/** The player wears this item now. The stored name says "owned". */
 	owned?: boolean;
 	/**
 	 * `false` only on a row Stop left unsimmed; absent otherwise, never
@@ -1039,7 +1040,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			// turn the worn item's "you already wear this" row into "wear a second
 			// copy": legal for a non-unique ring or trinket, but nothing in the row
 			// would say so. `paneRows` in `model/results_view.ts` relies on this to
-			// keep owned rows out of the below-cutoff group.
+			// keep worn rows out of the below-cutoff group.
 			const wornAt = equipment.findIndex(spec => spec.id === entry.itemId);
 			if (wornAt >= 0 && wornAt !== slotIndex) return { kind: 'skip' };
 			return { kind: 'ok', slotIndex };
@@ -1067,7 +1068,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		 * `concurrency` gives byte-identical output.
 		 */
 		async function runCandidate(entry: PoolEntry): Promise<void> {
-			const owned = equippedIds.has(entry.itemId);
+			const worn = equippedIds.has(entry.itemId);
 			const slotNames = simSlotsForPoolSlot(entry.slot, input.spec, entry.itemId);
 			let best: BestSwap | null = null;
 
@@ -1201,7 +1202,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 					slot: SIM_ORDER[r.slotIndex] as SimSlotName,
 				}));
 			}
-			if (owned) item.owned = true;
+			if (worn) item.owned = true;
 			if (metaSocketUnpriced(entry.itemId, best.candidateGems, gems.spec)) {
 				item.emptyMetaSocket = true;
 			}
@@ -1211,12 +1212,12 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		}
 
 		// Every eligible candidate gets a full-iteration sim; the cap keeps the
-		// first N items of the EP order the player does not wear, plus every owned
-		// row. Owned rows are kept anyway and the list leaves them out, so one
+		// first N items of the EP order the player does not wear, plus every worn
+		// row. Worn rows are kept anyway and the list leaves them out, so one
 		// counted against N would leave the list a row short.
 		const cap = input.candidateCap ?? ordered.length;
-		const keptNotOwned = new Set(ordered.filter(e => !equippedIds.has(e.itemId)).slice(0, cap));
-		const simCandidates = ordered.filter(e => keptNotOwned.has(e) || equippedIds.has(e.itemId));
+		const keptNotWorn = new Set(ordered.filter(e => !equippedIds.has(e.itemId)).slice(0, cap));
+		const simCandidates = ordered.filter(e => keptNotWorn.has(e) || equippedIds.has(e.itemId));
 
 		// Counted here, after the cap decides the full-iteration set. An upper
 		// bound until `replicateTopItems` restates it with the rows it re-sims.
@@ -3136,7 +3137,7 @@ function applySetContext(
 
 		// futureBonuses: every implemented threshold above the post-swap count,
 		// with its net value (dps absent when unmeasured). Only for a swap that
-		// adds a set piece: an owned row's swap changes nothing, so a future bonus
+		// adds a set piece: a worn row's swap changes nothing, so a future bonus
 		// would rank "keep what you wear" on value the swap cannot bring.
 		const advancesPieceCount = piecesAfterSwap > piecesWornBefore;
 		// The view never adds a `belowGate` bonus (`stepEligible`), but it is

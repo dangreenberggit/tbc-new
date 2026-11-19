@@ -66,7 +66,7 @@ export type PaneEmptyReason = 'no-source-row' | 'no-upgrades';
 
 /**
  * The main table also shows BiS-list rows below the cutoff, listed in
- * `notUpgrades`. Owned rows below the cutoff are dropped: the player already
+ * `notUpgrades`. Worn rows below the cutoff are dropped: the player already
  * wears the item, so its gain is about 0. There is no empty text for "no BiS-list
  * item", because the run may have left such an item out before simming.
  */

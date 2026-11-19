@@ -177,7 +177,7 @@ describe('UpgradesResults Filter by source', () => {
 		// The filter is view state: the run and the settings a staleness check compares are the same objects.
 		expect(upgradesStoreFor(host).getState().run).toBe(run);
 		expect(upgradesStoreFor(host).getState().settings).toBe(settings);
-		// The export reads the cut shortlist: its six rows less Dragonspine Trophy, which is owned.
+		// The export reads the cut shortlist: its six rows less Dragonspine Trophy, which is worn.
 		expect(exportCount()).toBe('5 items');
 
 		// Legs' only row, Leggings of the Forgotten Conqueror, is a Black Temple token.

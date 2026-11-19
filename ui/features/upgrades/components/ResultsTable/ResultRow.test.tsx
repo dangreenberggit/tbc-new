@@ -271,15 +271,15 @@ describe('ResultRow', () => {
 		expect(testIdText(renderRow(fixtureRow(1)), 'upgrades-bis-badge')).toEqual([]);
 	});
 
-	it('greys an owned row and says it is owned', () => {
-		const owned = renderRow(fixtureRow(7));
-		expect(owned.dataset.owned).toBe('true');
-		expect(owned.classList.contains('text-muted')).toBe(true);
-		expect(owned.textContent).toContain('(Owned)');
+	it('greys a worn row and says it is owned', () => {
+		const worn = renderRow(fixtureRow(7));
+		expect(worn.dataset.worn).toBe('true');
+		expect(worn.classList.contains('text-muted')).toBe(true);
+		expect(worn.textContent).toContain('(Owned)');
 
-		const notOwned = renderRow(fixtureRow(0));
-		expect(notOwned.dataset.owned).toBeUndefined();
-		expect(notOwned.classList.contains('text-muted')).toBe(false);
+		const notWorn = renderRow(fixtureRow(0));
+		expect(notWorn.dataset.worn).toBeUndefined();
+		expect(notWorn.classList.contains('text-muted')).toBe(false);
 	});
 
 	it('names the worn item a two-item swap removes', () => {

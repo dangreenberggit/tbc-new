@@ -131,7 +131,7 @@ describe('ResultsPanes', () => {
 		const shownIds = () =>
 			within(activePane(container))
 				.getAllByTestId('upgrades-result-row')
-				.filter(row => row.dataset.owned !== 'true')
+				.filter(row => row.dataset.worn !== 'true')
 				.map(row => Number(row.dataset.itemId));
 
 		fireEvent.click(within(activePane(container)).getByTestId('upgrades-sort-item'));

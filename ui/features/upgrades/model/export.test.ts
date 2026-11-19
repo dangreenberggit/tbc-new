@@ -32,7 +32,7 @@ describe('exportIdForRow', () => {
 });
 
 describe('exportPayload', () => {
-	it('lists the rows in the order given, leaving owned rows out', () => {
+	it('lists the rows in the order given, leaving worn rows out', () => {
 		expect(exportPayload([fixtureRow(1), trophy, greaves, fixtureRow(0)], 'token')).toEqual({ items: [{ id: 30902 }, { id: 31098 }, { id: 32332 }] });
 	});
 
@@ -41,7 +41,7 @@ describe('exportPayload', () => {
 		expect(exportPayload([fixtureRow(0), ringInOtherFinger], 'gear')).toEqual({ items: [{ id: 32332 }] });
 	});
 
-	it('is a well-formed empty list when every row is owned', () => {
+	it('is a well-formed empty list when every row is worn', () => {
 		expect(exportPayload([trophy], 'gear')).toEqual({ items: [] });
 	});
 });

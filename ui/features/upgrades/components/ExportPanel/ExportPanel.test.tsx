@@ -12,7 +12,7 @@ import { ExportPanel } from './ExportPanel';
 loadEnglishBundles();
 
 const TORCH = fixtureRow(0);
-const DRAGONSPINE_OWNED = fixtureRow(7);
+const DRAGONSPINE_WORN = fixtureRow(7);
 const GREAVES_TOKEN = fixtureRow(9);
 
 /** A fresh page per case, so each case gets its own tab store. */
@@ -29,8 +29,8 @@ const exportedIds = () => {
 };
 
 describe('ExportPanel', () => {
-	it('exports the tier token a tier piece drops from, skips owned rows, and keeps the order it is given', () => {
-		render(<ExportPanel rows={[GREAVES_TOKEN, DRAGONSPINE_OWNED, TORCH]} />);
+	it('exports the tier token a tier piece drops from, skips worn rows, and keeps the order it is given', () => {
+		render(<ExportPanel rows={[GREAVES_TOKEN, DRAGONSPINE_WORN, TORCH]} />);
 
 		expect(exportedIds()).toEqual([31098, TORCH.itemId]);
 		expect(screen.getByTestId('upgrades-export-count').textContent).toBe('2 items');
@@ -57,8 +57,8 @@ describe('ExportPanel', () => {
 		expect(store.getState().exportFlavour).toBe('token');
 	});
 
-	it('shows nothing when every row is owned', () => {
-		const { container } = render(<ExportPanel rows={[DRAGONSPINE_OWNED]} />);
+	it('shows nothing when every row is worn', () => {
+		const { container } = render(<ExportPanel rows={[DRAGONSPINE_WORN]} />);
 		expect(container.innerHTML).toBe('');
 	});
 });
