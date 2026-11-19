@@ -64,7 +64,7 @@ export type PartnerQuery = {
 	needed: number;
 	pool: readonly PartnerPiece[];
 	/** The worn bonuses that count as lost when every listed swap is made. */
-	lostBy: (swaps: readonly PlacedItem[]) => readonly Pick<BrokenSetBonus, 'setId' | 'threshold'>[];
+	brokenBy: (swaps: readonly PlacedItem[]) => readonly Pick<BrokenSetBonus, 'setId' | 'threshold'>[];
 	/** A worn bonus's measured value; undefined when unmeasured. */
 	breakDps: (setId: number, threshold: number) => number | undefined;
 	/** Used by 'single-swap'. */
@@ -103,25 +103,25 @@ export function estimateCombinedDelta(query: PartnerQuery, combination: readonly
 		slotIndex: query.row.slotIndex,
 	};
 	const swaps: PlacedItem[] = [rowSwap, ...combination.map(p => ({ itemId: p.itemId, slotIndex: p.slotIndex }))];
-	const lostAlone = new Map<string, number>();
+	const brokenAlone = new Map<string, number>();
 	const keys = new Map<string, Pick<BrokenSetBonus, 'setId' | 'threshold'>>();
 	for (const swap of swaps) {
-		for (const b of query.lostBy([swap])) {
+		for (const b of query.brokenBy([swap])) {
 			const key = bonusKey(b);
 			keys.set(key, b);
-			lostAlone.set(key, (lostAlone.get(key) ?? 0) + 1);
+			brokenAlone.set(key, (brokenAlone.get(key) ?? 0) + 1);
 		}
 	}
-	const lostTogether = new Set<string>();
-	for (const b of query.lostBy(swaps)) {
+	const brokenTogether = new Set<string>();
+	for (const b of query.brokenBy(swaps)) {
 		const key = bonusKey(b);
 		keys.set(key, b);
-		lostTogether.add(key);
+		brokenTogether.add(key);
 	}
 	let est = query.row.ownDeltaDps + combination.reduce((s, p) => s + p.ownDeltaDps, 0);
 	for (const [key, b] of keys) {
-		const m = lostAlone.get(key) ?? 0;
-		const lost = lostTogether.has(key) ? 1 : 0;
+		const m = brokenAlone.get(key) ?? 0;
+		const lost = brokenTogether.has(key) ? 1 : 0;
 		if (m === 0 && !opts.includeCombinationOnlyBreaks) continue;
 		const coefficient = m - lost;
 		if (coefficient === 0) continue;

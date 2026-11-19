@@ -33,9 +33,9 @@ const addsUp = (tip: SetBonusTip | null) => {
 
 const context = { ranking: RANKING_FIXTURE };
 
-type Future = NonNullable<SetContext['futureBonuses']>[number];
+type FutureBonus = NonNullable<SetContext['futureBonuses']>[number];
 /** A step ranking's measured 2pc future: worth 26 DPS over the row alone when the row's figure is 4.5. */
-const future = (over: Partial<Future> = {}): Future => ({
+const future = (over: Partial<FutureBonus> = {}): FutureBonus => ({
 	threshold: 2,
 	piecesNeeded: 1,
 	sameGearDps: 20,
@@ -311,7 +311,7 @@ describe('setBonusTipLines', () => {
 		// Each line says how much the figure would change if the tab counted that step in place of what it counts now.
 		describe('a bonus past the stop, with the toggle on (ticket 655)', () => {
 			const PIECES_4PC = ['Lightbringer Breastplate', 'Lightbringer Greaves', 'Lightbringer Shoulderbraces'];
-			const fourPiece = (stepGearDps: number, over: Partial<Future> = {}): Future =>
+			const fourPiece = (stepGearDps: number, over: Partial<FutureBonus> = {}): FutureBonus =>
 				future({
 					threshold: 4,
 					piecesNeeded: 3,

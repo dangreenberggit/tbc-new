@@ -35,10 +35,10 @@ type SetContextLike = Partial<
 	Pick<SetContext, 'futureBonuses' | 'commitBreaks' | 'singleBreaks' | 'crossesThreshold' | 'setName' | 'piecesWornBefore' | 'stepRanking' | 'singleDeltaDps'>
 >;
 
-type FutureLike = NonNullable<SetContext['futureBonuses']>[number];
+type FutureBonus = NonNullable<SetContext['futureBonuses']>[number];
 
 /**
- * One line of the credit's breakdown, in the order `walkCredit` counts it. `dps`
+ * One line of the credit's breakdown, in the order `creditBreakdown` counts it. `dps`
  * is signed: a break is negative.
  */
 export type SetPotentialTerm =
@@ -185,9 +185,9 @@ function assignTieGroups(rows: ViewRow[], sortKey: (r: ViewRow) => number): void
 
 function belowCutoffUnderView(item: RankedItem, withSetPotential: boolean, cutoff: Cutoff, setCredit: SetCreditView): boolean {
 	if (!withSetPotential) return item.belowCutoff;
-	const prospective = rankableSetPotential(item, cutoff, setCredit);
-	if (prospective === 0) return item.belowCutoff;
-	return !meetsCutoff(item.deltaDps + prospective, cutoff);
+	const credit = rankableSetPotential(item, cutoff, setCredit);
+	if (credit === 0) return item.belowCutoff;
+	return !meetsCutoff(item.deltaDps + credit, cutoff);
 }
 
 /**
@@ -284,7 +284,7 @@ export function ownSwapBreaks(
 	});
 }
 
-type CreditWalk = {
+type CreditBreakdown = {
 	credit: number;
 	split: number;
 	stopThreshold: number;
@@ -309,7 +309,7 @@ type CreditWalk = {
  * largest measured bonus, and a row whose own pieces keep that bonus should not
  * pay for them.
  */
-function walkCredit(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: SetCreditRule): CreditWalk {
+function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: SetCreditRule): CreditBreakdown {
 	if (ctx?.stepRanking) return walkSteps(ctx, cutoff, rule);
 	const noiseFloorDps = setBonusNoiseFloorDps(cutoff);
 	const future = [...(ctx?.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
@@ -319,7 +319,7 @@ function walkCredit(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: SetCr
 	const terms: SetPotentialTerm[] = [];
 	let running = 0;
 	let splitRunning = 0;
-	let best: Omit<CreditWalk, 'terms'> & { keep: number } = {
+	let best: Omit<CreditBreakdown, 'terms'> & { keep: number } = {
 		credit: 0,
 		split: 0,
 		stopThreshold: 0,
@@ -382,7 +382,7 @@ function walkCredit(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: SetCr
  * With `stepRanking`, whether a bonus can be the stopping point: it has a
  * `sameGearDps` that passes `clearsSameGearGate`.
  */
-export function stepEligible(future: Pick<FutureLike, 'belowGate' | 'sameGearDps' | 'sameGearSe'>, cutoff: Cutoff): boolean {
+export function stepEligible(future: Pick<FutureBonus, 'belowGate' | 'sameGearDps' | 'sameGearSe'>, cutoff: Cutoff): boolean {
 	if (future.belowGate || future.sameGearDps === undefined) return false;
 	return clearsSameGearGate(future.sameGearDps, future.sameGearSe ?? 0, cutoff);
 }
@@ -399,7 +399,7 @@ export function stepEligible(future: Pick<FutureLike, 'belowGate' | 'sameGearDps
  * Each value is one sim minus another, so the floor is `cutoff.absDps`, not the
  * four-sim floor.
  */
-function walkSteps(ctx: SetContextLike, cutoff: Cutoff, rule: SetCreditRule): CreditWalk {
+function walkSteps(ctx: SetContextLike, cutoff: Cutoff, rule: SetCreditRule): CreditBreakdown {
 	const ownDeltaDps = ctx.singleDeltaDps;
 	const eligible = [...(ctx.futureBonuses ?? [])]
 		.filter(f => f.stepGearDps !== undefined && stepEligible(f, cutoff))
@@ -469,7 +469,7 @@ export function setPotentialTerms(
 	cutoff: Cutoff,
 	rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE,
 ): { credit: number; stopThreshold: number; terms: SetPotentialTerm[] } {
-	const { credit, stopThreshold, terms } = walkCredit(ctx, cutoff, rule);
+	const { credit, stopThreshold, terms } = creditBreakdown(ctx, cutoff, rule);
 	return { credit, stopThreshold, terms };
 }
 
@@ -523,9 +523,9 @@ export function setPotentialSteps(ctx: SetContextLike | undefined, cutoff: Cutof
 		const ids = new Set(term.pieces.map(p => p.itemId));
 		if ([...prevIds].some(id => !ids.has(id))) return null;
 		const broken = term.broken.filter(b => !prevBroken.has(bonusKey(b)));
-		const fut = (ctx.futureBonuses ?? []).find(f => f.threshold === term.threshold);
-		const offKeys = new Set((fut?.bonusOff ?? []).map(bonusKey));
-		const offDps = fut?.bonusOffDps;
+		const bonus = (ctx.futureBonuses ?? []).find(f => f.threshold === term.threshold);
+		const offKeys = new Set((bonus?.bonusOff ?? []).map(bonusKey));
+		const offDps = bonus?.bonusOffDps;
 		const split = broken.length > 0 && offDps !== undefined && offKeys.size === broken.length && broken.every(b => offKeys.has(bonusKey(b)));
 		steps.push({
 			kind: 'step',
@@ -549,22 +549,22 @@ export function setPotentialSteps(ctx: SetContextLike | undefined, cutoff: Cutof
 	return steps;
 }
 
-/** `walkCredit`'s credit for the full or the `'split'` view. */
+/** `creditBreakdown`'s credit for the full or the `'split'` view. */
 export function setPotentialCredit(
 	ctx: SetContextLike | undefined,
 	cutoff: Cutoff,
 	setCredit: SetCreditView = 'full',
 	rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE,
 ): number {
-	const walk = walkCredit(ctx, cutoff, rule);
-	return setCredit === 'split' ? walk.split : walk.credit;
+	const breakdown = creditBreakdown(ctx, cutoff, rule);
+	return setCredit === 'split' ? breakdown.split : breakdown.credit;
 }
 
 /**
  * The set-potential credit for a row, for the full or the `'split'` view (each
  * bonus divided by its full piece count). A bonus counts only when it is above
  * (`>`, as the display checks) a noise floor from the ranking's own `Cutoff`, so
- * no row sorts on a bonus the display hides; `walkCredit` and `walkSteps` say
+ * no row sorts on a bonus the display hides; `creditBreakdown` and `walkSteps` say
  * which floor. When any figure the credit needs was not measured
  * (`setCreditUnmeasured`), the credit is 0, gains and losses alike. An
  * unmeasured commit break also makes it 0, though a measured one is not charged.

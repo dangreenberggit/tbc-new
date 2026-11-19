@@ -114,10 +114,10 @@ const NO_POTENTIAL: Potential = { lines: [], kind: 'none' };
  * bonus when the bonuses' pieces do not build on each other.
  */
 function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): Potential {
-	const futures = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
+	const futureBonuses = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
 	const bonusLabel = (threshold: number): TipLabel => ({ kind: 'bonus', set: ctx.setName, threshold, have: ctx.piecesWornBefore });
 	if (setCreditUnmeasured(ctx) && ctx.stepRanking) {
-		return { lines: futures.filter(stepFutureUnmeasured).map(f => ({ label: bonusLabel(f.threshold), dps: undefined })), kind: 'unmeasured' };
+		return { lines: futureBonuses.filter(stepFutureUnmeasured).map(f => ({ label: bonusLabel(f.threshold), dps: undefined })), kind: 'unmeasured' };
 	}
 	if (setCreditUnmeasured(ctx)) {
 		const lines: Line[] = [];
@@ -127,7 +127,7 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): Potent
 			named.add(bonusKey(b));
 			lines.push({ label: { kind: 'breaks', broken: [ref(b)] }, dps: undefined });
 		};
-		for (const f of futures) {
+		for (const f of futureBonuses) {
 			if (f.dps === undefined) lines.push({ label: bonusLabel(f.threshold), dps: undefined });
 			for (const b of f.breaks ?? []) nameUnmeasuredBreak(b);
 		}
@@ -214,9 +214,9 @@ function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopTh
  * listed with no figure, so the row still says its set was tried.
  */
 function noiseLines(ctx: SetContext, cutoff: Cutoff): TipEntry[] {
-	const futures = ctx.futureBonuses ?? [];
-	if (!ctx.stepRanking || futures.some(f => stepEligible(f, cutoff))) return [];
-	return futures
+	const futureBonuses = ctx.futureBonuses ?? [];
+	if (!ctx.stepRanking || futureBonuses.some(f => stepEligible(f, cutoff))) return [];
+	return futureBonuses
 		.filter(f => f.belowGate)
 		.sort((a, b) => a.threshold - b.threshold)
 		.map(f => line({ kind: 'noise', set: ctx.setName, threshold: f.threshold }, undefined));

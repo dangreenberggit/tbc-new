@@ -185,7 +185,7 @@ export type BrokenSetBonus = {
 export const bonusKey = (b: { setId: number; threshold: number }): string => `${b.setId}:${b.threshold}`;
 
 /** Lost bonus counts that `countsAsBreak` accepts, highest first; no list decides which exist. */
-export function lostThresholds(setId: number, before: number, after: number, countsAsBreak: CountsAsBreak = isBonusImplemented): SetThreshold[] {
+export function brokenThresholds(setId: number, before: number, after: number, countsAsBreak: CountsAsBreak = isBonusImplemented): SetThreshold[] {
 	const lost: SetThreshold[] = [];
 	for (let t = before; t > after && t >= 2; t--) {
 		if (countsAsBreak(setId, t)) lost.push(t);
@@ -223,7 +223,7 @@ export function brokenSetBonuses(
 		if (setId === completingSetId) continue;
 		const piecesAfter = after.get(setId) ?? 0;
 		if (piecesAfter >= piecesBefore) continue;
-		for (const threshold of lostThresholds(setId, piecesBefore, piecesAfter, countsAsBreak)) {
+		for (const threshold of brokenThresholds(setId, piecesBefore, piecesAfter, countsAsBreak)) {
 			broken.push({
 				setId,
 				setName: setLabel(equipment, setId),

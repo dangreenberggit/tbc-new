@@ -1834,7 +1834,7 @@ async function buildSetBonuses(
 				threshold,
 				needed: rest.length,
 				pool: [],
-				lostBy: swaps => brokenSetBonuses(equipment, swaps, setId, countsAsBreak),
+				brokenBy: swaps => brokenSetBonuses(equipment, swaps, setId, countsAsBreak),
 				breakDps: (s, c) => breakDpsBy.get(`${s}:${c}`),
 			},
 			rest,
@@ -2416,12 +2416,12 @@ async function measureSetSteps(args: {
 	};
 	const isSkipReason = (value: RaidSimRequest | SkipReason): value is SkipReason => 'because' in value;
 
-	type Future = NonNullable<SetContext['futureBonuses']>[number];
+	type FutureBonus = NonNullable<SetContext['futureBonuses']>[number];
 	const requests = new Map<string, RaidSimRequest>();
-	const pending: Array<{ future: Future; key: string; setName: string }> = [];
+	const pending: Array<{ future: FutureBonus; key: string; setName: string }> = [];
 	const audits: PartnerAuditEntry[] = [];
 	const rowSwapOf = new Map<RankedItem, PlacedItem>();
-	const partnersOf = new Map<Future, PlacedItem[]>();
+	const partnersOf = new Map<FutureBonus, PlacedItem[]>();
 
 	for (const item of args.ranked) {
 		const ctx = item.setContext;
@@ -2453,7 +2453,7 @@ async function measureSetSteps(args: {
 			slotIndex: ownDelta.slotIndex,
 		};
 		rowSwapOf.set(item, rowSwap);
-		const lostBy = (swaps: readonly PlacedItem[]) => brokenSetBonuses(equipment, swaps, setId, countsAsBreak);
+		const brokenBy = (swaps: readonly PlacedItem[]) => brokenSetBonuses(equipment, swaps, setId, countsAsBreak);
 
 		for (const f of eligible) {
 			const entry = args.setBonuses.find(b => b.setId === setId && b.threshold === f.threshold);
@@ -2479,7 +2479,7 @@ async function measureSetSteps(args: {
 					threshold: f.threshold,
 					needed: f.threshold - ctx.piecesAfterSwap,
 					pool,
-					lostBy,
+					brokenBy,
 					breakDps: (s, c) => bBy.get(`${s}:${c}`),
 					...(pathPieces ? { pathPieces } : {}),
 					simGear: async partners => {
@@ -2534,7 +2534,7 @@ async function measureSetSteps(args: {
 			// Every counted worn bonus this gear loses against the current gear,
 			// the row's own loss included, because the popover line is a total
 			// against the current gear.
-			const lost = lostBy([rowSwap, ...partners]);
+			const lost = brokenBy([rowSwap, ...partners]);
 			if (lost.length > 0) {
 				f.breaks = lost.map(brk => {
 					const dps = bBy.get(bonusKey(brk));
@@ -2586,7 +2586,7 @@ async function measureSetSteps(args: {
 	const offCounter: SimCounter = { simmed: 0, fromStore: 0 };
 	const offRequests = new Map<string, { request: RaidSimRequest; plain: RaidSimRequest }>();
 	const offPending: Array<{
-		future: Future;
+		future: FutureBonus;
 		key: string;
 		lost: Array<{ setId: number; threshold: SetThreshold }>;
 	}> = [];
@@ -2599,7 +2599,7 @@ async function measureSetSteps(args: {
 
 	/** Queues one shown bonus's bonus-off request; false when none can be built. */
 	const queueBonusOff = async (
-		future: Future,
+		future: FutureBonus,
 		prevSwaps: readonly PlacedItem[],
 		swaps: readonly PlacedItem[],
 		lost: Array<{ setId: number; threshold: SetThreshold }>,
