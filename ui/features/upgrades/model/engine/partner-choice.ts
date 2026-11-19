@@ -13,7 +13,7 @@
  * `pathToThreshold` picks) are kept only for that scoring.
  */
 
-import { bonusKey, type BrokenSetBonus, type PackagePiece } from './set-value';
+import { bonusKey, type BrokenSetBonus, type PlacedItem } from './set-value';
 
 export type PartnerRule = 'close-calls' | 'sum-of-singles' | 'sum-of-singles-plain' | 'single-swap' | 'every-combination';
 
@@ -40,7 +40,7 @@ export type PartnerPiece = {
 /**
  * The set's pieces that were simmed alone, outside the row's slot and the slots the set
  * already fills, best per slot (lower id on a tie), in slot order. Rings, trinkets and
- * one-handers are keyed to their first slot, as in `selectPackage`.
+ * one-handers are keyed to their first slot, as in `selectAddedPieces`.
  */
 export function partnerPool(args: { pieces: readonly PartnerPiece[]; wornSetSlots: ReadonlySet<number>; rowSlotIndex: number }): PartnerPiece[] {
 	const bestPerSlot = new Map<number, PartnerPiece>();
@@ -64,13 +64,13 @@ export type PartnerQuery = {
 	needed: number;
 	pool: readonly PartnerPiece[];
 	/** The worn bonuses that count as lost when every listed swap is made. */
-	lostBy: (swaps: readonly PackagePiece[]) => readonly Pick<BrokenSetBonus, 'setId' | 'threshold'>[];
+	lostBy: (swaps: readonly PlacedItem[]) => readonly Pick<BrokenSetBonus, 'setId' | 'threshold'>[];
 	/** A worn bonus's measured value; undefined when unmeasured. */
 	breakDps: (setId: number, count: number) => number | undefined;
 	/** Used by 'single-swap'. */
-	pathPieces?: readonly PackagePiece[];
+	pathPieces?: readonly PlacedItem[];
 	/** Sims current gear plus the row plus `partners`; the total is over current gear. */
-	simGear?: (partners: readonly PackagePiece[]) => Promise<{ totalDps: number; se: number } | undefined>;
+	simGear?: (partners: readonly PlacedItem[]) => Promise<{ totalDps: number; se: number } | undefined>;
 };
 
 /** Every set of `needed` pool pieces, each in slot order. */
@@ -98,11 +98,11 @@ export function partnerSets(query: PartnerQuery): PartnerPiece[][] {
  * `withCombinationOnly`. Undefined when a bonus that changes the estimate is unmeasured.
  */
 export function sumOfSinglesEstimate(query: PartnerQuery, set: readonly PartnerPiece[], opts: { withCombinationOnly: boolean }): number | undefined {
-	const rowSwap: PackagePiece = {
+	const rowSwap: PlacedItem = {
 		itemId: query.row.itemId,
 		slotIndex: query.row.slotIndex,
 	};
-	const swaps: PackagePiece[] = [rowSwap, ...set.map(p => ({ itemId: p.itemId, slotIndex: p.slotIndex }))];
+	const swaps: PlacedItem[] = [rowSwap, ...set.map(p => ({ itemId: p.itemId, slotIndex: p.slotIndex }))];
 	const lostAlone = new Map<string, number>();
 	const keys = new Map<string, Pick<BrokenSetBonus, 'setId' | 'threshold'>>();
 	for (const swap of swaps) {

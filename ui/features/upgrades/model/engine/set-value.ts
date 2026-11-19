@@ -94,12 +94,13 @@ export function nextMeasurableThreshold(setId: number, piecesAfterSwap: number):
 	return null;
 }
 
-export type PackagePiece = {
+/** An item put into one sim slot of current gear. */
+export type PlacedItem = {
 	itemId: number;
 	slotIndex: number;
 };
 
-export type PackageSelectionResult = { ok: true; piecesWorn: number; addedPieces: PackagePiece[] } | { ok: false; reason: 'insufficient-pieces' };
+export type AddedPiecesResult = { ok: true; piecesWorn: number; addedPieces: PlacedItem[] } | { ok: false; reason: 'insufficient-pieces' };
 
 /**
  * One item's own DPS change, used to pick the pieces that complete a set and to take their
@@ -114,14 +115,14 @@ export type OwnDelta = {
 	se: number;
 };
 
-export function selectPackage(
+export function selectAddedPieces(
 	setId: number,
 	threshold: SetThreshold,
 	equipment: readonly SimItemSpec[],
 	poolCandidates: readonly PoolEntry[],
 	ownDeltas: readonly OwnDelta[],
 	slotIndexForPoolEntry: (entry: PoolEntry) => number | undefined,
-): PackageSelectionResult {
+): AddedPiecesResult {
 	const wornSlotIndices = new Set<number>();
 	let piecesWorn = 0;
 	for (let i = 0; i < equipment.length; i++) {
@@ -162,7 +163,7 @@ export function selectPackage(
 		return { ok: false, reason: 'insufficient-pieces' };
 	}
 
-	const addedPieces: PackagePiece[] = candidates
+	const addedPieces: PlacedItem[] = candidates
 		.slice(0, needed)
 		.map(c => ({
 			itemId: c.itemId,
@@ -199,7 +200,7 @@ export function lostThresholds(setId: number, before: number, after: number, cou
  */
 export function brokenSetBonuses(
 	equipment: readonly SimItemSpec[],
-	addedPieces: readonly PackagePiece[],
+	addedPieces: readonly PlacedItem[],
 	completingSetId: number,
 	counts: BonusCountPredicate = isBonusImplemented,
 ): BrokenSetBonus[] {
@@ -271,7 +272,7 @@ export type AddedPieceSample = {
 
 export type SynergyInput = {
 	baseline: DpsSample;
-	packageSample: DpsSample;
+	addedPiecesSample: DpsSample;
 	addedPieceSamples: readonly AddedPieceSample[];
 	twoPieceBonus?: number;
 };
@@ -295,9 +296,9 @@ export type SelfSetConfound = {
 };
 
 export function computeSynergy(input: SynergyInput): SynergyResult {
-	const packageDeltaDps = input.packageSample.dps - input.baseline.dps;
+	const packageDeltaDps = input.addedPiecesSample.dps - input.baseline.dps;
 	const sumOfOwnDeltas = input.addedPieceSamples.reduce((sum, s) => sum + s.deltaDps, 0);
 	const bonusDps = packageDeltaDps - sumOfOwnDeltas - (input.twoPieceBonus ?? 0);
-	const se = combineSe([input.baseline, input.packageSample, ...input.addedPieceSamples.map(s => ({ dps: 0, se: s.se }))]);
+	const se = combineSe([input.baseline, input.addedPiecesSample, ...input.addedPieceSamples.map(s => ({ dps: 0, se: s.se }))]);
 	return { packageDeltaDps, bonusDps, se };
 }

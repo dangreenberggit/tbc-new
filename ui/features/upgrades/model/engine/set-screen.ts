@@ -133,7 +133,7 @@ export type SetScreenOn = {
 export type SetScreen = SetScreenRecord | SetScreenOn;
 
 /** The gear with a set's pieces up to `reach` swapped in, and the pieces added. */
-export type ScreenPackage = {
+export type ScreenGear = {
 	request: RaidSimRequest;
 	/** The added pieces' slot indices and item ids, in slot order. */
 	added: ReadonlyArray<{ slotIndex: number; itemId: number }>;
@@ -141,7 +141,7 @@ export type ScreenPackage = {
 	 * Each sim's request with meta repair run for that sim's own hit, one per
 	 * entry of `copiesList`: a `BuildFailure` when the request cannot be built,
 	 * or undefined when meta repair fails, in which case that sim is skipped
-	 * without a warning, as when `packageAt` returns nothing. Absent means every
+	 * without a warning, as when `gearAt` returns nothing. Absent means every
 	 * sim is `request` with its copies applied.
 	 */
 	requestsFor?: (copiesList: Array<{ setKept: number[]; setLess: number[] }>) => Promise<Array<RaidSimRequest | BuildFailure | undefined>>;
@@ -155,7 +155,7 @@ export type SetScreenInput = {
 	 * same way as the later set sims (pieces swapped in with meta repair, then
 	 * the request composed). Undefined when it cannot be built.
 	 */
-	packageAt: (setId: number, count: number) => ScreenPackage | undefined;
+	gearAt: (setId: number, count: number) => ScreenGear | undefined;
 	/** A store-cached sim with explicit options. Throws when the sim fails. */
 	runSimAt: (request: RaidSimRequest, opts: SimRunOpts) => Promise<{ observation: SimObservation; fromStore: boolean }>;
 	seed: number;
@@ -185,24 +185,24 @@ export type SetScreenOnInput = Omit<SetScreenInput, 'pairIterations' | 'ladderIt
 type ScreenCounter = { simmed: number; fromStore: number };
 
 /** The gear at `reach` and the slots of its added pieces, in slot order. */
-function screenPackage(input: Pick<SetScreenInput, 'packageAt'>, setId: number, reach: number) {
-	const pkg = input.packageAt(setId, reach);
-	const added = pkg ? [...pkg.added].sort((a, b) => a.slotIndex - b.slotIndex) : [];
-	return { pkg, added, slots: added.map(p => p.slotIndex) };
+function screenGear(input: Pick<SetScreenInput, 'gearAt'>, setId: number, reach: number) {
+	const gear = input.gearAt(setId, reach);
+	const added = gear ? [...gear.added].sort((a, b) => a.slotIndex - b.slotIndex) : [];
+	return { gear, added, slots: added.map(p => p.slotIndex) };
 }
 
 /**
  * Runs one of a set's sims for a given k, shared by both modes so an `'on'` pair
  * is the same request, with the same options, as a `'record'` pair at that
  * iteration count. Each sim catches its own failure, so one failure loses only
- * that sim. With `pkg.requestsFor`, the first sim builds all of `rungs` in one
+ * that sim. With `gear.requestsFor`, the first sim builds all of `rungs` in one
  * call.
  */
 function rungSimmer(
 	input: Pick<SetScreenInput, 'runSimAt' | 'seed' | 'signal' | 'onSimFailed' | 'onRequestNotBuilt'>,
 	setId: number,
 	worn: number,
-	pkg: ScreenPackage | undefined,
+	gear: ScreenGear | undefined,
 	slots: readonly number[],
 	counter: ScreenCounter,
 	rungs: readonly number[],
@@ -213,11 +213,11 @@ function rungSimmer(
 	});
 	let requests: Promise<Array<RaidSimRequest | BuildFailure | undefined>> | undefined;
 	return async (k, iterations) => {
-		if (!pkg) return undefined;
+		if (!gear) return undefined;
 		const what = `[upgrades] set screen: set ${setId} at ${worn + k} pieces, ${iterations} iterations, not measured`;
 		let request: RaidSimRequest | undefined;
-		if (pkg.requestsFor) {
-			requests ??= pkg.requestsFor(rungs.map(copiesAt));
+		if (gear.requestsFor) {
+			requests ??= gear.requestsFor(rungs.map(copiesAt));
 			const index = rungs.indexOf(k);
 			if (index < 0) throw new Error(`${what}: rung ${k} is not a screened rung`);
 			const built = (await requests)[index];
@@ -232,7 +232,7 @@ function rungSimmer(
 			request = built;
 		} else {
 			try {
-				request = applyCopies(pkg.request, copiesAt(k));
+				request = applyCopies(gear.request, copiesAt(k));
 			} catch (err) {
 				console.warn(what, err);
 				input.onRequestNotBuilt?.(setId, errorText(err));
@@ -267,13 +267,13 @@ export async function recordSetScreen(input: SetScreenInput): Promise<SetScreenR
 
 	for (const { setId, worn, reach } of input.sets) {
 		if (reach - worn < 2) continue;
-		const { pkg, added, slots } = screenPackage(input, setId, reach);
+		const { gear, added, slots } = screenGear(input, setId, reach);
 		const top = reach - worn;
 		const rungAt = rungSimmer(
 			input,
 			setId,
 			worn,
-			pkg,
+			gear,
 			slots,
 			counter,
 			Array.from({ length: top + 1 }, (_, k) => k),
@@ -339,8 +339,8 @@ export async function runSetScreenOn(input: SetScreenOnInput): Promise<SetScreen
 
 	for (const { setId, worn, reach } of [...input.sets].sort((a, b) => a.setId - b.setId)) {
 		if (reach - worn < 2) continue;
-		const { pkg, added, slots } = screenPackage(input, setId, reach);
-		const rungAt = rungSimmer(input, setId, worn, pkg, slots, counter, [0, reach - worn]);
+		const { gear, added, slots } = screenGear(input, setId, reach);
+		const rungAt = rungSimmer(input, setId, worn, gear, slots, counter, [0, reach - worn]);
 		const low = await rungAt(0, iterations);
 		const high = await rungAt(reach - worn, iterations);
 		const pairDps = low && high ? high.dps - low.dps : undefined;
