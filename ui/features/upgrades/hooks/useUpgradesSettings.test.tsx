@@ -81,7 +81,7 @@ describe('useUpgradesSettings', () => {
 
 	it('selects the new phase’s defaults when the phase changes, and drops an exclusion the new pool lacks', async () => {
 		const { view, setPhase } = mount();
-		act(() => view.result.current.toggleSource('Hyjal Summit'));
+		act(() => view.result.current.toggleExcludedSource('Hyjal Summit'));
 		expect(view.result.current.runSettings.excludedSources).toEqual(['Hyjal Summit']);
 
 		await setPhase(4);
@@ -136,7 +136,7 @@ describe('useUpgradesSettings', () => {
 		const other = render();
 		expect(other.result.current.runSettings).toEqual(view.result.current.runSettings);
 
-		act(() => view.result.current.toggleSource('Hyjal Summit'));
+		act(() => view.result.current.toggleExcludedSource('Hyjal Summit'));
 		expect(other.result.current.runSettings).toEqual(view.result.current.runSettings);
 		expect(other.result.current.runSettings.excludedSources).toEqual(['Hyjal Summit']);
 
@@ -155,8 +155,8 @@ describe('useUpgradesSettings', () => {
 		const expectAgreement = () => expect(outside.result.current.runSettings).toEqual(view.result.current.runSettings);
 		act(() => {
 			view.result.current.toggleGearSet('preset:3:P3');
-			view.result.current.toggleSource('Hyjal Summit');
-			view.result.current.toggleSource('Black Temple');
+			view.result.current.toggleExcludedSource('Hyjal Summit');
+			view.result.current.toggleExcludedSource('Black Temple');
 		});
 		expect(selectedKeys(view.result.current)).toEqual([]);
 		expectAgreement();
@@ -180,7 +180,7 @@ describe('useUpgradesSettings', () => {
 
 		act(() => view.result.current.setPrune(true));
 		act(() => view.result.current.setIterations(2000));
-		act(() => view.result.current.toggleSource('Hyjal Summit'));
+		act(() => view.result.current.toggleExcludedSource('Hyjal Summit'));
 		expect(view.result.current.selectedGearSets).toBe(before);
 
 		act(() => view.result.current.toggleGearSet('preset:3:P3'));

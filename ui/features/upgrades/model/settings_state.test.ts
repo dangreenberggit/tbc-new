@@ -8,10 +8,10 @@ import {
 	type SettingsState,
 	toRunSettings,
 	withCandidateCap,
+	withExcludedSourceToggled,
 	withGearSetToggled,
 	withIterations,
 	withPrune,
-	withSourceToggled,
 } from './settings_state';
 
 const fresh = (): SettingsState => initialSettings({ iterations: 3000 });
@@ -30,9 +30,9 @@ describe('initialSettings', () => {
 
 describe('the settings changes', () => {
 	it('excludes a source on the first toggle and includes it again on the second', () => {
-		const once = withSourceToggled(fresh(), 'Black Temple');
+		const once = withExcludedSourceToggled(fresh(), 'Black Temple');
 		expect(once.excludedSources).toEqual(['Black Temple']);
-		expect(withSourceToggled(once, 'Black Temple').excludedSources).toEqual([]);
+		expect(withExcludedSourceToggled(once, 'Black Temple').excludedSources).toEqual([]);
 	});
 
 	it('selects and deselects a set', () => {
@@ -84,7 +84,7 @@ describe('the settings changes', () => {
 	});
 
 	it('drops an exclusion whose source the new pool no longer offers', () => {
-		const excluded = withSourceToggled(withSourceToggled(fresh(), 'Black Temple'), 'Crafted');
+		const excluded = withExcludedSourceToggled(withExcludedSourceToggled(fresh(), 'Black Temple'), 'Crafted');
 		const next = appliedSettings(excluded, { specPhase: 'ret:2', defaultGearSetKeys: [], poolSourceKeys: ['Crafted', 'Badge vendor'] });
 		expect(next.excludedSources).toEqual(['Crafted']);
 	});
@@ -100,7 +100,7 @@ describe('the settings changes', () => {
 	});
 
 	it('drops on a scope change only the exclusions the new pool does not offer, and keeps the other settings', () => {
-		const excluded = withSourceToggled(withSourceToggled(fresh(), 'Hyjal Summit'), 'Black Temple');
+		const excluded = withExcludedSourceToggled(withExcludedSourceToggled(fresh(), 'Hyjal Summit'), 'Black Temple');
 		const edited = withIterations(withPrune(excluded, true), 2000);
 		const changed = afterScopeChange(edited, ['Black Temple', 'Zul’Aman']);
 		expect(changed).toMatchObject({ excludedSources: ['Black Temple'], prune: true, iterations: 2000 });
@@ -113,7 +113,7 @@ describe('the settings changes', () => {
 	});
 
 	it('returns the state it was given on a scope change with no sets to forget and no exclusion to drop', () => {
-		const changed = afterScopeChange(withSourceToggled(fresh(), 'Black Temple'), ['Black Temple']);
+		const changed = afterScopeChange(withExcludedSourceToggled(fresh(), 'Black Temple'), ['Black Temple']);
 		expect(afterScopeChange(changed, ['Black Temple'])).toBe(changed);
 	});
 });
@@ -129,7 +129,7 @@ describe('pruneEffective', () => {
 describe('toRunSettings', () => {
 	it('carries every setting the run reads', () => {
 		const capped = withCandidateCap(initialSettings({ iterations: 500 }), 10);
-		const state = withPrune(withGearSetToggled(withSourceToggled(capped, 'Crafted'), 'preset:3:P3'), true);
+		const state = withPrune(withGearSetToggled(withExcludedSourceToggled(capped, 'Crafted'), 'preset:3:P3'), true);
 		expect(toRunSettings(state, [30129, 32461])).toEqual({
 			iterations: 500,
 			candidateCap: 10,

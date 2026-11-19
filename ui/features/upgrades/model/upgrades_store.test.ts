@@ -219,9 +219,9 @@ describe('the source filter actions', () => {
 
 	it('hide and show one source at a time, and set the whole list at once', () => {
 		const store = createUpgradesStore(INITIAL_SETTINGS);
-		store.getState().toggleViewSource('Black Temple');
-		store.getState().toggleViewSource('Karazhan');
-		store.getState().toggleViewSource('Black Temple');
+		store.getState().toggleHiddenSource('Black Temple');
+		store.getState().toggleHiddenSource('Karazhan');
+		store.getState().toggleHiddenSource('Black Temple');
 		expect(selectHiddenSources(store.getState())).toEqual(['Karazhan']);
 
 		store.getState().setHiddenSources(['Crafted', 'PvP vendor']);
@@ -243,7 +243,7 @@ describe('the source filter actions', () => {
 		store.getState().startRun(1, 1000, MEASURED);
 		store.getState().settleRun(1, RANKING_FIXTURE);
 		const run = store.getState().run;
-		store.getState().toggleViewSource('Black Temple');
+		store.getState().toggleHiddenSource('Black Temple');
 		expect(store.getState().run).toBe(run);
 		expect(selectSettledSignature(store.getState())).toBe('sig-at-click');
 	});

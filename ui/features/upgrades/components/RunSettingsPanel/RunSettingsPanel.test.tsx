@@ -12,7 +12,7 @@ const { RunSettingsPanel } = await import('./RunSettingsPanel');
 
 loadEnglishBundles();
 
-const settingsWith = (toggleSource: UpgradesSettings['toggleSource']): UpgradesSettings => ({
+const settingsWith = (toggleExcludedSource: UpgradesSettings['toggleExcludedSource']): UpgradesSettings => ({
 	sources: { raids: [{ key: 'Black Temple', count: 3 }], other: [] },
 	bisHeadingsOf: () => [],
 	selectedGearSets: [],
@@ -23,7 +23,7 @@ const settingsWith = (toggleSource: UpgradesSettings['toggleSource']): UpgradesS
 	prune: false,
 	eligibleCount: 3,
 	store: createUpgradesStore({ iterations: 500 }),
-	toggleSource,
+	toggleExcludedSource,
 	toggleGearSet: () => {},
 	setPrune: () => {},
 	setIterations: () => {},
@@ -32,9 +32,9 @@ const settingsWith = (toggleSource: UpgradesSettings['toggleSource']): UpgradesS
 
 const mount = (devVisible = false) => {
 	const onStart = vi.fn();
-	const toggleSource = vi.fn();
-	render(<RunSettingsPanel settings={settingsWith(toggleSource)} ready running={false} devVisible={devVisible} onStart={onStart} />);
-	return { onStart, toggleSource };
+	const toggleExcludedSource = vi.fn();
+	render(<RunSettingsPanel settings={settingsWith(toggleExcludedSource)} ready running={false} devVisible={devVisible} onStart={onStart} />);
+	return { onStart, toggleExcludedSource };
 };
 
 const classes = (element: HTMLElement) => element.className.split(' ');
@@ -64,10 +64,10 @@ describe('RunSettingsPanel', () => {
 	});
 
 	it('sends a source tick to the settings', () => {
-		const { toggleSource } = mount();
+		const { toggleExcludedSource } = mount();
 		fireEvent.click(screen.getByTestId('upgrades-sources-button'));
 		fireEvent.click(screen.getByRole('checkbox'));
-		expect(toggleSource).toHaveBeenCalledWith('Black Temple');
+		expect(toggleExcludedSource).toHaveBeenCalledWith('Black Temple');
 	});
 
 	it('hides the candidate cap unless the dev flag is on', () => {

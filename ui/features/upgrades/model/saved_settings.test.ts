@@ -15,7 +15,7 @@ describe('openSavedUpgradesStore', () => {
 		const storage = memoryStorage();
 		const first = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY);
 		first.getState().setIterations(5000, undefined);
-		first.getState().toggleSource('raid:hyjal', undefined);
+		first.getState().toggleExcludedSource('raid:hyjal', undefined);
 		// A write with a scope is what stores that scope's defaults, as in production.
 		first.getState().setPrune(true, { specPhase: 'feral:3', defaultGearSetKeys: ['preset:P3'], poolSourceKeys: ['raid:hyjal'] });
 		first.getState().setSort([{ id: 'slot', desc: false }]);
@@ -45,8 +45,8 @@ describe('openSavedUpgradesStore', () => {
 	it('restores the sources "Filter by source" hides in a fresh store', () => {
 		const storage = memoryStorage();
 		const first = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY);
-		first.getState().toggleViewSource('Black Temple');
-		first.getState().toggleViewSource('Crafted');
+		first.getState().toggleHiddenSource('Black Temple');
+		first.getState().toggleHiddenSource('Crafted');
 
 		expect(openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY).getState().hiddenSources).toEqual(['Black Temple', 'Crafted']);
 	});

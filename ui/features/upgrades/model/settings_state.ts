@@ -46,7 +46,10 @@ export const initialSettings = (initial: { iterations: number }): SettingsState 
 	iterations: initial.iterations,
 });
 
-export const withSourceToggled = (state: SettingsState, key: string): SettingsState => ({ ...state, excludedSources: toggled(state.excludedSources, key) });
+export const withExcludedSourceToggled = (state: SettingsState, key: string): SettingsState => ({
+	...state,
+	excludedSources: toggled(state.excludedSources, key),
+});
 
 export const withGearSetToggled = (state: SettingsState, key: string): SettingsState => ({ ...state, selectedSetKeys: toggled(state.selectedSetKeys, key) });
 
@@ -86,7 +89,7 @@ export function afterScopeChange(state: SettingsState, poolSourceKeys: readonly 
 }
 
 /** A saved exclusion that a data update removed from the pool excludes nothing, but the Sources summary would count it. */
-export function withoutUnofferedSources(state: SettingsState, poolSourceKeys: readonly string[]): SettingsState {
+export function withoutUnofferedExclusions(state: SettingsState, poolSourceKeys: readonly string[]): SettingsState {
 	const kept = offeredExclusions(state.excludedSources, poolSourceKeys);
 	return kept.length === state.excludedSources.length ? state : { ...state, excludedSources: kept };
 }

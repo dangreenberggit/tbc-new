@@ -2,7 +2,7 @@ import i18n from '@i18n/config';
 import { Button } from '@ui-kit/Button';
 import { useId, useState } from 'react';
 
-import { offeredHidden, offeredSourceKeys, type ViewSourceOptions, withOfferedSourcesHidden } from '../../model/results_view';
+import { hiddenOfferedSourcesOf, offeredSourceKeys, type ViewSourceOptions, withOfferedSourcesHidden } from '../../model/results_view';
 import { ViewSourcesDialog } from './ViewSourcesDialog';
 
 export interface ViewSourcesButtonProps {
@@ -22,7 +22,7 @@ export const ViewSourcesButton = ({ options, hidden, onToggle, onSetHidden }: Vi
 	const [open, setOpen] = useState(false);
 	const summaryId = useId();
 	const offered = offeredSourceKeys(options);
-	const hiddenCount = offeredHidden(options, hidden).length;
+	const hiddenCount = hiddenOfferedSourcesOf(options, hidden).length;
 	return (
 		<div className="grid justify-items-start gap-1">
 			<Button variant="secondary" data-testid="upgrades-view-sources-button" aria-describedby={summaryId} onClick={() => setOpen(true)}>

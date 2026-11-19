@@ -126,10 +126,10 @@ export type ViewSourceOptions = { raids: SourceOption[]; other: SourceOption[] }
 
 export const offeredSourceKeys = (options: ViewSourceOptions): string[] => [...options.raids, ...options.other].map(option => option.key);
 
-export const offeredHidden = (options: ViewSourceOptions, hidden: readonly string[]): string[] =>
+export const hiddenOfferedSourcesOf = (options: ViewSourceOptions, hidden: readonly string[]): string[] =>
 	offeredSourceKeys(options).filter(key => hidden.includes(key));
 
-export const withViewSourceToggled = (hidden: readonly string[], key: string): string[] =>
+export const withHiddenSourceToggled = (hidden: readonly string[], key: string): string[] =>
 	hidden.includes(key) ? hidden.filter(k => k !== key) : [...hidden, key];
 
 /**
@@ -140,8 +140,8 @@ export const withOfferedSourcesHidden = (hidden: readonly string[], offered: rea
 
 /** A row stays while any of its sources is shown, so an item from two raids stays while either is. */
 export function sourcesView(view: ResultsViewResult, hidden: readonly string[]): ResultsViewResult {
-	const acting = offeredHidden(sourceOptions(view.rows), hidden);
-	const kept = (row: ViewRow) => sourceKeysMatching(row).some(key => !acting.includes(key));
+	const hiddenOfferedSources = hiddenOfferedSourcesOf(sourceOptions(view.rows), hidden);
+	const kept = (row: ViewRow) => sourceKeysMatching(row).some(key => !hiddenOfferedSources.includes(key));
 	const rows = view.rows.filter(kept);
 	if (rows.length === view.rows.length) return view;
 	const shortlist = view.shortlist.filter(kept);

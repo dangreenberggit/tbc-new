@@ -5,7 +5,7 @@ import type { RowContext } from '../components/ResultsTable';
 import {
 	appliedToggles,
 	dpsSortKeyFor,
-	offeredHidden,
+	hiddenOfferedSourcesOf,
 	offeredToggles,
 	resultsViewFor,
 	type ResultsViewResult,
@@ -29,7 +29,7 @@ export type ResultsView = {
 	sourceOptions: ViewSourceOptions;
 	/** The hidden sources as stored, which may name one this view does not offer. */
 	hiddenSources: readonly string[];
-	toggleViewSource: (key: string) => void;
+	toggleHiddenSource: (key: string) => void;
 	setHiddenSources: (keys: readonly string[]) => void;
 	rowContext: RowContext;
 	/** Undefined before a run settles. */
@@ -46,7 +46,7 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 	const toggles = useUpgradesStore(selectViewToggles);
 	const setToggle = useUpgradesStore(state => state.setViewToggle);
 	const hiddenSources = useUpgradesStore(selectHiddenSources);
-	const toggleViewSource = useUpgradesStore(state => state.toggleViewSource);
+	const toggleHiddenSource = useUpgradesStore(state => state.toggleHiddenSource);
 	const setHiddenSources = useUpgradesStore(state => state.setHiddenSources);
 	const offered = offeredToggles(run);
 	const { withSetPotential, onlyBis } = appliedToggles(offered, toggles);
@@ -65,7 +65,7 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 		[viewBeforeSourceFilter, hiddenSources],
 	);
 	// Only the hidden sources this view offers act, so a source hidden in an earlier run hides nothing here, in a row or a cell.
-	const actingHidden = useMemo(() => offeredHidden(offeredSources, hiddenSources), [offeredSources, hiddenSources]);
+	const hiddenOfferedSources = useMemo(() => hiddenOfferedSourcesOf(offeredSources, hiddenSources), [offeredSources, hiddenSources]);
 	// Memoised because every `ResultRow` is: a new context on each new row would render every row again.
 	const rowContext = useMemo<RowContext>(
 		() => ({
@@ -75,10 +75,10 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 			gearSetBadgesOf,
 			bisHeadingsOf,
 			dpsKey: dpsSortKeyFor(ranking, withSetPotential),
-			hiddenSources: actingHidden,
+			hiddenSources: hiddenOfferedSources,
 		}),
-		[sim, ranking, measuredOn, withSetPotential, gearSetBadgesOf, bisHeadingsOf, actingHidden],
+		[sim, ranking, measuredOn, withSetPotential, gearSetBadgesOf, bisHeadingsOf, hiddenOfferedSources],
 	);
 
-	return { toggles, offered, setToggle, sourceOptions: offeredSources, hiddenSources, toggleViewSource, setHiddenSources, rowContext, view };
+	return { toggles, offered, setToggle, sourceOptions: offeredSources, hiddenSources, toggleHiddenSource, setHiddenSources, rowContext, view };
 }

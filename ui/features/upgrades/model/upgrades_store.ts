@@ -10,7 +10,7 @@ import { createStore } from 'zustand/vanilla';
 import type { RankedItem, Ranking } from './engine/rank';
 import type { ContentPhase } from './engine/types';
 import type { ExportFlavour } from './export';
-import { NO_VIEW_TOGGLES, type ViewToggles, withViewSourceToggled } from './results_view';
+import { NO_VIEW_TOGGLES, type ViewToggles, withHiddenSourceToggled } from './results_view';
 import {
 	fixtureLoaded,
 	IDLE_RUN,
@@ -30,11 +30,11 @@ import {
 	type SettingsScope,
 	type SettingsState,
 	withCandidateCap,
+	withExcludedSourceToggled,
 	withGearSetToggled,
 	withIterations,
-	withoutUnofferedSources,
+	withoutUnofferedExclusions,
 	withPrune,
-	withSourceToggled,
 } from './settings_state';
 
 /**
@@ -74,17 +74,17 @@ export type UpgradesActions = {
 	 * tab showed (`appliedSettings`), in one notification. `scope` is required, though it may be undefined, so a caller
 	 * cannot forget it and store a change the next render's defaults would overwrite.
 	 */
-	toggleSource: (key: string, scope: SettingsScope | undefined) => void;
+	toggleExcludedSource: (key: string, scope: SettingsScope | undefined) => void;
 	toggleGearSet: (key: string, scope: SettingsScope | undefined) => void;
 	setPrune: (prune: boolean, scope: SettingsScope | undefined) => void;
 	setIterations: (iterations: number, scope: SettingsScope | undefined) => void;
 	setCandidateCap: (cap: number | undefined, scope: SettingsScope | undefined) => void;
 	/** The page's changes: a phase change, and the pool the page's phase offers once it has loaded (`follow_phase.ts`). */
 	changeScope: (poolSourceKeys: readonly string[]) => void;
-	dropUnofferedSources: (poolSourceKeys: readonly string[]) => void;
+	dropUnofferedExclusions: (poolSourceKeys: readonly string[]) => void;
 	setSort: (sort: ResultsSort) => void;
 	setViewToggle: (toggle: keyof ViewToggles, on: boolean) => void;
-	toggleViewSource: (key: string) => void;
+	toggleHiddenSource: (key: string) => void;
 	setHiddenSources: (keys: readonly string[]) => void;
 	setExportFlavour: (flavour: ExportFlavour) => void;
 };
@@ -139,17 +139,17 @@ export function createUpgradesStore(initial: InitialSettings, restored: Restored
 				settleRun: (runId, outcome) => setRun(run => runSettled(run, runId, outcome)),
 				failRun: (runId, message) => setRun(run => runFailed(run, runId, message)),
 
-				toggleSource: (key, scope) => changeInScope(scope, settings => withSourceToggled(settings, key)),
+				toggleExcludedSource: (key, scope) => changeInScope(scope, settings => withExcludedSourceToggled(settings, key)),
 				toggleGearSet: (key, scope) => changeInScope(scope, settings => withGearSetToggled(settings, key)),
 				setPrune: (prune, scope) => changeInScope(scope, settings => withPrune(settings, prune)),
 				setIterations: (iterations, scope) => changeInScope(scope, settings => withIterations(settings, iterations)),
 				setCandidateCap: (cap, scope) => changeInScope(scope, settings => withCandidateCap(settings, cap)),
 				changeScope: poolSourceKeys => setSettings(settings => afterScopeChange(settings, poolSourceKeys)),
-				dropUnofferedSources: poolSourceKeys => setSettings(settings => withoutUnofferedSources(settings, poolSourceKeys)),
+				dropUnofferedExclusions: poolSourceKeys => setSettings(settings => withoutUnofferedExclusions(settings, poolSourceKeys)),
 
 				setSort: sort => set(state => (sort === state.sort ? state : { sort })),
 				setViewToggle: (toggle, on) => set(state => (state.view[toggle] === on ? state : { view: { ...state.view, [toggle]: on } })),
-				toggleViewSource: key => set(state => ({ hiddenSources: withViewSourceToggled(state.hiddenSources, key) })),
+				toggleHiddenSource: key => set(state => ({ hiddenSources: withHiddenSourceToggled(state.hiddenSources, key) })),
 				setHiddenSources: keys =>
 					set(state =>
 						keys.length === state.hiddenSources.length && keys.every((key, i) => key === state.hiddenSources[i])

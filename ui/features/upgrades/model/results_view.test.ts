@@ -13,9 +13,9 @@ import {
 	dpsSortKeyFor,
 	effectiveSlot,
 	hasBisRows,
+	hiddenOfferedSourcesOf,
 	landedRows,
 	NO_VIEW_TOGGLES,
-	offeredHidden,
 	offeredSourceKeys,
 	offeredToggles,
 	paneRows,
@@ -26,8 +26,8 @@ import {
 	stoppedView,
 	type ViewSourceOptions,
 	type ViewToggles,
+	withHiddenSourceToggled,
 	withOfferedSourcesHidden,
-	withViewSourceToggled,
 } from './results_view';
 import type { RunState } from './run_state';
 import { sourceOptions } from './settings_pool';
@@ -467,8 +467,8 @@ describe('sourcesView over resultsViewFor', () => {
 
 describe('the source filter’s next states', () => {
 	it('toggles one source in or out of the hidden list', () => {
-		expect(withViewSourceToggled([], 'Black Temple')).toEqual(['Black Temple']);
-		expect(withViewSourceToggled(['Karazhan', 'Black Temple'], 'Black Temple')).toEqual(['Karazhan']);
+		expect(withHiddenSourceToggled([], 'Black Temple')).toEqual(['Black Temple']);
+		expect(withHiddenSourceToggled(['Karazhan', 'Black Temple'], 'Black Temple')).toEqual(['Karazhan']);
 	});
 
 	it('hides every offered source and keeps a hidden one the view does not offer', () => {
@@ -476,7 +476,7 @@ describe('the source filter’s next states', () => {
 	});
 });
 
-describe('offeredSourceKeys and offeredHidden', () => {
+describe('offeredSourceKeys and hiddenOfferedSourcesOf', () => {
 	const offered: ViewSourceOptions = {
 		raids: [
 			{ key: 'Black Temple', count: 5 },
@@ -491,9 +491,9 @@ describe('offeredSourceKeys and offeredHidden', () => {
 	});
 
 	it('keeps only the hidden sources the view offers, in offered order', () => {
-		expect(offeredHidden(offered, ['PvP vendor', 'Molten Core', 'Black Temple'])).toEqual(['Black Temple', 'PvP vendor']);
-		expect(offeredHidden(offered, ['Molten Core'])).toEqual([]);
-		expect(offeredHidden(offered, [])).toEqual([]);
+		expect(hiddenOfferedSourcesOf(offered, ['PvP vendor', 'Molten Core', 'Black Temple'])).toEqual(['Black Temple', 'PvP vendor']);
+		expect(hiddenOfferedSourcesOf(offered, ['Molten Core'])).toEqual([]);
+		expect(hiddenOfferedSourcesOf(offered, [])).toEqual([]);
 	});
 });
 

@@ -42,7 +42,7 @@ export const RunSettingsPanel = memo(({ settings, ready, running, devVisible, on
 			</Button>
 			<div id={bodyId} className={clsx(open ? 'grid' : 'hidden', 'gap-6 xl:grid')} data-testid="upgrades-run-settings-body">
 				<PhaseSelector />
-				<SourcesButton sources={settings.sources} excluded={settings.excludedSources} onToggle={settings.toggleSource} />
+				<SourcesButton sources={settings.sources} excluded={settings.excludedSources} onToggle={settings.toggleExcludedSource} />
 				<GearSetChips
 					chips={settings.chips}
 					selectedKeys={settings.selectedKeys}

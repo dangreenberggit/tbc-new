@@ -35,7 +35,7 @@ export type UpgradesSettings = Omit<GearSetSelection, 'selectedItemIds'> & {
 	/** Undefined when the page's spec has no ranking data. */
 	eligibleCount: number | undefined;
 	store: UpgradesStore;
-	toggleSource: (key: string) => void;
+	toggleExcludedSource: (key: string) => void;
 	toggleGearSet: (key: string) => void;
 	setPrune: (prune: boolean) => void;
 	setIterations: (iterations: number) => void;
@@ -60,7 +60,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 	const saved = useSavedGear().entries;
 	const store = useUpgradesStoreApi();
 	const stored = useStore(store, state => state.settings);
-	const toggleSource = useStore(store, state => state.toggleSource);
+	const toggleExcludedSource = useStore(store, state => state.toggleExcludedSource);
 	const toggleGearSet = useStore(store, state => state.toggleGearSet);
 	const setPrune = useStore(store, state => state.setPrune);
 	const setIterations = useStore(store, state => state.setIterations);
@@ -129,7 +129,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 			prune: state.prune,
 			eligibleCount: specId ? eligibleCount : undefined,
 			store,
-			toggleSource: key => toggleSource(key, scope),
+			toggleExcludedSource: key => toggleExcludedSource(key, scope),
 			toggleGearSet: key => toggleGearSet(key, scope),
 			setPrune: prune => setPrune(prune, scope),
 			setIterations: iterations => setIterations(iterations, scope),
@@ -146,7 +146,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 			eligibleCount,
 			store,
 			scope,
-			toggleSource,
+			toggleExcludedSource,
 			toggleGearSet,
 			setPrune,
 			setIterations,

@@ -25,7 +25,7 @@ import {
 	sourceOptions,
 	splitGearSetChips,
 } from './settings_pool';
-import { afterScopeChange, initialSettings, withGearSetToggled, withPrune, withSourceToggled } from './settings_state';
+import { afterScopeChange, initialSettings, withExcludedSourceToggled, withGearSetToggled, withPrune } from './settings_state';
 
 const entry = (itemId: number, source: PoolEntry['source'], extra: Partial<PoolEntry> = {}): PoolEntry => ({
 	itemId,
@@ -402,7 +402,7 @@ describe('gearSetSelection, runSettingsOf and eligibleCountOf', () => {
 	});
 
 	it('narrows the count when a source is excluded and, with prune, to the selected sets’ items', () => {
-		const excluded = withSourceToggled(fresh, 'Badge vendor');
+		const excluded = withExcludedSourceToggled(fresh, 'Badge vendor');
 		expect(viewOf(excluded).eligibleCount).toBe(4);
 
 		const pruned = withPrune(withGearSetToggled(fresh, 'preset:3:P3'), true);
@@ -435,7 +435,7 @@ describe('sources that start unticked (Q-heroic, include-unticked)', () => {
 	});
 
 	it('keeps a tick through a phase change whose pool still offers the key, and starts the key unticked after a phase without it', () => {
-		const ticked = withSourceToggled(initialSettings({ iterations: 500 }), HEROIC);
+		const ticked = withExcludedSourceToggled(initialSettings({ iterations: 500 }), HEROIC);
 		const kept = afterScopeChange(ticked, ['Zul’Aman', HEROIC]);
 		expect(effectiveExcludedSources(kept.excludedSources, ['Zul’Aman', HEROIC])).toEqual([]);
 		const gone = afterScopeChange(ticked, ['Zul’Aman']);
