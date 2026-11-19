@@ -51,7 +51,7 @@ export const RunSettingsPanel = memo(({ settings, ready, running, devVisible, on
 					onPruneChange={settings.setPrune}
 				/>
 				{/* Always in the page, so a test driving a production build can set the cap. Hidden without
-				    `?upgrades-dev`, because a cut of the candidate list the user cannot see drops real upgrades. */}
+				    `?upgrades-dev`, because a cap on the candidate list the user cannot see drops real upgrades. */}
 				<div className="grid gap-6" hidden={!devVisible}>
 					<CandidateCapPicker store={settings.store} onCapChange={settings.setCandidateCap} />
 					<FixtureFileInput />

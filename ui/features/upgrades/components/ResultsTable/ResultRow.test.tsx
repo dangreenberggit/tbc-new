@@ -212,7 +212,7 @@ describe('ResultRow', () => {
 	});
 
 	// The row has a second zone, so "Filter by source" keeps it while Black Temple is hidden; a token row with no other
-	// zone would be cut from the table, and its cell never seen.
+	// zone would be filtered out of the table, and its cell never seen.
 	it('names only the shown zone of a two-zone token row while Filter by source hides the other', () => {
 		const hyjal = { kind: 'raid', zone: 'Hyjal Summit', boss: 'Archimonde' } as const;
 		const row: RankedItem = { ...fixtureRow(0), source: token, sources: [token, hyjal] };

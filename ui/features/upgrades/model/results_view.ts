@@ -27,14 +27,14 @@ export const rowKey = (row: Pick<RankedItem, 'itemId' | 'slot'>): string => `${r
 
 /**
  * `paneSlots` keeps the slots from before a display filter, so a filter never
- * removes a pane. The `...BeforeSourceCut` fields let `paneRows` tell when
+ * removes a pane. The `...BeforeSourceFilter` fields let `paneRows` tell when
  * "Filter by source" emptied a pane.
  */
 export type ResultsViewResult = ViewResult & {
 	paneSlots?: readonly SimSlotName[];
 	sourcesHidden?: true;
-	slotsBeforeSourceCut?: readonly SimSlotName[];
-	panesWithMainBeforeSourceCut?: readonly PaneId[];
+	slotsBeforeSourceFilter?: readonly SimSlotName[];
+	panesWithMainBeforeSourceFilter?: readonly PaneId[];
 };
 
 /** A slot with no row above the cutoff keeps its tab at 0, so the user can open it and see why it is empty. */
@@ -76,9 +76,10 @@ export function paneRows(view: ResultsViewResult, pane: PaneId): PaneRows {
 	const missed = rows.filter(row => row.belowCutoffInView && !row.owned);
 	const shownAnyway = missed.filter(onBisList);
 	const main = rows.filter(inMainTable);
-	const hadRowBeforeSourceCut = pane === ALL_SLOTS_PANE || view.slotsBeforeSourceCut?.includes(pane) === true;
-	const sourceCutEmptied = (rows.length === 0 && hadRowBeforeSourceCut) || (main.length === 0 && view.panesWithMainBeforeSourceCut?.includes(pane) === true);
-	const emptyReason: PaneEmptyReason = view.sourcesHidden === true && sourceCutEmptied ? 'no-source-row' : 'no-upgrades';
+	const hadRowBeforeSourceFilter = pane === ALL_SLOTS_PANE || view.slotsBeforeSourceFilter?.includes(pane) === true;
+	const sourceFilterEmptied =
+		(rows.length === 0 && hadRowBeforeSourceFilter) || (main.length === 0 && view.panesWithMainBeforeSourceFilter?.includes(pane) === true);
+	const emptyReason: PaneEmptyReason = view.sourcesHidden === true && sourceFilterEmptied ? 'no-source-row' : 'no-upgrades';
 	return {
 		main,
 		notUpgrades: new Set(shownAnyway.map(rowKey)),
@@ -145,9 +146,9 @@ export function sourcesView(view: ResultsViewResult, hidden: readonly string[]):
 	if (rows.length === view.rows.length) return view;
 	const shortlist = view.shortlist.filter(kept);
 	const paneSlots = view.paneSlots ?? [...new Set(view.rows.map(effectiveSlot))];
-	const slotsBeforeSourceCut = [...new Set(view.rows.map(effectiveSlot))];
+	const slotsBeforeSourceFilter = [...new Set(view.rows.map(effectiveSlot))];
 	const mainBefore = view.rows.filter(inMainTable);
-	const panesWithMainBeforeSourceCut: PaneId[] = mainBefore.length > 0 ? [ALL_SLOTS_PANE, ...new Set(mainBefore.map(effectiveSlot))] : [];
+	const panesWithMainBeforeSourceFilter: PaneId[] = mainBefore.length > 0 ? [ALL_SLOTS_PANE, ...new Set(mainBefore.map(effectiveSlot))] : [];
 	return {
 		...view,
 		rows,
@@ -155,8 +156,8 @@ export function sourcesView(view: ResultsViewResult, hidden: readonly string[]):
 		belowCutoffCount: rows.length - shortlist.length,
 		paneSlots,
 		sourcesHidden: true,
-		slotsBeforeSourceCut,
-		panesWithMainBeforeSourceCut,
+		slotsBeforeSourceFilter,
+		panesWithMainBeforeSourceFilter,
 	};
 }
 

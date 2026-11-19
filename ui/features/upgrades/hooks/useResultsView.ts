@@ -58,9 +58,12 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 	const gearSetBadgesOf = useMemo(() => rowBadgeIndex(rankedGearSets), [rankedGearSets]);
 	// Memoised for the same rows: `applyView` builds new row objects on every call. The source filter runs on this
 	// view in a memo of its own, so ticking a source does not run `applyView` again.
-	const preCutView = useMemo(() => resultsViewFor(run, { withSetPotential, onlyBis }), [run, withSetPotential, onlyBis]);
-	const offeredSources = useMemo(() => sourceOptions(preCutView?.rows ?? []), [preCutView]);
-	const view = useMemo(() => (preCutView && hiddenSources.length > 0 ? sourcesView(preCutView, hiddenSources) : preCutView), [preCutView, hiddenSources]);
+	const viewBeforeSourceFilter = useMemo(() => resultsViewFor(run, { withSetPotential, onlyBis }), [run, withSetPotential, onlyBis]);
+	const offeredSources = useMemo(() => sourceOptions(viewBeforeSourceFilter?.rows ?? []), [viewBeforeSourceFilter]);
+	const view = useMemo(
+		() => (viewBeforeSourceFilter && hiddenSources.length > 0 ? sourcesView(viewBeforeSourceFilter, hiddenSources) : viewBeforeSourceFilter),
+		[viewBeforeSourceFilter, hiddenSources],
+	);
 	// Only the hidden sources this view offers act, so a source hidden in an earlier run hides nothing here, in a row or a cell.
 	const actingHidden = useMemo(() => offeredHidden(offeredSources, hiddenSources), [offeredSources, hiddenSources]);
 	// Memoised because every `ResultRow` is: a new context on each new row would render every row again.

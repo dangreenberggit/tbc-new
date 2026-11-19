@@ -431,26 +431,26 @@ describe('sourcesView over resultsViewFor', () => {
 	});
 
 	// The filter did not empty a main table that was already empty, so the pane keeps the no-upgrades reason.
-	it('does not blame the shown sources for a pane whose rows were all below the cutoff before the cut', () => {
-		// Helm of the Illidari Shatterer (Black Temple) misses the cutoff; the Hyjal Summit weapon is the row the cut hides.
+	it('does not blame the shown sources for a pane whose rows were all below the cutoff before the source filter', () => {
+		// Helm of the Illidari Shatterer (Black Temple) misses the cutoff; the Hyjal Summit weapon is the row the source filter hides.
 		const view = bySource(done(withRows([helm, fixtureRow(1)])), NO_VIEW_TOGGLES, ['Hyjal Summit']);
 		expect(view.sourcesHidden).toBe(true);
 		expect(paneRows(view, 'head')).toMatchObject({ main: [], emptyReason: 'no-upgrades' });
 		expect(ids(paneRows(view, 'head').belowCutoff)).toEqual([helm.itemId]);
 	});
 
-	// With no row in any main table before the cut, only the Upgrades pane arm of `hadRowBeforeSourceCut` says the filter emptied it.
+	// With no row in any main table before the source filter, only the Upgrades pane arm of `hadRowBeforeSourceFilter` says the filter emptied it.
 	it('says the Upgrades pane has no row from the shown sources when the filter hid every row, all of them below the cutoff', () => {
 		// Helm of the Illidari Shatterer (Black Temple) and a Midnight Chestguard (Hyjal Summit) moved below the cutoff; neither is on a BiS list.
 		const lowChest: RankedItem = { ...fixtureRow(6), deltaDps: -4, belowCutoff: true };
 		const view = bySource(done(withRows([helm, lowChest])), NO_VIEW_TOGGLES, ['Black Temple', 'Hyjal Summit']);
 		expect(view.rows).toEqual([]);
-		expect(view.panesWithMainBeforeSourceCut).toEqual([]);
+		expect(view.panesWithMainBeforeSourceFilter).toEqual([]);
 		expect(paneRows(view, ALL_SLOTS_PANE).emptyReason).toBe('no-source-row');
 	});
 
 	// The filter must not take the blame for a pane BiS only emptied.
-	it('under BiS only, says no row comes from the shown sources only for a slot that had a BiS-list row before the source cut', () => {
+	it('under BiS only, says no row comes from the shown sources only for a slot that had a BiS-list row before the source filter', () => {
 		const view = bySource(done(RANKING_FIXTURE), ONLY_BIS, ['Black Temple']);
 		// Chest has no BiS-list row at all.
 		expect(paneRows(view, 'chest')).toMatchObject({ main: [], belowCutoff: [], emptyReason: 'no-upgrades' });
