@@ -68,7 +68,7 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 		() => ({
 			itemOf: itemId => sim.db.getItemById(itemId),
 			sim,
-			tip: { ranking, wornItemIds: measuredOn?.wornItemIds, specId: measuredOn?.specId, withSetPotential },
+			rankingContext: { ranking, wornItemIds: measuredOn?.wornItemIds, specId: measuredOn?.specId, withSetPotential },
 			tagsOf,
 			bisHeadingsOf,
 			dpsKey: dpsSortKeyFor(ranking, withSetPotential),

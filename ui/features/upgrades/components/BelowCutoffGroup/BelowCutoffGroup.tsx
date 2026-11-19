@@ -25,7 +25,7 @@ const GROUP = 'below-cutoff';
  */
 export const BelowCutoffGroup = ({ head, table, rowContext, open, onOpenChange }: BelowCutoffGroupProps) => {
 	const count = table.options.data.length;
-	const cutoff = rowContext.tip.ranking?.cutoff;
+	const cutoff = rowContext.rankingContext.ranking?.cutoff;
 	const title =
 		cutoff === undefined
 			? i18n.t('upgrades_tab.results.below_cutoff_group', { ns: 'upgrades', count })

@@ -6,7 +6,7 @@ import { memo, type Ref } from 'react';
 import type { RankedItem } from '../../model/engine/rank';
 import { ilvlOf } from '../../model/pool_source';
 import type { DpsSortKey } from '../../model/results_columns';
-import type { SetBonusTipContext } from '../../model/set_bonus_tip';
+import type { RankingContext } from '../../model/set_bonus_tip';
 import type { RowTag } from '../../model/settings_pool';
 import { slotLabel } from '../../utils/format';
 import { BatchToggle, FavoriteToggle } from '../RowToggles';
@@ -23,7 +23,7 @@ export type RowContext = {
 	/** The page's sim, whose database the Source cell's links read. */
 	sim: Sim;
 	/** What the set-bonus popover and the below-cutoff rounding read; it has no ranking while a run is in flight. */
-	tip: SetBonusTipContext;
+	rankingContext: RankingContext;
 	/** The names of the selected sets that hold an item; one array per item, so the name cell's memo holds. */
 	tagsOf: (itemId: number) => readonly RowTag[];
 	/** The headings the "BiS" badge names on a row in no selected set (`bisHeadingIndex`). */

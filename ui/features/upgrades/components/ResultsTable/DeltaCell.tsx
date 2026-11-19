@@ -20,8 +20,8 @@ export interface DeltaCellProps {
  * the cutoff never rounds up to it. Memoised: see `ResultRow`.
  */
 export const DeltaCell = memo(({ row, context }: DeltaCellProps) => {
-	const tip = setBonusTipLines(row, context.tip);
-	const figure = formatDelta(context.dpsKey?.(row) ?? row.deltaDps, context.tip.ranking?.cutoff.absDps);
+	const tip = setBonusTipLines(row, context.rankingContext);
+	const figure = formatDelta(context.dpsKey?.(row) ?? row.deltaDps, context.rankingContext.ranking?.cutoff.absDps);
 
 	return (
 		<td className="py-1 pr-3 text-right whitespace-nowrap tabular-nums" data-testid="upgrades-delta-cell">

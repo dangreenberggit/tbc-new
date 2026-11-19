@@ -36,7 +36,7 @@ const ITEMS: Record<number, UIItem> = {
 const CONTEXT: RowContext = {
 	itemOf: itemId => ITEMS[itemId],
 	sim: fakeHost().sim,
-	tip: { ranking: RANKING_FIXTURE, specId: 'ret' },
+	rankingContext: { ranking: RANKING_FIXTURE, specId: 'ret' },
 	tagsOf: () => [],
 	bisHeadingsOf: () => [],
 };
@@ -298,15 +298,17 @@ describe('ResultRow', () => {
 		const legs: RankedItem = { ...fixtureRow(0), itemId: 30900, name: 'Bow-stitched Leggings', slot: 'legs', deltaDps: -94.1, deltaPct: -3.8 };
 		const ranking = { ...RANKING_FIXTURE, brokenSetValues: [{ setId: 676, setName: 'Thunderheart Harness', threshold: 2, dps: 106.24, se: 2 }] };
 
-		expect(testIdText(renderRow(legs, { ...CONTEXT, tip: { ranking, wornItemIds: worn, specId: 'feral' } }), 'upgrades-set-bonus')).toEqual(['set detail']);
-		expect(testIdText(renderRow(legs, { ...CONTEXT, tip: { ranking, specId: 'feral' } }), 'upgrades-set-bonus')).toEqual([]);
+		expect(testIdText(renderRow(legs, { ...CONTEXT, rankingContext: { ranking, wornItemIds: worn, specId: 'feral' } }), 'upgrades-set-bonus')).toEqual([
+			'set detail',
+		]);
+		expect(testIdText(renderRow(legs, { ...CONTEXT, rankingContext: { ranking, specId: 'feral' } }), 'upgrades-set-bonus')).toEqual([]);
 	});
 
 	it('opens that row’s set-bonus popover from its DPS figure, itemising the worn bonus the swap breaks', () => {
 		const worn = [8345, 30017, 30055, 29994, 30101, 29966, 31034, 30106, 31044, 28545, 29997, 30052, 30627, 29383, 32014, 0, 32387];
 		const legs: RankedItem = { ...fixtureRow(0), itemId: 30900, name: 'Bow-stitched Leggings', slot: 'legs', deltaDps: -94.1, deltaPct: -3.8 };
 		const ranking = { ...RANKING_FIXTURE, brokenSetValues: [{ setId: 676, setName: 'Thunderheart Harness', threshold: 2, dps: 106.24, se: 2 }] };
-		const tr = renderRow(legs, { ...CONTEXT, tip: { ranking, wornItemIds: worn, specId: 'feral' } });
+		const tr = renderRow(legs, { ...CONTEXT, rankingContext: { ranking, wornItemIds: worn, specId: 'feral' } });
 
 		vi.useFakeTimers();
 		try {

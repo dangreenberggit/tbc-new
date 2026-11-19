@@ -60,7 +60,8 @@ export type TipEntry =
 /** The data of the set-bonus popover (SetBonusPopover); "tip" is its short name in code and i18n keys. */
 export type SetBonusTip = { subLine: 'hover_hint' | 'not_counted'; kind: 'receipt' | 'outcomes'; entries: TipEntry[] };
 
-export type SetBonusTipContext = {
+/** The ranking on screen and the gear it was measured on. */
+export type RankingContext = {
 	/** Absent while a run is in flight: there is no cutoff yet, so no set potential and no bonuses lost to the row's own swap. */
 	ranking?: Pick<Ranking, 'cutoff' | 'brokenSetValues' | 'setBonuses' | 'setScreen'>;
 	/** The gear the ranking was measured on, in sim slot order. */
@@ -233,7 +234,7 @@ function notCountedHeading(hasReachable: boolean, on: boolean): Extract<TipEntry
  * No figure on purpose: a `below-zero` measure is the pieces and the bonus
  * together, so printing it as the bonus would blame the bonus for the pieces' loss.
  */
-function screenedLine(ctx: SetContext, ranking: SetBonusTipContext['ranking']): TipEntry | null {
+function screenedLine(ctx: SetContext, ranking: RankingContext['ranking']): TipEntry | null {
 	const screen = ranking?.setScreen?.mode === 'on' ? ranking.setScreen.sets.find(s => s.setId === ctx.setId) : undefined;
 	// Older rankings also mark the set with a "screened-out" entry.
 	const marked = ranking?.setBonuses?.some(b => b.setId === ctx.setId && b.unmeasured === 'screened-out') ?? false;
@@ -263,7 +264,7 @@ function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Li
  * line balances the toggle-off lines and keeps its value across the toggle, so the
  * toggle's rounding goes into the Set potential lines.
  */
-export function setBonusTipLines(row: RankedItem, context: SetBonusTipContext = {}): SetBonusTip | null {
+export function setBonusTipLines(row: RankedItem, context: RankingContext = {}): SetBonusTip | null {
 	const ctx = row.setContext;
 	const cutoff = context.ranking?.cutoff;
 	const bar = cutoff?.absDps;

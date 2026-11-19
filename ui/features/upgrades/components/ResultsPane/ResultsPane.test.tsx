@@ -24,7 +24,7 @@ const { upgradesStoreFor } = await import('../../hooks/useUpgradesStore');
 
 loadEnglishBundles({ character: true });
 
-const CONTEXT = { itemOf: () => undefined, sim: fakeTabHost().sim, tip: {}, tagsOf: () => [], bisHeadingsOf: () => [] };
+const CONTEXT = { itemOf: () => undefined, sim: fakeTabHost().sim, rankingContext: {}, tagsOf: () => [], bisHeadingsOf: () => [] };
 
 // A page per test, so a sort one test stores does not reach the next.
 let host: IndividualSimHost<any>;
@@ -63,7 +63,7 @@ describe('ResultsPane', () => {
 
 	// Players do not know a cutoff exists, so the group names a gain in DPS instead.
 	it('names the bar as a gain in DPS on the group once a ranking is shown, never as a cutoff', () => {
-		const rowContext = { ...CONTEXT, tip: { ranking: RANKING_FIXTURE } };
+		const rowContext = { ...CONTEXT, rankingContext: { ranking: RANKING_FIXTURE } };
 		const one = onPage({ rows: paneRowsOf([fixtureRow(0)], [fixtureRow(5)]), rowContext });
 		expect(one.getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 item that gains less than 3 DPS');
 		one.unmount();
@@ -105,7 +105,7 @@ describe('ResultsPane', () => {
 		const gainedBelowBar = fixtureRow(5);
 		expect(gainedBelowBar.deltaDps).toBeGreaterThan(0);
 		expect(gainedBelowBar.deltaDps).toBeLessThan(RANKING_FIXTURE.cutoff.absDps);
-		const rowContext = { ...CONTEXT, tip: { ranking: RANKING_FIXTURE } };
+		const rowContext = { ...CONTEXT, rankingContext: { ranking: RANKING_FIXTURE } };
 		const { getByTestId, queryByTestId } = onPage({ rows: paneRowsOf([], [gainedBelowBar]), rowContext });
 
 		expect(queryByTestId('upgrades-empty-state')).toBeNull();
