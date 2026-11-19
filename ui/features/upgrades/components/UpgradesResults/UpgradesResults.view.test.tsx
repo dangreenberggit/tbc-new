@@ -140,7 +140,7 @@ describe('UpgradesResults view toggles', () => {
 		const torch = within(activePane(container)).getAllByTestId('upgrades-result-row')[0]!;
 		expect(
 			within(torch)
-				.getAllByTestId('upgrades-bis-badge')
+				.getAllByTestId('upgrades-row-badge')
 				.map(badge => badge.textContent),
 		).toEqual(['P3']);
 	});

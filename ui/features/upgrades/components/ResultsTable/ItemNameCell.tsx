@@ -8,14 +8,14 @@ import { WowheadIcon } from '@ui-kit/WowheadIcon';
 import { memo } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
-import { type RowTag, withHeading } from '../../model/settings_pool';
+import { type RowBadge, withHeading } from '../../model/settings_pool';
 
 export interface ItemNameCellProps {
 	row: Pick<RankedItem, 'itemId' | 'name' | 'bisTags' | 'owned'>;
 	quality: ItemQuality | undefined;
-	/** The selected sets that hold the item. */
-	tags: readonly RowTag[];
-	/** The headings of the BiS sets that hold the item, named on its "BiS" badge when no selected set holds it. */
+	/** The selected gear sets that hold the item. */
+	gearSetBadges: readonly RowBadge[];
+	/** The headings of the BiS gear sets that hold the item, named on its "BiS" badge when no selected gear set holds it. */
 	bisHeadings: readonly string[];
 	/** Shown in the main table although it misses the cutoff: said in text beside the badges, so no hover is needed. */
 	notUpgrade?: boolean;
@@ -24,19 +24,19 @@ export interface ItemNameCellProps {
 }
 
 /**
- * For a row in no selected set: one per heading of the BiS sets that hold it, so warrior's page reads "BiS (Fury)"
+ * For a row in no selected gear set: one per heading of the BiS gear sets that hold it, so warrior's page reads "BiS (Fury)"
  * or "BiS (Arms)".
  */
-const poolBisBadges = (bisTags: RankedItem['bisTags'], headings: readonly string[]): RowTag[] => {
+const poolBisBadges = (bisTags: RankedItem['bisTags'], headings: readonly string[]): RowBadge[] => {
 	if (!bisTags.includes('BiS')) return [];
 	const label = i18n.t('upgrades_tab.results.bis_badge', { ns: 'upgrades' });
 	return headings.length > 0 ? headings.map(heading => ({ key: `BiS:${heading}`, label: withHeading(label, heading) })) : [{ key: 'BiS', label }];
 };
 
-/** The item: its icon, its name as a wowhead link in its quality colour, and its tags beneath. Memoised: see `ResultRow`. */
-export const ItemNameCell = memo(({ row, quality, tags, bisHeadings, notUpgrade = false, ilvl }: ItemNameCellProps) => {
+/** The item: its icon, its name as a wowhead link in its quality colour, and its badges beneath. Memoised: see `ResultRow`. */
+export const ItemNameCell = memo(({ row, quality, gearSetBadges, bisHeadings, notUpgrade = false, ilvl }: ItemNameCellProps) => {
 	const { iconUrl, href } = useActionId(ActionId.fromItemId(row.itemId));
-	const badges = tags.length > 0 ? tags : poolBisBadges(row.bisTags, bisHeadings);
+	const badges = gearSetBadges.length > 0 ? gearSetBadges : poolBisBadges(row.bisTags, bisHeadings);
 
 	return (
 		<td className="py-1 pr-3">
@@ -59,7 +59,7 @@ export const ItemNameCell = memo(({ row, quality, tags, bisHeadings, notUpgrade 
 						<span className="flex flex-wrap items-center gap-1 text-xs">
 							{!!ilvl && <span data-testid="upgrades-item-ilvl">{i18n.t('upgrades_tab.results.item_level', { ns: 'upgrades', ilvl })}</span>}
 							{badges.map(badge => (
-								<span key={badge.key} className="rounded-full bg-warning px-1.5 text-black" data-testid="upgrades-bis-badge">
+								<span key={badge.key} className="rounded-full bg-warning px-1.5 text-black" data-testid="upgrades-row-badge">
 									{badge.label}
 								</span>
 							))}

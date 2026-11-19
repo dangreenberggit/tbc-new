@@ -4,7 +4,7 @@ import { render, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import type { RankedItem } from '../../model/engine/rank';
-import { type GearSetOption, type RowTag, rowTagIndex } from '../../model/settings_pool';
+import { type GearSetOption, type RowBadge, rowBadgeIndex } from '../../model/settings_pool';
 import { fixtureRow } from '../../testing/ranking_fixture';
 
 // The icon lookup fetches from wowhead; the cell's text is under test.
@@ -24,41 +24,41 @@ const set = (key: string, name: string, phase: number | undefined, itemIds: numb
 	inPool: itemIds.length,
 });
 
-const badgesOf = (row: RankedItem, tags: readonly RowTag[], bisHeadings: readonly string[] = []) => {
+const badgesOf = (row: RankedItem, gearSetBadges: readonly RowBadge[], bisHeadings: readonly string[] = []) => {
 	const { container } = render(
 		<table>
 			<tbody>
 				<tr>
-					<ItemNameCell row={row} quality={ItemQuality.ItemQualityEpic} tags={tags} bisHeadings={bisHeadings} />
+					<ItemNameCell row={row} quality={ItemQuality.ItemQualityEpic} gearSetBadges={gearSetBadges} bisHeadings={bisHeadings} />
 				</tr>
 			</tbody>
 		</table>,
 	);
 	return within(container)
-		.queryAllByTestId('upgrades-bis-badge')
+		.queryAllByTestId('upgrades-row-badge')
 		.map(badge => badge.textContent);
 };
 
 const torch = fixtureRow(0);
 
 describe('ItemNameCell badges', () => {
-	it('shows one badge per selected set that holds the item, in place of the BiS tag', () => {
-		const tagsOf = rowTagIndex([set('preset:3:P3', 'P3', 3, [torch.itemId]), set('saved:Mine', 'Mine', undefined, [torch.itemId])]);
-		expect(badgesOf(torch, tagsOf(torch.itemId))).toEqual(['P3', 'Mine']);
+	it('shows one badge per selected gear set that holds the item, in place of the BiS tag', () => {
+		const gearSetBadgesOf = rowBadgeIndex([set('preset:3:P3', 'P3', 3, [torch.itemId]), set('saved:Mine', 'Mine', undefined, [torch.itemId])]);
+		expect(badgesOf(torch, gearSetBadgesOf(torch.itemId))).toEqual(['P3', 'Mine']);
 	});
 
-	it('puts the phase in front when two selected sets share a name', () => {
-		const tagsOf = rowTagIndex([set('preset:2:BiS', 'BiS', 2, [torch.itemId]), set('preset:3:BiS', 'BiS', 3, [torch.itemId])]);
-		expect(badgesOf(torch, tagsOf(torch.itemId))).toEqual(['P2 BiS', 'P3 BiS']);
+	it('puts the phase in front when two selected gear sets share a name', () => {
+		const gearSetBadgesOf = rowBadgeIndex([set('preset:2:BiS', 'BiS', 2, [torch.itemId]), set('preset:3:BiS', 'BiS', 3, [torch.itemId])]);
+		expect(badgesOf(torch, gearSetBadgesOf(torch.itemId))).toEqual(['P2 BiS', 'P3 BiS']);
 	});
 
-	it('keeps the pool’s own BiS badge on a row in no selected set', () => {
+	it('keeps the pool’s own BiS badge on a row in no selected gear set', () => {
 		expect(badgesOf(torch, [])).toEqual(['BiS']);
 		expect(badgesOf(fixtureRow(1), [])).toEqual([]);
 	});
 
-	// On warrior's page the BiS sets sit under Fury and Arms.
-	it('names each heading of the BiS sets that hold a row in no selected set', () => {
+	// On warrior's page the BiS gear sets sit under Fury and Arms.
+	it('names each heading of the BiS gear sets that hold a row in no selected gear set', () => {
 		expect(badgesOf(torch, [], ['Fury'])).toEqual(['BiS (Fury)']);
 		expect(badgesOf(torch, [], ['Fury', 'Arms'])).toEqual(['BiS (Fury)', 'BiS (Arms)']);
 		expect(badgesOf(fixtureRow(1), [], ['Fury'])).toEqual([]);

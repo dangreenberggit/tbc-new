@@ -37,7 +37,7 @@ const CONTEXT: RowContext = {
 	itemOf: itemId => ITEMS[itemId],
 	sim: fakeHost().sim,
 	rankingContext: { ranking: RANKING_FIXTURE, specId: 'ret' },
-	tagsOf: () => [],
+	gearSetBadgesOf: () => [],
 	bisHeadingsOf: () => [],
 };
 
@@ -266,9 +266,9 @@ describe('ResultRow', () => {
 		expect(within(renderRow(fixtureRow(1))).queryByTestId('upgrades-item-ilvl')).toBeNull();
 	});
 
-	it('tags a BiS row', () => {
-		expect(testIdText(renderRow(fixtureRow(0)), 'upgrades-bis-badge')).toEqual(['BiS']);
-		expect(testIdText(renderRow(fixtureRow(1)), 'upgrades-bis-badge')).toEqual([]);
+	it('badges a BiS row', () => {
+		expect(testIdText(renderRow(fixtureRow(0)), 'upgrades-row-badge')).toEqual(['BiS']);
+		expect(testIdText(renderRow(fixtureRow(1)), 'upgrades-row-badge')).toEqual([]);
 	});
 
 	it('greys a worn row and says it is owned', () => {

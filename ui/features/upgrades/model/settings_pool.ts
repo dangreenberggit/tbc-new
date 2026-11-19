@@ -218,7 +218,7 @@ export const eligibleCount = (pool: readonly PoolEntry[], maxPhase: number, { sp
 	);
 };
 
-export type RowTag = { key: string; label: string };
+export type RowBadge = { key: string; label: string };
 
 export const withHeading = (label: string, heading: string): string => `${label} (${heading})`;
 
@@ -228,7 +228,7 @@ export const withHeading = (label: string, heading: string): string => `${label}
  * Badges that would still read the same get their phase in front; without a
  * heading, those that share the phase too get their group.
  */
-export function rowTags(itemId: number, selectedGearSets: readonly GearSetOption[]): RowTag[] {
+export function rowBadges(itemId: number, selectedGearSets: readonly GearSetOption[]): RowBadge[] {
 	const holding = selectedGearSets.filter(o => heldIds(o).includes(itemId));
 	return holding.map(o => {
 		const shared = holding.some(other => other !== o && other.name === o.name && other.heading === o.heading);
@@ -255,13 +255,13 @@ export function bisHeadingIndex(options: readonly GearSetOption[], bisTagPhase: 
 	return itemId => byItem.get(itemId) ?? NO_HEADINGS;
 }
 
-const NO_TAGS: readonly RowTag[] = [];
+const NO_BADGES: readonly RowBadge[] = [];
 
 /** Each item keeps one array while the selection stands, so a memoised name cell does not re-render when its row moves. */
-export function rowTagIndex(selectedGearSets: readonly GearSetOption[]): (itemId: number) => readonly RowTag[] {
-	const byItem = new Map<number, readonly RowTag[]>();
-	for (const itemId of new Set(selectedGearSets.flatMap(heldIds))) byItem.set(itemId, rowTags(itemId, selectedGearSets));
-	return itemId => byItem.get(itemId) ?? NO_TAGS;
+export function rowBadgeIndex(selectedGearSets: readonly GearSetOption[]): (itemId: number) => readonly RowBadge[] {
+	const byItem = new Map<number, readonly RowBadge[]>();
+	for (const itemId of new Set(selectedGearSets.flatMap(heldIds))) byItem.set(itemId, rowBadges(itemId, selectedGearSets));
+	return itemId => byItem.get(itemId) ?? NO_BADGES;
 }
 
 type SavedGearSetEntry = { name: string; gear?: GearItems };

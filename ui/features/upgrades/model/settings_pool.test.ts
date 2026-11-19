@@ -16,8 +16,8 @@ import {
 	gearSetOptions,
 	gearSetSelection,
 	poolSourceKeysOf,
-	rowTagIndex,
-	rowTags,
+	rowBadgeIndex,
+	rowBadges,
 	runSettingsOf,
 	selectedGearSetItemIds,
 	settingsOffer,
@@ -228,7 +228,7 @@ describe('gearSetOptions over presets that share a phase and a name', () => {
 	});
 });
 
-describe('rowTags', () => {
+describe('rowBadges', () => {
 	const option = (key: string, name: string, phase: number | undefined, itemIds: number[]): GearSetOption => ({
 		key,
 		name,
@@ -241,17 +241,17 @@ describe('rowTags', () => {
 
 	it('names each selected set that holds the item', () => {
 		const selected = [option('preset:3:P3', 'P3', 3, [1, 2]), option('saved:Mine', 'Mine', undefined, [2])];
-		expect(rowTags(2, selected)).toEqual([
+		expect(rowBadges(2, selected)).toEqual([
 			{ key: 'preset:3:P3', label: 'P3' },
 			{ key: 'saved:Mine', label: 'Mine' },
 		]);
-		expect(rowTags(1, selected)).toEqual([{ key: 'preset:3:P3', label: 'P3' }]);
-		expect(rowTags(9, selected)).toEqual([]);
+		expect(rowBadges(1, selected)).toEqual([{ key: 'preset:3:P3', label: 'P3' }]);
+		expect(rowBadges(9, selected)).toEqual([]);
 	});
 
 	it('prefixes the phase when two selected sets share a name', () => {
 		const selected = [option('preset:2:BiS 9%', 'BiS 9%', 2, [1]), option('preset:3:BiS 9%', 'BiS 9%', 3, [1])];
-		expect(rowTags(1, selected).map(tag => tag.label)).toEqual(['P2 BiS 9%', 'P3 BiS 9%']);
+		expect(rowBadges(1, selected).map(tag => tag.label)).toEqual(['P2 BiS 9%', 'P3 BiS 9%']);
 	});
 
 	it('adds the group when two selected sets also share the phase', () => {
@@ -259,7 +259,7 @@ describe('rowTags', () => {
 			{ ...option('preset:2:Beast Mastery/DW - 6% hit', 'DW - 6% hit', 2, [1]), group: 'Beast Mastery' },
 			{ ...option('preset:2:Survival/DW - 6% hit', 'DW - 6% hit', 2, [1]), group: 'Survival' },
 		];
-		expect(rowTags(1, selected).map(tag => tag.label)).toEqual(['P2 DW - 6% hit (Beast Mastery)', 'P2 DW - 6% hit (Survival)']);
+		expect(rowBadges(1, selected).map(tag => tag.label)).toEqual(['P2 DW - 6% hit (Beast Mastery)', 'P2 DW - 6% hit (Survival)']);
 	});
 });
 
@@ -276,7 +276,7 @@ describe('badges on a page whose sets sit under more than one heading', () => {
 		return {
 			offer,
 			bisHeadingsOf: bisHeadingIndex(offer.gearSetOptions, bisTagPhase),
-			labelsOf: (itemId: number) => rowTags(itemId, selectedGearSets).map(tag => tag.label),
+			labelsOf: (itemId: number) => rowBadges(itemId, selectedGearSets).map(tag => tag.label),
 		};
 	};
 
@@ -300,7 +300,7 @@ describe('badges on a page whose sets sit under more than one heading', () => {
 		const { offer } = pageAt('warrior', 4);
 		const furyBis = offer.gearSetOptions.filter(o => o.heading === 'Fury' && o.name === 'BIS' && (o.phase === 3 || o.phase === 4));
 		const sharedId = furyBis[0]!.itemIds.find(id => furyBis[1]!.itemIds.includes(id))!;
-		expect(rowTags(sharedId, furyBis).map(tag => tag.label)).toEqual(['P3 BIS (Fury)', 'P4 BIS (Fury)']);
+		expect(rowBadges(sharedId, furyBis).map(tag => tag.label)).toEqual(['P3 BIS (Fury)', 'P4 BIS (Fury)']);
 	});
 
 	it('keeps today’s badges on ret’s page, whose sets sit under no heading', () => {
@@ -310,23 +310,23 @@ describe('badges on a page whose sets sit under more than one heading', () => {
 	});
 });
 
-describe('rowTagIndex', () => {
+describe('rowBadgeIndex', () => {
 	const selected: GearSetOption[] = [
 		{ key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [1, 2], inPool: 2 },
 		{ key: 'saved:Mine', name: 'Mine', label: 'Mine', kind: 'saved', itemIds: [2], inPool: 1 },
 	];
 
-	it('gives each item the tags rowTags gives it', () => {
-		const tagsOf = rowTagIndex(selected);
-		expect(tagsOf(2)).toEqual(rowTags(2, selected));
-		expect(tagsOf(1)).toEqual(rowTags(1, selected));
-		expect(tagsOf(9)).toEqual([]);
+	it('gives each item the badges rowBadges gives it', () => {
+		const badgesOf = rowBadgeIndex(selected);
+		expect(badgesOf(2)).toEqual(rowBadges(2, selected));
+		expect(badgesOf(1)).toEqual(rowBadges(1, selected));
+		expect(badgesOf(9)).toEqual([]);
 	});
 
 	it('returns the same array for an item on every call, so a memoised cell is not rendered again', () => {
-		const tagsOf = rowTagIndex(selected);
-		expect(tagsOf(2)).toBe(tagsOf(2));
-		expect(tagsOf(9)).toBe(tagsOf(8));
+		const badgesOf = rowBadgeIndex(selected);
+		expect(badgesOf(2)).toBe(badgesOf(2));
+		expect(badgesOf(9)).toBe(badgesOf(8));
 	});
 });
 
@@ -348,7 +348,7 @@ describe('a set that names the other id of an item the pool offers once', () => 
 		expect(pool.map(e => e.itemId)).toEqual([offered]);
 		expect(offer.gearSetOptions[0]).toMatchObject({ itemIds: [named], inPool: 1 });
 		expect(effectivePool(pool, { excludedSources: [], selectedGearSetItemIds: selectedItemIds, prune: true }).map(e => e.itemId)).toEqual([offered]);
-		expect(rowTagIndex(selectedGearSets)(offered)).toEqual([{ key: 'saved:Mine', label: 'Mine' }]);
+		expect(rowBadgeIndex(selectedGearSets)(offered)).toEqual([{ key: 'saved:Mine', label: 'Mine' }]);
 	});
 
 	it('selects a BiS preset that names the other id by default and names its heading on the offered row', () => {

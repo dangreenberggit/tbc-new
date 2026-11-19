@@ -7,7 +7,7 @@ import type { RankedItem } from '../../model/engine/rank';
 import { ilvlOf } from '../../model/pool_source';
 import type { DpsSortKey } from '../../model/results_columns';
 import type { RankingContext } from '../../model/set_bonus_popover';
-import type { RowTag } from '../../model/settings_pool';
+import type { RowBadge } from '../../model/settings_pool';
 import { slotLabel } from '../../utils/format';
 import { BatchToggle, FavoriteToggle } from '../RowToggles';
 import { DeltaCell } from './DeltaCell';
@@ -24,9 +24,9 @@ export type RowContext = {
 	sim: Sim;
 	/** What the set-bonus popover and the below-cutoff rounding read; it has no ranking while a run is in flight. */
 	rankingContext: RankingContext;
-	/** The names of the selected sets that hold an item; one array per item, so the name cell's memo holds. */
-	tagsOf: (itemId: number) => readonly RowTag[];
-	/** The headings the "BiS" badge names on a row in no selected set (`bisHeadingIndex`). */
+	/** The badges of the selected gear sets that hold an item; one array per item, so the name cell's memo holds. */
+	gearSetBadgesOf: (itemId: number) => readonly RowBadge[];
+	/** The headings the "BiS" badge names on a row in no selected gear set (`bisHeadingIndex`). */
 	bisHeadingsOf: (itemId: number) => readonly string[];
 	/** What the ΔDPS column sorts on; undefined is the bare ΔDPS. */
 	dpsKey?: DpsSortKey;
@@ -65,7 +65,7 @@ export const ResultRow = memo(({ row, position, context, notUpgrade = false, ref
 			<ItemNameCell
 				row={row}
 				quality={item?.quality}
-				tags={context.tagsOf(row.itemId)}
+				gearSetBadges={context.gearSetBadgesOf(row.itemId)}
 				bisHeadings={context.bisHeadingsOf(row.itemId)}
 				notUpgrade={notUpgrade}
 				ilvl={item && ilvlOf(item)}

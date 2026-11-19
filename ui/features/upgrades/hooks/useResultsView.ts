@@ -14,7 +14,7 @@ import {
 	type ViewToggles,
 } from '../model/results_view';
 import type { RunState } from '../model/run_state';
-import { type GearSetOption, rowTagIndex, sourceOptions } from '../model/settings_pool';
+import { type GearSetOption, rowBadgeIndex, sourceOptions } from '../model/settings_pool';
 import { selectHiddenSources, selectViewToggles } from '../model/upgrades_store';
 import { useUpgradesStore } from './useUpgradesStore';
 
@@ -53,9 +53,9 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 	const ranking = run.status === 'done' || run.status === 'stopped' ? run.result : undefined;
 	const measuredOn = run.status === 'running' || run.status === 'done' || run.status === 'stopped' ? run.measuredOn : undefined;
 	// The gear sets the run was ranked with, not the gear sets selected now: a phase change after the run selects the new
-	// phase's gear sets. Memoised on them alone, so a row's tags keep their identity and its memoised name cell holds.
+	// phase's gear sets. Memoised on them alone, so a row's badges keep their identity and its memoised name cell holds.
 	const rankedGearSets = measuredOn?.selectedGearSets ?? NO_GEAR_SETS;
-	const tagsOf = useMemo(() => rowTagIndex(rankedGearSets), [rankedGearSets]);
+	const gearSetBadgesOf = useMemo(() => rowBadgeIndex(rankedGearSets), [rankedGearSets]);
 	// Memoised for the same rows: `applyView` builds new row objects on every call. The source filter runs on this
 	// view in a memo of its own, so ticking a source does not run `applyView` again.
 	const preCutView = useMemo(() => resultsViewFor(run, { withSetPotential, onlyBis }), [run, withSetPotential, onlyBis]);
@@ -69,12 +69,12 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 			itemOf: itemId => sim.db.getItemById(itemId),
 			sim,
 			rankingContext: { ranking, wornItemIds: measuredOn?.wornItemIds, specId: measuredOn?.specId, withSetPotential },
-			tagsOf,
+			gearSetBadgesOf,
 			bisHeadingsOf,
 			dpsKey: dpsSortKeyFor(ranking, withSetPotential),
 			hiddenSources: actingHidden,
 		}),
-		[sim, ranking, measuredOn, withSetPotential, tagsOf, bisHeadingsOf, actingHidden],
+		[sim, ranking, measuredOn, withSetPotential, gearSetBadgesOf, bisHeadingsOf, actingHidden],
 	);
 
 	return { toggles, offered, setToggle, sourceOptions: offeredSources, hiddenSources, toggleViewSource, setHiddenSources, rowContext, view };

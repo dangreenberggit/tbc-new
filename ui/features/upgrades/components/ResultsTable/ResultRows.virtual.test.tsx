@@ -27,7 +27,7 @@ const ROW_HEIGHT = 43;
 /** Where the table starts in the page's content: below the tab's settings, as on the page. */
 const TABLE_TOP = 300;
 
-const CONTEXT: RowContext = { itemOf: () => undefined, sim: fakeTabHost().sim, rankingContext: {}, tagsOf: () => [], bisHeadingsOf: () => [] };
+const CONTEXT: RowContext = { itemOf: () => undefined, sim: fakeTabHost().sim, rankingContext: {}, gearSetBadgesOf: () => [], bisHeadingsOf: () => [] };
 const ROWS: RankedItem[] = Array.from({ length: RANKED }, (_unused, index) => ({
 	...fixtureRow(index % RANKING_FIXTURE.items.length),
 	itemId: 100_000 + index,
