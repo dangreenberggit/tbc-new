@@ -92,7 +92,7 @@ import {
 	type SelfSetConfound,
 	SET_THRESHOLDS,
 	setCounts,
-	setLabel,
+	setNameOf,
 	type SetThreshold,
 	type UnmeasuredReason,
 } from './set-value';
@@ -1719,7 +1719,7 @@ async function buildSetBonuses(
 				(setId, reason) =>
 					setCheckLines.push(
 						setBonusesSkipSubstitution({
-							setName: setLabel(
+							setName: setNameOf(
 								equipment,
 								setId,
 								candidates.map(entry => entry.itemId),
@@ -1787,7 +1787,7 @@ async function buildSetBonuses(
 					onSimFailed: (setId, error) =>
 						setCheckLines.push(
 							setScreenSkipSubstitution({
-								setName: setLabel(
+								setName: setNameOf(
 									equipment,
 									setId,
 									candidates.map(entry => entry.itemId),
@@ -1798,7 +1798,7 @@ async function buildSetBonuses(
 					onRequestNotBuilt: (setId, error) =>
 						setCheckLines.push(
 							setScreenSkipSubstitution({
-								setName: setLabel(
+								setName: setNameOf(
 									equipment,
 									setId,
 									candidates.map(entry => entry.itemId),
@@ -1864,7 +1864,7 @@ async function buildSetBonuses(
 	const setIdsWithoutBonuses: number[] = [];
 	for (const setId of setIdsWithCandidates) {
 		const piecesWorn = wornCounts.get(setId) ?? 0;
-		const label = setLabel(
+		const label = setNameOf(
 			equipment,
 			setId,
 			candidates.map(entry => entry.itemId),
@@ -2195,7 +2195,7 @@ async function buildSetBonuses(
 				if (!(err instanceof MetaRepairError)) throw err;
 			}
 			const crossingBuild = swapped;
-			const crossingLabel = setLabel(equipment, setId);
+			const crossingLabel = setNameOf(equipment, setId);
 			// A copy's failed gem repair leaves this check unmeasured with no line,
 			// as a failed repair of the swap itself does above.
 			let layoutRepairFailed = false;
@@ -2646,7 +2646,7 @@ async function measureSetSteps(args: {
 				for (const b of lost) {
 					args.bonusLines.push(
 						breakSplitSkipSubstitution({
-							setName: setLabel(equipment, b.setId),
+							setName: setNameOf(equipment, b.setId),
 							threshold: b.threshold,
 							error,
 							notBuilt: true,
@@ -2731,7 +2731,7 @@ async function measureSetSteps(args: {
 			for (const b of lost) {
 				args.bonusLines.push(
 					breakSplitSkipSubstitution({
-						setName: setLabel(equipment, b.setId),
+						setName: setNameOf(equipment, b.setId),
 						threshold: b.threshold,
 						error: simError,
 					}),
@@ -2944,7 +2944,7 @@ async function measureWornSets(
 	const request = composeFor(equipment);
 	const entries: WornSetCountEntry[] = [];
 	for (const setId of worn) {
-		const setName = setLabel(equipment, setId);
+		const setName = setNameOf(equipment, setId);
 		const slots = equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : []));
 		const countValues = await measureWornSetCounts(cachedSampleRun(`${setName} worn-set counts`), request, slots, (error, notBuilt) =>
 			lines.push(
@@ -3109,7 +3109,7 @@ function applySetContext(
 
 		const setContext: SetContext = {
 			setId,
-			setName: bonusesForSet[0]?.setName ?? setLabel(equipment, setId, [item.itemId]),
+			setName: bonusesForSet[0]?.setName ?? setNameOf(equipment, setId, [item.itemId]),
 			piecesWornBefore,
 			piecesAfterSwap,
 			nextThreshold,

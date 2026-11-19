@@ -44,7 +44,7 @@ describe('setBonusTipText', () => {
 			kind: 'receipt',
 			entries: [
 				{ type: 'heading', heading: 'set_potential' },
-				{ type: 'line', label: { kind: 'bonus', set: 'Lightbringer Battlegear', threshold: 2, have: 1 }, dps: undefined },
+				{ type: 'line', label: { kind: 'bonus', set: 'Lightbringer Battlegear', threshold: 2, worn: 1 }, dps: undefined },
 				{ type: 'line', label: { kind: 'total' }, dps: 4.42 },
 			],
 		});
@@ -61,7 +61,7 @@ describe('the not-counted section (ticket 336)', () => {
 		kind: 'reachable',
 		set,
 		threshold,
-		have: 0,
+		worn: 0,
 		pieces,
 		broken,
 	});

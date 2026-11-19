@@ -54,7 +54,7 @@ const stepRow = (over: Partial<SetContext>): RankedItem => ({
 const LIGHTBRINGER = 'Lightbringer Battlegear';
 const reachable = (dps: number, broken: Array<{ setName: string; threshold: number }> = []) => ({
 	type: 'line',
-	label: { kind: 'reachable', set: LIGHTBRINGER, threshold: 2, have: 0, pieces: ['Lightbringer Breastplate'], broken },
+	label: { kind: 'reachable', set: LIGHTBRINGER, threshold: 2, worn: 0, pieces: ['Lightbringer Breastplate'], broken },
 	dps,
 	outcome: true,
 });
@@ -208,7 +208,7 @@ describe('setBonusTipLines', () => {
 		const on = setBonusTipLines(row, { ...context, withSetPotential: true });
 		expect(on?.subLine).toBe('not_counted');
 		expect(on?.entries).toContainEqual({ type: 'heading', heading: 'set_potential' });
-		expect(lines(on)).toContainEqual({ type: 'line', label: { kind: 'bonus', set: 'Lightbringer Battlegear', threshold: 2, have: 0 }, dps: undefined });
+		expect(lines(on)).toContainEqual({ type: 'line', label: { kind: 'bonus', set: 'Lightbringer Battlegear', threshold: 2, worn: 0 }, dps: undefined });
 	});
 
 	// The toggle decides what the figure counts, never whether the popover exists.
@@ -250,7 +250,7 @@ describe('setBonusTipLines', () => {
 			expect(setBonusTipLines(row, context)?.entries).toEqual([
 				totalLine(4.5),
 				{ type: 'heading', heading: 'not_counted_off' },
-				{ type: 'line', label: { kind: 'reachable', set: LIGHTBRINGER, threshold: 2, have: 0, pieces: [], broken: [] }, dps: undefined, outcome: true },
+				{ type: 'line', label: { kind: 'reachable', set: LIGHTBRINGER, threshold: 2, worn: 0, pieces: [], broken: [] }, dps: undefined, outcome: true },
 			]);
 		});
 
@@ -325,7 +325,7 @@ describe('setBonusTipLines', () => {
 				});
 			const reachable4 = (dps: number, broken: Array<{ setName: string; threshold: number }> = []) => ({
 				type: 'line',
-				label: { kind: 'reachable', set: LIGHTBRINGER, threshold: 4, have: 0, pieces: PIECES_4PC, broken },
+				label: { kind: 'reachable', set: LIGHTBRINGER, threshold: 4, worn: 0, pieces: PIECES_4PC, broken },
 				dps,
 				outcome: true,
 			});

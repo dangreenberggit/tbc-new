@@ -73,13 +73,13 @@ export function setCounts(equipment: readonly SimItemSpec[]): Map<number, number
 	return counts;
 }
 
-export function setLabel(equipment: readonly SimItemSpec[], setId: number, alsoConsider: readonly number[] = []): string {
+export function setNameOf(equipment: readonly SimItemSpec[], setId: number, moreItemIds: readonly number[] = []): string {
 	for (const spec of equipment) {
 		if (!spec.id) continue;
 		const item = getItem(spec.id);
 		if (item?.setId === setId && item.setName) return item.setName;
 	}
-	for (const itemId of alsoConsider) {
+	for (const itemId of moreItemIds) {
 		const item = getItem(itemId);
 		if (item?.setId === setId && item.setName) return item.setName;
 	}
@@ -226,7 +226,7 @@ export function brokenSetBonuses(
 		for (const threshold of brokenThresholds(setId, piecesBefore, piecesAfter, countsAsBreak)) {
 			broken.push({
 				setId,
-				setName: setLabel(equipment, setId),
+				setName: setNameOf(equipment, setId),
 				threshold,
 				piecesBefore,
 				piecesAfter,

@@ -15,6 +15,7 @@
 
 import { bonusKey, type BrokenSetBonus, type PlacedItem } from './set-value';
 
+/** Hashed into the cache key, so the strings keep old words: "singles" are own deltas, "single-swap" is the row's own swap. */
 export type PartnerRule = 'close-calls' | 'sum-of-singles' | 'sum-of-singles-plain' | 'single-swap' | 'every-combination';
 
 /**
@@ -118,18 +119,18 @@ export function estimateCombinedDelta(query: PartnerQuery, combination: readonly
 		keys.set(key, b);
 		brokenTogether.add(key);
 	}
-	let est = query.row.ownDeltaDps + combination.reduce((s, p) => s + p.ownDeltaDps, 0);
+	let estimate = query.row.ownDeltaDps + combination.reduce((s, p) => s + p.ownDeltaDps, 0);
 	for (const [key, b] of keys) {
-		const m = brokenAlone.get(key) ?? 0;
+		const brokenAloneCount = brokenAlone.get(key) ?? 0;
 		const lost = brokenTogether.has(key) ? 1 : 0;
-		if (m === 0 && !opts.includeCombinationOnlyBreaks) continue;
-		const coefficient = m - lost;
+		if (brokenAloneCount === 0 && !opts.includeCombinationOnlyBreaks) continue;
+		const coefficient = brokenAloneCount - lost;
 		if (coefficient === 0) continue;
-		const v = query.breakDps(b.setId, b.threshold);
-		if (v === undefined) return undefined;
-		est += coefficient * v;
+		const bonusDps = query.breakDps(b.setId, b.threshold);
+		if (bonusDps === undefined) return undefined;
+		estimate += coefficient * bonusDps;
 	}
-	return est;
+	return estimate;
 }
 
 export type PartnerAudit = {

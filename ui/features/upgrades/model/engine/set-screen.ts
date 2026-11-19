@@ -270,7 +270,7 @@ export async function recordSetScreen(input: SetScreenInput): Promise<SetScreenR
 	for (const { setId, worn, reach } of input.sets) {
 		if (reach - worn < 2) continue;
 		const { gear, added, slots } = screenGear(input, setId, reach);
-		const top = reach - worn;
+		const addedCount = reach - worn;
 		const simAtCount = countSimmer(
 			input,
 			setId,
@@ -278,13 +278,13 @@ export async function recordSetScreen(input: SetScreenInput): Promise<SetScreenR
 			gear,
 			slots,
 			counter,
-			Array.from({ length: top + 1 }, (_, k) => k),
+			Array.from({ length: addedCount + 1 }, (_, k) => k),
 		);
 
 		const pairs: SetScreenPair[] = [];
 		for (const iterations of pairIterations) {
 			const low = await simAtCount(0, iterations);
-			const high = await simAtCount(top, iterations);
+			const high = await simAtCount(addedCount, iterations);
 			pairs.push({
 				iterations,
 				...(low && high ? { dps: high.dps - low.dps } : {}),
@@ -295,7 +295,7 @@ export async function recordSetScreen(input: SetScreenInput): Promise<SetScreenR
 		const countSims: SetScreenCountSim[] = [];
 		for (const iterations of countIterations) {
 			let below: SimObservation | undefined;
-			for (let k = 0; k <= top; k++) {
+			for (let k = 0; k <= addedCount; k++) {
 				const obs = await simAtCount(k, iterations);
 				countSims.push({
 					iterations,
@@ -347,14 +347,14 @@ export async function runSetScreenOn(input: SetScreenOnInput): Promise<SetScreen
 		const high = await simAtCount(reach - worn, iterations);
 		const pairDps = low && high ? high.dps - low.dps : undefined;
 
-		let bestStats: number | undefined;
+		let bestEstimate: number | undefined;
 		for (let t = Math.max(2, worn + 1); t <= reach; t++) {
 			const estimate = input.estimatedDeltaAt(setId, t);
-			if (estimate !== undefined && (bestStats === undefined || estimate > bestStats)) {
-				bestStats = estimate;
+			if (estimate !== undefined && (bestEstimate === undefined || estimate > bestEstimate)) {
+				bestEstimate = estimate;
 			}
 		}
-		const measure = bestStats !== undefined && pairDps !== undefined ? bestStats + pairDps : undefined;
+		const measure = bestEstimate !== undefined && pairDps !== undefined ? bestEstimate + pairDps : undefined;
 
 		readings.push({
 			setId,
@@ -365,7 +365,7 @@ export async function runSetScreenOn(input: SetScreenOnInput): Promise<SetScreen
 				...(pairDps !== undefined ? { dps: pairDps } : {}),
 				...optionalPairedSe('pairedSe', high, low, iterations),
 			},
-			...(bestStats !== undefined ? { bestStats } : {}),
+			...(bestEstimate !== undefined ? { bestStats: bestEstimate } : {}),
 			...(measure !== undefined ? { measure } : {}),
 		});
 	}
@@ -433,11 +433,11 @@ export function applyScreenRule(
 		for (const r of ranked) out.set(r.setId, { kept: true, reason: 'top-k' });
 		return out;
 	}
-	const measureK = ranked[rule.keep - 1]!.measure;
+	const lastKeptMeasure = ranked[rule.keep - 1]!.measure;
 	const width = rule.bandC * Math.SQRT2 * sigma!;
 	ranked.forEach((r, i) => {
 		if (i < rule.keep) out.set(r.setId, { kept: true, reason: 'top-k' });
-		else if (r.measure >= measureK - width) {
+		else if (r.measure >= lastKeptMeasure - width) {
 			out.set(r.setId, { kept: true, reason: 'band' });
 		} else out.set(r.setId, { kept: false, reason: 'outside-band' });
 	});

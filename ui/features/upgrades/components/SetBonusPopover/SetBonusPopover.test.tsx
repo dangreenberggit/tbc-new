@@ -81,7 +81,7 @@ describe('SetBonusPopover', () => {
 				{ type: 'heading', heading: 'not_counted_off' },
 				{
 					type: 'line',
-					label: { kind: 'reachable', set: 'Thunderheart Harness', threshold: 4, have: 2, pieces: ['Thunderheart Pauldrons'], broken: [] },
+					label: { kind: 'reachable', set: 'Thunderheart Harness', threshold: 4, worn: 2, pieces: ['Thunderheart Pauldrons'], broken: [] },
 					dps: 74.1,
 					outcome: true,
 				},

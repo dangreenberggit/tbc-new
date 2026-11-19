@@ -16,7 +16,7 @@ function setCounts(equipment: readonly SimItemSpec[]): Map<number, number> {
 	return counts;
 }
 
-function setLabel(equipment: readonly SimItemSpec[], setId: number): string {
+function setNameOf(equipment: readonly SimItemSpec[], setId: number): string {
 	for (const spec of equipment) {
 		if (!spec.id) continue;
 		const item = getItem(spec.id);
@@ -34,7 +34,7 @@ export function setBreakNote(equipment: readonly SimItemSpec[], slotIndex: numbe
 	for (const [setId, prev] of before) {
 		const next = after.get(setId) ?? 0;
 		if (next >= prev) continue;
-		const label = setLabel(equipment, setId);
+		const label = setNameOf(equipment, setId);
 		if (prev >= 4 && next < 4) {
 			notes.push(`breaks ${prev}-piece ${label} (below 4)`);
 		} else if (prev >= 2 && next < 2) {

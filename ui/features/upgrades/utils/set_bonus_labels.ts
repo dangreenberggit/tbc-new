@@ -59,7 +59,7 @@ export function tipLabelText(label: TipLabel): string {
 				: i18n.t('upgrades_tab.set_bonus.tip_breaks_several', { ns: 'upgrades', broken: brokenNames(label.broken) });
 		}
 		case 'bonus':
-			return i18n.t('upgrades_tab.set_bonus.tip_bonus', { ns: 'upgrades', set: label.set, threshold: label.threshold, have: label.have });
+			return i18n.t('upgrades_tab.set_bonus.tip_bonus', { ns: 'upgrades', set: label.set, threshold: label.threshold, have: label.worn });
 		case 'piece_stats':
 			return i18n.t('upgrades_tab.set_bonus.tip_piece_stats', { ns: 'upgrades', name: label.name });
 		case 'pieces':
