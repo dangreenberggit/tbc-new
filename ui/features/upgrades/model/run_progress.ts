@@ -1,8 +1,9 @@
 /**
- * What the progress dialog shows while a run is in flight. The engine sends no
- * phase, so it is read from the order of `Progress` events (`rank.ts`): setup
- * stages, a `simming` event for the baseline and each candidate, a set-bonus stage
- * that sends nothing and is not in `total`, `ranking`, then the replication sims.
+ * What the progress dialog shows while a run is in flight. The engine does not say
+ * what the run is doing, so the activity is read from the order of `Progress` events
+ * (`rank.ts`): setup stages, a `simming` event for the baseline and each candidate, a
+ * set-bonus stage that sends nothing and is not in `total`, `ranking`, then the
+ * replication sims.
  * Only the candidate count, which `lastCandidateDoneFor` solves from the first
  * `total`, tells the last candidate from the set-bonus stage.
  */
@@ -13,7 +14,7 @@ import { DEFAULT_SEED_COUNT, isReplicable, PAIRED_REPLICATE_TOP_N } from './engi
 /** The tab passes no `seeds`, so the run uses the engine's default count. */
 export const TAB_REPLICATE_SEED_COUNT = DEFAULT_SEED_COUNT;
 
-export type RunPhase = 'preparing' | 'candidates' | 'set-bonuses' | 'replication' | 'ranking';
+export type RunActivity = 'preparing' | 'candidates' | 'set-bonuses' | 'replication' | 'ranking';
 
 export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; kappa: number; psi: number; slowdown: number };
 
@@ -160,7 +161,7 @@ export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): 
 }
 
 export type RunProgressView = {
-	phase: RunPhase;
+	activity: RunActivity;
 	/** The label shown while preparing reads it. */
 	stage: Exclude<Progress, { kind: 'row' }>['stage'];
 	done?: number;
@@ -185,7 +186,7 @@ type TrackerOptions = {
  */
 export class RunProgressTracker {
 	private readonly options: Required<TrackerOptions>;
-	private phase: RunPhase = 'preparing';
+	private activity: RunActivity = 'preparing';
 	private stage: RunProgressView['stage'] = 'resolving';
 	private total: number | undefined;
 	private finalTotal: number | undefined;
@@ -206,7 +207,7 @@ export class RunProgressTracker {
 		this.concurrency = n;
 	}
 
-	/** From a Stop on, the estimate is hidden and the final phase is `ranking`. */
+	/** From a Stop on, the estimate is hidden and the final activity is `ranking`. */
 	noteStop(): void {
 		this.stopped = true;
 	}
@@ -222,7 +223,7 @@ export class RunProgressTracker {
 			case 'reading-gear':
 			case 'composing':
 			case 'building-pool':
-				this.phase = 'preparing';
+				this.activity = 'preparing';
 				return;
 			case 'simming':
 				this.observeSimming(p.done, p.total, nowMs);
@@ -231,7 +232,8 @@ export class RunProgressTracker {
 				this.rankingAt = nowMs;
 				const done = this.lastDone();
 				const timeline = this.timeline(nowMs);
-				this.phase = done === undefined || this.stopped || (timeline !== undefined && done >= expectedFinalDone(timeline)) ? 'ranking' : 'replication';
+				this.activity =
+					done === undefined || this.stopped || (timeline !== undefined && done >= expectedFinalDone(timeline)) ? 'ranking' : 'replication';
 				break;
 			}
 		}
@@ -240,7 +242,7 @@ export class RunProgressTracker {
 
 	view(): RunProgressView {
 		return {
-			phase: this.phase,
+			activity: this.activity,
 			stage: this.stage,
 			...(this.total === undefined ? {} : { done: this.lastDone(), total: this.total }),
 			lastCandidateDone: this.lastCandidateDone,
@@ -266,12 +268,12 @@ export class RunProgressTracker {
 		if (afterRanking && this.finalTotal === undefined) this.finalTotal = total;
 		this.sims.push({ t: nowMs, done, afterRanking });
 		if (afterRanking) {
-			this.phase = this.stopped || done >= expectedFinalDone(this.timeline(nowMs)!) ? 'ranking' : 'replication';
+			this.activity = this.stopped || done >= expectedFinalDone(this.timeline(nowMs)!) ? 'ranking' : 'replication';
 			return;
 		}
 		// The seed count does not match this run, so the set-bonus stage cannot be told apart.
 		if (this.lastCandidateDone !== null && done > this.lastCandidateDone) this.lastCandidateDone = null;
-		this.phase = this.lastCandidateDone !== null && done === this.lastCandidateDone ? 'set-bonuses' : 'candidates';
+		this.activity = this.lastCandidateDone !== null && done === this.lastCandidateDone ? 'set-bonuses' : 'candidates';
 	}
 
 	private lastDone(): number | undefined {

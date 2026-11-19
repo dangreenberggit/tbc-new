@@ -31,7 +31,7 @@ import {
 loadEnglishBundles({ character: true });
 
 const view = (overrides: Partial<RunProgressView>): RunProgressView => ({
-	phase: 'preparing',
+	activity: 'preparing',
 	stage: 'resolving',
 	lastCandidateDone: null,
 	concurrency: 1,
@@ -304,10 +304,10 @@ describe('describeRunError', () => {
 });
 
 describe('progress', () => {
-	it('reads the stage while preparing and the phase after', () => {
+	it('reads the stage while preparing and the activity after', () => {
 		expect(progressStageOf(null)).toBe('resolving');
 		expect(progressStageOf(view({ stage: 'building-pool' }))).toBe('building-pool');
-		expect(progressStageOf(view({ phase: 'replication', stage: 'simming' }))).toBe('replication');
+		expect(progressStageOf(view({ activity: 'replication', stage: 'simming' }))).toBe('replication');
 	});
 
 	it('labels each stage', () => {
@@ -316,6 +316,6 @@ describe('progress', () => {
 	});
 
 	it('fills the bar from the sims done', () => {
-		expect(progressBarOf(view({ phase: 'candidates', stage: 'simming', done: 3, total: 12 }))).toEqual({ current: 3, total: 12 });
+		expect(progressBarOf(view({ activity: 'candidates', stage: 'simming', done: 3, total: 12 }))).toEqual({ current: 3, total: 12 });
 	});
 });

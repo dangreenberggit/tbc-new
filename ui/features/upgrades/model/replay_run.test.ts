@@ -23,7 +23,7 @@ describe('replayRows', () => {
 	it('lands every row in order and resolves the whole ranking with its duration', async () => {
 		const landed: RankedItem[] = [];
 		const { deps, runContext } = depsWith(new AbortController().signal, row => landed.push(row));
-		const result = await replayRows(RANKING_FIXTURE, { stepDelayMs: 0 })(fakeHost(), SETTINGS, deps);
+		const result = await replayRows(RANKING_FIXTURE, { batchDelayMs: 0 })(fakeHost(), SETTINGS, deps);
 
 		expect(landed.map(r => r.itemId)).toEqual(RANKING_FIXTURE.items.map(r => r.itemId));
 		expect(result.complete).toBe(true);
@@ -39,7 +39,7 @@ describe('replayRows', () => {
 			landed.push(row);
 			if (landed.length === 3) controller.abort();
 		});
-		const result = await replayRows(RANKING_FIXTURE, { stepDelayMs: 0 })(fakeHost(), SETTINGS, deps);
+		const result = await replayRows(RANKING_FIXTURE, { batchDelayMs: 0 })(fakeHost(), SETTINGS, deps);
 
 		expect(result.complete).toBe(false);
 		expect(result.items.map(r => r.itemId)).toEqual(RANKING_FIXTURE.items.slice(0, 3).map(r => r.itemId));
@@ -52,7 +52,7 @@ describe('replayRows', () => {
 		controller.abort();
 		const onLanded = vi.fn();
 		const { deps } = depsWith(controller.signal, onLanded);
-		const result = await replayRows(RANKING_FIXTURE, { stepDelayMs: 0 })(fakeHost(), SETTINGS, deps);
+		const result = await replayRows(RANKING_FIXTURE, { batchDelayMs: 0 })(fakeHost(), SETTINGS, deps);
 
 		expect(result).toMatchObject({ complete: false, items: [] });
 		expect(onLanded).not.toHaveBeenCalled();
@@ -61,7 +61,7 @@ describe('replayRows', () => {
 	it('ticks the progress channel up to the row count', async () => {
 		const host = fakeHost();
 		const { deps } = depsWith(new AbortController().signal, () => {});
-		await replayRows(RANKING_FIXTURE, { stepDelayMs: 0 })(host, SETTINGS, deps);
+		await replayRows(RANKING_FIXTURE, { batchDelayMs: 0 })(host, SETTINGS, deps);
 
 		expect(progressOf(host.player)).toMatchObject({ done: RANKING_FIXTURE.items.length, total: RANKING_FIXTURE.items.length });
 	});

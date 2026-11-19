@@ -14,7 +14,7 @@ import type { SimOrderName } from '../model/engine/slots';
 import { ZONELESS_SOURCE_LABELS } from '../model/engine/view';
 import type { SortLabels } from '../model/results_columns';
 import { effectiveSlot } from '../model/results_view';
-import type { RunPhase, RunProgressView } from '../model/run_progress';
+import type { RunActivity, RunProgressView } from '../model/run_progress';
 import { type SourcedEntry, sourcesOf, zonelessSourceKey } from '../model/settings_pool';
 import { shownTenths } from '../model/shown_figure';
 import { FIXTURE_NOT_JSON, type FixtureLoadResult } from './fixture';
@@ -169,12 +169,12 @@ export const describeRunError = (error: unknown): string => {
 	return i18n.t('upgrades_tab.status.error', { ns: 'upgrades' });
 };
 
-/** What the progress dialog names: the engine's stage until sims start, the run phase after. */
-export type ProgressStage = Exclude<RunProgressView['stage'], 'simming'> | Exclude<RunPhase, 'preparing'>;
+/** What the progress dialog names: the engine's stage until sims start, the run activity after. */
+export type ProgressStage = Exclude<RunProgressView['stage'], 'simming'> | Exclude<RunActivity, 'preparing'>;
 
 export const progressStageOf = (view: RunProgressView | null): ProgressStage => {
 	if (!view) return 'resolving';
-	if (view.phase !== 'preparing') return view.phase;
+	if (view.activity !== 'preparing') return view.activity;
 	return view.stage === 'simming' ? 'candidates' : view.stage;
 };
 

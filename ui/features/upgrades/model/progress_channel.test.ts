@@ -5,7 +5,7 @@ import { clearProgress, emitProgress, progressOf, subscribeProgress } from './pr
 import type { RunProgressView } from './run_progress';
 
 const view = (done: number): RunProgressView => ({
-	phase: 'candidates',
+	activity: 'candidates',
 	stage: 'simming',
 	done,
 	total: 10,
