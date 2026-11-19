@@ -86,7 +86,7 @@ export function setNameOf(equipment: readonly SimItemSpec[], setId: number, more
 	return `set ${setId}`;
 }
 
-export function nextMeasurableThreshold(setId: number, piecesAfterSwap: number): SetThreshold | null {
+export function nextImplementedThreshold(setId: number, piecesAfterSwap: number): SetThreshold | null {
 	for (const t of SET_THRESHOLDS) {
 		if (t <= piecesAfterSwap) continue;
 		if (isBonusImplemented(setId, t)) return t;
@@ -106,7 +106,7 @@ export type AddedPiecesResult = { ok: true; piecesWorn: number; addedPieces: Pla
  * One item's own DPS change, used to pick the pieces that complete a set and to take their
  * value out of the gain of wearing them together. `deltaDps` must be candidate minus
  * baseline from the same run, so the offset both readings share cancels in
- * `computeSynergy`; moving it onto another baseline would bring the offset back.
+ * `computeBonusDps`; moving it onto another baseline would bring the offset back.
  */
 export type OwnDelta = {
 	itemId: number;
@@ -240,7 +240,7 @@ export function brokenSetBonuses(
  * How one broken worn bonus shows up in a raw `bonusDps`, for `netInflation`. The 2pc
  * fields are 0 when the added pieces are the 2pc.
  */
-export type InflationKey = {
+export type InflationTerm = {
 	piecesBreakingAlone: number;
 	twoPcPiecesBreakingAlone: number;
 	allPiecesBreak: number;
@@ -251,12 +251,15 @@ export type InflationKey = {
 /**
  * How much a raw `bonusDps` overstates the bonus because of worn bonuses the added pieces
  * break. Each broken bonus costs `brokenBonusDps` in the gain of the added pieces, in each
- * own swap and in the raw 2pc value, and `computeSynergy` subtracts the last two. At
+ * own swap and in the raw 2pc value, and `computeBonusDps` subtracts the last two. At
  * worn 4 a wrong sign on `allTwoPcPiecesBreak` gives the same answer, so it shows only at
  * other worn counts.
  */
-export function netInflation(keys: readonly InflationKey[]): number {
-	return keys.reduce((sum, k) => sum + (k.piecesBreakingAlone - k.twoPcPiecesBreakingAlone - k.allPiecesBreak + k.allTwoPcPiecesBreak) * k.brokenBonusDps, 0);
+export function netInflation(terms: readonly InflationTerm[]): number {
+	return terms.reduce(
+		(sum, k) => sum + (k.piecesBreakingAlone - k.twoPcPiecesBreakingAlone - k.allPiecesBreak + k.allTwoPcPiecesBreak) * k.brokenBonusDps,
+		0,
+	);
 }
 
 export type DpsSample = { dps: number; se: number };
@@ -270,14 +273,14 @@ export type AddedPieceSample = {
 	se: number;
 };
 
-export type SynergyInput = {
+export type BonusDpsInput = {
 	baseline: DpsSample;
 	addedPiecesSample: DpsSample;
 	addedPieceSamples: readonly AddedPieceSample[];
-	twoPieceBonus?: number;
+	twoPcBonusDps?: number;
 };
 
-export type SynergyResult = {
+export type BonusDpsResult = {
 	packageDeltaDps: number;
 	bonusDps: number;
 	se: number;
@@ -295,10 +298,10 @@ export type SelfSetConfound = {
 	dps?: number;
 };
 
-export function computeSynergy(input: SynergyInput): SynergyResult {
+export function computeBonusDps(input: BonusDpsInput): BonusDpsResult {
 	const packageDeltaDps = input.addedPiecesSample.dps - input.baseline.dps;
 	const sumOfOwnDeltas = input.addedPieceSamples.reduce((sum, s) => sum + s.deltaDps, 0);
-	const bonusDps = packageDeltaDps - sumOfOwnDeltas - (input.twoPieceBonus ?? 0);
+	const bonusDps = packageDeltaDps - sumOfOwnDeltas - (input.twoPcBonusDps ?? 0);
 	const se = combineSe([input.baseline, input.addedPiecesSample, ...input.addedPieceSamples.map(s => ({ dps: 0, se: s.se }))]);
 	return { packageDeltaDps, bonusDps, se };
 }

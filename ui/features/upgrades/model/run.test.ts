@@ -120,7 +120,7 @@ describe('rankForPlayer', () => {
 		expect(deps.simDatabaseFor).toBe(pageDatabase);
 		expect(deps.epWeights).toBe(epWeightsFor('ret'));
 		expect(deps.measureSetBonuses).toBe(true);
-		expect(deps.setScreen).toBe('on');
+		expect(deps.setScreenMode).toBe('on');
 	});
 
 	// Survival and Arms have no page of their own: the page's talents say which set the run takes. The talents

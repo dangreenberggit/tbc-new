@@ -15,7 +15,7 @@ import { getItem } from './items';
 import { type ItemSource, simSlotsForPoolSlot, sourceMatchesBoss } from './pool';
 import type { RankedItem, Ranking, SetContext } from './rank';
 import { clearsSameGearGate } from './set-less-copies';
-import { bonusKey, brokenSetBonuses, nextMeasurableThreshold, type SetThreshold } from './set-value';
+import { bonusKey, brokenSetBonuses, nextImplementedThreshold, type SetThreshold } from './set-value';
 import { SIM_ORDER } from './slots';
 import type { SpecId } from './types';
 
@@ -454,7 +454,7 @@ export function crossingLabelCount(
 ): number | null {
 	if (!ctx?.crossesThreshold) return null;
 	if (stepRanking) return ctx.piecesAfterSwap;
-	return nextMeasurableThreshold(ctx.setId, ctx.piecesWornBefore) ?? ctx.piecesAfterSwap;
+	return nextImplementedThreshold(ctx.setId, ctx.piecesWornBefore) ?? ctx.piecesAfterSwap;
 }
 
 /**

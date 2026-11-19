@@ -124,9 +124,9 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 			simDatabaseFor: simDatabaseResolverFor(host.player, skeleton),
 			concurrency: simRunner.concurrency,
 			signal: deps.signal,
-			// The set screen (`setScreen` below) runs only when this is on.
+			// The set screen (`setScreenMode` below) runs only when this is on.
 			measureSetBonuses: true,
-			setScreen: 'on',
+			setScreenMode: 'on',
 		},
 		onProgress,
 	);

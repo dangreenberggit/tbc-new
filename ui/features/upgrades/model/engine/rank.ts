@@ -79,13 +79,13 @@ import {
 	type BrokenSetBonus,
 	brokenSetBonuses,
 	combineSe,
-	computeSynergy,
+	computeBonusDps,
 	type CountsAsBreak,
 	type DpsSample,
-	type InflationKey,
+	type InflationTerm,
 	isBonusImplemented,
 	netInflation,
-	nextMeasurableThreshold,
+	nextImplementedThreshold,
 	type OwnDelta,
 	type PlacedItem,
 	selectAddedPieces,
@@ -164,7 +164,7 @@ export type Deps = {
 	 * nothing; the tab never sets it, only tests do. Both write
 	 * `Ranking.setScreen`. Absent means "off". Hashed only when set.
 	 */
-	setScreen?: SetScreenMode;
+	setScreenMode?: SetScreenMode;
 	/**
 	 * Stop signal. On abort, in-flight per-candidate sims finish, no further
 	 * sim is sent, and the run returns a `PartialRanking` (`complete: false`).
@@ -525,13 +525,13 @@ export type Ranking = {
 	 */
 	setBonusOffSims?: SetBonusOffSims;
 	/**
-	 * Every partner set simmed for every future bonus above noise, written only
+	 * Every partner combination simmed for every future bonus above noise, written only
 	 * under the "every-combination" rule, which tests set to score the rules
 	 * that choose without a sim. Players never get it.
 	 */
 	partnerAudit?: PartnerAuditEntry[];
 	/**
-	 * The set screen's readings, written only when `deps.setScreen` is "record"
+	 * The set screen's readings, written only when `deps.setScreenMode` is "record"
 	 * or "on"; in "on" mode it also holds each set's verdict and reason. Only
 	 * the set-bonus popover reads it, to say why a set was not measured; the
 	 * set-bonus sims filter on the screen's own result, and record mode's
@@ -812,7 +812,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		...(deps.partnerRule !== undefined ? { partnerRule: deps.partnerRule } : {}),
 		// The same rule for the screen: a ranking without its readings is never
 		// served to a run that asked for them.
-		...(deps.setScreen !== undefined ? { setScreen: deps.setScreen } : {}),
+		...(deps.setScreenMode !== undefined ? { setScreen: deps.setScreenMode } : {}),
 		// Only when set, so a full-weight spec keeps its key and a run that reads
 		// hit is never served a ranking repaired at full weight. The value names
 		// which repairs the budget reaches, so changing that reach changes the key.
@@ -906,11 +906,11 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		 * repair changed nothing is never read. One read per distinct request,
 		 * raced against Stop. The first read Stop ends turns this off for this
 		 * call and every later one, so the two sims of a pair never use different
-		 * gem layouts. A read that fails fails the run.
+		 * gems. A read that fails fails the run.
 		 */
 		const statsReadsByRequest = new Map<string, Promise<PlayerStatsObservation>>();
-		let versionBudgetsOff = false;
-		const requestsPerLayout: RequestsPerLayout = async (rebuild, base, copiesList) => {
+		let perGearHitBudgetsOff = false;
+		const requestsPerLayout: RequestsPerCopyLayout = async (rebuild, base, copiesList) => {
 			let plain: RaidSimRequest | BuildFailure;
 			try {
 				plain = composeFor(base.equipment);
@@ -927,7 +927,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			});
 			const shared = () => defaults.map(request => (isBuildFailure(request) ? request : { request, recolours: base.recolours }));
 			const hitBudget = gems.repairHitBudget;
-			if (!base.repaired || !hitBudget || hitPercentStat === undefined || baselineSimHit === undefined || versionBudgetsOff) {
+			if (!base.repaired || !hitBudget || hitPercentStat === undefined || baselineSimHit === undefined || perGearHitBudgetsOff) {
 				return shared();
 			}
 			try {
@@ -973,7 +973,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				return out;
 			} catch (err) {
 				if (!(err instanceof StopRefusedSim)) throw err;
-				versionBudgetsOff = true;
+				perGearHitBudgetsOff = true;
 				return shared();
 			}
 		};
@@ -1328,18 +1328,18 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		// With `measureSetBonuses`, a set row's future bonuses are valued by
 		// one sim of the row plus its partner pieces.
 		const stepPath = (deps.measureSetBonuses ?? false) && !aborted;
-		const hasSetContext = setBonuses.length > 0 || setBonusResult.setIdsWithoutBonuses.length > 0;
+		const hasSetContext = setBonuses.length > 0 || setBonusResult.setIdsNotValued.length > 0;
 		if (hasSetContext) {
 			applySetContext(
 				ranked,
 				setBonuses,
 				equipment,
 				setBonusResult.brokenSetValues,
-				setBonusResult.bestSlotIndexByItemId,
+				setBonusResult.firstSlotIndexByItemId,
 				ownDeltasByItemId,
 				countsAsBreak,
 				stepPath ? { crossingGates: setBonusResult.crossingGates } : undefined,
-				setBonusResult.setIdsWithoutBonuses,
+				setBonusResult.setIdsNotValued,
 			);
 		}
 		// After the future bonuses are filled in and before replication rewrites
@@ -1356,7 +1356,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 						composeFor,
 						ownDeltasByItemId,
 						brokenSetValues: setBonusResult.brokenSetValues,
-						bestSlotIndexByItemId: setBonusResult.bestSlotIndexByItemId,
+						firstSlotIndexByItemId: setBonusResult.firstSlotIndexByItemId,
 						countsAsBreak,
 						baseline: {
 							dps: baselineDps,
@@ -1609,19 +1609,22 @@ async function buildSetBonuses(
 	 */
 	baselineStdev: number,
 	/** Every set-phase request with repaired gems comes from it. */
-	requestsPerLayout: RequestsPerLayout,
+	requestsPerLayout: RequestsPerCopyLayout,
 ): Promise<{
 	bonuses: SetBonusValue[];
 	brokenSetValues: BrokenSetValue[];
 	wornSetLadder: WornSetCountEntry[];
 	crossingGates: CrossingGate[];
-	/** For `applySetContext` to find each row's losses. */
-	bestSlotIndexByItemId: Map<number, number>;
+	/**
+	 * The first SIM_ORDER slot each item fits; nothing is compared. For
+	 * `applySetContext` to find each row's losses.
+	 */
+	firstSlotIndexByItemId: Map<number, number>;
 	/**
 	 * No bonus in reach, or the set screen dropped them. Their rows still get
 	 * a `setContext`.
 	 */
-	setIdsWithoutBonuses: number[];
+	setIdsNotValued: number[];
 	setScreen?: SetScreen;
 }> {
 	const bonusNotMeasured = (setName: string, threshold: SetThreshold, reason: SkipReason) =>
@@ -1745,7 +1748,7 @@ async function buildSetBonuses(
 	// reachable bonuses. Both modes get the same sets, added pieces and sim
 	// options, so an "on" pair is the request "record" sims at that iteration
 	// count.
-	const screenMode = measureSetBonuses ? deps.setScreen : undefined;
+	const screenMode = measureSetBonuses ? deps.setScreenMode : undefined;
 	const screenInput: SetScreenInput | undefined =
 		screenMode === 'record' || screenMode === 'on'
 			? {
@@ -1812,9 +1815,10 @@ async function buildSetBonuses(
 						),
 				}
 			: undefined;
-	// The "on" screen estimates a count's value with `estimateCombinedDelta`,
-	// taking the first added piece as the row.
-	const breakDpsBy = new Map(brokenSetValues.map(v => [bonusKey(v), v.dps] as const));
+	// The "on" screen estimates a count's value with `estimateCombinedDelta`.
+	// The estimate treats the row like any other added piece, so which piece is
+	// the row does not matter.
+	const screenBrokenBonusDpsByKey = new Map(brokenSetValues.map(v => [bonusKey(v), v.dps] as const));
 	const estimatedDeltaAt = (setId: number, threshold: number): number | undefined => {
 		const selection = selectFor(setId, threshold);
 		if (!selection.ok) return undefined;
@@ -1838,7 +1842,7 @@ async function buildSetBonuses(
 				needed: rest.length,
 				pool: [],
 				brokenBy: swaps => brokenSetBonuses(equipment, swaps, setId, countsAsBreak),
-				breakDps: (s, c) => breakDpsBy.get(`${s}:${c}`),
+				breakDps: (s, c) => screenBrokenBonusDpsByKey.get(`${s}:${c}`),
 			},
 			rest,
 			{ includeCombinationOnlyBreaks: true },
@@ -1857,14 +1861,14 @@ async function buildSetBonuses(
 			brokenSetValues,
 			wornSetLadder,
 			crossingGates: [],
-			bestSlotIndexByItemId: new Map(),
-			setIdsWithoutBonuses: [],
+			firstSlotIndexByItemId: new Map(),
+			setIdsNotValued: [],
 			...(setScreen ? { setScreen } : {}),
 		};
 	}
 
 	const results: SetBonusValue[] = [];
-	const setIdsWithoutBonuses: number[] = [];
+	const setIdsNotValued: number[] = [];
 	for (const setId of setIdsWithCandidates) {
 		const piecesWorn = wornCounts.get(setId) ?? 0;
 		const label = setNameOf(
@@ -1872,7 +1876,7 @@ async function buildSetBonuses(
 			setId,
 			candidates.map(entry => entry.itemId),
 		);
-		let twoPieceBonus: number | undefined;
+		let twoPcBonusDps: number | undefined;
 		let twoPieceUnmeasurableAtThisWornCount = false;
 		// With `measureSetBonuses`: a 4pc's value subtracts the 2pc's, so it
 		// stays unset when the 2pc's sims were tried and failed.
@@ -1880,11 +1884,11 @@ async function buildSetBonuses(
 
 		const thresholds = measureSetBonuses ? reachableCounts(setId, piecesWorn) : SET_THRESHOLDS.filter(t => t > piecesWorn);
 		// No bonus in reach, or the set screen dropped the set: no bonus sims at
-		// all. The set goes in `setIdsWithoutBonuses`, so its rows keep their own losses
+		// all. The set goes in `setIdsNotValued`, so its rows keep their own losses
 		// and `crossesThreshold` in `setContext`, but it gets no `setBonuses`
 		// entry, since none of its counts is a bonus the ranking measured.
 		if ((measureSetBonuses && thresholds.length === 0) || screenedOut.has(setId)) {
-			setIdsWithoutBonuses.push(setId);
+			setIdsNotValued.push(setId);
 			continue;
 		}
 
@@ -1956,7 +1960,7 @@ async function buildSetBonuses(
 			const builtGear = gearBuild;
 			const rebuildGear = (g: GemContext) => chainSwapsWithRepairs(equipment, addedPieces, g);
 			// The added pieces' sim and the same-gear check's two sims, bonus on
-			// and bonus off (`measureSameGearBonus`), must share one gem layout, so
+			// and bonus off (`measureSameGearBonus`), must wear the same gems, so
 			// all three come from one `requestsPerLayout` call when the check runs.
 			// `plainLayout` keeps the request without copies, or why it could not
 			// be built.
@@ -2091,13 +2095,13 @@ async function buildSetBonuses(
 				dps: gearObs.dps,
 				se: gearObs.stdev / Math.sqrt(runOpts.iterations),
 			};
-			const synergy = computeSynergy({
+			const bonusValue = computeBonusDps({
 				baseline,
 				addedPiecesSample,
 				addedPieceSamples,
-				...(threshold === 4 && twoPieceBonus !== undefined ? { twoPieceBonus } : {}),
+				...(threshold === 4 && twoPcBonusDps !== undefined ? { twoPcBonusDps } : {}),
 			});
-			if (threshold === 2) twoPieceBonus = synergy.bonusDps;
+			if (threshold === 2) twoPcBonusDps = bonusValue.bonusDps;
 
 			const breaks = brokenSetBonuses(equipment, addedPieces, setId, countsAsBreak);
 			let selfConfound: SelfSetConfound | undefined = threshold === 4 && twoPieceUnmeasurableAtThisWornCount ? { threshold: 2 } : undefined;
@@ -2116,7 +2120,7 @@ async function buildSetBonuses(
 				const pair = breakFree
 					.flatMap((a, i) => breakFree.slice(i + 1).map(b => [a, b]))
 					.find(p => brokenSetBonuses(equipment, p, setId, countsAsBreak).length === 0);
-				const pairB2 =
+				const pairTwoPiece =
 					pair !== undefined
 						? await measurePairTwoPiece(
 								`${label} ${threshold}pc`,
@@ -2133,11 +2137,11 @@ async function buildSetBonuses(
 								reason => bonusNotMeasured(label, 2, reason),
 							)
 						: undefined;
-				if (pairB2) {
+				if (pairTwoPiece) {
 					const extra = addedPieces.length - 1;
-					synergy.bonusDps += extra * pairB2.dps;
-					synergy.se = Math.sqrt(synergy.se ** 2 + (extra * pairB2.se) ** 2);
-					selfConfound = { threshold: 2, dps: pairB2.dps };
+					bonusValue.bonusDps += extra * pairTwoPiece.dps;
+					bonusValue.se = Math.sqrt(bonusValue.se ** 2 + (extra * pairTwoPiece.se) ** 2);
+					selfConfound = { threshold: 2, dps: pairTwoPiece.dps };
 				}
 			}
 			const missingTwoPiece = measureSetBonuses && threshold === 4 && twoPieceFailed;
@@ -2147,8 +2151,8 @@ async function buildSetBonuses(
 				threshold,
 				piecesWorn,
 				packageItemIds: addedPieces.map(p => p.itemId),
-				packageDeltaDps: synergy.packageDeltaDps,
-				...(missingTwoPiece ? {} : { bonusDps: synergy.bonusDps, se: synergy.se }),
+				packageDeltaDps: bonusValue.packageDeltaDps,
+				...(missingTwoPiece ? {} : { bonusDps: bonusValue.bonusDps, se: bonusValue.se }),
 				...gateFields,
 				...(breaks.length > 0 ? { breaks } : {}),
 				...(selfConfound ? { selfConfound } : {}),
@@ -2241,27 +2245,28 @@ async function buildSetBonuses(
 		}
 	}
 
-	const bestSlotIndexByItemId = new Map<number, number>();
+	/** The first SIM_ORDER slot each item fits; nothing is compared. */
+	const firstSlotIndexByItemId = new Map<number, number>();
 	for (const entry of candidates) {
 		const idx = slotIndexForPoolEntry(entry);
 		if (idx === undefined) continue;
-		if (!bestSlotIndexByItemId.has(entry.itemId)) {
-			bestSlotIndexByItemId.set(entry.itemId, idx);
+		if (!firstSlotIndexByItemId.has(entry.itemId)) {
+			firstSlotIndexByItemId.set(entry.itemId, idx);
 		}
 	}
 
 	// Correct `bonusDps` for the worn bonuses its added pieces lose, using their
-	// measured values: `bonusDpsNet = bonusDps − netInflation(keys)`. Each
+	// measured values: `bonusDpsNet = bonusDps − netInflation(terms)`. Each
 	// entry's own `breaks` keep this right when the 2pc and 4pc pick different
-	// slots. The keys are the union of this entry's, the 2pc entry's and every
+	// slots. The terms come from the union of this entry's, the 2pc entry's and every
 	// added piece's own losses. While the 2pc's pieces are a prefix of the
 	// 4pc's, that union is this entry's own `breaks`; the union keeps the
 	// formula whole if `selectAddedPieces` changes.
-	const bBy = new Map<string, number | undefined>();
-	for (const v of brokenSetValues) bBy.set(bonusKey(v), v.dps);
+	const brokenBonusDpsByKey = new Map<string, number | undefined>();
+	for (const v of brokenSetValues) brokenBonusDpsByKey.set(bonusKey(v), v.dps);
 	const memberOwnBreaks = (bonus: SetBonusValue): BrokenSetBonus[] =>
 		bonus.packageItemIds.flatMap(itemId => {
-			const slotIndex = bestSlotIndexByItemId.get(itemId);
+			const slotIndex = firstSlotIndexByItemId.get(itemId);
 			const memberSetId = getItem(itemId)?.setId;
 			if (slotIndex === undefined || memberSetId == null) return [];
 			return brokenSetBonuses(equipment, [{ itemId, slotIndex }], memberSetId, countsAsBreak);
@@ -2275,33 +2280,33 @@ async function buildSetBonuses(
 			continue;
 		}
 		// The 2pc's terms apply only when the 4pc subtracted a measured 2pc value.
-		const two =
+		const twoPiece =
 			b.threshold === 4
 				? results.find(r => r.setId === b.setId && r.threshold === 2 && r.unmeasured === undefined && r.bonusDps !== undefined)
 				: undefined;
-		const union = new Map<string, BrokenSetBonus>();
-		for (const brk of [...(b.breaks ?? []), ...(two?.breaks ?? []), ...memberOwnBreaks(b), ...(two ? memberOwnBreaks(two) : [])]) {
-			union.set(bonusKey(brk), brk);
+		const breaksToCorrect = new Map<string, BrokenSetBonus>();
+		for (const brk of [...(b.breaks ?? []), ...(twoPiece?.breaks ?? []), ...memberOwnBreaks(b), ...(twoPiece ? memberOwnBreaks(twoPiece) : [])]) {
+			breaksToCorrect.set(bonusKey(brk), brk);
 		}
 		const brokenByAllPieces = new Set((b.breaks ?? []).map(bonusKey));
-		const brokenByAllTwoPcPieces = new Set((two?.breaks ?? []).map(bonusKey));
-		const keys: InflationKey[] = [];
+		const brokenByAllTwoPcPieces = new Set((twoPiece?.breaks ?? []).map(bonusKey));
+		const terms: InflationTerm[] = [];
 		let allMeasured = true;
-		for (const [key, brk] of union) {
-			const B = bBy.get(key);
-			if (B === undefined) {
+		for (const [key, brk] of breaksToCorrect) {
+			const brokenBonusDps = brokenBonusDpsByKey.get(key);
+			if (brokenBonusDps === undefined) {
 				allMeasured = false;
 				break;
 			}
-			keys.push({
-				piecesBreakingAlone: countMembersBreaking(b, brk, equipment, bestSlotIndexByItemId, countsAsBreak),
-				twoPcPiecesBreakingAlone: two ? countMembersBreaking(two, brk, equipment, bestSlotIndexByItemId, countsAsBreak) : 0,
+			terms.push({
+				piecesBreakingAlone: countMembersBreaking(b, brk, equipment, firstSlotIndexByItemId, countsAsBreak),
+				twoPcPiecesBreakingAlone: twoPiece ? countMembersBreaking(twoPiece, brk, equipment, firstSlotIndexByItemId, countsAsBreak) : 0,
 				allPiecesBreak: brokenByAllPieces.has(key) ? 1 : 0,
 				allTwoPcPiecesBreak: brokenByAllTwoPcPieces.has(key) ? 1 : 0,
-				brokenBonusDps: B,
+				brokenBonusDps,
 			});
 		}
-		if (allMeasured) b.bonusDpsNet = b.bonusDps - netInflation(keys);
+		if (allMeasured) b.bonusDpsNet = b.bonusDps - netInflation(terms);
 	}
 
 	return {
@@ -2309,8 +2314,8 @@ async function buildSetBonuses(
 		brokenSetValues,
 		wornSetLadder,
 		crossingGates,
-		bestSlotIndexByItemId,
-		setIdsWithoutBonuses,
+		firstSlotIndexByItemId,
+		setIdsNotValued,
 		...(setScreen ? { setScreen } : {}),
 	};
 }
@@ -2333,14 +2338,14 @@ async function measureSetSteps(args: {
 	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest;
 	ownDeltasByItemId: ReadonlyMap<number, OwnDelta>;
 	brokenSetValues: readonly BrokenSetValue[];
-	bestSlotIndexByItemId: ReadonlyMap<number, number>;
+	firstSlotIndexByItemId: ReadonlyMap<number, number>;
 	countsAsBreak: CountsAsBreak;
 	baseline: DpsSample;
 	simVersion: string;
 	runOpts: SimRunOpts;
 	cutoff: Cutoff;
 	/** Every request here comes from it. */
-	requestsPerLayout: RequestsPerLayout;
+	requestsPerLayout: RequestsPerCopyLayout;
 	/** A line, with the sim's error, for each bonus whose partner or bonus-off sim failed. */
 	bonusNotes: RunNote[];
 }): Promise<{
@@ -2350,9 +2355,9 @@ async function measureSetSteps(args: {
 }> {
 	const { deps, equipment, gems, composeFor, countsAsBreak, baseline, runOpts } = args;
 	const rule = deps.partnerRule ?? PARTNER_RULE;
-	const bBy = new Map<string, number | undefined>();
+	const brokenBonusDpsByKey = new Map<string, number | undefined>();
 	for (const v of args.brokenSetValues) {
-		bBy.set(bonusKey(v), v.dps);
+		brokenBonusDpsByKey.set(bonusKey(v), v.dps);
 	}
 	const nameOf = new Map(args.ranked.map(r => [r.itemId, r.name]));
 	type SimCounter = { simmed: number; fromStore: number };
@@ -2440,7 +2445,7 @@ async function measureSetSteps(args: {
 		const setId = ctx.setId;
 		const wornSetSlots = new Set(equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])));
 		const pieces: PartnerPiece[] = [];
-		for (const [itemId, slotIndex] of args.bestSlotIndexByItemId) {
+		for (const [itemId, slotIndex] of args.firstSlotIndexByItemId) {
 			if (itemId === item.itemId || getItem(itemId)?.setId !== setId) continue;
 			const delta = args.ownDeltasByItemId.get(itemId);
 			if (!delta) continue;
@@ -2460,15 +2465,15 @@ async function measureSetSteps(args: {
 
 		for (const f of eligible) {
 			const entry = args.setBonuses.find(b => b.setId === setId && b.threshold === f.threshold);
-			const pathSlot = args.bestSlotIndexByItemId.get(item.itemId);
+			const pathSlot = args.firstSlotIndexByItemId.get(item.itemId);
 			const pathPieces =
 				entry && entry.packageItemIds.length > 0 && pathSlot !== undefined
-					? pathToThreshold(item.itemId, pathSlot, entry, args.bestSlotIndexByItemId, args.ownDeltasByItemId).filter(p => p.itemId !== item.itemId)
+					? pathToThreshold(item.itemId, pathSlot, entry, args.firstSlotIndexByItemId, args.ownDeltasByItemId).filter(p => p.itemId !== item.itemId)
 					: undefined;
-			// A partner set whose sim fails is skipped, and the chosen set's gear is
-			// simmed below, so a failure counts for the row only when no set is
-			// chosen.
-			let comparisonFailure: SkipReason | undefined;
+			// A partner combination whose sim fails is skipped, and the chosen
+			// combination's gear is simmed below, so a failure counts for the row
+			// only when no combination is chosen.
+			let partnerSimFailure: SkipReason | undefined;
 			const choice = await choosePartners(
 				{
 					row: {
@@ -2481,17 +2486,17 @@ async function measureSetSteps(args: {
 					needed: f.threshold - ctx.piecesAfterSwap,
 					pool,
 					brokenBy,
-					breakDps: (s, c) => bBy.get(`${s}:${c}`),
+					breakDps: (s, c) => brokenBonusDpsByKey.get(`${s}:${c}`),
 					...(pathPieces ? { pathPieces } : {}),
 					simGear: async partners => {
 						const request = await stepRequest([rowSwap, ...partners]);
 						if (isSkipReason(request)) {
-							comparisonFailure ??= request;
+							partnerSimFailure ??= request;
 							return undefined;
 						}
 						const delta = await runCounted(request, stepCounter, stepFailure);
 						if (!isSimFailure(delta)) return delta;
-						comparisonFailure ??= SET_BONUS_SKIP_REASONS.rowSimsFailed(delta.simError);
+						partnerSimFailure ??= SET_BONUS_SKIP_REASONS.rowSimsFailed(delta.simError);
 						return undefined;
 					},
 				},
@@ -2502,8 +2507,8 @@ async function measureSetSteps(args: {
 			delete f.pieces;
 			delete f.breaks;
 			if (choice === undefined) {
-				if (comparisonFailure !== undefined) {
-					skipOnSomeRows(ctx.setName, f.threshold, comparisonFailure);
+				if (partnerSimFailure !== undefined) {
+					skipOnSomeRows(ctx.setName, f.threshold, partnerSimFailure);
 				}
 				continue;
 			}
@@ -2536,7 +2541,7 @@ async function measureSetSteps(args: {
 			const lost = brokenBy([rowSwap, ...partners]);
 			if (lost.length > 0) {
 				f.breaks = lost.map(brk => {
-					const dps = bBy.get(bonusKey(brk));
+					const dps = brokenBonusDpsByKey.get(bonusKey(brk));
 					return {
 						setId: brk.setId,
 						setName: brk.setName,
@@ -2630,14 +2635,14 @@ async function measureSetSteps(args: {
 		// request its pair, so both come from one call. For later bonuses entry 0
 		// is the previous bonus's own request (the gear build is deterministic and
 		// its read is cached).
-		const versions = repairErrorOr(await args.requestsPerLayout(stepRebuild(prevSwaps), beforeBuild, [{}, { setLess: replaced }]));
+		const beforeAndOffEntries = repairErrorOr(await args.requestsPerLayout(stepRebuild(prevSwaps), beforeBuild, [{}, { setLess: replaced }]));
 		// As when the gear before or after fails its repair above: the split is
 		// skipped, with no line, since no call failed.
-		if (versions instanceof MetaRepairError) {
-			console.warn("[upgrades] set step break not split: a version's gem repair failed", versions);
+		if (beforeAndOffEntries instanceof MetaRepairError) {
+			console.warn('[upgrades] set step break not split: the gem repair of the gear before or the bonus-off gear failed', beforeAndOffEntries);
 			return false;
 		}
-		const [plainEntry, offEntry] = versions;
+		const [plainEntry, offEntry] = beforeAndOffEntries;
 		if (!plainEntry || !offEntry || isBuildFailure(plainEntry) || isBuildFailure(offEntry)) {
 			const error = [plainEntry, offEntry].find(isBuildFailure)?.buildError;
 			console.warn('[upgrades] set step break not split: its request could not be built', error);
@@ -2660,7 +2665,7 @@ async function measureSetSteps(args: {
 		// For the first bonus the gear before is the row's own swap, built here on
 		// the run's hit budget. If entry 0 was repaired again for set-bonus hit
 		// that budget misses, it differs from that build, so the split is skipped
-		// rather than paired with another gem layout. The candidate loop repairs
+		// rather than paired with gear gemmed another way. The candidate loop repairs
 		// on the row's own stats read, so it may have simmed entry 0; this check
 		// does not look for that sim.
 		if (firstStep && stableStringify(plain) !== stableStringify(composeFor(before))) {
@@ -2781,14 +2786,14 @@ function topBonusBreaksWithRow(
 	setId: number,
 	slotIndex: number,
 	topBonus: SetBonusValue,
-	bestSlotIndexByItemId: ReadonlyMap<number, number>,
+	firstSlotIndexByItemId: ReadonlyMap<number, number>,
 	equipment: readonly SimItemSpec[],
 	countsAsBreak: CountsAsBreak,
 ): BrokenSetBonus[] {
 	const substituted: PlacedItem[] = topBonus.packageItemIds
 		.map(pieceItemId => ({
 			itemId: pieceItemId,
-			slotIndex: bestSlotIndexByItemId.get(pieceItemId),
+			slotIndex: firstSlotIndexByItemId.get(pieceItemId),
 		}))
 		.filter((p): p is PlacedItem => p.slotIndex !== undefined && p.slotIndex !== slotIndex);
 	substituted.push({ itemId, slotIndex });
@@ -2813,7 +2818,7 @@ async function measurePairTwoPiece(
 	baseline: DpsSample,
 	simVersion: string,
 	runOpts: SimRunOpts,
-	requestsPerLayout: RequestsPerLayout,
+	requestsPerLayout: RequestsPerCopyLayout,
 	onNotMeasured: (reason: SkipReason) => void,
 ): Promise<{ dps: number; se: number } | undefined> {
 	let pairBuild: ChainBuild;
@@ -2875,13 +2880,13 @@ function pathToThreshold(
 	itemId: number,
 	slotIndex: number,
 	bonus: SetBonusValue,
-	bestSlotIndexByItemId: ReadonlyMap<number, number>,
+	firstSlotIndexByItemId: ReadonlyMap<number, number>,
 	ownDeltasByItemId: ReadonlyMap<number, OwnDelta>,
 ): PlacedItem[] {
 	const members = bonus.packageItemIds
 		.map(pieceItemId => ({
 			itemId: pieceItemId,
-			slotIndex: bestSlotIndexByItemId.get(pieceItemId),
+			slotIndex: firstSlotIndexByItemId.get(pieceItemId),
 		}))
 		.filter((p): p is PlacedItem => p.slotIndex !== undefined);
 	if (bonus.packageItemIds.includes(itemId)) return members;
@@ -2901,12 +2906,12 @@ function countMembersBreaking(
 	bonus: SetBonusValue,
 	target: Pick<BrokenSetBonus, 'setId' | 'threshold'>,
 	equipment: readonly SimItemSpec[],
-	bestSlotIndexByItemId: ReadonlyMap<number, number>,
+	firstSlotIndexByItemId: ReadonlyMap<number, number>,
 	countsAsBreak: CountsAsBreak,
 ): number {
 	let k = 0;
 	for (const itemId of bonus.packageItemIds) {
-		const slotIndex = bestSlotIndexByItemId.get(itemId);
+		const slotIndex = firstSlotIndexByItemId.get(itemId);
 		if (slotIndex === undefined) continue;
 		const memberSetId = getItem(itemId)?.setId;
 		if (memberSetId == null) continue;
@@ -3057,7 +3062,7 @@ function applySetContext(
 	setBonuses: readonly SetBonusValue[],
 	equipment: readonly SimItemSpec[],
 	brokenSetValues: readonly BrokenSetValue[] = [],
-	bestSlotIndexByItemId: ReadonlyMap<number, number> = new Map(),
+	firstSlotIndexByItemId: ReadonlyMap<number, number> = new Map(),
 	ownDeltasByItemId: ReadonlyMap<number, OwnDelta> = new Map(),
 	countsAsBreak: CountsAsBreak = isBonusImplemented,
 	/**
@@ -3067,7 +3072,7 @@ function applySetContext(
 	 * becomes a future bonus.
 	 */
 	stepPath?: { crossingGates: readonly CrossingGate[] },
-	setIdsWithoutBonuses: readonly number[] = [],
+	setIdsNotValued: readonly number[] = [],
 ): void {
 	const wornCounts = setCounts(equipment);
 	const bonusesBySet = new Map<number, SetBonusValue[]>();
@@ -3076,12 +3081,12 @@ function applySetContext(
 		list.push(b);
 		bonusesBySet.set(b.setId, list);
 	}
-	for (const setId of setIdsWithoutBonuses) {
+	for (const setId of setIdsNotValued) {
 		if (!bonusesBySet.has(setId)) bonusesBySet.set(setId, []);
 	}
-	const bBy = new Map<string, number | undefined>();
-	for (const v of brokenSetValues) bBy.set(bonusKey(v), v.dps);
-	const dpsForBreak = (brk: BrokenSetBonus): number | undefined => bBy.get(bonusKey(brk));
+	const brokenBonusDpsByKey = new Map<string, number | undefined>();
+	for (const v of brokenSetValues) brokenBonusDpsByKey.set(bonusKey(v), v.dps);
+	const brokenBonusDps = (brk: BrokenSetBonus): number | undefined => brokenBonusDpsByKey.get(bonusKey(brk));
 	const rankedById = new Map(ranked.map(r => [r.itemId, r]));
 
 	for (const item of ranked) {
@@ -3096,15 +3101,15 @@ function applySetContext(
 		// that count's `crossingGates` entry cleared, and the next bonus is the
 		// next count above noise. No table is read.
 		const crossingCleared = stepPath?.crossingGates.some(g => g.setId === setId && g.count === piecesWornBefore + 1 && g.cleared) ?? false;
-		const thresholdBeforeSwap = stepPath
+		const nextThresholdBeforeSwap = stepPath
 			? crossingCleared
 				? piecesWornBefore + 1
 				: nextClearedThreshold(bonusesForSet, piecesWornBefore)
-			: nextMeasurableThreshold(setId, piecesWornBefore);
+			: nextImplementedThreshold(setId, piecesWornBefore);
 		const crossesThreshold = stepPath
 			? !item.owned && piecesAfterSwap === piecesWornBefore + 1 && crossingCleared
-			: thresholdBeforeSwap !== null && piecesAfterSwap >= thresholdBeforeSwap;
-		const nextThreshold = stepPath ? nextClearedThreshold(bonusesForSet, piecesAfterSwap) : nextMeasurableThreshold(setId, piecesAfterSwap);
+			: nextThresholdBeforeSwap !== null && piecesAfterSwap >= nextThresholdBeforeSwap;
+		const nextThreshold = stepPath ? nextClearedThreshold(bonusesForSet, piecesAfterSwap) : nextImplementedThreshold(setId, piecesAfterSwap);
 
 		const setContext: SetContext = {
 			setId,
@@ -3116,7 +3121,7 @@ function applySetContext(
 			...(stepPath ? { stepRanking: true as const } : {}),
 		};
 
-		const slotIndex = bestSlotIndexByItemId.get(item.itemId);
+		const slotIndex = firstSlotIndexByItemId.get(item.itemId);
 
 		// singleBreaks: worn bonuses this piece loses by itself, already inside
 		// deltaDps; dps is their measured value when there is one.
@@ -3124,7 +3129,7 @@ function applySetContext(
 			const ownBreaks = brokenSetBonuses(equipment, [{ itemId: item.itemId, slotIndex }], setId, countsAsBreak);
 			if (ownBreaks.length > 0) {
 				setContext.singleBreaks = ownBreaks.map(brk => {
-					const dps = dpsForBreak(brk);
+					const dps = brokenBonusDps(brk);
 					return {
 						setId: brk.setId,
 						setName: brk.setName,
@@ -3150,7 +3155,7 @@ function applySetContext(
 			: [...SET_THRESHOLDS].filter(t => advancesPieceCount && t > piecesAfterSwap && isBonusImplemented(setId, t));
 		const ownBreakKeys = new Set((setContext.singleBreaks ?? []).map(bonusKey));
 		const withDps = (brk: BrokenSetBonus) => {
-			const dps = dpsForBreak(brk);
+			const dps = brokenBonusDps(brk);
 			return {
 				setId: brk.setId,
 				setName: brk.setName,
@@ -3164,22 +3169,22 @@ function applySetContext(
 		// charges each loss once; the 2pc it reaches alone at worn 1 is taken out
 		// because the row's own gain already holds it. Undefined when any input
 		// was unmeasured.
-		const ownGain = (p: PlacedItem): number | undefined => {
+		const pathPieceGain = (p: PlacedItem): number | undefined => {
 			const ownDelta = ownDeltasByItemId.get(p.itemId)?.deltaDps;
 			if (ownDelta === undefined) return undefined;
-			let own = ownDelta;
+			let gain = ownDelta;
 			for (const brk of brokenSetBonuses(equipment, [p], setId, countsAsBreak)) {
-				const dps = dpsForBreak(brk);
+				const dps = brokenBonusDps(brk);
 				if (dps === undefined) return undefined;
-				own += dps;
+				gain += dps;
 			}
-			const pieceAfterSwap = rankedById.get(p.itemId)?.owned ? piecesWornBefore : piecesWornBefore + 1;
-			if (thresholdBeforeSwap !== null && pieceAfterSwap >= thresholdBeforeSwap) {
-				const crossed = bonusesForSet.find(b => b.selfConfound?.threshold === thresholdBeforeSwap)?.selfConfound?.dps;
+			const countAfterPieceSwap = rankedById.get(p.itemId)?.owned ? piecesWornBefore : piecesWornBefore + 1;
+			if (nextThresholdBeforeSwap !== null && countAfterPieceSwap >= nextThresholdBeforeSwap) {
+				const crossed = bonusesForSet.find(b => b.selfConfound?.threshold === nextThresholdBeforeSwap)?.selfConfound?.dps;
 				if (crossed === undefined) return undefined;
-				own -= crossed;
+				gain -= crossed;
 			}
-			return own;
+			return gain;
 		};
 		const futureBonuses = futureThresholds.map(t => {
 			const bonus = bonusesForSet.find(b => b.threshold === t);
@@ -3187,7 +3192,7 @@ function applySetContext(
 			// No path through a `belowGate` entry: its pieces were never simmed.
 			const path =
 				bonus && bonus.unmeasured === undefined && !bonus.belowGate && bonus.packageItemIds.length > 0 && slotIndex !== undefined
-					? pathToThreshold(item.itemId, slotIndex, bonus, bestSlotIndexByItemId, ownDeltasByItemId)
+					? pathToThreshold(item.itemId, slotIndex, bonus, firstSlotIndexByItemId, ownDeltasByItemId)
 					: undefined;
 			// The worn bonuses this path loses beyond the row's own loss. Ones a
 			// lower future bonus already lists stay; the view charges each once.
@@ -3197,7 +3202,7 @@ function applySetContext(
 			const pieces = path
 				?.filter(p => p.itemId !== item.itemId)
 				.map(p => {
-					const dps = ownGain(p);
+					const dps = pathPieceGain(p);
 					return {
 						itemId: p.itemId,
 						name: rankedById.get(p.itemId)?.name ?? String(p.itemId),
@@ -3224,10 +3229,10 @@ function applySetContext(
 		// those pieces' sim gain, shown only.
 		const topBonus = topMeasuredBonus(bonusesForSet);
 		if (topBonus && slotIndex !== undefined) {
-			const commitAll = topBonusBreaksWithRow(item.itemId, setId, slotIndex, topBonus, bestSlotIndexByItemId, equipment, countsAsBreak);
-			const commitOnly = commitAll.filter(brk => !ownBreakKeys.has(bonusKey(brk)));
-			if (commitOnly.length > 0) {
-				setContext.commitBreaks = commitOnly.map(withDps);
+			const topBonusBreaks = topBonusBreaksWithRow(item.itemId, setId, slotIndex, topBonus, firstSlotIndexByItemId, equipment, countsAsBreak);
+			const topBonusBreaksBeyondRow = topBonusBreaks.filter(brk => !ownBreakKeys.has(bonusKey(brk)));
+			if (topBonusBreaksBeyondRow.length > 0) {
+				setContext.commitBreaks = topBonusBreaksBeyondRow.map(withDps);
 			}
 			setContext.commitPackageDeltaDps = topBonus.packageDeltaDps;
 		}
@@ -3498,8 +3503,8 @@ function emptySetPhase(): Awaited<ReturnType<typeof buildSetBonuses>> {
 		brokenSetValues: [],
 		wornSetLadder: [],
 		crossingGates: [],
-		bestSlotIndexByItemId: new Map(),
-		setIdsWithoutBonuses: [],
+		firstSlotIndexByItemId: new Map(),
+		setIdsNotValued: [],
 	};
 }
 
@@ -3662,7 +3667,7 @@ const repairErrorOr = (entries: readonly LayoutResult[]): MetaRepairError | Arra
  * when its request cannot be composed, and a `RepairFailure` when its rebuild
  * fails gem repair, unless Stop ends a later read in the same call.
  */
-type RequestsPerLayout = (rebuild: (gems: GemContext) => ChainBuild, base: ChainBuild, copiesList: readonly CopyLayout[]) => Promise<LayoutResult[]>;
+type RequestsPerCopyLayout = (rebuild: (gems: GemContext) => ChainBuild, base: ChainBuild, copiesList: readonly CopyLayout[]) => Promise<LayoutResult[]>;
 
 const requestOf = (entry: LayoutRequest | BuildFailure): RaidSimRequest | BuildFailure => (isBuildFailure(entry) ? entry : entry.request);
 
@@ -3809,7 +3814,7 @@ export function candidateSkipNote(skip: CandidateSkip): RunNote {
 			}
 		: {
 				...line,
-				// A gem repair that finds no swap is no failed call (`metaOff`).
+				// A gem repair that finds no recolour is no failed call (`metaOff`).
 				detail: `This item was not ranked in this slot, because no gem swap could turn your meta gem on with it equipped.\n${where}: ${skip.reason}`,
 			};
 }
@@ -3831,12 +3836,12 @@ export const SET_BONUS_SKIP_REASONS = {
 		error,
 	}),
 	/**
-	 * A gem repair that finds no swap is no failed call, so its rule follows
+	 * A gem repair that finds no recolour is no failed call, so its message follows
 	 * the sentence, for the console: `error` holds only a failed call's error,
 	 * which the run's error toast shows.
 	 */
-	metaOff: (rule: string): SkipReason => ({
-		because: `no gem swap could turn your meta gem on.\n${rule}`,
+	metaOff: (repairMessage: string): SkipReason => ({
+		because: `no gem swap could turn your meta gem on.\n${repairMessage}`,
 	}),
 	measuringSimsNotBuilt: {
 		because: 'the sims that measure it could not be built.',
