@@ -129,7 +129,7 @@ export type Deps = {
 	 * stats times `epWeights` gives a weapon no credit for its weapon damage.
 	 */
 	itemEp: ItemEp;
-	gemPalette?: readonly GemEntry[];
+	phaseGems?: readonly GemEntry[];
 	pool?: readonly PoolEntry[];
 	/**
 	 * Per-request item rows for the sim's database: plain data, no I/O. The
@@ -690,7 +690,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 	let metaRecolours: GemRecolour[] = [];
 	// Reassigned once, after the baseline's stats read, so every later repair
 	// site gets the hit budget.
-	let gems = gemContext(deps.gemPalette ?? gemsForPhase(input.maxPhase), deps.epWeights, input.spec);
+	let gems = gemContext(deps.phaseGems ?? gemsForPhase(input.maxPhase), deps.epWeights, input.spec);
 	// The worn repair runs before the baseline exists, so its hit budget comes
 	// from its own read of the un-repaired gear, relative to the items the
 	// repair is given, as `repairMetaGems` expects. A spell-hit budget first
@@ -718,7 +718,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		const minimized = repairMetaGems({
 			items: preRepairSocketed,
 			epWeights: deps.epWeights,
-			palette: gems.fillPalette,
+			allowedGems: gems.fillGems,
 			...(wornHitCap ? { hitCap: wornHitCap } : {}),
 		});
 		socketed = minimized.items;
@@ -790,7 +790,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		candidates: ordered
 			.map(e => ({ itemId: e.itemId, slot: e.slot }))
 			.sort((a, b) => (a.itemId !== b.itemId ? a.itemId - b.itemId : a.slot < b.slot ? -1 : a.slot > b.slot ? 1 : 0)),
-		gemPaletteIds: gems.palette.map(g => g.id).sort((a, b) => a - b),
+		gemPaletteIds: gems.phaseGems.map(g => g.id).sort((a, b) => a - b),
 		epWeights: deps.epWeights,
 		presetId: presetIdFor(input.spec),
 		skeleton: deps.raidSimSkeleton,
@@ -3594,7 +3594,7 @@ export function candidateSwapWithRepairs(
 	const minimized = repairMetaGems({
 		items: socketed,
 		epWeights: gems.weights,
-		palette: gems.fillPalette,
+		allowedGems: gems.fillGems,
 		...(hitBudget
 			? {
 					hitCap: {
@@ -3734,7 +3734,7 @@ function swapItemAt(equipment: readonly SimItemSpec[], slotIndex: number, itemId
 			: fillEmptyCandidateGems(
 					itemId,
 					migrateGemsToItem(spec.gems ?? [], spec.id ?? 0, itemId),
-					gemCtx.fillPalette,
+					gemCtx.fillGems,
 					gemCtx.weightRecord,
 					fillOptsForSwap(equipment, slotIndex, gemCtx.spec),
 				);

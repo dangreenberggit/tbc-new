@@ -119,7 +119,7 @@ function valueModel(weights: EpWeights, hitCap?: HitCapBudget): ValueModel {
 export function greedyRepairMeta(opts: {
 	items: readonly SocketedItem[];
 	epWeights: EpWeights;
-	palette: readonly GemEntry[];
+	allowedGems: readonly GemEntry[];
 	hitCap?: HitCapBudget;
 }): MetaRepairResult {
 	const items = opts.items.map(it => ({
@@ -157,7 +157,7 @@ export function greedyRepairMeta(opts: {
 			throw new MetaInfeasibleError(`unexpected meta status ${status.kind}`);
 		}
 
-		const move = bestRepairMove(items, status.metaId, status.counts, opts.palette, model, dH);
+		const move = bestRepairMove(items, status.metaId, status.counts, opts.allowedGems, model, dH);
 		if (!move) {
 			throw new MetaInfeasibleError(`no legal recolour activates meta ${status.metaId} (${status.description})`);
 		}
@@ -254,7 +254,7 @@ export function dropUnneededRecolours(opts: {
 export function repairMetaGems(opts: {
 	items: readonly SocketedItem[];
 	epWeights: EpWeights;
-	palette: readonly GemEntry[];
+	allowedGems: readonly GemEntry[];
 	hitCap?: HitCapBudget;
 	workLimit?: number;
 }): MetaRepairResult {
@@ -270,7 +270,7 @@ export function repairMetaGems(opts: {
 	const found = bestMinimalRepair({
 		items: opts.items,
 		weights: opts.epWeights,
-		palette: opts.palette,
+		allowedGems: opts.allowedGems,
 		...(opts.hitCap ? { hitCap: opts.hitCap } : {}),
 		maxChanges: deficit + 1,
 		...(opts.workLimit !== undefined ? { workLimit: opts.workLimit } : {}),
@@ -325,7 +325,7 @@ const NO_COLOUR_CHANGE = colourChangeKind(0, 0, 0);
  * any one leaves the meta off, no unique gem repeats or duplicates a worn one, and there
  * are at most `maxChanges`. The value is the gems' EP change, plus bonuses switched on,
  * minus bonuses switched off, plus the hit term of `valueModel`. Ties go to the first
- * layout in SIM_ORDER, socket and palette order.
+ * layout in SIM_ORDER, socket and allowed-gems order.
  *
  * A dynamic program over the items that keeps the best value per state (which colour
  * changes, hit change, unique gems placed). This is exact because the value is a sum
@@ -334,7 +334,7 @@ const NO_COLOUR_CHANGE = colourChangeKind(0, 0, 0);
 export function bestMinimalRepair(opts: {
 	items: readonly SocketedItem[];
 	weights: EpWeights;
-	palette: readonly GemEntry[];
+	allowedGems: readonly GemEntry[];
 	hitCap?: HitCapBudget;
 	maxChanges: number;
 	workLimit?: number;
@@ -352,7 +352,7 @@ export function bestMinimalRepair(opts: {
 	const limit = opts.workLimit ?? REPAIR_SEARCH_WORK_LIMIT;
 	const maxChanges = opts.maxChanges;
 	const model = valueModel(opts.weights, opts.hitCap);
-	const pool = repairGemPool(opts.palette, model);
+	const pool = repairGemPool(opts.allowedGems, model);
 	const poolUnique = new Set(pool.filter(g => g.unique).map(g => g.id));
 	const held = new Set(allGemIds(original));
 	const base = gemColorCounts(allGemIds(original));
@@ -547,18 +547,18 @@ export function bestMinimalRepair(opts: {
 			cost: model.gem(c.from) - model.gem(c.to),
 		});
 	}
-	return { items, recolours: recolours, value: best.value, work };
+	return { items, recolours, value: best.value, work };
 }
 
 /**
- * Per (colour, hit amount), the non-unique palette gem with the
+ * Per (colour, hit amount), the non-unique allowed gem with the
  * highest value (the first on a tie), plus each unique gem that beats it. No other gem can
  * be in the best layout, as the meta and bonuses read colour alone and the hit term reads
  * total hit.
  */
-function repairGemPool(palette: readonly GemEntry[], model: ValueModel): GemEntry[] {
+function repairGemPool(allowedGems: readonly GemEntry[], model: ValueModel): GemEntry[] {
 	const groups = new Map<string, { best?: GemEntry; uniques: GemEntry[] }>();
-	for (const g of palette) {
+	for (const g of allowedGems) {
 		if (g.colour === GemColor.GemColorMeta || g.colour === GemColor.GemColorUnknown) {
 			continue;
 		}
@@ -634,7 +634,7 @@ function bestRepairMove(
 	items: SocketedItem[],
 	metaId: number,
 	beforeCounts: GemColorCounts,
-	palette: readonly GemEntry[],
+	allowedGems: readonly GemEntry[],
 	model: ValueModel,
 	dHBefore: number,
 ): Move | null {
@@ -653,7 +653,7 @@ function bestRepairMove(
 			const from = slot.gems[socketIndex] ?? 0;
 			const matchedBefore = socketsMatch(slot.itemId, slot.gems);
 
-			for (const candidate of palette) {
+			for (const candidate of allowedGems) {
 				if (candidate.colour === GemColor.GemColorMeta) continue;
 				if (candidate.unique && alreadyHasUnique(items, candidate.id, from)) {
 					continue;

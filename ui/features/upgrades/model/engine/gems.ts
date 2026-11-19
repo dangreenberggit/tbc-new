@@ -25,7 +25,7 @@ function toGemEntry(gem: { id: number; color: GemColor; stats: number[]; phase: 
 	};
 }
 
-export function gemPalette(): readonly GemEntry[] {
+export function allGems(): readonly GemEntry[] {
 	return Database.getSync().getGems().map(toGemEntry);
 }
 
@@ -35,11 +35,11 @@ export function getGem(gemId: number): GemEntry | undefined {
 }
 
 export function gemsForPhase(maxPhase: number): GemEntry[] {
-	return gemPalette().filter(g => g.phase <= maxPhase);
+	return allGems().filter(g => g.phase <= maxPhase);
 }
 
-export function gemsForQuality(palette: readonly GemEntry[], maxQuality: number): GemEntry[] {
-	return palette.filter(g => {
+export function gemsForQuality(gems: readonly GemEntry[], maxQuality: number): GemEntry[] {
+	return gems.filter(g => {
 		if (typeof g.quality !== 'number') {
 			throw new Error(`gem ${g.id} has non-numeric quality (${String(g.quality)}); cannot apply the rarity cap`);
 		}
@@ -49,8 +49,8 @@ export function gemsForQuality(palette: readonly GemEntry[], maxQuality: number)
 
 export const FILL_MAX_QUALITY = ItemQuality.ItemQualityRare;
 
-export function fillEligibleGems(palette: readonly GemEntry[]): readonly GemEntry[] {
-	return gemsForQuality(palette, FILL_MAX_QUALITY);
+export function fillEligibleGems(gems: readonly GemEntry[]): readonly GemEntry[] {
+	return gemsForQuality(gems, FILL_MAX_QUALITY);
 }
 
 export function findMetaGemId(gemIds: readonly number[]): number | undefined {

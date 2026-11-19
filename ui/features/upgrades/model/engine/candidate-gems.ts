@@ -1,6 +1,6 @@
 /**
  * Fills empty sockets on a candidate item with the highest-EP gems the phase
- * allows (`palette`).
+ * allows, up to rare quality (`GemContext.fillGems`).
  */
 import { GemColor } from '@generated/proto/common';
 
@@ -29,13 +29,13 @@ type EpWeightRecord = Readonly<Record<string, number>>;
  * record once so callers cannot pass two that disagree.
  */
 export type GemContext = {
-	readonly palette: readonly GemEntry[];
+	readonly phaseGems: readonly GemEntry[];
 	/**
-	 * The gems socket filling and meta repair may use: `palette` capped at rare,
+	 * The gems socket filling and meta repair may use: `phaseGems` capped at rare,
 	 * so meta repair adds no epic gems that filling would not. Every colour exists
 	 * at rare and every TBC meta gem is rare, so the cap removes no colour or meta.
 	 */
-	readonly fillPalette: readonly GemEntry[];
+	readonly fillGems: readonly GemEntry[];
 	readonly weights: EpWeights;
 	readonly weightRecord: EpWeightRecord;
 	/**
@@ -58,10 +58,10 @@ export type GemContext = {
 	};
 };
 
-export function gemContext(palette: readonly GemEntry[], weights: EpWeights, spec?: DetectedSpecId): GemContext {
+export function gemContext(phaseGems: readonly GemEntry[], weights: EpWeights, spec?: DetectedSpecId): GemContext {
 	return {
-		palette,
-		fillPalette: fillEligibleGems(palette),
+		phaseGems,
+		fillGems: fillEligibleGems(phaseGems),
 		weights,
 		weightRecord: toWeightRecord(weights),
 		...(spec !== undefined ? { spec } : {}),
@@ -138,7 +138,7 @@ export const SPEC_PREFERRED_METAS: Readonly<Record<SpecId, readonly number[]> & 
 
 /**
  * The note for a spec with no entry in `SPEC_PREFERRED_METAS`, or `undefined`.
- * It names the spec, because an empty socket alone looks like a palette with no
+ * It names the spec, because an empty socket alone looks like a gem list with no
  * meta gem, and the lost socket bonus, because the sim gives no socket bonus
  * while a socket is empty.
  */
@@ -185,7 +185,7 @@ export type FillEmptyOpts = {
 export function fillEmptyCandidateGems(
 	itemId: number,
 	gems: readonly number[],
-	palette: readonly GemEntry[],
+	allowedGems: readonly GemEntry[],
 	epWeights: EpWeightRecord,
 	opts: FillEmptyOpts = {},
 ): number[] {
@@ -194,8 +194,8 @@ export function fillEmptyCandidateGems(
 
 	const weights = gemFillWeights(epWeights, opts.spec);
 	const base = sockets.map((_, i) => gems[i] ?? 0);
-	const matched = fillEmpties(sockets, base, palette, weights, true, opts);
-	const free = fillEmpties(sockets, base, palette, weights, false, opts);
+	const matched = fillEmpties(sockets, base, allowedGems, weights, true, opts);
+	const free = fillEmpties(sockets, base, allowedGems, weights, false, opts);
 	return layoutScore(itemId, sockets, free, weights) > layoutScore(itemId, sockets, matched, weights) ? free : matched;
 }
 
@@ -217,7 +217,7 @@ export function gemFillWeights(epWeights: EpWeightRecord, spec?: DetectedSpecId)
 function fillEmpties(
 	sockets: readonly number[],
 	base: readonly number[],
-	palette: readonly GemEntry[],
+	allowedGems: readonly GemEntry[],
 	epWeights: EpWeightRecord,
 	matchColors: boolean,
 	opts: FillEmptyOpts,
@@ -234,7 +234,7 @@ function fillEmpties(
 		const placed = out.filter(id => id > 0);
 		const pick = bestGemForSocket(
 			sockets[i]!,
-			palette,
+			allowedGems,
 			epWeights,
 			usedUnique,
 			matchColors,
@@ -259,7 +259,7 @@ function fillEmpties(
 
 function bestGemForSocket(
 	socket: number,
-	palette: readonly GemEntry[],
+	allowedGems: readonly GemEntry[],
 	epWeights: EpWeightRecord,
 	usedUnique: ReadonlySet<number>,
 	matchColors: boolean,
@@ -268,7 +268,7 @@ function bestGemForSocket(
 ): GemEntry | undefined {
 	const eligible: { gem: GemEntry; ep: number }[] = [];
 
-	for (const gem of palette) {
+	for (const gem of allowedGems) {
 		if (gem.unique && usedUnique.has(gem.id)) continue;
 
 		if (socket === GemColor.GemColorMeta) {
