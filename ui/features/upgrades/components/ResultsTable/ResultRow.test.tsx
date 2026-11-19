@@ -319,9 +319,9 @@ describe('ResultRow', () => {
 		} finally {
 			vi.useRealTimers();
 		}
-		const tip = screen.getByTestId('upgrades-set-bonus-tip');
+		const popover = screen.getByTestId('upgrades-set-bonus-popover');
 		expect(
-			within(tip)
+			within(popover)
 				.getAllByRole('term')
 				.map(term => term.textContent),
 		).toEqual(['Item stats', 'Breaks Thunderheart Harness 2pc', 'Total']);

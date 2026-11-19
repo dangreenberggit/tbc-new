@@ -1,9 +1,9 @@
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
 import { describe, expect, it } from 'vitest';
 
-import { setBonusTipLines, type TipLabel } from '../model/set_bonus_tip';
+import { type PopoverLabel, setBonusPopoverLines } from '../model/set_bonus_popover';
 import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
-import { setBonusSubLineText, setBonusTipText, tipLabelId, tipLabelText, tipSections } from './set_bonus_labels';
+import { popoverLabelId, popoverLabelText, popoverSections, setBonusPopoverText, setBonusSubLineText } from './set_bonus_labels';
 
 loadEnglishBundles();
 
@@ -11,10 +11,10 @@ const NBSP = ' ';
 const crystalforge = { setName: 'Crystalforge Battlegear', threshold: 2 };
 const lightbringer = { setName: 'Lightbringer Battlegear', threshold: 4 };
 
-describe('setBonusTipText', () => {
+describe('setBonusPopoverText', () => {
 	it('prints a receipt with signed figures and a marked total', () => {
-		const tip = setBonusTipLines(fixtureRow(10), { ranking: RANKING_FIXTURE })!;
-		expect(setBonusTipText(tip)).toEqual([
+		const popover = setBonusPopoverLines(fixtureRow(10), { ranking: RANKING_FIXTURE })!;
+		expect(setBonusPopoverText(popover)).toEqual([
 			{ type: 'line', id: 'item_stats', label: 'Item stats', value: '+22.8', total: false },
 			{ type: 'line', id: 'breaks:Crystalforge Battlegear:2', label: `Breaks Crystalforge Battlegear${NBSP}2pc`, value: '-18.4', total: false },
 			{ type: 'line', id: 'total', label: 'Total', value: '+4.4', total: true },
@@ -22,7 +22,7 @@ describe('setBonusTipText', () => {
 	});
 
 	it('prints separate outcomes as more or less, with no sign, and the marker on the row’s figure', () => {
-		const rows = setBonusTipText({
+		const rows = setBonusPopoverText({
 			subLine: 'hover_hint',
 			kind: 'outcomes',
 			entries: [
@@ -39,7 +39,7 @@ describe('setBonusTipText', () => {
 	});
 
 	it('says a figure that was not measured could not be', () => {
-		const rows = setBonusTipText({
+		const rows = setBonusPopoverText({
 			subLine: 'not_counted',
 			kind: 'receipt',
 			entries: [
@@ -57,7 +57,7 @@ describe('setBonusTipText', () => {
 
 describe('the not-counted section (ticket 336)', () => {
 	const malorne2 = { setName: 'Malorne Harness', threshold: 2 };
-	const reachable = (set: string, threshold: number, pieces: string[], broken: Array<{ setName: string; threshold: number }> = []): TipLabel => ({
+	const reachable = (set: string, threshold: number, pieces: string[], broken: Array<{ setName: string; threshold: number }> = []): PopoverLabel => ({
 		kind: 'reachable',
 		set,
 		threshold,
@@ -67,7 +67,7 @@ describe('the not-counted section (ticket 336)', () => {
 	});
 
 	it('names only the bonus, with no figure, when a reachable line has no partner pieces', () => {
-		const [row] = setBonusTipText({
+		const [row] = setBonusPopoverText({
 			subLine: 'hover_hint',
 			kind: 'receipt',
 			entries: [{ type: 'line', label: reachable('Lightbringer Battlegear', 2, []), dps: undefined, outcome: true }],
@@ -76,7 +76,7 @@ describe('the not-counted section (ticket 336)', () => {
 	});
 
 	it('names a bonus within the noise, muted, with words in place of a figure (ticket 655)', () => {
-		const [row] = setBonusTipText({
+		const [row] = setBonusPopoverText({
 			subLine: 'hover_hint',
 			kind: 'receipt',
 			entries: [{ type: 'line', label: { kind: 'noise', set: 'Lightbringer Battlegear', threshold: 4 }, dps: undefined }],
@@ -92,7 +92,7 @@ describe('the not-counted section (ticket 336)', () => {
 	});
 
 	it('prints each heading, and every line under it muted, as more or less than the item alone', () => {
-		const rows = setBonusTipText({
+		const rows = setBonusPopoverText({
 			subLine: 'hover_hint',
 			kind: 'receipt',
 			entries: [
@@ -140,7 +140,7 @@ describe('the not-counted section (ticket 336)', () => {
 	// A step past the stop shows the 4-piece's own amount, negative included.
 	it('prints a step past the stop as a signed figure like the receipt’s, and one within the noise in words', () => {
 		const malorne4 = reachable('Malorne Harness', 4, ['Mantle of Malorne', 'Breastplate of Malorne', 'Greaves of Malorne']);
-		const rows = setBonusTipText({
+		const rows = setBonusPopoverText({
 			subLine: 'hover_hint',
 			kind: 'receipt',
 			entries: [
@@ -181,9 +181,9 @@ describe('the not-counted section (ticket 336)', () => {
 			reachable('Malorne Harness', 4, ['Mantle of Malorne', 'Breastplate of Malorne', 'Greaves of Malorne']),
 			`Malorne Harness${NBSP}4pc with Mantle of Malorne, Breastplate of Malorne and Greaves of Malorne`,
 		],
-		[{ kind: 'screened', set: 'Nordrassil Harness', reason: 'outside-band' } as TipLabel, 'Nordrassil Harness set bonuses (screened out)'],
+		[{ kind: 'screened', set: 'Nordrassil Harness', reason: 'outside-band' } as PopoverLabel, 'Nordrassil Harness set bonuses (screened out)'],
 	])('prints %j', (label, text) => {
-		expect(tipLabelText(label)).toBe(text);
+		expect(popoverLabelText(label)).toBe(text);
 	});
 
 	it.each([
@@ -191,7 +191,7 @@ describe('the not-counted section (ticket 336)', () => {
 		['exact-zero', 'no effect in the sim'],
 		['below-zero', 'a loss with its pieces'],
 	] as const)('says what the screen found for a dropped set (%s), with no figure', (reason, value) => {
-		const [row] = setBonusTipText({
+		const [row] = setBonusPopoverText({
 			subLine: 'hover_hint',
 			kind: 'receipt',
 			entries: [{ type: 'line', label: { kind: 'screened', set: 'Burning Rage', reason }, dps: undefined }],
@@ -200,8 +200,8 @@ describe('the not-counted section (ticket 336)', () => {
 	});
 });
 
-describe('tipLabelText', () => {
-	const cases: Array<[TipLabel, string]> = [
+describe('popoverLabelText', () => {
+	const cases: Array<[PopoverLabel, string]> = [
 		[{ kind: 'item_stats', bonus: lightbringer, unmeasuredBreaks: [] }, `Item stats + Lightbringer Battlegear${NBSP}4pc`],
 		[{ kind: 'item_stats', unmeasuredBreaks: [crystalforge] }, `Item stats − Crystalforge Battlegear${NBSP}2pc`],
 		[
@@ -217,7 +217,7 @@ describe('tipLabelText', () => {
 		[{ kind: 'item_alone', name: 'X', broken: [crystalforge] }, `X alone (breaks Crystalforge Battlegear${NBSP}2pc)`],
 	];
 	it.each(cases)('prints %j', (label, text) => {
-		expect(tipLabelText(label)).toBe(text);
+		expect(popoverLabelText(label)).toBe(text);
 	});
 });
 
@@ -227,10 +227,10 @@ describe('setBonusSubLineText', () => {
 	});
 });
 
-describe('tipSections', () => {
+describe('popoverSections', () => {
 	it('starts a new section at each heading and keeps the lines before the first heading in an untitled one', () => {
 		const line = (label: string) => ({ type: 'line' as const, id: label, label, value: '+1.0', total: false });
-		const sections = tipSections([line('a'), { type: 'heading', id: 'set_potential', text: 'Set potential' }, line('b'), line('c')]);
+		const sections = popoverSections([line('a'), { type: 'heading', id: 'set_potential', text: 'Set potential' }, line('b'), line('c')]);
 		expect(sections).toEqual([
 			{ id: 'lines', lines: [line('a')] },
 			{ id: 'set_potential', heading: 'Set potential', lines: [line('b'), line('c')] },
@@ -238,21 +238,21 @@ describe('tipSections', () => {
 	});
 
 	it('gives a popover that opens on a heading no untitled section', () => {
-		expect(tipSections([{ type: 'heading', id: 'set_potential_totals', text: 'Outcomes' }])).toEqual([
+		expect(popoverSections([{ type: 'heading', id: 'set_potential_totals', text: 'Outcomes' }])).toEqual([
 			{ id: 'set_potential_totals', heading: 'Outcomes', lines: [] },
 		]);
 	});
 });
 
-describe('tipLabelId', () => {
+describe('popoverLabelId', () => {
 	it('names a line by the bonus, piece or set it is about', () => {
-		expect(tipLabelId({ kind: 'breaks', broken: [crystalforge, lightbringer] })).toBe('breaks:Crystalforge Battlegear:2+Lightbringer Battlegear:4');
-		expect(tipLabelId({ kind: 'piece_stats', name: 'Lightbringer Greaves' })).toBe('piece:Lightbringer Greaves');
+		expect(popoverLabelId({ kind: 'breaks', broken: [crystalforge, lightbringer] })).toBe('breaks:Crystalforge Battlegear:2+Lightbringer Battlegear:4');
+		expect(popoverLabelId({ kind: 'piece_stats', name: 'Lightbringer Greaves' })).toBe('piece:Lightbringer Greaves');
 	});
 
 	it('numbers a second line about the same thing, so every row of a popover has its own id', () => {
 		const breaks = { type: 'line' as const, label: { kind: 'breaks' as const, broken: [crystalforge] }, dps: -1 };
-		const rows = setBonusTipText({
+		const rows = setBonusPopoverText({
 			subLine: 'hover_hint',
 			kind: 'receipt',
 			entries: [breaks, breaks, { type: 'line', label: { kind: 'total' }, dps: -2 }],

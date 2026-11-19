@@ -321,7 +321,7 @@
 						"singleDeltaDps": 1.4599801854910766
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -431,7 +431,7 @@
 						"singleDeltaDps": -13.364632140415779
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -540,7 +540,7 @@
 						"singleDeltaDps": -68.46066657435631
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -649,7 +649,7 @@
 						"singleDeltaDps": -71.3209020019558
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -742,7 +742,7 @@
 						"singleDeltaDps": -76.85915263808238
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -830,7 +830,7 @@
 						"singleDeltaDps": -81.6726631761203
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -930,7 +930,7 @@
 						"singleDeltaDps": -174.39186543888445
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -1014,7 +1014,7 @@
 						"singleDeltaDps": -191.34549140617764
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -1295,7 +1295,7 @@
 						"singleDeltaDps": 26.299313111646825
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -1389,7 +1389,7 @@
 						"singleDeltaDps": 7.617173385704518
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -1463,7 +1463,7 @@
 						"singleDeltaDps": 0.543033882850068
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -1557,7 +1557,7 @@
 						"singleDeltaDps": -14.037668226711503
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -1632,7 +1632,7 @@
 						"singleDeltaDps": -69.850955606345
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -1729,7 +1729,7 @@
 						"singleDeltaDps": -82.20968461934217
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -1824,7 +1824,7 @@
 						"singleDeltaDps": -109.90867838556369
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [
@@ -1916,7 +1916,7 @@
 						"singleDeltaDps": -111.39438168644483
 					}
 				},
-				"tip": {
+				"popover": {
 					"subLine": "hover_hint",
 					"kind": "receipt",
 					"entries": [

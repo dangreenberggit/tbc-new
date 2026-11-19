@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import { fixtureRow, RANKING_FIXTURE } from '../testing/ranking_fixture';
-import onSnapshot from '../testing/set_bonus_tip_on.snapshot.json';
+import onSnapshot from '../testing/set_bonus_popover_on.snapshot.json';
 import type { RankedItem, Ranking, SetContext } from './engine/rank';
 import { SCREEN_ON_RULE } from './engine/set-screen';
 
@@ -12,11 +12,12 @@ vi.mock('./engine/items', async importOriginal => ({
 	getItem: (itemId: number) => (itemId === 31034 || itemId === 31044 ? THUNDERHEART : itemId === 0 ? undefined : { setId: null, setName: null }),
 }));
 
-const { setBonusTipLines, spreadTenths } = await import('./set_bonus_tip');
-type SetBonusTip = import('./set_bonus_tip').SetBonusTip;
-type TipEntry = import('./set_bonus_tip').TipEntry;
+const { setBonusPopoverLines, spreadTenths } = await import('./set_bonus_popover');
+type SetBonusPopoverContent = import('./set_bonus_popover').SetBonusPopoverContent;
+type PopoverEntry = import('./set_bonus_popover').PopoverEntry;
 
-const lines = (tip: SetBonusTip | null) => (tip?.entries ?? []).filter((entry): entry is Extract<TipEntry, { type: 'line' }> => entry.type === 'line');
+const lines = (popover: SetBonusPopoverContent | null) =>
+	(popover?.entries ?? []).filter((entry): entry is Extract<PopoverEntry, { type: 'line' }> => entry.type === 'line');
 const tenths = (dps: number | undefined) => Math.round((dps ?? 0) * 10);
 
 /**
@@ -24,8 +25,8 @@ const tenths = (dps: number | undefined) => Math.round((dps ?? 0) * 10);
  * in tenths; a total alone is the row's figure. Lines after the total are not
  * counted.
  */
-const addsUp = (tip: SetBonusTip | null) => {
-	const all = lines(tip);
+const addsUp = (popover: SetBonusPopoverContent | null) => {
+	const all = lines(popover);
 	const at = all.findIndex(line => line.label.kind === 'total');
 	const total = all[at]!;
 	return at === 0 || all.slice(0, at).reduce((sum, line) => sum + tenths(line.dps), 0) === Math.round(Number(total.dps!.toFixed(1)) * 10);
@@ -81,47 +82,47 @@ const screenedRanking = (reason: 'outside-band' | 'exact-zero' | 'below-zero', o
 	},
 });
 
-describe('setBonusTipLines', () => {
+describe('setBonusPopoverLines', () => {
 	it('gives nothing for a row with no set and no break', () => {
-		expect(setBonusTipLines(fixtureRow(0), context)).toBeNull();
+		expect(setBonusPopoverLines(fixtureRow(0), context)).toBeNull();
 	});
 
 	it('gives nothing for a set row whose only line would repeat the figure', () => {
 		// Lightbringer Breastplate as a ranking that did not measure steps: its future bonuses are below the gate and it breaks nothing.
 		const { stepRanking: _, ...notStepped } = fixtureRow(4).setContext!;
 		const row: RankedItem = { ...fixtureRow(4), setContext: notStepped };
-		expect(setBonusTipLines(row, context)).toBeNull();
+		expect(setBonusPopoverLines(row, context)).toBeNull();
 	});
 
 	it('itemises a measured break of the row’s own swap above its total', () => {
-		const tip = setBonusTipLines(fixtureRow(10), context);
-		expect(tip).toMatchObject({ subLine: 'hover_hint', kind: 'receipt' });
-		expect(lines(tip)).toEqual([
+		const popover = setBonusPopoverLines(fixtureRow(10), context);
+		expect(popover).toMatchObject({ subLine: 'hover_hint', kind: 'receipt' });
+		expect(lines(popover)).toEqual([
 			{ type: 'line', label: { kind: 'item_stats', unmeasuredBreaks: [] }, dps: 22.8 },
 			{ type: 'line', label: { kind: 'breaks', broken: [{ setName: 'Crystalforge Battlegear', threshold: 2 }] }, dps: -18.4 },
 			{ type: 'line', label: { kind: 'total' }, dps: 4.42 },
 		]);
-		expect(addsUp(tip)).toBe(true);
+		expect(addsUp(popover)).toBe(true);
 	});
 
 	// The popover's total is the figure the cell shows, so it never reads as the bar for a row below it.
 	describe('a total just below the cutoff bar (ticket 618)', () => {
 		const nearBar: RankedItem = { ...fixtureRow(10), deltaDps: 2.96 };
-		const totalOf = (tip: SetBonusTip | null) => lines(tip).find(line => line.label.kind === 'total')?.dps;
+		const totalOf = (popover: SetBonusPopoverContent | null) => lines(popover).find(line => line.label.kind === 'total')?.dps;
 
 		it('shows the total one tenth under the bar and spreads the receipt against it, with the toggle off', () => {
-			const tip = setBonusTipLines(nearBar, context);
-			expect(totalOf(tip)).toBe(2.9);
-			expect(addsUp(tip)).toBe(true);
-			expect(lines(tip).find(line => line.label.kind === 'item_stats')?.dps).toBe(21.3);
+			const popover = setBonusPopoverLines(nearBar, context);
+			expect(totalOf(popover)).toBe(2.9);
+			expect(addsUp(popover)).toBe(true);
+			expect(lines(popover).find(line => line.label.kind === 'item_stats')?.dps).toBe(21.3);
 		});
 
 		it('does the same for a receipt with the toggle on', () => {
 			const row: RankedItem = { ...nearBar, setContext: { ...fixtureRow(10).setContext!, futureBonuses: [{ threshold: 2, piecesNeeded: 1 }] } };
-			const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
-			expect(tip?.kind).toBe('receipt');
-			expect(totalOf(tip)).toBe(2.9);
-			expect(addsUp(tip)).toBe(true);
+			const popover = setBonusPopoverLines(row, { ...context, withSetPotential: true });
+			expect(popover?.kind).toBe('receipt');
+			expect(totalOf(popover)).toBe(2.9);
+			expect(addsUp(popover)).toBe(true);
 		});
 
 		it('shows the outcome marked as the row’s figure one tenth under the bar, and the other lines raw', () => {
@@ -135,12 +136,12 @@ describe('setBonusTipLines', () => {
 				}),
 				deltaDps: 1,
 			};
-			const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
-			expect(tip?.kind).toBe('outcomes');
-			expect(lines(tip).find(line => line.marker)?.dps).toBe(2.9);
-			expect(lines(tip).find(line => line.label.kind === 'pieces' && !line.marker)?.dps).toBe(2.5);
-			expect(lines(tip).find(line => line.label.kind === 'item_alone')?.dps).toBe(1);
-			expect(totalOf(setBonusTipLines(fixtureRow(10), context))).toBe(4.42);
+			const popover = setBonusPopoverLines(row, { ...context, withSetPotential: true });
+			expect(popover?.kind).toBe('outcomes');
+			expect(lines(popover).find(line => line.marker)?.dps).toBe(2.9);
+			expect(lines(popover).find(line => line.label.kind === 'pieces' && !line.marker)?.dps).toBe(2.5);
+			expect(lines(popover).find(line => line.label.kind === 'item_alone')?.dps).toBe(1);
+			expect(totalOf(setBonusPopoverLines(fixtureRow(10), context))).toBe(4.42);
 		});
 
 		// With the toggle off the cell shows the item alone, so the line must read as that cell does.
@@ -155,10 +156,10 @@ describe('setBonusTipLines', () => {
 				}),
 				deltaDps: 2.96,
 			};
-			const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
-			expect(tip?.kind).toBe('outcomes');
-			expect(lines(tip).some(line => line.marker)).toBe(true);
-			expect(lines(tip).find(line => line.label.kind === 'item_alone')?.dps).toBe(2.9);
+			const popover = setBonusPopoverLines(row, { ...context, withSetPotential: true });
+			expect(popover?.kind).toBe('outcomes');
+			expect(lines(popover).some(line => line.marker)).toBe(true);
+			expect(lines(popover).find(line => line.label.kind === 'item_alone')?.dps).toBe(2.9);
 		});
 	});
 
@@ -167,7 +168,7 @@ describe('setBonusTipLines', () => {
 			...fixtureRow(10),
 			setContext: { ...fixtureRow(10).setContext!, singleBreaks: [{ setId: 629, setName: 'Crystalforge Battlegear', threshold: 2 }] },
 		};
-		expect(lines(setBonusTipLines(row, context))).toEqual([
+		expect(lines(setBonusPopoverLines(row, context))).toEqual([
 			{ type: 'line', label: { kind: 'item_stats', unmeasuredBreaks: [{ setName: 'Crystalforge Battlegear', threshold: 2 }] }, dps: 4.4 },
 			{ type: 'line', label: { kind: 'total' }, dps: 4.42 },
 		]);
@@ -178,7 +179,7 @@ describe('setBonusTipLines', () => {
 			...fixtureRow(10),
 			setContext: { ...fixtureRow(10).setContext!, singleBreaks: [], crossesThreshold: true, piecesWornBefore: 1, piecesAfterSwap: 2, stepRanking: true },
 		};
-		expect(lines(setBonusTipLines(row, context))[0]).toEqual({
+		expect(lines(setBonusPopoverLines(row, context))[0]).toEqual({
 			type: 'line',
 			label: { kind: 'item_stats', bonus: { setName: 'Lightbringer Battlegear', threshold: 2 }, unmeasuredBreaks: [] },
 			dps: 4.4,
@@ -190,14 +191,14 @@ describe('setBonusTipLines', () => {
 		const worn = [8345, 30017, 30055, 29994, 30101, 29966, 31034, 30106, 31044, 28545, 29997, 30052, 30627, 29383, 32014, 0, 32387];
 		const legs: RankedItem = { ...fixtureRow(0), itemId: 30900, name: 'Bow-stitched Leggings', slot: 'legs', deltaDps: -94.1, deltaPct: -3.8 };
 		const ranking = { ...RANKING_FIXTURE, brokenSetValues: [{ setId: 676, setName: 'Thunderheart Harness', threshold: 2, dps: 106.24, se: 2 }] };
-		const tip = setBonusTipLines(legs, { ranking, wornItemIds: worn, specId: 'feral' });
-		expect(lines(tip).map(line => line.label)).toEqual([
+		const popover = setBonusPopoverLines(legs, { ranking, wornItemIds: worn, specId: 'feral' });
+		expect(lines(popover).map(line => line.label)).toEqual([
 			{ kind: 'item_stats', unmeasuredBreaks: [] },
 			{ kind: 'breaks', broken: [{ setName: 'Thunderheart Harness', threshold: 2 }] },
 			{ kind: 'total' },
 		]);
-		expect(addsUp(tip)).toBe(true);
-		expect(setBonusTipLines(legs, { ranking, wornItemIds: worn })).toBeNull();
+		expect(addsUp(popover)).toBe(true);
+		expect(setBonusPopoverLines(legs, { ranking, wornItemIds: worn })).toBeNull();
 	});
 
 	it('keeps today’s Set potential section with the toggle on when a figure is unmeasured', () => {
@@ -205,7 +206,7 @@ describe('setBonusTipLines', () => {
 			...fixtureRow(10),
 			setContext: { ...fixtureRow(10).setContext!, futureBonuses: [{ threshold: 2, piecesNeeded: 1 }] },
 		};
-		const on = setBonusTipLines(row, { ...context, withSetPotential: true });
+		const on = setBonusPopoverLines(row, { ...context, withSetPotential: true });
 		expect(on?.subLine).toBe('not_counted');
 		expect(on?.entries).toContainEqual({ type: 'heading', heading: 'set_potential' });
 		expect(lines(on)).toContainEqual({ type: 'line', label: { kind: 'bonus', set: 'Lightbringer Battlegear', threshold: 2, worn: 0 }, dps: undefined });
@@ -214,15 +215,15 @@ describe('setBonusTipLines', () => {
 	// The toggle decides what the figure counts, never whether the popover exists.
 	describe('the not-counted section (ticket 336)', () => {
 		it('lists a reachable bonus under the total with the toggle off, as an outcome against the item alone', () => {
-			const tip = setBonusTipLines(stepRow({ futureBonuses: [future()] }), context);
-			expect(tip).toMatchObject({ subLine: 'hover_hint', kind: 'receipt' });
-			expect(tip?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_off' }, reachable(26)]);
-			expect(addsUp(tip)).toBe(true);
+			const popover = setBonusPopoverLines(stepRow({ futureBonuses: [future()] }), context);
+			expect(popover).toMatchObject({ subLine: 'hover_hint', kind: 'receipt' });
+			expect(popover?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_off' }, reachable(26)]);
+			expect(addsUp(popover)).toBe(true);
 		});
 
 		it('keeps today’s lines with the toggle on when the bonus is credited', () => {
-			const tip = setBonusTipLines(stepRow({ futureBonuses: [future()] }), { ...context, withSetPotential: true });
-			expect(tip?.entries).toEqual([
+			const popover = setBonusPopoverLines(stepRow({ futureBonuses: [future()] }), { ...context, withSetPotential: true });
+			expect(popover?.entries).toEqual([
 				{ type: 'line', label: { kind: 'item_stats', unmeasuredBreaks: [] }, dps: 4.5 },
 				{ type: 'heading', heading: 'set_potential' },
 				{ type: 'line', label: { kind: 'pieces', form: 'step', pieces: ['Lightbringer Breastplate'], threshold: 2, broken: [] }, dps: 26 },
@@ -232,22 +233,22 @@ describe('setBonusTipLines', () => {
 
 		it('lists a bonus that would lose DPS in both states, under a heading that says why it is not counted', () => {
 			const row = stepRow({ futureBonuses: [future({ stepGearDps: 2.5 })] });
-			const off = setBonusTipLines(row, context);
-			const on = setBonusTipLines(row, { ...context, withSetPotential: true });
+			const off = setBonusPopoverLines(row, context);
+			const on = setBonusPopoverLines(row, { ...context, withSetPotential: true });
 			expect(off?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_off' }, reachable(-2)]);
 			expect(on?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_no_gain' }, reachable(-2)]);
 			expect(on?.subLine).toBe('hover_hint');
 		});
 
 		it('values a reachable bonus against the row’s own swap, not against its figure after replication', () => {
-			const tip = setBonusTipLines(stepRow({ singleDeltaDps: 2, futureBonuses: [future()] }), context);
+			const popover = setBonusPopoverLines(stepRow({ singleDeltaDps: 2, futureBonuses: [future()] }), context);
 			// 30.5 step gear DPS less the 2 DPS own swap; the row's 4.5 DPS figure would give 26.
-			expect(lines(tip).at(-1)).toEqual(reachable(28.5));
+			expect(lines(popover).at(-1)).toEqual(reachable(28.5));
 		});
 
 		it('names only the bonus when the step ranking measured no partner choice for it', () => {
 			const row = stepRow({ futureBonuses: [future({ pieces: undefined, breaks: undefined, stepGearDps: undefined })] });
-			expect(setBonusTipLines(row, context)?.entries).toEqual([
+			expect(setBonusPopoverLines(row, context)?.entries).toEqual([
 				totalLine(4.5),
 				{ type: 'heading', heading: 'not_counted_off' },
 				{ type: 'line', label: { kind: 'reachable', set: LIGHTBRINGER, threshold: 2, worn: 0, pieces: [], broken: [] }, dps: undefined, outcome: true },
@@ -261,7 +262,7 @@ describe('setBonusTipLines', () => {
 				setContext: { ...fixtureRow(10).setContext!, singleBreaks: [], singleDeltaDps: 4.5, futureBonuses: [future({ dps: 20 })] },
 			};
 			expect(row.setContext?.stepRanking).toBeUndefined();
-			expect(setBonusTipLines(row, context)).toBeNull();
+			expect(setBonusPopoverLines(row, context)).toBeNull();
 		});
 
 		// A screened set is not counted whatever the toggle says, so its heading gives no reason.
@@ -272,10 +273,10 @@ describe('setBonusTipLines', () => {
 			['outside-band', true],
 			['below-zero', true],
 		] as const)('names a set the screen dropped (%s), toggle on: %s', (reason, withSetPotential) => {
-			const tip = setBonusTipLines(stepRow({ futureBonuses: [] }), { ranking: screenedRanking(reason), withSetPotential });
-			expect(tip?.subLine).toBe('hover_hint');
+			const popover = setBonusPopoverLines(stepRow({ futureBonuses: [] }), { ranking: screenedRanking(reason), withSetPotential });
+			expect(popover?.subLine).toBe('hover_hint');
 			// No figure, not even for below-zero, whose measure is the pieces and the bonus together.
-			expect(tip?.entries).toEqual([
+			expect(popover?.entries).toEqual([
 				totalLine(4.5),
 				{ type: 'heading', heading: 'not_counted' },
 				{ type: 'line', label: { kind: 'screened', set: LIGHTBRINGER, reason }, dps: undefined },
@@ -283,8 +284,8 @@ describe('setBonusTipLines', () => {
 		});
 
 		it('names a set the screen dropped in a ranking made before ticket 644, which also marks it', () => {
-			const tip = setBonusTipLines(stepRow({ futureBonuses: [] }), { ranking: screenedRanking('exact-zero', true), withSetPotential: false });
-			expect(tip?.entries).toContainEqual({ type: 'line', label: { kind: 'screened', set: LIGHTBRINGER, reason: 'exact-zero' }, dps: undefined });
+			const popover = setBonusPopoverLines(stepRow({ futureBonuses: [] }), { ranking: screenedRanking('exact-zero', true), withSetPotential: false });
+			expect(popover?.entries).toContainEqual({ type: 'line', label: { kind: 'screened', set: LIGHTBRINGER, reason: 'exact-zero' }, dps: undefined });
 		});
 
 		it('names each bonus within the noise gate, with no figure, in both states', () => {
@@ -297,15 +298,15 @@ describe('setBonusTipLines', () => {
 			const noise = (threshold: number) => ({ type: 'line', label: { kind: 'noise', set: LIGHTBRINGER, threshold }, dps: undefined });
 			const expected = [totalLine(4.5), { type: 'heading', heading: 'not_counted' }, noise(2), noise(4)];
 			for (const withSetPotential of [false, true]) {
-				const tip = setBonusTipLines(row, { ...context, withSetPotential });
-				expect(tip).toMatchObject({ subLine: 'hover_hint', kind: 'receipt' });
-				expect(tip?.entries).toEqual(expected);
+				const popover = setBonusPopoverLines(row, { ...context, withSetPotential });
+				expect(popover).toMatchObject({ subLine: 'hover_hint', kind: 'receipt' });
+				expect(popover?.entries).toEqual(expected);
 			}
 		});
 
 		it('names no bonus within the noise when another bonus of the set clears the gate', () => {
 			const row = stepRow({ futureBonuses: [future(), future({ threshold: 4, piecesNeeded: 3, belowGate: true, stepGearDps: undefined })] });
-			expect(setBonusTipLines(row, context)?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_off' }, reachable(26)]);
+			expect(setBonusPopoverLines(row, context)?.entries).toEqual([totalLine(4.5), { type: 'heading', heading: 'not_counted_off' }, reachable(26)]);
 		});
 
 		// Each line says how much the figure would change if the tab counted that step in place of what it counts now.
@@ -339,7 +340,7 @@ describe('setBonusTipLines', () => {
 			it('lists the 4pc past a 2pc stop like the toggle-off line, valued against the stop’s gear', () => {
 				// 2pc gear 30.5 and 4pc gear 20 against current gear: the stop is the 2pc, and the 4pc would move the figure by 20 - 30.5.
 				const row = stepRow({ futureBonuses: [future(), fourPiece(20)] });
-				expect(setBonusTipLines(row, { ...context, withSetPotential: true })?.entries).toEqual([
+				expect(setBonusPopoverLines(row, { ...context, withSetPotential: true })?.entries).toEqual([
 					{ type: 'line', label: { kind: 'item_stats', unmeasuredBreaks: [] }, dps: 4.5 },
 					{ type: 'heading', heading: 'set_potential' },
 					{ type: 'line', label: { kind: 'pieces', form: 'step', pieces: ['Lightbringer Breastplate'], threshold: 2, broken: [] }, dps: 26 },
@@ -348,7 +349,7 @@ describe('setBonusTipLines', () => {
 					pastStop4(-10.5),
 				]);
 				// Toggle off is unchanged: both bonuses, each against the item alone.
-				expect(setBonusTipLines(row, context)?.entries).toEqual([
+				expect(setBonusPopoverLines(row, context)?.entries).toEqual([
 					totalLine(4.5),
 					{ type: 'heading', heading: 'not_counted_off' },
 					reachable(26),
@@ -361,12 +362,12 @@ describe('setBonusTipLines', () => {
 				// A tie under the strict best-stop rule, then a gap of exactly 3.
 				for (const stepGearDps of [30.5, 27.5]) {
 					const row = stepRow({ futureBonuses: [future(), fourPiece(stepGearDps)] });
-					const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
-					expect(tip?.entries.slice(-2)).toEqual([{ type: 'heading', heading: 'not_counted' }, pastStop4(undefined)]);
+					const popover = setBonusPopoverLines(row, { ...context, withSetPotential: true });
+					expect(popover?.entries.slice(-2)).toEqual([{ type: 'heading', heading: 'not_counted' }, pastStop4(undefined)]);
 				}
 				// A 3.5 gap clears the bar, so it gets its figure.
 				const row = stepRow({ futureBonuses: [future(), fourPiece(27)] });
-				expect(setBonusTipLines(row, { ...context, withSetPotential: true })?.entries.at(-1)).toEqual(pastStop4(-3.5));
+				expect(setBonusPopoverLines(row, { ...context, withSetPotential: true })?.entries.at(-1)).toEqual(pastStop4(-3.5));
 			});
 
 			it('compares the gap with twice the two step gears’ standard errors added in quadrature', () => {
@@ -379,23 +380,23 @@ describe('setBonusTipLines', () => {
 					[3, 3, pastStop4(-10.5)],
 				] as const) {
 					const row = stepRow({ futureBonuses: [future({ stepGearSe: stopSe }), fourPiece(20, { stepGearSe: stepSe })] });
-					expect(setBonusTipLines(row, { ...context, withSetPotential: true })?.entries.at(-1)).toEqual(expected);
+					expect(setBonusPopoverLines(row, { ...context, withSetPotential: true })?.entries.at(-1)).toEqual(expected);
 				}
 			});
 
 			it('lists nothing under "Not counted" when the stop is the last step', () => {
 				const row = stepRow({ futureBonuses: [future({ stepGearDps: 10 }), fourPiece(40)] });
-				const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
-				expect(tip?.entries.at(-1)).toEqual(totalLine(40));
-				expect(tip?.entries.filter(e => e.type === 'heading')).toEqual([{ type: 'heading', heading: 'set_potential' }]);
-				expect(addsUp(tip)).toBe(true);
+				const popover = setBonusPopoverLines(row, { ...context, withSetPotential: true });
+				expect(popover?.entries.at(-1)).toEqual(totalLine(40));
+				expect(popover?.entries.filter(e => e.type === 'heading')).toEqual([{ type: 'heading', heading: 'set_potential' }]);
+				expect(addsUp(popover)).toBe(true);
 			});
 
 			it('names the worn bonuses the later step breaks beyond the row’s own swap, as the toggle-off line does', () => {
 				const justicar = { setId: 626, setName: 'Justicar Battlegear', threshold: 2 as const, dps: 30 };
 				const row = stepRow({ futureBonuses: [future(), fourPiece(20, { breaks: [justicar] })] });
-				const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
-				expect(tip?.entries.at(-1)).toEqual(pastStop4(-10.5, [{ setName: 'Justicar Battlegear', threshold: 2 }]));
+				const popover = setBonusPopoverLines(row, { ...context, withSetPotential: true });
+				expect(popover?.entries.at(-1)).toEqual(pastStop4(-10.5, [{ setName: 'Justicar Battlegear', threshold: 2 }]));
 			});
 		});
 
@@ -403,29 +404,29 @@ describe('setBonusTipLines', () => {
 			const crystalforge = { setId: 629, setName: 'Crystalforge Battlegear', threshold: 2 as const };
 			const justicar = { setId: 626, setName: 'Justicar Battlegear', threshold: 2 as const };
 			const row = stepRow({ singleBreaks: [{ ...crystalforge, dps: 18.43 }], futureBonuses: [future({ breaks: [crystalforge, justicar] })] });
-			const tip = setBonusTipLines(row, context);
-			expect(tip?.entries).toEqual([
+			const popover = setBonusPopoverLines(row, context);
+			expect(popover?.entries).toEqual([
 				{ type: 'line', label: { kind: 'item_stats', unmeasuredBreaks: [] }, dps: 22.9 },
 				{ type: 'line', label: { kind: 'breaks', broken: [{ setName: 'Crystalforge Battlegear', threshold: 2 }] }, dps: -18.4 },
 				totalLine(4.5),
 				{ type: 'heading', heading: 'not_counted_off' },
 				reachable(26, [{ setName: 'Justicar Battlegear', threshold: 2 }]),
 			]);
-			expect(addsUp(tip)).toBe(true);
+			expect(addsUp(popover)).toBe(true);
 		});
 
 		it('leaves the toggle-on popover of every credited row of the feral fixtures as it was before ticket 336, adding only the steps past the stop', () => {
 			// Captured before the not-counted steps were added, over the feral-p3-p2bis and feral-p3-th-hands-legs fixtures.
 			// A value cast: the JSON import's own type widens every literal, so it is not used as a type.
-			const snapshot = onSnapshot as unknown as Record<string, { ranking: Ranking; rows: Array<{ row: RankedItem; tip: SetBonusTip }> }>;
-			const rows = Object.values(snapshot).flatMap(fixture => fixture.rows.map(({ row, tip }) => ({ ranking: fixture.ranking, row, tip })));
+			const snapshot = onSnapshot as unknown as Record<string, { ranking: Ranking; rows: Array<{ row: RankedItem; popover: SetBonusPopoverContent }> }>;
+			const rows = Object.values(snapshot).flatMap(fixture => fixture.rows.map(({ row, popover }) => ({ ranking: fixture.ranking, row, popover })));
 			expect(rows).toHaveLength(16);
 			let withPastStop = 0;
-			for (const { ranking, row, tip } of rows) {
-				const now = setBonusTipLines(row, { ranking, withSetPotential: true });
-				expect(now && { ...now, entries: now.entries.slice(0, tip.entries.length) }).toEqual(tip);
+			for (const { ranking, row, popover } of rows) {
+				const now = setBonusPopoverLines(row, { ranking, withSetPotential: true });
+				expect(now && { ...now, entries: now.entries.slice(0, popover.entries.length) }).toEqual(popover);
 				// The Malorne rows of feral-p3-th-hands-legs stop at the 2pc, so their 4pc follows under "Not counted".
-				const added = now!.entries.slice(tip.entries.length);
+				const added = now!.entries.slice(popover.entries.length);
 				if (added.length === 0) continue;
 				withPastStop++;
 				expect(added[0]).toEqual({ type: 'heading', heading: 'not_counted' });
@@ -440,10 +441,10 @@ describe('setBonusTipLines', () => {
 			...fixtureRow(10),
 			setContext: { ...fixtureRow(10).setContext!, futureBonuses: [{ threshold: 2, piecesNeeded: 1, dps: 20.04, pieces: [], breaks: [] }] },
 		};
-		const tip = setBonusTipLines(row, { ...context, withSetPotential: true });
-		expect(tip?.entries).toContainEqual({ type: 'heading', heading: 'set_potential' });
-		expect(lines(tip).at(-1)!.dps).toBeGreaterThan(4.42);
-		expect(addsUp(tip)).toBe(true);
+		const popover = setBonusPopoverLines(row, { ...context, withSetPotential: true });
+		expect(popover?.entries).toContainEqual({ type: 'heading', heading: 'set_potential' });
+		expect(lines(popover).at(-1)!.dps).toBeGreaterThan(4.42);
+		expect(addsUp(popover)).toBe(true);
 	});
 });
 

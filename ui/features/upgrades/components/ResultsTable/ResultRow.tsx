@@ -6,7 +6,7 @@ import { memo, type Ref } from 'react';
 import type { RankedItem } from '../../model/engine/rank';
 import { ilvlOf } from '../../model/pool_source';
 import type { DpsSortKey } from '../../model/results_columns';
-import type { RankingContext } from '../../model/set_bonus_tip';
+import type { RankingContext } from '../../model/set_bonus_popover';
 import type { RowTag } from '../../model/settings_pool';
 import { slotLabel } from '../../utils/format';
 import { BatchToggle, FavoriteToggle } from '../RowToggles';

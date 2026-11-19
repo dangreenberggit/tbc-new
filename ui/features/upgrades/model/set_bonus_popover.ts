@@ -28,7 +28,7 @@ import { shownTenths, tenthsOf } from './shown_figure';
 /** A set bonus as a label names it: "{set} {count}pc". */
 export type BonusRef = { setName: string; threshold: number };
 
-export type TipLabel =
+export type PopoverLabel =
 	/** The row's own stats. Names the bonus it completes, and any worn bonus it breaks that was not measured, as that loss is then inside this line. */
 	| { kind: 'item_stats'; bonus?: BonusRef; unmeasuredBreaks: BonusRef[] }
 	| { kind: 'breaks'; broken: BonusRef[] }
@@ -53,12 +53,11 @@ export type ScreenedReason = (typeof SCREENED_REASONS)[number];
  * to tenths so they add up to it. `marker` flags the result the row's figure uses;
  * `outcome` flags a line after the total that is compared, not added.
  */
-export type TipEntry =
+export type PopoverEntry =
 	| { type: 'heading'; heading: 'set_potential' | 'set_potential_totals' | 'not_counted_off' | 'not_counted_no_gain' | 'not_counted' }
-	| { type: 'line'; label: TipLabel; dps: number | undefined; marker?: true; outcome?: true; againstStop?: true; belowNoise?: true };
+	| { type: 'line'; label: PopoverLabel; dps: number | undefined; marker?: true; outcome?: true; againstStop?: true; belowNoise?: true };
 
-/** The data of the set-bonus popover (SetBonusPopover); "tip" is its short name in code and i18n keys. */
-export type SetBonusTip = { subLine: 'hover_hint' | 'not_counted'; kind: 'receipt' | 'outcomes'; entries: TipEntry[] };
+export type SetBonusPopoverContent = { subLine: 'hover_hint' | 'not_counted'; kind: 'receipt' | 'outcomes'; entries: PopoverEntry[] };
 
 /** The ranking on screen and the gear it was measured on. */
 export type RankingContext = {
@@ -70,7 +69,7 @@ export type RankingContext = {
 	withSetPotential?: boolean;
 };
 
-type Line = { label: TipLabel; dps: number | undefined; marker?: boolean };
+type Line = { label: PopoverLabel; dps: number | undefined; marker?: boolean };
 
 /** Raw unless `shownTenths` moved it below the cutoff, so a figure it leaves alone keeps its full precision. */
 const shownValue = (v: number, bar: number | undefined): number => (shownTenths(v, bar) === tenthsOf(v) ? v : shownTenths(v, bar) / 10);
@@ -91,13 +90,16 @@ export function spreadTenths(values: readonly number[], target: number): number[
 }
 
 const ref = (b: BonusRef): BonusRef => ({ setName: b.setName, threshold: b.threshold });
-const line = (label: TipLabel, dps: number | undefined, marker?: boolean): TipEntry => ({
+const line = (label: PopoverLabel, dps: number | undefined, marker?: boolean): PopoverEntry => ({
 	type: 'line',
 	label,
 	dps,
 	...(marker ? { marker: true as const } : {}),
 });
-const piecesLabel = (form: 'stop' | 'step', term: { pieces: ReadonlyArray<{ name: string }>; threshold: number; broken: readonly BonusRef[] }): TipLabel => ({
+const piecesLabel = (
+	form: 'stop' | 'step',
+	term: { pieces: ReadonlyArray<{ name: string }>; threshold: number; broken: readonly BonusRef[] },
+): PopoverLabel => ({
 	kind: 'pieces',
 	form,
 	pieces: term.pieces.map(p => p.name),
@@ -117,7 +119,7 @@ const NO_SET_POTENTIAL: SetPotentialSection = { lines: [], kind: 'none' };
  */
 function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPotentialSection {
 	const futureBonuses = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
-	const bonusLabel = (threshold: number): TipLabel => ({ kind: 'bonus', set: ctx.setName, threshold, worn: ctx.piecesWornBefore });
+	const bonusLabel = (threshold: number): PopoverLabel => ({ kind: 'bonus', set: ctx.setName, threshold, worn: ctx.piecesWornBefore });
 	if (setCreditUnmeasured(ctx) && ctx.stepRanking) {
 		return { lines: futureBonuses.filter(stepFutureUnmeasured).map(f => ({ label: bonusLabel(f.threshold), dps: undefined })), kind: 'unmeasured' };
 	}
@@ -177,7 +179,7 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPot
  * `stopThreshold`. A difference too small to tell from noise gets no figure. Without `stepRanking` a
  * future bonus's figure is the bonus alone, which these labels would misstate.
  */
-function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopThreshold?: number): TipEntry[] {
+function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopThreshold?: number): PopoverEntry[] {
 	if (!ctx.stepRanking) return [];
 	const own = new Set((ctx.singleBreaks ?? []).map(bonusKey));
 	const stop = stopThreshold === undefined ? undefined : ctx.futureBonuses?.find(f => f.threshold === stopThreshold);
@@ -186,7 +188,7 @@ function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopTh
 	return [...(ctx.futureBonuses ?? [])]
 		.sort((a, b) => a.threshold - b.threshold)
 		.filter(f => f.threshold > (stopThreshold ?? 0) && stepEligible(f, cutoff))
-		.map((f): TipEntry => {
+		.map((f): PopoverEntry => {
 			const dps = f.stepGearDps === undefined ? undefined : f.stepGearDps - reference;
 			// Both `stepGearDps` values are measured against the same baseline sim, so
 			// `Math.hypot` of their errors counts the baseline's error twice. The test
@@ -215,7 +217,7 @@ function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, stopTh
  * When every bonus of a `stepRanking` row is too small to tell from noise, they are
  * listed with no figure, so the row still says its set was tried.
  */
-function noiseLines(ctx: SetContext, cutoff: Cutoff): TipEntry[] {
+function noiseLines(ctx: SetContext, cutoff: Cutoff): PopoverEntry[] {
 	const futureBonuses = ctx.futureBonuses ?? [];
 	if (!ctx.stepRanking || futureBonuses.some(f => stepEligible(f, cutoff))) return [];
 	return futureBonuses
@@ -225,7 +227,7 @@ function noiseLines(ctx: SetContext, cutoff: Cutoff): TipEntry[] {
 }
 
 /** The toggle is never why a set `set-screen.ts` dropped is not counted, so a section with no reachable line names no reason. */
-function notCountedHeading(hasReachable: boolean, on: boolean): Extract<TipEntry, { type: 'heading' }>['heading'] {
+function notCountedHeading(hasReachable: boolean, on: boolean): Extract<PopoverEntry, { type: 'heading' }>['heading'] {
 	if (!hasReachable) return 'not_counted';
 	return on ? 'not_counted_no_gain' : 'not_counted_off';
 }
@@ -234,7 +236,7 @@ function notCountedHeading(hasReachable: boolean, on: boolean): Extract<TipEntry
  * No figure on purpose: a `below-zero` measure is the pieces and the bonus
  * together, so printing it as the bonus would blame the bonus for the pieces' loss.
  */
-function screenedLine(ctx: SetContext, ranking: RankingContext['ranking']): TipEntry | null {
+function screenedLine(ctx: SetContext, ranking: RankingContext['ranking']): PopoverEntry | null {
 	const screen = ranking?.setScreen?.mode === 'on' ? ranking.setScreen.sets.find(s => s.setId === ctx.setId) : undefined;
 	// Older rankings also mark the set with a "screened-out" entry.
 	const marked = ranking?.setBonuses?.some(b => b.setId === ctx.setId && b.unmeasured === 'screened-out') ?? false;
@@ -250,7 +252,7 @@ function screenedLine(ctx: SetContext, ranking: RankingContext['ranking']): TipE
  * seeds moved the row's own figure. The item-alone and `marker` lines then match the
  * cell with the toggle off and on, so they are rounded as the cell is.
  */
-function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Line[], bar: number | undefined): TipEntry[] {
+function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Line[], bar: number | undefined): PopoverEntry[] {
 	const shift = row.deltaDps - (ctx.singleDeltaDps ?? row.deltaDps);
 	return [
 		{ type: 'heading', heading: 'set_potential_totals' },
@@ -264,7 +266,7 @@ function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Li
  * line balances the toggle-off lines and keeps its value across the toggle, so the
  * toggle's rounding goes into the Set potential lines.
  */
-export function setBonusTipLines(row: RankedItem, context: RankingContext = {}): SetBonusTip | null {
+export function setBonusPopoverLines(row: RankedItem, context: RankingContext = {}): SetBonusPopoverContent | null {
 	const ctx = row.setContext;
 	const cutoff = context.ranking?.cutoff;
 	const bar = cutoff?.absDps;
@@ -291,7 +293,7 @@ export function setBonusTipLines(row: RankedItem, context: RankingContext = {}):
 	const breakTenths = measuredBreaks.map(b => tenthsOf(-b.dps));
 	const itemStatsTenths = shownTenths(row.deltaDps, bar) - breakTenths.reduce((a, b) => a + b, 0);
 
-	const entries: TipEntry[] = [];
+	const entries: PopoverEntry[] = [];
 	// Kept even when it equals the total if it names a bonus or a loss, as no other line names them.
 	if (bonus !== undefined || unmeasuredBreaks.length > 0 || itemStatsTenths !== shownTenths(total, bar)) {
 		entries.push(line({ kind: 'item_stats', ...(bonus ? { bonus } : {}), unmeasuredBreaks }, itemStatsTenths / 10));
@@ -311,7 +313,7 @@ export function setBonusTipLines(row: RankedItem, context: RankingContext = {}):
 	}
 
 	// What the figure does not count goes after the total, so the toggle never decides whether the popover exists.
-	const notCounted: TipEntry[] = [];
+	const notCounted: PopoverEntry[] = [];
 	if (ctx && cutoff !== undefined) {
 		const pastStop = setPotentialOn && potential.stopThreshold !== undefined;
 		const reachable = !setPotentialOn || potential.kind === 'none' || pastStop ? reachableLines(row, ctx, cutoff, potential.stopThreshold) : [];

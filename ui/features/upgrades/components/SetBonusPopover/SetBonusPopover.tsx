@@ -3,11 +3,11 @@ import i18n from '@i18n/config';
 import { Popover, type PopoverSide } from '@ui-kit/Popover';
 import { type ReactNode, type SyntheticEvent, useState } from 'react';
 
-import type { SetBonusTip } from '../../model/set_bonus_tip';
-import { setBonusTipText, tipSections } from '../../utils/set_bonus_labels';
+import type { SetBonusPopoverContent } from '../../model/set_bonus_popover';
+import { popoverSections, setBonusPopoverText } from '../../utils/set_bonus_labels';
 
 export interface SetBonusPopoverProps {
-	tip: SetBonusTip;
+	content: SetBonusPopoverContent;
 	/** The DPS figure, which is the popover's trigger. */
 	children: ReactNode;
 }
@@ -43,7 +43,7 @@ const sideFor = (figure: Element): PopoverSide => {
  * figure (Base UI's trigger is a button). Right of the figure when it fits, so the DPS column stays
  * readable, and above it otherwise; on the right it covers the row's own Slot cell.
  */
-export const SetBonusPopover = ({ tip, children }: SetBonusPopoverProps) => {
+export const SetBonusPopover = ({ content, children }: SetBonusPopoverProps) => {
 	const [side, setSide] = useState<PopoverSide>('top');
 	const measure = (event: SyntheticEvent<HTMLButtonElement>) => setSide(sideFor(event.currentTarget));
 	return (
@@ -55,15 +55,15 @@ export const SetBonusPopover = ({ tip, children }: SetBonusPopoverProps) => {
 			side={side}
 			sideOffset={ANCHOR_GAP_PX}
 			maxWidth={POPUP_MAX_WIDTH}
-			testId="upgrades-set-bonus-tip">
-			<BasePopover.Title className="sr-only">{i18n.t('upgrades_tab.results.set_bonus_tip_title', { ns: 'upgrades' })}</BasePopover.Title>
+			testId="upgrades-set-bonus-popover">
+			<BasePopover.Title className="sr-only">{i18n.t('upgrades_tab.results.set_bonus_popover_title', { ns: 'upgrades' })}</BasePopover.Title>
 			<div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-0.5 text-left">
-				{tipSections(setBonusTipText(tip)).map(section => (
+				{popoverSections(setBonusPopoverText(content)).map(section => (
 					<div key={section.id} className="contents">
 						{section.heading && <p className="col-span-2 mt-1 mb-0 font-semibold">{section.heading}</p>}
 						<dl className="contents">
 							{section.lines.map(line => (
-								<div key={line.id} className="contents" data-testid={line.total ? 'upgrades-set-bonus-tip-total' : undefined}>
+								<div key={line.id} className="contents" data-testid={line.total ? 'upgrades-set-bonus-popover-total' : undefined}>
 									<dt
 										className={
 											line.total ? 'border-t border-t-border pt-0.5 font-semibold' : `font-normal${line.muted ? ' text-muted' : ''}`

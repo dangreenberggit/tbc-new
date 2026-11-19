@@ -2,7 +2,7 @@ import i18n from '@i18n/config';
 import { memo } from 'react';
 
 import type { RankedItem } from '../../model/engine/rank';
-import { setBonusTipLines } from '../../model/set_bonus_tip';
+import { setBonusPopoverLines } from '../../model/set_bonus_popover';
 import { formatDelta, simSlotLabel } from '../../utils/format';
 import { setBonusSubLineText } from '../../utils/set_bonus_labels';
 import { SetBonusPopover } from '../SetBonusPopover';
@@ -20,16 +20,16 @@ export interface DeltaCellProps {
  * the cutoff never rounds up to it. Memoised: see `ResultRow`.
  */
 export const DeltaCell = memo(({ row, context }: DeltaCellProps) => {
-	const tip = setBonusTipLines(row, context.rankingContext);
+	const popover = setBonusPopoverLines(row, context.rankingContext);
 	const figure = formatDelta(context.dpsKey?.(row) ?? row.deltaDps, context.rankingContext.ranking?.cutoff.absDps);
 
 	return (
 		<td className="py-1 pr-3 text-right whitespace-nowrap tabular-nums" data-testid="upgrades-delta-cell">
 			<span className="grid justify-items-end">
-				{tip ? <SetBonusPopover tip={tip}>{figure}</SetBonusPopover> : figure}
-				{tip && (
+				{popover ? <SetBonusPopover content={popover}>{figure}</SetBonusPopover> : figure}
+				{popover && (
 					<small className="text-muted" data-testid="upgrades-set-bonus">
-						{setBonusSubLineText(tip.subLine)}
+						{setBonusSubLineText(popover.subLine)}
 					</small>
 				)}
 				{row.removedItems?.map(removed => (

@@ -290,100 +290,100 @@
 						"not_counted": {
 							"type": "string"
 						},
-						"tip_item_stats": {
+						"popover_item_stats": {
 							"type": "string"
 						},
-						"tip_item_stats_with_bonus": {
+						"popover_item_stats_with_bonus": {
 							"type": "string"
 						},
-						"tip_item_stats_with_broken": {
+						"popover_item_stats_with_broken": {
 							"type": "string"
 						},
-						"tip_item_stats_add_broken": {
+						"popover_item_stats_add_broken": {
 							"type": "string"
 						},
-						"tip_breaks": {
+						"popover_breaks": {
 							"type": "string"
 						},
-						"tip_breaks_several": {
+						"popover_breaks_several": {
 							"type": "string"
 						},
-						"tip_couldnt_measure": {
+						"popover_couldnt_measure": {
 							"type": "string"
 						},
-						"tip_bonus": {
+						"popover_bonus": {
 							"type": "string"
 						},
-						"tip_piece_stats": {
+						"popover_piece_stats": {
 							"type": "string"
 						},
-						"tip_set_potential": {
+						"popover_set_potential": {
 							"type": "string"
 						},
-						"tip_set_potential_totals": {
+						"popover_set_potential_totals": {
 							"type": "string"
 						},
-						"tip_not_counted_off": {
+						"popover_not_counted_off": {
 							"type": "string"
 						},
-						"tip_not_counted_no_gain": {
+						"popover_not_counted_no_gain": {
 							"type": "string"
 						},
-						"tip_not_counted": {
+						"popover_not_counted": {
 							"type": "string"
 						},
-						"tip_reachable": {
+						"popover_reachable": {
 							"type": "string"
 						},
-						"tip_reachable_bonus": {
+						"popover_reachable_bonus": {
 							"type": "string"
 						},
-						"tip_reachable_breaks": {
+						"popover_reachable_breaks": {
 							"type": "string"
 						},
-						"tip_screened": {
+						"popover_screened": {
 							"type": "string"
 						},
-						"tip_screened_unmeasured": {
+						"popover_screened_unmeasured": {
 							"type": "string"
 						},
-						"tip_screened_no_effect": {
+						"popover_screened_no_effect": {
 							"type": "string"
 						},
-						"tip_screened_loss": {
+						"popover_screened_loss": {
 							"type": "string"
 						},
-						"tip_stop": {
+						"popover_stop": {
 							"type": "string"
 						},
-						"tip_stop_breaks": {
+						"popover_stop_breaks": {
 							"type": "string"
 						},
-						"tip_step": {
+						"popover_step": {
 							"type": "string"
 						},
-						"tip_step_breaks": {
+						"popover_step_breaks": {
 							"type": "string"
 						},
-						"tip_item_alone": {
+						"popover_item_alone": {
 							"type": "string"
 						},
-						"tip_item_alone_breaks": {
+						"popover_item_alone_breaks": {
 							"type": "string"
 						},
-						"tip_dps_more": {
+						"popover_dps_more": {
 							"type": "string"
 						},
-						"tip_dps_less": {
+						"popover_dps_less": {
 							"type": "string"
 						},
-						"tip_figure_marker": {
+						"popover_figure_marker": {
 							"type": "string"
 						},
-						"tip_total": {
+						"popover_total": {
 							"type": "string"
 						},
-						"tip_too_small": {
+						"popover_too_small": {
 							"type": "string"
 						}
 					},
@@ -391,38 +391,38 @@
 					"required": [
 						"hover_hint",
 						"not_counted",
-						"tip_item_stats",
-						"tip_item_stats_with_bonus",
-						"tip_item_stats_with_broken",
-						"tip_item_stats_add_broken",
-						"tip_breaks",
-						"tip_breaks_several",
-						"tip_couldnt_measure",
-						"tip_bonus",
-						"tip_piece_stats",
-						"tip_set_potential",
-						"tip_set_potential_totals",
-						"tip_not_counted_off",
-						"tip_not_counted_no_gain",
-						"tip_not_counted",
-						"tip_reachable",
-						"tip_reachable_bonus",
-						"tip_reachable_breaks",
-						"tip_screened",
-						"tip_screened_unmeasured",
-						"tip_screened_no_effect",
-						"tip_screened_loss",
-						"tip_stop",
-						"tip_stop_breaks",
-						"tip_step",
-						"tip_step_breaks",
-						"tip_item_alone",
-						"tip_item_alone_breaks",
-						"tip_dps_more",
-						"tip_dps_less",
-						"tip_figure_marker",
-						"tip_total",
-						"tip_too_small"
+						"popover_item_stats",
+						"popover_item_stats_with_bonus",
+						"popover_item_stats_with_broken",
+						"popover_item_stats_add_broken",
+						"popover_breaks",
+						"popover_breaks_several",
+						"popover_couldnt_measure",
+						"popover_bonus",
+						"popover_piece_stats",
+						"popover_set_potential",
+						"popover_set_potential_totals",
+						"popover_not_counted_off",
+						"popover_not_counted_no_gain",
+						"popover_not_counted",
+						"popover_reachable",
+						"popover_reachable_bonus",
+						"popover_reachable_breaks",
+						"popover_screened",
+						"popover_screened_unmeasured",
+						"popover_screened_no_effect",
+						"popover_screened_loss",
+						"popover_stop",
+						"popover_stop_breaks",
+						"popover_step",
+						"popover_step_breaks",
+						"popover_item_alone",
+						"popover_item_alone_breaks",
+						"popover_dps_more",
+						"popover_dps_less",
+						"popover_figure_marker",
+						"popover_total",
+						"popover_too_small"
 					]
 				},
 				"prune": {
@@ -536,7 +536,7 @@
 						"empty_no_phase_list_body": {
 							"type": "string"
 						},
-						"set_bonus_tip_title": {
+						"set_bonus_popover_title": {
 							"type": "string"
 						},
 						"empty_no_source_row": {
@@ -585,7 +585,7 @@
 						"empty_no_upgrades_body",
 						"empty_no_phase_list",
 						"empty_no_phase_list_body",
-						"set_bonus_tip_title",
+						"set_bonus_popover_title",
 						"empty_no_source_row",
 						"below_cutoff_group_one",
 						"below_cutoff_group_other",

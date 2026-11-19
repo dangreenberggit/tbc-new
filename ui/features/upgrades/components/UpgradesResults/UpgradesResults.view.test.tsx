@@ -129,7 +129,7 @@ describe('UpgradesResults view toggles', () => {
 		} finally {
 			vi.useRealTimers();
 		}
-		const total = within(screen.getByTestId('upgrades-set-bonus-tip-total')).getByRole('definition').textContent;
+		const total = within(screen.getByTestId('upgrades-set-bonus-popover-total')).getByRole('definition').textContent;
 		expect(total).toBe('+24.5');
 		expect(figure().textContent).toBe(total);
 	});
