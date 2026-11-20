@@ -11,7 +11,12 @@ import { RunControls } from './RunControls';
 loadEnglishBundles();
 
 /** The settings hook's contract in small: the change writes the tab store, which the picker reads back. */
-const mount = ({ ready = true, running = false, isNative = false }: { ready?: boolean; running?: boolean; isNative?: boolean } = {}) => {
+type MountOptions = { ready?: boolean; running?: boolean; isNative?: boolean; candidates?: number | undefined };
+
+const mount = (options: MountOptions = {}) => {
+	const { ready = true, running = false, isNative = false } = options;
+	// An explicit `candidates: undefined` is the unknown count, so it does not take the default.
+	const candidates = 'candidates' in options ? options.candidates : 399;
 	const store = createUpgradesStore({ iterations: 500 });
 	const onStart = vi.fn();
 	const view = within(
@@ -21,6 +26,7 @@ const mount = ({ ready = true, running = false, isNative = false }: { ready?: bo
 					ready={ready}
 					running={running}
 					store={store}
+					candidates={candidates}
 					onIterationsChange={iterations => store.getState().setIterations(iterations, undefined)}
 					onStart={onStart}
 				/>
@@ -71,17 +77,36 @@ describe('RunControls', () => {
 		expect(field.value).toBe('12');
 	});
 
+	// Like the Bulk tab, the limit is on the run's iterations in all: here at least the baseline and each of the 399
+	// eligible candidates, 400 sims, so 2,500 iterations each is exactly 1,000,000.
 	describe('the Bulk tab’s iterations warning', () => {
-		it('shows above 1,000,000 iterations on the web sim, with the Bulk tab’s words, and still lets the run start', () => {
+		it('shows when the run sims over 1,000,000 iterations on the web sim, with the Bulk tab’s words, and still lets the run start', () => {
 			const { store, runButton, warning } = mount();
-			act(() => store.getState().setIterations(1_000_001, undefined));
+			act(() => store.getState().setIterations(2_501, undefined));
 			expect(warning()?.getAttribute('aria-label')).toBe(WEB_WARNING);
 			expect(runButton.disabled).toBe(false);
 		});
 
-		it('does not show at 1,000,000 iterations', () => {
+		it('does not show at 1,000,000 iterations in all', () => {
 			const { store, warning } = mount();
-			act(() => store.getState().setIterations(1_000_000, undefined));
+			act(() => store.getState().setIterations(2_500, undefined));
+			expect(warning()).toBeNull();
+		});
+
+		it('counts only the candidates the cap lets through', () => {
+			const { store, warning } = mount();
+			act(() => {
+				store.getState().setIterations(5_000, undefined);
+				store.getState().setCandidateCap(99, undefined);
+			});
+			expect(warning()).toBeNull();
+			act(() => store.getState().setCandidateCap(299, undefined));
+			expect(warning()?.getAttribute('aria-label')).toBe(WEB_WARNING);
+		});
+
+		it('does not show while the candidate count is unknown', () => {
+			const { store, warning } = mount({ candidates: undefined });
+			act(() => store.getState().setIterations(20_000_000, undefined));
 			expect(warning()).toBeNull();
 		});
 

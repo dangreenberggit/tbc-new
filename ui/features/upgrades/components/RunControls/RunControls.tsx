@@ -19,21 +19,27 @@ export interface RunControlsProps {
 	ready: boolean;
 	running: boolean;
 	store: UpgradesStore;
+	/** The eligible candidate count the panel shows; undefined while it is unknown. */
+	candidates: number | undefined;
 	onIterationsChange: (iterations: number) => void;
 	onStart: () => void;
 }
 
 /**
- * The Bulk tab's iterations warning (`features/bulk/components/BulkSettings/CombinationsCount.tsx`), over the web
- * sim's limit only: its advice to download the sim is untrue in the downloaded sim. Like the Bulk tab, it never
- * blocks a run.
+ * The Bulk tab's iterations warning (`features/bulk/components/BulkSettings/CombinationsCount.tsx`). The Bulk tab
+ * weighs the batch's iterations in all; here that is at least one sim for the baseline and one per candidate the run
+ * takes, so the warning's "over" is true whenever it shows. Over the web sim's limit only: its advice to download the
+ * sim is untrue in the downloaded sim. Like the Bulk tab, it never blocks a run.
  */
-const IterationsWarning = ({ store }: { store: UpgradesStore }) => {
+const IterationsWarning = ({ store, candidates }: { store: UpgradesStore; candidates: number | undefined }) => {
 	const sim = useSim();
 	const tooltipId = useId();
 	const iterations = useStore(store, state => state.settings.iterations);
+	const cap = useStore(store, state => state.settings.candidateCap);
 	const limit = bulkLimitForHost(sim.isNative, WEB_ITERATIONS_LIMIT, Number.POSITIVE_INFINITY);
-	if (!(iterations > limit)) return null;
+	if (candidates === undefined) return null;
+	const sims = 1 + Math.min(candidates, cap ?? candidates);
+	if (!(sims * iterations > limit)) return null;
 	const warningText = i18n.t('bulk_tab.warning.iterations_limit', { limit: formatToNumber(limit) });
 	return (
 		<div>
@@ -51,7 +57,7 @@ const IterationsWarning = ({ store }: { store: UpgradesStore }) => {
 };
 
 /** The iterations field and Run. Stop is the progress dialog's cancel, as on the Bulk tab. */
-export const RunControls = ({ ready, running, store, onIterationsChange, onStart }: RunControlsProps) => (
+export const RunControls = ({ ready, running, store, candidates, onIterationsChange, onStart }: RunControlsProps) => (
 	<div className="grid gap-6" data-testid="upgrades-run-controls">
 		<NumberPicker
 			modObject={store}
@@ -64,7 +70,7 @@ export const RunControls = ({ ready, running, store, onIterationsChange, onStart
 				setValue: (_store, next) => onIterationsChange(next),
 			}}
 		/>
-		<IterationsWarning store={store} />
+		<IterationsWarning store={store} candidates={candidates} />
 		<Button data-testid="upgrades-run-button" disabled={!ready || running} onClick={onStart}>
 			{i18n.t('upgrades_tab.run', { ns: 'upgrades' })}
 		</Button>

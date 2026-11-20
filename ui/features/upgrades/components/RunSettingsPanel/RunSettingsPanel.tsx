@@ -58,7 +58,14 @@ export const RunSettingsPanel = memo(({ settings, ready, running, showDevControl
 				</div>
 			</div>
 			<EligibleCount count={settings.eligibleCount} />
-			<RunControls ready={ready} running={running} store={settings.store} onIterationsChange={settings.setIterations} onStart={onStart} />
+			<RunControls
+				ready={ready}
+				running={running}
+				store={settings.store}
+				candidates={settings.eligibleCount}
+				onIterationsChange={settings.setIterations}
+				onStart={onStart}
+			/>
 		</div>
 	);
 });
