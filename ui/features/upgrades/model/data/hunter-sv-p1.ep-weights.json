@@ -3,9 +3,8 @@
 	"pin": "b603564eed544d5e9f62fbc3950309dd65921110",
 	"label": "P1 SV",
 	"notes": [
-		"The Upgrades tab bundles this set for a hunter whose Survival tree has the most talent points (ticket 803); fallback.ep-weights.json (P1 BM) serves every other hunter.",
-		"At this pin P1_SV_EP_PRESET has the same numbers as P1_BM_EP_PRESET; this file keeps its own source so that ep-presets:check catches the day upstream changes one and not the other.",
-		"data/presets/ep-weights-by-phase.json and this repo's CLI do not read this file."
+		"The Upgrades tab uses this set (P1_SV_EP_PRESET) for a hunter whose Survival tree has strictly more talent points than each other tree; every other hunter gets P1_BM_EP_PRESET.",
+		"At this pin P1_SV_EP_PRESET has the same numbers as P1_BM_EP_PRESET; it is kept as its own set so that each follows upstream if the two ever differ."
 	],
 	"weights": {
 		"0": 0.06,

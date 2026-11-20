@@ -1,6 +1,6 @@
 {
 	"kind": "tier-exchange",
-	"generatedBy": "scripts/generate_fork_exchange.py",
+	"generatedBy": "Built from AtlasLoot's tier token and Sunmote upgrade tables, checked against wowsims' item database; do not edit by hand.",
 	"tokens": [
 		{
 			"pieceId": 28963,
