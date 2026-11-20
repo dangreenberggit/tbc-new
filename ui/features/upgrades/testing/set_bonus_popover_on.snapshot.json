@@ -277,7 +277,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"futureBonuses": [
 							{
 								"threshold": 2,
@@ -387,7 +387,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"futureBonuses": [
 							{
 								"threshold": 2,
@@ -498,7 +498,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
 						"futureBonuses": [
 							{
@@ -607,7 +607,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
 						"futureBonuses": [
 							{
@@ -714,7 +714,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 4,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
 						"futureBonuses": [
 							{ "threshold": 2, "piecesNeeded": 2, "sameGearDps": 0, "sameGearSe": 2.0272436471821083, "belowNoise": true },
@@ -802,7 +802,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 4,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"singleBreaks": [{ "setId": 640, "setName": "Malorne Harness", "threshold": 2, "dps": 88.37040387444813 }],
 						"futureBonuses": [
 							{ "threshold": 2, "piecesNeeded": 2, "sameGearDps": 0, "sameGearSe": 2.0272436471821083, "belowNoise": true },
@@ -890,7 +890,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"futureBonuses": [
 							{
 								"threshold": 2,
@@ -995,7 +995,7 @@
 						"piecesAfterSwap": 3,
 						"nextThreshold": 4,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"futureBonuses": [
 							{
 								"threshold": 4,
@@ -1275,7 +1275,7 @@
 						"piecesAfterSwap": 3,
 						"nextThreshold": 4,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"futureBonuses": [
 							{
 								"threshold": 4,
@@ -1348,7 +1348,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"futureBonuses": [
 							{
 								"threshold": 2,
@@ -1443,7 +1443,7 @@
 						"piecesAfterSwap": 3,
 						"nextThreshold": 4,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"futureBonuses": [
 							{
 								"threshold": 4,
@@ -1516,7 +1516,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"futureBonuses": [
 							{
 								"threshold": 2,
@@ -1613,7 +1613,7 @@
 						"piecesAfterSwap": 3,
 						"nextThreshold": 4,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"futureBonuses": [
 							{
 								"threshold": 4,
@@ -1688,7 +1688,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"futureBonuses": [
 							{
 								"threshold": 2,
@@ -1782,7 +1782,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"singleBreaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
 						"futureBonuses": [
 							{
@@ -1878,7 +1878,7 @@
 						"piecesAfterSwap": 1,
 						"nextThreshold": 2,
 						"crossesThreshold": false,
-						"bonusGearMeasured": true,
+						"usesBonusGear": true,
 						"singleBreaks": [{ "setId": 676, "setName": "Thunderheart Harness", "threshold": 2, "dps": 94.47552593854152 }],
 						"futureBonuses": [
 							{

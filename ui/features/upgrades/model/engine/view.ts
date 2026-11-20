@@ -7,7 +7,7 @@
  * corrected): each bonus, plus the stats of the other pieces needed to reach it,
  * minus the worn bonuses those swaps break. If any of those figures was not
  * measured the row gets nothing extra (`rankableSetPotential`). With
- * `setContext.bonusGearMeasured`, the credit comes instead from sims of the full gear
+ * `setContext.usesBonusGear`, the credit comes instead from sims of the full gear
  * the row would be worn in (`bonusGearCredit`).
  */
 import { type Cutoff, meetsCutoff, setBonusNoiseFloorDps } from './cutoff';
@@ -34,7 +34,7 @@ export const DEFAULT_SET_CREDIT_RULE: SetCreditRule = 'highest-credit';
 type SetContextLike = Partial<
 	Pick<
 		SetContext,
-		'futureBonuses' | 'commitBreaks' | 'singleBreaks' | 'crossesThreshold' | 'setName' | 'piecesWornBefore' | 'bonusGearMeasured' | 'singleDeltaDps'
+		'futureBonuses' | 'commitBreaks' | 'singleBreaks' | 'crossesThreshold' | 'setName' | 'piecesWornBefore' | 'usesBonusGear' | 'singleDeltaDps'
 	>
 >;
 
@@ -55,7 +55,7 @@ export type SetPotentialTerm =
 	| { kind: 'piece'; itemId: number; name: string; dps: number }
 	| { kind: 'break'; setName: string; threshold: number; dps: number }
 	/**
-	 * One eligible bonus with `bonusGearMeasured`: the DPS of its full gear over the
+	 * One eligible bonus with `usesBonusGear`: the DPS of its full gear over the
 	 * current gear, the partner pieces it adds (in sim slot order) and the worn
 	 * bonuses it breaks. These are whole-gear gains, not parts of the credit; `isCredited` marks
 	 * the bonus the credit counts up to.
@@ -202,8 +202,8 @@ function belowCutoffUnderView(item: RankedItem, withSetPotential: boolean, cutof
 export function setCreditUnmeasured(ctx: SetContextLike | undefined): boolean {
 	const future = ctx?.futureBonuses ?? [];
 	if (future.length === 0) return false;
-	// `commitBreaks` are not read with `bonusGearMeasured`.
-	if (ctx?.bonusGearMeasured) return future.some(bonusGearUnmeasured);
+	// `commitBreaks` are not read with `usesBonusGear`.
+	if (ctx?.usesBonusGear) return future.some(bonusGearUnmeasured);
 	return (
 		future.some(f => f.dps === undefined || (f.breaks ?? []).some(b => b.dps === undefined) || (f.pieces ?? []).some(p => p.dps === undefined)) ||
 		(ctx?.commitBreaks ?? []).some(b => b.dps === undefined)
@@ -211,7 +211,7 @@ export function setCreditUnmeasured(ctx: SetContextLike | undefined): boolean {
 }
 
 /**
- * With `bonusGearMeasured`, whether one bonus makes the row's credit 0: it has no
+ * With `usesBonusGear`, whether one bonus makes the row's credit 0: it has no
  * `sameGearDps` and is not `belowNoise`, or it has one but lacks `bonusGearDps` or
  * its partner pieces (`partnerUnmeasured`). Exported so the tab's popover lists
  * the same bonuses.
@@ -236,7 +236,7 @@ export function setBonusSubLine(ctx: SetContextLike | undefined, on: boolean): '
 		(ctx.singleBreaks ?? []).length > 0 ||
 		ctx.crossesThreshold === true ||
 		(ctx.futureBonuses ?? []).length > 0 ||
-		(!ctx.bonusGearMeasured && (ctx.commitBreaks ?? []).length > 0);
+		(!ctx.usesBonusGear && (ctx.commitBreaks ?? []).length > 0);
 	if (!anyDisclosure) return null;
 	return on && setCreditUnmeasured(ctx) ? 'not_counted' : 'hover_hint';
 }
@@ -313,7 +313,7 @@ type CreditBreakdown = {
  * pay for them.
  */
 function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: SetCreditRule): CreditBreakdown {
-	if (ctx?.bonusGearMeasured) return bonusGearCredit(ctx, cutoff, rule);
+	if (ctx?.usesBonusGear) return bonusGearCredit(ctx, cutoff, rule);
 	const noiseFloorDps = setBonusNoiseFloorDps(cutoff);
 	const future = [...(ctx?.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
 	const floored = (v: number): number => (v > noiseFloorDps ? v : 0);
@@ -382,7 +382,7 @@ function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: 
 }
 
 /**
- * With `bonusGearMeasured`, whether a bonus can be the credited bonus: it has a
+ * With `usesBonusGear`, whether a bonus can be the credited bonus: it has a
  * `sameGearDps` that passes `clearsSameGearNoise`.
  */
 export function canBeCredited(future: Pick<FutureBonus, 'belowNoise' | 'sameGearDps' | 'sameGearSe'>, cutoff: Cutoff): boolean {
@@ -391,7 +391,7 @@ export function canBeCredited(future: Pick<FutureBonus, 'belowNoise' | 'sameGear
 }
 
 /**
- * The credit with `bonusGearMeasured`. For each eligible bonus by piece count,
+ * The credit with `usesBonusGear`. For each eligible bonus by piece count,
  * c = `bonusGearDps` − `singleDeltaDps`. `'highest-credit'` credits the first bonus
  * with the highest c above 0, and that c; `'full-path'` credits the last
  * eligible bonus. So a credited row's `deltaDps` + credit is the sim of its full
@@ -447,23 +447,23 @@ function bonusGearCredit(ctx: SetContextLike, cutoff: Cutoff, rule: SetCreditRul
 
 /**
  * The piece count in the "Item stats + {set} {n}pc" label of a row that reaches
- * a new bonus (`crossesThreshold`). With `bonusGearMeasured` it is the count after the
+ * a new bonus (`crossesThreshold`). With `usesBonusGear` it is the count after the
  * swap, which is the count that was measured; otherwise the next bonus above
  * the worn count. Null when the row reaches no new bonus.
  */
 export function crossingLabelCount(
-	ctx: Pick<SetContext, 'setId' | 'piecesWornBefore' | 'piecesAfterSwap' | 'crossesThreshold' | 'bonusGearMeasured'> | undefined,
-	bonusGearMeasured: boolean = ctx?.bonusGearMeasured === true,
+	ctx: Pick<SetContext, 'setId' | 'piecesWornBefore' | 'piecesAfterSwap' | 'crossesThreshold' | 'usesBonusGear'> | undefined,
+	usesBonusGear: boolean = ctx?.usesBonusGear === true,
 ): number | null {
 	if (!ctx?.crossesThreshold) return null;
-	if (bonusGearMeasured) return ctx.piecesAfterSwap;
+	if (usesBonusGear) return ctx.piecesAfterSwap;
 	return nextImplementedThreshold(ctx.setId, ctx.piecesWornBefore) ?? ctx.piecesAfterSwap;
 }
 
 /**
  * The full-view credit and its breakdown up to the credited bonus, for the tab's
  * popover: each counted bonus (none when floored to 0), then the pieces it adds,
- * then the breaks it charges; the lines add up to `credit`. With `bonusGearMeasured`
+ * then the breaks it charges; the lines add up to `credit`. With `usesBonusGear`
  * there is one `"outcome"` per eligible bonus instead, and the outcomes do not add
  * up to `credit`. Call it only when `setCreditUnmeasured` is false.
  */
@@ -477,7 +477,7 @@ export function setPotentialTerms(
 }
 
 /**
- * One increment of a `bonusGearMeasured` row: the partner pieces it adds to the
+ * One increment of a `usesBonusGear` row: the partner pieces it adds to the
  * previous increment's gear, the bonus it reaches, the worn bonuses it newly breaks,
  * and `dps`, its bonus gear's DPS minus the previous increment's (for the first
  * increment, minus the row's own swap). `dps` can be negative: a bonus before the
@@ -511,7 +511,7 @@ export type SetPotentialIncrement = {
 };
 
 /**
- * Turns a `bonusGearMeasured` row's outcomes, up to the credited bonus,
+ * Turns a `usesBonusGear` row's outcomes, up to the credited bonus,
  * into increments whose `dps` add up to the credit. Null when no bonus is credited,
  * or when an increment's partner pieces do not include the previous increment's,
  * because then no increment builds on the one before. The first increment leaves
@@ -524,7 +524,7 @@ export function setPotentialIncrements(
 	cutoff: Cutoff,
 	rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE,
 ): SetPotentialIncrement[] | null {
-	if (!ctx?.bonusGearMeasured || ctx.singleDeltaDps === undefined) return null;
+	if (!ctx?.usesBonusGear || ctx.singleDeltaDps === undefined) return null;
 	const outcomes = bonusGearCredit(ctx, cutoff, rule).terms.filter((t): t is Extract<SetPotentialTerm, { kind: 'outcome' }> => t.kind === 'outcome');
 	const last = outcomes.findIndex(t => t.isCredited);
 	if (last < 0) return null;

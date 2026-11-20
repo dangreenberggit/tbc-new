@@ -50,7 +50,7 @@ const future = (over: Partial<FutureBonus> = {}): FutureBonus => ({
 const bonusGearRow = (over: Partial<SetContext>): RankedItem => ({
 	...fixtureRow(10),
 	deltaDps: 4.5,
-	setContext: { ...fixtureRow(10).setContext!, singleBreaks: [], singleDeltaDps: 4.5, bonusGearMeasured: true, ...over },
+	setContext: { ...fixtureRow(10).setContext!, singleBreaks: [], singleDeltaDps: 4.5, usesBonusGear: true, ...over },
 });
 const LIGHTBRINGER = 'Lightbringer Battlegear';
 const reachable = (dps: number, broken: Array<{ setName: string; threshold: number }> = []) => ({
@@ -89,7 +89,7 @@ describe('setBonusPopoverLines', () => {
 
 	it('gives nothing for a set row whose only line would repeat the figure', () => {
 		// Lightbringer Breastplate as a ranking that did not measure bonus gear: its future bonuses are within the noise and it breaks nothing.
-		const { bonusGearMeasured: _, ...withoutBonusGear } = fixtureRow(4).setContext!;
+		const { usesBonusGear: _, ...withoutBonusGear } = fixtureRow(4).setContext!;
 		const row: RankedItem = { ...fixtureRow(4), setContext: withoutBonusGear };
 		expect(setBonusPopoverLines(row, context)).toBeNull();
 	});
@@ -183,7 +183,7 @@ describe('setBonusPopoverLines', () => {
 				crossesThreshold: true,
 				piecesWornBefore: 1,
 				piecesAfterSwap: 2,
-				bonusGearMeasured: true,
+				usesBonusGear: true,
 			},
 		};
 		expect(lines(setBonusPopoverLines(row, context))[0]).toEqual({
@@ -268,7 +268,7 @@ describe('setBonusPopoverLines', () => {
 				deltaDps: 4.5,
 				setContext: { ...fixtureRow(10).setContext!, singleBreaks: [], singleDeltaDps: 4.5, futureBonuses: [future({ dps: 20 })] },
 			};
-			expect(row.setContext?.bonusGearMeasured).toBeUndefined();
+			expect(row.setContext?.usesBonusGear).toBeUndefined();
 			expect(setBonusPopoverLines(row, context)).toBeNull();
 		});
 

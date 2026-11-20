@@ -265,7 +265,7 @@ export type RankedItem = {
  * bonus means wearing them. `pieces` is present exactly when there is such a
  * path. Only these losses are charged: a Malorne chest row must not pay for
  * the Thunderheart 2pc that only the Malorne 4pc's hands piece breaks. With
- * `bonusGearMeasured`, `measureBonusGear` replaces both for each bonus above noise.
+ * `usesBonusGear`, `measureBonusGear` replaces both for each bonus above noise.
  * `commitBreaks` (losses of `topMeasuredBonus`) are shown, never charged.
  */
 export type SetContext = {
@@ -283,7 +283,7 @@ export type SetContext = {
 	 * helpers that see only this context read it to use that sim instead of
 	 * summing `pieces`.
 	 */
-	bonusGearMeasured?: true;
+	usesBonusGear?: true;
 	/**
 	 * The row's own swap gain, taken before paired replication rewrites
 	 * `deltaDps`. A future bonus's value is its `bonusGearDps` minus this.
@@ -310,7 +310,7 @@ export type SetContext = {
 		 * The bonus gear is the current gear plus this row plus its partner pieces:
 		 * the gear that reaches this bonus. These are its sim minus the sim of the
 		 * current gear, and that difference's standard error.
-		 * Present only with `bonusGearMeasured`, for a bonus above noise, when the
+		 * Present only with `usesBonusGear`, for a bonus above noise, when the
 		 * partner choice and the sim succeeded.
 		 */
 		bonusGearDps?: number;
@@ -320,7 +320,7 @@ export type SetContext = {
 		 * loses turned off (their pieces sent as set-less copies), minus the
 		 * current gear's sim; its standard error; and the bonuses turned off. The
 		 * popover uses it to show those losses on their own line. Present only
-		 * with `bonusGearMeasured`, for a shown bonus that newly loses a worn bonus,
+		 * with `usesBonusGear`, for a shown bonus that newly loses a worn bonus,
 		 * when that gear without copies was in the store and the sim succeeded.
 		 */
 		bonusOffDps?: number;
@@ -328,7 +328,7 @@ export type SetContext = {
 		bonusOff?: Array<{ setId: number; threshold: SetThreshold }>;
 		/** The partner choice needed a worn bonus whose value is unmeasured. */
 		partnerUnmeasured?: 'break-unmeasured';
-		/** The rule that chose `pieces`, with `bonusGearMeasured`. */
+		/** The rule that chose `pieces`, with `usesBonusGear`. */
 		partnerRule?: PartnerRule;
 		breaks?: Array<{
 			setId: number;
@@ -2697,7 +2697,7 @@ async function measureBonusGear(args: {
 	for (const item of args.ranked) {
 		const ctx = item.setContext;
 		const rowSwap = rowSwapOf.get(item);
-		if (!ctx?.bonusGearMeasured || !rowSwap || setCreditUnmeasured(ctx)) continue;
+		if (!ctx?.usesBonusGear || !rowSwap || setCreditUnmeasured(ctx)) continue;
 		const increments = setPotentialIncrements(ctx, args.cutoff);
 		if (!increments) continue;
 		let prevSwaps: PlacedItem[] | undefined = [rowSwap];
@@ -3136,7 +3136,7 @@ function applySetContext(
 			piecesAfterSwap,
 			nextThreshold,
 			crossesThreshold,
-			...(measured ? { bonusGearMeasured: true as const } : {}),
+			...(measured ? { usesBonusGear: true as const } : {}),
 		};
 
 		const slotIndex = firstSlotIndexByItemId.get(item.itemId);

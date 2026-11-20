@@ -120,7 +120,7 @@ const NO_SET_POTENTIAL: SetPotentialSection = { lines: [], kind: 'none' };
 function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPotentialSection {
 	const futureBonuses = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
 	const bonusLabel = (threshold: number): PopoverLabel => ({ kind: 'bonus', set: ctx.setName, threshold, worn: ctx.piecesWornBefore });
-	if (setCreditUnmeasured(ctx) && ctx.bonusGearMeasured) {
+	if (setCreditUnmeasured(ctx) && ctx.usesBonusGear) {
 		return { lines: futureBonuses.filter(bonusGearUnmeasured).map(f => ({ label: bonusLabel(f.threshold), dps: undefined })), kind: 'unmeasured' };
 	}
 	if (setCreditUnmeasured(ctx)) {
@@ -139,7 +139,7 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPot
 		return { lines, kind: 'unmeasured' };
 	}
 	if (credit === 0) return NO_SET_POTENTIAL;
-	if (ctx.bonusGearMeasured) {
+	if (ctx.usesBonusGear) {
 		const increments = setPotentialIncrements(ctx, cutoff);
 		if (increments !== null) {
 			const lines = increments.flatMap((s): Line[] =>
@@ -173,14 +173,14 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPot
 }
 
 /**
- * The bonuses a `bonusGearMeasured` row can reach that its figure does not count. Each
+ * The bonuses a `usesBonusGear` row can reach that its figure does not count. Each
  * figure is how much the row's figure would change if it counted that bonus instead:
  * against the row alone, or for bonuses past `creditedThreshold`, against the gear at
- * `creditedThreshold`. A difference too small to tell from noise gets no figure. Without `bonusGearMeasured` a
+ * `creditedThreshold`. A difference too small to tell from noise gets no figure. Without `usesBonusGear` a
  * future bonus's figure is the bonus alone, which these labels would misstate.
  */
 function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, creditedThreshold?: number): PopoverEntry[] {
-	if (!ctx.bonusGearMeasured) return [];
+	if (!ctx.usesBonusGear) return [];
 	const own = new Set((ctx.singleBreaks ?? []).map(bonusKey));
 	const credited = creditedThreshold === undefined ? undefined : ctx.futureBonuses?.find(f => f.threshold === creditedThreshold);
 	if (creditedThreshold !== undefined && credited?.bonusGearDps === undefined) return [];
@@ -216,12 +216,12 @@ function reachableLines(row: RankedItem, ctx: SetContext, cutoff: Cutoff, credit
 }
 
 /**
- * When every bonus of a `bonusGearMeasured` row is too small to tell from noise, they are
+ * When every bonus of a `usesBonusGear` row is too small to tell from noise, they are
  * listed with no figure, so the row still says its set was tried.
  */
 function noiseLines(ctx: SetContext, cutoff: Cutoff): PopoverEntry[] {
 	const futureBonuses = ctx.futureBonuses ?? [];
-	if (!ctx.bonusGearMeasured || futureBonuses.some(f => canBeCredited(f, cutoff))) return [];
+	if (!ctx.usesBonusGear || futureBonuses.some(f => canBeCredited(f, cutoff))) return [];
 	return futureBonuses
 		.filter(f => f.belowNoise)
 		.sort((a, b) => a.threshold - b.threshold)
