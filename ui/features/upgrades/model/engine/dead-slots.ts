@@ -11,9 +11,9 @@ export const THIN_POOL_CANDIDATES = 4;
 /** A best alternative this far below the worn item (DPS, negative) reads as a unique effect. */
 export const UNIQUE_EFFECT_GAP_DPS = -50;
 
-/** `'set-break-toll'`: nothing beats the worn piece, and replacing it would break a worn set bonus. */
+/** `'set-break-cost'`: nothing beats the worn piece, and replacing it would break a worn set bonus. */
 export type DeadSlotCause =
-	| 'set-break-toll'
+	| 'set-break-cost'
 	| 'unique-effect'
 	| 'thin-pool'
 	| 'unknown-item'
@@ -40,7 +40,6 @@ export type DeadSlot = {
 	/** The best strictly worse candidate's DPS change from the worn item (≤ 0); 0 when there is none. */
 	runnerUpGapDps: number | null;
 	tiedCandidates: number | null;
-	poolSize: number;
 };
 
 export type WornUnrankableItem = {
@@ -79,7 +78,6 @@ export function classifyDeadSlots(rows: readonly DeadSlotRow[], options: Classif
 
 	const unrankableSlots = new Set((options.wornUnrankable ?? []).map(w => w.slot));
 	for (const worn of options.wornUnrankable ?? []) {
-		const slotRows = bySlot.get(worn.slot) ?? [];
 		dead.push({
 			slot: worn.slot,
 			cause: 'worn-unrankable',
@@ -89,7 +87,6 @@ export function classifyDeadSlots(rows: readonly DeadSlotRow[], options: Classif
 			wornSetName: null,
 			runnerUpGapDps: null,
 			tiedCandidates: null,
-			poolSize: slotRows.length,
 		});
 	}
 
@@ -110,7 +107,6 @@ export function classifyDeadSlots(rows: readonly DeadSlotRow[], options: Classif
 				wornSetName: null,
 				runnerUpGapDps: null,
 				tiedCandidates: null,
-				poolSize: slotRows.length,
 			});
 			continue;
 		}
@@ -135,7 +131,7 @@ export function classifyDeadSlots(rows: readonly DeadSlotRow[], options: Classif
 			if (wornItem === undefined) {
 				cause = 'unknown-item';
 			} else if (brokenThreshold !== null) {
-				cause = 'set-break-toll';
+				cause = 'set-break-cost';
 			} else if (candidates.length < THIN_POOL_CANDIDATES) {
 				cause = 'thin-pool';
 			} else if (runnerUpGapDps <= UNIQUE_EFFECT_GAP_DPS) {
@@ -153,7 +149,6 @@ export function classifyDeadSlots(rows: readonly DeadSlotRow[], options: Classif
 				wornSetName,
 				runnerUpGapDps,
 				tiedCandidates,
-				poolSize: candidates.length,
 			};
 			if (brokenThreshold !== null) entry.brokenThreshold = brokenThreshold;
 			dead.push(entry);

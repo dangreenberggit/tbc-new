@@ -24,7 +24,6 @@ export type GemRecolor = {
 	socketIndex: number;
 	from: number;
 	to: number;
-	cost: number;
 };
 
 export type MetaRepairResult = {
@@ -173,7 +172,6 @@ export function greedyRepairMeta(opts: {
 			socketIndex: move.socketIndex,
 			from: move.from,
 			to: move.to,
-			cost: move.cost,
 		});
 	}
 
@@ -544,7 +542,6 @@ export function bestMinimalRepair(opts: {
 			socketIndex: c.socketIndex,
 			from: c.from,
 			to: c.to,
-			cost: model.gem(c.from) - model.gem(c.to),
 		});
 	}
 	return { items, recolors, value: best.value, work };

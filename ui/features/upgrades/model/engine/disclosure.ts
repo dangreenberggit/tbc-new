@@ -61,56 +61,6 @@ export function buildStandingAssumptions(race: Race): StandingAssumption[] {
 	];
 }
 
-export function renderDisclosure(opts: { standing: readonly StandingAssumption[]; substitutions: readonly RunNote[]; expandStanding?: boolean }): string[] {
-	const lines: string[] = [];
-	const { standing, substitutions } = opts;
-
-	if (opts.expandStanding) {
-		lines.push(`assumptions (${standing.length}):`);
-		for (const a of standing) lines.push(`  - [${a.id}] ${a.detail}`);
-	} else if (standing.length > 0) {
-		lines.push(`assumptions: ${standing.length} standing (--assumptions to expand)`);
-	}
-
-	if (substitutions.length > 0) {
-		lines.push(`substitutions this run (${substitutions.length}):`);
-		for (const s of substitutions) lines.push(`  - ${s.field}: ${s.detail}${s.error ? `\n${s.error}` : ''}`);
-	}
-	return lines;
-}
-
-const CONFIDENT_PARSE = 0.9;
-
-export function fightProvenanceLines(fight: {
-	reportCode: string;
-	fightId: number;
-	encounterName?: string;
-	route: 'ranked' | 'report-events';
-	confidence?: number;
-	salvationUptime?: number;
-}): string[] {
-	const where = fight.encounterName ?? `fight ${fight.fightId}`;
-	const lines = [
-		`gear read from ${where} (${fight.reportCode} fight ${fight.fightId}, ${fight.route} route)` +
-			(fight.confidence === undefined ? '' : `, spec confidence ${(fight.confidence * 100).toFixed(0)}%`),
-	];
-
-	const salv = fight.salvationUptime;
-	const confident = (fight.confidence ?? 0) >= CONFIDENT_PARSE;
-	if (salv !== undefined && salv === 0 && confident) {
-		lines.push(
-			`  no Blessing of Salvation on this fight — were you off-tanking, or was there no paladin? ` +
-				`If you were covering a tank slot, this gear is not your DPS set and the numbers below are measured against the wrong baseline. ` +
-				`Pick another fight if so.`,
-		);
-	}
-	return lines;
-}
-
-export function setPotentialDisclosureLine(): string {
-	return "set potential is measured with the completion-package synergy method, shared seeds — see PLAN.md §14's 2026-08-09 amendment";
-}
-
 export function notesFromMetaRepair(recolors: readonly GemRecolor[]): RunNote[] {
 	if (recolors.length === 0) return [];
 	return [

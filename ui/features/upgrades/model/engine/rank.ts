@@ -1933,10 +1933,6 @@ async function buildSetBonuses(
 		const estimate = estimateCombinedDelta(
 			{
 				row,
-				setId,
-				threshold,
-				needed: rest.length,
-				pool: [],
 				brokenBy: swaps => brokenSetBonuses(equipment, swaps, setId, countsAsBreak),
 				breakDps: (s, c) => screenBrokenBonusDpsByKey.get(`${s}:${c}`),
 			},
@@ -2033,7 +2029,7 @@ async function buildSetBonuses(
 			}
 			/** A failed gem repair on this gear or any copy of it skips this bonus. */
 			const skipRepairFailed = (err: MetaRepairError) => {
-				console.warn(`[upgrades] ${label} ${threshold}pc bonus package not measured: gem repair failed`, err);
+				console.warn(`[upgrades] ${label} ${threshold}pc bonus's added pieces not measured: gem repair failed`, err);
 				bonusNotMeasured(label, threshold, SET_BONUS_SKIP_REASONS.metaOff(err.message));
 				results.push({
 					setId,
@@ -2173,7 +2169,7 @@ async function buildSetBonuses(
 				} catch (err) {
 					// No warning for a sim the Stop guard refused.
 					if (!deps.signal?.aborted) {
-						console.warn(`[upgrades] ${label} ${threshold}pc bonus package not measured: the sim failed`, err);
+						console.warn(`[upgrades] ${label} ${threshold}pc bonus's added pieces not measured: the sim failed`, err);
 					}
 					addedPiecesNotMeasured(SET_BONUS_SKIP_REASONS.simFailed(errorText(err)));
 					continue;
@@ -3497,7 +3493,7 @@ async function setBonusCountsInReach(
 			build = chainSwapsWithRepairs(equipment, top, gems);
 		} catch (err) {
 			if (!(err instanceof MetaRepairError)) throw err;
-			console.warn(`[upgrades] set ${setId}: its bonus counts were not read, the package's gem repair failed`, err);
+			console.warn(`[upgrades] set ${setId}: its bonus counts were not read, the added pieces' gem repair failed`, err);
 			onNotRead(setId, SET_BONUS_SKIP_REASONS.metaOff(err.message));
 			out.set(setId, new Set());
 			continue;

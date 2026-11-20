@@ -8,7 +8,7 @@ import type { SetThreshold } from './set-value';
 
 export const IMPLAUSIBLE_BONUS_FRACTION = 0.075;
 
-const WARNED_DEAD_SLOT_CAUSES: readonly DeadSlotCause[] = ['set-break-toll', 'unique-effect', 'unknown-item', 'unidentified-worn-item', 'worn-unrankable'];
+const WARNED_DEAD_SLOT_CAUSES: readonly DeadSlotCause[] = ['set-break-cost', 'unique-effect', 'unknown-item', 'unidentified-worn-item', 'worn-unrankable'];
 
 export type ImplausibleSetBonusWarning = {
 	kind: 'implausible-set-bonus';
@@ -48,11 +48,11 @@ export function setBonusMagnitudeWarnings(bonuses: readonly SetBonusValue[], opt
 			b.bonusDps > 0
 				? `${b.setName} ${b.threshold}pc reports ${b.bonusDps.toFixed(2)} DPS — ` +
 					`~${(fractionOfBaseline * 100).toFixed(1)}% of a ${options.baselineDps.toFixed(2)} baseline, ` +
-					`above the ${(IMPLAUSIBLE_BONUS_FRACTION * 100).toFixed(1)}% plausibility band. ` +
-					`Treat as a suspected confound, not a bonus this large; check what the package breaks.`
+					`above the ${(IMPLAUSIBLE_BONUS_FRACTION * 100).toFixed(1)}% limit for a believable set bonus. ` +
+					`Treat it as a likely measurement problem, not a bonus this large; check which worn bonuses the added pieces break.`
 				: `${b.setName} ${b.threshold}pc reports ${b.bonusDps.toFixed(2)} DPS — ` +
 					`a loss of ~${(Math.abs(fractionOfBaseline) * 100).toFixed(1)}% of a ${options.baselineDps.toFixed(2)} baseline, ` +
-					`outside the ${(IMPLAUSIBLE_BONUS_FRACTION * 100).toFixed(1)}% plausibility band. ` +
+					`beyond the ${(IMPLAUSIBLE_BONUS_FRACTION * 100).toFixed(1)}% limit for a believable set bonus. ` +
 					`This bonus is implausibly negative; suspect a measurement problem ` +
 					`(for example, a piece of the same set already worn), not a bonus that hurts this much.`;
 		warnings.push({
@@ -91,10 +91,10 @@ function deadSlotMessage(cause: DeadSlotCause, slot: string, wornItemName: strin
 			`worn item added to the pool before it can be ranked.`
 		);
 	}
-	if (cause === 'set-break-toll') {
+	if (cause === 'set-break-cost') {
 		return (
 			`No positive candidate in ${slot}: every alternative displaces ${wornItemName} ` +
-			`and pays ${setName ?? 'its set'}'s lost bonus. Check that toll is real before trusting the slot.`
+			`and loses ${setName ?? 'its set'}'s bonus. Check that this lost bonus is real before trusting the slot.`
 		);
 	}
 	if (cause === 'unknown-item') {

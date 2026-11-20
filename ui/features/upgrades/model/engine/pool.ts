@@ -8,6 +8,7 @@
 import { HandType } from '@generated/proto/common';
 
 import { getItem } from './items';
+import type { SimOrderName } from './slots';
 import type { SpecId } from './types';
 
 /**
@@ -72,91 +73,13 @@ export type PoolEntry = {
 	phase: number;
 	source: ItemSource;
 	sources?: ItemSource[];
-	curationHint?: number;
 	bisTags?: Array<'BiS' | 'Alt' | 'Realistic'>;
 	curatedSets?: string[];
 	bisSets?: string[];
 };
-
-export type UniverseEntry = {
-	itemId: number;
-	name: string;
-	slot: ItemSlot;
-	phase: number;
-	sources: ItemSource[];
-	curationHint?: number;
-	/** @deprecated JSON key from pre-rename generators; mapped to curationHint */
-	ep?: number;
-	bisTags?: Array<'BiS' | 'Alt' | 'Realistic'>;
-	curatedSets?: string[];
-	bisSets?: string[];
-};
-
-export function poolEntryFromUniverse(entry: UniverseEntry): PoolEntry {
-	const source = entry.sources[0];
-	if (!source) {
-		throw new Error(`universe row ${entry.itemId} has no sources`);
-	}
-	const curationHint = entry.curationHint ?? entry.ep;
-	return {
-		itemId: entry.itemId,
-		name: entry.name,
-		slot: entry.slot,
-		phase: entry.phase,
-		source,
-		sources: [...entry.sources],
-		...(curationHint !== undefined ? { curationHint } : {}),
-		...(entry.bisTags !== undefined ? { bisTags: entry.bisTags } : {}),
-		...(entry.curatedSets !== undefined ? { curatedSets: [...entry.curatedSets] } : {}),
-		...(entry.bisSets !== undefined ? { bisSets: [...entry.bisSets] } : {}),
-	};
-}
-
-export function poolFromUniverse(data: { entries: readonly UniverseEntry[] }): PoolEntry[] {
-	return data.entries.map(poolEntryFromUniverse);
-}
 
 export function filterPoolByPhase(pool: readonly PoolEntry[], maxPhase: number): PoolEntry[] {
 	return pool.filter(e => e.phase <= maxPhase);
-}
-
-function sourceHasZone(source: ItemSource, zone: string): boolean {
-	return 'zone' in source && source.zone === zone;
-}
-
-export function filterByZone<T extends { source: ItemSource; sources?: readonly ItemSource[] }>(entries: readonly T[], zone: string): T[] {
-	return entries.filter(e => sourceHasZone(e.source, zone) || (e.sources?.some(s => sourceHasZone(s, zone)) ?? false));
-}
-
-export function filterPoolByZone(pool: readonly PoolEntry[], zone: string): PoolEntry[] {
-	return filterByZone(pool, zone);
-}
-
-export function zonesInPool(pool: readonly PoolEntry[]): string[] {
-	const zones = new Set<string>();
-	for (const e of pool) {
-		if ('zone' in e.source) zones.add(e.source.zone);
-		for (const s of e.sources ?? []) {
-			if ('zone' in s) zones.add(s.zone);
-		}
-	}
-	return [...zones].sort();
-}
-
-export const VIEW_ALL = 'all';
-
-export function viewFilterValue(raw: string | undefined): string | undefined {
-	return raw === undefined || raw === VIEW_ALL ? undefined : raw;
-}
-
-export function validateViewFilter(value: string | undefined, known: readonly string[]): { ok: true } | { ok: false; known: readonly string[] } {
-	const wanted = viewFilterValue(value);
-	if (wanted === undefined || known.includes(wanted)) return { ok: true };
-	return { ok: false, known };
-}
-
-function sourcesOfEntry(entry: { source: ItemSource; sources?: readonly ItemSource[] }): readonly ItemSource[] {
-	return entry.sources ?? [entry.source];
 }
 
 export function sourceMatchesBoss(source: ItemSource, boss: string, zone: string | undefined): boolean {
@@ -164,19 +87,7 @@ export function sourceMatchesBoss(source: ItemSource, boss: string, zone: string
 	return zone === undefined || ('zone' in source && source.zone === zone);
 }
 
-export function bossesInPool(pool: readonly PoolEntry[], zone?: string): string[] {
-	const bosses = new Set<string>();
-	for (const e of pool) {
-		for (const s of sourcesOfEntry(e)) {
-			if (!('boss' in s) || s.boss === undefined) continue;
-			if (sourceMatchesBoss(s, s.boss, zone)) bosses.add(s.boss);
-		}
-	}
-	return [...bosses].sort();
-}
-
-/** A sim slot name, written out from `ItemSlot` to match `SimOrderName` (slots.ts). */
-export type SimSlotName = Exclude<ItemSlot, 'finger' | 'trinket' | 'weapon'> | 'finger1' | 'finger2' | 'trinket1' | 'trinket2' | 'mainhand' | 'offhand';
+export type SimSlotName = SimOrderName;
 
 /**
  * Specs that can put a one-handed weapon in the off hand: wowsims' per-spec `canDualWield`,

@@ -80,7 +80,6 @@ export type ViewOptions = {
 	raid?: string;
 	boss?: string;
 	groupBy?: 'rank' | 'slot' | 'raid';
-	hideWorn?: boolean;
 	withSetPotential?: boolean;
 	setCredit?: SetCreditView;
 };
@@ -615,7 +614,6 @@ export function applyView(r: Ranking, v: ViewOptions = {}): ViewResult {
 
 	const rows: ViewRow[] = r.items
 		.filter(item => {
-			if (v.hideWorn === true && item.owned === true) return false;
 			if (zone !== undefined && !matchesRaidFilter(item, zone)) return false;
 			if (boss !== undefined && !matchesBoss(item, zone, boss)) return false;
 			return true;

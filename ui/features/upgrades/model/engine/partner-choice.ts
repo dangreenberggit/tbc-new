@@ -107,7 +107,7 @@ export function partnerCombinations(query: PartnerQuery): PartnerPiece[][] {
  * the set's bonuses as its pair's DPS.
  */
 export function estimateCombinedDelta(
-	query: PartnerQuery,
+	query: Pick<PartnerQuery, 'row' | 'brokenBy' | 'breakDps'>,
 	combination: readonly PartnerPiece[],
 	opts: { includeCombinationOnlyBreaks: boolean },
 ): number | undefined {

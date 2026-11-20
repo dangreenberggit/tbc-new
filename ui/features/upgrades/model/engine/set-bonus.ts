@@ -2,28 +2,8 @@
  * Detect an item's own swap breaking a 2-piece or 4-piece set bonus.
  */
 
-import { getItem } from './items';
+import { setCounts, setNameOf } from './set-value';
 import type { SimItemSpec } from './slots';
-
-function setCounts(equipment: readonly SimItemSpec[]): Map<number, number> {
-	const counts = new Map<number, number>();
-	for (const spec of equipment) {
-		if (!spec.id) continue;
-		const setId = getItem(spec.id)?.setId;
-		if (setId == null) continue;
-		counts.set(setId, (counts.get(setId) ?? 0) + 1);
-	}
-	return counts;
-}
-
-function setNameOf(equipment: readonly SimItemSpec[], setId: number): string {
-	for (const spec of equipment) {
-		if (!spec.id) continue;
-		const item = getItem(spec.id);
-		if (item?.setId === setId && item.setName) return item.setName;
-	}
-	return `set ${setId}`;
-}
 
 export function setBreakNote(equipment: readonly SimItemSpec[], slotIndex: number, newItemId: number): string | undefined {
 	const before = setCounts(equipment);

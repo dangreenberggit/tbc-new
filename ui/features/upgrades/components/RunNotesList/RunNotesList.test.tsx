@@ -105,7 +105,7 @@ describe('RunNotesList', () => {
 		render(
 			<RunNotesList
 				notes={[
-					...notesFromMetaRepair([{ itemId: 30987, itemIndex: 0, socketIndex: 1, from: 24027, to: 24054, cost: 1 }]),
+					...notesFromMetaRepair([{ itemId: 30987, itemIndex: 0, socketIndex: 1, from: 24027, to: 24054 }]),
 					hitCapUnknownNote(),
 					hitCapFullWeightNote(),
 					hitCapPerSpellTalentNote('Suppression'),
