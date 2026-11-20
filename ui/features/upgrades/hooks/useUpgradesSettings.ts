@@ -67,7 +67,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 	const setCandidateCap = useStore(store, state => state.setCandidateCap);
 
 	const phasedPresets = useMemo(() => (ready ? presetsWithPhase(host, presets) : presets), [ready, host, presets]);
-	// Memoised: `poolFor` builds a new pool on each call, and the tab renders again on every row a run finishes.
+	// Memoized: `poolFor` builds a new pool on each call, and the tab renders again on every row a run finishes.
 	const offer = useMemo(
 		() =>
 			settingsOffer({

@@ -24,7 +24,7 @@ export interface RunSettingsPanelProps {
 /**
  * The run settings panel. Below `xl` the settings sit behind a summary button, so a
  * phone does not scroll past them to reach the results; the eligible count and Run
- * never collapse. Memoised: every row a run finishes renders the tab but changes no prop.
+ * never collapse. Memoized: every row a run finishes renders the tab but changes no prop.
  */
 export const RunSettingsPanel = memo(({ settings, ready, running, showDevControls, onStart }: RunSettingsPanelProps) => {
 	const [open, setOpen] = useState(false);

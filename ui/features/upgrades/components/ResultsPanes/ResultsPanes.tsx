@@ -41,7 +41,7 @@ export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {
 			return next;
 		});
 	const exportTable = useResultsTable(view.shortlist, rowContext);
-	// Memoised on the view: `paneRows` returns new arrays on every call, and a new array rebuilds that pane's
+	// Memoized on the view: `paneRows` returns new arrays on every call, and a new array rebuilds that pane's
 	// tables, so a sort click would rebuild every pane's tables instead of re-sorting them.
 	const contents = useMemo(
 		(): PaneContent[] => [

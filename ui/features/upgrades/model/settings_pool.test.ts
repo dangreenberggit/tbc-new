@@ -323,7 +323,7 @@ describe('rowBadgeIndex', () => {
 		expect(badgesOf(9)).toEqual([]);
 	});
 
-	it('returns the same array for an item on every call, so a memoised cell is not rendered again', () => {
+	it('returns the same array for an item on every call, so a memoized cell is not rendered again', () => {
 		const badgesOf = rowBadgeIndex(selected);
 		expect(badgesOf(2)).toBe(badgesOf(2));
 		expect(badgesOf(9)).toBe(badgesOf(8));

@@ -48,7 +48,7 @@ export interface SourceCellProps {
 
 /**
  * Where the item comes from, as the gear picker shows it, or the engine's plain label when the site
- * has no source to show. Memoised so a new row elsewhere re-renders only this row's Rank cell. A
+ * has no source to show. Memoized so a new row elsewhere re-renders only this row's Rank cell. A
  * row "Filter by source" keeps can also come from a hidden source, and `ItemSource` names only the
  * first, so while any of the row's sources is hidden the cell names its first shown one in plain text.
  */

@@ -16,7 +16,7 @@ vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '',
 
 // Every row, so the assertions are about the table's order rather than what it windowed; `useVirtualRows.test.tsx` covers the windowing.
 // One `measureRow` for every render, as the real hook's `virtualizer.measureElement` is. With a new ref each render,
-// every memoised row renders again, so a test cannot see a row that skipped a render it needed.
+// every memoized row renders again, so a test cannot see a row that skipped a render it needed.
 vi.mock('../../hooks/useVirtualRows', () => {
 	const measureRow = () => {};
 	return { useVirtualRows: (keys: readonly string[]) => ({ indexes: keys.map((_key, index) => index), paddingTop: 0, paddingBottom: 0, measureRow }) };
@@ -163,7 +163,7 @@ describe('ResultsTable', () => {
 		fireEvent.click(getByTestId('upgrades-sort-item'));
 		expect(storedSort()).toEqual([{ id: 'item', desc: true }]);
 		expect(placesOf(table)).toEqual(placesFor([...ascending].reverse()));
-		// Moved, not rebuilt: each row is the element it was, so the memoised row had to render its new place.
+		// Moved, not rebuilt: each row is the element it was, so the memoized row had to render its new place.
 		expect(rowsOf(table).every(row => elementsBefore.get(row.dataset.itemId) === row)).toBe(true);
 
 		fireEvent.click(getByTestId('upgrades-sort-item'));

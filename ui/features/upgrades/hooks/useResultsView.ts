@@ -54,10 +54,10 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 	const ranking = run.status === 'done' || run.status === 'stopped' ? run.result : undefined;
 	const measuredOn = run.status === 'running' || run.status === 'done' || run.status === 'stopped' ? run.measuredOn : undefined;
 	// The gear sets the run was ranked with, not the gear sets selected now: a phase change after the run selects the new
-	// phase's gear sets. Memoised on them alone, so a row's badges keep their identity and its memoised name cell holds.
+	// phase's gear sets. Memoized on them alone, so a row's badges keep their identity and its memoized name cell holds.
 	const rankedGearSets = measuredOn?.selectedGearSets ?? NO_GEAR_SETS;
 	const gearSetBadgesOf = useMemo(() => rowBadgeIndex(rankedGearSets), [rankedGearSets]);
-	// Memoised for the same rows: `applyView` builds new row objects on every call. The source filter runs on this
+	// Memoized for the same rows: `applyView` builds new row objects on every call. The source filter runs on this
 	// view in a memo of its own, so ticking a source does not run `applyView` again.
 	const viewBeforeSourceFilter = useMemo(() => resultsViewFor(run, { withSetPotential, onlyBis }), [run, withSetPotential, onlyBis]);
 	const offeredSources = useMemo(() => sourceOptions(viewBeforeSourceFilter?.rows ?? []), [viewBeforeSourceFilter]);
@@ -67,7 +67,7 @@ export function useResultsView(run: RunState, bisHeadingsOf: (itemId: number) =>
 	);
 	// Only the hidden sources this view offers act, so a source hidden in an earlier run hides nothing here, in a row or a cell.
 	const hiddenOfferedSources = useMemo(() => hiddenOfferedSourcesOf(offeredSources, hiddenSources), [offeredSources, hiddenSources]);
-	// Memoised because every `ResultRow` is: a new context on each new row would render every row again.
+	// Memoized because every `ResultRow` is: a new context on each new row would render every row again.
 	const rowContext = useMemo<RowContext>(
 		() => ({
 			itemOf: itemId => sim.db.getItemById(itemId),

@@ -43,7 +43,7 @@ export interface ProvisionalResultsTableProps {
 
 /** The table of a run in flight: the rows so far, best first, under a head with nothing to click, so the stored sort does not apply. */
 export const ProvisionalResultsTable = ({ landedRows, rowContext }: ProvisionalResultsTableProps) => {
-	// Memoised on the run's array, which changes only when a row finishes: TanStack rebuilds every row on new data.
+	// Memoized on the run's array, which changes only when a row finishes: TanStack rebuilds every row on new data.
 	const rows = useMemo(() => simmedBestFirst(landedRows), [landedRows]);
 	const table = useResultsTable(rows, rowContext, { sortable: false });
 	return (
@@ -69,7 +69,7 @@ const RowSpacer = ({ height }: { height: number }) => (
 export const ResultRows = ({ table, rowContext, notUpgradeKeys }: ResultRowsProps) => {
 	const rows = table.getRowModel().rows;
 	const tbodyRef = useRef<HTMLTableSectionElement>(null);
-	// Memoised on the row model, which TanStack keeps while the data and sort hold: a new array is a new
+	// Memoized on the row model, which TanStack keeps while the data and sort hold: a new array is a new
 	// `getItemKey`, which makes the virtualiser recompute every row's position.
 	const keys = useMemo(() => rows.map(row => row.id), [rows]);
 	const { indexes, paddingTop, paddingBottom, measureRow } = useVirtualRows(keys, tbodyRef);

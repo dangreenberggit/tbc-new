@@ -72,7 +72,7 @@ vi.mock('@sim/hooks/useSimReady', () => ({ useSimReady: () => true }));
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
 vi.mock('@features/upgrades/components/RowToggles', () => ({ FavoriteToggle: () => null, BatchToggle: () => null }));
 vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
-/** The run card's renders, counted through a child it always renders and that is not itself memoised. */
+/** The run card's renders, counted through a child it always renders and that is not itself memoized. */
 const runCard = { renders: 0 };
 vi.mock('@features/upgrades/components/EligibleCount', async importOriginal => {
 	const { EligibleCount } = await importOriginal<typeof import('@features/upgrades/components/EligibleCount')>();

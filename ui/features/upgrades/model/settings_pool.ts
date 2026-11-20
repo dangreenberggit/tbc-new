@@ -257,7 +257,7 @@ export function bisHeadingIndex(options: readonly GearSetOption[], bisTagPhase: 
 
 const NO_BADGES: readonly RowBadge[] = [];
 
-/** Each item keeps one array while the selection stands, so a memoised name cell does not re-render when its row moves. */
+/** Each item keeps one array while the selection stands, so a memoized name cell does not re-render when its row moves. */
 export function rowBadgeIndex(selectedGearSets: readonly GearSetOption[]): (itemId: number) => readonly RowBadge[] {
 	const byItem = new Map<number, readonly RowBadge[]>();
 	for (const itemId of new Set(selectedGearSets.flatMap(heldIds))) byItem.set(itemId, rowBadges(itemId, selectedGearSets));
