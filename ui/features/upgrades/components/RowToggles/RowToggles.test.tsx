@@ -54,7 +54,7 @@ const mount = (ui: ReactNode) => {
 const pressed = (testId: string) => screen.getByTestId(testId).getAttribute('aria-pressed');
 
 describe('FavoriteToggle', () => {
-	it('adds the item to the sim’s favourites and reads pressed, and a second click takes it out', () => {
+	it('adds the item to the sim’s favorites and reads pressed, and a second click takes it out', () => {
 		const host = mount(<FavoriteToggle itemId={ITEM_ID} />);
 		expect(pressed('upgrades-favorite-toggle')).toBe('false');
 
@@ -68,7 +68,7 @@ describe('FavoriteToggle', () => {
 		expect(pressed('upgrades-favorite-toggle')).toBe('false');
 	});
 
-	it('follows a favourite set elsewhere on the page', () => {
+	it('follows a favorite set elsewhere on the page', () => {
 		const host = mount(<FavoriteToggle itemId={ITEM_ID} />);
 		const next = host.sim.getFilters();
 		next.favoriteItems = [ITEM_ID];
