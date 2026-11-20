@@ -48,7 +48,7 @@ export interface ResultRowProps {
  * One ranked item. DPS comes before Slot so a phone shows the figure without scrolling sideways.
  * Memoized because each row a run finishes renders the table again. A new row or a sort still moves
  * `position` for the rows below it, so the costly cells are memoized on their own and only the Rank
- * cell changes. The virtualiser reads `data-index` when it measures the row.
+ * cell changes. The virtualizer reads `data-index` when it measures the row.
  */
 export const ResultRow = memo(({ row, position, context, notUpgrade = false, ref }: ResultRowProps) => {
 	const item = context.itemOf(row.itemId);

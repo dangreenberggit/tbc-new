@@ -25,7 +25,7 @@ type PaneContent = { id: PaneId; rows: PaneRows; slot?: ReturnType<typeof slotTa
 /**
  * A settled ranking as sub-tabs: the Upgrades list, one pane per slot `slotTabs` names, then the
  * export. The open tab lives here, unstored; the column sort every pane shares is in the tab store.
- * Only the shown pane is mounted, since a hidden pane has no size to virtualise its rows by, so
+ * Only the shown pane is mounted, since a hidden pane has no size to virtualize its rows by, so
  * which below-cutoff groups are open is kept here, to survive a pane switch.
  */
 export const ResultsPanes = ({ view, rowContext }: ResultsPanesProps) => {

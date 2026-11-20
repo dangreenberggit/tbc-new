@@ -268,7 +268,7 @@ export const DEFAULT_CAP_PROFILE: CapProfile = CAP_PROFILE_BY_SPEC.ret;
 /**
  * A typed `SpecId` always hits a row. The `?? DEFAULT_CAP_PROFILE` covers
  * untyped values that reach here through a cast, because gem fill must degrade
- * rather than throw on a spec it does not recognise.
+ * rather than throw on a spec it does not recognize.
  */
 export function capProfileFor(spec: SpecId | undefined): CapProfile {
 	if (spec === undefined) return DEFAULT_CAP_PROFILE;

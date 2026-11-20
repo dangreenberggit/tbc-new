@@ -70,7 +70,7 @@ export const ResultRows = ({ table, rowContext, notUpgradeKeys }: ResultRowsProp
 	const rows = table.getRowModel().rows;
 	const tbodyRef = useRef<HTMLTableSectionElement>(null);
 	// Memoized on the row model, which TanStack keeps while the data and sort hold: a new array is a new
-	// `getItemKey`, which makes the virtualiser recompute every row's position.
+	// `getItemKey`, which makes the virtualizer recompute every row's position.
 	const keys = useMemo(() => rows.map(row => row.id), [rows]);
 	const { indexes, paddingTop, paddingBottom, measureRow } = useVirtualRows(keys, tbodyRef);
 	return (

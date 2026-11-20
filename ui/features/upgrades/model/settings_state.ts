@@ -27,7 +27,7 @@ export type SettingsState = {
 export type SettingsScope = { specPhase: string; defaultGearSetKeys: readonly string[]; poolSourceKeys: readonly string[] };
 
 /** A cap of 0 means "no cap". */
-const normaliseCap = (cap: number | undefined): number | undefined => (cap !== undefined && cap > 0 ? cap : undefined);
+const normalizeCap = (cap: number | undefined): number | undefined => (cap !== undefined && cap > 0 ? cap : undefined);
 
 const toggled = (keys: readonly string[], key: string): readonly string[] => (keys.includes(key) ? keys.filter(k => k !== key) : [...keys, key]);
 
@@ -56,7 +56,7 @@ export const withGearSetToggled = (state: SettingsState, key: string): SettingsS
 export const withPrune = (state: SettingsState, prune: boolean): SettingsState => (state.prune === prune ? state : { ...state, prune });
 
 export function withCandidateCap(state: SettingsState, cap: number | undefined): SettingsState {
-	const candidateCap = normaliseCap(cap);
+	const candidateCap = normalizeCap(cap);
 	return state.candidateCap === candidateCap ? state : { ...state, candidateCap };
 }
 

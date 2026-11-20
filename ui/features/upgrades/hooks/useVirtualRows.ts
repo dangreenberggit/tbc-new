@@ -72,7 +72,7 @@ export const useVirtualRows = (keys: readonly string[], tbodyRef: RefObject<HTML
 		return () => observer.disconnect();
 	}, [tbodyRef, measureMargin]);
 
-	// Stable while `keys` is: the virtualiser recomputes every row's position when `getItemKey` changes.
+	// Stable while `keys` is: the virtualizer recomputes every row's position when `getItemKey` changes.
 	const getItemKey = useCallback((index: number) => keys[index] ?? index, [keys]);
 
 	const virtualizer = useVirtualizer({

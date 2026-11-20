@@ -1,7 +1,7 @@
 /**
  * The run's assumptions as one console line, for diagnosing a bad ranking. No
  * player can act on these, so none is on the page. Plain English on purpose: a
- * console line is a diagnostic, not localised UI.
+ * console line is a diagnostic, not localized UI.
  */
 
 import { bisTagPhaseFor, epWeightsPhaseMismatch, type EpWeightsPreset, type PagePoolHost, poolFor, poolSourceFor, unsourcedCountFor } from './data/data';
