@@ -8,7 +8,7 @@ import { useId } from 'react';
 import { useUpgradesStore } from '../../hooks/useUpgradesStore';
 import type { RankedItem } from '../../model/engine/rank';
 import { exportPayload } from '../../model/export';
-import { selectExportFlavour } from '../../model/upgrades_store';
+import { selectExportFlavor } from '../../model/upgrades_store';
 
 export interface ExportPanelProps {
 	/**
@@ -26,10 +26,10 @@ export interface ExportPanelProps {
  */
 export const ExportPanel = ({ rows }: ExportPanelProps) => {
 	/** Whether a tier piece exports as itself or as its token. */
-	const flavour = useUpgradesStore(selectExportFlavour);
-	const setExportFlavour = useUpgradesStore(state => state.setExportFlavour);
-	const flavourId = useId();
-	const payload = exportPayload(rows, flavour);
+	const flavor = useUpgradesStore(selectExportFlavor);
+	const setExportFlavor = useUpgradesStore(state => state.setExportFlavor);
+	const flavorId = useId();
+	const payload = exportPayload(rows, flavor);
 	if (payload.items.length === 0) return null;
 	const json = JSON.stringify(payload, null, 2);
 
@@ -39,15 +39,15 @@ export const ExportPanel = ({ rows }: ExportPanelProps) => {
 			<BooleanPicker
 				modObject={null}
 				config={{
-					id: flavourId,
-					label: i18n.t('upgrades_tab.export.flavour_toggle', { ns: 'upgrades' }),
+					id: flavorId,
+					label: i18n.t('upgrades_tab.export.flavor_toggle', { ns: 'upgrades' }),
 					layout: 'inline',
-					value: flavour === 'token',
-					onChange: useTokenIds => setExportFlavour(useTokenIds ? 'token' : 'gear'),
+					value: flavor === 'token',
+					onChange: useTokenIds => setExportFlavor(useTokenIds ? 'token' : 'gear'),
 				}}
 			/>
 			<p className="mb-2 text-muted">
-				{i18n.t(flavour === 'token' ? 'upgrades_tab.export.flavour_tokens' : 'upgrades_tab.export.flavour_gear', { ns: 'upgrades' })}
+				{i18n.t(flavor === 'token' ? 'upgrades_tab.export.flavor_tokens' : 'upgrades_tab.export.flavor_gear', { ns: 'upgrades' })}
 			</p>
 			<TextArea readOnly rows={6} aria-label={i18n.t('upgrades_tab.export.title', { ns: 'upgrades' })} data-testid="upgrades-export-area" value={json} />
 			<div className="mt-2 flex items-center justify-between gap-2">

@@ -73,9 +73,9 @@
 			"caveat": "Copy the upgrades above as JSON.",
 			"count": "{{count}} items",
 			"copy": "Copy JSON",
-			"flavour_toggle": "Use tier token ids (for a loot-priority tool, e.g. ThatsMyBis)",
-			"flavour_tokens": "Exporting the token ID for tier pieces — the item that actually drops.",
-			"flavour_gear": "Exporting the gear item ID for every row."
+			"flavor_toggle": "Use tier token ids (for a loot-priority tool, e.g. ThatsMyBis)",
+			"flavor_tokens": "Exporting the token ID for tier pieces — the item that actually drops.",
+			"flavor_gear": "Exporting the gear item ID for every row."
 		},
 		"set_bonus": {
 			"hover_hint": "set detail",

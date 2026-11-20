@@ -268,18 +268,18 @@
 						"copy": {
 							"type": "string"
 						},
-						"flavour_toggle": {
+						"flavor_toggle": {
 							"type": "string"
 						},
-						"flavour_tokens": {
+						"flavor_tokens": {
 							"type": "string"
 						},
-						"flavour_gear": {
+						"flavor_gear": {
 							"type": "string"
 						}
 					},
 					"additionalProperties": false,
-					"required": ["title", "caveat", "count", "copy", "flavour_toggle", "flavour_tokens", "flavour_gear"]
+					"required": ["title", "caveat", "count", "copy", "flavor_toggle", "flavor_tokens", "flavor_gear"]
 				},
 				"set_bonus": {
 					"type": "object",

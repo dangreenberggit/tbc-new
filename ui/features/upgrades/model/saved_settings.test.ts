@@ -68,7 +68,7 @@ describe('openSavedUpgradesStore', () => {
 
 	it('restores the export panel’s token or gear choice in a fresh store (ticket 588)', () => {
 		const storage = memoryStorage();
-		openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY).getState().setExportFlavour('gear');
+		openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY).getState().setExportFlavor('gear');
 		expect(openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY).getState().exportFlavour).toBe('gear');
 	});
 

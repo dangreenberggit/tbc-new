@@ -7,7 +7,7 @@
 import type { Env } from '@sim/state/env';
 
 import { isRecord } from '../utils/is_record';
-import type { ExportFlavour } from './export';
+import type { ExportFlavor } from './export';
 import { SORT_COLUMN_IDS } from './results_columns';
 import { NO_VIEW_TOGGLES } from './results_view';
 import { SAVED_VERSION } from './saved_entry';
@@ -24,7 +24,7 @@ type SavedSettings = Omit<Settings, 'candidateCap'>;
 
 const isStringList = (value: unknown): value is string[] => Array.isArray(value) && value.every(entry => typeof entry === 'string');
 const isCount = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0;
-const EXPORT_FLAVOURS: readonly ExportFlavour[] = ['token', 'gear'];
+const EXPORT_FLAVORS: readonly ExportFlavor[] = ['token', 'gear'];
 
 /** Each field reads back on its own, so one bad field costs only itself. */
 const FIELD_CHECKS: { [K in keyof SavedSettings]-?: (value: unknown) => boolean } = {
@@ -77,7 +77,7 @@ function readSavedTab(storage: Storage, key: string): RestoredTab {
 		view: restoredView(saved.view),
 		// A new field, so no version bump: an entry without it restores every source shown.
 		hiddenSources: isStringList(saved.hiddenSources) ? saved.hiddenSources : undefined,
-		exportFlavour: EXPORT_FLAVOURS.find(flavour => flavour === saved.exportFlavour),
+		exportFlavour: EXPORT_FLAVORS.find(flavor => flavor === saved.exportFlavour),
 	};
 }
 

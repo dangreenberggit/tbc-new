@@ -37,7 +37,7 @@ describe('ExportPanel', () => {
 		expect(screen.getByText('Exporting the token ID for tier pieces — the item that actually drops.')).toBeTruthy();
 	});
 
-	it('exports the gear item ids once the token flavour is turned off', () => {
+	it('exports the gear item ids once the token flavor is turned off', () => {
 		render(<ExportPanel rows={[GREAVES_TOKEN, TORCH]} />);
 		fireEvent.click(screen.getByRole('checkbox'));
 
@@ -48,7 +48,7 @@ describe('ExportPanel', () => {
 	// The choice is saved with the tab's other settings, so it survives a reload.
 	it('starts from the choice the page saved, and keeps a new one in the tab’s store', () => {
 		const store = upgradesStoreFor(host);
-		store.getState().setExportFlavour('gear');
+		store.getState().setExportFlavor('gear');
 		render(<ExportPanel rows={[GREAVES_TOKEN, TORCH]} />);
 		expect(exportedIds()).toEqual([GREAVES_TOKEN.itemId, TORCH.itemId]);
 

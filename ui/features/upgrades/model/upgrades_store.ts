@@ -9,7 +9,7 @@ import { createStore } from 'zustand/vanilla';
 
 import type { RankedItem, Ranking } from './engine/rank';
 import type { ContentPhase } from './engine/types';
-import type { ExportFlavour } from './export';
+import type { ExportFlavor } from './export';
 import { NO_VIEW_TOGGLES, type ViewToggleState, withHiddenSourceToggled } from './results_view';
 import {
 	fixtureLoaded,
@@ -54,7 +54,8 @@ export type UpgradesData = {
 	sort: ResultsSort;
 	view: ViewToggleState;
 	hiddenSources: readonly string[];
-	exportFlavour: ExportFlavour;
+	/** Saved under this name, so it keeps the British spelling: a rename would need a migration. */
+	exportFlavour: ExportFlavor;
 };
 
 /**
@@ -86,7 +87,7 @@ export type UpgradesActions = {
 	setViewToggle: (toggle: keyof ViewToggleState, on: boolean) => void;
 	toggleHiddenSource: (key: string) => void;
 	setHiddenSources: (keys: readonly string[]) => void;
-	setExportFlavour: (flavour: ExportFlavour) => void;
+	setExportFlavor: (flavor: ExportFlavor) => void;
 };
 
 export type UpgradesState = UpgradesData & UpgradesActions;
@@ -100,7 +101,7 @@ export type RestoredTab = {
 	sort?: ResultsSort;
 	view?: Partial<ViewToggleState>;
 	hiddenSources?: readonly string[];
-	exportFlavour?: ExportFlavour;
+	exportFlavour?: ExportFlavor;
 };
 
 export type UpgradesStore = ReturnType<typeof createUpgradesStore>;
@@ -156,7 +157,7 @@ export function createUpgradesStore(initial: InitialSettings, restored: Restored
 							? state
 							: { hiddenSources: [...keys] },
 					),
-				setExportFlavour: flavour => set(state => (flavour === state.exportFlavour ? state : { exportFlavour: flavour })),
+				setExportFlavor: flavor => set(state => (flavor === state.exportFlavour ? state : { exportFlavour: flavor })),
 			};
 		}),
 	);
@@ -166,7 +167,7 @@ export const selectRun = (state: UpgradesState): RunState => state.run;
 export const selectSort = (state: UpgradesState): ResultsSort => state.sort;
 export const selectViewToggles = (state: UpgradesState): ViewToggleState => state.view;
 export const selectHiddenSources = (state: UpgradesState): readonly string[] => state.hiddenSources;
-export const selectExportFlavour = (state: UpgradesState): ExportFlavour => state.exportFlavour;
+export const selectExportFlavor = (state: UpgradesState): ExportFlavor => state.exportFlavour;
 export const selectRunStatus = (state: UpgradesState): RunState['status'] => state.run.status;
 
 /** The signature the result on screen was measured on; none while a run is in flight, which is never stale. */

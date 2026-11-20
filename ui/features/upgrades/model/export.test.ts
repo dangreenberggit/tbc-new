@@ -9,11 +9,11 @@ const breastplate = fixtureRow(4);
 const trophy = fixtureRow(7);
 
 describe('exportIdForRow', () => {
-	it('gives the tier token that drops for a token row, under the token flavour', () => {
+	it('gives the tier token that drops for a token row, under the token flavor', () => {
 		expect(exportIdForRow(greaves, 'token')).toBe(31098);
 	});
 
-	it('gives the gear id under the gear flavour', () => {
+	it('gives the gear id under the gear flavor', () => {
 		expect(exportIdForRow(greaves, 'gear')).toBe(30993);
 	});
 
