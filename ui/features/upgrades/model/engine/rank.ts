@@ -1905,11 +1905,11 @@ async function buildSetBonuses(
 	// The "on" screen estimates the added pieces' gain at each count with
 	// `estimateCombinedDelta`, which adds no term for the set's own bonuses.
 	// The estimate treats the row like any other added piece, so which piece is
-	// the row does not matter. But each own delta of a set worn at w reached
-	// w + 1 pieces alone, so when there is a bonus at w + 1 every own delta
-	// holds it once. The pair already counts it, and sets worn at another count
-	// carry no such extra, so the crossing check's value is taken out once per
-	// added piece (ticket 886). An unmeasured crossing leaves the estimate
+	// the row does not matter. But each own delta of a set worn at w was simmed
+	// with w + 1 pieces, so when w + 1 is a bonus count every own delta holds
+	// that bonus once. The pair counts it already, so the crossing check's
+	// value, which is that bonus, is taken out once per added piece (ticket
+	// 886). A crossing check that ran without a value leaves the estimate
 	// unset, and the screen keeps the set.
 	const screenBrokenBonusDpsByKey = new Map(brokenSetValues.map(v => [bonusKey(v), v.dps] as const));
 	const estimatedDeltaAt = (setId: number, threshold: number): number | undefined => {

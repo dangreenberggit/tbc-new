@@ -49,7 +49,7 @@ export function setBonusMagnitudeWarnings(bonuses: readonly SetBonusValue[], opt
 				? `${b.setName} ${b.threshold}pc reports ${b.bonusDps.toFixed(2)} DPS — ` +
 					`~${(fractionOfBaseline * 100).toFixed(1)}% of a ${options.baselineDps.toFixed(2)} baseline, ` +
 					`above the ${(IMPLAUSIBLE_BONUS_FRACTION * 100).toFixed(1)}% limit for a believable set bonus. ` +
-					`Treat it as a likely measurement problem, not a bonus this large; check which worn bonuses the added pieces break.`
+					`Treat it as a suspected measurement problem, not a bonus this large; check which worn bonuses the added pieces break.`
 				: `${b.setName} ${b.threshold}pc reports ${b.bonusDps.toFixed(2)} DPS — ` +
 					`a loss of ~${(Math.abs(fractionOfBaseline) * 100).toFixed(1)}% of a ${options.baselineDps.toFixed(2)} baseline, ` +
 					`beyond the ${(IMPLAUSIBLE_BONUS_FRACTION * 100).toFixed(1)}% limit for a believable set bonus. ` +
@@ -94,7 +94,7 @@ function deadSlotMessage(cause: DeadSlotCause, slot: string, wornItemName: strin
 	if (cause === 'set-break-cost') {
 		return (
 			`No positive candidate in ${slot}: every alternative displaces ${wornItemName} ` +
-			`and loses ${setName ?? 'its set'}'s bonus. Check that this lost bonus is real before trusting the slot.`
+			`and loses a ${setName ?? 'set'} bonus. Check that this lost bonus is real before trusting the slot.`
 		);
 	}
 	if (cause === 'unknown-item') {
