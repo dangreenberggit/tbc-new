@@ -57,7 +57,7 @@ export type SetPotentialTerm =
 	/**
 	 * One eligible bonus with `bonusGearMeasured`: the DPS of its full gear over the
 	 * current gear, the partner pieces it adds (in sim slot order) and the worn
-	 * bonuses it loses. These are whole-gear gains, not parts of the credit; `isCredited` marks
+	 * bonuses it breaks. These are whole-gear gains, not parts of the credit; `isCredited` marks
 	 * the bonus the credit counts up to.
 	 */
 	| {
@@ -464,7 +464,7 @@ export function crossingLabelCount(
  * The full-view credit and its breakdown up to the credited bonus, for the tab's
  * popover: each counted bonus (none when floored to 0), then the pieces it adds,
  * then the breaks it charges; the lines add up to `credit`. With `bonusGearMeasured`
- * there is one `"outcome"` total per eligible bonus instead, and those do not add
+ * there is one `"outcome"` per eligible bonus instead, and the outcomes do not add
  * up to `credit`. Call it only when `setCreditUnmeasured` is false.
  */
 export function setPotentialTerms(
@@ -478,9 +478,10 @@ export function setPotentialTerms(
 
 /**
  * One increment of a `bonusGearMeasured` row: the partner pieces it adds to the
- * previous increment's gear, the bonus it reaches, the worn bonuses it newly loses,
- * and `dps`, its total minus the previous increment's (for the first increment,
- * minus the row's own swap).
+ * previous increment's gear, the bonus it reaches, the worn bonuses it newly breaks,
+ * and `dps`, its bonus gear's DPS minus the previous increment's (for the first
+ * increment, minus the row's own swap). `dps` can be negative: a bonus before the
+ * credited one can gain less than the gear before it.
  */
 export type SetPotentialIncrement = {
 	kind: 'increment';
@@ -494,24 +495,29 @@ export type SetPotentialIncrement = {
 		dps?: number;
 	}>;
 	dps: number;
+	/**
+	 * True only on the last increment, the one that reaches the credited bonus.
+	 * Every increment counts toward the credit.
+	 */
 	isCredited: boolean;
 	/**
-	 * An increment that newly loses a worn bonus shows as two lines: Breaks, the
-	 * sim with that bonus turned off minus the previous total, and pieces, the increment's
-	 * total minus that sim. Both are set or neither is, and they add up to `dps`.
+	 * An increment that newly breaks a worn bonus shows as two lines: Breaks, the
+	 * sim with that bonus turned off minus the previous bonus gear's DPS, and pieces,
+	 * the increment's bonus gear's DPS minus that sim. Both are set or neither is, and
+	 * they add up to `dps`.
 	 */
 	breaksLineDps?: number;
 	piecesLineDps?: number;
 };
 
 /**
- * Turns a `bonusGearMeasured` row's `"outcome"` totals, up to the credited bonus,
+ * Turns a `bonusGearMeasured` row's outcomes, up to the credited bonus,
  * into increments whose `dps` add up to the credit. Null when no bonus is credited,
  * or when an increment's partner pieces do not include the previous increment's,
  * because then no increment builds on the one before. The first increment leaves
  * out the row's own breaks, which the popover lists above the increments. An
  * increment gets its two line values only when its `bonusOff` sim turned off
- * exactly the bonuses it newly loses; otherwise it stays one line.
+ * exactly the bonuses it newly breaks; otherwise it stays one line.
  */
 export function setPotentialIncrements(
 	ctx: SetContextLike | undefined,

@@ -276,10 +276,12 @@ export type SetContext = {
 	nextThreshold: SetThreshold | null;
 	crossesThreshold: boolean;
 	/**
-	 * Set on every row of a ranking made with `measureSetBonuses`: each
-	 * future bonus was valued by one sim of the row plus its partner pieces
-	 * (`bonusGearDps`). View helpers that see only this context read it to use
-	 * that sim instead of summing `pieces`.
+	 * Set on every row of a ranking made with `measureSetBonuses`, which values
+	 * each future bonus by one sim of the row plus its partner pieces
+	 * (`bonusGearDps`). It says how the ranking was made, not that every such
+	 * sim succeeded: a bonus can still be unmeasured or within the noise. View
+	 * helpers that see only this context read it to use that sim instead of
+	 * summing `pieces`.
 	 */
 	bonusGearMeasured?: true;
 	/**
