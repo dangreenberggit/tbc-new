@@ -6,26 +6,19 @@
  * For a set with `worn` pieces worn whose pool pieces can reach `reach`, at
  * least 2 more: it sims the gear with all those pieces, sending the first k
  * added pieces (in slot order) as normal copies and the rest as copies with no
- * set (`applyCopies`), so the sim counts `worn` + k pieces. Each k is one of
- * the screened counts, and a `pairs` entry is k = 0 against k = `reach` − `worn`. They all
- * share a seed and return per-iteration values, so the difference of two has a
- * paired standard error.
+ * set (`applyCopies`), so the sim counts `worn` + k pieces. The pair is
+ * k = 0 against k = `reach` − `worn`. Both sims share a seed and return
+ * per-iteration values, so their difference has a paired standard error.
  *
- * `'record'` mode runs the pair at several iteration counts and every k, for
- * scoring rules offline, and drops nothing. `'on'` mode, which the tab uses,
- * sims only the pair and applies `SCREEN_ON_RULE`. A dropped set gets no later
- * set sims and no `setBonuses` entry. A set whose sims failed is kept, so a
- * failure never hides a set.
+ * `'on'` mode, which the tab uses, sims the pair and applies `SCREEN_ON_RULE`.
+ * A dropped set gets no later set sims and no `setBonuses` entry. A set whose
+ * sims failed is kept, so a failure never hides a set.
  */
 
 import type { RaidSimRequest, SimObservation, SimRunOpts } from './seams/sim-runner';
 import { applyCopies, type BuildFailure, errorText, isBuildFailure } from './set-less-copies';
 
-export type SetScreenMode = 'off' | 'record' | 'on';
-
-/** Iteration counts for `pairs`, and for `countSims`, in `'record'` mode. */
-export const SCREEN_PAIR_ITERATIONS: readonly number[] = [10, 100, 300, 1000];
-export const SCREEN_COUNT_ITERATIONS: readonly number[] = [100, 300, 1000];
+export type SetScreenMode = 'off' | 'on';
 
 export type ScreenOnRule = {
 	/** `'M2'`: `bestStats` plus the pair's DPS. */
@@ -42,8 +35,9 @@ export type ScreenOnRule = {
 };
 
 /**
- * The `'on'` mode's rule, chosen by scoring rules offline against `'record'`
- * results: it kept every set worth collecting. Changing any value means scoring
+ * The `'on'` mode's rule, chosen by scoring rules offline against readings of
+ * the pair at several iteration counts and of every piece count: it kept every
+ * set worth collecting. Changing any value means scoring
  * it again. Scored again after ticket 886 took the set's own bonus out of the
  * estimate: it kept the same sets on every scored character.
  */
@@ -57,47 +51,6 @@ export const SCREEN_ON_RULE = {
 } as const;
 
 export type ScreenReason = 'exact-zero' | 'readings-absent' | 'below-zero' | 'top-k' | 'band' | 'outside-band';
-
-export type SetScreenPair = {
-	iterations: number;
-	/** DPS with all added pieces counted minus with none; absent if a sim failed. */
-	dps?: number;
-	/** sd(a_i − b_i)/√N over the two sims' per-iteration values. */
-	pairedSe?: number;
-};
-
-export type SetScreenCountSim = {
-	iterations: number;
-	/** How many of the set's pieces the sim counts. */
-	count: number;
-	/** This sim's DPS. Absent when it failed. */
-	dps?: number;
-	se?: number;
-	/** The paired standard error of this sim minus the one a count below. */
-	pairedSeToPrev?: number;
-};
-
-export type SetScreenSet = {
-	setId: number;
-	worn: number;
-	reach: number;
-	/** The pieces added up to `reach`, in slot order. Stored name: "package" means these added pieces. */
-	packageItemIds: number[];
-	pairs: SetScreenPair[];
-	/** Grouped by iteration count, then in count order. */
-	countSims: SetScreenCountSim[];
-};
-
-export type SetScreenRecord = {
-	mode: 'record';
-	seed: number;
-	pairIterations: number[];
-	countIterations: number[];
-	sets: SetScreenSet[];
-	/** Sims sent to the runner, failed ones included. */
-	simmed: number;
-	fromStore: number;
-};
 
 export type SetScreenOnSet = {
 	setId: number;
@@ -132,7 +85,7 @@ export type SetScreenOn = {
 	fromStore: number;
 };
 
-export type SetScreen = SetScreenRecord | SetScreenOn;
+export type SetScreen = SetScreenOn;
 
 /** The gear with a set's pieces up to `reach` swapped in, and the pieces added. */
 export type ScreenGear = {
@@ -170,15 +123,13 @@ export type SetScreenInput = {
 	onSimFailed?: (setId: number, error: string) => void;
 	/** The error of each sim request that could not be built. */
 	onRequestNotBuilt?: (setId: number, error: string) => void;
-	pairIterations?: readonly number[];
-	countIterations?: readonly number[];
 };
 
-export type SetScreenOnInput = Omit<SetScreenInput, 'pairIterations' | 'countIterations'> & {
+export type SetScreenOnInput = SetScreenInput & {
 	/**
 	 * The estimated delta of `setId`'s chosen pieces at `threshold`: their own
-	 * deltas added up with the break corrections, as the `'sum-of-singles'`
-	 * partner rule does, so it needs no extra sim, less the set's bonus each
+	 * deltas added up with the break corrections, the partner choice's
+	 * `'sum-of-singles'` estimate, so it needs no extra sim, less the set's bonus each
 	 * own delta reached alone. It has no term for this set's bonuses; the
 	 * pair's DPS adds them. Undefined when an input is missing.
 	 */
@@ -197,11 +148,9 @@ function screenGear(input: Pick<SetScreenInput, 'gearAt'>, setId: number, reach:
 }
 
 /**
- * Runs one of a set's sims for a given k, shared by both modes so an `'on'` pair
- * is the same request, with the same options, as a `'record'` pair at that
- * iteration count. Each sim catches its own failure, so one failure loses only
- * that sim. With `gear.requestsFor`, the first sim builds all of `counts` in one
- * call.
+ * Runs one of a set's sims for a given k. Each sim catches its own failure, so
+ * one failure loses only that sim. With `gear.requestsFor`, the first sim
+ * builds all of `counts` in one call.
  */
 function countSimmer(
 	input: Pick<SetScreenInput, 'runSimAt' | 'seed' | 'signal' | 'onSimFailed' | 'onRequestNotBuilt'>,
@@ -261,73 +210,6 @@ function countSimmer(
 			}
 			return undefined;
 		}
-	};
-}
-
-export async function recordSetScreen(input: SetScreenInput): Promise<SetScreenRecord> {
-	const pairIterations = [...(input.pairIterations ?? SCREEN_PAIR_ITERATIONS)];
-	const countIterations = [...(input.countIterations ?? SCREEN_COUNT_ITERATIONS)];
-	const counter: ScreenCounter = { simmed: 0, fromStore: 0 };
-	const sets: SetScreenSet[] = [];
-
-	for (const { setId, worn, reach } of input.sets) {
-		if (reach - worn < 2) continue;
-		const { gear, added, slots } = screenGear(input, setId, reach);
-		const addedCount = reach - worn;
-		const simAtCount = countSimmer(
-			input,
-			setId,
-			worn,
-			gear,
-			slots,
-			counter,
-			Array.from({ length: addedCount + 1 }, (_, k) => k),
-		);
-
-		const pairs: SetScreenPair[] = [];
-		for (const iterations of pairIterations) {
-			const low = await simAtCount(0, iterations);
-			const high = await simAtCount(addedCount, iterations);
-			pairs.push({
-				iterations,
-				...(low && high ? { dps: high.dps - low.dps } : {}),
-				...optionalPairedSe('pairedSe', high, low, iterations),
-			});
-		}
-
-		const countSims: SetScreenCountSim[] = [];
-		for (const iterations of countIterations) {
-			let below: SimObservation | undefined;
-			for (let k = 0; k <= addedCount; k++) {
-				const obs = await simAtCount(k, iterations);
-				countSims.push({
-					iterations,
-					count: worn + k,
-					...(obs ? { dps: obs.dps, se: obs.stdev / Math.sqrt(iterations) } : {}),
-					...(k > 0 ? optionalPairedSe('pairedSeToPrev', obs, below, iterations) : {}),
-				});
-				below = obs;
-			}
-		}
-
-		sets.push({
-			setId,
-			worn,
-			reach,
-			packageItemIds: added.map(p => p.itemId),
-			pairs,
-			countSims,
-		});
-	}
-
-	return {
-		mode: 'record',
-		seed: input.seed,
-		pairIterations,
-		countIterations,
-		sets,
-		simmed: counter.simmed,
-		fromStore: counter.fromStore,
 	};
 }
 

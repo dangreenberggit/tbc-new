@@ -273,7 +273,7 @@ export function setBonusPopoverLines(row: RankedItem, context: RankingContext = 
 	const cutoff = context.ranking?.cutoff;
 	const cutoffDps = cutoff?.absDps;
 	const setPotentialOn = (context.withSetPotential ?? false) && cutoff !== undefined;
-	const credit = setPotentialOn ? rankableSetPotential(row, cutoff, 'full') : 0;
+	const credit = setPotentialOn ? rankableSetPotential(row, cutoff) : 0;
 	// A row with no `setContext` still lists the worn bonuses its own swap breaks.
 	const ownBreaks =
 		ctx || !context.ranking || !context.specId ? [] : ownSwapBreaks(row, context.ranking.brokenSetValues, context.wornItemIds, context.specId);

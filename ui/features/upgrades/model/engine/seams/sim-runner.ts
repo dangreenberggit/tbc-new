@@ -11,7 +11,7 @@ export type RaidSimRequest = Readonly<Record<string, unknown>>;
 export type SimRunOpts = {
 	seed: number;
 	iterations: number;
-	/** Ask for each iteration's DPS (set screen `'record'` mode); a runner may ignore it. */
+	/** Ask for each iteration's DPS (the set screen); a runner may ignore it. */
 	saveAllValues?: boolean;
 };
 

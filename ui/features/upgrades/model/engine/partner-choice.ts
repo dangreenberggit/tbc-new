@@ -3,8 +3,8 @@
  * one bonus. `choosePartners` is the only place they are picked, so the rule can be
  * swapped here alone.
  *
- * The tab's rule, 'close-calls', ranks every combination by the 'sum-of-singles' estimate,
- * then sims those within `CLOSE_CALL_MARGIN_DPS` of the best and keeps the highest delta.
+ * The rule, 'close-calls', ranks every combination by the 'sum-of-singles' estimate, then
+ * sims those within `CLOSE_CALL_MARGIN_DPS` of the best and keeps the highest delta.
  *
  * The estimate adds up each piece's DPS change when swapped in alone, then fixes the worn
  * bonuses that sum gets wrong. A bonus several pieces each break alone is charged once per
@@ -12,19 +12,15 @@
  * charged, so it is taken off. It has no term for the bonus being reached, which every
  * combination reaches alike. Rules that rank by the estimate break ties to the lowest
  * sorted item ids.
- *
- * 'every-combination' sims every combination and is the reference the others are scored against.
- * 'sum-of-singles-plain' (the estimate without taking off bonuses only the full swap breaks)
- * and 'single-swap' (the pieces `pathToThreshold` picks) are kept only for that scoring.
  */
 
 import { bonusKey, type BrokenSetBonus, type PlacedItem } from './set-value';
 
-/** Hashed into the cache key, so the strings keep old words: "singles" are own deltas, and 'single-swap' takes the pieces `pathToThreshold` picks. */
-export type PartnerRule = 'close-calls' | 'sum-of-singles' | 'sum-of-singles-plain' | 'single-swap' | 'every-combination';
+/** Written to `bonusGearSims` and each future bonus, which name the rule that chose the pieces. */
+export type PartnerRule = 'close-calls';
 
 /**
- * The tab's rule. On eight test characters, no rule that picks without simming chose a
+ * The rule. On eight test characters, no rule that picks without simming chose a
  * combination within noise of the best simmed combination on every row.
  */
 export const PARTNER_RULE: PartnerRule = 'close-calls';
@@ -73,8 +69,6 @@ export type PartnerQuery = {
 	brokenBy: (swaps: readonly PlacedItem[]) => readonly Pick<BrokenSetBonus, 'setId' | 'threshold'>[];
 	/** A worn bonus's measured value; undefined when unmeasured. */
 	breakDps: (setId: number, threshold: number) => number | undefined;
-	/** Used by 'single-swap'. */
-	pathPieces?: readonly PlacedItem[];
 	/** Sims current gear plus the row plus `partners`; the delta is against current gear. */
 	simGear?: (partners: readonly PlacedItem[]) => Promise<{ deltaDps: number; se: number } | undefined>;
 };
@@ -100,17 +94,13 @@ export function partnerCombinations(query: PartnerQuery): PartnerPiece[][] {
 }
 
 /**
- * The 'sum-of-singles' estimate of one combination, or 'sum-of-singles-plain' without
- * `includeCombinationOnlyBreaks`. Undefined when a bonus that changes the estimate is unmeasured.
+ * The 'sum-of-singles' estimate of one combination. Undefined when a bonus that changes the
+ * estimate is unmeasured.
  * It has no term for the bonus the swaps reach: the callers' `brokenBy` leaves that set out.
  * Partner choice compares combinations that reach the same bonus, and the set screen adds
  * the set's bonuses as its pair's DPS.
  */
-export function estimateCombinedDelta(
-	query: Pick<PartnerQuery, 'row' | 'brokenBy' | 'breakDps'>,
-	combination: readonly PartnerPiece[],
-	opts: { includeCombinationOnlyBreaks: boolean },
-): number | undefined {
+export function estimateCombinedDelta(query: Pick<PartnerQuery, 'row' | 'brokenBy' | 'breakDps'>, combination: readonly PartnerPiece[]): number | undefined {
 	const rowSwap: PlacedItem = {
 		itemId: query.row.itemId,
 		slotIndex: query.row.slotIndex,
@@ -135,7 +125,6 @@ export function estimateCombinedDelta(
 	for (const [key, b] of keys) {
 		const brokenAloneCount = brokenAlone.get(key) ?? 0;
 		const brokenTogetherCount = brokenTogether.has(key) ? 1 : 0;
-		if (brokenAloneCount === 0 && !opts.includeCombinationOnlyBreaks) continue;
 		const coefficient = brokenAloneCount - brokenTogetherCount;
 		if (coefficient === 0) continue;
 		const bonusDps = query.breakDps(b.setId, b.threshold);
@@ -145,24 +134,11 @@ export function estimateCombinedDelta(
 	return estimate;
 }
 
-export type PartnerAudit = {
-	combinations: Array<{
-		itemIds: number[];
-		deltaDps: number | null;
-		se: number | null;
-		estimate: number | null;
-		plainEstimate: number | null;
-	}>;
-	chosen: { itemIds: number[]; deltaDps: number };
-};
-
 export type PartnerChoice =
 	| {
 			itemIds: number[];
-			rule: PartnerRule;
 			estimatedDeltaDps?: number;
 			deltaDps?: number;
-			audit?: PartnerAudit;
 	  }
 	| { unmeasured: 'break-unmeasured' };
 
@@ -179,84 +155,29 @@ function compareIds(a: readonly { itemId: number }[], b: readonly { itemId: numb
 }
 
 /**
- * The partners for one row and bonus under `rule`. Undefined when no combination of
- * `needed` pieces exists or every "every-combination" sim failed. "break-unmeasured" when
- * any combination's estimate is undefined, so the row is not valued on a combination
- * chosen without that bonus.
+ * The partners for one row and bonus. Undefined when no combination of `needed` pieces
+ * exists. "break-unmeasured" when any combination's estimate is undefined, so the row is
+ * not valued on a combination chosen without that bonus.
  */
-export async function choosePartners(query: PartnerQuery, rule: PartnerRule): Promise<PartnerChoice | undefined> {
-	if (rule === 'single-swap') {
-		const pieces = query.pathPieces;
-		if (!pieces || pieces.length !== query.needed) return undefined;
-		return {
-			itemIds: [...pieces].sort((a, b) => a.slotIndex - b.slotIndex).map(p => p.itemId),
-			rule,
-		};
-	}
+export async function choosePartners(query: PartnerQuery): Promise<PartnerChoice | undefined> {
 	const combinations = partnerCombinations(query);
 	if (combinations.length === 0) return undefined;
 
-	if (rule === 'every-combination') {
-		if (!query.simGear) return undefined;
-		const audit: PartnerAudit['combinations'] = [];
-		let best: { combination: PartnerPiece[]; deltaDps: number; estimate: number | undefined } | undefined;
-		for (const combination of combinations) {
-			const estimate = estimateCombinedDelta(query, combination, { includeCombinationOnlyBreaks: true });
-			const plainEstimate = estimateCombinedDelta(query, combination, {
-				includeCombinationOnlyBreaks: false,
-			});
-			const sim = await query.simGear(combination);
-			audit.push({
-				itemIds: combination.map(p => p.itemId),
-				deltaDps: sim?.deltaDps ?? null,
-				se: sim?.se ?? null,
-				estimate: estimate ?? null,
-				plainEstimate: plainEstimate ?? null,
-			});
-			if (!sim) continue;
-			const better =
-				!best ||
-				sim.deltaDps > best.deltaDps ||
-				(sim.deltaDps === best.deltaDps &&
-					((estimate ?? -Infinity) > (best.estimate ?? -Infinity) ||
-						((estimate ?? -Infinity) === (best.estimate ?? -Infinity) && compareIds(combination, best.combination) < 0)));
-			if (better) best = { combination, deltaDps: sim.deltaDps, estimate };
-		}
-		if (!best) return undefined;
-		const itemIds = best.combination.map(p => p.itemId);
-		return {
-			itemIds,
-			rule,
-			deltaDps: best.deltaDps,
-			...(best.estimate !== undefined ? { estimatedDeltaDps: best.estimate } : {}),
-			audit: { combinations: audit, chosen: { itemIds, deltaDps: best.deltaDps } },
-		};
-	}
-
-	const includeCombinationOnlyBreaks = rule !== 'sum-of-singles-plain';
 	const ranked: Array<{ combination: PartnerPiece[]; estimate: number }> = [];
 	for (const combination of combinations) {
-		const estimate = estimateCombinedDelta(query, combination, { includeCombinationOnlyBreaks });
+		const estimate = estimateCombinedDelta(query, combination);
 		if (estimate === undefined) return { unmeasured: 'break-unmeasured' };
 		ranked.push({ combination, estimate });
 	}
 	// Highest estimate first, ties to the lowest sorted ids.
 	ranked.sort((a, b) => b.estimate - a.estimate || compareIds(a.combination, b.combination));
 	const top = ranked[0]!;
-	if (rule !== 'close-calls') {
-		return {
-			itemIds: top.combination.map(p => p.itemId),
-			rule,
-			estimatedDeltaDps: top.estimate,
-		};
-	}
 
 	const close = ranked.filter(c => c.estimate >= top.estimate - CLOSE_CALL_MARGIN_DPS);
 	// One candidate needs no comparison; its gear is simmed later anyway.
 	if (close.length === 1 || !query.simGear) {
 		return {
 			itemIds: top.combination.map(p => p.itemId),
-			rule,
 			estimatedDeltaDps: top.estimate,
 		};
 	}
@@ -272,13 +193,11 @@ export async function choosePartners(query: PartnerQuery, rule: PartnerRule): Pr
 	if (!best) {
 		return {
 			itemIds: top.combination.map(p => p.itemId),
-			rule,
 			estimatedDeltaDps: top.estimate,
 		};
 	}
 	return {
 		itemIds: best.combination.map(p => p.itemId),
-		rule,
 		estimatedDeltaDps: best.estimate,
 		deltaDps: best.deltaDps,
 	};

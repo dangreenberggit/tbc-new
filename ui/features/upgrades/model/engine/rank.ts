@@ -25,7 +25,7 @@ import { isKaelTempLegendary } from './kael-temp';
 import { equipmentFromLoggedGear, socketedItemsFromLoggedGear } from './logged-gear';
 import { type GemRecolor, inactiveMeta, MetaRepairError, REPAIR_SEARCH_WORK_LIMIT, repairMetaGems, type SocketedItem } from './meta-repair';
 import { migrateGemsToItem } from './migrate-gems';
-import { choosePartners, estimateCombinedDelta, PARTNER_RULE, type PartnerAudit, type PartnerPiece, partnerPool, type PartnerRule } from './partner-choice';
+import { choosePartners, estimateCombinedDelta, PARTNER_RULE, type PartnerPiece, partnerPool, type PartnerRule } from './partner-choice';
 import { type PlausibilityWarning, plausibilityWarnings } from './plausibility';
 import {
 	filterPoolByPhase,
@@ -73,7 +73,7 @@ import {
 	measureWornSetCounts,
 	type SimFailure,
 } from './set-less-copies';
-import { recordSetScreen, runSetScreenOn, type SetScreen, type SetScreenInput, type SetScreenMode } from './set-screen';
+import { runSetScreenOn, type SetScreen, type SetScreenInput, type SetScreenMode } from './set-screen';
 import {
 	bonusKey,
 	type BrokenSetBonus,
@@ -151,18 +151,10 @@ export type Deps = {
 	 */
 	measureSetBonuses?: boolean;
 	/**
-	 * The rule that picks the other set pieces a set row is simmed with
-	 * (`partner-choice.ts`). Absent means `PARTNER_RULE`. The tab never sets
-	 * it; tests set it to score the rules against each other. Hashed only when
-	 * set, so a ranking cached under one rule is never served for another.
-	 */
-	partnerRule?: PartnerRule;
-	/**
 	 * The set screen (`set-screen.ts`), run only with `measureSetBonuses`.
 	 * "on" values the bonuses rows could reach only for the sets the screen
-	 * keeps; the tab passes it. "record" runs the screen's sims and filters
-	 * nothing; the tab never sets it, only tests do. Both write
-	 * `Ranking.setScreen`. Absent means "off". Hashed only when set.
+	 * keeps, and writes `Ranking.setScreen`; the tab passes it. Absent means
+	 * "off". Hashed only when set.
 	 */
 	setScreenMode?: SetScreenMode;
 	/**
@@ -427,13 +419,6 @@ export type SetBonusOffSims = {
 	beforeInStore: number;
 };
 
-export type PartnerAuditEntry = {
-	itemId: number;
-	setId: number;
-	threshold: number;
-	audit: PartnerAudit;
-};
-
 export type SetBonusValue = {
 	setId: number;
 	setName: string;
@@ -537,17 +522,10 @@ export type Ranking = {
 	 */
 	setBonusOffSims?: SetBonusOffSims;
 	/**
-	 * Every partner combination simmed for every future bonus above noise, written only
-	 * under the "every-combination" rule, which tests set to score the rules
-	 * that choose without a sim. Players never get it.
-	 */
-	partnerAudit?: PartnerAuditEntry[];
-	/**
-	 * The set screen's readings, written only when `deps.setScreenMode` is "record"
-	 * or "on"; in "on" mode it also holds each set's verdict and reason. Only
-	 * the set-bonus popover reads it, to say why a set was not measured; the
-	 * set-bonus sims filter on the screen's own result, and record mode's
-	 * readings are scored offline.
+	 * The set screen's readings, each set's verdict and its reason, written
+	 * only when `deps.setScreenMode` is "on". Only the set-bonus popover reads
+	 * it, to say why a set was not measured; the set-bonus sims filter on the
+	 * screen's own result.
 	 */
 	setScreen?: SetScreen;
 	plausibilityWarnings?: PlausibilityWarning[];
@@ -819,11 +797,9 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		fullPool: true,
 		screenIterations: null,
 		promoteTopK: null,
-		// Only when set, so a run without it keeps every key already written; a
-		// run with it is never served a ranking another rule made.
-		...(deps.partnerRule !== undefined ? { partnerRule: deps.partnerRule } : {}),
-		// The same rule for the screen: a ranking without its readings is never
-		// served to a run that asked for them.
+		// Only when set, so a run without it keeps every key already written,
+		// and a ranking without the screen's readings is never served to a run
+		// that asked for them.
 		...(deps.setScreenMode !== undefined ? { setScreen: deps.setScreenMode } : {}),
 		// Only when set, so a full-weight spec keeps its key and a run that reads
 		// hit is never served a ranking repaired at full weight. The value names
@@ -1494,7 +1470,6 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			...(setBonusResult.crossingChecks.length > 0 ? { crossingChecks: setBonusResult.crossingChecks } : {}),
 			...(bonusGearResult ? { bonusGearSims: bonusGearResult.bonusGearSims } : {}),
 			...(bonusGearResult ? { setBonusOffSims: bonusGearResult.bonusOffSims } : {}),
-			...(bonusGearResult?.partnerAudit ? { partnerAudit: bonusGearResult.partnerAudit } : {}),
 			...(setBonusResult.setScreen ? { setScreen: setBonusResult.setScreen } : {}),
 			...(warnings.length > 0 ? { plausibilityWarnings: warnings } : {}),
 		};
@@ -1758,12 +1733,9 @@ async function buildSetBonuses(
 	};
 
 	// The screen runs after the worn-set values and before the loop over
-	// reachable bonuses. Both modes get the same sets, added pieces and sim
-	// options, so an "on" pair is the request "record" sims at that iteration
-	// count.
-	const screenMode = measureSetBonuses ? deps.setScreenMode : undefined;
+	// reachable bonuses.
 	const screenInput: SetScreenInput | undefined =
-		screenMode === 'record' || screenMode === 'on'
+		measureSetBonuses && deps.setScreenMode === 'on'
 			? {
 					sets: [...setIdsWithCandidates]
 						.sort((a, b) => a - b)
@@ -1937,16 +1909,11 @@ async function buildSetBonuses(
 				breakDps: (s, c) => screenBrokenBonusDpsByKey.get(`${s}:${c}`),
 			},
 			rest,
-			{ includeCombinationOnlyBreaks: true },
 		);
 		return estimate === undefined ? undefined : estimate - pieces.length * crossedPerPiece;
 	};
-	const setScreen: SetScreen | undefined = !screenInput
-		? undefined
-		: screenMode === 'record'
-			? await recordSetScreen(screenInput)
-			: await runSetScreenOn({ ...screenInput, estimatedDeltaAt, baselineStdev });
-	const screenedOut = new Set(setScreen?.mode === 'on' ? setScreen.sets.filter(s => !s.kept).map(s => s.setId) : []);
+	const setScreen: SetScreen | undefined = screenInput ? await runSetScreenOn({ ...screenInput, estimatedDeltaAt, baselineStdev }) : undefined;
+	const screenedOut = new Set(setScreen ? setScreen.sets.filter(s => !s.kept).map(s => s.setId) : []);
 
 	if (setIdsWithCandidates.size === 0) {
 		return {
@@ -2370,10 +2337,8 @@ async function measureBonusGear(args: {
 }): Promise<{
 	bonusGearSims: BonusGearSims;
 	bonusOffSims: SetBonusOffSims;
-	partnerAudit?: PartnerAuditEntry[];
 }> {
 	const { deps, equipment, gems, composeFor, countsAsBreak, baseline, runOpts } = args;
-	const rule = deps.partnerRule ?? PARTNER_RULE;
 	const brokenBonusDpsByKey = new Map<string, number | undefined>();
 	for (const v of args.brokenSetValues) {
 		brokenBonusDpsByKey.set(bonusKey(v), v.dps);
@@ -2446,7 +2411,6 @@ async function measureBonusGear(args: {
 	type FutureBonus = NonNullable<SetContext['futureBonuses']>[number];
 	const requests = new Map<string, RaidSimRequest>();
 	const pending: Array<{ future: FutureBonus; key: string; setName: string }> = [];
-	const audits: PartnerAuditEntry[] = [];
 	const rowSwapOf = new Map<RankedItem, PlacedItem>();
 	const partnersOf = new Map<FutureBonus, PlacedItem[]>();
 
@@ -2483,44 +2447,34 @@ async function measureBonusGear(args: {
 		const brokenBy = (swaps: readonly PlacedItem[]) => brokenSetBonuses(equipment, swaps, setId, countsAsBreak);
 
 		for (const f of eligible) {
-			const entry = args.setBonuses.find(b => b.setId === setId && b.threshold === f.threshold);
-			const pathSlot = args.firstSlotIndexByItemId.get(item.itemId);
-			const pathPieces =
-				entry && entry.packageItemIds.length > 0 && pathSlot !== undefined
-					? pathToThreshold(item.itemId, pathSlot, entry, args.firstSlotIndexByItemId, args.ownDeltasByItemId).filter(p => p.itemId !== item.itemId)
-					: undefined;
 			// A partner combination whose sim fails is skipped, and the chosen
 			// combination's gear is simmed below, so a failure counts for the row
 			// only when no combination is chosen.
 			let partnerSimFailure: SkipReason | undefined;
-			const choice = await choosePartners(
-				{
-					row: {
-						itemId: item.itemId,
-						slotIndex: ownDelta.slotIndex,
-						ownDeltaDps: ownDelta.deltaDps,
-					},
-					setId,
-					threshold: f.threshold,
-					needed: f.threshold - ctx.piecesAfterSwap,
-					pool,
-					brokenBy,
-					breakDps: (s, c) => brokenBonusDpsByKey.get(`${s}:${c}`),
-					...(pathPieces ? { pathPieces } : {}),
-					simGear: async partners => {
-						const request = await bonusGearRequest([rowSwap, ...partners]);
-						if (isSkipReason(request)) {
-							partnerSimFailure ??= request;
-							return undefined;
-						}
-						const delta = await runCounted(request, bonusGearCounter, bonusGearFailure);
-						if (!isSimFailure(delta)) return delta;
-						partnerSimFailure ??= SET_BONUS_SKIP_REASONS.rowSimsFailed(delta.simError);
-						return undefined;
-					},
+			const choice = await choosePartners({
+				row: {
+					itemId: item.itemId,
+					slotIndex: ownDelta.slotIndex,
+					ownDeltaDps: ownDelta.deltaDps,
 				},
-				rule,
-			);
+				setId,
+				threshold: f.threshold,
+				needed: f.threshold - ctx.piecesAfterSwap,
+				pool,
+				brokenBy,
+				breakDps: (s, c) => brokenBonusDpsByKey.get(`${s}:${c}`),
+				simGear: async partners => {
+					const request = await bonusGearRequest([rowSwap, ...partners]);
+					if (isSkipReason(request)) {
+						partnerSimFailure ??= request;
+						return undefined;
+					}
+					const delta = await runCounted(request, bonusGearCounter, bonusGearFailure);
+					if (!isSimFailure(delta)) return delta;
+					partnerSimFailure ??= SET_BONUS_SKIP_REASONS.rowSimsFailed(delta.simError);
+					return undefined;
+				},
+			});
 			// Here a future bonus's `pieces` and `breaks` come from the partner
 			// choice, so the `pathToThreshold` ones are dropped first.
 			delete f.pieces;
@@ -2535,21 +2489,13 @@ async function measureBonusGear(args: {
 				f.partnerUnmeasured = choice.unmeasured;
 				continue;
 			}
-			if (choice.audit) {
-				audits.push({
-					itemId: item.itemId,
-					setId,
-					threshold: f.threshold,
-					audit: choice.audit,
-				});
-			}
 			const slotOf = new Map<number, number>();
-			for (const p of [...pool, ...(pathPieces ?? [])]) {
+			for (const p of pool) {
 				slotOf.set(p.itemId, p.slotIndex);
 			}
 			const partners: PlacedItem[] = choice.itemIds.map(itemId => ({ itemId, slotIndex: slotOf.get(itemId)! })).sort((a, b) => a.slotIndex - b.slotIndex);
 			partnersOf.set(f, partners);
-			f.partnerRule = rule;
+			f.partnerRule = PARTNER_RULE;
 			f.pieces = partners.map(p => ({
 				itemId: p.itemId,
 				name: nameOf.get(p.itemId) ?? String(p.itemId),
@@ -2774,7 +2720,7 @@ async function measureBonusGear(args: {
 
 	return {
 		bonusGearSims: {
-			partnerRule: rule,
+			partnerRule: PARTNER_RULE,
 			gears: keys.length,
 			simmed: bonusGearCounter.simmed,
 			fromStore: bonusGearCounter.fromStore,
@@ -2787,7 +2733,6 @@ async function measureBonusGear(args: {
 			skippedIncrements,
 			beforeInStore: paired.size,
 		},
-		...(rule === 'every-combination' ? { partnerAudit: audits } : {}),
 	};
 }
 

@@ -19,18 +19,6 @@ import { bonusKey, brokenSetBonuses, nextImplementedThreshold, type SetThreshold
 import { SIM_ORDER } from './slots';
 import type { SpecId } from './types';
 
-export type SetCreditView = 'full' | 'split';
-
-/**
- * How far the set-potential credit assumes a player collects a set.
- * `'highest-credit'`: up to the bonus where collecting pays most, or not at all; only
- * a bonus above the noise floor can be that point. `'full-path'`: every counted
- * bonus, with every piece and break on the way. This is a player's choice, not a
- * game rule; the default is `'highest-credit'`.
- */
-export type SetCreditRule = 'highest-credit' | 'full-path';
-export const DEFAULT_SET_CREDIT_RULE: SetCreditRule = 'highest-credit';
-
 type SetContextLike = Partial<
 	Pick<
 		SetContext,
@@ -81,7 +69,6 @@ export type ViewOptions = {
 	boss?: string;
 	groupBy?: 'rank' | 'slot' | 'raid';
 	withSetPotential?: boolean;
-	setCredit?: SetCreditView;
 };
 
 export type ViewRow = RankedItem & {
@@ -185,9 +172,9 @@ function assignTieGroups(rows: ViewRow[], sortKey: (r: ViewRow) => number): void
 	}
 }
 
-function belowCutoffUnderView(item: RankedItem, withSetPotential: boolean, cutoff: Cutoff, setCredit: SetCreditView): boolean {
+function belowCutoffUnderView(item: RankedItem, withSetPotential: boolean, cutoff: Cutoff): boolean {
 	if (!withSetPotential) return item.belowCutoff;
-	const credit = rankableSetPotential(item, cutoff, setCredit);
+	const credit = rankableSetPotential(item, cutoff);
 	if (credit === 0) return item.belowCutoff;
 	return !meetsCutoff(item.deltaDps + credit, cutoff);
 }
@@ -288,7 +275,6 @@ export function ownSwapBreaks(
 
 type CreditBreakdown = {
 	credit: number;
-	split: number;
 	creditedThreshold: number;
 	terms: SetPotentialTerm[];
 };
@@ -300,19 +286,17 @@ type CreditBreakdown = {
  * not floored: each piece's stats add the same amount back, so a row inside a
  * fully measured set of pieces sums to the gain of swapping them all.
  *
- * `'highest-credit'` credits the bonus where the running total is highest, or none when no
- * total is positive; `'full-path'` credits the last bonus. Only a bonus above
- * the floor (`setBonusNoiseFloorDps`, as each bonus comes from four sims) can be
- * the credited bonus, or a row would be credited with another item's stats and
- * no bonus. The pieces and breaks of a bonus below it still count toward a later
- * one. The `'split'` view takes each bonus per piece, minus floored breaks, at
- * the same point, and may go negative, since which bonus to count is the player's
- * choice. `commitBreaks` are not charged: they belong to the pieces of the
- * largest measured bonus, and a row whose own pieces keep that bonus should not
- * pay for them.
+ * It credits the bonus where the running total is highest, that is, where
+ * collecting the set pays most, or none when no total is positive. Only a bonus
+ * above the floor (`setBonusNoiseFloorDps`, as each bonus comes from four sims)
+ * can be the credited bonus, or a row would be credited with another item's
+ * stats and no bonus. The pieces and breaks of a bonus below it still count
+ * toward a later one. `commitBreaks` are not charged: they belong to the pieces
+ * of the largest measured bonus, and a row whose own pieces keep that bonus
+ * should not pay for them.
  */
-function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: SetCreditRule): CreditBreakdown {
-	if (ctx?.usesBonusGear) return bonusGearCredit(ctx, cutoff, rule);
+function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff): CreditBreakdown {
+	if (ctx?.usesBonusGear) return bonusGearCredit(ctx, cutoff);
 	const noiseFloorDps = setBonusNoiseFloorDps(cutoff);
 	const future = [...(ctx?.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);
 	const floored = (v: number): number => (v > noiseFloorDps ? v : 0);
@@ -320,16 +304,13 @@ function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: 
 	const charged = new Set<string>();
 	const terms: SetPotentialTerm[] = [];
 	let running = 0;
-	let splitRunning = 0;
 	let best: Omit<CreditBreakdown, 'terms'> & { keep: number } = {
 		credit: 0,
-		split: 0,
 		creditedThreshold: 0,
 		keep: 0,
 	};
 	for (const f of future) {
 		const bonus = floored(f.dps!);
-		if (rule === 'full-path' && bonus === 0) continue;
 		const add = (term: Exclude<SetPotentialTerm, { kind: 'outcome' }>) => {
 			terms.push(term);
 			running += term.dps;
@@ -348,12 +329,10 @@ function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: 
 			counted.add(p.itemId);
 			add({ kind: 'piece', itemId: p.itemId, name: p.name, dps: p.dps! });
 		}
-		let splitLoss = 0;
 		for (const brk of f.breaks ?? []) {
 			const key = bonusKey(brk);
 			if (charged.has(key)) continue;
 			charged.add(key);
-			splitLoss += floored(brk.dps!);
 			if (brk.dps! === 0) continue;
 			add({
 				kind: 'break',
@@ -362,11 +341,9 @@ function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: 
 				dps: -brk.dps!,
 			});
 		}
-		splitRunning += floored(f.dps! / f.threshold) - splitLoss;
-		if (rule === 'full-path' || (bonus > 0 && running > best.credit)) {
+		if (bonus > 0 && running > best.credit) {
 			best = {
 				credit: running,
-				split: splitRunning,
 				creditedThreshold: f.threshold,
 				keep: terms.length,
 			};
@@ -374,7 +351,6 @@ function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: 
 	}
 	return {
 		credit: best.credit,
-		split: best.split,
 		creditedThreshold: best.creditedThreshold,
 		terms: terms.slice(0, best.keep),
 	};
@@ -391,40 +367,23 @@ export function canBeCredited(future: Pick<FutureBonus, 'belowNoise' | 'sameGear
 
 /**
  * The credit with `usesBonusGear`. For each eligible bonus by piece count,
- * c = `bonusGearDps` − `singleDeltaDps`. `'highest-credit'` credits the first bonus
- * with the highest c above 0, and that c; `'full-path'` credits the last
- * eligible bonus. So a credited row's `deltaDps` + credit is the sim of its full
- * gear, unless paired replication rewrote `deltaDps`.
- *
- * The `'split'` view uses `sameGearDps` per piece instead, minus each newly lost
- * worn bonus beyond the row's own breaks, floored, up to the credited bonus.
- * Each value is one sim minus another, so the floor is `cutoff.absDps`, not the
- * four-sim floor.
+ * c = `bonusGearDps` − `singleDeltaDps`. It credits the first bonus with the
+ * highest c above 0, and that c. So a credited row's `deltaDps` + credit is the
+ * sim of its full gear, unless paired replication rewrote `deltaDps`.
  */
-function bonusGearCredit(ctx: SetContextLike, cutoff: Cutoff, rule: SetCreditRule): CreditBreakdown {
+function bonusGearCredit(ctx: SetContextLike, cutoff: Cutoff): CreditBreakdown {
 	const ownDeltaDps = ctx.singleDeltaDps;
 	const eligible = [...(ctx.futureBonuses ?? [])]
 		.filter(f => f.bonusGearDps !== undefined && canBeCredited(f, cutoff))
 		.sort((a, b) => a.threshold - b.threshold);
 	if (ownDeltaDps === undefined || eligible.length === 0) {
-		return { credit: 0, split: 0, creditedThreshold: 0, terms: [] };
+		return { credit: 0, creditedThreshold: 0, terms: [] };
 	}
-	const floored = (v: number): number => (v > cutoff.absDps ? v : 0);
-	const charged = new Set((ctx.singleBreaks ?? []).map(bonusKey));
-	let splitRunning = 0;
-	let best = { credit: 0, split: 0, creditedThreshold: 0 };
+	let best = { credit: 0, creditedThreshold: 0 };
 	for (const f of eligible) {
-		let splitLoss = 0;
-		for (const brk of f.breaks ?? []) {
-			const key = bonusKey(brk);
-			if (charged.has(key)) continue;
-			charged.add(key);
-			splitLoss += floored(brk.dps ?? 0);
-		}
-		splitRunning += floored(f.sameGearDps! / f.threshold) - splitLoss;
 		const c = f.bonusGearDps! - ownDeltaDps;
-		if (rule === 'full-path' || c > best.credit) {
-			best = { credit: c, split: splitRunning, creditedThreshold: f.threshold };
+		if (c > best.credit) {
+			best = { credit: c, creditedThreshold: f.threshold };
 		}
 	}
 	const terms: SetPotentialTerm[] = eligible.map(f => ({
@@ -466,13 +425,8 @@ export function crossingLabelCount(
  * there is one `"outcome"` per eligible bonus instead, and the outcomes do not add
  * up to `credit`. Call it only when `setCreditUnmeasured` is false.
  */
-export function setPotentialTerms(
-	ctx: SetContextLike | undefined,
-	cutoff: Cutoff,
-	rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE,
-): { credit: number; creditedThreshold: number; terms: SetPotentialTerm[] } {
-	const { credit, creditedThreshold, terms } = creditBreakdown(ctx, cutoff, rule);
-	return { credit, creditedThreshold, terms };
+export function setPotentialTerms(ctx: SetContextLike | undefined, cutoff: Cutoff): { credit: number; creditedThreshold: number; terms: SetPotentialTerm[] } {
+	return creditBreakdown(ctx, cutoff);
 }
 
 /**
@@ -518,13 +472,9 @@ export type SetPotentialIncrement = {
  * increment gets its two line values only when its `bonusOff` sim turned off
  * exactly the bonuses it newly breaks; otherwise it stays one line.
  */
-export function setPotentialIncrements(
-	ctx: SetContextLike | undefined,
-	cutoff: Cutoff,
-	rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE,
-): SetPotentialIncrement[] | null {
+export function setPotentialIncrements(ctx: SetContextLike | undefined, cutoff: Cutoff): SetPotentialIncrement[] | null {
 	if (!ctx?.usesBonusGear || ctx.singleDeltaDps === undefined) return null;
-	const outcomes = bonusGearCredit(ctx, cutoff, rule).terms.filter((t): t is Extract<SetPotentialTerm, { kind: 'outcome' }> => t.kind === 'outcome');
+	const outcomes = bonusGearCredit(ctx, cutoff).terms.filter((t): t is Extract<SetPotentialTerm, { kind: 'outcome' }> => t.kind === 'outcome');
 	const last = outcomes.findIndex(t => t.isCredited);
 	if (last < 0) return null;
 	let prevIds = new Set<number>();
@@ -561,34 +511,27 @@ export function setPotentialIncrements(
 	return increments;
 }
 
-/** `creditBreakdown`'s credit for the full or the `'split'` view. */
-export function setPotentialCredit(
-	ctx: SetContextLike | undefined,
-	cutoff: Cutoff,
-	setCredit: SetCreditView = 'full',
-	rule: SetCreditRule = DEFAULT_SET_CREDIT_RULE,
-): number {
-	const breakdown = creditBreakdown(ctx, cutoff, rule);
-	return setCredit === 'split' ? breakdown.split : breakdown.credit;
+/** `creditBreakdown`'s credit. */
+export function setPotentialCredit(ctx: SetContextLike | undefined, cutoff: Cutoff): number {
+	return creditBreakdown(ctx, cutoff).credit;
 }
 
 /**
- * The set-potential credit for a row, for the full or the `'split'` view (each
- * bonus divided by its full piece count). A bonus counts only when it is above
+ * The set-potential credit for a row. A bonus counts only when it is above
  * (`>`, as the display checks) a noise floor from the ranking's own `Cutoff`, so
  * no row sorts on a bonus the display hides; `creditBreakdown` and `bonusGearCredit` say
  * which floor. When any figure the credit needs was not measured
  * (`setCreditUnmeasured`), the credit is 0, gains and losses alike. An
  * unmeasured commit break also makes it 0, though a measured one is not charged.
  */
-export function rankableSetPotential(item: Pick<RankedItem, 'setContext'>, cutoff: Cutoff, setCredit: SetCreditView = 'full'): number {
+export function rankableSetPotential(item: Pick<RankedItem, 'setContext'>, cutoff: Cutoff): number {
 	if ((item.setContext?.futureBonuses ?? []).length === 0) return 0;
 	if (setCreditUnmeasured(item.setContext)) return 0;
-	return setPotentialCredit(item.setContext, cutoff, setCredit);
+	return setPotentialCredit(item.setContext, cutoff);
 }
 
-function sortKeyFor(withSetPotential: boolean, cutoff: Cutoff, setCredit: SetCreditView = 'full'): (r: ViewRow) => number {
-	return withSetPotential ? r => r.deltaDps + rankableSetPotential(r, cutoff, setCredit) : r => r.deltaDps;
+function sortKeyFor(withSetPotential: boolean, cutoff: Cutoff): (r: ViewRow) => number {
+	return withSetPotential ? r => r.deltaDps + rankableSetPotential(r, cutoff) : r => r.deltaDps;
 }
 
 function compareRows(a: ViewRow, b: ViewRow, pinBis: boolean, sortKey: (r: ViewRow) => number): number {
@@ -609,8 +552,7 @@ export function applyView(r: Ranking, v: ViewOptions = {}): ViewResult {
 	const pinBis = v.pinBis ?? false;
 	const zone = v.raid === undefined || v.raid === 'all' ? undefined : v.raid;
 	const boss = v.boss === undefined || v.boss === 'all' ? undefined : v.boss;
-	const setCredit = v.setCredit ?? 'full';
-	const sortKey = sortKeyFor(v.withSetPotential ?? false, r.cutoff, setCredit);
+	const sortKey = sortKeyFor(v.withSetPotential ?? false, r.cutoff);
 
 	const rows: ViewRow[] = r.items
 		.filter(item => {
@@ -620,7 +562,7 @@ export function applyView(r: Ranking, v: ViewOptions = {}): ViewResult {
 		})
 		.map(item => ({
 			...item,
-			belowCutoffInView: belowCutoffUnderView(item, v.withSetPotential ?? false, r.cutoff, setCredit),
+			belowCutoffInView: belowCutoffUnderView(item, v.withSetPotential ?? false, r.cutoff),
 		}));
 
 	rows.sort((a, b) => compareRows(a, b, pinBis, sortKey));
