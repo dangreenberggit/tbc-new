@@ -114,8 +114,8 @@ const NO_SET_POTENTIAL: SetPotentialSection = { lines: [], kind: 'none' };
 /**
  * The Set potential lines, with the toggle on. `unmeasured` lists each figure
  * missing from `credit`; `none` when `credit` is 0; `itemised` its parts; `increments`
- * each increment up to `creditedThreshold`, adding up to `credit`; `outcomes` one total per
- * bonus when the bonuses' pieces do not build on each other.
+ * each increment up to `creditedThreshold`, adding up to `credit`; `outcomes` one line per
+ * bonus, compared rather than added, when the bonuses' pieces do not build on each other.
  */
 function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPotentialSection {
 	const futureBonuses = [...(ctx.futureBonuses ?? [])].sort((a, b) => a.threshold - b.threshold);

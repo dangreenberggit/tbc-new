@@ -14,7 +14,7 @@ export type PopoverTextRow =
 const joinNames = (names: readonly string[]): string => (names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`);
 
 /** "{set} {count}pc", with the no-break space the `popover_*` keys use, so a count never wraps away from its set. */
-const brokenNames = (lost: readonly BonusRef[]): string => joinNames(lost.map(b => `${b.setName} ${b.threshold}pc`));
+const brokenNames = (broken: readonly BonusRef[]): string => joinNames(broken.map(b => `${b.setName} ${b.threshold}pc`));
 
 export const setBonusSubLineText = (subLine: SetBonusPopoverContent['subLine']): string =>
 	subLine === 'not_counted'
