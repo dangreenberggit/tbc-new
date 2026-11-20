@@ -108,12 +108,12 @@ const piecesLabel = (
 });
 
 /** `creditedThreshold` is the credited bonus of an `increments` section. */
-type SetPotentialSection = { lines: Line[]; kind: 'unmeasured' | 'none' | 'itemised' | 'increments' | 'outcomes'; creditedThreshold?: number };
+type SetPotentialSection = { lines: Line[]; kind: 'unmeasured' | 'none' | 'itemized' | 'increments' | 'outcomes'; creditedThreshold?: number };
 const NO_SET_POTENTIAL: SetPotentialSection = { lines: [], kind: 'none' };
 
 /**
  * The Set potential lines, with the toggle on. `unmeasured` lists each figure
- * missing from `credit`; `none` when `credit` is 0; `itemised` its parts; `increments`
+ * missing from `credit`; `none` when `credit` is 0; `itemized` its parts; `increments`
  * each increment up to `creditedThreshold`, adding up to `credit`; `outcomes` one line per
  * bonus, compared rather than added, when the bonuses' pieces do not build on each other.
  */
@@ -169,7 +169,7 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPot
 				return { label: piecesLabel('outcome', term), dps: term.bonusGearDps };
 		}
 	});
-	return { lines, kind: 'itemised' };
+	return { lines, kind: 'itemized' };
 }
 
 /**
@@ -305,7 +305,7 @@ export function setBonusPopoverLines(row: RankedItem, context: RankingContext = 
 	if (potential.kind !== 'none') entries.push({ type: 'heading', heading: 'set_potential' });
 	if (potential.kind === 'unmeasured') {
 		for (const l of potential.lines) entries.push(line(l.label, undefined));
-	} else if (potential.kind === 'itemised' || potential.kind === 'increments') {
+	} else if (potential.kind === 'itemized' || potential.kind === 'increments') {
 		// The toggle-off lines add up to the toggle-off figure, so these must add up to the difference.
 		const shown = spreadTenths(
 			potential.lines.map(l => l.dps ?? 0),

@@ -65,7 +65,7 @@ describe('SetBonusPopover', () => {
 		expect(screen.getByTestId('upgrades-set-bonus-popover')).toBeTruthy();
 	});
 
-	it('itemises the figure: the item’s stats, the bonus its swap breaks, and the total', () => {
+	it('itemizes the figure: the item’s stats, the bonus its swap breaks, and the total', () => {
 		hover(show(FACEGUARD_POPOVER));
 
 		expect(popupLines()).toEqual(['Item stats +22.8', 'Breaks Crystalforge Battlegear 2pc -18.4', 'Total +4.4']);

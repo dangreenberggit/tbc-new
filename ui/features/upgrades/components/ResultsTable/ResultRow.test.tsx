@@ -304,7 +304,7 @@ describe('ResultRow', () => {
 		expect(testIdText(renderRow(legs, { ...CONTEXT, rankingContext: { ranking, specId: 'feral' } }), 'upgrades-set-bonus')).toEqual([]);
 	});
 
-	it('opens that row’s set-bonus popover from its DPS figure, itemising the worn bonus the swap breaks', () => {
+	it('opens that row’s set-bonus popover from its DPS figure, itemizing the worn bonus the swap breaks', () => {
 		const worn = [8345, 30017, 30055, 29994, 30101, 29966, 31034, 30106, 31044, 28545, 29997, 30052, 30627, 29383, 32014, 0, 32387];
 		const legs: RankedItem = { ...fixtureRow(0), itemId: 30900, name: 'Bow-stitched Leggings', slot: 'legs', deltaDps: -94.1, deltaPct: -3.8 };
 		const ranking = { ...RANKING_FIXTURE, brokenSetValues: [{ setId: 676, setName: 'Thunderheart Harness', threshold: 2, dps: 106.24, se: 2 }] };
@@ -327,7 +327,7 @@ describe('ResultRow', () => {
 		).toEqual(['Item stats', 'Breaks Thunderheart Harness 2pc', 'Total']);
 	});
 
-	it('shows a figure with nothing to itemise as plain text, not a button', () => {
+	it('shows a figure with nothing to itemize as plain text, not a button', () => {
 		expect(within(renderRow(fixtureRow(0))).queryByRole('button', { name: '+45.7' })).toBeNull();
 	});
 

@@ -94,7 +94,7 @@ describe('setBonusPopoverLines', () => {
 		expect(setBonusPopoverLines(row, context)).toBeNull();
 	});
 
-	it('itemises a measured break of the row’s own swap above its total', () => {
+	it('itemizes a measured break of the row’s own swap above its total', () => {
 		const popover = setBonusPopoverLines(fixtureRow(10), context);
 		expect(popover).toMatchObject({ subLine: 'hover_hint', kind: 'receipt' });
 		expect(lines(popover)).toEqual([

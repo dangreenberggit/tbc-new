@@ -15,7 +15,7 @@ export interface DeltaCellProps {
 
 /**
  * The DPS change, with up to two notes under it: that the row has set-bonus detail (the figure then
- * opens the popover itemising it), and which worn item a two-item swap removes. The figure is what
+ * opens the popover itemizing it), and which worn item a two-item swap removes. The figure is what
  * the column sorts on, so with Set potential on it is ΔDPS plus the set-bonus credit. A figure below
  * the cutoff never rounds up to it. Memoized: see `ResultRow`.
  */
