@@ -38,7 +38,7 @@ export type ScreenOnRule = {
  * The `'on'` mode's rule, chosen by scoring rules offline against readings of
  * the pair at several iteration counts and of every piece count: it kept every
  * set worth collecting. Changing any value means scoring
- * it again. Scored again after ticket 886 took the set's own bonus out of the
+ * it again. Scored again after the set's own bonus was taken out of the
  * estimate: it kept the same sets on every scored character.
  */
 export const SCREEN_ON_RULE = {
