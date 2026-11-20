@@ -49,7 +49,7 @@ export type SetPotentialTerm =
 			kind: 'bonus';
 			setName: string;
 			threshold: number;
-			have: number;
+			worn: number;
 			dps: number;
 	  }
 	| { kind: 'piece'; itemId: number; name: string; dps: number }
@@ -340,7 +340,7 @@ function creditBreakdown(ctx: SetContextLike | undefined, cutoff: Cutoff, rule: 
 				kind: 'bonus',
 				setName: ctx?.setName ?? '',
 				threshold: f.threshold,
-				have: ctx?.piecesWornBefore ?? 0,
+				worn: ctx?.piecesWornBefore ?? 0,
 				dps: bonus,
 			});
 		}

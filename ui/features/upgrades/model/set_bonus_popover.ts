@@ -160,7 +160,7 @@ function potentialLines(ctx: SetContext, cutoff: Cutoff, credit: number): SetPot
 	const lines = setPotentialTerms(ctx, cutoff).terms.map((term): Line => {
 		switch (term.kind) {
 			case 'bonus':
-				return { label: { kind: 'bonus', set: term.setName, threshold: term.threshold, worn: term.have }, dps: term.dps };
+				return { label: { kind: 'bonus', set: term.setName, threshold: term.threshold, worn: term.worn }, dps: term.dps };
 			case 'piece':
 				return { label: { kind: 'piece_stats', name: term.name }, dps: term.dps };
 			case 'break':
