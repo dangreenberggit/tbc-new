@@ -1,6 +1,14 @@
+import { bulkLimitForHost } from '@features/bulk/model/limits';
 import i18n from '@i18n/config';
+import { WEB_ITERATIONS_LIMIT } from '@sim/bulk/types';
+import { useSim } from '@sim/context/SimHostContext';
+import { formatToNumber } from '@sim/utils/format';
 import { Button } from '@ui-kit/Button';
+import { Icon } from '@ui-kit/Icon';
 import { NumberPicker } from '@ui-kit/NumberPicker';
+import { Tooltip, tooltipAnchorProps } from '@ui-kit/Tooltip';
+import { useId } from 'react';
+import { useStore } from 'zustand';
 
 import { numberSettingSource } from '../../hooks/useUpgradesStore';
 import type { UpgradesStore } from '../../model/upgrades_store';
@@ -14,6 +22,33 @@ export interface RunControlsProps {
 	onIterationsChange: (iterations: number) => void;
 	onStart: () => void;
 }
+
+/**
+ * The Bulk tab's iterations warning (`features/bulk/components/BulkSettings/CombinationsCount.tsx`), over the web
+ * sim's limit only: its advice to download the sim is untrue in the downloaded sim. Like the Bulk tab, it never
+ * blocks a run.
+ */
+const IterationsWarning = ({ store }: { store: UpgradesStore }) => {
+	const sim = useSim();
+	const tooltipId = useId();
+	const iterations = useStore(store, state => state.settings.iterations);
+	const limit = bulkLimitForHost(sim.isNative, WEB_ITERATIONS_LIMIT, Number.POSITIVE_INFINITY);
+	if (!(iterations > limit)) return null;
+	const warningText = i18n.t('bulk_tab.warning.iterations_limit', { limit: formatToNumber(limit) });
+	return (
+		<div>
+			<button
+				type="button"
+				aria-label={warningText}
+				className="text-link-warning"
+				data-testid="upgrades-iterations-warning"
+				{...tooltipAnchorProps(tooltipId)}>
+				<Icon name="exclamation-triangle" size="2x" />
+			</button>
+			<Tooltip id={tooltipId} place="right" content={warningText} />
+		</div>
+	);
+};
 
 /** The iterations field and Run. Stop is the progress dialog's cancel, as on the Bulk tab. */
 export const RunControls = ({ ready, running, store, onIterationsChange, onStart }: RunControlsProps) => (
@@ -29,6 +64,7 @@ export const RunControls = ({ ready, running, store, onIterationsChange, onStart
 				setValue: (_store, next) => onIterationsChange(next),
 			}}
 		/>
+		<IterationsWarning store={store} />
 		<Button data-testid="upgrades-run-button" disabled={!ready || running} onClick={onStart}>
 			{i18n.t('upgrades_tab.run', { ns: 'upgrades' })}
 		</Button>

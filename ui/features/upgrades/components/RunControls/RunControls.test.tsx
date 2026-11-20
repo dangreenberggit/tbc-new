@@ -1,29 +1,40 @@
+import { SimHostProvider } from '@sim/context/SimHostContext';
+import { fakeHost } from '@sim/testing';
 import { act, fireEvent, render, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createUpgradesStore } from '../../model/upgrades_store';
+import { loadEnglishBundles } from '../../testing/locales';
 import { fixtureRow } from '../../testing/ranking_fixture';
 import { RunControls } from './RunControls';
 
+loadEnglishBundles();
+
 /** The settings hook's contract in small: the change writes the tab store, which the picker reads back. */
-const mount = ({ ready = true, running = false }: { ready?: boolean; running?: boolean } = {}) => {
+const mount = ({ ready = true, running = false, isNative = false }: { ready?: boolean; running?: boolean; isNative?: boolean } = {}) => {
 	const store = createUpgradesStore({ iterations: 500 });
 	const onStart = vi.fn();
 	const view = within(
 		render(
-			<RunControls
-				ready={ready}
-				running={running}
-				store={store}
-				onIterationsChange={iterations => store.getState().setIterations(iterations, undefined)}
-				onStart={onStart}
-			/>,
+			<SimHostProvider host={fakeHost({ sim: { isNative } })}>
+				<RunControls
+					ready={ready}
+					running={running}
+					store={store}
+					onIterationsChange={iterations => store.getState().setIterations(iterations, undefined)}
+					onStart={onStart}
+				/>
+			</SimHostProvider>,
 		).container,
 	);
 	const runButton = view.getByTestId('upgrades-run-button') as HTMLButtonElement;
 	const field = within(view.getByTestId('upgrades-iterations-picker')).getByRole('textbox') as HTMLInputElement;
-	return { store, onStart, runButton, field };
+	return { store, onStart, runButton, field, warning: () => view.queryByTestId('upgrades-iterations-warning') };
 };
+
+// The Bulk tab's own text for its iterations warning (assets/locales/en/translation.json, bulk_tab.warning).
+const WEB_WARNING =
+	'Simming over 1,000,000 iterations in the sim will take a long time or may not run at all. For larger batch sims we recommend downloading the executable and running on your machine.';
 
 describe('RunControls', () => {
 	it('shows the store’s iterations and runs on a click', () => {
@@ -58,6 +69,28 @@ describe('RunControls', () => {
 			store.getState().landRow(1, fixtureRow(0));
 		});
 		expect(field.value).toBe('12');
+	});
+
+	describe('the Bulk tab’s iterations warning', () => {
+		it('shows above 1,000,000 iterations on the web sim, with the Bulk tab’s words, and still lets the run start', () => {
+			const { store, runButton, warning } = mount();
+			act(() => store.getState().setIterations(1_000_001, undefined));
+			expect(warning()?.getAttribute('aria-label')).toBe(WEB_WARNING);
+			expect(runButton.disabled).toBe(false);
+		});
+
+		it('does not show at 1,000,000 iterations', () => {
+			const { store, warning } = mount();
+			act(() => store.getState().setIterations(1_000_000, undefined));
+			expect(warning()).toBeNull();
+		});
+
+		// The warning's second sentence tells the player to download the sim, which is untrue in the downloaded sim.
+		it('does not show in the downloaded sim', () => {
+			const { store, warning } = mount({ isNative: true });
+			act(() => store.getState().setIterations(20_000_000, undefined));
+			expect(warning()).toBeNull();
+		});
 	});
 
 	it('cannot run before the sim is ready, or while a run is in flight', () => {
