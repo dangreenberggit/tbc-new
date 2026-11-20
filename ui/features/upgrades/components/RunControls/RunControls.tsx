@@ -1,6 +1,5 @@
-import { bulkLimitForHost } from '@features/bulk/model/limits';
+import { bulkIterationsLimit } from '@features/bulk/model/limits';
 import i18n from '@i18n/config';
-import { WEB_ITERATIONS_LIMIT } from '@sim/bulk/types';
 import { useSim } from '@sim/context/SimHostContext';
 import { formatToNumber } from '@sim/utils/format';
 import { Button } from '@ui-kit/Button';
@@ -26,17 +25,17 @@ export interface RunControlsProps {
 }
 
 /**
- * The Bulk tab's iterations warning (`features/bulk/components/BulkSettings/CombinationsCount.tsx`). The Bulk tab
- * weighs the batch's iterations in all; here that is at least one sim for the baseline and one per candidate the run
- * takes, so the warning's "over" is true whenever it shows. Over the web sim's limit only: its advice to download the
- * sim is untrue in the downloaded sim. Like the Bulk tab, it never blocks a run.
+ * The Bulk tab's iterations warning (`features/bulk/components/BulkSettings/CombinationsCount.tsx`), with its limit
+ * for this host and its words. The Bulk tab weighs the batch's iterations in all; here that is at least one sim for
+ * the baseline and one per candidate the run takes, so the warning's "over" is true whenever it shows. Like the Bulk
+ * tab, it never blocks a run.
  */
 const IterationsWarning = ({ store, candidates }: { store: UpgradesStore; candidates: number | undefined }) => {
 	const sim = useSim();
 	const tooltipId = useId();
 	const iterations = useStore(store, state => state.settings.iterations);
 	const cap = useStore(store, state => state.settings.candidateCap);
-	const limit = bulkLimitForHost(sim.isNative, WEB_ITERATIONS_LIMIT, Number.POSITIVE_INFINITY);
+	const limit = bulkIterationsLimit(sim.isNative);
 	if (candidates === undefined) return null;
 	const sims = 1 + Math.min(candidates, cap ?? candidates);
 	if (!(sims * iterations > limit)) return null;

@@ -41,6 +41,8 @@ const mount = (options: MountOptions = {}) => {
 // The Bulk tab's own text for its iterations warning (assets/locales/en/translation.json, bulk_tab.warning).
 const WEB_WARNING =
 	'Simming over 1,000,000 iterations in the sim will take a long time or may not run at all. For larger batch sims we recommend downloading the executable and running on your machine.';
+const NATIVE_WARNING =
+	'Simming over 10,000,000 iterations in the sim will take a long time or may not run at all. For larger batch sims we recommend downloading the executable and running on your machine.';
 
 describe('RunControls', () => {
 	it('shows the store’s iterations and runs on a click', () => {
@@ -110,11 +112,14 @@ describe('RunControls', () => {
 			expect(warning()).toBeNull();
 		});
 
-		// The warning's second sentence tells the player to download the sim, which is untrue in the downloaded sim.
-		it('does not show in the downloaded sim', () => {
+		// The Bulk tab warns in the downloaded sim too, above its own limit (bulkIterationsLimit in
+		// features/bulk/model/limits.ts) and with the same words. 400 sims at 25,000 iterations is exactly 10,000,000.
+		it('shows above 10,000,000 iterations in all in the downloaded sim, with the Bulk tab’s words', () => {
 			const { store, warning } = mount({ isNative: true });
-			act(() => store.getState().setIterations(20_000_000, undefined));
+			act(() => store.getState().setIterations(25_000, undefined));
 			expect(warning()).toBeNull();
+			act(() => store.getState().setIterations(25_001, undefined));
+			expect(warning()?.getAttribute('aria-label')).toBe(NATIVE_WARNING);
 		});
 	});
 
