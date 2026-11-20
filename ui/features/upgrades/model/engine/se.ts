@@ -46,8 +46,8 @@ export function assertDistinctSeeds(seeds: readonly number[]): void {
 		const list = [...repeated].sort((a, b) => a - b).join(', ');
 		throw new DegenerateSeedsError(
 			`seeds must be distinct to measure a spread: ${list} repeated in [${seeds.join(', ')}]. ` +
-				`A shared seed repeats bit-identical, so a repeated seed contributes no ` +
-				`variance and drives the paired-replicate SE toward a false zero (PLAN.md §10).`,
+				`Two runs from the same seed give identical results, so a repeated seed adds no ` +
+				`spread and makes the standard error look smaller than it is.`,
 		);
 	}
 }
@@ -69,10 +69,9 @@ export function assertUsableSeeds(seeds: readonly number[], iterations: number):
 		throw new DegenerateSeedsError(
 			`seeds must be at least ${iterations} apart to be independent replicates: ` +
 				`${lo} and ${hi} are ${gap} apart in [${seeds.join(', ')}]. ` +
-				`A run of N iterations from seed S consumes the per-iteration streams ` +
-				`S..S+N-1, so these two share ${iterations - gap} of ${iterations} streams ` +
-				`and their spread measures overlap rather than simulation noise ` +
-				`(ticket 236; upstream vendor/tbc-new-fork/sim/core/sim.go:248-251).`,
+				`A run of N iterations from seed S reseeds each iteration from S to S+N-1, ` +
+				`so these two runs share ${iterations - gap} of their ${iterations} iterations' seeds ` +
+				`and their spread measures that overlap, not simulation noise.`,
 		);
 	}
 }
