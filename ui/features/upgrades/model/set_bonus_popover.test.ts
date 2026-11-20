@@ -106,7 +106,7 @@ describe('setBonusPopoverLines', () => {
 	});
 
 	// The popover's total is the figure the cell shows, so it never reads as the cutoff for a row below it.
-	describe('a total just below the cutoff (ticket 618)', () => {
+	describe('a total just below the cutoff', () => {
 		const nearBar: RankedItem = { ...fixtureRow(10), deltaDps: 2.96 };
 		const totalOf = (popover: SetBonusPopoverContent | null) => lines(popover).find(line => line.label.kind === 'total')?.dps;
 
@@ -220,7 +220,7 @@ describe('setBonusPopoverLines', () => {
 	});
 
 	// The toggle decides what the figure counts, never whether the popover exists.
-	describe('the not-counted section (ticket 336)', () => {
+	describe('the not-counted section', () => {
 		it('lists a reachable bonus under the total with the toggle off, as an outcome against the item alone', () => {
 			const popover = setBonusPopoverLines(bonusGearRow({ futureBonuses: [future()] }), context);
 			expect(popover).toMatchObject({ subLine: 'hover_hint', kind: 'receipt' });
@@ -290,7 +290,7 @@ describe('setBonusPopoverLines', () => {
 			]);
 		});
 
-		it('names a set the screen dropped in a ranking made before ticket 644, which also marks it', () => {
+		it('names a set the screen dropped in an older ranking that also marks it screened out in its set bonuses', () => {
 			const popover = setBonusPopoverLines(bonusGearRow({ futureBonuses: [] }), {
 				ranking: screenedRanking('exact-zero', true),
 				withSetPotential: false,
@@ -320,7 +320,7 @@ describe('setBonusPopoverLines', () => {
 		});
 
 		// Each line says how much the figure would change if the tab counted that bonus in place of what it counts now.
-		describe('a bonus past the credited bonus, with the toggle on (ticket 655)', () => {
+		describe('a bonus past the credited bonus, with the toggle on', () => {
 			const PIECES_4PC = ['Lightbringer Breastplate', 'Lightbringer Greaves', 'Lightbringer Shoulderbraces'];
 			const fourPiece = (bonusGearDps: number, over: Partial<FutureBonus> = {}): FutureBonus =>
 				future({
@@ -425,7 +425,7 @@ describe('setBonusPopoverLines', () => {
 			expect(addsUp(popover)).toBe(true);
 		});
 
-		it('leaves the toggle-on popover of every credited row of the feral fixtures as it was before ticket 336, adding only the bonuses past the credited bonus', () => {
+		it('leaves the toggle-on popover of every credited row of the feral fixtures as it was before the not-counted section, adding only the bonuses past the credited bonus', () => {
 			// Captured before the not-counted bonuses were added, over the feral-p3-p2bis and feral-p3-th-hands-legs fixtures.
 			// A value cast: the JSON import's own type widens every literal, so it is not used as a type.
 			const snapshot = onSnapshot as unknown as Record<string, { ranking: Ranking; rows: Array<{ row: RankedItem; popover: SetBonusPopoverContent }> }>;

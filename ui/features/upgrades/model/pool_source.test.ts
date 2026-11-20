@@ -16,6 +16,10 @@ import {
 import cellsFixture from './pool_source.cells.fixture.json';
 import { effectiveExcludedSources, effectivePool, sourceKeysInPool } from './settings_pool';
 
+// Per spec-phase pool sizes under both heroic five-man policies, and the include pool's BiS-tagged rows, each measured
+// once by a separate script that applied the pool rule to db.json. To re-pin after db.json, the presets or the pool rule
+// change, list the item ids each changed cell gained or lost (`dbPoolFor`) and check each one against db.json and the
+// rule in pool_source.ts before copying the new sizes; a size copied without that check pins whatever the code does.
 // The fixture's shape is asserted here, never derived from the JSON import.
 const CELLS = (cellsFixture as { cells: Record<string, { exclude: number; include: number; bisRows: number }> }).cells;
 const poolOf = (spec: SpecId, phase: number, policy: HeroicFiveManPolicy) => dbPoolFor(spec, phase, policy);
@@ -169,7 +173,7 @@ describe('bisGearSetsFor', () => {
 		expect(bisGearSetsFor(sets.slice(1), 1, () => undefined)).toBeUndefined();
 	});
 
-	// The items each cell gained when the name rule went; the cells fixture's _comment lists them too.
+	// The items each cell gained when the name rule went.
 	it.each([
 		['ret', 3, [28485]],
 		['feral', 2, [30222, 30223, 30229, 30230, 30834]],

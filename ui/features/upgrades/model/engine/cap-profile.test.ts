@@ -19,7 +19,7 @@ function request(faerieFire: string | number | undefined, levels: readonly numbe
 	};
 }
 
-describe('meta repair hit policy per spec (746)', () => {
+describe('meta repair hit policy per spec', () => {
 	it('gives the note to rogue, enh, warrior, hunter, balance and ele and a budget to every other spec', () => {
 		const specs = Object.keys(CAP_PROFILE_BY_SPEC) as SpecId[];
 		const byKind = (kind: string) => specs.filter(s => CAP_PROFILE_BY_SPEC[s].repair.kind === kind).sort();

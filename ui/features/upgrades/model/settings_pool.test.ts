@@ -147,8 +147,8 @@ describe('eligibleCount', () => {
 		expect(eligibleCount(POOL, 4, NO_WEAPON)).toBe(6);
 	});
 
-	// Measured once under include-unticked, as `pool_source.cells.fixture.json`'s _comment describes; re-pin as that
-	// _comment says.
+	// Measured once under include-unticked, like the cells of `pool_source.cells.fixture.json`; re-pin the way
+	// `pool_source.test.ts` says.
 	it('matches the measured ret pool sizes (1173 at phase 4, 1439 at phase 5)', () => {
 		expect(eligibleCount(effectivePool(dbPoolFor('ret', 4), NO_FILTER), 4, NO_WEAPON)).toBe(1173);
 		expect(eligibleCount(effectivePool(dbPoolFor('ret', 5), NO_FILTER), 5, NO_WEAPON)).toBe(1439);

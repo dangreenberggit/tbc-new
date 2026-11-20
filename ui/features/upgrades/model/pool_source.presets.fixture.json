@@ -1,5 +1,4 @@
 {
-	"_comment": "Each DPS spec's wowsims preset gear sets (name, declared phase, wowsims `group` where the preset has one, item ids) as the spec's config lists them. Copied once by a script in the outer repo's gitignored stage folder, which no checkout holds. To re-pin after an upstream preset change, copy each changed set's name, declared phase, group and item ids from the spec's ui/specs/<class>/<spec>/presets.ts and the gear_sets/ file it imports, then re-pin pool_source.cells.fixture.json as its _comment says.",
 	"specs": {
 		"balance": [
 			{

@@ -91,7 +91,7 @@ describe('WorkerPoolSimRunner.run', () => {
 		resetWorkerPoolForTests();
 	});
 
-	it("gives the first player's spell damage by school, without melee actions or pets (ticket 831)", async () => {
+	it("gives the first player's spell damage by school, without melee actions or pets", async () => {
 		const action = (spellSchool: number, damages: number[], isMelee = false) => ({
 			isMelee,
 			spellSchool,

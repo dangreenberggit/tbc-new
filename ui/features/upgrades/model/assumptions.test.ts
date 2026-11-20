@@ -10,7 +10,7 @@ describe('assumptionsLine', () => {
 		expect(assumptionsLine(RANKING_FIXTURE)).toBe('[upgrades] assumptions — seeds: 11, 22, 33, 44, 55 · iterations: 3000 · max phase: 3 · cutoff: 3 DPS');
 	});
 
-	it('gives every spec the same flat cutoff, borrowed from no other spec (ADR-0037)', () => {
+	it('gives every spec the same flat cutoff, borrowed from no other spec', () => {
 		for (const specId of ['ret', 'feral', 'warlock'] as const) {
 			const line = assumptionsLine(RANKING_FIXTURE, { epWeightsPreset: specId });
 			expect(line).toContain(' · cutoff: 3 DPS');
@@ -47,7 +47,8 @@ describe('assumptionsLine', () => {
 		expect(line).not.toContain('candidate cap');
 	});
 
-	// 1042: ret-p3 under include-unticked, measured as `pool_source.cells.fixture.json`'s _comment says; re-pin the same way.
+	// 1042: ret-p3 under include-unticked, measured like the cells of `pool_source.cells.fixture.json`; re-pin the way
+	// `pool_source.test.ts` says.
 	it('names the page’s database and the size of the pool the run drew from', () => {
 		expect(assumptionsLine(RANKING_FIXTURE, { epWeightsPreset: 'ret', host: dbPoolHost('ret') })).toContain(' · pool source: wowsims db (1042 entries)');
 	});

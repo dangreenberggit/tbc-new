@@ -60,7 +60,7 @@ describe('itemSourceShows', () => {
 });
 
 describe('nameBeforeOverrunKey', () => {
-	it('recovers the boss from a name the generator ran past its AtlasLoot key on (ticket 680)', () => {
+	it('recovers the boss from a name the generator ran past its AtlasLoot key on', () => {
 		expect(nameBeforeOverrunKey('Isalien"].." - "..format(AL["Tier %s Sets')).toBe('Isalien');
 		expect(nameBeforeOverrunKey('Lord Valthalak"].." - "..format(AL["Tier %s Sets')).toBe('Lord Valthalak');
 	});

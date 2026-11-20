@@ -1,7 +1,10 @@
 /**
  * The run-time pool over db.json and each spec's presets, for tests: what `buildPool`
  * gives a live page, without a `Sim` or a `Player`. The presets come from
- * `model/pool_source.presets.fixture.json`, whose `_comment` says how to re-pin it.
+ * `model/pool_source.presets.fixture.json`: each DPS spec's preset gear sets (name, declared phase,
+ * `group` where the preset has one, item ids) as its config lists them. After an upstream preset
+ * change, copy each changed set from the spec's `presets.ts` and the `gear_sets/` file it imports,
+ * then re-pin the pool sizes as `model/pool_source.test.ts` says.
  */
 
 import { readFileSync } from 'node:fs';

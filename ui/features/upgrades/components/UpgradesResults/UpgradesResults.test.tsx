@@ -103,7 +103,7 @@ describe('UpgradesResults', () => {
 		expect(within(pane).getAllByTestId('upgrades-set-bonus')).toHaveLength(2);
 	});
 
-	it('works out a row’s own set break from the gear the ranking was measured on (ticket 536)', () => {
+	it('works out a row’s own set break from the gear the ranking was measured on', () => {
 		const worn = [8345, 30017, 30055, 29994, 30101, 29966, 31034, 30106, 31044, 28545, 29997, 30052, 30627, 29383, 32014, 0, 32387];
 		const legs: RankedItem = { ...fixtureRow(0), itemId: 30900, name: 'Bow-stitched Leggings', slot: 'legs', deltaDps: 3.5, deltaPct: 0.2 };
 		const result = {
@@ -133,7 +133,7 @@ describe('UpgradesResults', () => {
 		expect(within(running.container).queryByTestId('upgrades-run-notes')).toBeNull();
 	});
 
-	describe('a finished run with no rows (ticket 515)', () => {
+	describe('a finished run with no rows', () => {
 		const emptyAt = (maxPhase: ContentPhase): RunState => ({
 			status: 'done',
 			runId: 1,
@@ -158,7 +158,7 @@ describe('UpgradesResults', () => {
 		});
 	});
 
-	it('says the BiS tags are from an older phase when wowsims has no set for the ranked one (ticket 699)', () => {
+	it('says the BiS tags are from an older phase when wowsims has no set for the ranked one', () => {
 		const at = (maxPhase: ContentPhase): RunState => ({
 			status: 'done',
 			runId: 1,
@@ -171,7 +171,7 @@ describe('UpgradesResults', () => {
 		expect(show(at(3)).queryByTestId('upgrades-bis-phase-notice')).toBeNull();
 	});
 
-	it('says what to do before the first run, naming the Simulate button (ticket 604)', () => {
+	it('says what to do before the first run, naming the Simulate button', () => {
 		const { getByTestId } = show({ status: 'idle' });
 		const text = getByTestId('upgrades-empty-state').textContent;
 		expect(text).toContain('No ranking yet');

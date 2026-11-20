@@ -66,7 +66,7 @@ describe('openSavedUpgradesStore', () => {
 		expect(effectiveExcludedSources(excludedSources, ['Black Temple', heroic])).toContain(heroic);
 	});
 
-	it('restores the export panel’s token or gear choice in a fresh store (ticket 588)', () => {
+	it('restores the export panel’s token or gear choice in a fresh store', () => {
 		const storage = memoryStorage();
 		openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY).getState().setExportFlavor('gear');
 		expect(openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY).getState().exportFlavour).toBe('gear');

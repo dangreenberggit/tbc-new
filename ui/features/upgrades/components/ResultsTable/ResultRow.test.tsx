@@ -200,7 +200,7 @@ describe('ResultRow', () => {
 		token: 'Leggings of the Forgotten Protector',
 	} as const;
 
-	it('names a tier token’s boss, a reputation’s standing and a PvP item’s currency in the plain text (ticket 619)', () => {
+	it('names a tier token’s boss, a reputation’s standing and a PvP item’s currency in the plain text', () => {
 		const sourceText = (source: RankedItem['source']) => {
 			const { sources: _, ...row } = { ...fixtureRow(0), source };
 			const tr = renderRow(row, { ...CONTEXT, itemOf: () => undefined });

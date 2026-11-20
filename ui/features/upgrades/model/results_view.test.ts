@@ -1,7 +1,3 @@
-import { existsSync, readFileSync } from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
 import { describe, expect, it } from 'vitest';
 
 import { fixtureRow, RANKING_FIXTURE, STOPPED_FIXTURE } from '../testing/ranking_fixture';
@@ -35,8 +31,6 @@ import { sourceOptions } from './settings_pool';
 const ids = (rows: ReadonlyArray<{ itemId: number }>) => rows.map(row => row.itemId);
 const VIEW = applyView(RANKING_FIXTURE);
 const helm = fixtureRow(5);
-// A recording of a ret P3 run from P2 gear, kept outside this checkout, six folders above this one.
-const RECORDING = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../../../packages/core/test/fixtures/tab-recordings/ret-p3-p2.json');
 
 describe('effectiveSlot and rowKey', () => {
 	it('takes the sim slot the engine chose, else the first one the pool slot maps to', () => {
@@ -278,16 +272,6 @@ describe('resultsViewFor', () => {
 		expect(ids(view.rows.filter(row => effectiveSlot(row) === 'head'))).toEqual([wornZulAmanHelm.itemId]);
 		expect(paneRows(view, 'head')).toMatchObject({ main: [], emptyReason: 'no-source-row' });
 	});
-
-	// The recording is outside this checkout, so this runs only where it exists.
-	it.skipIf(!existsSync(RECORDING))('ret-p3-p2: under BiS only the neck pane, whose BiS-list item is worn, gets the no-upgrades reason (ticket 625)', () => {
-		const ranking = (JSON.parse(readFileSync(RECORDING, 'utf8')) as { ranking: Ranking }).ranking;
-		const view = resultsViewFor(done(ranking), ONLY_BIS)!;
-		const neck = paneRows(view, 'neck');
-		expect(neck.main).toEqual([]);
-		expect(neck.emptyReason).toBe('no-upgrades');
-		expect(paneRows(view, ALL_SLOTS_PANE).emptyReason).toBe('no-upgrades');
-	});
 });
 
 describe('sourceOptions over a view’s rows', () => {
@@ -305,7 +289,7 @@ describe('sourceOptions over a view’s rows', () => {
 });
 
 // Made-up source lists on recorded rows, for the cases the fixture lacks. Cataclysm's Edge as an item that drops in two
-// raids, Hyjal Summit first, as Choker of Serrated Blades (32591) does in ret-p3-p2.json; Vengeful Gladiator's Greatsword
+// raids, Hyjal Summit first, as Choker of Serrated Blades (32591) does in a recorded ret P3 run; Vengeful Gladiator's Greatsword
 // as a badge-vendor item, and once more as one sold for badges that also drops in Black Temple.
 const twoRaidEdge: RankedItem = {
 	...fixtureRow(1),

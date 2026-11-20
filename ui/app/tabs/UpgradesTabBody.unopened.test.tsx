@@ -80,7 +80,7 @@ const closedPage = async (
 	};
 };
 
-describe('UpgradesTabBody while its tab has not been opened (ticket 589)', () => {
+describe('UpgradesTabBody while its tab has not been opened', () => {
 	it.each([
 		['a spec with ranking data', Spec.SpecRetributionPaladin],
 		['a spec with none', Spec.SpecProtectionPaladin],

@@ -72,7 +72,7 @@ describe('SetBonusPopover', () => {
 		expect(screen.getByTestId('upgrades-set-bonus-popover-total').textContent).toBe('Total+4.4');
 	});
 
-	it('keeps the total marked when not-counted lines follow it (ticket 336)', () => {
+	it('keeps the total marked when not-counted lines follow it', () => {
 		const popover: SetBonusPopoverContent = {
 			subLine: 'hover_hint',
 			kind: 'receipt',
@@ -102,7 +102,7 @@ describe('SetBonusPopover', () => {
 		expect(screen.getByRole('dialog', { name: 'Set-bonus breakdown' })).toBe(screen.getByTestId('upgrades-set-bonus-popover'));
 	});
 
-	describe('opens right of the figure when the popup fits there, above it otherwise (ticket 495)', () => {
+	describe('opens right of the figure when the popup fits there, above it otherwise', () => {
 		/** Puts the figure's right edge `room` px short of the window's right edge. */
 		const withRoom = (trigger: HTMLElement, room: number) => {
 			const right = window.innerWidth - room;

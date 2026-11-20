@@ -68,7 +68,7 @@ const sim: SimRunner = {
 };
 
 describe('SimRunner', () => {
-	it('must read stats, so a hit-budget spec never repairs at full weight unannounced (ticket 830)', () => {
+	it('must read stats, so a hit-budget spec never repairs at full weight unannounced', () => {
 		// @ts-expect-error computeStats is required; tsc fails here if it turns optional.
 		const noStatsReader: SimRunner = { version: sim.version, run: sim.run };
 		expect(noStatsReader.computeStats).toBeUndefined();

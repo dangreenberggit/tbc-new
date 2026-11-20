@@ -55,7 +55,7 @@ describe('setBonusPopoverText', () => {
 	});
 });
 
-describe('the not-counted section (ticket 336)', () => {
+describe('the not-counted section', () => {
 	const malorne2 = { setName: 'Malorne Harness', threshold: 2 };
 	const reachable = (set: string, threshold: number, pieces: string[], broken: Array<{ setName: string; threshold: number }> = []): PopoverLabel => ({
 		kind: 'reachable',
@@ -75,7 +75,7 @@ describe('the not-counted section (ticket 336)', () => {
 		expect(row).toMatchObject({ label: `Lightbringer Battlegear${NBSP}2pc`, value: "couldn't measure" });
 	});
 
-	it('names a bonus within the noise, muted, with words in place of a figure (ticket 655)', () => {
+	it('names a bonus within the noise, muted, with words in place of a figure', () => {
 		const [row] = setBonusPopoverText({
 			subLine: 'hover_hint',
 			kind: 'receipt',

@@ -68,7 +68,7 @@ describe('ViewToggles', () => {
 		expect(queryByTestId('upgrades-view-sources-button')).toBeNull();
 	});
 
-	describe('the phase the BiS tags come from (ticket 699)', () => {
+	describe('the phase the BiS tags come from', () => {
 		const showAt = (maxPhase: number, bisTagPhase: number | undefined) =>
 			render(
 				<ViewToggles

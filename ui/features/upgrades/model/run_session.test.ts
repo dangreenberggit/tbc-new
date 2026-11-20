@@ -87,7 +87,7 @@ describe('createRunSession', () => {
 		expect(console.info).toHaveBeenCalledOnce();
 	});
 
-	it('keeps the sets picked at the click and at a fixture load through a later phase change (ticket 865)', async () => {
+	it('keeps the sets picked at the click and at a fixture load through a later phase change', async () => {
 		const { store, session, call, run } = setup();
 		const p3: GearSetOption = { key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [32332], inPoolCount: 1 };
 		session.start(SETTINGS, SIGNATURE, [p3]);
@@ -273,7 +273,7 @@ describe('createRunSession', () => {
 		for (const line of lines) expect(line).toMatch(/pool source: wowsims db \(\d+ entries\)/);
 	});
 
-	describe('the EP-weights preset (ticket 811)', () => {
+	describe('the EP-weights preset', () => {
 		// A Fury page: were the session to read the talents itself, its line would name Fury's set, not the run's.
 		const furyPage = () => {
 			const getTalentTreePoints = vi.fn(() => [21, 40, 0]);

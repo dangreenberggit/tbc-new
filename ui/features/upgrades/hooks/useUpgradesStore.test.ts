@@ -40,7 +40,7 @@ describe('upgradesStoreFor', () => {
 	});
 });
 
-describe('upgradesStoreFor and the page’s phase (ticket 587)', () => {
+describe('upgradesStoreFor and the page’s phase', () => {
 	const KEY = `__upgrades_test${UPGRADES_SETTINGS_STORAGE_KEY}`;
 	const savedSettings = (settings: object) => ({ [KEY]: JSON.stringify({ version: SAVED_VERSION, settings }) });
 
