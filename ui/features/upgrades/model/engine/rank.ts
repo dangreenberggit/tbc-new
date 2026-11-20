@@ -1828,14 +1828,96 @@ async function buildSetBonuses(
 						),
 				}
 			: undefined;
+	// With `measureSetBonuses`: whether one more piece of a worn set reaches
+	// a bonus, measured on the gear a row makes. One check per worn set with a
+	// candidate in a slot the set does not fill, on that set's best such
+	// candidate's own swap, so `crossesThreshold` reads a measurement rather
+	// than the fixed table in `isBonusImplemented`.
+	const crossingChecks: CrossingCheck[] = [];
+	if (measureSetBonuses) {
+		for (const setId of [...setIdsWithCandidates].sort((a, b) => a - b)) {
+			const worn = wornCounts.get(setId) ?? 0;
+			if (worn < 1) continue;
+			// One more piece reaches no bonus the sim lists.
+			if (bonusCounts.get(setId)?.has(worn + 1) === false) continue;
+			const wornSlots = new Set(equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])));
+			let best: OwnDelta | undefined;
+			for (const entry of candidates) {
+				if (getItem(entry.itemId)?.setId !== setId) continue;
+				const ownDelta = ownDeltasByItemId.get(entry.itemId);
+				if (!ownDelta || wornSlots.has(ownDelta.slotIndex)) continue;
+				if (!best || ownDelta.deltaDps > best.deltaDps || (ownDelta.deltaDps === best.deltaDps && ownDelta.itemId < best.itemId)) {
+					best = ownDelta;
+				}
+			}
+			if (!best) continue;
+			const crossing = [{ slotIndex: best.slotIndex, itemId: best.itemId }];
+			let swapped: ChainBuild | undefined;
+			try {
+				swapped = chainSwapsWithRepairs(equipment, crossing, gems);
+			} catch (err) {
+				if (!(err instanceof MetaRepairError)) throw err;
+			}
+			const crossingBuild = swapped;
+			const crossingLabel = setNameOf(equipment, setId);
+			// A copy's failed gem repair leaves this check unmeasured with no line,
+			// as a failed repair of the swap itself does above.
+			let layoutRepairFailed = false;
+			const nextPieceResult = crossingBuild
+				? await measureSameGearBonus(
+						cachedSampleRun(`${crossingLabel} ${worn + 1}pc crossing check`),
+						composeFor(crossingBuild.equipment),
+						crossingBuild.equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])),
+						worn,
+						// "On" and "off" are compared as a pair, so they come from
+						// one call.
+						async copiesList => {
+							const entries = repairErrorOr(
+								await requestsPerLayout(g => chainSwapsWithRepairs(equipment, crossing, g), crossingBuild, copiesList),
+							);
+							if (!(entries instanceof MetaRepairError)) {
+								return entries.map(requestOf);
+							}
+							layoutRepairFailed = true;
+							// Never read: the check's result is dropped below.
+							return copiesList.map(() => ({ buildError: errorText(entries) }));
+						},
+					)
+				: undefined;
+			const measured = layoutRepairFailed ? undefined : nextPieceResult;
+			if (isSimFailure(measured)) {
+				bonusNotMeasured(crossingLabel, worn + 1, SET_BONUS_SKIP_REASONS.simFailed(measured.simError));
+			}
+			if (isBuildFailure(measured)) {
+				bonusNotMeasured(crossingLabel, worn + 1, SET_BONUS_SKIP_REASONS.notBuilt(measured.buildError));
+			}
+			const value = isSimFailure(measured) || isBuildFailure(measured) ? undefined : measured;
+			crossingChecks.push({
+				setId,
+				count: worn + 1,
+				itemId: best.itemId,
+				...(value ? { dps: value.dps, se: value.se } : {}),
+				cleared: value !== undefined && clearsSameGearNoise(value.dps, value.se, cutoff),
+			});
+		}
+	}
+
 	// The "on" screen estimates the added pieces' gain at each count with
-	// `estimateCombinedDelta`, which has no term for the set's own bonuses.
+	// `estimateCombinedDelta`, which adds no term for the set's own bonuses.
 	// The estimate treats the row like any other added piece, so which piece is
-	// the row does not matter.
+	// the row does not matter. But each own delta of a set worn at w reached
+	// w + 1 pieces alone, so when there is a bonus at w + 1 every own delta
+	// holds it once. The pair already counts it, and sets worn at another count
+	// carry no such extra, so the crossing check's value is taken out once per
+	// added piece (ticket 886). An unmeasured crossing leaves the estimate
+	// unset, and the screen keeps the set.
 	const screenBrokenBonusDpsByKey = new Map(brokenSetValues.map(v => [bonusKey(v), v.dps] as const));
 	const estimatedDeltaAt = (setId: number, threshold: number): number | undefined => {
 		const selection = selectFor(setId, threshold);
 		if (!selection.ok) return undefined;
+		const crossing = crossingChecks.find(c => c.setId === setId && c.count === selection.piecesWorn + 1);
+		if (crossing && crossing.dps === undefined) return undefined;
+		const crossedPerPiece = crossing?.dps ?? 0;
 		const pieces: PartnerPiece[] = [];
 		for (const piece of selection.addedPieces) {
 			const ownDelta = ownDeltasByItemId.get(piece.itemId)?.deltaDps;
@@ -1848,7 +1930,7 @@ async function buildSetBonuses(
 		}
 		const [row, ...rest] = pieces;
 		if (!row) return undefined;
-		return estimateCombinedDelta(
+		const estimate = estimateCombinedDelta(
 			{
 				row,
 				setId,
@@ -1861,6 +1943,7 @@ async function buildSetBonuses(
 			rest,
 			{ includeCombinationOnlyBreaks: true },
 		);
+		return estimate === undefined ? undefined : estimate - pieces.length * crossedPerPiece;
 	};
 	const setScreen: SetScreen | undefined = !screenInput
 		? undefined
@@ -2181,80 +2264,6 @@ async function buildSetBonuses(
 							})),
 						}
 					: {}),
-			});
-		}
-	}
-
-	// With `measureSetBonuses`: whether one more piece of a worn set reaches
-	// a bonus, measured on the gear a row makes. One check per worn set with a
-	// candidate in a slot the set does not fill, on that set's best such
-	// candidate's own swap, so `crossesThreshold` reads a measurement rather
-	// than the fixed table in `isBonusImplemented`.
-	const crossingChecks: CrossingCheck[] = [];
-	if (measureSetBonuses) {
-		for (const setId of [...setIdsWithCandidates].sort((a, b) => a - b)) {
-			const worn = wornCounts.get(setId) ?? 0;
-			if (worn < 1) continue;
-			// One more piece reaches no bonus the sim lists.
-			if (bonusCounts.get(setId)?.has(worn + 1) === false) continue;
-			const wornSlots = new Set(equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])));
-			let best: OwnDelta | undefined;
-			for (const entry of candidates) {
-				if (getItem(entry.itemId)?.setId !== setId) continue;
-				const ownDelta = ownDeltasByItemId.get(entry.itemId);
-				if (!ownDelta || wornSlots.has(ownDelta.slotIndex)) continue;
-				if (!best || ownDelta.deltaDps > best.deltaDps || (ownDelta.deltaDps === best.deltaDps && ownDelta.itemId < best.itemId)) {
-					best = ownDelta;
-				}
-			}
-			if (!best) continue;
-			const crossing = [{ slotIndex: best.slotIndex, itemId: best.itemId }];
-			let swapped: ChainBuild | undefined;
-			try {
-				swapped = chainSwapsWithRepairs(equipment, crossing, gems);
-			} catch (err) {
-				if (!(err instanceof MetaRepairError)) throw err;
-			}
-			const crossingBuild = swapped;
-			const crossingLabel = setNameOf(equipment, setId);
-			// A copy's failed gem repair leaves this check unmeasured with no line,
-			// as a failed repair of the swap itself does above.
-			let layoutRepairFailed = false;
-			const nextPieceResult = crossingBuild
-				? await measureSameGearBonus(
-						cachedSampleRun(`${crossingLabel} ${worn + 1}pc crossing check`),
-						composeFor(crossingBuild.equipment),
-						crossingBuild.equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])),
-						worn,
-						// "On" and "off" are compared as a pair, so they come from
-						// one call.
-						async copiesList => {
-							const entries = repairErrorOr(
-								await requestsPerLayout(g => chainSwapsWithRepairs(equipment, crossing, g), crossingBuild, copiesList),
-							);
-							if (!(entries instanceof MetaRepairError)) {
-								return entries.map(requestOf);
-							}
-							layoutRepairFailed = true;
-							// Never read: the check's result is dropped below.
-							return copiesList.map(() => ({ buildError: errorText(entries) }));
-						},
-					)
-				: undefined;
-			const measured = layoutRepairFailed ? undefined : nextPieceResult;
-			if (isSimFailure(measured)) {
-				bonusNotMeasured(crossingLabel, worn + 1, SET_BONUS_SKIP_REASONS.simFailed(measured.simError));
-			}
-			if (isBuildFailure(measured)) {
-				bonusNotMeasured(crossingLabel, worn + 1, SET_BONUS_SKIP_REASONS.notBuilt(measured.buildError));
-			}
-			const value = isSimFailure(measured) || isBuildFailure(measured) ? undefined : measured;
-			crossingChecks.push({
-				setId,
-				count: worn + 1,
-				itemId: best.itemId,
-				...(value ? { dps: value.dps, se: value.se } : {}),
-				cleared: value !== undefined && clearsSameGearNoise(value.dps, value.se, cutoff),
 			});
 		}
 	}

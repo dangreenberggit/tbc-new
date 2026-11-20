@@ -44,7 +44,8 @@ export type ScreenOnRule = {
 /**
  * The `'on'` mode's rule, chosen by scoring rules offline against `'record'`
  * results: it kept every set worth collecting. Changing any value means scoring
- * it again.
+ * it again. Scored again after ticket 886 took the set's own bonus out of the
+ * estimate: it kept the same sets on every scored character.
  */
 export const SCREEN_ON_RULE = {
 	measure: 'M2',
@@ -177,9 +178,9 @@ export type SetScreenOnInput = Omit<SetScreenInput, 'pairIterations' | 'countIte
 	/**
 	 * The estimated delta of `setId`'s chosen pieces at `threshold`: their own
 	 * deltas added up with the break corrections, as the `'sum-of-singles'`
-	 * partner rule does, so it needs no extra sim. It has no term for this
-	 * set's bonuses; the pair's DPS adds them. Undefined when an input is
-	 * missing.
+	 * partner rule does, so it needs no extra sim, less the set's bonus each
+	 * own delta reached alone. It has no term for this set's bonuses; the
+	 * pair's DPS adds them. Undefined when an input is missing.
 	 */
 	estimatedDeltaAt: (setId: number, threshold: number) => number | undefined;
 	/** The baseline sim's per-iteration standard deviation. */
