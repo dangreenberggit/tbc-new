@@ -54,7 +54,7 @@ export type ScreenedReason = (typeof SCREENED_REASONS)[number];
  * `outcome` flags a line after the total that is compared, not added.
  */
 export type PopoverEntry =
-	| { type: 'heading'; heading: 'set_potential' | 'set_potential_totals' | 'not_counted_off' | 'not_counted_no_gain' | 'not_counted' }
+	| { type: 'heading'; heading: 'set_potential' | 'set_potential_outcomes' | 'not_counted_off' | 'not_counted_no_gain' | 'not_counted' }
 	| { type: 'line'; label: PopoverLabel; dps: number | undefined; marker?: true; outcome?: true; againstCreditedGear?: true; belowNoise?: true };
 
 export type SetBonusPopoverContent = { subLine: 'hover_hint' | 'not_counted'; kind: 'receipt' | 'outcomes'; entries: PopoverEntry[] };
@@ -257,7 +257,7 @@ function screenedLine(ctx: SetContext, ranking: RankingContext['ranking']): Popo
 function outcomesEntries(row: RankedItem, ctx: SetContext, outcomes: readonly Line[], cutoffDps: number | undefined): PopoverEntry[] {
 	const shift = row.deltaDps - (ctx.singleDeltaDps ?? row.deltaDps);
 	return [
-		{ type: 'heading', heading: 'set_potential_totals' },
+		{ type: 'heading', heading: 'set_potential_outcomes' },
 		line({ kind: 'item_alone', name: row.name, broken: (ctx.singleBreaks ?? []).map(ref) }, shownValue(row.deltaDps, cutoffDps)),
 		...outcomes.map(o => line(o.label, o.marker ? shownValue((o.dps ?? 0) + shift, cutoffDps) : (o.dps ?? 0) + shift, o.marker)),
 	];

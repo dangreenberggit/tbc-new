@@ -49,7 +49,7 @@ export const useUpgradesStoreApi = (): UpgradesStore => upgradesStoreFor(useSimH
 /**
  * A number picker's subscription and read for one tab setting. It notifies on that
  * field alone, so a row a run finishes does not rewrite the field. Writes go through
- * `useUpgradesSettings`, which applies the scope's default sets first. Gated like
+ * `useUpgradesSettings`, which applies the scope's default gear sets first. Gated like
  * the sim's own pickers (`subscriptions.ts` `fromSelector`), so a write inside
  * `batch()` notifies once, at the batch's end.
  */

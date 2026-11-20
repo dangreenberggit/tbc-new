@@ -56,7 +56,7 @@
 						"sets_title": {
 							"type": "string"
 						},
-						"sets_in_pool": {
+						"gear_set_in_pool": {
 							"type": "string"
 						},
 						"sets_other_phases": {
@@ -85,7 +85,7 @@
 						"sources_section_raids",
 						"sources_section_other",
 						"sets_title",
-						"sets_in_pool",
+						"gear_set_in_pool",
 						"sets_other_phases",
 						"fixture_file",
 						"fixture_loaded",
@@ -320,7 +320,7 @@
 						"popover_set_potential": {
 							"type": "string"
 						},
-						"popover_set_potential_totals": {
+						"popover_set_potential_outcomes": {
 							"type": "string"
 						},
 						"popover_not_counted_off": {
@@ -401,7 +401,7 @@
 						"popover_bonus",
 						"popover_piece_stats",
 						"popover_set_potential",
-						"popover_set_potential_totals",
+						"popover_set_potential_outcomes",
 						"popover_not_counted_off",
 						"popover_not_counted_no_gain",
 						"popover_not_counted",

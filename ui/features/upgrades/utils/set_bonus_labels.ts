@@ -145,7 +145,7 @@ export function popoverLabelId(label: PopoverLabel): string {
 
 const HEADING_KEYS = {
 	set_potential: 'popover_set_potential',
-	set_potential_totals: 'popover_set_potential_totals',
+	set_potential_outcomes: 'popover_set_potential_outcomes',
 	not_counted_off: 'popover_not_counted_off',
 	not_counted_no_gain: 'popover_not_counted_no_gain',
 	not_counted: 'popover_not_counted',

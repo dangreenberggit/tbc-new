@@ -9,7 +9,7 @@ import { sourceKeysInPool } from './settings_pool';
 import type { UpgradesStore } from './upgrades_store';
 
 /**
- * Resets the settings to each new phase's default sets for the page's lifetime,
+ * Resets the settings to each new phase's default gear sets for the page's lifetime,
  * whether or not the tab is on screen, as `initBulk` follows the gear, so no render
  * writes the store. Once the page loads, a saved exclusion the pool no longer
  * offers is dropped, so it is not counted.

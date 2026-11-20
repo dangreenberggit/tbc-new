@@ -26,13 +26,13 @@ describe('setBonusPopoverText', () => {
 			subLine: 'hover_hint',
 			kind: 'outcomes',
 			entries: [
-				{ type: 'heading', heading: 'set_potential_totals' },
+				{ type: 'heading', heading: 'set_potential_outcomes' },
 				{ type: 'line', label: { kind: 'item_alone', name: 'Lightbringer Faceguard', broken: [] }, dps: -2.04 },
 				{ type: 'line', label: { kind: 'pieces', form: 'outcome', pieces: ['A', 'B'], threshold: 4, broken: [] }, dps: 12.96, marker: true },
 			],
 		});
 		expect(rows).toEqual([
-			{ type: 'heading', id: 'set_potential_totals', text: 'Separate outcomes with this item, not added' },
+			{ type: 'heading', id: 'set_potential_outcomes', text: 'Separate outcomes with this item, not added' },
 			{ type: 'line', id: 'item_alone', label: 'Lightbringer Faceguard alone', value: '2.0 DPS less', total: false },
 			{ type: 'line', id: 'pieces:outcome:4:A+B', label: 'With A and B (4pc)', value: '13.0 DPS more', marker: "this row's figure", total: false },
 		]);
@@ -238,8 +238,8 @@ describe('popoverSections', () => {
 	});
 
 	it('gives a popover that opens on a heading no untitled section', () => {
-		expect(popoverSections([{ type: 'heading', id: 'set_potential_totals', text: 'Outcomes' }])).toEqual([
-			{ id: 'set_potential_totals', heading: 'Outcomes', lines: [] },
+		expect(popoverSections([{ type: 'heading', id: 'set_potential_outcomes', text: 'Outcomes' }])).toEqual([
+			{ id: 'set_potential_outcomes', heading: 'Outcomes', lines: [] },
 		]);
 	});
 });

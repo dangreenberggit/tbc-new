@@ -154,7 +154,7 @@ describe('SetBonusPopover', () => {
 			subLine: 'hover_hint',
 			kind: 'outcomes',
 			entries: [
-				{ type: 'heading', heading: 'set_potential_totals' },
+				{ type: 'heading', heading: 'set_potential_outcomes' },
 				{ type: 'line', label: { kind: 'item_alone', name: 'Lightbringer Faceguard', broken: [] }, dps: 4.4 },
 				{
 					type: 'line',
