@@ -85,8 +85,8 @@ function withoutStat(weights: EpWeights, stat: Stat): EpWeights {
 	return { ...(weights as Readonly<Record<string, number>>), [String(stat)]: 0 };
 }
 
-function valueModel(weights: EpWeights, hitCap?: HitCapBudget): ValueModel {
-	const priced = hitCap ? withoutStat(weights, hitCap.stat) : weights;
+function valueModel(weights: EpWeights, hitBudget?: HitCapBudget): ValueModel {
+	const priced = hitBudget ? withoutStat(weights, hitBudget.stat) : weights;
 	const gemCache = new Map<number, number>();
 	const gem = (gemId: number) => {
 		let v = gemCache.get(gemId);
@@ -97,12 +97,12 @@ function valueModel(weights: EpWeights, hitCap?: HitCapBudget): ValueModel {
 		return v;
 	};
 	const bonus = (itemId: number) => socketBonusEp(itemId, priced);
-	if (!hitCap) {
+	if (!hitBudget) {
 		return { gem, gemHit: () => 0, bonus, bonusHit: () => 0, hitTerm: () => 0 };
 	}
-	const { stat, remaining: r } = hitCap;
+	const { stat, remaining: r } = hitBudget;
 	const w = weightOf(weights, stat);
-	const groups = hitCap.groups ?? [{ offset: 0, share: 1 }];
+	const groups = hitBudget.groups ?? [{ offset: 0, share: 1 }];
 	return {
 		gem,
 		gemHit: gemId => (gemId ? (getGem(gemId)?.stats[stat] ?? 0) : 0),
@@ -120,7 +120,7 @@ export function greedyRepairMeta(opts: {
 	items: readonly SocketedItem[];
 	epWeights: EpWeights;
 	allowedGems: readonly GemEntry[];
-	hitCap?: HitCapBudget;
+	hitBudget?: HitCapBudget;
 }): MetaRepairResult {
 	const items = opts.items.map(it => ({
 		itemId: it.itemId,
@@ -141,7 +141,7 @@ export function greedyRepairMeta(opts: {
 		return { items, metaAdjusted: false, recolors: [] };
 	}
 
-	const model = valueModel(opts.epWeights, opts.hitCap);
+	const model = valueModel(opts.epWeights, opts.hitBudget);
 	const recolors: GemRecolor[] = [];
 	const maxRecolors = 32;
 	// The hit change from the gear before repair, so each move's hit is priced
@@ -255,7 +255,7 @@ export function repairMetaGems(opts: {
 	items: readonly SocketedItem[];
 	epWeights: EpWeights;
 	allowedGems: readonly GemEntry[];
-	hitCap?: HitCapBudget;
+	hitBudget?: HitCapBudget;
 	workLimit?: number;
 }): MetaRepairResult {
 	const status = inactiveMeta(opts.items);
@@ -271,7 +271,7 @@ export function repairMetaGems(opts: {
 		items: opts.items,
 		weights: opts.epWeights,
 		allowedGems: opts.allowedGems,
-		...(opts.hitCap ? { hitCap: opts.hitCap } : {}),
+		...(opts.hitBudget ? { hitBudget: opts.hitBudget } : {}),
 		maxChanges: deficit + 1,
 		...(opts.workLimit !== undefined ? { workLimit: opts.workLimit } : {}),
 	});
@@ -335,7 +335,7 @@ export function bestMinimalRepair(opts: {
 	items: readonly SocketedItem[];
 	weights: EpWeights;
 	allowedGems: readonly GemEntry[];
-	hitCap?: HitCapBudget;
+	hitBudget?: HitCapBudget;
 	maxChanges: number;
 	workLimit?: number;
 }): MinimalRepair | { overLimit: true; work: number } | undefined {
@@ -351,7 +351,7 @@ export function bestMinimalRepair(opts: {
 	const metaId = status.metaId;
 	const limit = opts.workLimit ?? REPAIR_SEARCH_WORK_LIMIT;
 	const maxChanges = opts.maxChanges;
-	const model = valueModel(opts.weights, opts.hitCap);
+	const model = valueModel(opts.weights, opts.hitBudget);
 	const pool = repairGemPool(opts.allowedGems, model);
 	const poolUnique = new Set(pool.filter(g => g.unique).map(g => g.id));
 	const held = new Set(allGemIds(original));

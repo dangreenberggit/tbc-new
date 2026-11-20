@@ -709,7 +709,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 	// sims that gear for the spells it casts; that sim failing fails the run. A
 	// read Stop ended is no failure: the candidate loop returns a partial
 	// ranking, which is never cached.
-	let wornHitCap: HitCapBudget | undefined;
+	let wornHitBudget: HitCapBudget | undefined;
 	if (hitPercentStat !== undefined && inactiveMeta(preRepairSocketed)) {
 		const preRequest = composeFor(equipmentFromLoggedGear(logged));
 		let spellDamage: SpellDamageBySchool | undefined;
@@ -721,7 +721,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			}
 		}
 		try {
-			wornHitCap = (await readHitCap(preRequest, hitPercentStat, spellDamage)).budget;
+			wornHitBudget = (await readHitCap(preRequest, hitPercentStat, spellDamage)).budget;
 		} catch (err) {
 			if (!(err instanceof StopRefusedSim)) throw err;
 		}
@@ -731,7 +731,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 			items: preRepairSocketed,
 			epWeights: deps.epWeights,
 			allowedGems: gems.fillGems,
-			...(wornHitCap ? { hitCap: wornHitCap } : {}),
+			...(wornHitBudget ? { hitBudget: wornHitBudget } : {}),
 		});
 		socketed = minimized.items;
 		metaAdjusted = minimized.metaAdjusted;
@@ -3620,7 +3620,7 @@ export function candidateSwapWithRepairs(
 		allowedGems: gems.fillGems,
 		...(hitBudget
 			? {
-					hitCap: {
+					hitBudget: {
 						stat: hitBudget.stat,
 						remaining: hitBudget.baselineRemaining - (gearHitRating(swapped, hitBudget.stat) - hitBudget.baselineGearHit),
 						...(hitBudget.groups ? { groups: hitBudget.groups } : {}),
