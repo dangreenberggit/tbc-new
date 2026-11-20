@@ -2220,7 +2220,7 @@ async function buildSetBonuses(
 			// A copy's failed gem repair leaves this check unmeasured with no line,
 			// as a failed repair of the swap itself does above.
 			let layoutRepairFailed = false;
-			const nextPieceMeasured = crossingBuild
+			const nextPieceResult = crossingBuild
 				? await measureSameGearBonus(
 						cachedSampleRun(`${crossingLabel} ${worn + 1}pc crossing check`),
 						composeFor(crossingBuild.equipment),
@@ -2241,7 +2241,7 @@ async function buildSetBonuses(
 						},
 					)
 				: undefined;
-			const measured = layoutRepairFailed ? undefined : nextPieceMeasured;
+			const measured = layoutRepairFailed ? undefined : nextPieceResult;
 			if (isSimFailure(measured)) {
 				bonusNotMeasured(crossingLabel, worn + 1, SET_BONUS_SKIP_REASONS.simFailed(measured.simError));
 			}
@@ -2552,9 +2552,9 @@ async function measureBonusGear(args: {
 			// Every counted worn bonus this gear loses against the current gear,
 			// the row's own loss included, because the popover line is a total
 			// against the current gear.
-			const lost = brokenBy([rowSwap, ...partners]);
-			if (lost.length > 0) {
-				f.breaks = lost.map(brk => {
+			const broken = brokenBy([rowSwap, ...partners]);
+			if (broken.length > 0) {
+				f.breaks = broken.map(brk => {
 					const dps = brokenBonusDpsByKey.get(bonusKey(brk));
 					return {
 						setId: brk.setId,
@@ -2606,7 +2606,7 @@ async function measureBonusGear(args: {
 	const offPending: Array<{
 		future: FutureBonus;
 		key: string;
-		lost: Array<{ setId: number; threshold: SetThreshold }>;
+		broken: Array<{ setId: number; threshold: SetThreshold }>;
 	}> = [];
 	let skippedIncrements = 0;
 	const setIdAt = (gear: readonly SimItemSpec[], slot: number): number | undefined => {
@@ -2620,26 +2620,26 @@ async function measureBonusGear(args: {
 		future: FutureBonus,
 		prevSwaps: readonly PlacedItem[],
 		swaps: readonly PlacedItem[],
-		lost: Array<{ setId: number; threshold: SetThreshold }>,
+		broken: Array<{ setId: number; threshold: SetThreshold }>,
 		firstIncrement: boolean,
 	): Promise<boolean> => {
 		const beforeBuild = bonusGearBuild(prevSwaps);
 		const before = beforeBuild?.equipment;
 		const after = bonusGearBuild(swaps)?.equipment;
 		if (!beforeBuild || !before || !after) return false;
-		const lostSets = new Set(lost.map(b => b.setId));
+		const brokenSets = new Set(broken.map(b => b.setId));
 		const prevIds = new Set(prevSwaps.map(p => p.itemId));
 		const replaced = [...new Set(swaps.filter(p => !prevIds.has(p.itemId)).map(p => p.slotIndex))]
 			.filter(slot => {
 				const setId = setIdAt(before, slot);
-				return setId !== undefined && lostSets.has(setId);
+				return setId !== undefined && brokenSets.has(setId);
 			})
 			.sort((a, b) => a - b);
 		if (replaced.length === 0) return false;
 		// Copying the replaced pieces must leave each lost set at its count after
 		// this bonus's swaps; otherwise (a two-hander's off-hand, a repair) the
 		// bonus-off gear is not the gear before minus exactly these bonuses.
-		for (const setId of lostSets) {
+		for (const setId of brokenSets) {
 			const copied = replaced.filter(slot => setIdAt(before, slot) === setId).length;
 			if (countOf(before, setId) - copied !== countOf(after, setId)) {
 				return false;
@@ -2664,7 +2664,7 @@ async function measureBonusGear(args: {
 			const error = [plainEntry, offEntry].find(isBuildFailure)?.buildError;
 			console.warn('[upgrades] increment not split into breaks and pieces: its request could not be built', error);
 			if (error !== undefined) {
-				for (const b of lost) {
+				for (const b of broken) {
 					args.bonusNotes.push(
 						breakSplitSkipNote({
 							setName: setNameOf(equipment, b.setId),
@@ -2690,7 +2690,7 @@ async function measureBonusGear(args: {
 		}
 		const key = simCacheKey(request, args.simVersion, runOpts);
 		if (!offRequests.has(key)) offRequests.set(key, { request, plain });
-		offPending.push({ future, key, lost });
+		offPending.push({ future, key, broken });
 		return true;
 	};
 
@@ -2707,12 +2707,12 @@ async function measureBonusGear(args: {
 			const partners = f ? partnersOf.get(f) : undefined;
 			const swaps = partners ? [rowSwap, ...partners] : undefined;
 			if (increment.broken.length > 0) {
-				const lost = increment.broken.map(b => ({
+				const broken = increment.broken.map(b => ({
 					setId: b.setId,
 					threshold: b.threshold as SetThreshold,
 				}));
 				const queued =
-					f !== undefined && swaps !== undefined && prevSwaps !== undefined && (await queueBonusOff(f, prevSwaps, swaps, lost, firstIncrement));
+					f !== undefined && swaps !== undefined && prevSwaps !== undefined && (await queueBonusOff(f, prevSwaps, swaps, broken, firstIncrement));
 				if (!queued) skippedIncrements += 1;
 			}
 			prevSwaps = swaps;
@@ -2743,14 +2743,14 @@ async function measureBonusGear(args: {
 		}),
 		deps.concurrency ?? 1,
 	);
-	for (const { future, key, lost } of offPending) {
+	for (const { future, key, broken } of offPending) {
 		if (!paired.has(key)) {
 			skippedIncrements += 1;
 			continue;
 		}
 		const simError = offErrors.get(key);
 		if (simError !== undefined) {
-			for (const b of lost) {
+			for (const b of broken) {
 				args.bonusNotes.push(
 					breakSplitSkipNote({
 						setName: setNameOf(equipment, b.setId),
@@ -2764,7 +2764,7 @@ async function measureBonusGear(args: {
 		if (!delta) continue;
 		future.bonusOffDps = delta.deltaDps;
 		future.bonusOffSe = delta.se;
-		future.bonusOff = lost;
+		future.bonusOff = broken;
 	}
 
 	return {

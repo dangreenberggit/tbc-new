@@ -57,13 +57,13 @@ export type ClassifyDeadSlotsOptions = {
 };
 
 /** Dropping one piece loses exactly the worn count, if it is a break. */
-function thresholdLostByDroppingOnePiece(setId: number, piecesWorn: number, countsAsBreak: CountsAsBreak): SetThreshold | null {
+function thresholdBrokenByDroppingOnePiece(setId: number, piecesWorn: number, countsAsBreak: CountsAsBreak): SetThreshold | null {
 	return piecesWorn >= 2 && countsAsBreak(setId, piecesWorn) ? piecesWorn : null;
 }
 
 function wornRowsOf(slotRows: readonly DeadSlotRow[]): DeadSlotRow[] {
-	const owned = slotRows.filter(r => r.owned === true);
-	if (owned.length > 0) return owned.filter(r => r.deltaDps === 0);
+	const worn = slotRows.filter(r => r.owned === true);
+	if (worn.length > 0) return worn.filter(r => r.deltaDps === 0);
 	return [];
 }
 
@@ -129,7 +129,7 @@ export function classifyDeadSlots(rows: readonly DeadSlotRow[], options: Classif
 			const brokenThreshold =
 				wornSetId === null
 					? null
-					: thresholdLostByDroppingOnePiece(wornSetId, options.wornSetCounts.get(wornSetId) ?? 0, options.countsAsBreak ?? isBonusImplemented);
+					: thresholdBrokenByDroppingOnePiece(wornSetId, options.wornSetCounts.get(wornSetId) ?? 0, options.countsAsBreak ?? isBonusImplemented);
 
 			let cause: DeadSlotCause;
 			if (wornItem === undefined) {

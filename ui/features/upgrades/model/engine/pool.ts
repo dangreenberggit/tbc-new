@@ -246,8 +246,8 @@ export function mainHandLeavesOffHandFree(wornMainHandId: number | undefined): b
 export function offHandBlockedEntries(pool: readonly PoolEntry[], spec: SpecId | undefined, wornMainHandId: number | undefined): PoolEntry[] {
 	if (mainHandLeavesOffHandFree(wornMainHandId)) return [];
 	return pool.filter(e => {
-		const placements = simSlotsForPoolSlot(e.slot, spec, e.itemId);
-		return placements.length === 1 && placements[0] === 'offhand';
+		const simSlots = simSlotsForPoolSlot(e.slot, spec, e.itemId);
+		return simSlots.length === 1 && simSlots[0] === 'offhand';
 	});
 }
 
@@ -264,7 +264,7 @@ export function oneHandBlockedEntries(pool: readonly PoolEntry[], spec: SpecId |
 		if (handType == null || handType === HandType.HandTypeTwoHand) {
 			return false;
 		}
-		const placements = simSlotsForPoolSlot(e.slot, spec, e.itemId);
-		return !(placements.length === 1 && placements[0] === 'offhand');
+		const simSlots = simSlotsForPoolSlot(e.slot, spec, e.itemId);
+		return !(simSlots.length === 1 && simSlots[0] === 'offhand');
 	});
 }

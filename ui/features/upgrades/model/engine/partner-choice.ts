@@ -234,33 +234,33 @@ export async function choosePartners(query: PartnerQuery, rule: PartnerRule): Pr
 	}
 
 	const includeCombinationOnlyBreaks = rule !== 'sum-of-singles-plain';
-	const ranked: Array<{ combination: PartnerPiece[]; est: number }> = [];
+	const ranked: Array<{ combination: PartnerPiece[]; estimate: number }> = [];
 	for (const combination of combinations) {
-		const est = estimateCombinedDelta(query, combination, { includeCombinationOnlyBreaks });
-		if (est === undefined) return { unmeasured: 'break-unmeasured' };
-		ranked.push({ combination, est });
+		const estimate = estimateCombinedDelta(query, combination, { includeCombinationOnlyBreaks });
+		if (estimate === undefined) return { unmeasured: 'break-unmeasured' };
+		ranked.push({ combination, estimate });
 	}
 	// Highest estimate first, ties to the lowest sorted ids.
-	ranked.sort((a, b) => b.est - a.est || compareIds(a.combination, b.combination));
+	ranked.sort((a, b) => b.estimate - a.estimate || compareIds(a.combination, b.combination));
 	const top = ranked[0]!;
 	if (rule !== 'close-calls') {
 		return {
 			itemIds: top.combination.map(p => p.itemId),
 			rule,
-			estimatedDeltaDps: top.est,
+			estimatedDeltaDps: top.estimate,
 		};
 	}
 
-	const close = ranked.filter(c => c.est >= top.est - CLOSE_CALL_MARGIN_DPS);
+	const close = ranked.filter(c => c.estimate >= top.estimate - CLOSE_CALL_MARGIN_DPS);
 	// One candidate needs no comparison; its gear is simmed later anyway.
 	if (close.length === 1 || !query.simGear) {
 		return {
 			itemIds: top.combination.map(p => p.itemId),
 			rule,
-			estimatedDeltaDps: top.est,
+			estimatedDeltaDps: top.estimate,
 		};
 	}
-	let best: { combination: PartnerPiece[]; est: number; deltaDps: number } | undefined;
+	let best: { combination: PartnerPiece[]; estimate: number; deltaDps: number } | undefined;
 	for (const c of close) {
 		const sim = await query.simGear(c.combination);
 		if (!sim) continue;
@@ -273,13 +273,13 @@ export async function choosePartners(query: PartnerQuery, rule: PartnerRule): Pr
 		return {
 			itemIds: top.combination.map(p => p.itemId),
 			rule,
-			estimatedDeltaDps: top.est,
+			estimatedDeltaDps: top.estimate,
 		};
 	}
 	return {
 		itemIds: best.combination.map(p => p.itemId),
 		rule,
-		estimatedDeltaDps: best.est,
+		estimatedDeltaDps: best.estimate,
 		deltaDps: best.deltaDps,
 	};
 }

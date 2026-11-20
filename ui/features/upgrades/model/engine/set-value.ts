@@ -186,11 +186,11 @@ export const bonusKey = (b: { setId: number; threshold: number }): string => `${
 
 /** Lost bonus counts that `countsAsBreak` accepts, highest first; no list decides which exist. */
 export function brokenThresholds(setId: number, before: number, after: number, countsAsBreak: CountsAsBreak = isBonusImplemented): SetThreshold[] {
-	const lost: SetThreshold[] = [];
+	const broken: SetThreshold[] = [];
 	for (let t = before; t > after && t >= 2; t--) {
-		if (countsAsBreak(setId, t)) lost.push(t);
+		if (countsAsBreak(setId, t)) broken.push(t);
 	}
-	return lost;
+	return broken;
 }
 
 /**
