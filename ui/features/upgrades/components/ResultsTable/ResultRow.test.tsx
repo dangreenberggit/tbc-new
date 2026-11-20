@@ -271,7 +271,7 @@ describe('ResultRow', () => {
 		expect(testIdText(renderRow(fixtureRow(1)), 'upgrades-row-badge')).toEqual([]);
 	});
 
-	it('greys a worn row and says it is owned', () => {
+	it('grays a worn row and says it is owned', () => {
 		const worn = renderRow(fixtureRow(7));
 		expect(worn.dataset.worn).toBe('true');
 		expect(worn.classList.contains('text-muted')).toBe(true);

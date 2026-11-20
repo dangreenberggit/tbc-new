@@ -54,7 +54,7 @@ beforeEach(() => {
 	contexts.length = 0;
 });
 
-// The session's own behaviour is `model/run_session.test.ts`; this is the hook's wiring to the page's store.
+// The session's own behavior is `model/run_session.test.ts`; this is the hook's wiring to the page's store.
 describe('useUpgradesRun', () => {
 	it('runs into the page’s tab store, from idle through landed rows to done', async () => {
 		const { runFn, call } = controllableRun();

@@ -112,7 +112,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		);
 	};
 
-	/** Nothing is cancelled mid-sim: the engine finishes the step in flight and returns the rows so far. */
+	/** Nothing is canceled mid-sim: the engine finishes the step in flight and returns the rows so far. */
 	const stop = () => {
 		if (!controller) return;
 		controller.abort();

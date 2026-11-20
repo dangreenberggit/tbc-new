@@ -45,14 +45,14 @@ vi.mock('./data/data', async importOriginal => ({
 
 type RankCall = { input: RankInput; deps: Deps; onProgress?: (p: Progress) => void };
 const rankCalls: RankCall[] = [];
-let rankBehaviour: (call: RankCall) => Promise<typeof RANKING_FIXTURE | PartialRanking>;
+let rankBehavior: (call: RankCall) => Promise<typeof RANKING_FIXTURE | PartialRanking>;
 
 vi.mock('./engine/rank', async importOriginal => ({
 	...(await importOriginal<typeof import('./engine/rank')>()),
 	rankUpgrades: (input: RankInput, deps: Deps, onProgress?: (p: Progress) => void) => {
 		const call = { input, deps, onProgress };
 		rankCalls.push(call);
-		return rankBehaviour(call);
+		return rankBehavior(call);
 	},
 }));
 
@@ -89,7 +89,7 @@ const streamRows = async ({ onProgress }: RankCall) => {
 
 beforeEach(() => {
 	rankCalls.length = 0;
-	rankBehaviour = streamRows;
+	rankBehavior = streamRows;
 });
 
 describe('rankForPlayer', () => {
@@ -155,7 +155,7 @@ describe('rankForPlayer', () => {
 	// mocked here.
 	it('passes the phase and an empty pool to the engine on a phase with no candidates, and resolves', async () => {
 		expect(poolFor(fakeHost(Spec.SpecRetributionPaladin, 1), [], 1)).toEqual([]);
-		rankBehaviour = async () => ({ ...RANKING_FIXTURE, items: [] });
+		rankBehavior = async () => ({ ...RANKING_FIXTURE, items: [] });
 
 		const result = await rankForPlayer(fakeHost(Spec.SpecRetributionPaladin, 1), SETTINGS, depsFor());
 
@@ -179,7 +179,7 @@ describe('rankForPlayer', () => {
 
 	it('hands Stop to the engine as its signal, and resolves the partial ranking the engine returns with a duration', async () => {
 		const partial: PartialRanking = { ...RANKING_FIXTURE, items: RANKING_FIXTURE.items.slice(0, 2), complete: false };
-		rankBehaviour = ({ deps }) => new Promise(resolve => deps.signal?.addEventListener('abort', () => resolve(partial), { once: true }));
+		rankBehavior = ({ deps }) => new Promise(resolve => deps.signal?.addEventListener('abort', () => resolve(partial), { once: true }));
 		const controller = new AbortController();
 		const pending = rankForPlayer(fakeHost(), SETTINGS, depsFor({ signal: controller.signal }));
 		await vi.waitFor(() => expect(rankCalls).toHaveLength(1));

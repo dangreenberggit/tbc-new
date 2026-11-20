@@ -10,7 +10,7 @@ export type PoolTask<T> = () => Promise<T>;
 
 /**
  * Runs `tasks` with at most `n` in flight. On a rejection it rejects with the
- * lowest-index error and dispatches nothing more; in-flight tasks are not cancelled
+ * lowest-index error and dispatches nothing more; in-flight tasks are not canceled
  * (Stop aborts through `rankUpgrades`' `AbortSignal`).
  */
 export async function promisePool<T>(tasks: readonly PoolTask<T>[], n: number): Promise<T[]> {

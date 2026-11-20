@@ -865,7 +865,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 
 	async function rankAfterJobCreated(): Promise<Ranking | PartialRanking> {
 		// Only `deps.sim.run` belongs inside this catch. A store read or write
-		// that fails is an `internal` fault, and labelling it `sim-failed` sends
+		// that fails is an `internal` fault, and labeling it `sim-failed` sends
 		// an operator to the wrong subsystem.
 		let observation = await readCachedSim(deps, request, simVersion, runOpts);
 		if (!observation) {

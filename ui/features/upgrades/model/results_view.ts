@@ -11,7 +11,7 @@ import type { DpsSortKey } from './results_columns';
 import type { RunState, StoppedRanking } from './run_state';
 import { sourceKeysMatching, type SourceOption, sourceOptions } from './settings_pool';
 
-/** The first pane, labelled "Upgrades": every slot's rows. */
+/** The first pane, labeled "Upgrades": every slot's rows. */
 export const ALL_SLOTS_PANE = 'all-slots';
 
 export type PaneId = typeof ALL_SLOTS_PANE | SimSlotName;
