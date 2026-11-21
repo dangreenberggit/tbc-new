@@ -3,8 +3,8 @@
 	"pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
 	"label": "P1 - Affli / Demo / Destro",
 	"notes": [
-		"Transcribed from the fork, not upstream: ui/warlock/dps/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
-		"ui/warlock/dps/sim.ts:60 wires P1_AFFLI_DEMO_DESTRO_EP; the Destruction/Fire variant is derived via .withStat() from this one (presets.ts:56-58) and is not transcribed"
+		"Transcribed from ui/specs/warlock/dps/presets.ts.",
+		"ui/specs/warlock/dps/spec.ts:62 wires P1_AFFLI_DEMO_DESTRO_EP; the Destruction/Fire variant (P1_DESTRUCTION_FIRE_EP) is derived from it with .withStat() (presets.ts:57-59) and is not transcribed."
 	],
 	"weights": {
 		"3": 0.38,

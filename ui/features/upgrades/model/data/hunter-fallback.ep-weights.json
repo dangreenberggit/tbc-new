@@ -3,8 +3,8 @@
 	"pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
 	"label": "P1 BM",
 	"notes": [
-		"Transcribed from the fork, not upstream: ui/hunter/dps/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
-		"ui/specs/hunter/dps/spec.ts:77 (ui/hunter/dps/sim.ts:75 at this file's pin) wires P1_BM_EP_PRESET as the default. The Upgrades tab uses P1_SV_EP_PRESET instead for a hunter whose Survival tree has strictly more talent points than each other tree."
+		"Transcribed from ui/specs/hunter/dps/presets.ts.",
+		"ui/specs/hunter/dps/spec.ts:77 wires P1_BM_EP_PRESET as the default. The Upgrades tab uses P1_SV_EP_PRESET instead for a hunter whose Survival tree has strictly more talent points than each other tree."
 	],
 	"weights": {
 		"0": 0.06,

@@ -3,8 +3,8 @@
 	"pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
 	"label": "Combat Swords",
 	"notes": [
-		"Transcribed from the fork, not upstream: ui/rogue/dps/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
-		"ui/rogue/dps/sim.ts:76 wires P1_EP_PRESET; it is the only rogue preset"
+		"Transcribed from ui/specs/rogue/dps/presets.ts.",
+		"ui/specs/rogue/dps/spec.ts:64 wires P1_EP_PRESET; it is the only rogue preset (presets.ts:25)."
 	],
 	"weights": {
 		"0": 1.1,

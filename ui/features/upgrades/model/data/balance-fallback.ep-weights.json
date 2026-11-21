@@ -3,8 +3,8 @@
 	"pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
 	"label": "Pre-raid",
 	"notes": [
-		"Transcribed from the fork, not upstream: ui/druid/balance/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
-		"ui/druid/balance/sim.ts:61 wires DefaultEPWeights, an alias of Phase2EPWeights labelled 'Default (P2)' (presets.ts:131)"
+		"Transcribed from ui/specs/druid/balance/presets.ts.",
+		"ui/specs/druid/balance/spec.ts:60 wires Phase3EPWeights as the default. DefaultEPWeights, labelled 'Default (P2)', is an alias of Phase2EPWeights (presets.ts:132)."
 	],
 	"weights": {
 		"3": 0.61,

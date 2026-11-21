@@ -3,8 +3,8 @@
 	"pin": "282d7b77c6f45f070b92d82b84bbb934c5dd3678",
 	"label": "P1 - Fury",
 	"notes": [
-		"Transcribed from the fork, not upstream: ui/warrior/dps/presets.ts exists on the fork branch feat/upgrades-tab at this pin.",
-		"ui/specs/warrior/dps/spec.ts:64 (ui/warrior/dps/sim.ts:63 at this file's pin) wires P2_FURY_EP_PRESET, so Fury is the default variant. The Upgrades tab uses P3_ARMS_EP_PRESET instead for a warrior whose Arms tree has strictly more talent points than each other tree."
+		"Transcribed from ui/specs/warrior/dps/presets.ts.",
+		"ui/specs/warrior/dps/spec.ts:64 wires P2_FURY_EP_PRESET, so Fury is the default variant. The Upgrades tab uses P3_ARMS_EP_PRESET instead for a warrior whose Arms tree has strictly more talent points than each other tree."
 	],
 	"weights": {
 		"0": 1.0,
