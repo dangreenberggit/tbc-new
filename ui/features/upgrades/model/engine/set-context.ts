@@ -1,6 +1,6 @@
 /**
  * `RankedItem.setContext`: for each row, the set bonuses it reaches, keeps or breaks, and the
- * pieces still needed. Pure.
+ * pieces still needed. `applySetContext` writes it onto the rows; the helpers are pure.
  */
 
 import { getItem } from './items';

@@ -1,6 +1,6 @@
 /**
- * Which piece counts each set can reach from the worn gear and the pool, and the checks
- * that a reach crosses a bonus (`crossingChecks`).
+ * `setBonusCountsInReach`: for each set, the piece counts above the worn count at which the
+ * sim has a bonus the pool can reach.
  */
 
 import type { GemContext } from './candidate-gems';

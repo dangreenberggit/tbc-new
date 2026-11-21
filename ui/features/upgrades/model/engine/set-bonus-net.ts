@@ -1,5 +1,6 @@
 /**
- * `bonusDpsNet`: a bonus's DPS less the worn bonuses its pieces break. Pure.
+ * `countMembersBreaking`: how many of a bonus's added pieces break a worn bonus by their own
+ * swap, a term of the set phase's `bonusDpsNet`. Pure.
  */
 
 import { getItem } from './items';

@@ -1,6 +1,7 @@
 /**
- * `wornSetLadder` and `brokenSetValues`: what each worn set bonus is worth, measured on the
- * worn gear, and which swaps count as breaking one.
+ * `measureWornSets` gives `wornSetLadder`: what each piece count of a worn set is worth,
+ * measured on the worn gear. `countsAsBreakFrom` counts a swap as breaking only a count that
+ * ladder counted.
  */
 
 import type { Cutoff } from './cutoff';

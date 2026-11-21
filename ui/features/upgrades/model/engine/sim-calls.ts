@@ -1,7 +1,7 @@
 /**
- * Every way the engine calls the sim: the store-cached run, the stats read, and the runner
- * that refuses new sims after Stop. Store faults are `internal`; only the sim's own failure
- * is a failed sim.
+ * The sim helpers `rankUpgrades` and the set phase share: the store-cached run, the stats
+ * read, and the runner that refuses new sims after Stop. Other call sites call `deps.sim`
+ * directly. Store faults are `internal`; only the sim's own failure is a failed sim.
  */
 
 import { type Deps, RankError } from './rank-types';

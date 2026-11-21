@@ -1,5 +1,6 @@
 /**
- * `setBonuses`: one set's bonus at one piece count, measured by sims.
+ * `measurePairTwoPiece`: a set's 2pc value from one sim of two of its pieces, which the set
+ * phase needs to give the 4pc a `bonusDpsNet`.
  */
 
 import type { GemContext } from './candidate-gems';

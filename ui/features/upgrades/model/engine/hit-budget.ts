@@ -1,6 +1,6 @@
 /**
- * The repair hit budget: hit read from a gear's stats, and the requests built for each copy
- * layout once that budget is known.
+ * The repair hit budget: hit read from a gear's stats, and the types the requests for each
+ * copy layout are built with (`requestsPerLayout` in `rank.ts` builds them).
  */
 
 import type { GemContext } from './candidate-gems';
