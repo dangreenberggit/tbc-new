@@ -542,16 +542,16 @@
 						"empty_no_source_row": {
 							"type": "string"
 						},
-						"below_cutoff_group_one": {
+						"below_cutoff_group_singular": {
 							"type": "string"
 						},
-						"below_cutoff_group_other": {
+						"below_cutoff_group_count": {
 							"type": "string"
 						},
-						"below_cutoff_group_title_one": {
+						"below_cutoff_group_title_singular": {
 							"type": "string"
 						},
-						"below_cutoff_group_title_other": {
+						"below_cutoff_group_title_count": {
 							"type": "string"
 						},
 						"removes_worn": {
@@ -587,10 +587,10 @@
 						"empty_no_phase_list_body",
 						"set_bonus_popover_title",
 						"empty_no_source_row",
-						"below_cutoff_group_one",
-						"below_cutoff_group_other",
-						"below_cutoff_group_title_one",
-						"below_cutoff_group_title_other",
+						"below_cutoff_group_singular",
+						"below_cutoff_group_count",
+						"below_cutoff_group_title_singular",
+						"below_cutoff_group_title_count",
 						"removes_worn",
 						"sort_ascending",
 						"sort_descending"

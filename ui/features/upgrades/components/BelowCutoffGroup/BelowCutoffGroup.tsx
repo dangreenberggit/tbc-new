@@ -26,10 +26,15 @@ const GROUP = 'below-cutoff';
 export const BelowCutoffGroup = ({ head, table, rowContext, open, onOpenChange }: BelowCutoffGroupProps) => {
 	const count = table.options.data.length;
 	const cutoff = rowContext.rankingContext.ranking?.cutoff;
+	// A key per count picked here, not i18next plurals, as upstream's bulk tab does (CombinationsCount.tsx).
 	const title =
 		cutoff === undefined
-			? i18n.t('upgrades_tab.results.below_cutoff_group', { ns: 'upgrades', count })
-			: i18n.t('upgrades_tab.results.below_cutoff_group_title', { ns: 'upgrades', count, abs: String(cutoff.absDps) });
+			? count === 1
+				? i18n.t('upgrades_tab.results.below_cutoff_group_singular', { ns: 'upgrades' })
+				: i18n.t('upgrades_tab.results.below_cutoff_group_count', { ns: 'upgrades', amount: count })
+			: count === 1
+				? i18n.t('upgrades_tab.results.below_cutoff_group_title_singular', { ns: 'upgrades', abs: String(cutoff.absDps) })
+				: i18n.t('upgrades_tab.results.below_cutoff_group_title_count', { ns: 'upgrades', amount: count, abs: String(cutoff.absDps) });
 
 	return (
 		<Accordion value={open ? [GROUP] : []} onValueChange={value => onOpenChange(value.includes(GROUP))}>
