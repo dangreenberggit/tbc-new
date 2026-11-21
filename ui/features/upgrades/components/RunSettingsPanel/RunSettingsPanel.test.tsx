@@ -1,6 +1,4 @@
 import { loadEnglishBundles } from '@features/upgrades/testing/locales';
-import { SimHostProvider } from '@sim/context/SimHostContext';
-import { fakeHost } from '@sim/testing';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -35,12 +33,7 @@ const settingsWith = (toggleExcludedSource: UpgradesSettings['toggleExcludedSour
 const mount = (showDevControls = false) => {
 	const onStart = vi.fn();
 	const toggleExcludedSource = vi.fn();
-	// The iterations warning reads whether the page is the downloaded sim; `RunControls.test.tsx` covers it.
-	render(
-		<SimHostProvider host={fakeHost({ sim: { isNative: false } })}>
-			<RunSettingsPanel settings={settingsWith(toggleExcludedSource)} ready running={false} showDevControls={showDevControls} onStart={onStart} />
-		</SimHostProvider>,
-	);
+	render(<RunSettingsPanel settings={settingsWith(toggleExcludedSource)} ready running={false} showDevControls={showDevControls} onStart={onStart} />);
 	return { onStart, toggleExcludedSource };
 };
 
