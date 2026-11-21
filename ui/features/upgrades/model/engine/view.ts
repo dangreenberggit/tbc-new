@@ -13,7 +13,7 @@
 import { type Cutoff, meetsCutoff, setBonusNoiseFloorDps } from './cutoff';
 import { getItem } from './items';
 import { type ItemSource, simSlotsForPoolSlot, sourceMatchesBoss } from './pool';
-import type { RankedItem, Ranking, SetContext } from './rank';
+import type { RankedItem, Ranking, SetContext } from './rank-types';
 import { clearsSameGearNoise } from './set-less-copies';
 import { bonusKey, brokenSetBonuses, nextImplementedThreshold, type SetThreshold } from './set-value';
 import { SIM_ORDER } from './slots';
