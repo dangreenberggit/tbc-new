@@ -7,7 +7,6 @@ import {
 	pruneEffective,
 	type SettingsState,
 	toRunSettings,
-	withCandidateCap,
 	withExcludedSourceToggled,
 	withGearSetToggled,
 	withIterations,
@@ -17,12 +16,11 @@ import {
 const fresh = (): SettingsState => initialSettings({ iterations: 3000 });
 
 describe('initialSettings', () => {
-	it('starts with nothing excluded, no set selected, prune off, no cap and the initial iterations', () => {
+	it('starts with nothing excluded, no set selected, prune off and the initial iterations', () => {
 		expect(initialSettings({ iterations: 500 })).toEqual({
 			excludedSources: [],
 			selectedSetKeys: [],
 			prune: false,
-			candidateCap: undefined,
 			iterations: 500,
 		});
 	});
@@ -45,26 +43,15 @@ describe('the settings changes', () => {
 		expect(withPrune(fresh(), true).prune).toBe(true);
 	});
 
-	it('keeps a positive cap and reads 0 or less as no cap', () => {
-		expect(withCandidateCap(fresh(), 40).candidateCap).toBe(40);
-		expect(withCandidateCap(withCandidateCap(fresh(), 40), 0).candidateCap).toBeUndefined();
-		expect(withCandidateCap(fresh(), -3).candidateCap).toBeUndefined();
-		expect(withCandidateCap(fresh(), undefined).candidateCap).toBeUndefined();
-	});
-
 	it('sets iterations', () => {
 		expect(withIterations(fresh(), 2000).iterations).toBe(2000);
 	});
 
 	// The store writes nothing for a change that returns the state it was given, so the page saves nothing either.
-	it('returns the state it was given when prune, the cap or the iterations already hold the value', () => {
-		const capped = withCandidateCap(fresh(), 40);
-		expect(withPrune(capped, false)).toBe(capped);
-		expect(withCandidateCap(capped, 40)).toBe(capped);
-		expect(withIterations(capped, 3000)).toBe(capped);
-
-		const uncapped = fresh();
-		expect(withCandidateCap(uncapped, 0)).toBe(uncapped);
+	it('returns the state it was given when prune or the iterations already hold the value', () => {
+		const state = fresh();
+		expect(withPrune(state, false)).toBe(state);
+		expect(withIterations(state, 3000)).toBe(state);
 	});
 
 	it('applies the default sets once per spec and phase, so a later deselect survives', () => {
@@ -128,11 +115,9 @@ describe('pruneEffective', () => {
 
 describe('toRunSettings', () => {
 	it('carries every setting the run reads', () => {
-		const capped = withCandidateCap(initialSettings({ iterations: 500 }), 10);
-		const state = withPrune(withGearSetToggled(withExcludedSourceToggled(capped, 'Crafted'), 'preset:3:P3'), true);
+		const state = withPrune(withGearSetToggled(withExcludedSourceToggled(initialSettings({ iterations: 500 }), 'Crafted'), 'preset:3:P3'), true);
 		expect(toRunSettings(state, [30129, 32461])).toEqual({
 			iterations: 500,
-			candidateCap: 10,
 			excludedSources: ['Crafted'],
 			selectedGearSetKeys: ['preset:3:P3'],
 			selectedGearSetItemIds: [30129, 32461],

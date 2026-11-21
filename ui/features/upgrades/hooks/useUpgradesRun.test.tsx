@@ -94,13 +94,6 @@ describe('useUpgradesRun', () => {
 		expect(run()).toMatchObject({ status: 'running', stopping: true });
 	});
 
-	it('shows a loaded fixture as a finished run', () => {
-		const { runFn } = controllableRun();
-		const { result, run } = mount(runFn);
-		act(() => result.current.loadFixture(RANKING_FIXTURE, SIGNATURE, []));
-		expect(run()).toMatchObject({ status: 'done', result: RANKING_FIXTURE, measuredOn: { inputsSignature: SIGNATURE } });
-	});
-
 	it('aborts the run on unmount', () => {
 		const { runFn, call } = controllableRun();
 		const { result, unmount } = mount(runFn);

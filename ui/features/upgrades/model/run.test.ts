@@ -68,7 +68,7 @@ const fakeContext = (): RunContext => ({
 	store: new MemoryStore(),
 });
 
-const SETTINGS = { iterations: 500, candidateCap: 10 };
+const SETTINGS = { iterations: 500 };
 
 const depsFor = (overrides: Partial<RunDeps> = {}): RunDeps => {
 	const context = fakeContext();
@@ -105,7 +105,7 @@ describe('rankForPlayer', () => {
 		expect(deps.store).toBe(context.store);
 		expect(deps.signal).toBe(signal);
 		expect(deps.concurrency).toBe(2);
-		expect(input).toMatchObject({ spec: 'ret', maxPhase: 3, iterations: 500, candidateCap: 10 });
+		expect(input).toMatchObject({ spec: 'ret', maxPhase: 3, iterations: 500 });
 	});
 
 	// These options change the numbers and nothing else checks them: the engine is mocked here, and a

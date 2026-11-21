@@ -7,29 +7,17 @@
 import { subscribeWithSelector } from 'zustand/middleware';
 import { createStore } from 'zustand/vanilla';
 
-import type { RankedItem, Ranking } from './engine/rank';
+import type { RankedItem } from './engine/rank';
 import type { ContentPhase } from './engine/types';
 import type { ExportFlavor } from './export';
 import { NO_VIEW_TOGGLES, type ViewToggleState, withHiddenSourceToggled } from './results_view';
-import {
-	fixtureLoaded,
-	IDLE_RUN,
-	type MeasuredOn,
-	rowLanded,
-	runFailed,
-	type RunOutcome,
-	runSettled,
-	runStarted,
-	type RunState,
-	stopRequested,
-} from './run_state';
+import { IDLE_RUN, type MeasuredOn, rowLanded, runFailed, type RunOutcome, runSettled, runStarted, type RunState, stopRequested } from './run_state';
 import {
 	afterPhaseChange,
 	appliedSettings,
 	initialSettings,
 	type SettingsScope,
 	type SettingsState,
-	withCandidateCap,
 	withExcludedSourceToggled,
 	withGearSetToggled,
 	withIterations,
@@ -65,7 +53,6 @@ export type UpgradesData = {
 export type UpgradesActions = {
 	/** The run's id comes from `run_session.ts`, which uses it to tell an older run's callbacks apart. */
 	startRun: (runId: number, startedAt: number, measuredOn?: MeasuredOn) => void;
-	loadFixture: (runId: number, ranking: Ranking, measuredOn?: MeasuredOn) => void;
 	landRow: (runId: number, row: RankedItem) => void;
 	requestStop: (runId: number) => void;
 	settleRun: (runId: number, outcome: RunOutcome) => void;
@@ -79,7 +66,6 @@ export type UpgradesActions = {
 	toggleGearSet: (key: string, scope: SettingsScope | undefined) => void;
 	setPrune: (prune: boolean, scope: SettingsScope | undefined) => void;
 	setIterations: (iterations: number, scope: SettingsScope | undefined) => void;
-	setCandidateCap: (cap: number | undefined, scope: SettingsScope | undefined) => void;
 	/** The page's changes: a phase change, and the pool the page's phase offers once it has loaded (`follow_phase.ts`). */
 	resetForNewPhase: (poolSourceKeys: readonly string[]) => void;
 	dropUnofferedExclusions: (poolSourceKeys: readonly string[]) => void;
@@ -92,7 +78,7 @@ export type UpgradesActions = {
 
 export type UpgradesState = UpgradesData & UpgradesActions;
 
-/** The settings a new store starts from, before the page's saved entry and the dev link go over them (`saved_settings.ts`). */
+/** The settings a new store starts from, before the page's saved entry goes over them (`saved_settings.ts`). */
 export type InitialSettings = { iterations: number };
 
 /** What a store restores from storage over its initial settings: only the fields that read back valid. */
@@ -134,7 +120,6 @@ export function createUpgradesStore(initial: InitialSettings, restored: Restored
 
 				// A run leaves the sort alone: the column sort the user chose holds across runs.
 				startRun: (runId, startedAt, measuredOn) => setRun(() => runStarted(runId, startedAt, measuredOn)),
-				loadFixture: (runId, ranking, measuredOn) => setRun(() => fixtureLoaded(runId, ranking, measuredOn)),
 				landRow: (runId, row) => setRun(run => rowLanded(run, runId, row)),
 				requestStop: runId => setRun(run => stopRequested(run, runId)),
 				settleRun: (runId, outcome) => setRun(run => runSettled(run, runId, outcome)),
@@ -144,7 +129,6 @@ export function createUpgradesStore(initial: InitialSettings, restored: Restored
 				toggleGearSet: (key, scope) => changeWithDefaults(scope, settings => withGearSetToggled(settings, key)),
 				setPrune: (prune, scope) => changeWithDefaults(scope, settings => withPrune(settings, prune)),
 				setIterations: (iterations, scope) => changeWithDefaults(scope, settings => withIterations(settings, iterations)),
-				setCandidateCap: (cap, scope) => changeWithDefaults(scope, settings => withCandidateCap(settings, cap)),
 				resetForNewPhase: poolSourceKeys => setSettings(settings => afterPhaseChange(settings, poolSourceKeys)),
 				dropUnofferedExclusions: poolSourceKeys => setSettings(settings => withoutUnofferedExclusions(settings, poolSourceKeys)),
 

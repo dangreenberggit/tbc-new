@@ -8,7 +8,6 @@ import type { RunProgressView } from '../model/run_progress';
 import { sourceKeysMatching } from '../model/settings_pool';
 import {
 	describeRunError,
-	fixtureOutcomeText,
 	formatDelta,
 	formatDps,
 	formatSeconds,
@@ -275,17 +274,6 @@ describe('sourceKeyLabel', () => {
 	// Some of these rings may be quest rewards, so the bucket claims no vendor; the saved key keeps its text.
 	it('names the reputation bucket "Reputation" while its key stays "Reputation vendor"', () => {
 		expect(sourceKeyLabel('Reputation vendor')).toBe('Reputation');
-	});
-});
-
-describe('fixtureOutcomeText', () => {
-	it('counts the rows of a loaded fixture, and gives the detail or the reason of a refused one', () => {
-		expect(fixtureOutcomeText({ ok: true, rows: 467 })).toBe('Loaded a fixture with 467 rows.');
-		expect(fixtureOutcomeText({ ok: false, reason: 'spec', detail: 'fixture is feral, page is ret' })).toBe(
-			'Fixture rejected: fixture is feral, page is ret',
-		);
-		expect(fixtureOutcomeText({ ok: false, reason: 'phase missing' })).toBe('Fixture rejected: phase missing');
-		expect(fixtureOutcomeText({ ok: false, reason: 'not_json' })).toBe('The file is not JSON.');
 	});
 });
 

@@ -27,13 +27,12 @@ const settingsWith = (toggleExcludedSource: UpgradesSettings['toggleExcludedSour
 	toggleGearSet: () => {},
 	setPrune: () => {},
 	setIterations: () => {},
-	setCandidateCap: () => {},
 });
 
-const mount = (showDevControls = false) => {
+const mount = () => {
 	const onStart = vi.fn();
 	const toggleExcludedSource = vi.fn();
-	render(<RunSettingsPanel settings={settingsWith(toggleExcludedSource)} ready running={false} showDevControls={showDevControls} onStart={onStart} />);
+	render(<RunSettingsPanel settings={settingsWith(toggleExcludedSource)} ready running={false} onStart={onStart} />);
 	return { onStart, toggleExcludedSource };
 };
 
@@ -68,15 +67,5 @@ describe('RunSettingsPanel', () => {
 		fireEvent.click(screen.getByTestId('upgrades-sources-button'));
 		fireEvent.click(screen.getByRole('checkbox'));
 		expect(toggleExcludedSource).toHaveBeenCalledWith('Black Temple');
-	});
-
-	it('hides the candidate cap unless the dev flag is on', () => {
-		mount();
-		expect(screen.getByTestId('upgrades-candidate-cap-picker').parentElement?.hidden).toBe(true);
-	});
-
-	it('shows the candidate cap under the dev flag', () => {
-		mount(true);
-		expect(screen.getByTestId('upgrades-candidate-cap-picker').parentElement?.hidden).toBe(false);
 	});
 });

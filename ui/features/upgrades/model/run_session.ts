@@ -34,13 +34,12 @@ export type RunSession = {
 	 */
 	start: (settings: RunSettings, inputsSignature: string, selectedGearSets: readonly GearSetOption[]) => void;
 	stop: () => void;
-	loadFixture: (ranking: Ranking, inputsSignature: string, selectedGearSets: readonly GearSetOption[]) => void;
 	dispose: () => void;
 };
 
 /**
  * Read at the click: the progress dialog blocks gear edits until the run settles,
- * so this is the gear the engine reads. A fixture sets the page gear before this.
+ * so this is the gear the engine reads.
  */
 const measuredOnPage = (host: IndividualSimHost<Spec>, inputsSignature: string, selectedGearSets: readonly GearSetOption[]): MeasuredOn => ({
 	wornItemIds: equippedItemIds(host.player),
@@ -95,7 +94,7 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 				store.getState().settleRun(id, result);
 				// The store drops an older run's result, so it is not logged either.
 				if (id !== runId) return;
-				// The set the run says it ranked with; a replay names none, as it ranked nothing.
+				// The set the run says it ranked with.
 				logAssumptions(result, { epWeightsPreset: result.epWeightsPreset, settings, host });
 				// The notes list's order: the first line whose call failed.
 				if (!current.signal.aborted) toastErrorMessage(result.substitutions.find(s => s.error?.trim())?.error);
@@ -119,14 +118,6 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		store.getState().requestStop(runId);
 	};
 
-	const loadFixture = (ranking: Ranking, inputsSignature: string, selectedGearSets: readonly GearSetOption[]) => {
-		controller?.abort();
-		const measuredOn = measuredOnPage(host, inputsSignature, selectedGearSets);
-		store.getState().loadFixture(++runId, ranking, measuredOn);
-		// A fixture records no EP-weights preset, and the page's talents now need not be the ones it was ranked with.
-		logAssumptions(ranking, { host });
-	};
-
 	/**
 	 * Aborts the run and nothing more: StrictMode's dev remount runs this before the
 	 * first Run, so the session must stay usable, and the run id keeps counting so the
@@ -136,5 +127,5 @@ export function createRunSession(store: UpgradesStore, host: IndividualSimHost<S
 		controller?.abort();
 	};
 
-	return { start, stop, loadFixture, dispose };
+	return { start, stop, dispose };
 }

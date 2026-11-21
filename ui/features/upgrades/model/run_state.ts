@@ -11,8 +11,6 @@ import type { GearSetOption } from './settings_pool';
 
 export type RunSettings = {
 	iterations: number;
-	/** Keep the first N candidates of the EP ordering that the player does not wear; undefined is no cap. */
-	candidateCap?: number;
 	/**
 	 * The pool filters: excluded sources and, with `prune`, only the selected gear sets'
 	 * items, applied through `effectivePool`. The gear set keys are for the assumptions line.
@@ -26,12 +24,9 @@ export type RunSettings = {
 /** The iteration count used when the field is empty or zero. */
 export const TAB_DEFAULT_ITERATIONS = 3000;
 
-export const iterationsAndCap = (iterations: number, candidateCap?: number): RunSettings => ({
-	iterations: iterations > 0 ? Math.floor(iterations) : TAB_DEFAULT_ITERATIONS,
-	candidateCap,
-});
+export const runIterations = (iterations: number): number => (iterations > 0 ? Math.floor(iterations) : TAB_DEFAULT_ITERATIONS);
 
-/** `durationMs` is absent on a ranking loaded from a fixture: nothing ran, so there is no time to show. */
+/** `durationMs` is absent when the run function reports no time; the tab then shows none. */
 export type FinishedRanking = Ranking & { durationMs?: number };
 export type StoppedRanking = PartialRanking & { durationMs: number };
 export type RunResult = FinishedRanking | StoppedRanking;
@@ -78,7 +73,7 @@ const withRunner = (measuredOn: MeasuredOn | undefined, runner: RunnerName | und
 	runner ? { ...measuredOn, runner } : measuredOn;
 
 /**
- * An older run's rows, Stop and result can still arrive after a new run started or a fixture loaded. Every function
+ * An older run's rows, Stop and result can still arrive after a new run started. Every function
  * below returns the state unchanged for such a call, so the store writes nothing.
  */
 const isCurrentRun = (state: RunState, runId: number): state is RunningState => state.status === 'running' && state.runId === runId;
@@ -92,14 +87,6 @@ export const runStarted = (runId: number, startedAt: number, measuredOn?: Measur
 	measuredOn,
 });
 
-/** Replaces a run in flight, whose late rows are then dropped. */
-export const fixtureLoaded = (runId: number, ranking: Ranking, measuredOn?: MeasuredOn): RunState => ({
-	status: 'done',
-	runId,
-	result: ranking,
-	measuredOn,
-});
-
 export const rowLanded = (state: RunState, runId: number, row: RankedItem): RunState =>
 	isCurrentRun(state, runId) ? { ...state, landedRows: [...state.landedRows, row] } : state;
 
@@ -107,7 +94,7 @@ export const stopRequested = (state: RunState, runId: number): RunState => (isCu
 
 /**
  * A partial ranking is what Stop returns, so it settles as stopped and a complete one as done. The runner moves into
- * `measuredOn` and the EP-weights preset is dropped, so a ranking the fixture recorder saves carries neither.
+ * `measuredOn` and the EP-weights preset is dropped: it is for the log only.
  */
 export function runSettled(state: RunState, runId: number, outcome: RunOutcome): RunState {
 	if (!isCurrentRun(state, runId)) return state;
@@ -135,6 +122,3 @@ export function visibleRows(run: RunState): readonly RankedItem[] {
 
 export const measuredOnOf = (run: RunState): MeasuredOn | undefined =>
 	run.status === 'running' || run.status === 'done' || run.status === 'stopped' ? run.measuredOn : undefined;
-
-/** The finished ranking on screen, which the fixture recorder saves. */
-export const finishedRanking = (run: RunState): FinishedRanking | undefined => (run.status === 'done' ? run.result : undefined);

@@ -61,18 +61,6 @@
 						},
 						"sets_other_phases": {
 							"type": "string"
-						},
-						"fixture_file": {
-							"type": "string"
-						},
-						"fixture_loaded": {
-							"type": "string"
-						},
-						"fixture_rejected": {
-							"type": "string"
-						},
-						"fixture_not_json": {
-							"type": "string"
 						}
 					},
 					"additionalProperties": false,
@@ -86,11 +74,7 @@
 						"sources_section_other",
 						"sets_title",
 						"gear_set_in_pool",
-						"sets_other_phases",
-						"fixture_file",
-						"fixture_loaded",
-						"fixture_rejected",
-						"fixture_not_json"
+						"sets_other_phases"
 					]
 				},
 				"sources": {
@@ -138,9 +122,6 @@
 					"required": ["arena", "honor", "season"]
 				},
 				"iterations_label": {
-					"type": "string"
-				},
-				"candidates_label": {
 					"type": "string"
 				},
 				"eligible_count": {
@@ -638,7 +619,6 @@
 				"sources",
 				"source_detail",
 				"iterations_label",
-				"candidates_label",
 				"eligible_count",
 				"eligible_count_unknown",
 				"status",

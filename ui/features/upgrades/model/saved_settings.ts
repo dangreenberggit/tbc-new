@@ -16,18 +16,12 @@ import { createUpgradesStore, type InitialSettings, type RestoredTab, type Resul
 type Storage = Env['storage'];
 type Settings = UpgradesState['settings'];
 
-/**
- * Every setting but the candidate cap. Its picker shows only with `?upgrades-dev` (`RunSettingsPanel`), so a saved
- * cap would cut the runs of a later page that cannot show it; the dev link carries the cap on each load instead.
- */
-type SavedSettings = Omit<Settings, 'candidateCap'>;
-
 const isStringList = (value: unknown): value is string[] => Array.isArray(value) && value.every(entry => typeof entry === 'string');
 const isCount = (value: unknown): value is number => Number.isInteger(value) && (value as number) >= 0;
 const EXPORT_FLAVORS: readonly ExportFlavor[] = ['token', 'gear'];
 
 /** Each field reads back on its own, so one bad field costs only itself. */
-const FIELD_CHECKS: { [K in keyof SavedSettings]-?: (value: unknown) => boolean } = {
+const FIELD_CHECKS: { [K in keyof Settings]-?: (value: unknown) => boolean } = {
 	excludedSources: isStringList,
 	selectedSetKeys: isStringList,
 	prune: value => typeof value === 'boolean',
@@ -35,13 +29,13 @@ const FIELD_CHECKS: { [K in keyof SavedSettings]-?: (value: unknown) => boolean 
 	defaultsFor: value => typeof value === 'string',
 };
 
-const restoredSettings = (saved: unknown): Partial<SavedSettings> | undefined => {
+const restoredSettings = (saved: unknown): Partial<Settings> | undefined => {
 	if (!isRecord(saved)) return undefined;
 	const settings: Record<string, unknown> = {};
 	for (const [field, check] of Object.entries(FIELD_CHECKS)) {
 		if (check(saved[field])) settings[field] = saved[field];
 	}
-	return settings as Partial<SavedSettings>;
+	return settings as Partial<Settings>;
 };
 
 const restoredView = (saved: unknown): RestoredTab['view'] => {
@@ -83,7 +77,7 @@ function readSavedTab(storage: Storage, key: string): RestoredTab {
 
 const SAVED_PARTS = ['settings', 'sort', 'view', 'hiddenSources', 'exportFlavour'] as const satisfies readonly (keyof UpgradesState)[];
 
-const savedTabOf = ({ settings: { candidateCap: _notSaved, ...settings }, sort, view, hiddenSources, exportFlavour }: UpgradesState) => ({
+const savedTabOf = ({ settings, sort, view, hiddenSources, exportFlavour }: UpgradesState) => ({
 	version: SAVED_VERSION,
 	settings,
 	sort,
@@ -92,16 +86,13 @@ const savedTabOf = ({ settings: { candidateCap: _notSaved, ...settings }, sort, 
 	exportFlavour,
 });
 
-/** The dev link's iterations and cap (`utils/dev_flags.ts`); a field the link does not set is absent. */
-export type LinkedSettings = Partial<Pick<Settings, 'iterations' | 'candidateCap'>>;
-
 /**
  * A new store over the page's saved entry, saving each later change to it; a run changes none of the saved fields, so
- * a run writes nothing. The load order is wowsims' (`ui/sim/state/persistence.ts`): defaults, then saved, then the link.
+ * a run writes nothing. The load order is wowsims' (`ui/sim/state/persistence.ts`): defaults, then saved.
  */
-export function openSavedUpgradesStore(initial: InitialSettings, storage: Storage, key: string, link: LinkedSettings = {}): UpgradesStore {
+export function openSavedUpgradesStore(initial: InitialSettings, storage: Storage, key: string): UpgradesStore {
 	const saved = readSavedTab(storage, key);
-	const store = createUpgradesStore(initial, { ...saved, settings: { ...saved.settings, ...link } });
+	const store = createUpgradesStore(initial, saved);
 	store.subscribe((state, previous) => {
 		if (SAVED_PARTS.every(part => state[part] === previous[part])) return;
 		try {

@@ -10,9 +10,9 @@ import type { Ranking } from './engine/rank';
 import type { RunSettings } from './run_state';
 
 export type AssumptionsContext = {
-	/** Absent for a replay or a loaded fixture, which leaves out the EP-weights lines. */
+	/** Absent for a run that names no EP-weights set, which leaves out the EP-weights lines. */
 	epWeightsPreset?: EpWeightsPreset;
-	/** Absent for a loaded fixture, which does not record its run settings. */
+	/** Without it, the pool settings lines are left out. */
 	settings?: RunSettings;
 	/** Without it, or before the page's database loads, the pool lines are left out. */
 	host?: PagePoolHost;
@@ -37,7 +37,6 @@ export function assumptionsLine(ranking: Pick<Ranking, 'assumptions' | 'cutoff'>
 	const unsourced = pool ? unsourcedCountFor(pool) : 0;
 	if (unsourced > 0) lines.push(`source attribution: partial, ${unsourced} items with no recorded source`);
 	if (settings) {
-		if (settings.candidateCap !== undefined) lines.push(`candidate cap: top ${settings.candidateCap} simmed in full, plus anything you already own`);
 		const excluded = settings.excludedSources ?? [];
 		lines.push(excluded.length === 0 ? 'sources: all' : `sources: excluded ${excluded.join(', ')}`);
 		const sets = settings.selectedGearSetKeys ?? [];

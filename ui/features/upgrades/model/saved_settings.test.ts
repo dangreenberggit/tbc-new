@@ -87,27 +87,6 @@ describe('openSavedUpgradesStore', () => {
 		expect(state.view).toEqual({ withSetPotential: false, onlyBis: false });
 	});
 
-	it('lets the dev link’s iterations win over the saved ones, as a settings link wins over saved settings upstream', () => {
-		const storage = memoryStorage();
-		const first = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY);
-		first.getState().setIterations(5000, undefined);
-
-		expect(openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY, { iterations: 300 }).getState().settings.iterations).toBe(300);
-	});
-
-	// The cap picker shows only on a page with `?upgrades-dev`, so a cap that came back on another page would cut the run unseen.
-	it('restores no cap: a page without the dev link runs uncapped whatever a dev page set', () => {
-		const storage = memoryStorage({ [KEY]: JSON.stringify({ version: SAVED_VERSION, settings: { candidateCap: 25 } }) });
-		const devPage = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY, { candidateCap: 3 });
-		expect(devPage.getState().settings.candidateCap).toBe(3);
-		devPage.getState().setCandidateCap(7, undefined);
-		devPage.getState().setIterations(2000, undefined);
-
-		const plainPage = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY).getState().settings;
-		expect(plainPage.iterations).toBe(2000);
-		expect(plainPage.candidateCap).toBeUndefined();
-	});
-
 	it('stores nothing from a run', () => {
 		const storage = memoryStorage();
 		const store = openSavedUpgradesStore(INITIAL_SETTINGS, storage, KEY);
@@ -167,7 +146,6 @@ describe('openSavedUpgradesStore', () => {
 			const raw = saved({
 				settings: {
 					iterations: '5000',
-					candidateCap: -3,
 					prune: 'yes',
 					excludedSources: ['raid:hyjal', 7],
 					selectedSetKeys: ['preset:P3'],

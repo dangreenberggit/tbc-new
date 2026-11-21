@@ -39,7 +39,6 @@ export type UpgradesSettings = Omit<GearSetSelection, 'selectedItemIds'> & {
 	toggleGearSet: (key: string) => void;
 	setPrune: (prune: boolean) => void;
 	setIterations: (iterations: number) => void;
-	setCandidateCap: (cap: number) => void;
 };
 
 /**
@@ -64,7 +63,6 @@ export function useUpgradesSettings(): UpgradesSettings {
 	const toggleGearSet = useStore(store, state => state.toggleGearSet);
 	const setPrune = useStore(store, state => state.setPrune);
 	const setIterations = useStore(store, state => state.setIterations);
-	const setCandidateCap = useStore(store, state => state.setCandidateCap);
 
 	const phasedPresets = useMemo(() => (ready ? presetsWithPhase(host, presets) : presets), [ready, host, presets]);
 	// Memoized: `poolFor` builds a new pool on each call, and the tab renders again on every row a run finishes.
@@ -107,7 +105,7 @@ export function useUpgradesSettings(): UpgradesSettings {
 	const runSettings = useMemo(() => runSettingsOf(selection, effectiveSettings), [selection, effectiveSettings]);
 	const { excludedSources } = effectiveSettings;
 	const effectivePrune = runSettings.prune ?? false;
-	// On the pool filters alone: filtering the whole pool must not rerun on an iterations or cap keystroke.
+	// On the pool filters alone: filtering the whole pool must not rerun on an iterations keystroke.
 	const eligibleCount = useMemo(
 		() =>
 			eligibleCountOf(offer, { excludedSources, selectedGearSetItemIds: selection.selectedItemIds, prune: effectivePrune }, phase, {
@@ -133,7 +131,6 @@ export function useUpgradesSettings(): UpgradesSettings {
 			toggleGearSet: key => toggleGearSet(key, scope),
 			setPrune: prune => setPrune(prune, scope),
 			setIterations: iterations => setIterations(iterations, scope),
-			setCandidateCap: cap => setCandidateCap(cap, scope),
 		}),
 		[
 			selection,
@@ -150,7 +147,6 @@ export function useUpgradesSettings(): UpgradesSettings {
 			toggleGearSet,
 			setPrune,
 			setIterations,
-			setCandidateCap,
 		],
 	);
 }

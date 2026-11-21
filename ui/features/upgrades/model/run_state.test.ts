@@ -3,13 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { PartialRanking } from './engine/rank';
 import {
-	finishedRanking,
-	fixtureLoaded,
 	IDLE_RUN,
-	iterationsAndCap,
 	measuredOnOf,
 	rowLanded,
 	runFailed,
+	runIterations,
 	runSettled,
 	runStarted,
 	type RunState,
@@ -75,11 +73,6 @@ describe('the run transitions', () => {
 		expect(runSettled(landed, 1, { ...partial, durationMs: 800 })).toMatchObject({ status: 'stopped', measuredOn });
 	});
 
-	it('keeps what a loaded fixture was measured against', () => {
-		const measuredOn = { wornItemIds: [4, 5], specId: 'feral' as const };
-		expect(fixtureLoaded(3, RANKING_FIXTURE, measuredOn)).toMatchObject({ status: 'done', measuredOn });
-	});
-
 	it('enters error with the message', () => {
 		expect(runFailed(running(), 1, 'sim failed')).toEqual({
 			status: 'error',
@@ -101,20 +94,6 @@ describe('the run transitions', () => {
 		expect(runSettled(IDLE_RUN, 1, result)).toBe(IDLE_RUN);
 	});
 
-	it('enters done with no duration when a fixture loads, since nothing ran', () => {
-		expect(fixtureLoaded(3, RANKING_FIXTURE)).toEqual({
-			status: 'done',
-			runId: 3,
-			result: RANKING_FIXTURE,
-		});
-	});
-
-	it('lets a loaded fixture replace a run in flight, whose late rows are then dropped', () => {
-		const loaded = fixtureLoaded(2, RANKING_FIXTURE);
-		expect(loaded).toMatchObject({ status: 'done', runId: 2 });
-		expect(rowLanded(loaded, 1, rowA!)).toBe(loaded);
-	});
-
 	it('keeps the inputs signature a run started with through to its result', () => {
 		const started = runStarted(1, 0, { inputsSignature: 'sig' });
 		const done = runSettled(started, 1, RANKING_FIXTURE);
@@ -127,18 +106,18 @@ describe('the run transitions', () => {
 		expect(live).toMatchObject({ measuredOn: { inputsSignature: 'sig', runner: 'WorkerPoolSimRunner' } });
 		const stopped = runSettled(started, 1, { ...partial, durationMs: 1, runner: 'WorkerPoolSimRunner' });
 		expect(stopped).toMatchObject({ status: 'stopped', measuredOn: { runner: 'WorkerPoolSimRunner' } });
-		const replay = runSettled(started, 1, RANKING_FIXTURE);
-		expect(replay.status === 'done' && replay.measuredOn).toEqual({ inputsSignature: 'sig' });
+		const unnamed = runSettled(started, 1, RANKING_FIXTURE);
+		expect(unnamed.status === 'done' && unnamed.measuredOn).toEqual({ inputsSignature: 'sig' });
 	});
 });
 
-describe('iterationsAndCap', () => {
-	it('keeps a positive whole iteration count and the cap', () => {
-		expect(iterationsAndCap(750, 10)).toEqual({ iterations: 750, candidateCap: 10 });
+describe('runIterations', () => {
+	it('keeps a positive whole iteration count', () => {
+		expect(runIterations(750)).toBe(750);
 	});
 
 	it('falls back to the default for an empty or zero field', () => {
-		expect(iterationsAndCap(0)).toEqual({ iterations: TAB_DEFAULT_ITERATIONS, candidateCap: undefined });
+		expect(runIterations(0)).toBe(TAB_DEFAULT_ITERATIONS);
 	});
 });
 
@@ -176,16 +155,6 @@ describe('visibleRows', () => {
 		const unsimmed = { ...rowB!, simmed: false as const };
 		const result = { ...partial, items: [rowA!, unsimmed], durationMs: 1 };
 		expect(visibleRows(runSettled(running(), 1, result))).toEqual([rowA]);
-	});
-});
-
-describe('finishedRanking', () => {
-	it('is the finished ranking, and nothing for any other state', () => {
-		const result = { ...RANKING_FIXTURE, durationMs: 1 };
-		// Equal, not the same object: settling copies the result to move the runner off it.
-		expect(finishedRanking(runSettled(running(), 1, result))).toEqual(result);
-		expect(finishedRanking(running())).toBeUndefined();
-		expect(finishedRanking(IDLE_RUN)).toBeUndefined();
 	});
 });
 

@@ -37,7 +37,6 @@ export const inputsSignature = ({ liveKey, settings }: { liveKey: string; settin
 	JSON.stringify({
 		live: liveKey,
 		iterations: settings.iterations,
-		candidateCap: settings.candidateCap ?? null,
 		excludedSources: sortedStrings(settings.excludedSources),
 		selectedGearSetKeys: sortedStrings(settings.selectedGearSetKeys),
 		selectedGearSetItemIds: sortedNumbers(settings.selectedGearSetItemIds),

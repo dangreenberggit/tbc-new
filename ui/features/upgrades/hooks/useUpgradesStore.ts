@@ -9,19 +9,12 @@ import { useStore } from 'zustand';
 import { followPhase } from '../model/follow_phase';
 import { TAB_DEFAULT_ITERATIONS } from '../model/run_state';
 import { UPGRADES_SETTINGS_STORAGE_KEY } from '../model/saved_entry';
-import { type LinkedSettings, openSavedUpgradesStore } from '../model/saved_settings';
+import { openSavedUpgradesStore } from '../model/saved_settings';
 import type { InitialSettings, UpgradesState, UpgradesStore } from '../model/upgrades_store';
-import { DEV_FLAGS } from '../utils/dev_flags';
 
 export { selectRun, selectRunStatus, selectSettledSignature, selectSort } from '../model/upgrades_store';
 
 const INITIAL_SETTINGS: InitialSettings = { iterations: TAB_DEFAULT_ITERATIONS };
-
-/** The iterations and cap from the dev URL flags, read once per page load; a flag left out is absent, so the saved iterations stand and no cap is set. */
-const DEV_LINK: LinkedSettings = {
-	...(DEV_FLAGS.iterations !== undefined && { iterations: DEV_FLAGS.iterations }),
-	...(DEV_FLAGS.cap !== undefined && { candidateCap: DEV_FLAGS.cap }),
-};
 
 const stores = new WeakMap<Sim, UpgradesStore>();
 
@@ -37,7 +30,7 @@ const stores = new WeakMap<Sim, UpgradesStore>();
 export function upgradesStoreFor(host: IndividualSimHost<Spec>): UpgradesStore {
 	let store = stores.get(host.sim);
 	if (!store) {
-		store = openSavedUpgradesStore(INITIAL_SETTINGS, host.sim.env.storage, host.getStorageKey(UPGRADES_SETTINGS_STORAGE_KEY), DEV_LINK);
+		store = openSavedUpgradesStore(INITIAL_SETTINGS, host.sim.env.storage, host.getStorageKey(UPGRADES_SETTINGS_STORAGE_KEY));
 		stores.set(host.sim, store);
 		followPhase(store, host);
 	}
@@ -53,12 +46,12 @@ export const useUpgradesStoreApi = (): UpgradesStore => upgradesStoreFor(useSimH
  * the sim's own pickers (`subscriptions.ts` `fromSelector`), so a write inside
  * `batch()` notifies once, at the batch's end.
  */
-export const numberSettingSource = (field: 'iterations' | 'candidateCap') => ({
+export const numberSettingSource = (field: 'iterations') => ({
 	storeSubscribe:
 		(store: UpgradesStore): StoreSubscribe =>
 		listener =>
 			subscribeGated(store.subscribe, state => state.settings[field], listener),
-	getValue: (store: UpgradesStore): number => store.getState().settings[field] ?? 0,
+	getValue: (store: UpgradesStore): number => store.getState().settings[field],
 });
 
 /** A read of the tab's store, the way `useBulkState` reads the Bulk tab's slice. */

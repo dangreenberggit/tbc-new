@@ -100,7 +100,6 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 		spec: specId,
 		maxPhase,
 		iterations: settings.iterations,
-		candidateCap: settings.candidateCap,
 	};
 
 	// The run picks its EP-weights preset once: that preset drives the engine and is the one the run returns.

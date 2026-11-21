@@ -1,10 +1,9 @@
 /**
- * The tab's run settings (excluded sources, selected gear sets, prune, candidate cap,
- * iterations) and the pure functions the store's actions change them with. One
+ * The tab's run settings (excluded sources, selected gear sets, prune, iterations) and the pure functions the store's actions change them with. One
  * state, because the eligible count and the run read several of them together.
  */
 
-import { iterationsAndCap, type RunSettings } from './run_state';
+import { runIterations, type RunSettings } from './run_state';
 
 export type SettingsState = {
 	/** Sources whose items leave the pool. In stored version 2 a default-off source's key means ticked (saved_entry.ts). */
@@ -13,8 +12,6 @@ export type SettingsState = {
 	selectedSetKeys: readonly string[];
 	/** Keep only the selected gear sets' items in the pool. Stored name. */
 	prune: boolean;
-	/** Undefined is no cap. */
-	candidateCap?: number;
 	iterations: number;
 	/** The `spec:phase` the default gear sets were last applied for. */
 	defaultsFor?: string;
@@ -26,9 +23,6 @@ export type SettingsState = {
  */
 export type SettingsScope = { specPhase: string; defaultGearSetKeys: readonly string[]; poolSourceKeys: readonly string[] };
 
-/** A cap of 0 means "no cap". */
-const normalizeCap = (cap: number | undefined): number | undefined => (cap !== undefined && cap > 0 ? cap : undefined);
-
 const toggled = (keys: readonly string[], key: string): readonly string[] => (keys.includes(key) ? keys.filter(k => k !== key) : [...keys, key]);
 
 /** The exclusions a pool offering `poolSourceKeys` still offers; an exclusion it does not offer would narrow it invisibly. */
@@ -37,12 +31,10 @@ const offeredExclusions = (excluded: readonly string[], poolSourceKeys: readonly
 	return excluded.filter(key => valid.has(key));
 };
 
-/** No cap: only the dev link sets one (`utils/dev_flags.ts`), and it goes over these settings (`saved_settings.ts`). */
 export const initialSettings = (initial: { iterations: number }): SettingsState => ({
 	excludedSources: [],
 	selectedSetKeys: [],
 	prune: false,
-	candidateCap: undefined,
 	iterations: initial.iterations,
 });
 
@@ -54,11 +46,6 @@ export const withExcludedSourceToggled = (state: SettingsState, key: string): Se
 export const withGearSetToggled = (state: SettingsState, key: string): SettingsState => ({ ...state, selectedSetKeys: toggled(state.selectedSetKeys, key) });
 
 export const withPrune = (state: SettingsState, prune: boolean): SettingsState => (state.prune === prune ? state : { ...state, prune });
-
-export function withCandidateCap(state: SettingsState, cap: number | undefined): SettingsState {
-	const candidateCap = normalizeCap(cap);
-	return state.candidateCap === candidateCap ? state : { ...state, candidateCap };
-}
 
 export const withIterations = (state: SettingsState, iterations: number): SettingsState => (state.iterations === iterations ? state : { ...state, iterations });
 
@@ -99,7 +86,7 @@ export const pruneEffective = (state: SettingsState): boolean => state.prune && 
 
 export const toRunSettings = (state: SettingsState, selectedGearSetItemIds: readonly number[]): RunSettings => ({
 	// The field can be empty or zero; the run then takes the default count.
-	...iterationsAndCap(state.iterations, state.candidateCap),
+	iterations: runIterations(state.iterations),
 	excludedSources: state.excludedSources,
 	selectedGearSetKeys: state.selectedSetKeys,
 	selectedGearSetItemIds: selectedGearSetItemIds,

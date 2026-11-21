@@ -68,7 +68,6 @@ describe('inputsSignature', () => {
 
 	it.each<[string, Partial<RunSettings>]>([
 		['iterations', { iterations: 500 }],
-		['cap', { candidateCap: 40 }],
 		['an excluded source', { excludedSources: ['Crafted'] }],
 		['a selected set', { selectedGearSetKeys: [] }],
 		['prune', { prune: true }],

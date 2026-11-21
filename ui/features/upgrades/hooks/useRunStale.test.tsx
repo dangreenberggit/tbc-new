@@ -66,7 +66,12 @@ const mountRun = () => {
 		wrapper,
 		initialProps: { settings: SETTINGS },
 	});
-	return { view, ...page, settle: (outcome: RunOutcome) => settle(outcome) };
+	/** A run started on the page as it is now, and finished. */
+	const finishRun = async () => {
+		act(() => view.result.current.start(SETTINGS, page.signatureNow(SETTINGS), []));
+		await act(async () => settle({ ...RANKING_FIXTURE, durationMs: 10 }));
+	};
+	return { view, ...page, settle: (outcome: RunOutcome) => settle(outcome), finishRun };
 };
 
 beforeEach(() => {
@@ -87,18 +92,9 @@ describe('useRunStale', () => {
 		expect(view.result.current.stale).toBe(true);
 	});
 
-	it('shows a fresh fixture as current, and as stale once the gear changes', () => {
-		const { view, signatureNow, changeGear } = mountRun();
-		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS), []));
-		expect(view.result.current.stale).toBe(false);
-
-		act(changeGear);
-		expect(view.result.current.stale).toBe(true);
-	});
-
-	it('marks a result stale when a tab setting or the iterations change', () => {
-		const { view, signatureNow } = mountRun();
-		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS), []));
+	it('marks a result stale when a tab setting or the iterations change', async () => {
+		const { view, finishRun } = mountRun();
+		await finishRun();
 
 		view.rerender({ settings: { ...SETTINGS, excludedSources: ['Black Temple'] } });
 		expect(view.result.current.stale).toBe(true);
@@ -108,9 +104,9 @@ describe('useRunStale', () => {
 		expect(view.result.current.stale).toBe(false);
 	});
 
-	it('keeps a result current through an edit the run does not read, and a render with the same settings', () => {
-		const { view, signatureNow, changeSeed } = mountRun();
-		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS), []));
+	it('keeps a result current through an edit the run does not read, and a render with the same settings', async () => {
+		const { view, changeSeed, finishRun } = mountRun();
+		await finishRun();
 
 		// A fixed seed notifies, but leaves raid, encounter and phase alone.
 		act(changeSeed);
@@ -125,19 +121,22 @@ describe('useRunStale', () => {
 	});
 
 	// Every render counts: a page key cached from before the result would show the warning for one paint.
-	it('never renders a fresh result as stale, though the gear changed after the tab mounted', () => {
+	it('never renders a fresh result as stale, though the gear changed after the tab mounted', async () => {
 		const { wrapper, signatureNow, changeGear } = makePage();
 		const seen: boolean[] = [];
+		let settle: (outcome: RunOutcome) => void = () => {};
 		const view = renderHook(
 			() => {
-				const tab = useUpgradesRun(() => new Promise<RunOutcome>(() => {}));
+				const tab = useUpgradesRun(() => new Promise<RunOutcome>(resolve => (settle = resolve)));
 				seen.push(useRunStale(SETTINGS));
-				return tab;
+				return { ...tab, status: useUpgradesStore(selectRunStatus) };
 			},
 			{ wrapper },
 		);
 		act(changeGear);
-		act(() => view.result.current.loadFixture(RANKING_FIXTURE, signatureNow(SETTINGS), []));
+		act(() => view.result.current.start(SETTINGS, signatureNow(SETTINGS), []));
+		await act(async () => settle({ ...RANKING_FIXTURE, durationMs: 10 }));
+		expect(view.result.current.status).toBe('done');
 		expect(seen).not.toContain(true);
 	});
 });

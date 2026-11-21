@@ -7,7 +7,7 @@ import { describeRunError } from '../utils/format';
 import { RUNNER_ENV } from '../utils/runner_env';
 import { useUpgradesStoreApi } from './useUpgradesStore';
 
-export type UpgradesRun = Pick<RunSession, 'start' | 'stop' | 'loadFixture'>;
+export type UpgradesRun = Pick<RunSession, 'start' | 'stop'>;
 
 const SESSION_ENV: RunSessionEnv = { runner: RUNNER_ENV, describeError: describeRunError };
 

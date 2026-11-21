@@ -391,7 +391,6 @@ describe('gearSetSelection, runSettingsOf and eligibleCountOf', () => {
 		const view = viewOf(fresh);
 		expect(view.runSettings).toEqual({
 			iterations: 500,
-			candidateCap: undefined,
 			excludedSources: [],
 			selectedGearSetKeys: [],
 			selectedGearSetItemIds: [],

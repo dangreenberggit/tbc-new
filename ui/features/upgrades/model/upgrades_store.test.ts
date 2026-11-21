@@ -61,15 +61,6 @@ describe('the run actions', () => {
 		expect(selectHiddenSources(store.getState())).toEqual(['Black Temple', 'PvP vendor']);
 	});
 
-	it('keeps the sort when a recorded ranking loads', () => {
-		const store = createUpgradesStore(INITIAL_SETTINGS);
-		store.getState().setSort([{ id: 'item', desc: false }]);
-
-		store.getState().loadFixture(1, RANKING_FIXTURE);
-
-		expect(selectSort(store.getState())).toEqual([{ id: 'item', desc: false }]);
-	});
-
 	it('starts a new run from a finished one, keeping none of its rows or what it was measured on', () => {
 		const store = createUpgradesStore(INITIAL_SETTINGS);
 		store.getState().startRun(1, 1000, MEASURED);
@@ -147,7 +138,6 @@ describe('the user’s settings actions', () => {
 
 		store.getState().setPrune(false, SCOPE);
 		store.getState().setIterations(1000, SCOPE);
-		store.getState().setCandidateCap(undefined, SCOPE);
 		expect(listener).not.toHaveBeenCalled();
 	});
 

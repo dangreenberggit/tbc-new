@@ -4,8 +4,6 @@ import clsx from 'clsx';
 import { memo, useId, useState } from 'react';
 
 import type { UpgradesSettings } from '../../hooks/useUpgradesSettings';
-import { CandidateCapPicker } from '../CandidateCapPicker';
-import { FixtureFileInput } from '../DevTools';
 import { EligibleCount } from '../EligibleCount';
 import { GearSetChips } from '../GearSetChips';
 import { PhaseSelector } from '../PhaseSelector';
@@ -16,8 +14,6 @@ export interface RunSettingsPanelProps {
 	settings: UpgradesSettings;
 	ready: boolean;
 	running: boolean;
-	/** `?upgrades-dev`: shows the candidate cap and the fixture file input. */
-	showDevControls: boolean;
 	onStart: () => void;
 }
 
@@ -26,7 +22,7 @@ export interface RunSettingsPanelProps {
  * phone does not scroll past them to reach the results; the eligible count and Run
  * never collapse. Memoized: every row a run finishes renders the tab but changes no prop.
  */
-export const RunSettingsPanel = memo(({ settings, ready, running, showDevControls, onStart }: RunSettingsPanelProps) => {
+export const RunSettingsPanel = memo(({ settings, ready, running, onStart }: RunSettingsPanelProps) => {
 	const [open, setOpen] = useState(false);
 	const bodyId = useId();
 	return (
@@ -50,12 +46,6 @@ export const RunSettingsPanel = memo(({ settings, ready, running, showDevControl
 					onToggleGearSet={settings.toggleGearSet}
 					onPruneChange={settings.setPrune}
 				/>
-				{/* Always in the page, so a test driving a production build can set the cap. Hidden without
-				    `?upgrades-dev`, because a cap on the candidate list the user cannot see drops real upgrades. */}
-				<div className="grid gap-6" hidden={!showDevControls}>
-					<CandidateCapPicker store={settings.store} onCapChange={settings.setCandidateCap} />
-					<FixtureFileInput />
-				</div>
 			</div>
 			<EligibleCount count={settings.eligibleCount} />
 			<RunControls ready={ready} running={running} store={settings.store} onIterationsChange={settings.setIterations} onStart={onStart} />

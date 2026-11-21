@@ -17,7 +17,6 @@ import { effectiveSlot } from '../model/results_view';
 import type { RunActivity, RunProgressView } from '../model/run_progress';
 import { type SourcedEntry, sourcesOf, zonelessSourceKey } from '../model/settings_pool';
 import { shownTenths } from '../model/shown_figure';
-import { FIXTURE_NOT_JSON, type FixtureLoadResult } from './fixture';
 
 const ONE_DECIMAL = { minimumFractionDigits: 1, maximumFractionDigits: 1 };
 
@@ -149,12 +148,6 @@ export const sortLabelsFor = (hiddenSources: readonly string[]): SortLabels<Pick
 	slot: slotLabel,
 	source: row => rowSourceDetail(row, hiddenSources),
 });
-
-export const fixtureOutcomeText = (outcome: FixtureLoadResult): string => {
-	if (outcome.ok) return i18n.t('upgrades_tab.settings.fixture_loaded', { ns: 'upgrades', rows: outcome.rows });
-	if (outcome.reason === FIXTURE_NOT_JSON) return i18n.t('upgrades_tab.settings.fixture_not_json', { ns: 'upgrades' });
-	return i18n.t('upgrades_tab.settings.fixture_rejected', { ns: 'upgrades', reason: outcome.detail ?? outcome.reason });
-};
 
 /** A label in the list of left-out items. An item line adds the slot it was tried in, because its text says only "this slot". */
 export const noteLabel = (note: RunNote): string =>

@@ -106,14 +106,11 @@ describe('useUpgradesSettings', () => {
 	it('writes a typed number to the tab store, which the pickers read back', () => {
 		const { view, tabStore } = mount();
 		expect(view.result.current.store).toBe(tabStore);
-		expect(tabStore.getState().settings).toMatchObject({ iterations: 3000, candidateCap: undefined });
+		expect(tabStore.getState().settings).toMatchObject({ iterations: 3000 });
 
-		act(() => {
-			view.result.current.setIterations(2000);
-			view.result.current.setCandidateCap(40);
-		});
-		expect(tabStore.getState().settings).toMatchObject({ iterations: 2000, candidateCap: 40 });
-		expect(view.result.current.runSettings).toMatchObject({ iterations: 2000, candidateCap: 40 });
+		act(() => view.result.current.setIterations(2000));
+		expect(tabStore.getState().settings).toMatchObject({ iterations: 2000 });
+		expect(view.result.current.runSettings).toMatchObject({ iterations: 2000 });
 	});
 
 	it('shows the phase’s default sets before any write, though the store holds none yet', () => {
@@ -205,7 +202,10 @@ describe('useUpgradesSettings', () => {
 		await setPhase(4);
 		expect(view.result.current.bisHeadingsOf(1)).toEqual(['Arms']);
 
-		act(() => tabStore.getState().loadFixture(1, RANKING_FIXTURE));
+		act(() => {
+			tabStore.getState().startRun(1, 0);
+			tabStore.getState().settleRun(1, RANKING_FIXTURE);
+		});
 		expect(RANKING_FIXTURE.assumptions.maxPhase).toBe(3);
 		expect(view.result.current.bisHeadingsOf(1)).toEqual(['Fury']);
 	});

@@ -87,7 +87,7 @@ describe('createRunSession', () => {
 		expect(console.info).toHaveBeenCalledOnce();
 	});
 
-	it('keeps the sets picked at the click and at a fixture load through a later phase change', async () => {
+	it('keeps the sets picked at the click through a later phase change', async () => {
 		const { store, session, call, run } = setup();
 		const p3: GearSetOption = { key: 'preset:3:P3', name: 'P3', label: 'P3', phase: 3, kind: 'preset', itemIds: [32332], inPoolCount: 1 };
 		session.start(SETTINGS, SIGNATURE, [p3]);
@@ -96,10 +96,6 @@ describe('createRunSession', () => {
 		store.getState().resetForNewPhase([]);
 		expect(store.getState().settings.selectedSetKeys).toEqual([]);
 		expect(run()).toMatchObject({ measuredOn: { selectedGearSets: [p3] } });
-
-		session.loadFixture(RANKING_FIXTURE, SIGNATURE, [p3]);
-		store.getState().resetForNewPhase([]);
-		expect(run()).toMatchObject({ status: 'done', measuredOn: { selectedGearSets: [p3] } });
 	});
 
 	it('aborts the run on stop and shows the partial ranking it returns', async () => {
@@ -212,7 +208,7 @@ describe('createRunSession', () => {
 			expect(toast.mock.calls).toEqual([[{ variant: 'error', body: 'HTTP 500 from /raidSimAsync: first\nStack Trace:' }]]);
 		});
 
-		it('shows no toast when no call failed, after Stop, for a superseded run or for a loaded fixture', async () => {
+		it('shows no toast when no call failed, after Stop, or for a superseded run', async () => {
 			const toast = vi.spyOn(toastManager, 'add');
 			const { session, call, run } = setup();
 			session.start(SETTINGS, SIGNATURE, []);
@@ -227,31 +223,12 @@ describe('createRunSession', () => {
 			session.start(SETTINGS, SIGNATURE, []);
 			session.start(SETTINGS, SIGNATURE, []);
 			call(2).settle(ranking(failures));
-			session.loadFixture(ranking(failures), SIGNATURE, []);
 			await flushPromises();
 			expect(toast).not.toHaveBeenCalled();
 		});
 	});
 
-	it('shows a loaded fixture as a finished run, aborts the run it replaced and logs the fixture once', async () => {
-		const { session, call, run } = setup();
-		equipped = [{ id: 28830 }];
-		session.start(SETTINGS, SIGNATURE, []);
-
-		session.loadFixture(RANKING_FIXTURE, 'sig-at-load', []);
-		expect(call(0).deps.signal.aborted).toBe(true);
-		call(0).settle(partialOf());
-		await flushPromises();
-		expect(run()).toMatchObject({
-			status: 'done',
-			runId: 2,
-			result: RANKING_FIXTURE,
-			measuredOn: { wornItemIds: [28830, ...Array.from({ length: 16 }, () => 0)], specId: 'ret', inputsSignature: 'sig-at-load' },
-		});
-		expect(console.info).toHaveBeenCalledOnce();
-	});
-
-	it('logs the pool lines of the page the run drew from, for a run and for a loaded fixture', async () => {
+	it('logs the pool lines of the page the run drew from', async () => {
 		const page = dbPoolHost('ret');
 		const player = {
 			...page.player,
@@ -266,10 +243,9 @@ describe('createRunSession', () => {
 		session.start(SETTINGS, SIGNATURE, []);
 		call(0).settle({ ...RANKING_FIXTURE, durationMs: 1200, runner: 'WorkerPoolSimRunner' });
 		await vi.waitFor(() => expect(console.info).toHaveBeenCalledOnce());
-		session.loadFixture(RANKING_FIXTURE, SIGNATURE, []);
 
 		const lines = vi.mocked(console.info).mock.calls.map(([line]) => String(line));
-		expect(lines).toHaveLength(2);
+		expect(lines).toHaveLength(1);
 		for (const line of lines) expect(line).toMatch(/pool source: wowsims db \(\d+ entries\)/);
 	});
 
@@ -296,15 +272,13 @@ describe('createRunSession', () => {
 			expect(getTalentTreePoints).not.toHaveBeenCalled();
 		});
 
-		// A replay returns no set, and a fixture records none: the page's talents now need not be the ones it was ranked with.
-		it('names no EP weights for a run that returned no set, or a loaded fixture', async () => {
+		it('names no EP weights for a run that returned no set', async () => {
 			const { session, call, getTalentTreePoints } = furyPage();
 			session.start(SETTINGS, SIGNATURE, []);
 			call(0).settle({ ...RANKING_FIXTURE, durationMs: 9 });
 			await vi.waitFor(() => expect(console.info).toHaveBeenCalledOnce());
-			session.loadFixture(RANKING_FIXTURE, SIGNATURE, []);
 
-			expect(infoLines()).toHaveLength(2);
+			expect(infoLines()).toHaveLength(1);
 			for (const line of infoLines()) expect(line).not.toContain('EP weights');
 			expect(getTalentTreePoints).not.toHaveBeenCalled();
 		});
