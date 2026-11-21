@@ -40,17 +40,19 @@ beforeEach(() => {
 });
 
 /** The group over `rows` with its own table, as `ResultsPane` builds it, and its open state, as `ResultsPanes` keeps it. */
-const Group = ({ rows }: { rows: readonly RankedItem[] }) => {
-	const table = useResultsTable(rows, CONTEXT);
+const Group = ({ rows, context }: { rows: readonly RankedItem[]; context: typeof CONTEXT }) => {
+	const table = useResultsTable(rows, context);
 	const [open, setOpen] = useState(false);
-	return <BelowCutoffGroup head={HEAD} table={table} rowContext={CONTEXT} open={open} onOpenChange={setOpen} />;
+	return <BelowCutoffGroup head={HEAD} table={table} rowContext={context} open={open} onOpenChange={setOpen} />;
 };
-const group = () =>
+const group = (rows: readonly RankedItem[] = ROWS, context: typeof CONTEXT = CONTEXT) =>
 	render(
 		<SimHostProvider host={host}>
-			<Group rows={ROWS} />
+			<Group rows={rows} context={context} />
 		</SimHostProvider>,
 	);
+/** A context whose ranking names a cutoff, so the title reads it. */
+const withCutoff = (absDps: number) => ({ ...CONTEXT, rankingContext: { ranking: { cutoff: { absDps } } } }) as unknown as typeof CONTEXT;
 
 describe('BelowCutoffGroup', () => {
 	it('starts collapsed, with its row count, and renders no table until opened', () => {
@@ -58,6 +60,18 @@ describe('BelowCutoffGroup', () => {
 
 		expect(getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('2 more items');
 		expect(queryByTestId('upgrades-results-table')).toBeNull();
+	});
+
+	it('says "item", not "items", for one row', () => {
+		expect(group([ROWS[0]!]).getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 more item');
+	});
+
+	it('names the cutoff in its title when the ranking has one, in the singular for one row', () => {
+		expect(group([ROWS[0]!], withCutoff(3)).getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('1 item that gains less than 3 DPS');
+	});
+
+	it('counts the rows in the cutoff title', () => {
+		expect(group(ROWS, withCutoff(3)).getByTestId('upgrades-below-cutoff-trigger').textContent).toBe('2 items that gain less than 3 DPS');
 	});
 
 	it('renders the head it is given above its rows', () => {
