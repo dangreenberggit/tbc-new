@@ -8,9 +8,7 @@
  * seams/sim-runner.ts.
  */
 
-import { HandType } from '@generated/proto/common';
-
-import { fillEmptyCandidateGems, type FillEmptyOpts, type GemContext, gemContext, metaSocketUnpriced } from './candidate-gems';
+import { type GemContext, gemContext, metaSocketUnpriced } from './candidate-gems';
 import { orderCandidatesByEp } from './candidate-order';
 import { capProfileFor, type HitCapBudget, hitCapBudgetFrom, perSpellHitTalentTaken, targetsAtCapLevel, usesSpellHitBudget } from './cap-profile';
 import { gearHitRating } from './caps';
@@ -18,13 +16,25 @@ import { compose } from './compose';
 import { canonicalJson, ENGINE_VERSION, type HashedGearItem } from './content-hash';
 import { CUTOFF, type Cutoff, meetsCutoff } from './cutoff';
 import { buildStandingAssumptions, notesFromMetaRepair, type RunNote } from './disclosure';
-import { enchantAppliesToItem } from './enchants';
-import { findMetaGemId, gemsForPhase, getGem } from './gems';
+import { applyRepairedGems, candidateSwapPreRepair, candidateSwapWithRepairs, type ChainBuild, chainSwapsWithRepairs } from './gear-swap';
+import { gemsForPhase } from './gems';
+import {
+	CandidateHitReadFailed,
+	type CopyLayout,
+	hitPercentOf,
+	hitPercentOrSimFailed,
+	isRepairFailure,
+	type LayoutRequest,
+	type LayoutResult,
+	MISSED_HIT_TOLERANCE,
+	repairErrorOr,
+	requestOf,
+	type RequestsPerCopyLayout,
+} from './hit-budget';
 import { getItem } from './items';
 import { isKaelTempLegendary } from './kael-temp';
 import { equipmentFromLoggedGear, socketedItemsFromLoggedGear } from './logged-gear';
 import { type GemRecolor, inactiveMeta, MetaRepairError, REPAIR_SEARCH_WORK_LIMIT, repairMetaGems, type SocketedItem } from './meta-repair';
-import { migrateGemsToItem } from './migrate-gems';
 import { choosePartners, estimateCombinedDelta, PARTNER_RULE, type PartnerPiece, partnerPool } from './partner-choice';
 import { plausibilityWarnings } from './plausibility';
 import {
@@ -37,6 +47,7 @@ import {
 	simSlotsForPoolSlot,
 } from './pool';
 import { promisePool } from './promise-pool';
+import { DEFAULT_ITERATIONS, DEFAULT_SEED_BASE, defaultSeedsFor, presetIdFor, raceFromSkeleton, resolveFight, talentsStringFromRequest } from './rank-setup';
 import {
 	type AddedPiecesContext,
 	type BonusGearSims,
@@ -73,17 +84,7 @@ import {
 	uniqueNotes,
 	wornSetSkipNote,
 } from './run-notes';
-import {
-	assertUsableSeeds,
-	DEFAULT_SEED_COUNT,
-	DegenerateSeedsError,
-	isReplicable,
-	PAIRED_REPLICATE_TOP_N,
-	pairedReplicateSe,
-	replicateSeeds,
-	usesPairedReplication,
-} from './se';
-import type { FightSummary } from './seams/gear-source';
+import { assertUsableSeeds, DegenerateSeedsError, isReplicable, PAIRED_REPLICATE_TOP_N, pairedReplicateSe, usesPairedReplication } from './se';
 import {
 	type PlayerStatsObservation,
 	type RaidSimRequest,
@@ -129,8 +130,9 @@ import {
 	setNameOf,
 	type SetThreshold,
 } from './set-value';
+import { cacheSimResult, rankingCacheKey, readCachedSim, readStats, runSimAt, stopGuardedDeps, StopRefusedSim } from './sim-calls';
 import { SIM_ORDER, type SimItemSpec } from './slots';
-import type { DetectedSpecId, FightRef, Race, SpecId } from './types';
+import type { Race } from './types';
 import { setCreditUnmeasured, setPotentialIncrements } from './view';
 export {
 	type RankInput,
@@ -171,6 +173,8 @@ export {
 	hitCapFullWeightNote,
 	hitCapPerSpellTalentNote,
 } from './run-notes';
+export { resolveFight } from './rank-setup';
+export { equipmentForCandidateSwap, candidateSwapPreRepair, candidateSwapWithRepairs } from './gear-swap';
 
 type BestSwap = {
 	deltaDps: number;
@@ -184,53 +188,6 @@ type BestSwap = {
 	removed: readonly { slotIndex: number; itemId: number }[];
 	candidateGems: readonly number[];
 };
-
-/**
- * Used when a caller passes no count; the tab always passes its own
- * (`TAB_DEFAULT_ITERATIONS`). Flat, not adaptive. The count is part of every
- * ranking cache key.
- */
-const DEFAULT_ITERATIONS = 5000;
-/**
- * First of the default seeds, which are distinct because
- * `usesPairedReplication` (`se.ts`) needs more than one, and spaced by the
- * iteration count: the sim seeds iteration `i` from `RandomSeed + i`
- * (`reseedRands` in `sim/core/sim.go`), so seeds closer than the iteration
- * count share most of their random streams and their SE comes out far too
- * small.
- */
-const DEFAULT_SEED_BASE = 11;
-
-/**
- * Derived from the run's resolved iteration count, not `DEFAULT_ITERATIONS`:
- * a caller passing `iterations: 10000` would otherwise get seeds 5,000 apart,
- * which overlap and fail `assertUsableSeeds`.
- */
-function defaultSeedsFor(iterations: number): number[] {
-	return replicateSeeds(DEFAULT_SEED_BASE, DEFAULT_SEED_COUNT, iterations);
-}
-
-/**
- * Per-spec preset id, disclosed in `Assumptions.presetId`. A stable label, not
- * a file path: the skeleton is the page's own current settings.
- */
-const PRESET_ID_BY_SPEC: Record<SpecId, string> = {
-	ret: 'ret/current-page-settings',
-	feral: 'feral/current-page-settings',
-	balance: 'balance/current-page-settings',
-	hunter: 'hunter/current-page-settings',
-	mage: 'mage/current-page-settings',
-	shadow: 'shadow/current-page-settings',
-	rogue: 'rogue/current-page-settings',
-	ele: 'ele/current-page-settings',
-	enh: 'enh/current-page-settings',
-	warlock: 'warlock/current-page-settings',
-	warrior: 'warrior/current-page-settings',
-};
-
-function presetIdFor(spec: SpecId): string {
-	return PRESET_ID_BY_SPEC[spec];
-}
 
 export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p: Progress) => void): Promise<Ranking | PartialRanking> {
 	onProgress?.({ stage: 'resolving' });
@@ -2836,198 +2793,6 @@ function applySetContext(
 	}
 }
 
-export function resolveFight(fights: readonly FightSummary[], requested?: FightRef): ResolvedFight | undefined {
-	if (requested) {
-		const match = fights.find(f => f.reportCode === requested.reportCode && f.fightId === requested.fightId);
-		return match
-			? summaryToResolved(match)
-			: {
-					...requested,
-					route: 'report-events',
-				};
-	}
-	const ranked = fights.find(f => f.route === 'ranked');
-	const chosen = ranked ?? fights[0];
-	return chosen ? summaryToResolved(chosen) : undefined;
-}
-
-function summaryToResolved(f: FightSummary): ResolvedFight {
-	return {
-		reportCode: f.reportCode,
-		fightId: f.fightId,
-		...(f.encounterName ? { encounterName: f.encounterName } : {}),
-		...(f.killedAt ? { killedAt: f.killedAt } : {}),
-		route: f.route,
-		confidence: f.confidence,
-		...(f.salvationUptime === undefined ? {} : { salvationUptime: f.salvationUptime }),
-	};
-}
-
-/** Namespaced so a ranking cannot collide with another stored value. */
-function rankingCacheKey(contentHash: string): string {
-	return `ranking:${contentHash}`;
-}
-
-async function readCachedSim(deps: Deps, req: RaidSimRequest, simVersion: string, opts: SimRunOpts): Promise<SimObservation | undefined> {
-	return asInternal(() => deps.store.get<SimObservation>(simStoreKey(req, simVersion, opts)));
-}
-
-function simStoreKey(req: RaidSimRequest, simVersion: string, opts: SimRunOpts): string {
-	return `sim:${simCacheKey(req, simVersion, opts)}`;
-}
-
-async function cacheSimResult(deps: Deps, req: RaidSimRequest, simVersion: string, opts: SimRunOpts, observation: SimObservation): Promise<void> {
-	await asInternal(() => deps.store.put(simStoreKey(req, simVersion, opts), observation));
-}
-
-/**
- * A store-cached sim at explicit options, for sims whose seed, iteration count
- * or `saveAllValues` differ from the run's own (the set screen). The store key
- * holds every option (`simCacheKey`), so it never answers one question with
- * another's reading. Throws when the sim fails.
- */
-async function runSimAt(deps: Deps, req: RaidSimRequest, simVersion: string, opts: SimRunOpts): Promise<{ observation: SimObservation; fromStore: boolean }> {
-	const cached = await readCachedSim(deps, req, simVersion, opts);
-	if (cached) return { observation: cached, fromStore: true };
-	const observation = await deps.sim.run(req, opts);
-	await cacheSimResult(deps, req, simVersion, opts, observation);
-	return { observation, fromStore: false };
-}
-
-/**
- * A sim the guard below refused to start because the caller's Stop fired. Its
- * own class, so callers can tell it from a sim failure, which fails the
- * ranking.
- */
-class StopRefusedSim extends Error {
-	override readonly name = 'StopRefusedSim';
-
-	constructor() {
-		super('sim not started: Stop was pressed');
-	}
-}
-
-/**
- * A candidate's own stats read failed. Its own class, so `runCandidate` can
- * report only the read as that candidate's failed sim and still fail the run
- * on a code error around it.
- */
-class CandidateHitReadFailed extends Error {
-	override readonly name = 'CandidateHitReadFailed';
-
-	// `cause` as a field: the TS lib is es2021, which has no Error options.
-	constructor(readonly cause: unknown) {
-		super(cause instanceof Error ? cause.message : String(cause));
-	}
-}
-
-/**
- * The hit percent a stats read gives. It throws when the value is not a
- * finite number: `hitPercentOrSimFailed` lets that error fail the run as an
- * internal error, and `candidateRepairGems` reports it as the candidate's
- * failed sim.
- */
-function hitPercentOf(observed: PlayerStatsObservation, pseudoStat: number): number {
-	const hitPercent = observed.pseudoStats[pseudoStat];
-	if (typeof hitPercent !== 'number' || !Number.isFinite(hitPercent)) {
-		throw new Error(`hit percent read as ${String(hitPercent)}`);
-	}
-	return hitPercent;
-}
-
-/**
- * The hit percent of a worn-gear, baseline or set-phase stats read. A read
- * that fails fails the run with the sim's error, as a failed baseline sim
- * does; a read Stop ended rejects with `StopRefusedSim`. A read with no hit
- * number is no sim failure: `hitPercentOf`'s error fails the run as internal.
- */
-async function hitPercentOrSimFailed(
-	read: Promise<PlayerStatsObservation>,
-	pseudoStat: number,
-): Promise<{ observed: PlayerStatsObservation; hitPercent: number }> {
-	let observed: PlayerStatsObservation;
-	try {
-		observed = await read;
-	} catch (err) {
-		if (err instanceof StopRefusedSim) throw err;
-		throw new RankError('sim-failed', errorText(err));
-	}
-	return { observed, hitPercent: hitPercentOf(observed, pseudoStat) };
-}
-
-/**
- * One stats read, raced against Stop. The listener goes on before the read
- * starts, so an abort fired while the read is being sent is not missed. No
- * timeout: a read that gets no answer means its worker cannot answer sims
- * either, and least-busy routing sends that worker a sim once every healthy
- * worker is busy, so a timeout would only move the hang to a later sim.
- */
-async function readStats(sim: Deps['sim'], req: RaidSimRequest, signal: AbortSignal | undefined): Promise<PlayerStatsObservation> {
-	if (signal?.aborted) throw new StopRefusedSim();
-	const started = performance.now();
-	if (!signal) {
-		const observed = await sim.computeStats(req);
-		logStatsRead(started);
-		return observed;
-	}
-	let onAbort: (() => void) | undefined;
-	const stopped = new Promise<never>((_, reject) => {
-		onAbort = () => reject(new StopRefusedSim());
-		signal.addEventListener('abort', onAbort, { once: true });
-	});
-	try {
-		const read = sim.computeStats(req);
-		// After Stop wins the race nobody awaits the read, so its late failure
-		// must not become an unhandled rejection.
-		read.catch(() => {});
-		const observed = await Promise.race([read, stopped]);
-		logStatsRead(started);
-		return observed;
-	} finally {
-		signal.removeEventListener('abort', onAbort!);
-	}
-}
-
-/**
- * Pre-formatted, so a forwarded console line keeps the number. It times
- * reads on either sim transport.
- */
-function logStatsRead(started: number): void {
-	console.debug(`[upgrades] stats read ${Math.round(performance.now() - started)} ms`);
-}
-
-/**
- * `deps` whose sim refuses to start once `deps.signal` has aborted, for the
- * set phase and replication. The candidate loop keeps the plain runner: it
- * turns a failed sim into a dropped row and has its own Stop check.
- */
-function stopGuardedDeps(deps: Deps): Deps {
-	const { signal, sim } = deps;
-	if (!signal) return deps;
-	return {
-		...deps,
-		sim: {
-			version: () => sim.version(),
-			run: async (req, opts) => {
-				if (signal.aborted) throw new StopRefusedSim();
-				return sim.run(req, opts);
-			},
-			computeStats: async req => {
-				if (signal.aborted) throw new StopRefusedSim();
-				return sim.computeStats(req);
-			},
-			...(sim.activeSetBonuses
-				? {
-						activeSetBonuses: async (req: RaidSimRequest) => {
-							if (signal.aborted) throw new StopRefusedSim();
-							return sim.activeSetBonuses!(req);
-						},
-					}
-				: {}),
-		},
-	};
-}
-
 /**
  * For each set, the piece counts above the worn count at which the sim has a
  * bonus, up to the most pieces the pool can fill (`mostAddedPieces` gives
@@ -3099,275 +2864,4 @@ function emptySetPhase(): Awaited<ReturnType<typeof buildSetBonuses>> {
 		firstSlotIndexByItemId: new Map(),
 		setIdsNotValued: [],
 	};
-}
-
-async function asInternal<T>(op: () => Promise<T>): Promise<T> {
-	try {
-		return await op();
-	} catch (err) {
-		throw new RankError('internal', err instanceof Error ? err.message : String(err));
-	}
-}
-
-function raceFromSkeleton(skeleton: RaidSimRequest): Race {
-	const raw = (
-		skeleton as {
-			raid?: { parties?: Array<{ players?: Array<{ race?: string }> }> };
-		}
-	).raid?.parties?.[0]?.players?.[0]?.race;
-	if (raw && isRace(raw)) return raw;
-	return 'RaceHuman';
-}
-
-function talentsStringFromRequest(request: RaidSimRequest): string | undefined {
-	const raw = (
-		request as {
-			raid?: {
-				parties?: Array<{ players?: Array<{ talentsString?: string }> }>;
-			};
-		}
-	).raid?.parties?.[0]?.players?.[0]?.talentsString;
-	return typeof raw === 'string' ? raw : undefined;
-}
-
-function isRace(value: string): value is Race {
-	return (
-		value === 'RaceHuman' ||
-		value === 'RaceDwarf' ||
-		value === 'RaceNightElf' ||
-		value === 'RaceGnome' ||
-		value === 'RaceDraenei' ||
-		value === 'RaceOrc' ||
-		value === 'RaceUndead' ||
-		value === 'RaceTauren' ||
-		value === 'RaceTroll' ||
-		value === 'RaceBloodElf'
-	);
-}
-
-export function equipmentForCandidateSwap(equipment: readonly SimItemSpec[], slotIndex: number, itemId: number, gems: GemContext): SimItemSpec[] {
-	return candidateSwapWithRepairs(equipment, slotIndex, itemId, gems).equipment;
-}
-
-/**
- * The first half of `candidateSwapWithRepairs`: the gear after the swap and
- * its gem fill, before any meta repair. Exported so a test can read each
- * repair's input.
- */
-export function candidateSwapPreRepair(
-	equipment: readonly SimItemSpec[],
-	slotIndex: number,
-	itemId: number,
-	gems: GemContext,
-): {
-	swapped: SimItemSpec[];
-	socketed: SocketedItem[];
-	removed: readonly { slotIndex: number; itemId: number }[];
-} {
-	// Cleared before the swap: `swapItemAt` computes `fillOptsForSwap` from the
-	// array it is handed, so clearing afterwards would leave a unique gem on the
-	// removed off-hand item in `usedUnique`, blocking the candidate's socket.
-	const { equipment: cleared, removed } = clearOffHandForTwoHander(equipment, slotIndex, itemId);
-	const swapped = swapItemAt(cleared, slotIndex, itemId, gems);
-	const socketed: SocketedItem[] = swapped.map(spec => ({
-		itemId: spec.id ?? 0,
-		gems: [...spec.gems],
-	}));
-	return { swapped, socketed, removed };
-}
-
-export function candidateSwapWithRepairs(
-	equipment: readonly SimItemSpec[],
-	slotIndex: number,
-	itemId: number,
-	gems: GemContext,
-): {
-	equipment: SimItemSpec[];
-	recolors: readonly GemRecolor[];
-	repaired: boolean;
-	removed: readonly { slotIndex: number; itemId: number }[];
-} {
-	const { swapped, socketed, removed } = candidateSwapPreRepair(equipment, slotIndex, itemId, gems);
-	const hitBudget = gems.repairHitBudget;
-	const minimized = repairMetaGems({
-		items: socketed,
-		epWeights: gems.weights,
-		allowedGems: gems.fillGems,
-		...(hitBudget
-			? {
-					hitBudget: {
-						stat: hitBudget.stat,
-						remaining: hitBudget.baselineRemaining - (gearHitRating(swapped, hitBudget.stat) - hitBudget.baselineGearHit),
-						...(hitBudget.groups ? { groups: hitBudget.groups } : {}),
-					},
-				}
-			: {}),
-	});
-	return {
-		equipment: applyRepairedGems(swapped, minimized.items),
-		recolors: minimized.recolors.filter(s => s.itemIndex !== slotIndex),
-		// The swapped slot included, which `swaps` filters out.
-		repaired: minimized.recolors.length > 0,
-		removed,
-	};
-}
-
-/**
- * The gear from one fixed series of `candidateSwapWithRepairs` calls, as
- * built: the set phase's added-pieces, partner and pair gears. `repaired` is
- * whether any call changed a socket; `swaps` is every call's repair swaps in
- * call order.
- */
-type ChainBuild = {
-	equipment: SimItemSpec[];
-	repaired: boolean;
-	recolors: GemRecolor[];
-};
-
-/** `{}` sends no copies. */
-type CopyLayout = {
-	setKept?: readonly number[];
-	setLess?: readonly number[];
-};
-
-type LayoutRequest = {
-	request: RaidSimRequest;
-	recolors: readonly GemRecolor[];
-};
-
-/**
- * An entry whose gear, repaired again on its own hit budget, failed the gem
- * repair. It is no failed call, so a caller treats it like the same failure
- * on the first build, never as a request that could not be built: a build
- * error's line carries `RunNote.error`, which the run's error toast
- * shows.
- */
-type RepairFailure = { repairError: MetaRepairError };
-
-type LayoutResult = LayoutRequest | BuildFailure | RepairFailure;
-
-const isRepairFailure = (entry: LayoutResult | undefined): entry is RepairFailure => entry !== undefined && 'repairError' in entry;
-
-/** The first failed repair, or every entry when none failed. */
-const repairErrorOr = (entries: readonly LayoutResult[]): MetaRepairError | Array<LayoutRequest | BuildFailure> =>
-	entries.find(isRepairFailure)?.repairError ?? entries.filter((entry): entry is LayoutRequest | BuildFailure => !isRepairFailure(entry));
-
-/**
- * The requests for one set-phase gear, one per copy layout, each with gems
- * repaired on its own hit budget; both sims of a pair come from one call
- * (`rankUpgrades` defines it). `base` is the gear on the run's budget;
- * `rebuild` builds the same gear on another. An entry is a `BuildFailure`
- * when its request cannot be composed, and a `RepairFailure` when its rebuild
- * fails gem repair, unless Stop ends a later read in the same call.
- */
-type RequestsPerCopyLayout = (rebuild: (gems: GemContext) => ChainBuild, base: ChainBuild, copiesList: readonly CopyLayout[]) => Promise<LayoutResult[]>;
-
-const requestOf = (entry: LayoutRequest | BuildFailure): RaidSimRequest | BuildFailure => (isBuildFailure(entry) ? entry : entry.request);
-
-/**
- * Missed hit below this many rating keeps a request on the run's budget. On
- * the measured gear, gem, item and enchant hit cancel inside `missed`, so
- * what is left is set-bonus hit, a whole number of rating (20 on Burning
- * Rage's 2pc); the tolerance only absorbs the percent round trip.
- */
-const MISSED_HIT_TOLERANCE = 0.5;
-
-function chainSwapsWithRepairs(equipment: readonly SimItemSpec[], pieces: readonly { slotIndex: number; itemId: number }[], gems: GemContext): ChainBuild {
-	let gear: SimItemSpec[] = [...equipment];
-	let repaired = false;
-	const recolors: GemRecolor[] = [];
-	for (const piece of pieces) {
-		const outcome = candidateSwapWithRepairs(gear, piece.slotIndex, piece.itemId, gems);
-		gear = outcome.equipment;
-		repaired ||= outcome.repaired;
-		recolors.push(...outcome.recolors);
-	}
-	return { equipment: gear, repaired, recolors };
-}
-
-/**
- * Takes the worn off-hand item off when a two-handed candidate goes in the
- * main hand, and names what it took. A two-hander beside an off-hand item is
- * gear the game cannot equip, so the row's sim runs without it and the row
- * discloses it in `RankedItem.removedItems`. The reverse case, a one-hander
- * offered beside a worn two-hander, is rejected in `attemptEligibility`,
- * because displacing the two-hander would be a hidden cost; here the build is
- * legal and the cost is stated. Every other case returns the input untouched.
- */
-function clearOffHandForTwoHander(
-	equipment: readonly SimItemSpec[],
-	slotIndex: number,
-	itemId: number,
-): {
-	equipment: readonly SimItemSpec[];
-	removed: readonly { slotIndex: number; itemId: number }[];
-} {
-	if (slotIndex !== SIM_ORDER.indexOf('mainhand')) {
-		return { equipment, removed: [] };
-	}
-	if (getItem(itemId)?.handType !== HandType.HandTypeTwoHand) {
-		return { equipment, removed: [] };
-	}
-	const offHandIndex = SIM_ORDER.indexOf('offhand');
-	const wornOffHandId = equipment[offHandIndex]?.id;
-	if (!wornOffHandId) return { equipment, removed: [] };
-
-	const cleared = equipment.map((spec, i) =>
-		// The bare-slot value `equipmentFromLoggedGear` writes for an empty slot,
-		// so a cleared off hand looks like one the player never filled.
-		i === offHandIndex ? { gems: [] } : spec,
-	);
-	return {
-		equipment: cleared,
-		removed: [{ slotIndex: offHandIndex, itemId: wornOffHandId }],
-	};
-}
-
-function swapItemAt(equipment: readonly SimItemSpec[], slotIndex: number, itemId: number, gemCtx: GemContext): SimItemSpec[] {
-	return equipment.map((spec, i) => {
-		if (i !== slotIndex) return spec;
-		const sameItem = spec.id === itemId;
-		const gems = sameItem
-			? [...(spec.gems ?? [])]
-			: fillEmptyCandidateGems(
-					itemId,
-					migrateGemsToItem(spec.gems ?? [], spec.id ?? 0, itemId),
-					gemCtx.fillGems,
-					gemCtx.weightRecord,
-					fillOptsForSwap(equipment, slotIndex, gemCtx.spec),
-				);
-		const out: SimItemSpec = { id: itemId, gems };
-		if (spec.enchant && enchantAppliesToItem(spec.enchant, itemId)) {
-			out.enchant = spec.enchant;
-		}
-		return out;
-	});
-}
-
-function fillOptsForSwap(equipment: readonly SimItemSpec[], slotIndex: number, spec: DetectedSpecId | undefined): FillEmptyOpts {
-	const usedUnique = new Set<number>();
-	const otherGemIds: number[] = [];
-	for (let i = 0; i < equipment.length; i++) {
-		if (i === slotIndex) continue;
-		for (const id of equipment[i]?.gems ?? []) {
-			if (!(id > 0)) continue;
-			otherGemIds.push(id);
-			if (getGem(id)?.unique) usedUnique.add(id);
-		}
-	}
-	const wornGems = (equipment[slotIndex]?.gems ?? []).filter(id => id > 0);
-	const metaId = findMetaGemId([...otherGemIds, ...wornGems]);
-	return {
-		usedUnique,
-		...(metaId !== undefined ? { meta: { metaId, otherGemIds } } : {}),
-		...(spec !== undefined ? { spec } : {}),
-	};
-}
-
-function applyRepairedGems(equipment: readonly SimItemSpec[], socketed: SocketedItem[]): SimItemSpec[] {
-	return equipment.map((spec, i) => {
-		const repaired = socketed[i];
-		if (!repaired || !spec.id) return spec;
-		return { ...spec, gems: [...repaired.gems] };
-	});
 }
