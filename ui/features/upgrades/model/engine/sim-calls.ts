@@ -1,11 +1,15 @@
 /**
  * The sim helpers `rankUpgrades` and the set phase share: the store-cached run, the stats
- * read, and the runner that refuses new sims after Stop. Other call sites call `deps.sim`
- * directly. Store faults are `internal`; only the sim's own failure is a failed sim.
+ * read, the runner that refuses new sims after Stop, and the counted delta sims of the
+ * bonus-gear and bonus-off sims. Other call sites call `deps.sim` directly. Store faults are
+ * `internal`; only the sim's own failure is a failed sim.
  */
 
+import { promisePool } from './promise-pool';
 import { type Deps, RankError } from './rank-types';
 import { type PlayerStatsObservation, type RaidSimRequest, simCacheKey, type SimObservation, type SimRunOpts } from './seams/sim-runner';
+import { errorText, isSimFailure, type SimFailure } from './set-less-copies';
+import { type DpsSample, sampleOf } from './set-value';
 
 /** Namespaced so a ranking cannot collide with another stored value. */
 export function rankingCacheKey(contentHash: string): string {
@@ -66,6 +70,67 @@ export async function runSimAt(
 	const outcome = await simOrFailure(deps, req, simVersion, opts);
 	if ('simError' in outcome) throw outcome.simError;
 	return outcome;
+}
+
+/** How many of a group's sims ran and how many came from the store. */
+export type SimCounter = { simmed: number; fromStore: number };
+
+/** What `runCounted` reads: the runner, the sim's version and options, and the baseline. */
+export type CountedSims = {
+	deps: Deps;
+	simVersion: string;
+	runOpts: SimRunOpts;
+	baseline: DpsSample;
+};
+
+/**
+ * One store-cached sim as a delta against the baseline, counted in `counter`.
+ * A failed sim warns with `failure` and comes back as its error's text.
+ */
+export async function runCounted(
+	at: CountedSims,
+	request: RaidSimRequest,
+	counter: SimCounter,
+	failure: string,
+): Promise<{ deltaDps: number; se: number } | SimFailure> {
+	const { deps, baseline, runOpts } = at;
+	const outcome = await simOrFailure(deps, request, at.simVersion, runOpts);
+	if ('simError' in outcome) {
+		// No warning for a sim the Stop guard refused.
+		if (!deps.signal?.aborted) console.warn(failure, outcome.simError);
+		return { simError: errorText(outcome.simError) };
+	}
+	if (outcome.fromStore) counter.fromStore += 1;
+	else counter.simmed += 1;
+	const sample = sampleOf(outcome.observation, runOpts.iterations);
+	return {
+		deltaDps: sample.dps - baseline.dps,
+		se: Math.sqrt(sample.se ** 2 + baseline.se ** 2),
+	};
+}
+
+/**
+ * Sims each keyed request once with `runCounted`, at the runner's
+ * concurrency, in key order. Each key gets its delta or its sim's error, so
+ * one failed sim costs only its own key.
+ */
+export async function simEachOnce(
+	at: CountedSims,
+	requests: ReadonlyMap<string, RaidSimRequest>,
+	counter: SimCounter,
+	failure: string,
+): Promise<{ deltas: Map<string, { deltaDps: number; se: number }>; errors: Map<string, string> }> {
+	const deltas = new Map<string, { deltaDps: number; se: number }>();
+	const errors = new Map<string, string>();
+	await promisePool(
+		[...requests].map(([key, request]) => async () => {
+			const delta = await runCounted(at, request, counter, failure);
+			if (isSimFailure(delta)) errors.set(key, delta.simError);
+			else deltas.set(key, delta);
+		}),
+		at.deps.concurrency ?? 1,
+	);
+	return { deltas, errors };
 }
 
 /**
