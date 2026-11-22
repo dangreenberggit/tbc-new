@@ -290,7 +290,7 @@ async function runSetPhase(
 	requestsPerLayout: RequestsPerCopyLayout,
 	abortedBefore: boolean,
 ): Promise<SetPhaseOutcome> {
-	const { input, deps, guardedDeps, cutoff, race, composeFor, iterations, simVersion, runOpts, equipment } = ctx;
+	const { input, deps, guardedDeps, cutoff, composeFor, iterations, simVersion, runOpts, equipment } = ctx;
 	const { ranked, ownDeltasByItemId, simCandidates } = candidates;
 	const { gems } = baselineHitBudget;
 	const signal = deps.signal;
@@ -304,25 +304,24 @@ async function runSetPhase(
 
 	const setBonusResult = aborted
 		? emptySetPhase()
-		: await buildSetBonuses(
-				guardedDeps,
-				simCandidates,
+		: await buildSetBonuses({
+				deps: guardedDeps,
+				candidates: simCandidates,
 				equipment,
 				gems,
-				race,
 				input,
 				composeFor,
 				ownDeltasByItemId,
-				sampleOf(observation, iterations),
+				baseline: sampleOf(observation, iterations),
 				simVersion,
 				runOpts,
 				setBonusNotes,
 				setCheckNotes,
-				deps.measureSetBonuses ?? false,
+				measureSetBonuses: deps.measureSetBonuses ?? false,
 				cutoff,
-				observation.stdev,
+				baselineStdev: observation.stdev,
 				requestsPerLayout,
-			);
+			});
 	if (signal?.aborted) aborted = true;
 	// With `measureSetBonuses`, a swap loses a worn bonus only at a count
 	// `wornSetLadder` counted, and no table is read. An aborted run has none,
