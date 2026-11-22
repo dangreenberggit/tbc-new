@@ -15,7 +15,7 @@ export function isReplicable(row: { readonly belowCutoff: boolean; readonly simm
 }
 
 /**
- * Seeds that cannot produce a spread. Its own class so `rank.ts` maps it to `RankError`
+ * Seeds that cannot produce a spread. Its own class so `rank-setup.ts` maps it to `RankError`
  * kind `internal` (bad caller input) without matching strings.
  */
 export class DegenerateSeedsError extends Error {

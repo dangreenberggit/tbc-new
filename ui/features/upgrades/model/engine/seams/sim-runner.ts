@@ -94,7 +94,7 @@ export function simCacheKey(req: RaidSimRequest, simVersion: string, opts: SimRu
 }
 
 /**
- * JSON with object keys sorted, so equal requests give one string. rank.ts also keys its
+ * JSON with object keys sorted, so equal requests give one string. hit-budget.ts also keys its
  * stats reads by it.
  */
 export function stableStringify(value: unknown): string {

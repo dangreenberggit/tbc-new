@@ -152,7 +152,7 @@ export function mainHandLeavesOffHandFree(wornMainHandId: number | undefined): b
 
 /**
  * Off-hand-only entries while a two-hander is worn, as placing one is a two-item swap. A
- * run holds them out before ordering (rank.ts) and the tab's candidate count does the same.
+ * run holds them out before ordering (rank-setup.ts) and the tab's candidate count does the same.
  */
 export function offHandBlockedEntries(pool: readonly PoolEntry[], spec: SpecId | undefined, wornMainHandId: number | undefined): PoolEntry[] {
 	if (mainHandLeavesOffHandFree(wornMainHandId)) return [];

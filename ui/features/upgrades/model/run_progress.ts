@@ -1,7 +1,7 @@
 /**
  * What the progress dialog shows while a run is in flight. The engine does not say
  * what the run is doing, so the activity is read from the order of `Progress` events
- * (`rank.ts`): setup stages, a `simming` event for the baseline and each candidate, a
+ * (`rank.ts`, `rank-candidates.ts`, `rank-replication.ts`): setup stages, a `simming` event for the baseline and each candidate, a
  * set-bonus stage that sends nothing and is not in `total`, `ranking`, then the
  * replication sims.
  * Only the candidate count, which `doneAtLastCandidateFor` solves from the first
@@ -29,7 +29,7 @@ export const RUN_PROGRESS_SHOW_FROM_FRACTION = 0.35;
 export const RUN_PROGRESS_MIN_CANDIDATES_DONE = 10;
 
 /**
- * Solved from `totalSims` in `rank.ts`:
+ * Solved from `totalSims` in `rank-candidates.ts`:
  * `total = 1 + candidates + (seedCount - 1) * (1 + min(topN, candidates))`.
  * `null` when no whole candidate count fits.
  */

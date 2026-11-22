@@ -10,23 +10,6 @@ import { type ItemSource, sourceMatchesBoss } from './pool';
 import type { RankedItem, Ranking } from './rank-types';
 import { rankableSetPotential } from './set-potential';
 
-// Until chunk C3 of the readability plan, the moved names stay importable from here.
-export {
-	type SetPotentialTerm,
-	setCreditUnmeasured,
-	bonusGearUnmeasured,
-	setBonusSubLine,
-	type SwapBreak,
-	ownSwapBreaks,
-	canBeCredited,
-	crossingLabelCount,
-	setPotentialTerms,
-	type SetPotentialIncrement,
-	setPotentialIncrements,
-	setPotentialCredit,
-	rankableSetPotential,
-} from './set-potential';
-
 export type ViewOptions = {
 	pinBis?: boolean;
 	raid?: string;

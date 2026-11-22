@@ -60,29 +60,6 @@ export {
 	type Ranking,
 	type PartialRanking,
 } from './rank-types';
-export {
-	metaPreferenceNotes,
-	oneHandBlockedNotes,
-	offHandBlockedNotes,
-	type CandidateSkip,
-	candidateSkipNote,
-	type SkipReason,
-	SET_BONUS_SKIP_REASONS,
-	type SetBonusSkip,
-	setBonusSkipNote,
-	setBonusCountsSkipNote,
-	breakSplitSkipNote,
-	type SetScreenSkip,
-	setScreenSkipNote,
-	wornSetSkipNote,
-	uniqueNotes,
-	hitCapUnknownNote,
-	hitCapFullWeightNote,
-	hitCapPerSpellTalentNote,
-} from './run-notes';
-export { resolveFight } from './rank-setup';
-export { equipmentForCandidateSwap, candidateSwapPreRepair, candidateSwapWithRepairs } from './gear-swap';
-export { bonusesWithItem } from './set-context';
 
 /**
  * What setup settled that only `runRanking` reads, beside the fixed inputs

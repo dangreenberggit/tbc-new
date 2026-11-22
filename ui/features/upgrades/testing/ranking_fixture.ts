@@ -1,4 +1,5 @@
-import { candidateSkipNote, type RankedItem, type Ranking } from '../model/engine/rank';
+import type { RankedItem, Ranking } from '../model/engine/rank';
+import { candidateSkipNote } from '../model/engine/run-notes';
 import type { StoppedRanking } from '../model/run_state';
 
 /**

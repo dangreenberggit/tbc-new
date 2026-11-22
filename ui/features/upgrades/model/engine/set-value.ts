@@ -314,7 +314,7 @@ export type SelfSetConfound = {
 	 * together, and already added back into the 4pc `bonusDps`. Absent when no two added
 	 * pieces broke nothing alone and together, or that sim or its repair failed. The 4pc
 	 * `bonusDps` then still has the 2pc charged once per added piece past the first, and
-	 * `rank.ts` leaves its `bonusDpsNet` unset.
+	 * `applyNetCorrection` (set-bonus-net.ts) leaves its `bonusDpsNet` unset.
 	 */
 	dps?: number;
 };

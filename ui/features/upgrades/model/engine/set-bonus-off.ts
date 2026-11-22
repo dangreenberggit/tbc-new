@@ -14,10 +14,10 @@ import { breakSplitSkipNote } from './run-notes';
 import { type RaidSimRequest, simCacheKey, stableStringify } from './seams/sim-runner';
 import type { BonusGearArgs, BonusGearBuilders, FutureBonus } from './set-bonus-gear';
 import { isBuildFailure } from './set-less-copies';
+import { setCreditUnmeasured, setPotentialIncrements } from './set-potential';
 import { type PlacedItem, setNameOf, type SetThreshold } from './set-value';
 import { readCachedSim, type SimCounter, simEachOnce } from './sim-calls';
 import type { SimItemSpec } from './slots';
-import { setCreditUnmeasured, setPotentialIncrements } from './view';
 
 /** A worn bonus a shown bonus loses. */
 type BrokenBonus = { setId: number; threshold: SetThreshold };

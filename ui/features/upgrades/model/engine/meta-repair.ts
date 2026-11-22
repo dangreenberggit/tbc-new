@@ -51,7 +51,7 @@ export class MetaRecolorLimitExceededError extends MetaRepairError {
 /**
  * The most work (`work`) the exact search may do before repair falls back to greedy; the
  * engine runs on the page's main thread, so the search needs a bound. The limit decides
- * which repair a gear gets, so it is part of the `metaRepair` cache key in `rank.ts`.
+ * which repair a gear gets, so it is part of the `metaRepair` cache key in `rank-setup.ts`.
  */
 export const REPAIR_SEARCH_WORK_LIMIT = 5_000_000;
 

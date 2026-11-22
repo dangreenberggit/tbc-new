@@ -18,7 +18,7 @@ import {
 	setScreenSkipNote,
 	uniqueNotes,
 	wornSetSkipNote,
-} from '../../model/engine/rank';
+} from '../../model/engine/run-notes';
 import type { DetectedSpecId } from '../../model/engine/types';
 import { RANKING_FIXTURE } from '../../testing/ranking_fixture';
 import { RunNotesList } from './RunNotesList';
