@@ -1,19 +1,17 @@
 /**
  * `measureWornSets` gives `wornSetLadder`: what each piece count of a worn set is worth,
  * measured on the worn gear. `countsAsBreakFrom` counts a swap as breaking only a count that
- * ladder counted.
+ * ladder counted. `wornSetValues` gives the set phase both, with `brokenSetValues`.
  */
 
-import type { Cutoff } from './cutoff';
 import type { RunNote } from './disclosure';
-import { getItem } from './items';
-import type { WornSetCountEntry } from './rank-types';
+import type { BrokenSetValue, WornSetCountEntry } from './rank-types';
 import { SET_BONUS_SKIP_REASONS, setBonusCountsSkipNote, wornSetSkipNote } from './run-notes';
 import type { RaidSimRequest } from './seams/sim-runner';
 import { applySetLessCopies, clearsSameGearNoise, errorText, measureWornSetCounts } from './set-less-copies';
-import { type CountsAsBreak, type DpsSample, setCounts, setNameOf } from './set-value';
+import type { SampleRunnerFor, SetPhaseContext } from './set-phase';
+import { bonusCountOf, bonusKey, type BrokenSetBonus, type CountsAsBreak, isBonusImplemented, setCounts, setNameOf, setPieceSlots } from './set-value';
 import { StopRefusedSim } from './sim-calls';
-import type { SimItemSpec } from './slots';
 
 /**
  * The value of each piece count of every set worn at 2 or more pieces
@@ -25,13 +23,11 @@ import type { SimItemSpec } from './slots';
  * gives no such line, so there a failed count is counted.
  */
 export async function measureWornSets(
-	equipment: readonly SimItemSpec[],
-	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
-	cachedSampleRun: (what: string) => (request: RaidSimRequest) => Promise<DpsSample>,
-	cutoff: Cutoff,
-	notes: RunNote[],
+	ctx: SetPhaseContext,
+	cachedSampleRun: SampleRunnerFor,
 	readBonuses?: (request: RaidSimRequest) => Promise<readonly string[]>,
 ): Promise<WornSetCountEntry[]> {
+	const { equipment, composeFor, cutoff, setCheckNotes } = ctx;
 	const worn = [...setCounts(equipment)]
 		.filter(([, count]) => count >= 2)
 		.map(([setId]) => setId)
@@ -41,9 +37,9 @@ export async function measureWornSets(
 	const entries: WornSetCountEntry[] = [];
 	for (const setId of worn) {
 		const setName = setNameOf(equipment, setId);
-		const slots = equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : []));
+		const slots = setPieceSlots(equipment, setId);
 		const countValues = await measureWornSetCounts(cachedSampleRun(`${setName} worn-set counts`), request, slots, (error, notBuilt) =>
-			notes.push(
+			setCheckNotes.push(
 				wornSetSkipNote({
 					setName,
 					error,
@@ -53,7 +49,7 @@ export async function measureWornSets(
 		);
 		const bonusCounts =
 			readBonuses && countValues.some(countValue => countValue.unmeasured !== undefined)
-				? await wornSetBonusCounts(readBonuses, request, slots, setName, notes)
+				? await wornSetBonusCounts(readBonuses, request, slots, setName, setCheckNotes)
 				: undefined;
 		for (const countValue of countValues) {
 			const counted =
@@ -98,8 +94,8 @@ async function wornSetBonusCounts(
 		const counts = new Set<number>();
 		for (const name of worn) {
 			if (left.has(name)) continue;
-			const match = / \((\d+)pc\)$/.exec(name);
-			if (match) counts.add(Number(match[1]));
+			const count = bonusCountOf(name);
+			if (count !== undefined) counts.add(count);
 		}
 		return counts;
 	} catch (err) {
@@ -119,4 +115,64 @@ async function wornSetBonusCounts(
 export function countsAsBreakFrom(wornSetCounts: readonly WornSetCountEntry[]): CountsAsBreak {
 	const counted = new Set(wornSetCounts.filter(e => e.counted).map(e => `${e.setId}:${e.count}`));
 	return (setId, count) => counted.has(`${setId}:${count}`);
+}
+
+/**
+ * Each counted worn bonus's measured DPS by `bonusKey`, undefined when its
+ * sim failed. Built once per set phase from `brokenSetValues`, for every
+ * reader of a lost bonus's value.
+ */
+export function brokenBonusDpsByKey(brokenSetValues: readonly BrokenSetValue[]): Map<string, number | undefined> {
+	const byKey = new Map<string, number | undefined>();
+	for (const v of brokenSetValues) byKey.set(bonusKey(v), v.dps);
+	return byKey;
+}
+
+/** A lost bonus as a row shows it: the bonus, with its measured DPS when there is one. */
+export function brokenBonusWithDps(brk: BrokenSetBonus, dpsByKey: ReadonlyMap<string, number | undefined>) {
+	const dps = dpsByKey.get(bonusKey(brk));
+	return {
+		setId: brk.setId,
+		setName: brk.setName,
+		threshold: brk.threshold,
+		...(dps !== undefined ? { dps } : {}),
+	};
+}
+
+/**
+ * The worn sets' values, and what the rest of the set phase reads from them:
+ * which lost counts are breaks, and the counted ones as `brokenSetValues`
+ * with their DPS by `bonusKey`.
+ */
+export async function wornSetValues(
+	ctx: SetPhaseContext,
+	cachedSampleRun: SampleRunnerFor,
+): Promise<{
+	wornSetLadder: WornSetCountEntry[];
+	countsAsBreak: CountsAsBreak;
+	brokenSetValues: BrokenSetValue[];
+	brokenBonusDpsByKey: Map<string, number | undefined>;
+}> {
+	const { deps, measureSetBonuses } = ctx;
+	// The value of every bonus each worn set has, on the player's own gear,
+	// before any reachable bonus is simmed, so every loss below reads a
+	// measured value instead of a table. It runs even when no set piece is a
+	// candidate, because `classifyDeadSlots` (in `plausibilityWarnings`) reads
+	// it too.
+	const wornSetLadder = measureSetBonuses
+		? await measureWornSets(ctx, cachedSampleRun, deps.sim.activeSetBonuses ? request => deps.sim.activeSetBonuses!(request) : undefined)
+		: [];
+	const countsAsBreak: CountsAsBreak = measureSetBonuses ? countsAsBreakFrom(wornSetLadder) : isBonusImplemented;
+	const brokenSetValues: BrokenSetValue[] = wornSetLadder
+		.filter(e => e.counted)
+		.sort((a, b) => (a.setId !== b.setId ? a.setId - b.setId : b.count - a.count))
+		.map(e => ({
+			setId: e.setId,
+			setName: e.setName,
+			threshold: e.count,
+			...(e.dps !== undefined ? { dps: e.dps } : {}),
+			...(e.se !== undefined ? { se: e.se } : {}),
+			...(e.unmeasured ? { unmeasured: e.unmeasured } : {}),
+		}));
+	return { wornSetLadder, countsAsBreak, brokenSetValues, brokenBonusDpsByKey: brokenBonusDpsByKey(brokenSetValues) };
 }

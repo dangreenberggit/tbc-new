@@ -5,6 +5,7 @@
 
 import { getItem } from './items';
 import type { PoolEntry } from './pool';
+import type { SimObservation } from './seams/sim-runner';
 import type { SimItemSpec } from './slots';
 
 /**
@@ -71,6 +72,20 @@ export function setCounts(equipment: readonly SimItemSpec[]): Map<number, number
 		counts.set(setId, (counts.get(setId) ?? 0) + 1);
 	}
 	return counts;
+}
+
+/** The slots of `equipment` that hold a piece of `setId`, in slot order. */
+export function setPieceSlots(equipment: readonly SimItemSpec[], setId: number): number[] {
+	return equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : []));
+}
+
+/**
+ * The piece count in the name of a bonus the sim lists (`<set> (<n>pc)`), or
+ * undefined for a name without one.
+ */
+export function bonusCountOf(bonusName: string): number | undefined {
+	const match = / \((\d+)pc\)$/.exec(bonusName);
+	return match ? Number(match[1]) : undefined;
 }
 
 export function setNameOf(equipment: readonly SimItemSpec[], setId: number, moreItemIds: readonly number[] = []): string {
@@ -263,6 +278,11 @@ export function netInflation(terms: readonly InflationTerm[]): number {
 }
 
 export type DpsSample = { dps: number; se: number };
+
+/** One sim's DPS, with the standard error of its mean over `iterations`. */
+export function sampleOf(observation: Pick<SimObservation, 'dps' | 'stdev'>, iterations: number): DpsSample {
+	return { dps: observation.dps, se: observation.stdev / Math.sqrt(iterations) };
+}
 
 export function combineSe(samples: readonly DpsSample[]): number {
 	return Math.sqrt(samples.reduce((sum, s) => sum + s.se * s.se, 0));
