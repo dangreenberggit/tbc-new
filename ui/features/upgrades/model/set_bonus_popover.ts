@@ -8,9 +8,6 @@
 import type { Cutoff } from './engine/cutoff';
 import type { RankedItem, Ranking, SetContext } from './engine/rank';
 import { clearsSameGearNoise } from './engine/set-less-copies';
-import type { ScreenReason } from './engine/set-screen';
-import { bonusKey } from './engine/set-value';
-import type { SpecId } from './engine/types';
 import {
 	bonusGearUnmeasured,
 	canBeCredited,
@@ -22,7 +19,10 @@ import {
 	setPotentialIncrements,
 	type SetPotentialTerm,
 	setPotentialTerms,
-} from './engine/view';
+} from './engine/set-potential';
+import type { ScreenReason } from './engine/set-screen';
+import { bonusKey } from './engine/set-value';
+import type { SpecId } from './engine/types';
 import { shownTenths, tenthsOf } from './shown_figure';
 
 /** A set bonus as a label names it: "{set} {count}pc". */

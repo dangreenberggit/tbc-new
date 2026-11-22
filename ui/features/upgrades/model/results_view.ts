@@ -5,8 +5,9 @@
 
 import { type SimSlotName, simSlotsForPoolSlot } from './engine/pool';
 import type { RankedItem, Ranking } from './engine/rank';
+import { rankableSetPotential } from './engine/set-potential';
 import { SIM_ORDER } from './engine/slots';
-import { applyView, rankableSetPotential, type ViewResult, type ViewRow } from './engine/view';
+import { applyView, type ViewResult, type ViewRow } from './engine/view';
 import type { DpsSortKey } from './results_columns';
 import type { RunState, StoppedRanking } from './run_state';
 import { sourceKeysMatching, type SourceOption, sourceOptions } from './settings_pool';
