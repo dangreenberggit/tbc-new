@@ -9,24 +9,15 @@
  */
 
 import { type GemContext, gemContext, metaSocketUnpriced } from './candidate-gems';
-import { capProfileFor, perSpellHitTalentTaken } from './cap-profile';
-import { gearHitRating } from './caps';
+import { capProfileFor } from './cap-profile';
 import { compose } from './compose';
 import { CUTOFF, meetsCutoff } from './cutoff';
 import { buildStandingAssumptions, notesFromMetaRepair, type RunNote } from './disclosure';
-import { applyRepairedGems, candidateSwapPreRepair, candidateSwapWithRepairs, type ChainBuild } from './gear-swap';
+import { applyRepairedGems, candidateSwapWithRepairs } from './gear-swap';
 import { gemsForPhase } from './gems';
-import {
-	CandidateHitReadFailed,
-	hitPercentOf,
-	hitPercentOrSimFailed,
-	type LayoutResult,
-	MISSED_HIT_TOLERANCE,
-	readHitCap,
-	type RequestsPerCopyLayout,
-} from './hit-budget';
+import { CandidateHitReadFailed, candidateRepairGems, makeRequestsPerLayout, readBaselineHitBudget } from './hit-budget';
 import { equipmentFromLoggedGear } from './logged-gear';
-import { type GemRecolor, inactiveMeta, MetaRepairError } from './meta-repair';
+import { type GemRecolor, MetaRepairError } from './meta-repair';
 import { plausibilityWarnings } from './plausibility';
 import { type PoolEntry, type SimSlotName, simSlotsForPoolSlot } from './pool';
 import { promisePool } from './promise-pool';
@@ -40,31 +31,19 @@ import {
 	resolveFight,
 	resolveSeeds,
 	type RunContext,
-	talentsStringFromRequest,
 } from './rank-setup';
 import { type Deps, type PartialRanking, type Progress, type RankedItem, RankError, type Ranking, type RankInput, type ResolvedFight } from './rank-types';
-import {
-	type CandidateSkip,
-	candidateSkipNote,
-	hitCapFullWeightNote,
-	hitCapPerSpellTalentNote,
-	hitCapUnknownNote,
-	metaPreferenceNotes,
-	offHandBlockedNotes,
-	oneHandBlockedNotes,
-	uniqueNotes,
-} from './run-notes';
+import { type CandidateSkip, candidateSkipNote, metaPreferenceNotes, offHandBlockedNotes, oneHandBlockedNotes, uniqueNotes } from './run-notes';
 import { isReplicable, PAIRED_REPLICATE_TOP_N, pairedReplicateSe, usesPairedReplication } from './se';
-import { type PlayerStatsObservation, type RaidSimRequest, type SimObservation, stableStringify } from './seams/sim-runner';
+import type { RaidSimRequest, SimObservation } from './seams/sim-runner';
 import type { Job } from './seams/store';
 import { setBreakNote } from './set-bonus';
 import { measureBonusGear } from './set-bonus-gear';
 import { applySetContext } from './set-context';
-import { applyCopies, type BuildFailure, errorText, isBuildFailure } from './set-less-copies';
 import { buildSetBonuses, emptySetPhase } from './set-phase';
 import { type CountsAsBreak, type OwnDelta, sampleOf, setCounts } from './set-value';
 import { countsAsBreakFrom } from './set-worn-ladder';
-import { rankingCacheKey, readStats, simOrFailure, stopGuardedDeps, StopRefusedSim } from './sim-calls';
+import { rankingCacheKey, simOrFailure, stopGuardedDeps, StopRefusedSim } from './sim-calls';
 import { SIM_ORDER, type SimItemSpec } from './slots';
 export {
 	type RankInput,
@@ -251,37 +230,10 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
  * job failed when this throws.
  */
 async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | PartialRanking> {
-	const {
-		input,
-		deps,
-		guardedDeps,
-		onProgress,
-		cutoff,
-		race,
-		composeFor,
-		capProfile,
-		hitPercentStat,
-		iterations,
-		seeds,
-		runOpts,
-		simVersion,
-		equipment,
-		request,
-	} = ctx;
+	const { input, deps, guardedDeps, onProgress, cutoff, race, composeFor, iterations, seeds, runOpts, simVersion, equipment, request } = ctx;
 	const { resolved, contentHash, job, metaAdjusted, metaRecolors } = setup;
 	const { equippedIds, mainHandIsOneHanded, blockedOffHand, blockedOneHand, ordered } = setup.pool;
-	// Reassigned once, after the baseline's stats read, so every later repair
-	// site gets the hit budget.
-	let gems = setup.gems;
 	const simCounts: SimCounts = { done: 0, total: 0 };
-	/** The baseline's sim hit rating, once the budget is set. */
-	let baselineSimHit: number | undefined;
-	/**
-	 * How repair priced hit where the ranking cannot show it: no cap used
-	 * (a full-weight spec, or a target not at level 73), or a per-spell hit
-	 * talent the cap leaves out.
-	 */
-	const hitCapNotes: RunNote[] = [];
 
 	const baselineOutcome = await simOrFailure(deps, request, simVersion, runOpts);
 	if ('simError' in baselineOutcome) {
@@ -294,150 +246,11 @@ async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | P
 	// One stats read of the baseline gives the repair hit budget every later
 	// swap starts from, so it runs before the first candidate. A read Stop
 	// ended is no failure: the candidate loop returns a partial ranking.
-	if (hitPercentStat !== undefined) {
-		try {
-			const { hitPercent, budget } = await readHitCap(deps, capProfile, request, hitPercentStat, observation.spellDamageBySchool);
-			if (budget) {
-				gems = {
-					...gems,
-					repairHitBudget: {
-						stat: budget.stat,
-						baselineRemaining: budget.remaining,
-						baselineGearHit: gearHitRating(equipment, budget.stat),
-						...(budget.groups ? { groups: budget.groups } : {}),
-					},
-				};
-				baselineSimHit = hitPercent * capProfile.ratingPerPercent;
-				const talent = perSpellHitTalentTaken(capProfile, talentsStringFromRequest(request));
-				if (talent !== undefined) {
-					hitCapNotes.push(hitCapPerSpellTalentNote(talent));
-				}
-			} else {
-				hitCapNotes.push(hitCapUnknownNote());
-			}
-		} catch (err) {
-			if (!(err instanceof StopRefusedSim)) throw err;
-		}
-	} else if (capProfile.repair.kind === 'fullWeight') {
-		hitCapNotes.push(hitCapFullWeightNote());
-	}
-
-	/**
-	 * The requests for one set-phase gear and its copies, each with gems
-	 * repaired on its own hit budget. A request's missed hit is the set-bonus
-	 * hit that counting gear hit alone cannot see:
-	 * `sim hit(request) − sim hit(baseline) − (gear hit(build) − gear hit(baseline))`,
-	 * with gear hit taken on real item ids before the copies. A gear whose
-	 * repair changed nothing is never read. One read per distinct request,
-	 * raced against Stop. The first read Stop ends turns this off for this
-	 * call and every later one, so the two sims of a pair never use different
-	 * gems. A read that fails fails the run.
-	 */
-	const statsReadsByRequest = new Map<string, Promise<PlayerStatsObservation>>();
-	let perGearHitBudgetsOff = false;
-	const requestsPerLayout: RequestsPerCopyLayout = async (rebuild, base, copiesList) => {
-		let plain: RaidSimRequest | BuildFailure;
-		try {
-			plain = composeFor(base.equipment);
-		} catch (err) {
-			plain = { buildError: errorText(err) };
-		}
-		const defaults = copiesList.map((copies): RaidSimRequest | BuildFailure => {
-			if (isBuildFailure(plain)) return plain;
-			try {
-				return applyCopies(plain, copies);
-			} catch (err) {
-				return { buildError: errorText(err) };
-			}
-		});
-		const shared = () => defaults.map(request => (isBuildFailure(request) ? request : { request, recolors: base.recolors }));
-		const hitBudget = gems.repairHitBudget;
-		if (!base.repaired || !hitBudget || hitPercentStat === undefined || baselineSimHit === undefined || perGearHitBudgetsOff) {
-			return shared();
-		}
-		try {
-			const buildHit = gearHitRating(base.equipment, hitBudget.stat);
-			const out: LayoutResult[] = [];
-			for (let i = 0; i < copiesList.length; i++) {
-				const request = defaults[i]!;
-				if (isBuildFailure(request)) {
-					out.push(request);
-					continue;
-				}
-				const key = stableStringify(request);
-				let read = statsReadsByRequest.get(key);
-				if (!read) {
-					read = readStats(deps.sim, request, deps.signal);
-					statsReadsByRequest.set(key, read);
-				}
-				const { hitPercent } = await hitPercentOrSimFailed(read, hitPercentStat);
-				const missed = hitPercent * capProfile.ratingPerPercent - baselineSimHit - (buildHit - hitBudget.baselineGearHit);
-				if (Math.abs(missed) < MISSED_HIT_TOLERANCE) {
-					out.push({ request, recolors: base.recolors });
-					continue;
-				}
-				let rebuilt: ChainBuild;
-				try {
-					rebuilt = rebuild({
-						...gems,
-						repairHitBudget: {
-							...hitBudget,
-							baselineRemaining: hitBudget.baselineRemaining - missed,
-						},
-					});
-				} catch (err) {
-					if (!(err instanceof MetaRepairError)) throw err;
-					out.push({ repairError: err });
-					continue;
-				}
-				out.push({
-					request: applyCopies(composeFor(rebuilt.equipment), copiesList[i]!),
-					recolors: rebuilt.recolors,
-				});
-			}
-			return out;
-		} catch (err) {
-			if (!(err instanceof StopRefusedSim)) throw err;
-			perGearHitBudgetsOff = true;
-			return shared();
-		}
-	};
-
-	/**
-	 * The gem context one candidate's repair runs with. The run's hit budget
-	 * moves by the swap's gear hit, which misses set-bonus hit the swap breaks
-	 * or completes (a warlock's Mana-Etched head breaks a +35 spell hit set).
-	 * So when the swap turns the meta off, the candidate's own stats read
-	 * corrects the budget, as `requestsPerLayout` does above. The read runs on the
-	 * candidate sim's worker, so a failed read rejects with
-	 * `CandidateHitReadFailed`, reported as that candidate's failed sim; a
-	 * read Stop refused rejects with `StopRefusedSim`.
-	 */
-	const candidateRepairGems = async (slotIndex: number, itemId: number): Promise<GemContext> => {
-		const hitBudget = gems.repairHitBudget;
-		if (!hitBudget || hitPercentStat === undefined || baselineSimHit === undefined) {
-			return gems;
-		}
-		const pre = candidateSwapPreRepair(equipment, slotIndex, itemId, gems);
-		if (!inactiveMeta(pre.socketed)) return gems;
-		const request = composeFor(pre.swapped);
-		let hitPercent: number;
-		try {
-			hitPercent = hitPercentOf(await readStats(deps.sim, request, deps.signal), hitPercentStat);
-		} catch (err) {
-			if (err instanceof StopRefusedSim) throw err;
-			throw new CandidateHitReadFailed(err);
-		}
-		const missed = hitPercent * capProfile.ratingPerPercent - baselineSimHit - (gearHitRating(pre.swapped, hitBudget.stat) - hitBudget.baselineGearHit);
-		if (Math.abs(missed) < MISSED_HIT_TOLERANCE) return gems;
-		return {
-			...gems,
-			repairHitBudget: {
-				...hitBudget,
-				baselineRemaining: hitBudget.baselineRemaining - missed,
-			},
-		};
-	};
+	const baselineHitBudget = await readBaselineHitBudget(ctx, setup.gems, observation);
+	const { gems, hitCapNotes } = baselineHitBudget;
+	// One instance per run, built after the read: its read memo and its Stop
+	// latch are shared by every set-phase call.
+	const requestsPerLayout = makeRequestsPerLayout(ctx, baselineHitBudget);
 
 	const baselineDps = observation.dps;
 	const ranked: RankedItem[] = [];
@@ -510,7 +323,7 @@ async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | P
 			let removed: readonly { slotIndex: number; itemId: number }[];
 			let repairGems: GemContext;
 			try {
-				repairGems = await candidateRepairGems(slotIndex, entry.itemId);
+				repairGems = await candidateRepairGems(ctx, baselineHitBudget, slotIndex, entry.itemId);
 			} catch (err) {
 				// Stop refused the read: the row is left to the Stop placeholder.
 				if (err instanceof StopRefusedSim) return;

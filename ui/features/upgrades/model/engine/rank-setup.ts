@@ -1,8 +1,7 @@
 /**
  * What a run settles before its baseline sim: iterations and seeds, the fight, the worn
  * gear's meta repair, the candidates it may price and the ranking's cache key, plus the race
- * and talents read from the page's request. `RunContext` holds the inputs every later step
- * reads.
+ * read from the page's request. `RunContext` holds the inputs every later step reads.
  */
 
 import type { GemContext } from './candidate-gems';
@@ -107,17 +106,6 @@ export function raceFromSkeleton(skeleton: RaidSimRequest): Race {
 	).raid?.parties?.[0]?.players?.[0]?.race;
 	if (raw && isRace(raw)) return raw;
 	return 'RaceHuman';
-}
-
-export function talentsStringFromRequest(request: RaidSimRequest): string | undefined {
-	const raw = (
-		request as {
-			raid?: {
-				parties?: Array<{ players?: Array<{ talentsString?: string }> }>;
-			};
-		}
-	).raid?.parties?.[0]?.players?.[0]?.talentsString;
-	return typeof raw === 'string' ? raw : undefined;
 }
 
 function isRace(value: string): value is Race {
