@@ -12,10 +12,10 @@ import { type GemContext, gemContext } from './candidate-gems';
 import { capProfileFor } from './cap-profile';
 import { compose } from './compose';
 import { CUTOFF } from './cutoff';
-import { buildStandingAssumptions, notesFromMetaRepair, type RunNote } from './disclosure';
+import { buildStandingAssumptions, notesFromMetaRepair } from './disclosure';
 import { applyRepairedGems } from './gear-swap';
 import { gemsForPhase } from './gems';
-import { type BaselineHitBudget, makeRequestsPerLayout, readBaselineHitBudget, type RequestsPerCopyLayout } from './hit-budget';
+import { type BaselineHitBudget, makeRequestsPerLayout, readBaselineHitBudget } from './hit-budget';
 import { equipmentFromLoggedGear } from './logged-gear';
 import type { GemRecolor } from './meta-repair';
 import { plausibilityWarnings } from './plausibility';
@@ -36,10 +36,8 @@ import { type Deps, type PartialRanking, type Progress, type RankedItem, RankErr
 import { candidateSkipNote, metaPreferenceNotes, offHandBlockedNotes, oneHandBlockedNotes, uniqueNotes } from './run-notes';
 import type { SimObservation } from './seams/sim-runner';
 import type { Job } from './seams/store';
-import { measureBonusGear } from './set-bonus-gear';
-import { applySetContext } from './set-context';
-import { buildSetBonuses, emptySetPhase } from './set-phase';
-import { type CountsAsBreak, sampleOf, setCounts } from './set-value';
+import { emptySetPhase, runSetPhase, type SetPhaseOutcome } from './set-phase';
+import { setCounts } from './set-value';
 import { countsAsBreakFrom } from './set-worn-ladder';
 import { rankingCacheKey, simOrFailure, stopGuardedDeps, StopRefusedSim } from './sim-calls';
 import type { SimItemSpec } from './slots';
@@ -262,114 +260,6 @@ async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | P
 
 	const rankingBase = assembleRanking(ctx, setup, observation, baselineHitBudget, candidates, setPhase);
 	return saveRanking(deps, setup, rankingBase, aborted);
-}
-
-/**
- * What the set phase leaves for the ranking. `dropSetFigures` empties it in
- * place when Stop fires after the candidate loop.
- */
-type SetPhaseOutcome = {
-	setBonusResult: ReturnType<typeof emptySetPhase>;
-	countsAsBreak: CountsAsBreak | undefined;
-	bonusGearResult: Awaited<ReturnType<typeof measureBonusGear>> | undefined;
-	/** The set phase pushes to both, and a Stop empties them in place. */
-	setBonusNotes: RunNote[];
-	setCheckNotes: RunNote[];
-};
-
-/**
- * The set phase and what it adds to the rows: the set-bonus sims, each
- * row's `setContext`, and the bonus-gear sims. After a Stop it runs no sim
- * and gives the empty set phase.
- */
-async function runSetPhase(
-	ctx: RunContext,
-	candidates: CandidateResults,
-	baselineHitBudget: BaselineHitBudget,
-	observation: SimObservation,
-	requestsPerLayout: RequestsPerCopyLayout,
-	abortedBefore: boolean,
-): Promise<SetPhaseOutcome> {
-	const { input, deps, guardedDeps, cutoff, composeFor, iterations, simVersion, runOpts, equipment } = ctx;
-	const { ranked, ownDeltasByItemId, simCandidates } = candidates;
-	const { gems } = baselineHitBudget;
-	const signal = deps.signal;
-	let aborted = abortedBefore;
-
-	// A line for every set bonus the set phase could not measure, and for
-	// every set screen or worn-set value sim that failed, most with the sim's
-	// error.
-	const setBonusNotes: RunNote[] = [];
-	const setCheckNotes: RunNote[] = [];
-
-	const setBonusResult = aborted
-		? emptySetPhase()
-		: await buildSetBonuses({
-				deps: guardedDeps,
-				candidates: simCandidates,
-				equipment,
-				gems,
-				input,
-				composeFor,
-				ownDeltasByItemId,
-				baseline: sampleOf(observation, iterations),
-				simVersion,
-				runOpts,
-				setBonusNotes,
-				setCheckNotes,
-				measureSetBonuses: deps.measureSetBonuses ?? false,
-				cutoff,
-				baselineStdev: observation.stdev,
-				requestsPerLayout,
-			});
-	if (signal?.aborted) aborted = true;
-	// With `measureSetBonuses`, a swap loses a worn bonus only at a count
-	// `wornSetLadder` counted, and no table is read. An aborted run has none,
-	// so it charges no loss.
-	const countsAsBreak: CountsAsBreak | undefined = deps.measureSetBonuses ? countsAsBreakFrom(setBonusResult.wornSetLadder) : undefined;
-	const setBonuses = setBonusResult.bonuses;
-	// With `measureSetBonuses`, a set row's future bonuses are valued by
-	// one sim of the row plus its partner pieces.
-	const simBonusGear = (deps.measureSetBonuses ?? false) && !aborted;
-	const hasSetContext = setBonuses.length > 0 || setBonusResult.setIdsNotValued.length > 0;
-	if (hasSetContext) {
-		applySetContext({
-			ranked,
-			setBonuses,
-			equipment,
-			brokenBonusDpsByKey: setBonusResult.brokenBonusDpsByKey,
-			firstSlotIndexByItemId: setBonusResult.firstSlotIndexByItemId,
-			ownDeltasByItemId,
-			countsAsBreak,
-			measured: simBonusGear ? { crossingChecks: setBonusResult.crossingChecks } : undefined,
-			setIdsNotValued: setBonusResult.setIdsNotValued,
-		});
-	}
-	// After the future bonuses are filled in and before replication rewrites
-	// the top rows' `deltaDps`: one sim per distinct gear of a row plus its
-	// partner pieces.
-	const bonusGearResult =
-		simBonusGear && hasSetContext && countsAsBreak
-			? await measureBonusGear({
-					deps: guardedDeps,
-					ranked,
-					setBonuses,
-					equipment,
-					gems,
-					composeFor,
-					ownDeltasByItemId,
-					brokenBonusDpsByKey: setBonusResult.brokenBonusDpsByKey,
-					firstSlotIndexByItemId: setBonusResult.firstSlotIndexByItemId,
-					countsAsBreak,
-					baseline: sampleOf(observation, iterations),
-					simVersion,
-					runOpts,
-					cutoff,
-					requestsPerLayout,
-					bonusNotes: setBonusNotes,
-				})
-			: undefined;
-	return { setBonusResult, countsAsBreak, bonusGearResult, setBonusNotes, setCheckNotes };
 }
 
 /**

@@ -6,13 +6,12 @@
 
 import type { GemContext } from './candidate-gems';
 import { type ChainBuild, chainSwapsWithRepairs } from './gear-swap';
-import { type CopyLayout, isRepairFailure, type LayoutRequest, repairErrorOr, requestOf, type RequestsPerCopyLayout } from './hit-budget';
+import { type CopyLayout, isRepairFailure, type LayoutRequest, repairErrorOr, requestOf } from './hit-budget';
 import { type GemRecolor, MetaRepairError } from './meta-repair';
-import type { Deps, SetBonusValue } from './rank-types';
+import type { SetBonusValue } from './rank-types';
 import { SET_BONUS_SKIP_REASONS, setBonusSkipNote, type SkipReason } from './run-notes';
-import type { RaidSimRequest, SimRunOpts } from './seams/sim-runner';
 import { type BuildFailure, clearsSameGearNoise, errorText, isBuildFailure, isSimFailure, measureSameGearBonus } from './set-less-copies';
-import type { SetPhaseContext } from './set-phase';
+import type { SampleRunnerFor, SetPhaseContext } from './set-phase';
 import type { SetReach } from './set-reach';
 import {
 	type BonusDpsResult,
@@ -22,7 +21,6 @@ import {
 	type CountsAsBreak,
 	type DpsSample,
 	isBonusImplemented,
-	type OwnDelta,
 	type PlacedItem,
 	sampleOf,
 	type SelfSetConfound,
@@ -31,13 +29,12 @@ import {
 	type SetThreshold,
 } from './set-value';
 import { simOrFailure } from './sim-calls';
-import type { SimItemSpec } from './slots';
 
 /** What measuring a count reads beyond the context. */
 export type BonusTools = {
 	readonly countsAsBreak: CountsAsBreak;
 	/** `cachedSampleRun` from set-phase.ts, passed in so the import goes one way. */
-	readonly cachedSampleRun: (what: string) => (request: RaidSimRequest) => Promise<DpsSample>;
+	readonly cachedSampleRun: SampleRunnerFor;
 };
 
 /** One count of one set. */
@@ -70,8 +67,10 @@ type SameGearFields = Pick<SetBonusValue, 'sameGearDps' | 'sameGearSe'>;
 
 /**
  * `setBonuses`: each reachable count of each set with a candidate piece,
- * one value per count, by set in pool order and then by count. A set with
- * no count to measure goes in `setIdsNotValued`.
+ * one value per count, by set in pool order and then by count. With
+ * `measureSetBonuses`, a set with no count in reach goes in
+ * `setIdsNotValued`, as does a set the screen dropped. Without it, a set
+ * worn at 4 or more pieces has no count to measure and gets neither.
  */
 export async function measureSetBonusValues(
 	ctx: SetPhaseContext,
@@ -177,9 +176,9 @@ async function measureBonusAtCount(ctx: SetPhaseContext, reach: SetReach, tools:
 }
 
 /**
- * The counts that run no sim: a bonus the sim lacks (without
- * `measureSetBonuses`), too few pieces in the pool, or one added piece.
- * Otherwise the added pieces.
+ * The counts that run no sim: a bonus the `isBonusImplemented` table does
+ * not measure (without `measureSetBonuses`), too few pieces in the pool, or
+ * one added piece. Otherwise the added pieces.
  */
 function addedPiecesOrNoSimValue(
 	ctx: SetPhaseContext,
@@ -395,7 +394,7 @@ async function correctWornOnePair(
 	bonusValue: BonusDpsResult,
 	twoPiece: TwoPieceCarry,
 ): Promise<SelfSetConfound | undefined> {
-	const { deps, equipment, gems, composeFor, ownDeltasByItemId, baseline, simVersion, runOpts, requestsPerLayout } = ctx;
+	const { equipment, ownDeltasByItemId } = ctx;
 	const { setId, label, threshold } = at;
 	let selfConfound: SelfSetConfound | undefined = threshold === 4 && twoPiece.twoPieceUnmeasurableAtThisWornCount ? { threshold: 2 } : undefined;
 	if (selfConfound) {
@@ -412,22 +411,7 @@ async function correctWornOnePair(
 			.flatMap((a, i) => breakFree.slice(i + 1).map(b => [a, b]))
 			.find(p => brokenSetBonuses(equipment, p, setId, tools.countsAsBreak).length === 0);
 		const pairTwoPiece =
-			pair !== undefined
-				? await measurePairTwoPiece(
-						`${label} ${threshold}pc`,
-						deps,
-						pair,
-						equipment,
-						gems,
-						composeFor,
-						ownDeltasByItemId,
-						baseline,
-						simVersion,
-						runOpts,
-						requestsPerLayout,
-						reason => bonusNotMeasured(ctx, label, 2, reason),
-					)
-				: undefined;
+			pair !== undefined ? await measurePairTwoPiece(ctx, `${label} ${threshold}pc`, pair, reason => bonusNotMeasured(ctx, label, 2, reason)) : undefined;
 		if (pairTwoPiece) {
 			const extra = addedPieces.length - 1;
 			bonusValue.bonusDps += extra * pairTwoPiece.dps;
@@ -456,7 +440,7 @@ function notValued(at: BonusAt, packageItemIds: number[], tail: SameGearFields &
 }
 
 /** Adds the run note that a bonus was not measured, and why. */
-function bonusNotMeasured(ctx: SetPhaseContext, setName: string, threshold: SetThreshold, reason: SkipReason): void {
+export function bonusNotMeasured(ctx: SetPhaseContext, setName: string, threshold: SetThreshold, reason: SkipReason): void {
 	ctx.setBonusNotes.push(setBonusSkipNote({ setName, threshold, reason }));
 }
 
@@ -468,19 +452,12 @@ function bonusNotMeasured(ctx: SetPhaseContext, setName: string, threshold: SetT
  * a sim Stop refused.
  */
 export async function measurePairTwoPiece(
+	ctx: SetPhaseContext,
 	bonusLabel: string,
-	deps: Deps,
 	pair: readonly PlacedItem[],
-	equipment: readonly SimItemSpec[],
-	gems: GemContext,
-	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
-	ownDeltasByItemId: ReadonlyMap<number, OwnDelta>,
-	baseline: DpsSample,
-	simVersion: string,
-	runOpts: SimRunOpts,
-	requestsPerLayout: RequestsPerCopyLayout,
 	onNotMeasured: (reason: SkipReason) => void,
 ): Promise<{ dps: number; se: number } | undefined> {
+	const { deps, equipment, gems, ownDeltasByItemId, baseline, simVersion, runOpts, requestsPerLayout } = ctx;
 	let pairBuild: ChainBuild;
 	try {
 		pairBuild = chainSwapsWithRepairs(equipment, pair, gems);

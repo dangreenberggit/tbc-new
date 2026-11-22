@@ -83,18 +83,16 @@ export type CountedSims = {
 	baseline: DpsSample;
 };
 
+/** A sim's DPS minus the baseline's, with the standard error of that difference. */
+type DeltaSample = { deltaDps: number; se: number };
+
 /**
  * One store-cached sim as a delta against the baseline, counted in `counter`.
  * A failed sim warns with `failure` and comes back as its error's text.
  */
-export async function runCounted(
-	at: CountedSims,
-	request: RaidSimRequest,
-	counter: SimCounter,
-	failure: string,
-): Promise<{ deltaDps: number; se: number } | SimFailure> {
-	const { deps, baseline, runOpts } = at;
-	const outcome = await simOrFailure(deps, request, at.simVersion, runOpts);
+export async function runCounted(sims: CountedSims, request: RaidSimRequest, counter: SimCounter, failure: string): Promise<DeltaSample | SimFailure> {
+	const { deps, baseline, runOpts } = sims;
+	const outcome = await simOrFailure(deps, request, sims.simVersion, runOpts);
 	if ('simError' in outcome) {
 		// No warning for a sim the Stop guard refused.
 		if (!deps.signal?.aborted) console.warn(failure, outcome.simError);
@@ -115,20 +113,20 @@ export async function runCounted(
  * one failed sim costs only its own key.
  */
 export async function simEachOnce(
-	at: CountedSims,
+	sims: CountedSims,
 	requests: ReadonlyMap<string, RaidSimRequest>,
 	counter: SimCounter,
 	failure: string,
-): Promise<{ deltas: Map<string, { deltaDps: number; se: number }>; errors: Map<string, string> }> {
-	const deltas = new Map<string, { deltaDps: number; se: number }>();
+): Promise<{ deltas: Map<string, DeltaSample>; errors: Map<string, string> }> {
+	const deltas = new Map<string, DeltaSample>();
 	const errors = new Map<string, string>();
 	await promisePool(
 		[...requests].map(([key, request]) => async () => {
-			const delta = await runCounted(at, request, counter, failure);
+			const delta = await runCounted(sims, request, counter, failure);
 			if (isSimFailure(delta)) errors.set(key, delta.simError);
 			else deltas.set(key, delta);
 		}),
-		at.deps.concurrency ?? 1,
+		sims.deps.concurrency ?? 1,
 	);
 	return { deltas, errors };
 }

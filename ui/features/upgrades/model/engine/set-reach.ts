@@ -5,21 +5,19 @@
  * `Ranking`'s `crossingChecks`).
  */
 
-import type { GemContext } from './candidate-gems';
 import { type ChainBuild, chainSwapsWithRepairs } from './gear-swap';
 import { repairErrorOr, requestOf } from './hit-budget';
 import { getItem } from './items';
 import { MetaRepairError } from './meta-repair';
 import { type PoolEntry, simSlotsForPoolSlot } from './pool';
 import type { CrossingCheck } from './rank-types';
-import { SET_BONUS_SKIP_REASONS, setBonusCountsSkipNote, setBonusSkipNote, type SkipReason } from './run-notes';
-import type { RaidSimRequest, SimRunner } from './seams/sim-runner';
+import { SET_BONUS_SKIP_REASONS, setBonusCountsSkipNote, type SkipReason } from './run-notes';
+import { bonusNotMeasured } from './set-bonus-values';
 import { clearsSameGearNoise, errorText, isBuildFailure, isSimFailure, measureSameGearBonus } from './set-less-copies';
-import type { SetPhaseContext } from './set-phase';
+import type { SampleRunnerFor, SetPhaseContext } from './set-phase';
 import {
 	type AddedPiecesResult,
 	bonusCountOf,
-	type DpsSample,
 	type OwnDelta,
 	type PlacedItem,
 	selectAddedPieces,
@@ -56,7 +54,7 @@ export type SetReach = {
  * are `setBonusCountsInReach`'s bonus reads.
  */
 export async function setReach(ctx: SetPhaseContext, nameOfSet: (setId: number) => string): Promise<SetReach> {
-	const { deps, candidates, equipment, gems, input, composeFor, ownDeltasByItemId, setCheckNotes, measureSetBonuses } = ctx;
+	const { candidates, equipment, input, ownDeltasByItemId, setCheckNotes, measureSetBonuses } = ctx;
 	const setIdsWithCandidates = new Set<number>();
 	for (const entry of candidates) {
 		const setId = getItem(entry.itemId)?.setId;
@@ -90,15 +88,12 @@ export async function setReach(ctx: SetPhaseContext, nameOfSet: (setId: number) 
 	// (Thunderheart Harness at 5).
 	const bonusCounts = measureSetBonuses
 		? await setBonusCountsInReach(
-				deps.sim,
+				ctx,
 				setIdsWithCandidates,
 				setId => {
 					const byCount = addedByCount(setId, wornCounts.get(setId) ?? 0);
 					return byCount[byCount.length - 1]?.pieces;
 				},
-				equipment,
-				gems,
-				composeFor,
 				(setId, reason) =>
 					setCheckNotes.push(
 						setBonusCountsSkipNote({
@@ -109,7 +104,8 @@ export async function setReach(ctx: SetPhaseContext, nameOfSet: (setId: number) 
 			)
 		: new Map<number, ReadonlySet<number>>();
 	// With `measureSetBonuses`: the counts in reach at which the set has a
-	// bonus. The same-gear check below decides which are worth something here.
+	// bonus. The same-gear check (`checkSameGear` in set-bonus-values.ts)
+	// decides which are worth something here.
 	const reachableCounts = (setId: number, piecesWorn: number): SetThreshold[] => {
 		const known = bonusCounts.get(setId);
 		return addedByCount(setId, piecesWorn)
@@ -144,14 +140,13 @@ export async function setReach(ctx: SetPhaseContext, nameOfSet: (setId: number) 
  * every count is then tried.
  */
 export async function setBonusCountsInReach(
-	sim: SimRunner,
+	ctx: SetPhaseContext,
 	setIds: ReadonlySet<number>,
 	mostAddedPieces: (setId: number) => PlacedItem[] | undefined,
-	equipment: readonly SimItemSpec[],
-	gems: GemContext,
-	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest,
 	onNotRead: (setId: number, reason: SkipReason) => void,
 ): Promise<Map<number, ReadonlySet<number>>> {
+	const { equipment, gems, composeFor } = ctx;
+	const { sim } = ctx.deps;
 	const out = new Map<number, ReadonlySet<number>>();
 	if (!sim.activeSetBonuses) return out;
 	const read = (eq: readonly SimItemSpec[]) => sim.activeSetBonuses!(composeFor(eq));
@@ -197,82 +192,73 @@ export async function setBonusCountsInReach(
  * candidate's own swap, so `crossesThreshold` reads a measurement rather
  * than the fixed table in `isBonusImplemented`.
  */
-export async function measureCrossingChecks(
-	ctx: SetPhaseContext,
-	reach: SetReach,
-	cachedSampleRun: (what: string) => (request: RaidSimRequest) => Promise<DpsSample>,
-): Promise<CrossingCheck[]> {
-	const { candidates, equipment, gems, composeFor, ownDeltasByItemId, setBonusNotes, measureSetBonuses, cutoff, requestsPerLayout } = ctx;
+export async function measureCrossingChecks(ctx: SetPhaseContext, reach: SetReach, cachedSampleRun: SampleRunnerFor): Promise<CrossingCheck[]> {
+	const { candidates, equipment, gems, composeFor, ownDeltasByItemId, measureSetBonuses, cutoff, requestsPerLayout } = ctx;
 	const { setIdsWithCandidates, wornCounts, bonusCounts } = reach;
-	const bonusNotMeasured = (setName: string, threshold: SetThreshold, reason: SkipReason) =>
-		setBonusNotes.push(setBonusSkipNote({ setName, threshold, reason }));
+	if (!measureSetBonuses) return [];
 	const crossingChecks: CrossingCheck[] = [];
-	if (measureSetBonuses) {
-		for (const setId of [...setIdsWithCandidates].sort((a, b) => a - b)) {
-			const worn = wornCounts.get(setId) ?? 0;
-			if (worn < 1) continue;
-			// One more piece reaches no bonus the sim lists.
-			if (bonusCounts.get(setId)?.has(worn + 1) === false) continue;
-			const wornSlots = new Set(setPieceSlots(equipment, setId));
-			let best: OwnDelta | undefined;
-			for (const entry of candidates) {
-				if (getItem(entry.itemId)?.setId !== setId) continue;
-				const ownDelta = ownDeltasByItemId.get(entry.itemId);
-				if (!ownDelta || wornSlots.has(ownDelta.slotIndex)) continue;
-				if (!best || ownDelta.deltaDps > best.deltaDps || (ownDelta.deltaDps === best.deltaDps && ownDelta.itemId < best.itemId)) {
-					best = ownDelta;
-				}
+	for (const setId of [...setIdsWithCandidates].sort((a, b) => a - b)) {
+		const worn = wornCounts.get(setId) ?? 0;
+		if (worn < 1) continue;
+		// One more piece reaches no bonus the sim lists.
+		if (bonusCounts.get(setId)?.has(worn + 1) === false) continue;
+		const wornSlots = new Set(setPieceSlots(equipment, setId));
+		let best: OwnDelta | undefined;
+		for (const entry of candidates) {
+			if (getItem(entry.itemId)?.setId !== setId) continue;
+			const ownDelta = ownDeltasByItemId.get(entry.itemId);
+			if (!ownDelta || wornSlots.has(ownDelta.slotIndex)) continue;
+			if (!best || ownDelta.deltaDps > best.deltaDps || (ownDelta.deltaDps === best.deltaDps && ownDelta.itemId < best.itemId)) {
+				best = ownDelta;
 			}
-			if (!best) continue;
-			const crossing = [{ slotIndex: best.slotIndex, itemId: best.itemId }];
-			let swapped: ChainBuild | undefined;
-			try {
-				swapped = chainSwapsWithRepairs(equipment, crossing, gems);
-			} catch (err) {
-				if (!(err instanceof MetaRepairError)) throw err;
-			}
-			const crossingBuild = swapped;
-			const crossingLabel = setNameOf(equipment, setId);
-			// A copy's failed gem repair leaves this check unmeasured with no line,
-			// as a failed repair of the swap itself does above.
-			let layoutRepairFailed = false;
-			const nextPieceResult = crossingBuild
-				? await measureSameGearBonus(
-						cachedSampleRun(`${crossingLabel} ${worn + 1}pc crossing check`),
-						composeFor(crossingBuild.equipment),
-						setPieceSlots(crossingBuild.equipment, setId),
-						worn,
-						// "On" and "off" are compared as a pair, so they come from
-						// one call.
-						async copiesList => {
-							const entries = repairErrorOr(
-								await requestsPerLayout(g => chainSwapsWithRepairs(equipment, crossing, g), crossingBuild, copiesList),
-							);
-							if (!(entries instanceof MetaRepairError)) {
-								return entries.map(requestOf);
-							}
-							layoutRepairFailed = true;
-							// Never read: the check's result is dropped below.
-							return copiesList.map(() => ({ buildError: errorText(entries) }));
-						},
-					)
-				: undefined;
-			const measured = layoutRepairFailed ? undefined : nextPieceResult;
-			if (isSimFailure(measured)) {
-				bonusNotMeasured(crossingLabel, worn + 1, SET_BONUS_SKIP_REASONS.simFailed(measured.simError));
-			}
-			if (isBuildFailure(measured)) {
-				bonusNotMeasured(crossingLabel, worn + 1, SET_BONUS_SKIP_REASONS.notBuilt(measured.buildError));
-			}
-			const value = isSimFailure(measured) || isBuildFailure(measured) ? undefined : measured;
-			crossingChecks.push({
-				setId,
-				count: worn + 1,
-				itemId: best.itemId,
-				...(value ? { dps: value.dps, se: value.se } : {}),
-				cleared: value !== undefined && clearsSameGearNoise(value.dps, value.se, cutoff),
-			});
 		}
+		if (!best) continue;
+		const crossing = [{ slotIndex: best.slotIndex, itemId: best.itemId }];
+		let swapped: ChainBuild | undefined;
+		try {
+			swapped = chainSwapsWithRepairs(equipment, crossing, gems);
+		} catch (err) {
+			if (!(err instanceof MetaRepairError)) throw err;
+		}
+		const crossingBuild = swapped;
+		const crossingLabel = setNameOf(equipment, setId);
+		// A copy's failed gem repair leaves this check unmeasured with no line,
+		// as a failed repair of the swap itself does above.
+		let layoutRepairFailed = false;
+		const nextPieceResult = crossingBuild
+			? await measureSameGearBonus(
+					cachedSampleRun(`${crossingLabel} ${worn + 1}pc crossing check`),
+					composeFor(crossingBuild.equipment),
+					setPieceSlots(crossingBuild.equipment, setId),
+					worn,
+					// "On" and "off" are compared as a pair, so they come from
+					// one call.
+					async copiesList => {
+						const entries = repairErrorOr(await requestsPerLayout(g => chainSwapsWithRepairs(equipment, crossing, g), crossingBuild, copiesList));
+						if (!(entries instanceof MetaRepairError)) {
+							return entries.map(requestOf);
+						}
+						layoutRepairFailed = true;
+						// Never read: the check's result is dropped below.
+						return copiesList.map(() => ({ buildError: errorText(entries) }));
+					},
+				)
+			: undefined;
+		const measured = layoutRepairFailed ? undefined : nextPieceResult;
+		if (isSimFailure(measured)) {
+			bonusNotMeasured(ctx, crossingLabel, worn + 1, SET_BONUS_SKIP_REASONS.simFailed(measured.simError));
+		}
+		if (isBuildFailure(measured)) {
+			bonusNotMeasured(ctx, crossingLabel, worn + 1, SET_BONUS_SKIP_REASONS.notBuilt(measured.buildError));
+		}
+		const value = isSimFailure(measured) || isBuildFailure(measured) ? undefined : measured;
+		crossingChecks.push({
+			setId,
+			count: worn + 1,
+			itemId: best.itemId,
+			...(value ? { dps: value.dps, se: value.se } : {}),
+			cleared: value !== undefined && clearsSameGearNoise(value.dps, value.se, cutoff),
+		});
 	}
 	return crossingChecks;
 }

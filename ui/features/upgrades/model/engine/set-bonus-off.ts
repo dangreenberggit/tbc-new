@@ -104,15 +104,15 @@ export async function measureBonusOff(args: BonusGearArgs, chosen: ChosenPartner
 async function queueShownBonuses(args: BonusGearArgs, chosen: ChosenPartners, queue: BonusOffQueue): Promise<number> {
 	let skippedIncrements = 0;
 	for (const item of args.ranked) {
-		const ctx = item.setContext;
+		const setContext = item.setContext;
 		const rowSwap = chosen.rowSwapOf.get(item);
-		if (!ctx?.usesBonusGear || !rowSwap || setCreditUnmeasured(ctx)) continue;
-		const increments = setPotentialIncrements(ctx, args.cutoff);
+		if (!setContext?.usesBonusGear || !rowSwap || setCreditUnmeasured(setContext)) continue;
+		const increments = setPotentialIncrements(setContext, args.cutoff);
 		if (!increments) continue;
 		let prevSwaps: PlacedItem[] | undefined = [rowSwap];
 		let firstIncrement = true;
 		for (const increment of increments) {
-			const f = (ctx.futureBonuses ?? []).find(x => x.threshold === increment.threshold);
+			const f = (setContext.futureBonuses ?? []).find(x => x.threshold === increment.threshold);
 			const partners = f ? chosen.partnersOf.get(f) : undefined;
 			const swaps = partners ? [rowSwap, ...partners] : undefined;
 			if (increment.broken.length > 0) {

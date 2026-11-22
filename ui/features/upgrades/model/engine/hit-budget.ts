@@ -19,7 +19,7 @@ import { applyCopies, type BuildFailure, errorText, isBuildFailure } from './set
 import { readStats, StopRefusedSim } from './sim-calls';
 
 /**
- * A candidate's own stats read failed. Its own class, so `runCandidate` can
+ * A candidate's own stats read failed. Its own class, so `bestSwapFor` can
  * report only the read as that candidate's failed sim and still fail the run
  * on a code error around it.
  */
@@ -71,8 +71,8 @@ export async function hitPercentOrSimFailed(
  * gives. A spell-hit budget also needs a sim result's spell damage by
  * school.
  */
-export async function readHitCap(deps: Deps, capProfile: CapProfile, request: RaidSimRequest, slot: number, spellDamageBySchool?: SpellDamageBySchool) {
-	const { observed, hitPercent } = await hitPercentOrSimFailed(readStats(deps.sim, request, deps.signal), slot);
+export async function readHitCap(deps: Deps, capProfile: CapProfile, request: RaidSimRequest, hitStat: number, spellDamageBySchool?: SpellDamageBySchool) {
+	const { observed, hitPercent } = await hitPercentOrSimFailed(readStats(deps.sim, request, deps.signal), hitStat);
 	return {
 		hitPercent,
 		budget: hitCapBudgetFrom(capProfile, request, observed.pseudoStats, spellDamageBySchool),

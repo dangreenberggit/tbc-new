@@ -93,7 +93,7 @@ type PartnerChoiceRun = {
 /** A set row with at least one future bonus to value, and what its partner choice reads. */
 type PartnerRow = {
 	item: RankedItem;
-	ctx: SetContext;
+	setContext: SetContext;
 	ownDelta: OwnDelta;
 	eligible: FutureBonus[];
 	pool: PartnerPiece[];
@@ -231,17 +231,17 @@ async function choosePartnerGears(args: BonusGearArgs, builders: BonusGearBuilde
  */
 function partnerRowOf(args: BonusGearArgs, item: RankedItem): PartnerRow | undefined {
 	const { equipment, countsAsBreak } = args;
-	const ctx = item.setContext;
-	if (!ctx) return undefined;
+	const setContext = item.setContext;
+	if (!setContext) return undefined;
 	const ownDelta = args.ownDeltasByItemId.get(item.itemId);
 	if (!ownDelta) return undefined;
-	ctx.singleDeltaDps = ownDelta.deltaDps;
-	const eligible = (ctx.futureBonuses ?? []).filter(
+	setContext.singleDeltaDps = ownDelta.deltaDps;
+	const eligible = (setContext.futureBonuses ?? []).filter(
 		f => !f.belowNoise && f.sameGearDps !== undefined && clearsSameGearNoise(f.sameGearDps, f.sameGearSe ?? 0, args.cutoff),
 	);
 	if (eligible.length === 0) return undefined;
 
-	const setId = ctx.setId;
+	const setId = setContext.setId;
 	const wornSetSlots = new Set(setPieceSlots(equipment, setId));
 	const pieces: PartnerPiece[] = [];
 	for (const [itemId, slotIndex] of args.firstSlotIndexByItemId) {
@@ -260,18 +260,20 @@ function partnerRowOf(args: BonusGearArgs, item: RankedItem): PartnerRow | undef
 		slotIndex: ownDelta.slotIndex,
 	};
 	const brokenBy = (swaps: readonly PlacedItem[]) => brokenSetBonuses(equipment, swaps, setId, countsAsBreak);
-	return { item, ctx, ownDelta, eligible, pool, rowSwap, brokenBy };
+	return { item, setContext, ownDelta, eligible, pool, rowSwap, brokenBy };
 }
 
 /**
  * One future bonus of a row: chooses its partners, writes its partner
- * fields, and queues its row-and-partners gear's request. A bonus with no
- * choice or no request gets a line and no sim.
+ * fields, and queues its row-and-partners gear's request. A bonus whose
+ * request cannot be built gets a line and no sim. With no choice, or an
+ * unmeasured one (`partnerUnmeasured`), it gets no sim and no line:
+ * `choosePartners` gives either only before any partner sim.
  */
 async function choosePartnersFor(run: PartnerChoiceRun, row: PartnerRow, f: FutureBonus): Promise<void> {
 	const { args, gears } = run;
-	const { item, ctx, ownDelta, pool, rowSwap, brokenBy } = row;
-	const setId = ctx.setId;
+	const { item, setContext, ownDelta, pool, rowSwap, brokenBy } = row;
+	const setId = setContext.setId;
 	// A partner combination whose sim fails is skipped, and the chosen
 	// combination's gear is simmed below, so a failure counts for the row
 	// only when no combination is chosen.
@@ -284,7 +286,7 @@ async function choosePartnersFor(run: PartnerChoiceRun, row: PartnerRow, f: Futu
 		},
 		setId,
 		threshold: f.threshold,
-		needed: f.threshold - ctx.piecesAfterSwap,
+		needed: f.threshold - setContext.piecesAfterSwap,
 		pool,
 		brokenBy,
 		breakDps: (s, c) => args.brokenBonusDpsByKey.get(`${s}:${c}`),
@@ -306,7 +308,7 @@ async function choosePartnersFor(run: PartnerChoiceRun, row: PartnerRow, f: Futu
 	delete f.breaks;
 	if (choice === undefined) {
 		if (partnerSimFailure !== undefined) {
-			skipOnSomeRows(args.bonusNotes, ctx.setName, f.threshold, partnerSimFailure);
+			skipOnSomeRows(args.bonusNotes, setContext.setName, f.threshold, partnerSimFailure);
 		}
 		return;
 	}
@@ -334,10 +336,10 @@ async function choosePartnersFor(run: PartnerChoiceRun, row: PartnerRow, f: Futu
 	}
 	const request = await bonusGearRequest(args, run.builders, [rowSwap, ...partners]);
 	if (isSkipReason(request)) {
-		skipOnSomeRows(args.bonusNotes, ctx.setName, f.threshold, request);
+		skipOnSomeRows(args.bonusNotes, setContext.setName, f.threshold, request);
 		return;
 	}
 	const key = simCacheKey(request, args.simVersion, args.runOpts);
 	gears.requests.set(key, request);
-	gears.pending.push({ future: f, key, setName: ctx.setName });
+	gears.pending.push({ future: f, key, setName: setContext.setName });
 }

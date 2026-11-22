@@ -23,7 +23,7 @@ export function applyNetCorrection(
 	equipment: readonly SimItemSpec[],
 	firstSlotIndexByItemId: ReadonlyMap<number, number>,
 	countsAsBreak: CountsAsBreak,
-	brokenDpsByKey: ReadonlyMap<string, number | undefined>,
+	brokenBonusDpsByKey: ReadonlyMap<string, number | undefined>,
 ): void {
 	const memberOwnBreaks = (bonus: SetBonusValue): BrokenSetBonus[] =>
 		bonus.packageItemIds.flatMap(itemId => {
@@ -54,7 +54,7 @@ export function applyNetCorrection(
 		const terms: InflationTerm[] = [];
 		let allMeasured = true;
 		for (const [key, brk] of breaksToCorrect) {
-			const brokenBonusDps = brokenDpsByKey.get(key);
+			const brokenBonusDps = brokenBonusDpsByKey.get(key);
 			if (brokenBonusDps === undefined) {
 				allMeasured = false;
 				break;

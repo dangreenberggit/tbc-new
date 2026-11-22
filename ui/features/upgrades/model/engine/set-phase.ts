@@ -1,31 +1,36 @@
 /**
- * The set phase of a run: after the candidate sims, it measures what each set bonus is worth
- * and fills the `Ranking`'s set fields.
+ * The set phase of a run, after the candidate sims. `runSetPhase` runs it: `buildSetBonuses`
+ * measures what each set bonus is worth, then each row gets its `setContext` and the
+ * bonus-gear sims run. rank.ts builds the `Ranking`'s set fields from what it gives.
  */
 
 import type { GemContext } from './candidate-gems';
 import type { Cutoff } from './cutoff';
 import type { RunNote } from './disclosure';
 import { type ChainBuild, chainSwapsWithRepairs } from './gear-swap';
-import { isRepairFailure, requestOf, type RequestsPerCopyLayout } from './hit-budget';
+import { type BaselineHitBudget, isRepairFailure, requestOf, type RequestsPerCopyLayout } from './hit-budget';
 import { MetaRepairError } from './meta-repair';
 import { estimateCombinedDelta, type PartnerPiece } from './partner-choice';
 import type { PoolEntry } from './pool';
+import type { CandidateResults } from './rank-candidates';
+import type { RunContext } from './rank-setup';
 import type { BrokenSetValue, CrossingCheck, Deps, RankInput, SetBonusValue, WornSetCountEntry } from './rank-types';
 import { setScreenSkipNote } from './run-notes';
-import type { RaidSimRequest, SimRunOpts } from './seams/sim-runner';
+import type { RaidSimRequest, SimObservation, SimRunOpts } from './seams/sim-runner';
+import { measureBonusGear } from './set-bonus-gear';
 import { applyNetCorrection } from './set-bonus-net';
 import { measureSetBonusValues } from './set-bonus-values';
+import { applySetContext } from './set-context';
 import { measureCrossingChecks, type SetReach, setReach } from './set-reach';
 import { runSetScreenOn, type SetScreen, type SetScreenInput } from './set-screen';
 import { brokenSetBonuses, type CountsAsBreak, type DpsSample, type OwnDelta, sampleOf, setNameOf } from './set-value';
-import { wornSetValues } from './set-worn-ladder';
+import { countsAsBreakFrom, wornSetValues } from './set-worn-ladder';
 import { runSimAt, simOrFailure } from './sim-calls';
 import type { SimItemSpec } from './slots';
 
 /**
- * What the set phase reads, the same for every step of it. `runSetPhase` in
- * rank.ts builds it once.
+ * What the set phase reads, the same for every step of it. `runSetPhase`
+ * builds it once.
  */
 export type SetPhaseContext = {
 	/** `guardedDeps`: the run's deps with the Stop guard on its sim. */
@@ -87,14 +92,21 @@ export type SetPhaseResult = {
 };
 
 /**
- * The set phase's steps, in order: the worn sets' values, which counts each
- * set can reach, the crossing checks, the "on" screen, the value of each
- * reachable count, then the correction for lost worn bonuses.
+ * Makes the set phase's store-cached sim run; `what` names the sims in its
+ * failure warning.
+ */
+export type SampleRunnerFor = (what: string) => (request: RaidSimRequest) => Promise<DpsSample>;
+
+/**
+ * The set-bonus sims, in order: the worn sets' values, which counts each set
+ * can reach, the crossing checks, the "on" screen, the value of each
+ * reachable count, then the correction for lost worn bonuses. It writes no
+ * row; `runSetPhase` adds the rows' set fields after it.
  */
 export async function buildSetBonuses(ctx: SetPhaseContext): Promise<SetPhaseResult> {
 	const { candidates, equipment, baselineStdev } = ctx;
-	const runCached = (what: string) => cachedSampleRun(ctx, what);
-	const { wornSetLadder, countsAsBreak, brokenSetValues, brokenDpsByKey } = await wornSetValues(ctx, runCached);
+	const makeCachedSampleRun = (what: string) => cachedSampleRun(ctx, what);
+	const { wornSetLadder, countsAsBreak, brokenSetValues, brokenBonusDpsByKey } = await wornSetValues(ctx, makeCachedSampleRun);
 	// Set names for the notes: from the worn gear, else from the candidates.
 	const candidateItemIds = candidates.map(entry => entry.itemId);
 	const nameOfSet = (setId: number) => setNameOf(equipment, setId, candidateItemIds);
@@ -104,11 +116,11 @@ export async function buildSetBonuses(ctx: SetPhaseContext): Promise<SetPhaseRes
 	// The screen runs after the worn-set values and before the loop over
 	// reachable bonuses.
 	const screenInput = setScreenInputFor(ctx, reach, nameOfSet);
-	const crossingChecks = await measureCrossingChecks(ctx, reach, runCached);
+	const crossingChecks = await measureCrossingChecks(ctx, reach, makeCachedSampleRun);
 	const setScreen: SetScreen | undefined = screenInput
 		? await runSetScreenOn({
 				...screenInput,
-				estimatedDeltaAt: (setId, threshold) => estimatedDeltaAt(ctx, reach, countsAsBreak, brokenDpsByKey, crossingChecks, setId, threshold),
+				estimatedDeltaAt: (setId, threshold) => estimatedDeltaAt(ctx, reach, countsAsBreak, brokenBonusDpsByKey, crossingChecks, setId, threshold),
 				baselineStdev,
 			})
 		: undefined;
@@ -118,7 +130,7 @@ export async function buildSetBonuses(ctx: SetPhaseContext): Promise<SetPhaseRes
 		return {
 			bonuses: [],
 			brokenSetValues,
-			brokenBonusDpsByKey: brokenDpsByKey,
+			brokenBonusDpsByKey,
 			wornSetLadder,
 			crossingChecks: [],
 			firstSlotIndexByItemId: new Map(),
@@ -127,13 +139,19 @@ export async function buildSetBonuses(ctx: SetPhaseContext): Promise<SetPhaseRes
 		};
 	}
 
-	const { results, setIdsNotValued } = await measureSetBonusValues(ctx, reach, { countsAsBreak, cachedSampleRun: runCached }, nameOfSet, screenedOut);
-	applyNetCorrection(results, equipment, firstSlotIndexByItemId, countsAsBreak, brokenDpsByKey);
+	const { results, setIdsNotValued } = await measureSetBonusValues(
+		ctx,
+		reach,
+		{ countsAsBreak, cachedSampleRun: makeCachedSampleRun },
+		nameOfSet,
+		screenedOut,
+	);
+	applyNetCorrection(results, equipment, firstSlotIndexByItemId, countsAsBreak, brokenBonusDpsByKey);
 
 	return {
 		bonuses: results,
 		brokenSetValues,
-		brokenBonusDpsByKey: brokenDpsByKey,
+		brokenBonusDpsByKey,
 		wornSetLadder,
 		crossingChecks,
 		firstSlotIndexByItemId,
@@ -185,8 +203,9 @@ function setScreenInputFor(ctx: SetPhaseContext, reach: SetReach, nameOfSet: (se
 				gearAt: (setId, threshold) => {
 					const selection = selectFor(setId, threshold);
 					if (!selection.ok) return undefined;
-					// The same swaps as the loop below, so the screen sims the gear
-					// that loop would build for this count.
+					// The same swaps as `buildAddedGear` in set-bonus-values.ts, so the
+					// screen sims the gear `measureSetBonusValues` would build for this
+					// count.
 					const pieces = selection.addedPieces;
 					let base: ChainBuild;
 					try {
@@ -199,7 +218,7 @@ function setScreenInputFor(ctx: SetPhaseContext, reach: SetReach, nameOfSet: (se
 						request: composeFor(base.equipment),
 						added: pieces,
 						// Each copy layout gets its own gem repair; one whose repair
-						// fails is not measured, as in the loop below.
+						// fails is not measured, as in `measureSetBonusValues`.
 						requestsFor: async copiesList =>
 							(await requestsPerLayout(g => chainSwapsWithRepairs(equipment, pieces, g), base, copiesList)).map(entry =>
 								isRepairFailure(entry) ? undefined : requestOf(entry),
@@ -243,7 +262,7 @@ function estimatedDeltaAt(
 	ctx: SetPhaseContext,
 	reach: SetReach,
 	countsAsBreak: CountsAsBreak,
-	brokenDpsByKey: ReadonlyMap<string, number | undefined>,
+	brokenBonusDpsByKey: ReadonlyMap<string, number | undefined>,
 	crossingChecks: readonly CrossingCheck[],
 	setId: number,
 	threshold: number,
@@ -271,7 +290,7 @@ function estimatedDeltaAt(
 		{
 			row,
 			brokenBy: swaps => brokenSetBonuses(equipment, swaps, setId, countsAsBreak),
-			breakDps: (s, c) => brokenDpsByKey.get(`${s}:${c}`),
+			breakDps: (s, c) => brokenBonusDpsByKey.get(`${s}:${c}`),
 		},
 		rest,
 	);
@@ -279,7 +298,7 @@ function estimatedDeltaAt(
 }
 
 /** What the set phase gives when it does not run, or when Stop drops it. */
-export function emptySetPhase(): Awaited<ReturnType<typeof buildSetBonuses>> {
+export function emptySetPhase(): SetPhaseResult {
 	return {
 		bonuses: [],
 		brokenSetValues: [],
@@ -289,4 +308,115 @@ export function emptySetPhase(): Awaited<ReturnType<typeof buildSetBonuses>> {
 		firstSlotIndexByItemId: new Map(),
 		setIdsNotValued: [],
 	};
+}
+
+/**
+ * What the set phase leaves for the ranking. `dropSetFigures` empties it in
+ * place when Stop fires after the candidate loop.
+ */
+export type SetPhaseOutcome = {
+	setBonusResult: SetPhaseResult;
+	countsAsBreak: CountsAsBreak | undefined;
+	bonusGearResult: Awaited<ReturnType<typeof measureBonusGear>> | undefined;
+	/** The set phase pushes to both, and a Stop empties them in place. */
+	setBonusNotes: RunNote[];
+	setCheckNotes: RunNote[];
+};
+
+/**
+ * The whole set phase, in order: `buildSetBonuses`, then each row's
+ * `setContext` (`applySetContext`), then the bonus-gear and bonus-off sims
+ * (`measureBonusGear`), which write into each row's `setContext`. After a
+ * Stop before it starts, it runs no sim and gives the empty set phase. After
+ * a Stop during it, it starts no further sim and gives what it has;
+ * `runRanking` then sees the Stop, and `dropSetFigures` empties that.
+ */
+export async function runSetPhase(
+	ctx: RunContext,
+	candidates: CandidateResults,
+	baselineHitBudget: BaselineHitBudget,
+	observation: SimObservation,
+	requestsPerLayout: RequestsPerCopyLayout,
+	abortedBefore: boolean,
+): Promise<SetPhaseOutcome> {
+	const { input, deps, guardedDeps, cutoff, composeFor, iterations, simVersion, runOpts, equipment } = ctx;
+	const { ranked, ownDeltasByItemId, simCandidates } = candidates;
+	const { gems } = baselineHitBudget;
+	const signal = deps.signal;
+	let aborted = abortedBefore;
+
+	// A line for every set bonus the set phase could not measure, and for
+	// every set screen or worn-set value sim that failed, most with the sim's
+	// error.
+	const setBonusNotes: RunNote[] = [];
+	const setCheckNotes: RunNote[] = [];
+
+	const setBonusResult = aborted
+		? emptySetPhase()
+		: await buildSetBonuses({
+				deps: guardedDeps,
+				candidates: simCandidates,
+				equipment,
+				gems,
+				input,
+				composeFor,
+				ownDeltasByItemId,
+				baseline: sampleOf(observation, iterations),
+				simVersion,
+				runOpts,
+				setBonusNotes,
+				setCheckNotes,
+				measureSetBonuses: deps.measureSetBonuses ?? false,
+				cutoff,
+				baselineStdev: observation.stdev,
+				requestsPerLayout,
+			});
+	if (signal?.aborted) aborted = true;
+	// With `measureSetBonuses`, a swap loses a worn bonus only at a count
+	// `wornSetLadder` counted, and no table is read. An aborted run has none,
+	// so it charges no loss.
+	const countsAsBreak: CountsAsBreak | undefined = deps.measureSetBonuses ? countsAsBreakFrom(setBonusResult.wornSetLadder) : undefined;
+	const setBonuses = setBonusResult.bonuses;
+	// With `measureSetBonuses`, a set row's future bonuses are valued by
+	// one sim of the row plus its partner pieces.
+	const simBonusGear = (deps.measureSetBonuses ?? false) && !aborted;
+	const hasSetContext = setBonuses.length > 0 || setBonusResult.setIdsNotValued.length > 0;
+	if (hasSetContext) {
+		applySetContext({
+			ranked,
+			setBonuses,
+			equipment,
+			brokenBonusDpsByKey: setBonusResult.brokenBonusDpsByKey,
+			firstSlotIndexByItemId: setBonusResult.firstSlotIndexByItemId,
+			ownDeltasByItemId,
+			countsAsBreak,
+			measured: simBonusGear ? { crossingChecks: setBonusResult.crossingChecks } : undefined,
+			setIdsNotValued: setBonusResult.setIdsNotValued,
+		});
+	}
+	// After the future bonuses are filled in and before replication rewrites
+	// the top rows' `deltaDps`: one sim per distinct gear of a row plus its
+	// partner pieces.
+	const bonusGearResult =
+		simBonusGear && hasSetContext && countsAsBreak
+			? await measureBonusGear({
+					deps: guardedDeps,
+					ranked,
+					setBonuses,
+					equipment,
+					gems,
+					composeFor,
+					ownDeltasByItemId,
+					brokenBonusDpsByKey: setBonusResult.brokenBonusDpsByKey,
+					firstSlotIndexByItemId: setBonusResult.firstSlotIndexByItemId,
+					countsAsBreak,
+					baseline: sampleOf(observation, iterations),
+					simVersion,
+					runOpts,
+					cutoff,
+					requestsPerLayout,
+					bonusNotes: setBonusNotes,
+				})
+			: undefined;
+	return { setBonusResult, countsAsBreak, bonusGearResult, setBonusNotes, setCheckNotes };
 }
