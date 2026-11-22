@@ -1,6 +1,7 @@
 /**
- * The set-potential credit of a row and its breakdown for the popover.
- * view.ts sorts and cuts rows by `rankableSetPotential`.
+ * The set-potential credit of a row and its breakdown for the popover, and
+ * `ownSwapBreaks`, the worn bonuses a row with no `setContext` breaks. view.ts
+ * sorts and cuts rows by `rankableSetPotential`.
  *
  * With `withSetPotential` on, a set piece's row also gets the DPS of the higher
  * set bonuses it leads to (`futureBonuses`, whose values the engine has already

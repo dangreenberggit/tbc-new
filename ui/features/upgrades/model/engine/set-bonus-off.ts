@@ -49,7 +49,7 @@ type BonusOffQueue = {
  */
 export async function measureBonusOff(args: BonusGearArgs, chosen: ChosenPartners): Promise<SetBonusOffSims> {
 	// The bonus-off sims run for exactly the bonuses the popover shows, so this
-	// uses the view's own list of them (`setPotentialIncrements`).
+	// uses the popover's own list of them (`setPotentialIncrements`).
 	const offCounter: SimCounter = { simmed: 0, fromStore: 0 };
 	const queue: BonusOffQueue = { requests: new Map(), pending: [] };
 	let skippedIncrements = await queueShownBonuses(args, chosen, queue);

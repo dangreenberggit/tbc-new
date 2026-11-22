@@ -1,8 +1,8 @@
 /**
- * Bounded concurrency for rank-candidates.ts's candidate loop. ui/sim/wasm/bulk_sim/batch.ts uses
- * `async`'s `queue` instead; this pool puts each result at its task's index whatever the
- * finish order and reports the lowest-index error, so the outcome does not depend on
- * concurrency.
+ * Bounded concurrency for rank-candidates.ts's candidate loop and sim-calls.ts's
+ * `simEachOnce`. ui/sim/wasm/bulk_sim/batch.ts uses `async`'s `queue` instead; this
+ * pool puts each result at its task's index whatever the finish order and reports the
+ * lowest-index error, so the outcome does not depend on concurrency.
  */
 
 /** A unit of work; `promisePool` runs it exactly once, on dispatch. */

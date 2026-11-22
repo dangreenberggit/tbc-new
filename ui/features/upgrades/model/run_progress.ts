@@ -1,9 +1,9 @@
 /**
  * What the progress dialog shows while a run is in flight. The engine does not say
  * what the run is doing, so the activity is read from the order of `Progress` events
- * (`rank.ts`, `rank-candidates.ts`, `rank-replication.ts`): setup stages, a `simming` event for the baseline and each candidate, a
- * set-bonus stage that sends nothing and is not in `total`, `ranking`, then the
- * replication sims.
+ * (`rank.ts`, `rank-candidates.ts`, `rank-replication.ts`): setup stages, a `simming`
+ * event for the baseline and each candidate, a set-bonus stage that sends nothing and
+ * is not in `total`, `ranking`, then the replication sims.
  * Only the candidate count, which `doneAtLastCandidateFor` solves from the first
  * `total`, tells the last candidate from the set-bonus stage.
  */
