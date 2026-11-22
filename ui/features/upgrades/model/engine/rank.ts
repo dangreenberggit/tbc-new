@@ -11,15 +11,16 @@
 import { type GemContext, gemContext } from './candidate-gems';
 import { capProfileFor } from './cap-profile';
 import { compose } from './compose';
-import { CUTOFF, meetsCutoff } from './cutoff';
+import { CUTOFF } from './cutoff';
 import { buildStandingAssumptions, notesFromMetaRepair, type RunNote } from './disclosure';
 import { applyRepairedGems } from './gear-swap';
 import { gemsForPhase } from './gems';
-import { makeRequestsPerLayout, readBaselineHitBudget } from './hit-budget';
+import { type BaselineHitBudget, makeRequestsPerLayout, readBaselineHitBudget, type RequestsPerCopyLayout } from './hit-budget';
 import { equipmentFromLoggedGear } from './logged-gear';
 import type { GemRecolor } from './meta-repair';
 import { plausibilityWarnings } from './plausibility';
-import { runCandidates, type SimCounts } from './rank-candidates';
+import { type CandidateResults, runCandidates } from './rank-candidates';
+import { applyReplicatedDeltas, type ReplicatedRow, replicateTopItems, type SimCounts } from './rank-replication';
 import {
 	type EligibleCandidates,
 	eligibleCandidates,
@@ -33,8 +34,7 @@ import {
 } from './rank-setup';
 import { type Deps, type PartialRanking, type Progress, type RankedItem, RankError, type Ranking, type RankInput, type ResolvedFight } from './rank-types';
 import { candidateSkipNote, metaPreferenceNotes, offHandBlockedNotes, oneHandBlockedNotes, uniqueNotes } from './run-notes';
-import { isReplicable, PAIRED_REPLICATE_TOP_N, pairedReplicateSe, usesPairedReplication } from './se';
-import type { RaidSimRequest, SimObservation } from './seams/sim-runner';
+import type { SimObservation } from './seams/sim-runner';
 import type { Job } from './seams/store';
 import { measureBonusGear } from './set-bonus-gear';
 import { applySetContext } from './set-context';
@@ -208,9 +208,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
  * job failed when this throws.
  */
 async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | PartialRanking> {
-	const { input, deps, guardedDeps, onProgress, cutoff, race, composeFor, iterations, seeds, runOpts, simVersion, equipment, request } = ctx;
-	const { resolved, contentHash, job, metaAdjusted, metaRecolors } = setup;
-	const { blockedOffHand, blockedOneHand } = setup.pool;
+	const { deps, onProgress, simVersion, runOpts, request } = ctx;
 	const simCounts: SimCounts = { done: 0, total: 0 };
 
 	const baselineOutcome = await simOrFailure(deps, request, simVersion, runOpts);
@@ -225,16 +223,78 @@ async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | P
 	// swap starts from, so it runs before the first candidate. A read Stop
 	// ended is no failure: the candidate loop returns a partial ranking.
 	const baselineHitBudget = await readBaselineHitBudget(ctx, setup.gems, observation);
-	const { gems, hitCapNotes } = baselineHitBudget;
 	// One instance per run, built after the read: its read memo and its Stop
 	// latch are shared by every set-phase call.
 	const requestsPerLayout = makeRequestsPerLayout(ctx, baselineHitBudget);
 
-	const baselineDps = observation.dps;
-	const candidates = await runCandidates(ctx, setup.pool, baselineHitBudget, baselineDps, simCounts);
-	const { ranked, winningRequests, candidateSkips, ownDeltasByItemId, simCandidates } = candidates;
+	const candidates = await runCandidates(ctx, setup.pool, baselineHitBudget, observation.dps, simCounts);
+	const { ranked, winningRequests } = candidates;
 	let { aborted } = candidates;
 	const signal = deps.signal;
+
+	// The set-bonus sims and paired replication only refine the ranking, so
+	// once Stop fires neither runs: what already simmed stands and the
+	// unsimmed rows stay unsimmed.
+	const setPhase = await runSetPhase(ctx, candidates, baselineHitBudget, observation, requestsPerLayout, aborted);
+	if (signal?.aborted) aborted = true;
+	onProgress?.({ stage: 'ranking' });
+	// Sorted here so replication can pick the top of the list, and again
+	// below, because replication rewrites `deltaDps`. Unsimmed rows sort last.
+	ranked.sort(bySimmedThenDelta);
+	let replicated: ReplicatedRow[] = [];
+	if (!aborted) {
+		try {
+			replicated = await replicateTopItems(ctx, simCounts, ranked, winningRequests);
+		} catch (err) {
+			// The guard refused a replication sim, so Stop fired; the re-read
+			// below sees it. Any other error still fails the ranking.
+			if (!(err instanceof StopRefusedSim)) throw err;
+		}
+	}
+	if (signal?.aborted) aborted = true;
+	if (aborted) {
+		dropSetFigures(deps, ranked, setPhase);
+	} else {
+		applyReplicatedDeltas(replicated, observation.dps, ctx.cutoff);
+	}
+	ranked.sort(bySimmedThenDelta);
+	stampRanks(ranked);
+
+	const rankingBase = assembleRanking(ctx, setup, observation, baselineHitBudget, candidates, setPhase);
+	return saveRanking(deps, setup, rankingBase, aborted);
+}
+
+/**
+ * What the set phase leaves for the ranking. `dropSetFigures` empties it in
+ * place when Stop fires after the candidate loop.
+ */
+type SetPhaseOutcome = {
+	setBonusResult: ReturnType<typeof emptySetPhase>;
+	countsAsBreak: CountsAsBreak | undefined;
+	bonusGearResult: Awaited<ReturnType<typeof measureBonusGear>> | undefined;
+	/** The set phase pushes to both, and a Stop empties them in place. */
+	setBonusNotes: RunNote[];
+	setCheckNotes: RunNote[];
+};
+
+/**
+ * The set phase and what it adds to the rows: the set-bonus sims, each
+ * row's `setContext`, and the bonus-gear sims. After a Stop it runs no sim
+ * and gives the empty set phase.
+ */
+async function runSetPhase(
+	ctx: RunContext,
+	candidates: CandidateResults,
+	baselineHitBudget: BaselineHitBudget,
+	observation: SimObservation,
+	requestsPerLayout: RequestsPerCopyLayout,
+	abortedBefore: boolean,
+): Promise<SetPhaseOutcome> {
+	const { input, deps, guardedDeps, cutoff, race, composeFor, iterations, simVersion, runOpts, equipment } = ctx;
+	const { ranked, ownDeltasByItemId, simCandidates } = candidates;
+	const { gems } = baselineHitBudget;
+	const signal = deps.signal;
+	let aborted = abortedBefore;
 
 	// A line for every set bonus the set phase could not measure, and for
 	// every set screen or worn-set value sim that failed, most with the sim's
@@ -242,10 +302,7 @@ async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | P
 	const setBonusNotes: RunNote[] = [];
 	const setCheckNotes: RunNote[] = [];
 
-	// The set-bonus sims and paired replication only refine the ranking, so
-	// once Stop fires neither runs: what already simmed stands and the
-	// unsimmed rows stay unsimmed.
-	let setBonusResult = aborted
+	const setBonusResult = aborted
 		? emptySetPhase()
 		: await buildSetBonuses(
 				guardedDeps,
@@ -270,8 +327,8 @@ async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | P
 	// With `measureSetBonuses`, a swap loses a worn bonus only at a count
 	// `wornSetLadder` counted, and no table is read. An aborted run has none,
 	// so it charges no loss.
-	let countsAsBreak: CountsAsBreak | undefined = deps.measureSetBonuses ? countsAsBreakFrom(setBonusResult.wornSetLadder) : undefined;
-	let setBonuses = setBonusResult.bonuses;
+	const countsAsBreak: CountsAsBreak | undefined = deps.measureSetBonuses ? countsAsBreakFrom(setBonusResult.wornSetLadder) : undefined;
+	const setBonuses = setBonusResult.bonuses;
 	// With `measureSetBonuses`, a set row's future bonuses are valued by
 	// one sim of the row plus its partner pieces.
 	const simBonusGear = (deps.measureSetBonuses ?? false) && !aborted;
@@ -292,7 +349,7 @@ async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | P
 	// After the future bonuses are filled in and before replication rewrites
 	// the top rows' `deltaDps`: one sim per distinct gear of a row plus its
 	// partner pieces.
-	let bonusGearResult =
+	const bonusGearResult =
 		simBonusGear && hasSetContext && countsAsBreak
 			? await measureBonusGear({
 					deps: guardedDeps,
@@ -313,56 +370,43 @@ async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | P
 					bonusNotes: setBonusNotes,
 				})
 			: undefined;
-	if (signal?.aborted) aborted = true;
-	onProgress?.({ stage: 'ranking' });
-	// Sorted here so replication can pick the top of the list, and again
-	// below, because replication rewrites `deltaDps`. Unsimmed rows sort last.
-	// The tiebreak matches view.ts's compareRows (bisTags richness, then
-	// itemId), so stamped rank and rendered order agree inside exact ties,
-	// unless set potential is on and compareRows adds rankableSetPotential.
-	const bySimmedThenDelta = (a: RankedItem, b: RankedItem): number => {
-		if (a.simmed === false && b.simmed !== false) return 1;
-		if (b.simmed === false && a.simmed !== false) return -1;
-		if (a.deltaDps !== b.deltaDps) return b.deltaDps - a.deltaDps;
-		const richness = b.bisTags.length - a.bisTags.length;
-		if (richness !== 0) return richness;
-		return a.itemId - b.itemId;
-	};
-	ranked.sort(bySimmedThenDelta);
-	let replicated: Array<{ item: RankedItem; deltas: number[] }> = [];
-	if (!aborted) {
-		try {
-			replicated = await replicateTopItems(ctx, simCounts, ranked, winningRequests);
-		} catch (err) {
-			// The guard refused a replication sim, so Stop fired; the re-read
-			// below sees it. Any other error still fails the ranking.
-			if (!(err instanceof StopRefusedSim)) throw err;
-		}
-	}
-	if (signal?.aborted) aborted = true;
-	if (aborted) {
-		// A Stop after the candidate loop returns what a Stop during its last
-		// sim returns. Worn-set values cut short would charge losses at counts
-		// never measured, so no partial set figure is kept.
-		setBonusResult = emptySetPhase();
-		countsAsBreak = deps.measureSetBonuses ? countsAsBreakFrom(setBonusResult.wornSetLadder) : undefined;
-		setBonuses = setBonusResult.bonuses;
-		bonusGearResult = undefined;
-		setBonusNotes.length = 0;
-		setCheckNotes.length = 0;
-		for (const item of ranked) delete item.setContext;
-	}
-	if (!aborted) {
-		for (const { item, deltas } of replicated) {
-			item.se = pairedReplicateSe(deltas);
-			item.seMethod = 'paired-replicate';
-			item.deltaDps = deltas.reduce((sum, d) => sum + d, 0) / deltas.length;
-			item.deltaPct = baselineDps === 0 ? 0 : (item.deltaDps / baselineDps) * 100;
-			item.belowCutoff = !meetsCutoff(item.deltaDps, cutoff);
-		}
-	}
-	ranked.sort(bySimmedThenDelta);
+	return { setBonusResult, countsAsBreak, bonusGearResult, setBonusNotes, setCheckNotes };
+}
 
+/**
+ * The order rows are ranked in: simmed rows by delta, unsimmed rows last.
+ * The tiebreak matches view.ts's compareRows (bisTags richness, then
+ * itemId), so stamped rank and rendered order agree inside exact ties,
+ * unless set potential is on and compareRows adds rankableSetPotential.
+ */
+function bySimmedThenDelta(a: RankedItem, b: RankedItem): number {
+	if (a.simmed === false && b.simmed !== false) return 1;
+	if (b.simmed === false && a.simmed !== false) return -1;
+	if (a.deltaDps !== b.deltaDps) return b.deltaDps - a.deltaDps;
+	const richness = b.bisTags.length - a.bisTags.length;
+	if (richness !== 0) return richness;
+	return a.itemId - b.itemId;
+}
+
+/**
+ * A Stop after the candidate loop returns what a Stop during its last
+ * sim returns. Worn-set values cut short would charge losses at counts
+ * never measured, so no partial set figure is kept.
+ */
+function dropSetFigures(deps: Deps, ranked: RankedItem[], setPhase: SetPhaseOutcome): void {
+	setPhase.setBonusResult = emptySetPhase();
+	setPhase.countsAsBreak = deps.measureSetBonuses ? countsAsBreakFrom(setPhase.setBonusResult.wornSetLadder) : undefined;
+	setPhase.bonusGearResult = undefined;
+	setPhase.setBonusNotes.length = 0;
+	setPhase.setCheckNotes.length = 0;
+	for (const item of ranked) delete item.setContext;
+}
+
+/**
+ * Numbers the simmed rows that meet the cutoff in their sorted order. Every
+ * other row gets `rank: null`.
+ */
+function stampRanks(ranked: readonly RankedItem[]): void {
 	let rank = 1;
 	for (const item of ranked) {
 		// Stop left this row unsimmed: there is no measured delta to classify
@@ -378,6 +422,27 @@ async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | P
 			rank += 1;
 		}
 	}
+}
+
+/**
+ * The ranking's fields but `complete`: the baseline, the assumptions, every
+ * note in its fixed order, the rows, and the set figures the run kept.
+ */
+function assembleRanking(
+	ctx: RunContext,
+	setup: RunSetup,
+	observation: SimObservation,
+	baselineHitBudget: BaselineHitBudget,
+	candidates: CandidateResults,
+	setPhase: SetPhaseOutcome,
+): Omit<Ranking, 'complete'> {
+	const { input, cutoff, race, iterations, seeds, equipment } = ctx;
+	const { resolved, contentHash, metaAdjusted, metaRecolors } = setup;
+	const { blockedOffHand, blockedOneHand } = setup.pool;
+	const { gems, hitCapNotes } = baselineHitBudget;
+	const { ranked, candidateSkips } = candidates;
+	const { setBonusResult, countsAsBreak, bonusGearResult, setBonusNotes, setCheckNotes } = setPhase;
+	const setBonuses = setBonusResult.bonuses;
 
 	const warnings = plausibilityWarnings({
 		baselineDps: observation.dps,
@@ -393,7 +458,7 @@ async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | P
 		...(countsAsBreak ? { countsAsBreak } : {}),
 	});
 
-	const rankingBase = {
+	return {
 		contentHash,
 		cutoff,
 		fight: resolved,
@@ -429,7 +494,14 @@ async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | P
 		...(setBonusResult.setScreen ? { setScreen: setBonusResult.setScreen } : {}),
 		...(warnings.length > 0 ? { plausibilityWarnings: warnings } : {}),
 	};
+}
 
+/**
+ * Writes the finished run to its job row, and a complete ranking to the
+ * ranking cache too, then returns it.
+ */
+async function saveRanking(deps: Deps, setup: RunSetup, rankingBase: Omit<Ranking, 'complete'>, aborted: boolean): Promise<Ranking | PartialRanking> {
+	const { contentHash, job } = setup;
 	if (aborted) {
 		// No ranking-cache row for a partial run; this branch is the only
 		// thing that enforces it (see `Ranking.complete`). Per-sim rows already
@@ -449,80 +521,4 @@ async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | P
 		result: ranking,
 	});
 	return ranking;
-}
-
-/**
- * The top rows' paired deltas, one per seed. It writes nothing to the rows,
- * so a Stop part-way through leaves them as the candidate loop left them.
- */
-async function replicateTopItems(
-	ctx: RunContext,
-	simCounts: SimCounts,
-	ranked: RankedItem[],
-	winningRequests: ReadonlyMap<number, RaidSimRequest>,
-): Promise<Array<{ item: RankedItem; deltas: number[] }>> {
-	const { seeds, onProgress, request } = ctx;
-	const top = usesPairedReplication(seeds) ? ranked.filter(isReplicable).slice(0, PAIRED_REPLICATE_TOP_N) : [];
-	// The total sent so far budgeted re-sims for up to top-N rows; only now is
-	// the number of rows known, so the total is restated as the sims done
-	// plus the sims this function will run.
-	simCounts.total = simCounts.done + (top.length === 0 ? 0 : (seeds.length - 1) * (1 + top.length));
-	onProgress?.({
-		stage: 'simming',
-		done: simCounts.done,
-		total: simCounts.total,
-	});
-	if (top.length === 0) return [];
-	const baselineBySeed = new Map<number, number>();
-	for (const s of seeds) {
-		baselineBySeed.set(s, (await simFor(ctx, request, s)).dps);
-		bumpProgress(ctx, simCounts, s);
-	}
-
-	const replicated: Array<{ item: RankedItem; deltas: number[] }> = [];
-	for (const item of top) {
-		const candReq = winningRequests.get(item.itemId);
-		if (!candReq) {
-			throw new RankError('internal', `no recorded request for ranked item ${item.itemId} (${item.name}); ` + `paired replication cannot re-sim it`);
-		}
-		const deltas: number[] = [];
-		for (const s of seeds) {
-			const obs = await simFor(ctx, candReq, s);
-			deltas.push(obs.dps - baselineBySeed.get(s)!);
-			bumpProgress(ctx, simCounts, s);
-		}
-		replicated.push({ item, deltas });
-	}
-	return replicated;
-}
-
-/**
- * Counts one replication sim. A first-seed sim is not counted: the baseline
- * and the candidate loop already ran it with that seed.
- */
-function bumpProgress(ctx: RunContext, simCounts: SimCounts, seedForRun: number): void {
-	if (seedForRun === ctx.seeds[0]) return;
-	simCounts.done += 1;
-	ctx.onProgress?.({
-		stage: 'simming',
-		done: simCounts.done,
-		total: simCounts.total,
-	});
-}
-
-/**
- * One replication sim at `seedForRun`, through the Stop guard. A refused
- * sim rethrows `StopRefusedSim`; any other failure fails the run.
- */
-async function simFor(ctx: RunContext, req: RaidSimRequest, seedForRun: number): Promise<SimObservation> {
-	const opts = { seed: seedForRun, iterations: ctx.iterations };
-	// The store goes through `guardedDeps` too: `stopGuardedDeps` keeps
-	// `deps`'s own store, and only the sim is guarded.
-	const outcome = await simOrFailure(ctx.guardedDeps, req, ctx.simVersion, opts);
-	if ('simError' in outcome) {
-		const err = outcome.simError;
-		if (err instanceof StopRefusedSim) throw err;
-		throw new RankError('sim-failed', err instanceof Error ? err.message : String(err));
-	}
-	return outcome.observation;
 }

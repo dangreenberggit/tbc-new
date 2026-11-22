@@ -11,6 +11,7 @@ import { type BaselineHitBudget, CandidateHitReadFailed, candidateRepairGems } f
 import { type GemRecolor, MetaRepairError } from './meta-repair';
 import { type PoolEntry, type SimSlotName, simSlotsForPoolSlot } from './pool';
 import { promisePool } from './promise-pool';
+import type { SimCounts } from './rank-replication';
 import type { EligibleCandidates, RunContext } from './rank-setup';
 import type { Deps, RankedItem } from './rank-types';
 import type { CandidateSkip } from './run-notes';
@@ -33,13 +34,6 @@ type BestSwap = {
 	removed: readonly { slotIndex: number; itemId: number }[];
 	candidateGems: readonly number[];
 };
-
-/**
- * The sim counts the progress events report. One object per run, so the
- * candidate loop, `replicateTopItems` and `bumpProgress` add to the same
- * counts.
- */
-export type SimCounts = { done: number; total: number };
 
 /** What the candidate loop hands the rest of the run. */
 export type CandidateResults = {
