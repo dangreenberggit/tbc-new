@@ -177,7 +177,7 @@ async function runWithFault(faultAt?: number, stopAtSim?: number) {
 						fightGearKey(summary),
 						{
 							items: SIM_ORDER.map(slot => ({ id: worn[slot] ?? 0, slot, gems: [] })),
-							talentPointsByTree: [0, 45, 16],
+							talentPointsByTree: [0, 44, 17],
 							provenance: { reportCode: summary.reportCode, fightId: summary.fightId, sourceID: 1 },
 						},
 					],
