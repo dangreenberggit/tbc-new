@@ -12,12 +12,23 @@ import { getItem } from './items';
 import { MetaRepairError } from './meta-repair';
 import { choosePartners, PARTNER_RULE, type PartnerPiece, partnerPool } from './partner-choice';
 import { promisePool } from './promise-pool';
-import type { BonusGearSims, BrokenSetValue, Deps, RankedItem, SetBonusOffSims, SetBonusValue, SetContext } from './rank-types';
+import type { BonusGearSims, Deps, RankedItem, SetBonusOffSims, SetBonusValue, SetContext } from './rank-types';
 import { breakSplitSkipNote, SET_BONUS_SKIP_REASONS, setBonusSkipNote, type SkipReason } from './run-notes';
 import { type RaidSimRequest, simCacheKey, type SimRunOpts, stableStringify } from './seams/sim-runner';
 import { clearsSameGearNoise, errorText, isBuildFailure, isSimFailure, type SimFailure } from './set-less-copies';
-import { bonusKey, brokenSetBonuses, type CountsAsBreak, type DpsSample, type OwnDelta, type PlacedItem, setNameOf, type SetThreshold } from './set-value';
-import { cacheSimResult, readCachedSim } from './sim-calls';
+import {
+	brokenSetBonuses,
+	type CountsAsBreak,
+	type DpsSample,
+	type OwnDelta,
+	type PlacedItem,
+	sampleOf,
+	setNameOf,
+	setPieceSlots,
+	type SetThreshold,
+} from './set-value';
+import { brokenBonusWithDps } from './set-worn-ladder';
+import { readCachedSim, simOrFailure } from './sim-calls';
 import type { SimItemSpec } from './slots';
 import { setCreditUnmeasured, setPotentialIncrements } from './view';
 
@@ -38,7 +49,8 @@ export async function measureBonusGear(args: {
 	gems: GemContext;
 	composeFor: (equipment: readonly SimItemSpec[]) => RaidSimRequest;
 	ownDeltasByItemId: ReadonlyMap<number, OwnDelta>;
-	brokenSetValues: readonly BrokenSetValue[];
+	/** `brokenBonusDpsByKey` of the set phase's `brokenSetValues`. */
+	brokenBonusDpsByKey: ReadonlyMap<string, number | undefined>;
 	firstSlotIndexByItemId: ReadonlyMap<number, number>;
 	countsAsBreak: CountsAsBreak;
 	baseline: DpsSample;
@@ -53,35 +65,25 @@ export async function measureBonusGear(args: {
 	bonusGearSims: BonusGearSims;
 	bonusOffSims: SetBonusOffSims;
 }> {
-	const { deps, equipment, gems, composeFor, countsAsBreak, baseline, runOpts } = args;
-	const brokenBonusDpsByKey = new Map<string, number | undefined>();
-	for (const v of args.brokenSetValues) {
-		brokenBonusDpsByKey.set(bonusKey(v), v.dps);
-	}
+	const { deps, equipment, gems, composeFor, brokenBonusDpsByKey, countsAsBreak, baseline, runOpts } = args;
 	const nameOf = new Map(args.ranked.map(r => [r.itemId, r.name]));
 	type SimCounter = { simmed: number; fromStore: number };
 	const bonusGearCounter: SimCounter = { simmed: 0, fromStore: 0 };
 	const bonusGearFailure = '[upgrades] set bonus gear not measured: the sim failed';
 
 	const runCounted = async (request: RaidSimRequest, counter: SimCounter, failure: string): Promise<{ deltaDps: number; se: number } | SimFailure> => {
-		let obs = await readCachedSim(deps, request, args.simVersion, runOpts);
-		if (obs) {
-			counter.fromStore += 1;
-		} else {
-			try {
-				obs = await deps.sim.run(request, runOpts);
-			} catch (err) {
-				// No warning for a sim the Stop guard refused.
-				if (!deps.signal?.aborted) console.warn(failure, err);
-				return { simError: errorText(err) };
-			}
-			counter.simmed += 1;
-			await cacheSimResult(deps, request, args.simVersion, runOpts, obs);
+		const outcome = await simOrFailure(deps, request, args.simVersion, runOpts);
+		if ('simError' in outcome) {
+			// No warning for a sim the Stop guard refused.
+			if (!deps.signal?.aborted) console.warn(failure, outcome.simError);
+			return { simError: errorText(outcome.simError) };
 		}
-		const se = obs.stdev / Math.sqrt(runOpts.iterations);
+		if (outcome.fromStore) counter.fromStore += 1;
+		else counter.simmed += 1;
+		const sample = sampleOf(outcome.observation, runOpts.iterations);
 		return {
-			deltaDps: obs.dps - baseline.dps,
-			se: Math.sqrt(se ** 2 + baseline.se ** 2),
+			deltaDps: sample.dps - baseline.dps,
+			se: Math.sqrt(sample.se ** 2 + baseline.se ** 2),
 		};
 	};
 
@@ -141,7 +143,7 @@ export async function measureBonusGear(args: {
 		if (eligible.length === 0) continue;
 
 		const setId = ctx.setId;
-		const wornSetSlots = new Set(equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])));
+		const wornSetSlots = new Set(setPieceSlots(equipment, setId));
 		const pieces: PartnerPiece[] = [];
 		for (const [itemId, slotIndex] of args.firstSlotIndexByItemId) {
 			if (itemId === item.itemId || getItem(itemId)?.setId !== setId) continue;
@@ -220,15 +222,7 @@ export async function measureBonusGear(args: {
 			// against the current gear.
 			const broken = brokenBy([rowSwap, ...partners]);
 			if (broken.length > 0) {
-				f.breaks = broken.map(brk => {
-					const dps = brokenBonusDpsByKey.get(bonusKey(brk));
-					return {
-						setId: brk.setId,
-						setName: brk.setName,
-						threshold: brk.threshold,
-						...(dps !== undefined ? { dps } : {}),
-					};
-				});
+				f.breaks = broken.map(brk => brokenBonusWithDps(brk, brokenBonusDpsByKey));
 			}
 			const request = await bonusGearRequest([rowSwap, ...partners]);
 			if (isSkipReason(request)) {

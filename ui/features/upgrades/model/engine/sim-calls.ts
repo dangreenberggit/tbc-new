@@ -25,6 +25,33 @@ export async function cacheSimResult(deps: Deps, req: RaidSimRequest, simVersion
 }
 
 /**
+ * Read the store, run the sim on a miss, write the store: every store-cached
+ * sim of a run. A failed sim comes back as `simError`, the error it threw, so
+ * each caller decides what it costs. A failed store read or write still
+ * throws, as an `internal` fault.
+ */
+export async function simOrFailure(
+	deps: Deps,
+	req: RaidSimRequest,
+	simVersion: string,
+	opts: SimRunOpts,
+): Promise<{ observation: SimObservation; fromStore: boolean } | { simError: unknown }> {
+	const cached = await readCachedSim(deps, req, simVersion, opts);
+	if (cached) return { observation: cached, fromStore: true };
+	// Only `deps.sim.run` belongs inside this catch. A store read or write
+	// that fails is an `internal` fault, and labeling it `sim-failed` sends
+	// an operator to the wrong subsystem.
+	let observation: SimObservation;
+	try {
+		observation = await deps.sim.run(req, opts);
+	} catch (err) {
+		return { simError: err };
+	}
+	await cacheSimResult(deps, req, simVersion, opts, observation);
+	return { observation, fromStore: false };
+}
+
+/**
  * A store-cached sim at explicit options, for sims whose seed, iteration count
  * or `saveAllValues` differ from the run's own (the set screen). The store key
  * holds every option (`simCacheKey`), so it never answers one question with
@@ -36,11 +63,9 @@ export async function runSimAt(
 	simVersion: string,
 	opts: SimRunOpts,
 ): Promise<{ observation: SimObservation; fromStore: boolean }> {
-	const cached = await readCachedSim(deps, req, simVersion, opts);
-	if (cached) return { observation: cached, fromStore: true };
-	const observation = await deps.sim.run(req, opts);
-	await cacheSimResult(deps, req, simVersion, opts, observation);
-	return { observation, fromStore: false };
+	const outcome = await simOrFailure(deps, req, simVersion, opts);
+	if ('simError' in outcome) throw outcome.simError;
+	return outcome;
 }
 
 /**

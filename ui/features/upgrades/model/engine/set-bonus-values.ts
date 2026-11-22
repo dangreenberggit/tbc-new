@@ -11,8 +11,8 @@ import type { Deps } from './rank-types';
 import { SET_BONUS_SKIP_REASONS, type SkipReason } from './run-notes';
 import type { RaidSimRequest, SimRunOpts } from './seams/sim-runner';
 import { errorText, isBuildFailure } from './set-less-copies';
-import { combineSe, type DpsSample, type OwnDelta, type PlacedItem } from './set-value';
-import { cacheSimResult, readCachedSim } from './sim-calls';
+import { combineSe, type DpsSample, type OwnDelta, type PlacedItem, sampleOf } from './set-value';
+import { simOrFailure } from './sim-calls';
 import type { SimItemSpec } from './slots';
 
 /**
@@ -60,25 +60,17 @@ export async function measurePairTwoPiece(
 		return undefined;
 	}
 	const request = entry.request;
-	let obs = await readCachedSim(deps, request, simVersion, runOpts);
-	if (!obs) {
-		try {
-			obs = await deps.sim.run(request, runOpts);
-		} catch (err) {
-			// No warning for a sim the Stop guard refused.
-			if (!deps.signal?.aborted) {
-				console.warn(`[upgrades] ${bonusLabel} net value not measured: the sim failed for the worn-1 pair that measures the 2pc`, err);
-				onNotMeasured(SET_BONUS_SKIP_REASONS.simFailed(errorText(err)));
-			}
-			return undefined;
+	const outcome = await simOrFailure(deps, request, simVersion, runOpts);
+	if ('simError' in outcome) {
+		// No warning for a sim the Stop guard refused.
+		if (!deps.signal?.aborted) {
+			console.warn(`[upgrades] ${bonusLabel} net value not measured: the sim failed for the worn-1 pair that measures the 2pc`, outcome.simError);
+			onNotMeasured(SET_BONUS_SKIP_REASONS.simFailed(errorText(outcome.simError)));
 		}
-		await cacheSimResult(deps, request, simVersion, runOpts, obs);
+		return undefined;
 	}
 	const ownDeltas = pair.map(p => ownDeltasByItemId.get(p.itemId)!);
-	const pairSample: DpsSample = {
-		dps: obs.dps,
-		se: obs.stdev / Math.sqrt(runOpts.iterations),
-	};
+	const pairSample: DpsSample = sampleOf(outcome.observation, runOpts.iterations);
 	return {
 		dps: ownDeltas.reduce((sum, s) => sum + s.deltaDps, 0) - (pairSample.dps - baseline.dps),
 		se: combineSe([baseline, pairSample, ...ownDeltas.map(s => ({ dps: 0, se: s.se }))]),

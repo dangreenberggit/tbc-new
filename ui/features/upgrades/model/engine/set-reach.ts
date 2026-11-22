@@ -9,7 +9,7 @@ import { MetaRepairError } from './meta-repair';
 import { SET_BONUS_SKIP_REASONS, type SkipReason } from './run-notes';
 import type { RaidSimRequest, SimRunner } from './seams/sim-runner';
 import { errorText } from './set-less-copies';
-import type { PlacedItem } from './set-value';
+import { bonusCountOf, type PlacedItem } from './set-value';
 import { StopRefusedSim } from './sim-calls';
 import type { SimItemSpec } from './slots';
 
@@ -58,8 +58,8 @@ export async function setBonusCountsInReach(
 			const counts = new Set<number>();
 			for (const name of await read(build.equipment)) {
 				if (wornNames.has(name)) continue;
-				const match = / \((\d+)pc\)$/.exec(name);
-				if (match) counts.add(Number(match[1]));
+				const count = bonusCountOf(name);
+				if (count !== undefined) counts.add(count);
 			}
 			out.set(setId, counts);
 		} catch (err) {

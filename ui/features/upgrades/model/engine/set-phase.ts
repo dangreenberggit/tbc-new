@@ -32,15 +32,17 @@ import {
 	netInflation,
 	type OwnDelta,
 	type PlacedItem,
+	sampleOf,
 	selectAddedPieces,
 	type SelfSetConfound,
 	SET_THRESHOLDS,
 	setCounts,
 	setNameOf,
+	setPieceSlots,
 	type SetThreshold,
 } from './set-value';
-import { countsAsBreakFrom, measureWornSets } from './set-worn-ladder';
-import { cacheSimResult, readCachedSim, runSimAt } from './sim-calls';
+import { brokenBonusDpsByKey, countsAsBreakFrom, measureWornSets } from './set-worn-ladder';
+import { runSimAt, simOrFailure } from './sim-calls';
 import { SIM_ORDER, type SimItemSpec } from './slots';
 import type { Race } from './types';
 
@@ -81,6 +83,8 @@ export async function buildSetBonuses(
 ): Promise<{
 	bonuses: SetBonusValue[];
 	brokenSetValues: BrokenSetValue[];
+	/** `brokenSetValues`' DPS by `bonusKey`, for every reader of a lost bonus's value. */
+	brokenBonusDpsByKey: ReadonlyMap<string, number | undefined>;
 	/** The worn sets' DPS at each piece count. Stored name: "ladder" is the list of counts. */
 	wornSetLadder: WornSetCountEntry[];
 	crossingChecks: CrossingCheck[];
@@ -104,21 +108,16 @@ export async function buildSetBonuses(
 	const cachedSampleRun =
 		(what: string) =>
 		async (request: RaidSimRequest): Promise<DpsSample> => {
-			let obs = await readCachedSim(deps, request, simVersion, runOpts);
-			if (!obs) {
-				try {
-					obs = await deps.sim.run(request, runOpts);
-				} catch (err) {
-					// After Stop the guard refused the sim, which is no sim failure,
-					// and the caller drops this run's set figures.
-					if (!deps.signal?.aborted) {
-						console.warn(`[upgrades] ${what} not measured: the sim failed`, err);
-					}
-					throw err;
+			const outcome = await simOrFailure(deps, request, simVersion, runOpts);
+			if ('simError' in outcome) {
+				// After Stop the guard refused the sim, which is no sim failure,
+				// and the caller drops this run's set figures.
+				if (!deps.signal?.aborted) {
+					console.warn(`[upgrades] ${what} not measured: the sim failed`, outcome.simError);
 				}
-				await cacheSimResult(deps, request, simVersion, runOpts, obs);
+				throw outcome.simError;
 			}
-			return { dps: obs.dps, se: obs.stdev / Math.sqrt(runOpts.iterations) };
+			return sampleOf(outcome.observation, runOpts.iterations);
 		};
 
 	// The value of every bonus each worn set has, on the player's own gear,
@@ -148,6 +147,7 @@ export async function buildSetBonuses(
 			...(e.se !== undefined ? { se: e.se } : {}),
 			...(e.unmeasured ? { unmeasured: e.unmeasured } : {}),
 		}));
+	const brokenDpsByKey = brokenBonusDpsByKey(brokenSetValues);
 
 	const setIdsWithCandidates = new Set<number>();
 	for (const entry of candidates) {
@@ -293,7 +293,7 @@ export async function buildSetBonuses(
 			if (worn < 1) continue;
 			// One more piece reaches no bonus the sim lists.
 			if (bonusCounts.get(setId)?.has(worn + 1) === false) continue;
-			const wornSlots = new Set(equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])));
+			const wornSlots = new Set(setPieceSlots(equipment, setId));
 			let best: OwnDelta | undefined;
 			for (const entry of candidates) {
 				if (getItem(entry.itemId)?.setId !== setId) continue;
@@ -320,7 +320,7 @@ export async function buildSetBonuses(
 				? await measureSameGearBonus(
 						cachedSampleRun(`${crossingLabel} ${worn + 1}pc crossing check`),
 						composeFor(crossingBuild.equipment),
-						crossingBuild.equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])),
+						setPieceSlots(crossingBuild.equipment, setId),
 						worn,
 						// "On" and "off" are compared as a pair, so they come from
 						// one call.
@@ -364,7 +364,6 @@ export async function buildSetBonuses(
 	// value, which is that bonus, is taken out once per added piece (ticket
 	// 886). A crossing check that ran without a value leaves the estimate
 	// unset, and the screen keeps the set.
-	const screenBrokenBonusDpsByKey = new Map(brokenSetValues.map(v => [bonusKey(v), v.dps] as const));
 	const estimatedDeltaAt = (setId: number, threshold: number): number | undefined => {
 		const selection = selectFor(setId, threshold);
 		if (!selection.ok) return undefined;
@@ -387,7 +386,7 @@ export async function buildSetBonuses(
 			{
 				row,
 				brokenBy: swaps => brokenSetBonuses(equipment, swaps, setId, countsAsBreak),
-				breakDps: (s, c) => screenBrokenBonusDpsByKey.get(`${s}:${c}`),
+				breakDps: (s, c) => brokenDpsByKey.get(`${s}:${c}`),
 			},
 			rest,
 		);
@@ -400,6 +399,7 @@ export async function buildSetBonuses(
 		return {
 			bonuses: [],
 			brokenSetValues,
+			brokenBonusDpsByKey: brokenDpsByKey,
 			wornSetLadder,
 			crossingChecks: [],
 			firstSlotIndexByItemId: new Map(),
@@ -530,7 +530,7 @@ export async function buildSetBonuses(
 				const measured = await measureSameGearBonus(
 					cachedSampleRun(`${label} ${threshold}pc same-gear bonus`),
 					composeFor(builtGear.equipment),
-					builtGear.equipment.flatMap((spec, i) => (spec.id && getItem(spec.id)?.setId === setId ? [i] : [])),
+					setPieceSlots(builtGear.equipment, setId),
 					threshold - 1,
 					addedRequestsFor,
 				);
@@ -610,19 +610,14 @@ export async function buildSetBonuses(
 			// outside the added pieces' own slots.
 			const addedSlots = new Set(addedPieces.map(p => p.slotIndex));
 			const gearRepairRecolors = gearEntry.recolors.filter(s => !addedSlots.has(s.itemIndex));
-			let gearObs = await readCachedSim(deps, gearRequest, simVersion, runOpts);
-			if (!gearObs) {
-				try {
-					gearObs = await deps.sim.run(gearRequest, runOpts);
-				} catch (err) {
-					// No warning for a sim the Stop guard refused.
-					if (!deps.signal?.aborted) {
-						console.warn(`[upgrades] ${label} ${threshold}pc bonus's added pieces not measured: the sim failed`, err);
-					}
-					addedPiecesNotMeasured(SET_BONUS_SKIP_REASONS.simFailed(errorText(err)));
-					continue;
+			const gearOutcome = await simOrFailure(deps, gearRequest, simVersion, runOpts);
+			if ('simError' in gearOutcome) {
+				// No warning for a sim the Stop guard refused.
+				if (!deps.signal?.aborted) {
+					console.warn(`[upgrades] ${label} ${threshold}pc bonus's added pieces not measured: the sim failed`, gearOutcome.simError);
 				}
-				await cacheSimResult(deps, gearRequest, simVersion, runOpts, gearObs);
+				addedPiecesNotMeasured(SET_BONUS_SKIP_REASONS.simFailed(errorText(gearOutcome.simError)));
+				continue;
 			}
 
 			const addedPieceSamples = addedPieces.map(p => {
@@ -632,10 +627,7 @@ export async function buildSetBonuses(
 					se: ownDelta?.se ?? 0,
 				};
 			});
-			const addedPiecesSample: DpsSample = {
-				dps: gearObs.dps,
-				se: gearObs.stdev / Math.sqrt(runOpts.iterations),
-			};
+			const addedPiecesSample: DpsSample = sampleOf(gearOutcome.observation, runOpts.iterations);
 			const bonusValue = computeBonusDps({
 				baseline,
 				addedPiecesSample,
@@ -729,8 +721,6 @@ export async function buildSetBonuses(
 	// added piece's own losses. While the 2pc's pieces are a prefix of the
 	// 4pc's, that union is this entry's own `breaks`; the union keeps the
 	// formula whole if `selectAddedPieces` changes.
-	const brokenBonusDpsByKey = new Map<string, number | undefined>();
-	for (const v of brokenSetValues) brokenBonusDpsByKey.set(bonusKey(v), v.dps);
 	const memberOwnBreaks = (bonus: SetBonusValue): BrokenSetBonus[] =>
 		bonus.packageItemIds.flatMap(itemId => {
 			const slotIndex = firstSlotIndexByItemId.get(itemId);
@@ -760,7 +750,7 @@ export async function buildSetBonuses(
 		const terms: InflationTerm[] = [];
 		let allMeasured = true;
 		for (const [key, brk] of breaksToCorrect) {
-			const brokenBonusDps = brokenBonusDpsByKey.get(key);
+			const brokenBonusDps = brokenDpsByKey.get(key);
 			if (brokenBonusDps === undefined) {
 				allMeasured = false;
 				break;
@@ -779,6 +769,7 @@ export async function buildSetBonuses(
 	return {
 		bonuses: results,
 		brokenSetValues,
+		brokenBonusDpsByKey: brokenDpsByKey,
 		wornSetLadder,
 		crossingChecks,
 		firstSlotIndexByItemId,
@@ -792,6 +783,7 @@ export function emptySetPhase(): Awaited<ReturnType<typeof buildSetBonuses>> {
 	return {
 		bonuses: [],
 		brokenSetValues: [],
+		brokenBonusDpsByKey: new Map(),
 		wornSetLadder: [],
 		crossingChecks: [],
 		firstSlotIndexByItemId: new Map(),

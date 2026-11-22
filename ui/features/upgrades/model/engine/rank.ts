@@ -53,9 +53,9 @@ import { measureBonusGear } from './set-bonus-gear';
 import { applySetContext } from './set-context';
 import { applyCopies, type BuildFailure, errorText, isBuildFailure } from './set-less-copies';
 import { buildSetBonuses, emptySetPhase } from './set-phase';
-import { type CountsAsBreak, type OwnDelta, setCounts } from './set-value';
+import { type CountsAsBreak, type OwnDelta, sampleOf, setCounts } from './set-value';
 import { countsAsBreakFrom } from './set-worn-ladder';
-import { cacheSimResult, rankingCacheKey, readCachedSim, readStats, stopGuardedDeps, StopRefusedSim } from './sim-calls';
+import { rankingCacheKey, readStats, simOrFailure, stopGuardedDeps, StopRefusedSim } from './sim-calls';
 import { SIM_ORDER, type SimItemSpec } from './slots';
 export {
 	type RankInput,
@@ -102,7 +102,7 @@ export { bonusesWithItem } from './set-context';
 
 type BestSwap = {
 	deltaDps: number;
-	stdev: number;
+	se: number;
 	request: RaidSimRequest;
 	slotChoice?: SimSlotName;
 	slotIndex: number;
@@ -346,18 +346,12 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 	}
 
 	async function rankAfterJobCreated(): Promise<Ranking | PartialRanking> {
-		// Only `deps.sim.run` belongs inside this catch. A store read or write
-		// that fails is an `internal` fault, and labeling it `sim-failed` sends
-		// an operator to the wrong subsystem.
-		let observation = await readCachedSim(deps, request, simVersion, runOpts);
-		if (!observation) {
-			try {
-				observation = await deps.sim.run(request, runOpts);
-			} catch (err) {
-				throw new RankError('sim-failed', err instanceof Error ? err.message : String(err));
-			}
-			await cacheSimResult(deps, request, simVersion, runOpts, observation);
+		const baselineOutcome = await simOrFailure(deps, request, simVersion, runOpts);
+		if ('simError' in baselineOutcome) {
+			const err = baselineOutcome.simError;
+			throw new RankError('sim-failed', err instanceof Error ? err.message : String(err));
 		}
+		const { observation } = baselineOutcome;
 		simsDone = 1;
 
 		// One stats read of the baseline gives the repair hit budget every later
@@ -610,28 +604,25 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 					continue;
 				}
 				const candReq = composeFor(swapped);
-				let candObs = await readCachedSim(deps, candReq, simVersion, runOpts);
-				if (!candObs) {
-					try {
-						candObs = await deps.sim.run(candReq, runOpts);
-					} catch (err) {
-						candidateSkips.push({
-							kind: 'sim',
-							itemId: entry.itemId,
-							name: entry.name,
-							slot: slotName,
-							reason: err instanceof Error ? err.message : String(err),
-						});
-						continue;
-					}
-					await cacheSimResult(deps, candReq, simVersion, runOpts, candObs);
+				const candOutcome = await simOrFailure(deps, candReq, simVersion, runOpts);
+				if ('simError' in candOutcome) {
+					const err = candOutcome.simError;
+					candidateSkips.push({
+						kind: 'sim',
+						itemId: entry.itemId,
+						name: entry.name,
+						slot: slotName,
+						reason: err instanceof Error ? err.message : String(err),
+					});
+					continue;
 				}
+				const candObs = candOutcome.observation;
 				const deltaDps = candObs.dps - baselineDps;
 				const note = setBreakNote(equipment, slotIndex, entry.itemId);
 				if (!best || deltaDps > best.deltaDps) {
 					const next: BestSwap = {
 						deltaDps,
-						stdev: candObs.stdev,
+						se: sampleOf(candObs, iterations).se,
 						request: candReq,
 						slotIndex,
 						repairRecolors,
@@ -659,7 +650,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				itemId: entry.itemId,
 				slotIndex: best.slotIndex,
 				deltaDps: best.deltaDps,
-				se: best.stdev / Math.sqrt(iterations),
+				se: best.se,
 			});
 
 			const deltaPct = baselineDps === 0 ? 0 : (best.deltaDps / baselineDps) * 100;
@@ -672,7 +663,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				source: entry.source,
 				deltaDps: best.deltaDps,
 				deltaPct,
-				se: best.stdev / Math.sqrt(iterations),
+				se: best.se,
 				seMethod: 'independent',
 				bisTags: entry.bisTags ?? [],
 				...(entry.curatedSets ? { curatedSets: entry.curatedSets } : {}),
@@ -803,7 +794,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 					input,
 					composeFor,
 					ownDeltasByItemId,
-					{ dps: baselineDps, se: observation.stdev / Math.sqrt(iterations) },
+					sampleOf(observation, iterations),
 					simVersion,
 					runOpts,
 					setBonusNotes,
@@ -828,7 +819,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 				ranked,
 				setBonuses,
 				equipment,
-				setBonusResult.brokenSetValues,
+				setBonusResult.brokenBonusDpsByKey,
 				setBonusResult.firstSlotIndexByItemId,
 				ownDeltasByItemId,
 				countsAsBreak,
@@ -849,13 +840,10 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 						gems,
 						composeFor,
 						ownDeltasByItemId,
-						brokenSetValues: setBonusResult.brokenSetValues,
+						brokenBonusDpsByKey: setBonusResult.brokenBonusDpsByKey,
 						firstSlotIndexByItemId: setBonusResult.firstSlotIndexByItemId,
 						countsAsBreak,
-						baseline: {
-							dps: baselineDps,
-							se: observation.stdev / Math.sqrt(iterations),
-						},
+						baseline: sampleOf(observation, iterations),
 						simVersion,
 						runOpts,
 						cutoff,
@@ -1055,16 +1043,14 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 
 	async function simFor(req: RaidSimRequest, seedForRun: number): Promise<SimObservation> {
 		const opts = { seed: seedForRun, iterations };
-		const cached = await readCachedSim(deps, req, simVersion, opts);
-		if (cached) return cached;
-		let obs: SimObservation;
-		try {
-			obs = await guardedDeps.sim.run(req, opts);
-		} catch (err) {
+		// The store goes through `guardedDeps` too: `stopGuardedDeps` keeps
+		// `deps`'s own store, and only the sim is guarded.
+		const outcome = await simOrFailure(guardedDeps, req, simVersion, opts);
+		if ('simError' in outcome) {
+			const err = outcome.simError;
 			if (err instanceof StopRefusedSim) throw err;
 			throw new RankError('sim-failed', err instanceof Error ? err.message : String(err));
 		}
-		await cacheSimResult(deps, req, simVersion, opts, obs);
-		return obs;
+		return outcome.observation;
 	}
 }

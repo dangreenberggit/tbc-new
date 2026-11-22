@@ -4,7 +4,7 @@
  */
 
 import { getItem } from './items';
-import type { AddedPiecesContext, BrokenSetValue, CrossingCheck, RankedItem, SetBonusValue, SetContext } from './rank-types';
+import type { AddedPiecesContext, CrossingCheck, RankedItem, SetBonusValue, SetContext } from './rank-types';
 import {
 	bonusKey,
 	type BrokenSetBonus,
@@ -19,6 +19,7 @@ import {
 	setNameOf,
 	type SetThreshold,
 } from './set-value';
+import { brokenBonusWithDps } from './set-worn-ladder';
 import type { SimItemSpec } from './slots';
 
 /** The highest-count measured entry with added pieces, for `commitBreaks`. */
@@ -113,7 +114,8 @@ export function applySetContext(
 	ranked: RankedItem[],
 	setBonuses: readonly SetBonusValue[],
 	equipment: readonly SimItemSpec[],
-	brokenSetValues: readonly BrokenSetValue[] = [],
+	/** `brokenBonusDpsByKey` of the set phase's `brokenSetValues`. */
+	brokenBonusDpsByKey: ReadonlyMap<string, number | undefined> = new Map(),
 	firstSlotIndexByItemId: ReadonlyMap<number, number> = new Map(),
 	ownDeltasByItemId: ReadonlyMap<number, OwnDelta> = new Map(),
 	countsAsBreak: CountsAsBreak = isBonusImplemented,
@@ -136,8 +138,6 @@ export function applySetContext(
 	for (const setId of setIdsNotValued) {
 		if (!bonusesBySet.has(setId)) bonusesBySet.set(setId, []);
 	}
-	const brokenBonusDpsByKey = new Map<string, number | undefined>();
-	for (const v of brokenSetValues) brokenBonusDpsByKey.set(bonusKey(v), v.dps);
 	const brokenBonusDps = (brk: BrokenSetBonus): number | undefined => brokenBonusDpsByKey.get(bonusKey(brk));
 	const rankedById = new Map(ranked.map(r => [r.itemId, r]));
 
@@ -180,15 +180,7 @@ export function applySetContext(
 		if (slotIndex !== undefined) {
 			const ownBreaks = brokenSetBonuses(equipment, [{ itemId: item.itemId, slotIndex }], setId, countsAsBreak);
 			if (ownBreaks.length > 0) {
-				setContext.singleBreaks = ownBreaks.map(brk => {
-					const dps = brokenBonusDps(brk);
-					return {
-						setId: brk.setId,
-						setName: brk.setName,
-						threshold: brk.threshold,
-						...(dps !== undefined ? { dps } : {}),
-					};
-				});
+				setContext.singleBreaks = ownBreaks.map(brk => brokenBonusWithDps(brk, brokenBonusDpsByKey));
 			}
 		}
 
@@ -206,15 +198,7 @@ export function applySetContext(
 					.sort((a, b) => a - b)
 			: [...SET_THRESHOLDS].filter(t => advancesPieceCount && t > piecesAfterSwap && isBonusImplemented(setId, t));
 		const ownBreakKeys = new Set((setContext.singleBreaks ?? []).map(bonusKey));
-		const withDps = (brk: BrokenSetBonus) => {
-			const dps = brokenBonusDps(brk);
-			return {
-				setId: brk.setId,
-				setName: brk.setName,
-				threshold: brk.threshold,
-				...(dps !== undefined ? { dps } : {}),
-			};
-		};
+		const withDps = (brk: BrokenSetBonus) => brokenBonusWithDps(brk, brokenBonusDpsByKey);
 		// A path piece's swap gain, read before replication rewrites the top
 		// rows' `deltaDps`, so a row among measured added pieces sums to their
 		// gain. The worn bonuses it loses alone are added back because the path
