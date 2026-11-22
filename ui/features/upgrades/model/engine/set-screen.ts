@@ -111,8 +111,11 @@ export type SetScreenInput = {
 	 * the request composed). Undefined when it cannot be built.
 	 */
 	gearAt: (setId: number, threshold: number) => ScreenGear | undefined;
-	/** A store-cached sim with explicit options. Throws when the sim fails. */
-	runSimAt: (request: RaidSimRequest, opts: SimRunOpts) => Promise<{ observation: SimObservation; fromStore: boolean }>;
+	/**
+	 * A store-cached sim with explicit options. A failed sim comes back as
+	 * `simError`; a store fault throws.
+	 */
+	runSimAt: (request: RaidSimRequest, opts: SimRunOpts) => Promise<{ observation: SimObservation; fromStore: boolean } | { simError: unknown }>;
 	seed: number;
 	/**
 	 * The caller's Stop. Once it has aborted, a failed sim is the runner refusing
@@ -148,8 +151,8 @@ function screenGear(input: Pick<SetScreenInput, 'gearAt'>, setId: number, reach:
 }
 
 /**
- * Runs one of a set's sims for a given k. Each sim catches its own failure, so
- * one failure loses only that sim. With `gear.requestsFor`, the first sim
+ * Runs one of a set's sims for a given k. A failed sim loses only that sim;
+ * a store fault throws. With `gear.requestsFor`, the first sim
  * builds all of `counts` in one call.
  */
 function countSimmer(
@@ -193,23 +196,22 @@ function countSimmer(
 				return undefined;
 			}
 		}
-		try {
-			const { observation, fromStore: hit } = await input.runSimAt(request, {
-				seed: input.seed,
-				iterations,
-				saveAllValues: true,
-			});
-			if (hit) counter.fromStore += 1;
-			else counter.simmed += 1;
-			return observation;
-		} catch (err) {
+		const outcome = await input.runSimAt(request, {
+			seed: input.seed,
+			iterations,
+			saveAllValues: true,
+		});
+		if ('simError' in outcome) {
 			counter.simmed += 1;
 			if (!input.signal?.aborted) {
-				console.warn(what, err);
-				input.onSimFailed?.(setId, errorText(err));
+				console.warn(what, outcome.simError);
+				input.onSimFailed?.(setId, errorText(outcome.simError));
 			}
 			return undefined;
 		}
+		if (outcome.fromStore) counter.fromStore += 1;
+		else counter.simmed += 1;
+		return outcome.observation;
 	};
 }
 

@@ -39,7 +39,7 @@ import type { Job } from './seams/store';
 import { emptySetPhase, runSetPhase, type SetPhaseOutcome } from './set-phase';
 import { setCounts } from './set-value';
 import { countsAsBreakFrom } from './set-worn-ladder';
-import { rankingCacheKey, simOrFailure, stopGuardedDeps, StopRefusedSim } from './sim-calls';
+import { asInternal, rankingCacheKey, simOrFailure, stopGuardedDeps, StopRefusedSim } from './sim-calls';
 import type { SimItemSpec } from './slots';
 export {
 	type RankInput,
@@ -134,7 +134,7 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 	// readGear, and this is still before the expensive sim loop.
 	const contentHash = rankingContentHash({ input, race, fight, logged, ordered: pool.ordered, gems, deps, iterations, seeds, simVersion, hitPercentStat });
 
-	const cached = await deps.store.get<Ranking>(rankingCacheKey(contentHash));
+	const cached = await asInternal(() => deps.store.get<Ranking>(rankingCacheKey(contentHash)));
 	if (cached) {
 		onProgress?.({ stage: 'ranking' });
 		return cached;
@@ -158,8 +158,8 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		request,
 	};
 
-	const job = await deps.store.job.create({ contentHash, input });
-	await deps.store.job.update(job.id, { status: 'running' });
+	const job = await asInternal(() => deps.store.job.create({ contentHash, input }));
+	await asInternal(() => deps.store.job.update(job.id, { status: 'running' }));
 
 	try {
 		return await runRanking(ctx, { resolved, contentHash, job, gems, metaAdjusted, metaRecolors, pool });
@@ -373,18 +373,22 @@ async function saveRanking(deps: Deps, setup: RunSetup, rankingBase: Omit<Rankin
 		// thing that enforces it (see `Ranking.complete`). Per-sim rows already
 		// landed via `cacheSimResult`, so a re-run still resumes cheaply.
 		const partial: PartialRanking = { ...rankingBase, complete: false };
-		await deps.store.job.update(job.id, {
-			status: 'done',
-			result: partial,
-		});
+		await asInternal(() =>
+			deps.store.job.update(job.id, {
+				status: 'done',
+				result: partial,
+			}),
+		);
 		return partial;
 	}
 
 	const ranking: Ranking = { ...rankingBase, complete: true };
-	await deps.store.put(rankingCacheKey(contentHash), ranking);
-	await deps.store.job.update(job.id, {
-		status: 'done',
-		result: ranking,
-	});
+	await asInternal(() => deps.store.put(rankingCacheKey(contentHash), ranking));
+	await asInternal(() =>
+		deps.store.job.update(job.id, {
+			status: 'done',
+			result: ranking,
+		}),
+	);
 	return ranking;
 }

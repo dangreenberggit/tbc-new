@@ -21,11 +21,12 @@ import { measureBonusGear } from './set-bonus-gear';
 import { applyNetCorrection } from './set-bonus-net';
 import { measureSetBonusValues } from './set-bonus-values';
 import { applySetContext } from './set-context';
+import { errorText, type SimFailure } from './set-less-copies';
 import { measureCrossingChecks, type SetReach, setReach } from './set-reach';
 import { runSetScreenOn, type SetScreen, type SetScreenInput } from './set-screen';
 import { brokenSetBonuses, type CountsAsBreak, type DpsSample, type OwnDelta, sampleOf, setNameOf } from './set-value';
 import { countsAsBreakFrom, wornSetValues } from './set-worn-ladder';
-import { runSimAt, simOrFailure } from './sim-calls';
+import { simOrFailure } from './sim-calls';
 import type { SimItemSpec } from './slots';
 
 /**
@@ -95,7 +96,7 @@ export type SetPhaseResult = {
  * Makes the set phase's store-cached sim run; `what` names the sims in its
  * failure warning.
  */
-export type SampleRunnerFor = (what: string) => (request: RaidSimRequest) => Promise<DpsSample>;
+export type SampleRunnerFor = (what: string) => (request: RaidSimRequest) => Promise<DpsSample | SimFailure>;
 
 /**
  * The set-bonus sims, in order: the worn sets' values, which counts each set
@@ -161,12 +162,13 @@ export async function buildSetBonuses(ctx: SetPhaseContext): Promise<SetPhaseRes
 }
 
 /**
- * The set sims' store-cached run; the caller decides what a failed sim
- * costs.
+ * The set sims' store-cached run. A failed sim comes back as its error's
+ * text and the caller decides what it costs; a store fault throws, as
+ * everywhere else in the run.
  */
-function cachedSampleRun(ctx: SetPhaseContext, what: string): (request: RaidSimRequest) => Promise<DpsSample> {
+function cachedSampleRun(ctx: SetPhaseContext, what: string): (request: RaidSimRequest) => Promise<DpsSample | SimFailure> {
 	const { deps, simVersion, runOpts } = ctx;
-	return async (request: RaidSimRequest): Promise<DpsSample> => {
+	return async (request: RaidSimRequest): Promise<DpsSample | SimFailure> => {
 		const outcome = await simOrFailure(deps, request, simVersion, runOpts);
 		if ('simError' in outcome) {
 			// After Stop the guard refused the sim, which is no sim failure,
@@ -174,7 +176,7 @@ function cachedSampleRun(ctx: SetPhaseContext, what: string): (request: RaidSimR
 			if (!deps.signal?.aborted) {
 				console.warn(`[upgrades] ${what} not measured: the sim failed`, outcome.simError);
 			}
-			throw outcome.simError;
+			return { simError: errorText(outcome.simError) };
 		}
 		return sampleOf(outcome.observation, runOpts.iterations);
 	};
@@ -225,7 +227,9 @@ function setScreenInputFor(ctx: SetPhaseContext, reach: SetReach, nameOfSet: (se
 							),
 					};
 				},
-				runSimAt: (request, opts) => runSimAt(deps, request, simVersion, opts),
+				// The screen's seed and iterations differ from the run's; the store
+				// key holds every option (`simCacheKey`), so neither reads the other's sims.
+				runSimAt: (request, opts) => simOrFailure(deps, request, simVersion, opts),
 				seed: runOpts.seed,
 				...(deps.signal ? { signal: deps.signal } : {}),
 				onSimFailed: (setId, error) =>

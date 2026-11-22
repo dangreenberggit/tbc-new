@@ -106,7 +106,7 @@ export const isBuildFailure = <T extends object>(value: T | BuildFailure | undef
  * gems chosen for its own hit; a rejection from it goes to the caller.
  */
 export async function measureSameGearBonus(
-	runSim: (request: RaidSimRequest) => Promise<DpsSample>,
+	runSim: (request: RaidSimRequest) => Promise<DpsSample | SimFailure>,
 	composedRequest: RaidSimRequest,
 	setPieceSlots: readonly number[],
 	lowerCount: number,
@@ -134,13 +134,11 @@ export async function measureSameGearBonus(
 	if (!onRequest || !offRequest) return undefined;
 	if (isBuildFailure(onRequest)) return onRequest;
 	if (isBuildFailure(offRequest)) return offRequest;
-	try {
-		const on = await runSim(onRequest);
-		const off = await runSim(offRequest);
-		return { dps: on.dps - off.dps, se: Math.sqrt(on.se ** 2 + off.se ** 2) };
-	} catch (err) {
-		return { simError: errorText(err) };
-	}
+	const on = await runSim(onRequest);
+	if (isSimFailure(on)) return on;
+	const off = await runSim(offRequest);
+	if (isSimFailure(off)) return off;
+	return { dps: on.dps - off.dps, se: Math.sqrt(on.se ** 2 + off.se ** 2) };
 }
 
 export const isSimFailure = <T extends object>(value: T | SimFailure | undefined): value is SimFailure => value !== undefined && 'simError' in value;
@@ -162,7 +160,7 @@ export type WornSetCountValue = {
  * request could not be built.
  */
 export async function measureWornSetCounts(
-	runSim: (request: RaidSimRequest) => Promise<DpsSample>,
+	runSim: (request: RaidSimRequest) => Promise<DpsSample | SimFailure>,
 	composedRequest: RaidSimRequest,
 	wornSetSlots: readonly number[],
 	onFailed?: (error: string, notBuilt?: true) => void,
@@ -182,11 +180,12 @@ export async function measureWornSetCounts(
 			onFailed?.(errorText(err), true);
 			continue;
 		}
-		try {
-			simsByCount[c] = await runSim(request);
-		} catch (err) {
+		const sample = await runSim(request);
+		if (isSimFailure(sample)) {
 			simsByCount[c] = undefined;
-			onFailed?.(errorText(err));
+			onFailed?.(sample.simError);
+		} else {
+			simsByCount[c] = sample;
 		}
 	}
 	const out: WornSetCountValue[] = [];

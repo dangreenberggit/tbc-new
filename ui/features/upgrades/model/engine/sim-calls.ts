@@ -55,23 +55,6 @@ export async function simOrFailure(
 	return { observation, fromStore: false };
 }
 
-/**
- * A store-cached sim at explicit options, for sims whose seed, iteration count
- * or `saveAllValues` differ from the run's own (the set screen). The store key
- * holds every option (`simCacheKey`), so it never answers one question with
- * another's reading. Throws when the sim fails.
- */
-export async function runSimAt(
-	deps: Deps,
-	req: RaidSimRequest,
-	simVersion: string,
-	opts: SimRunOpts,
-): Promise<{ observation: SimObservation; fromStore: boolean }> {
-	const outcome = await simOrFailure(deps, req, simVersion, opts);
-	if ('simError' in outcome) throw outcome.simError;
-	return outcome;
-}
-
 /** How many of a group's sims ran and how many came from the store. */
 export type SimCounter = { simmed: number; fromStore: number };
 
@@ -217,7 +200,8 @@ export function stopGuardedDeps(deps: Deps): Deps {
 	};
 }
 
-async function asInternal<T>(op: () => Promise<T>): Promise<T> {
+/** Runs a store read or write; a fault in it is an `internal` `RankError`, never a failed sim. */
+export async function asInternal<T>(op: () => Promise<T>): Promise<T> {
 	try {
 		return await op();
 	} catch (err) {
