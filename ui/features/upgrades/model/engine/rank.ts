@@ -333,17 +333,17 @@ async function runSetPhase(
 	const simBonusGear = (deps.measureSetBonuses ?? false) && !aborted;
 	const hasSetContext = setBonuses.length > 0 || setBonusResult.setIdsNotValued.length > 0;
 	if (hasSetContext) {
-		applySetContext(
+		applySetContext({
 			ranked,
 			setBonuses,
 			equipment,
-			setBonusResult.brokenBonusDpsByKey,
-			setBonusResult.firstSlotIndexByItemId,
+			brokenBonusDpsByKey: setBonusResult.brokenBonusDpsByKey,
+			firstSlotIndexByItemId: setBonusResult.firstSlotIndexByItemId,
 			ownDeltasByItemId,
 			countsAsBreak,
-			simBonusGear ? { crossingChecks: setBonusResult.crossingChecks } : undefined,
-			setBonusResult.setIdsNotValued,
-		);
+			measured: simBonusGear ? { crossingChecks: setBonusResult.crossingChecks } : undefined,
+			setIdsNotValued: setBonusResult.setIdsNotValued,
+		});
 	}
 	// After the future bonuses are filled in and before replication rewrites
 	// the top rows' `deltaDps`: one sim per distinct gear of a row plus its
