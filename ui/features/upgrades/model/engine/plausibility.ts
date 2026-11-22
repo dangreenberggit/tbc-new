@@ -3,7 +3,7 @@
  */
 
 import { classifyDeadSlots, type ClassifyDeadSlotsOptions, type DeadSlotCause, type DeadSlotRow } from './dead-slots';
-import type { SetBonusValue } from './rank';
+import type { SetBonusValue } from './rank-types';
 import type { SetThreshold } from './set-value';
 
 export const IMPLAUSIBLE_BONUS_FRACTION = 0.075;
