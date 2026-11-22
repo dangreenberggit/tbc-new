@@ -4,12 +4,13 @@
  */
 
 import type { GemContext } from './candidate-gems';
+import { type CapProfile, hitCapBudgetFrom } from './cap-profile';
 import type { ChainBuild } from './gear-swap';
 import type { GemRecolor, MetaRepairError } from './meta-repair';
-import { RankError } from './rank-types';
-import type { PlayerStatsObservation, RaidSimRequest } from './seams/sim-runner';
+import { type Deps, RankError } from './rank-types';
+import type { PlayerStatsObservation, RaidSimRequest, SpellDamageBySchool } from './seams/sim-runner';
 import { type BuildFailure, errorText, isBuildFailure } from './set-less-copies';
-import { StopRefusedSim } from './sim-calls';
+import { readStats, StopRefusedSim } from './sim-calls';
 
 /**
  * A candidate's own stats read failed. Its own class, so `runCandidate` can
@@ -57,6 +58,19 @@ export async function hitPercentOrSimFailed(
 		throw new RankError('sim-failed', errorText(err));
 	}
 	return { observed, hitPercent: hitPercentOf(observed, pseudoStat) };
+}
+
+/**
+ * One stats read of `request`: its hit percent and the `HitCapBudget` it
+ * gives. A spell-hit budget also needs a sim result's spell damage by
+ * school.
+ */
+export async function readHitCap(deps: Deps, capProfile: CapProfile, request: RaidSimRequest, slot: number, spellDamageBySchool?: SpellDamageBySchool) {
+	const { observed, hitPercent } = await hitPercentOrSimFailed(readStats(deps.sim, request, deps.signal), slot);
+	return {
+		hitPercent,
+		budget: hitCapBudgetFrom(capProfile, request, observed.pseudoStats, spellDamageBySchool),
+	};
 }
 
 /** `{}` sends no copies. */
