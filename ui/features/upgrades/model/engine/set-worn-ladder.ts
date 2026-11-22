@@ -1,7 +1,7 @@
 /**
  * `measureWornSets` gives `wornSetLadder`: what each piece count of a worn set is worth,
  * measured on the worn gear. `countsAsBreakFrom` counts a swap as breaking only a count that
- * ladder counted.
+ * ladder counted. `wornSetValues` gives the set phase both, with `brokenSetValues`.
  */
 
 import type { Cutoff } from './cutoff';
@@ -10,7 +10,18 @@ import type { BrokenSetValue, WornSetCountEntry } from './rank-types';
 import { SET_BONUS_SKIP_REASONS, setBonusCountsSkipNote, wornSetSkipNote } from './run-notes';
 import type { RaidSimRequest } from './seams/sim-runner';
 import { applySetLessCopies, clearsSameGearNoise, errorText, measureWornSetCounts } from './set-less-copies';
-import { bonusCountOf, bonusKey, type BrokenSetBonus, type CountsAsBreak, type DpsSample, setCounts, setNameOf, setPieceSlots } from './set-value';
+import type { SetPhaseContext } from './set-phase';
+import {
+	bonusCountOf,
+	bonusKey,
+	type BrokenSetBonus,
+	type CountsAsBreak,
+	type DpsSample,
+	isBonusImplemented,
+	setCounts,
+	setNameOf,
+	setPieceSlots,
+} from './set-value';
 import { StopRefusedSim } from './sim-calls';
 import type { SimItemSpec } from './slots';
 
@@ -140,4 +151,49 @@ export function brokenBonusWithDps(brk: BrokenSetBonus, dpsByKey: ReadonlyMap<st
 		threshold: brk.threshold,
 		...(dps !== undefined ? { dps } : {}),
 	};
+}
+
+/**
+ * The worn sets' values, and what the rest of the set phase reads from them:
+ * which lost counts are breaks, and the counted ones as `brokenSetValues`
+ * with their DPS by `bonusKey`.
+ */
+export async function wornSetValues(
+	ctx: SetPhaseContext,
+	cachedSampleRun: (what: string) => (request: RaidSimRequest) => Promise<DpsSample>,
+): Promise<{
+	wornSetLadder: WornSetCountEntry[];
+	countsAsBreak: CountsAsBreak;
+	brokenSetValues: BrokenSetValue[];
+	brokenDpsByKey: Map<string, number | undefined>;
+}> {
+	const { deps, equipment, composeFor, setCheckNotes, measureSetBonuses, cutoff } = ctx;
+	// The value of every bonus each worn set has, on the player's own gear,
+	// before any reachable bonus is simmed, so every loss below reads a
+	// measured value instead of a table. It runs even when no set piece is a
+	// candidate, because `classifyDeadSlots` (in `plausibilityWarnings`) reads
+	// it too.
+	const wornSetLadder = measureSetBonuses
+		? await measureWornSets(
+				equipment,
+				composeFor,
+				cachedSampleRun,
+				cutoff,
+				setCheckNotes,
+				deps.sim.activeSetBonuses ? request => deps.sim.activeSetBonuses!(request) : undefined,
+			)
+		: [];
+	const countsAsBreak: CountsAsBreak = measureSetBonuses ? countsAsBreakFrom(wornSetLadder) : isBonusImplemented;
+	const brokenSetValues: BrokenSetValue[] = wornSetLadder
+		.filter(e => e.counted)
+		.sort((a, b) => (a.setId !== b.setId ? a.setId - b.setId : b.count - a.count))
+		.map(e => ({
+			setId: e.setId,
+			setName: e.setName,
+			threshold: e.count,
+			...(e.dps !== undefined ? { dps: e.dps } : {}),
+			...(e.se !== undefined ? { se: e.se } : {}),
+			...(e.unmeasured ? { unmeasured: e.unmeasured } : {}),
+		}));
+	return { wornSetLadder, countsAsBreak, brokenSetValues, brokenDpsByKey: brokenBonusDpsByKey(brokenSetValues) };
 }
