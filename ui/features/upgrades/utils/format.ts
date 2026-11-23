@@ -199,4 +199,11 @@ export const progressLabel = (stage: ProgressStage): string => {
 	}
 };
 
-export const progressBarOf = (view: RunProgressView): ProgressTrackerProgress => ({ current: view.done, total: view.total });
+/**
+ * The set-bonus stage sends no count, so the bar shows none then, as wowsims' Bulk
+ * bar does in a stage without one (`features/bulk/model/progress.ts`,
+ * `candidateGearProgress`): the candidates' last count would stand still for the
+ * whole stage.
+ */
+export const progressBarOf = (view: RunProgressView): ProgressTrackerProgress =>
+	view.activity === 'set-bonuses' ? {} : { current: view.done, total: view.total };
