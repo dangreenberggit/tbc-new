@@ -77,7 +77,7 @@ export const ResultRow = memo(({ row, position, context, notUpgrade = false, ref
 				<FavoriteToggle itemId={row.itemId} />
 			</td>
 			<td className="py-1">
-				<BatchToggle itemId={row.itemId} />
+				<BatchToggle itemId={row.itemId} randomSuffix={row.randomSuffix} />
 			</td>
 		</tr>
 	);

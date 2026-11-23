@@ -15,6 +15,7 @@
  * sims failed is kept, so a failure never hides a set.
  */
 
+import { promisePool } from './promise-pool';
 import type { RaidSimRequest, SimObservation, SimRunOpts } from './seams/sim-runner';
 import { applyCopies, type BuildFailure, errorText, isBuildFailure } from './set-less-copies';
 
@@ -126,6 +127,8 @@ export type SetScreenInput = {
 	onSimFailed?: (setId: number, error: string) => void;
 	/** The error of each sim request that could not be built. */
 	onRequestNotBuilt?: (setId: number, error: string) => void;
+	/** How many sets' sims run at once (`Deps.concurrency`); absent means one. */
+	concurrency?: number;
 };
 
 export type SetScreenOnInput = SetScreenInput & {
@@ -224,38 +227,31 @@ export async function runSetScreenOn(input: SetScreenOnInput): Promise<SetScreen
 	const rule = SCREEN_ON_RULE;
 	const iterations = rule.iterations;
 	const counter: ScreenCounter = { simmed: 0, fromStore: 0 };
-	const readings: Omit<SetScreenOnSet, 'kept' | 'reason'>[] = [];
-
-	for (const { setId, worn, reach } of [...input.sets].sort((a, b) => a.setId - b.setId)) {
-		if (reach - worn < 2) continue;
-		const { gear, added, slots } = screenGear(input, setId, reach);
-		const simAtCount = countSimmer(input, setId, worn, gear, slots, counter, [0, reach - worn]);
-		const low = await simAtCount(0, iterations);
-		const high = await simAtCount(reach - worn, iterations);
-		const pairDps = low && high ? high.dps - low.dps : undefined;
-
-		let bestEstimate: number | undefined;
-		for (let t = Math.max(2, worn + 1); t <= reach; t++) {
-			const estimate = input.estimatedDeltaAt(setId, t);
-			if (estimate !== undefined && (bestEstimate === undefined || estimate > bestEstimate)) {
-				bestEstimate = estimate;
-			}
-		}
-		const measure = bestEstimate !== undefined && pairDps !== undefined ? bestEstimate + pairDps : undefined;
-
-		readings.push({
-			setId,
-			worn,
-			reach,
-			packageItemIds: added.map(p => p.itemId),
-			pair: {
-				...(pairDps !== undefined ? { dps: pairDps } : {}),
-				...optionalPairedSe('pairedSe', high, low, iterations),
-			},
-			...(bestEstimate !== undefined ? { bestStats: bestEstimate } : {}),
-			...(measure !== undefined ? { measure } : {}),
-		});
-	}
+	const sets = [...input.sets].sort((a, b) => a.setId - b.setId).filter(({ worn, reach }) => reach - worn >= 2);
+	// Each set's pair is independent of the other sets', so the sets run at the
+	// runner's concurrency, one set's two sims after each other. A set's notes
+	// wait for the pool, so they come in set id order whatever the finish order.
+	const screened = await promisePool(
+		sets.map(set => async () => {
+			const notes: Array<() => void> = [];
+			const reading = await screenOneSet(
+				{
+					...input,
+					onSimFailed: (setId, error) => notes.push(() => input.onSimFailed?.(setId, error)),
+					onRequestNotBuilt: (setId, error) => notes.push(() => input.onRequestNotBuilt?.(setId, error)),
+				},
+				set,
+				counter,
+				iterations,
+			);
+			return { reading, notes };
+		}),
+		input.concurrency ?? 1,
+	);
+	const readings = screened.map(({ reading, notes }) => {
+		for (const note of notes) note();
+		return reading;
+	});
 
 	const sigma = Number.isFinite(input.baselineStdev) ? (rule.sigmaBoundScale * Math.SQRT2 * input.baselineStdev) / Math.sqrt(iterations) : undefined;
 	const verdicts = applyScreenRule(
@@ -277,6 +273,42 @@ export async function runSetScreenOn(input: SetScreenOnInput): Promise<SetScreen
 		sets: readings.map(r => ({ ...r, ...verdicts.get(r.setId)! })),
 		simmed: counter.simmed,
 		fromStore: counter.fromStore,
+	};
+}
+
+/** One set's screen pair, and what `measure` the screen rule reads from it. */
+async function screenOneSet(
+	input: SetScreenOnInput,
+	{ setId, worn, reach }: { setId: number; worn: number; reach: number },
+	counter: ScreenCounter,
+	iterations: number,
+): Promise<Omit<SetScreenOnSet, 'kept' | 'reason'>> {
+	const { gear, added, slots } = screenGear(input, setId, reach);
+	const simAtCount = countSimmer(input, setId, worn, gear, slots, counter, [0, reach - worn]);
+	const low = await simAtCount(0, iterations);
+	const high = await simAtCount(reach - worn, iterations);
+	const pairDps = low && high ? high.dps - low.dps : undefined;
+
+	let bestEstimate: number | undefined;
+	for (let t = Math.max(2, worn + 1); t <= reach; t++) {
+		const estimate = input.estimatedDeltaAt(setId, t);
+		if (estimate !== undefined && (bestEstimate === undefined || estimate > bestEstimate)) {
+			bestEstimate = estimate;
+		}
+	}
+	const measure = bestEstimate !== undefined && pairDps !== undefined ? bestEstimate + pairDps : undefined;
+
+	return {
+		setId,
+		worn,
+		reach,
+		packageItemIds: added.map(p => p.itemId),
+		pair: {
+			...(pairDps !== undefined ? { dps: pairDps } : {}),
+			...optionalPairedSe('pairedSe', high, low, iterations),
+		},
+		...(bestEstimate !== undefined ? { bestStats: bestEstimate } : {}),
+		...(measure !== undefined ? { measure } : {}),
 	};
 }
 

@@ -12,9 +12,10 @@ import type { SpecId } from './types';
 
 /**
  * An item's EP in one sim slot, 0 for an unknown item. The slot matters for weapons, whose
- * DPS is priced at that slot's weight (`EquippedItem.calcStats(slot)`).
+ * DPS is priced at that slot's weight (`EquippedItem.calcStats(slot)`), and a random-suffix
+ * item with the suffix it carries.
  */
-export type ItemEp = (itemId: number, slot: SimSlotName) => number;
+export type ItemEp = (itemId: number, slot: SimSlotName, randomSuffix?: number) => number;
 
 const OFFHAND_INDEX = SIM_ORDER.indexOf('offhand');
 
@@ -26,15 +27,15 @@ const OFFHAND_INDEX = SIM_ORDER.indexOf('offhand');
  */
 function bestEpDelta(entry: PoolEntry, equipment: readonly SimItemSpec[], itemEp: ItemEp, spec?: SpecId): number {
 	const wornEp = (slotName: SimSlotName, slotIndex: number): number => {
-		const wornId = equipment[slotIndex]?.id;
-		return wornId === undefined ? 0 : itemEp(wornId, slotName);
+		const worn = equipment[slotIndex];
+		return worn?.id === undefined ? 0 : itemEp(worn.id, slotName, worn.randomSuffix);
 	};
 	const twoHander = getItem(entry.itemId)?.handType === HandType.HandTypeTwoHand;
 	let best: number | undefined;
 	for (const slotName of simSlotsForPoolSlot(entry.slot, spec, entry.itemId)) {
 		const slotIndex = SIM_ORDER.indexOf(slotName);
 		if (slotIndex < 0) continue;
-		let delta = itemEp(entry.itemId, slotName) - wornEp(slotName, slotIndex);
+		let delta = itemEp(entry.itemId, slotName, entry.randomSuffix) - wornEp(slotName, slotIndex);
 		if (twoHander && slotName === 'mainhand') {
 			delta -= wornEp('offhand', OFFHAND_INDEX);
 		}

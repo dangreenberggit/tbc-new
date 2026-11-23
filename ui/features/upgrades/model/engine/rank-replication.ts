@@ -4,6 +4,7 @@
  */
 
 import { type Cutoff, meetsCutoff } from './cutoff';
+import { promisePool } from './promise-pool';
 import type { RunContext } from './rank-setup';
 import { type RankedItem, RankError } from './rank-types';
 import { isReplicable, PAIRED_REPLICATE_TOP_N, pairedReplicateSe, usesPairedReplication } from './se';
@@ -42,27 +43,31 @@ export async function replicateTopItems(
 		total: simCounts.total,
 	});
 	if (top.length === 0) return [];
-	const baselineBySeed = new Map<number, number>();
-	for (const s of seeds) {
-		baselineBySeed.set(s, (await simFor(ctx, request, s)).dps);
-		bumpProgress(ctx, simCounts, s);
-	}
-
-	const replicated: ReplicatedRow[] = [];
-	for (const item of top) {
+	const requests = top.map(item => {
 		const candReq = winningRequests.get(item.itemId);
 		if (!candReq) {
 			throw new RankError('internal', `no recorded request for ranked item ${item.itemId} (${item.name}); ` + `paired replication cannot re-sim it`);
 		}
-		const deltas: number[] = [];
-		for (const s of seeds) {
-			const obs = await simFor(ctx, candReq, s);
-			deltas.push(obs.dps - baselineBySeed.get(s)!);
-			bumpProgress(ctx, simCounts, s);
-		}
-		replicated.push({ item, deltas });
-	}
-	return replicated;
+		return candReq;
+	});
+
+	// Every sim here is independent of the others, so they run at the
+	// runner's concurrency, as the candidate loop's do: one at a time left all
+	// but one web worker idle. The tasks keep the order the sims were sent in
+	// one at a time, the baselines first, and `promisePool` keeps each result
+	// at its task's index, so the deltas do not depend on the finish order.
+	const simAt = (req: RaidSimRequest, s: number) => async (): Promise<number> => {
+		const { dps } = await simFor(ctx, req, s);
+		bumpProgress(ctx, simCounts, s);
+		return dps;
+	};
+	const tasks = [request, ...requests].flatMap(req => seeds.map(s => simAt(req, s)));
+	const dps = await promisePool(tasks, ctx.deps.concurrency ?? 1);
+	const baselineDps = dps.slice(0, seeds.length);
+	return top.map((item, row) => {
+		const rowDps = dps.slice((row + 1) * seeds.length, (row + 2) * seeds.length);
+		return { item, deltas: rowDps.map((d, i) => d - baselineDps[i]!) };
+	});
 }
 
 /**

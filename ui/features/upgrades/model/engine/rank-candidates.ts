@@ -206,7 +206,7 @@ async function bestSwapFor(loop: CandidateLoop, entry: PoolEntry): Promise<BestS
 		let removed: readonly { slotIndex: number; itemId: number }[];
 		let repairGems: GemContext;
 		try {
-			repairGems = await candidateRepairGems(ctx, baselineHitBudget, slotIndex, entry.itemId);
+			repairGems = await candidateRepairGems(ctx, baselineHitBudget, slotIndex, entry.itemId, entry.randomSuffix);
 		} catch (err) {
 			// Stop refused the read: the row is left to the Stop placeholder.
 			if (err instanceof StopRefusedSim) return 'stopped';
@@ -221,7 +221,7 @@ async function bestSwapFor(loop: CandidateLoop, entry: PoolEntry): Promise<BestS
 			continue;
 		}
 		try {
-			const outcome = candidateSwapWithRepairs(equipment, slotIndex, entry.itemId, repairGems);
+			const outcome = candidateSwapWithRepairs(equipment, slotIndex, entry.itemId, repairGems, entry.randomSuffix);
 			swapped = outcome.equipment;
 			repairRecolors = outcome.recolors;
 			removed = outcome.removed;
@@ -299,6 +299,7 @@ function rankedRow(entry: PoolEntry, best: BestSwap, worn: boolean, baselineDps:
 		...(entry.bisSets ? { bisSets: entry.bisSets } : {}),
 		belowCutoff,
 	};
+	if (entry.randomSuffix) item.randomSuffix = entry.randomSuffix;
 	if (entry.sources) item.sources = entry.sources;
 	if (best.slotChoice) item.slotChoice = best.slotChoice;
 	if (best.setBonusNote) item.setBonusNote = best.setBonusNote;
@@ -346,6 +347,7 @@ function placeholderRow(entry: PoolEntry, slotChoice: SimSlotName | undefined, w
 		belowCutoff: false,
 		...(entry.sources ? { sources: entry.sources } : {}),
 		...(worn ? { owned: true } : {}),
+		...(entry.randomSuffix ? { randomSuffix: entry.randomSuffix } : {}),
 	};
 }
 

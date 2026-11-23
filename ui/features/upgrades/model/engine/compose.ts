@@ -42,6 +42,7 @@ export function compose(skeleton: RaidSimRequest, player: ComposePlayer): RaidSi
 function toProtoItem(spec: SimItemSpec): Record<string, unknown> {
 	if (!spec.id) return {};
 	const out: Record<string, unknown> = { id: spec.id };
+	if (spec.randomSuffix) out.randomSuffix = spec.randomSuffix;
 	if (spec.enchant) out.enchant = spec.enchant;
 	if (spec.gems.length > 0) out.gems = [...spec.gems];
 	return out;

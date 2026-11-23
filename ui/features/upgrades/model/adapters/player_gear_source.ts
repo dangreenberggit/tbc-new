@@ -53,6 +53,7 @@ export class PlayerGearSource implements GearSource {
 			const eq = equipped[i];
 			if (!eq) return { id: 0, slot };
 			const item: LoggedItem = { id: ids[i]!, slot };
+			if (eq.randomSuffix) item.randomSuffix = eq.randomSuffix.id;
 			const enchant = eq.enchant;
 			if (enchant) item.enchant = enchant.effectId;
 			const gemIds = eq.gems.filter((g): g is NonNullable<typeof g> => g != null).map(g => g.id);

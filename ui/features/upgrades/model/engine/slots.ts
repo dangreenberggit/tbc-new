@@ -28,6 +28,8 @@ export type SimOrderName = (typeof SIM_ORDER)[number];
 
 export type SimItemSpec = {
 	id?: number;
+	/** `ItemSpec.random_suffix`: the "of the Beast" part, without which the sim gives only the base stats. */
+	randomSuffix?: number;
 	enchant?: number;
 	gems: number[];
 };

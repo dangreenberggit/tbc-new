@@ -283,14 +283,20 @@ export function makeRequestsPerLayout(ctx: RunContext, baselineHitBudget: Baseli
  * `CandidateHitReadFailed`, reported as that candidate's failed sim; a
  * read Stop refused rejects with `StopRefusedSim`.
  */
-export async function candidateRepairGems(ctx: RunContext, baselineHitBudget: BaselineHitBudget, slotIndex: number, itemId: number): Promise<GemContext> {
+export async function candidateRepairGems(
+	ctx: RunContext,
+	baselineHitBudget: BaselineHitBudget,
+	slotIndex: number,
+	itemId: number,
+	randomSuffix?: number,
+): Promise<GemContext> {
 	const { deps, composeFor, capProfile, hitPercentStat, equipment } = ctx;
 	const { gems, baselineSimHit } = baselineHitBudget;
 	const hitBudget = gems.repairHitBudget;
 	if (!hitBudget || hitPercentStat === undefined || baselineSimHit === undefined) {
 		return gems;
 	}
-	const pre = candidateSwapPreRepair(equipment, slotIndex, itemId, gems);
+	const pre = candidateSwapPreRepair(equipment, slotIndex, itemId, gems, randomSuffix);
 	if (!inactiveMeta(pre.socketed)) return gems;
 	const request = composeFor(pre.swapped);
 	let hitPercent: number;

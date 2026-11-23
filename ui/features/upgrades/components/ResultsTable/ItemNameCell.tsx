@@ -11,7 +11,7 @@ import type { RankedItem } from '../../model/engine/rank';
 import { type RowBadge, withHeading } from '../../model/settings_pool';
 
 export interface ItemNameCellProps {
-	row: Pick<RankedItem, 'itemId' | 'name' | 'bisTags' | 'owned'>;
+	row: Pick<RankedItem, 'itemId' | 'randomSuffix' | 'name' | 'bisTags' | 'owned'>;
 	quality: ItemQuality | undefined;
 	/** The selected gear sets that hold the item. */
 	gearSetBadges: readonly RowBadge[];
@@ -35,7 +35,7 @@ const poolBisBadges = (bisTags: RankedItem['bisTags'], headings: readonly string
 
 /** The item: its icon, its name as a wowhead link in its quality color, and its badges beneath. Memoized: see `ResultRow`. */
 export const ItemNameCell = memo(({ row, quality, gearSetBadges, bisHeadings, notUpgrade = false, ilvl }: ItemNameCellProps) => {
-	const { iconUrl, href } = useActionId(ActionId.fromItemId(row.itemId));
+	const { iconUrl, href } = useActionId(ActionId.fromItemId(row.itemId, undefined, row.randomSuffix));
 	const badges = gearSetBadges.length > 0 ? gearSetBadges : poolBisBadges(row.bisTags, bisHeadings);
 
 	return (

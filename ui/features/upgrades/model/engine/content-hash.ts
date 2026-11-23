@@ -33,6 +33,7 @@ export const ENGINE_VERSION = 8;
 export type HashedGearItem = {
 	id: number;
 	slot: string;
+	randomSuffix?: number;
 	enchant?: number;
 	gems?: readonly number[];
 };
