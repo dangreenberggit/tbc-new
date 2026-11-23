@@ -14,6 +14,7 @@ import { isKaelTempLegendary } from './kael-temp';
 import { equipmentFromLoggedGear, socketedItemsFromLoggedGear } from './logged-gear';
 import { type GemRecolor, inactiveMeta, MetaRepairError, REPAIR_SEARCH_WORK_LIMIT, repairMetaGems, type SocketedItem } from './meta-repair';
 import { filterPoolByPhase, mainHandLeavesOffHandFree, offHandBlockedEntries, oneHandBlockedEntries, type PoolEntry } from './pool';
+import { withCandidateSuffixes } from './random-suffix';
 import { type Deps, type Progress, RankError, type RankInput, type ResolvedFight } from './rank-types';
 import { assertUsableSeeds, DEFAULT_SEED_COUNT, DegenerateSeedsError, replicateSeeds } from './se';
 import type { FightSummary, LoggedGear } from './seams/gear-source';
@@ -260,7 +261,11 @@ export function eligibleCandidates(input: RankInput, deps: Deps, equipment: read
 	const equippedIds = new Set(equipment.map(s => s.id).filter((id): id is number => !!id));
 	const wornMainHandId = equipment[SIM_ORDER.indexOf('mainhand')]?.id;
 	const mainHandIsOneHanded = mainHandLeavesOffHandFree(wornMainHandId);
-	const phaseEligible = filterPoolByPhase(deps.pool ?? [], input.maxPhase).filter(e => !isKaelTempLegendary(e.itemId));
+	const phaseEligible = withCandidateSuffixes(
+		filterPoolByPhase(deps.pool ?? [], input.maxPhase).filter(e => !isKaelTempLegendary(e.itemId)),
+		equipment,
+		deps.epWeights,
+	);
 	/**
 	 * Off-hand-only items that cannot sit beside the worn two-hander without a
 	 * two-item swap, which `attemptEligibility` rejects. They leave before
@@ -329,10 +334,12 @@ export function rankingContentHash({
 				slot: item.slot,
 				enchant: item.enchant ?? 0,
 				gems: [...(item.gems ?? [])],
+				// Only when set, so gear without a suffix keeps every key already written.
+				...(item.randomSuffix ? { randomSuffix: item.randomSuffix } : {}),
 			}))
 			.sort((a, b) => (a.slot < b.slot ? -1 : a.slot > b.slot ? 1 : a.id - b.id)),
 		candidates: ordered
-			.map(e => ({ itemId: e.itemId, slot: e.slot }))
+			.map(e => ({ itemId: e.itemId, slot: e.slot, ...(e.randomSuffix ? { randomSuffix: e.randomSuffix } : {}) }))
 			.sort((a, b) => (a.itemId !== b.itemId ? a.itemId - b.itemId : a.slot < b.slot ? -1 : a.slot > b.slot ? 1 : 0)),
 		gemPaletteIds: gems.phaseGems.map(g => g.id).sort((a, b) => a - b),
 		epWeights: deps.epWeights,

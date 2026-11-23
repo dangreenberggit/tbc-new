@@ -14,8 +14,19 @@ import { fixtureRow, RANKING_FIXTURE } from '../../testing/ranking_fixture';
 
 // The row toggles read the page's store; `RowToggles.test.tsx` covers them.
 vi.mock('../RowToggles', () => ({ FavoriteToggle: () => <span data-testid="favorite-stub" />, BatchToggle: () => <span data-testid="batch-stub" /> }));
-// The icon lookup fetches from wowhead; the row's own cells are under test.
-vi.mock('@ui-kit/hooks/useActionId', () => ({ useActionId: () => ({ iconUrl: '', name: '', href: '', ready: true }) }));
+// The icon lookup fetches from wowhead; the row's own cells are under test. The href follows the hook's own rule
+// for an item (`hrefOf`, ui/ui-kit/hooks/useActionId.ts), which needs no fetch.
+vi.mock('@ui-kit/hooks/useActionId', async () => {
+	const { ActionId: Id } = await import('@sim/proto/action_id');
+	return {
+		useActionId: (actionId: { itemId: number; randomSuffixId: number }) => ({
+			iconUrl: '',
+			name: '',
+			href: actionId.itemId ? Id.makeItemUrl(actionId.itemId, actionId.randomSuffixId) : '',
+			ready: true,
+		}),
+	};
+});
 // The engine reads set membership from the sim database, which a unit test does not load.
 vi.mock('../../model/engine/items', async importOriginal => ({
 	...(await importOriginal<typeof import('../../model/engine/items')>()),
@@ -218,6 +229,15 @@ describe('ResultRow', () => {
 		const row: RankedItem = { ...fixtureRow(0), source: token, sources: [token, hyjal] };
 		const cell = within(renderRow(row, { ...CONTEXT, itemOf: () => undefined, hiddenSources: ['Black Temple'] })).getAllByRole('cell')[4]!;
 		expect(cell.textContent).toBe('Hyjal Summit · Archimonde');
+	});
+
+	it('names a random-suffix row with its suffix and links it to that suffix on wowhead, as the gear picker does', () => {
+		const OF_THE_TIGER = -14;
+		const row: RankedItem = { ...fixtureRow(0), itemId: 30687, name: "Ravager's Bracers of the Tiger", randomSuffix: OF_THE_TIGER };
+		const name = within(renderRow(row, { ...CONTEXT, itemOf: () => undefined })).getByTestId('upgrades-item-name');
+		expect(name.textContent).toBe("Ravager's Bracers of the Tiger");
+		expect(name.getAttribute('href')).toBe(ActionId.makeItemUrl(30687, OF_THE_TIGER));
+		expect(new URL(name.getAttribute('href')!).searchParams.get('rand')).toBe(String(OF_THE_TIGER));
 	});
 
 	it('colors the item name by its quality', () => {

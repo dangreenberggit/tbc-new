@@ -8,14 +8,14 @@ import { Icon } from '@ui-kit/Icon';
 import clsx from 'clsx';
 
 /**
- * The gear picker's batch button for one result row: it adds the plain item to the
- * Batch Sim list, or takes it out. The read and the removal both match the exact
+ * The gear picker's batch button for one result row: it adds the plain item, with the
+ * random suffix its row was simmed with, to the Batch Sim list, or takes it out. The read and the removal both match the exact
  * spec, so a gemmed copy batched elsewhere, which a click could not remove, does
  * not read as this row's.
  */
-export const BatchToggle = ({ itemId }: { itemId: number }) => {
+export const BatchToggle = ({ itemId, randomSuffix }: { itemId: number; randomSuffix?: number }) => {
 	const { player } = useSimHost();
-	const spec = ItemSpec.create({ id: itemId });
+	const spec = ItemSpec.create({ id: itemId, ...(randomSuffix ? { randomSuffix } : {}) });
 	const inBatch = useBulkState(slice => slice.items.some(item => !!item && ItemSpec.equals(item, spec)));
 
 	return (

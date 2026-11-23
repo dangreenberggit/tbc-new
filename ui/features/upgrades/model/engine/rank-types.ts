@@ -129,7 +129,10 @@ export class RankError extends Error {
 export type RankedItem = {
 	rank: number | null;
 	itemId: number;
+	/** With the suffix's name when the row has `randomSuffix`. */
 	name: string;
+	/** The random suffix the row was simmed with (`PoolEntry.randomSuffix`). */
+	randomSuffix?: number;
 	slot: PoolEntry['slot'];
 	slotChoice?: SimSlotName;
 	source: ItemSource;

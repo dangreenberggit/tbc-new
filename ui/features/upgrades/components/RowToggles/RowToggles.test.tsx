@@ -93,6 +93,15 @@ describe('BatchToggle', () => {
 		expect(pressed('upgrades-batch-toggle')).toBe('false');
 	});
 
+	it('adds a random-suffix row with the suffix its row names, so Batch Sim sims the same item', () => {
+		const OF_THE_TIGER = -14;
+		const host = mount(<BatchToggle itemId={ITEM_ID} randomSuffix={OF_THE_TIGER} />);
+		fireEvent.click(screen.getByTestId('upgrades-batch-toggle'));
+		expect(hasBulkItem(host.player, ItemSpec.create({ id: ITEM_ID, randomSuffix: OF_THE_TIGER }))).toBe(true);
+		expect(hasBulkItem(host.player, ItemSpec.create({ id: ITEM_ID }))).toBe(false);
+		expect(pressed('upgrades-batch-toggle')).toBe('true');
+	});
+
 	it('does not read a gemmed copy of the item in the Bulk list as this row’s, because a click could not remove it', () => {
 		const host = mount(<BatchToggle itemId={ITEM_ID} />);
 		addBulkItems(host.player, [ItemSpec.create({ id: ITEM_ID, gems: [24027] })], true);

@@ -92,4 +92,21 @@ describe('orderCandidatesByEp', () => {
 		const ordered = orderCandidatesByEp([entry(BLADESPIRE_WARBANDS, 'wrist'), entry(CRYSTALFORGE_HELM, 'head')], equipment, itemEp, 'ret');
 		expect(order(ordered)).toEqual([CRYSTALFORGE_HELM, BLADESPIRE_WARBANDS]);
 	});
+
+	it('scores a random-suffix candidate with the suffix it carries, as the gear picker scores it with its best one', () => {
+		const RAVAGERS_BRACERS = 30687;
+		const CRYSTALFORGE_HELM = 30131;
+		const OF_THE_TIGER = -14;
+		const others = scores({ [CRYSTALFORGE_HELM]: { head: 20 } });
+		const itemEp = (itemId: number, slot: SimSlotName, randomSuffix?: number) =>
+			itemId !== RAVAGERS_BRACERS ? others(itemId, slot) : randomSuffix === OF_THE_TIGER ? 30 : 5;
+		const entry = (itemId: number, slot: PoolEntry['slot'], randomSuffix?: number): PoolEntry => ({
+			...weapon(itemId),
+			slot,
+			...(randomSuffix !== undefined ? { randomSuffix } : {}),
+		});
+		// Bracers of the Tiger: 30 - 0 = +30. The helm: +20. Scored bare, the bracers would be +5 and sort last.
+		const ordered = orderCandidatesByEp([entry(CRYSTALFORGE_HELM, 'head'), entry(RAVAGERS_BRACERS, 'wrist', OF_THE_TIGER)], wearing({}), itemEp, 'ret');
+		expect(order(ordered)).toEqual([RAVAGERS_BRACERS, CRYSTALFORGE_HELM]);
+	});
 });

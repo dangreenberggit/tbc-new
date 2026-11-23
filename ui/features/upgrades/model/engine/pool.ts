@@ -68,7 +68,10 @@ type _UnionCoversJson = Assert<Extends<ItemSourceKindName, ItemSourceKind>>;
 
 export type PoolEntry = {
 	itemId: number;
+	/** With its random suffix's name when it has `randomSuffix`. */
 	name: string;
+	/** `ItemSpec.random_suffix` to price the item with (`withCandidateSuffixes`); absent for an item with no suffix options. */
+	randomSuffix?: number;
 	slot: ItemSlot;
 	phase: number;
 	source: ItemSource;

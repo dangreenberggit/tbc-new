@@ -29,6 +29,7 @@ export function candidateSwapPreRepair(
 	slotIndex: number,
 	itemId: number,
 	gems: GemContext,
+	randomSuffix?: number,
 ): {
 	swapped: SimItemSpec[];
 	socketed: SocketedItem[];
@@ -38,7 +39,7 @@ export function candidateSwapPreRepair(
 	// array it is handed, so clearing afterwards would leave a unique gem on the
 	// removed off-hand item in `usedUnique`, blocking the candidate's socket.
 	const { equipment: cleared, removed } = clearOffHandForTwoHander(equipment, slotIndex, itemId);
-	const swapped = swapItemAt(cleared, slotIndex, itemId, gems);
+	const swapped = swapItemAt(cleared, slotIndex, itemId, gems, randomSuffix);
 	const socketed: SocketedItem[] = swapped.map(spec => ({
 		itemId: spec.id ?? 0,
 		gems: [...spec.gems],
@@ -51,13 +52,14 @@ export function candidateSwapWithRepairs(
 	slotIndex: number,
 	itemId: number,
 	gems: GemContext,
+	randomSuffix?: number,
 ): {
 	equipment: SimItemSpec[];
 	recolors: readonly GemRecolor[];
 	repaired: boolean;
 	removed: readonly { slotIndex: number; itemId: number }[];
 } {
-	const { swapped, socketed, removed } = candidateSwapPreRepair(equipment, slotIndex, itemId, gems);
+	const { swapped, socketed, removed } = candidateSwapPreRepair(equipment, slotIndex, itemId, gems, randomSuffix);
 	const hitBudget = gems.repairHitBudget;
 	const minimized = repairMetaGems({
 		items: socketed,
@@ -149,7 +151,8 @@ function clearOffHandForTwoHander(
 	};
 }
 
-function swapItemAt(equipment: readonly SimItemSpec[], slotIndex: number, itemId: number, gemCtx: GemContext): SimItemSpec[] {
+/** `randomSuffix` is the candidate's own; the worn item put back in its own slot keeps the one it is worn with. */
+function swapItemAt(equipment: readonly SimItemSpec[], slotIndex: number, itemId: number, gemCtx: GemContext, randomSuffix?: number): SimItemSpec[] {
 	return equipment.map((spec, i) => {
 		if (i !== slotIndex) return spec;
 		const sameItem = spec.id === itemId;
@@ -163,8 +166,8 @@ function swapItemAt(equipment: readonly SimItemSpec[], slotIndex: number, itemId
 					fillOptsForSwap(equipment, slotIndex, gemCtx.spec),
 				);
 		const out: SimItemSpec = { id: itemId, gems };
-		// A pool entry has no suffix of its own, so only the worn copy carries one.
-		if (sameItem && spec.randomSuffix) out.randomSuffix = spec.randomSuffix;
+		const suffix = sameItem ? spec.randomSuffix : randomSuffix;
+		if (suffix) out.randomSuffix = suffix;
 		if (spec.enchant && enchantAppliesToItem(spec.enchant, itemId)) {
 			out.enchant = spec.enchant;
 		}
