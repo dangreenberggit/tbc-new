@@ -19,13 +19,15 @@ export type RunActivity = 'preparing' | 'candidates' | 'set-bonuses' | 'replicat
 export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; replicationSimCost: number; setBonusStageCandidates: number; slowdown: number };
 
 /**
- * Fitted on one recorded feral run (364 candidates, concurrency 4). Later
- * candidates slowed there, likely from rendering each new row, so refit
- * `slowdown`, `replicationSimCost` and `setBonusStageCandidates` when that cost
- * changes. That run re-simmed one sim at a time; its fitted 0.3221 per sim per
- * worker is kept as 4 · 0.3221 candidates' time per replication sim.
+ * `slowdown` was fitted on one recorded desktop feral run (364 candidates,
+ * concurrency 4), where later candidates slowed, likely from rendering each new
+ * row; refit it when that cost changes. Once the set phase and replication ran
+ * their sims at the runner's concurrency, `setBonusStageCandidates` and
+ * `replicationSimCost` were refitted on the web build's feral run, the slow
+ * one; the same run on desktop measured 20.1 and 0.505, so desktop's time left
+ * reads about 25 s high there.
  */
-export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', replicationSimCost: 1.2884, setBonusStageCandidates: 50.993, slowdown: 0.003064 };
+export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', replicationSimCost: 0.75, setBonusStageCandidates: 45.34, slowdown: 0.003064 };
 export const RUN_PROGRESS_SHOW_FROM_FRACTION = 0.35;
 export const RUN_PROGRESS_MIN_CANDIDATES_DONE = 10;
 
