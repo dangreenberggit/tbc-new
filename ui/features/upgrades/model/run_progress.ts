@@ -22,9 +22,10 @@ export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; replication
  * Fitted on one recorded feral run (364 candidates, concurrency 4). Later
  * candidates slowed there, likely from rendering each new row, so refit
  * `slowdown`, `replicationSimCost` and `setBonusStageCandidates` when that cost
- * changes.
+ * changes. That run re-simmed one sim at a time; its fitted 0.3221 per sim per
+ * worker is kept as 4 · 0.3221 candidates' time per replication sim.
  */
-export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', replicationSimCost: 0.3221, setBonusStageCandidates: 50.993, slowdown: 0.003064 };
+export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', replicationSimCost: 1.2884, setBonusStageCandidates: 50.993, slowdown: 0.003064 };
 export const RUN_PROGRESS_SHOW_FROM_FRACTION = 0.35;
 export const RUN_PROGRESS_MIN_CANDIDATES_DONE = 10;
 
@@ -97,8 +98,8 @@ export function expectedFinalDone(run: RunTimeline): number {
  * The time left, in ms; undefined until the run has said enough. `linear` scales
  * the time per sim so far. `phased` assumes candidates run `concurrency` at a
  * time, each a little slower than the last (`slowdown`); the set-bonus stage takes
- * `setBonusStageCandidates` candidates' time; each replication sim runs alone and
- * takes `replicationSimCost * concurrency` candidates' time.
+ * `setBonusStageCandidates` candidates' time; replication sims run `concurrency`
+ * at a time too, each taking `replicationSimCost` candidates' time.
  */
 export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): number | undefined {
 	const first = run.sims[0];
@@ -115,7 +116,7 @@ export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): 
 	if (config.kind === 'linear') {
 		estimate = linear();
 	} else {
-		const k = config.replicationSimCost * run.concurrency;
+		const k = config.replicationSimCost;
 		const doneAtLastCandidate = run.doneAtLastCandidate;
 		const finalDone = expectedFinalDone(run);
 		const lastCandidateEvent = doneAtLastCandidate === null ? undefined : run.sims.find(s => !s.afterRanking && s.done === doneAtLastCandidate);

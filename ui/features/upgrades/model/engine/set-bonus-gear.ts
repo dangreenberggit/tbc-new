@@ -11,12 +11,13 @@ import { type ChainBuild, chainSwapsWithRepairs } from './gear-swap';
 import { isRepairFailure, type RequestsPerCopyLayout } from './hit-budget';
 import { getItem } from './items';
 import { MetaRepairError } from './meta-repair';
-import { choosePartners, PARTNER_RULE, type PartnerPiece, partnerPool } from './partner-choice';
+import { closeCalls, PARTNER_RULE, type PartnerChoice, type PartnerPiece, partnerPool, type PartnerQuery, pickClosest } from './partner-choice';
+import { promisePool } from './promise-pool';
 import type { BonusGearSims, Deps, RankedItem, SetBonusOffSims, SetBonusValue, SetContext } from './rank-types';
 import { SET_BONUS_SKIP_REASONS, setBonusSkipNote, type SkipReason } from './run-notes';
 import { type RaidSimRequest, simCacheKey, type SimRunOpts } from './seams/sim-runner';
 import { measureBonusOff } from './set-bonus-off';
-import { clearsSameGearNoise, isBuildFailure, isSimFailure } from './set-less-copies';
+import { clearsSameGearNoise, isBuildFailure, isSimFailure, type SimFailure } from './set-less-copies';
 import {
 	type BrokenSetBonus,
 	brokenSetBonuses,
@@ -28,7 +29,7 @@ import {
 	type SetThreshold,
 } from './set-value';
 import { brokenBonusWithDps } from './set-worn-ladder';
-import { runCounted, type SimCounter, simEachOnce } from './sim-calls';
+import { type DeltaSample, runCounted, type SimCounter, simEachOnce } from './sim-calls';
 import type { SimItemSpec } from './slots';
 
 export type FutureBonus = NonNullable<SetContext['futureBonuses']>[number];
@@ -87,8 +88,21 @@ type PartnerChoiceRun = {
 	builders: BonusGearBuilders;
 	counter: SimCounter;
 	nameOf: ReadonlyMap<number, string>;
-	gears: PartnerGears;
+	/** Each close-call gear's sim by its cache key, so rows that share a gear sim it once. */
+	simsByKey: Map<string, Promise<DeltaSample | SimFailure>>;
 };
+
+/** One future bonus of a set row, and its partner choice before any sim. */
+type BonusChoice = {
+	row: PartnerRow;
+	f: FutureBonus;
+	calls: ReturnType<typeof closeCalls>;
+};
+
+/** What a bonus's partner choice adds to `PartnerGears`; undefined when it chose no partners. */
+type ChosenGear =
+	| undefined
+	| ({ f: FutureBonus; partners: PlacedItem[]; setName: string } & ({ skip: SkipReason } | { key: string; request: RaidSimRequest }));
 
 /** A set row with at least one future bonus to value, and what its partner choice reads. */
 type PartnerRow = {
@@ -105,7 +119,7 @@ const BONUS_GEAR_FAILURE = '[upgrades] set bonus gear not measured: the sim fail
 
 /**
  * With `measureSetBonuses`, values each set row's future bonuses by sim.
- * For each bonus above noise, `choosePartners` picks the other set pieces,
+ * For each bonus above noise, `closeCalls` and `pickClosest` pick the other set pieces,
  * and the current gear plus the row plus those pieces (swapped in slot order,
  * with the usual gem repairs) is simmed once per distinct gear; its
  * `bonusGearDps` is that sim minus the baseline. A failed choice, repair or
@@ -212,15 +226,47 @@ async function choosePartnerGears(args: BonusGearArgs, builders: BonusGearBuilde
 		builders,
 		counter,
 		nameOf: new Map(args.ranked.map(r => [r.itemId, r.name])),
-		gears,
+		simsByKey: new Map(),
 	};
+	const choices: BonusChoice[] = [];
 	for (const item of args.ranked) {
 		const row = partnerRowOf(args, item);
 		if (!row) continue;
 		gears.rowSwapOf.set(item, row.rowSwap);
 		for (const f of row.eligible) {
-			await choosePartnersFor(run, row, f);
+			choices.push({ row, f, calls: closeCalls(partnerQuery(args, row, f)) });
 		}
+	}
+
+	// The close calls' sims are independent, so they run at the runner's
+	// concurrency; one at a time left all but one web worker idle. The tasks
+	// keep the order they ran in one at a time: each bonus's sims, then its
+	// choice. `promisePool` starts tasks in order, so a choice starts after
+	// its sims have started and only waits for their results.
+	const simsOf = choices.map((): Array<Promise<DeltaSample | undefined>> => []);
+	const tasks: Array<() => Promise<ChosenGear>> = [];
+	for (const [k, choice] of choices.entries()) {
+		for (const c of 'close' in choice.calls ? choice.calls.close : []) {
+			tasks.push(async () => {
+				const sim = simCloseCall(run, choice.row, c.combination);
+				simsOf[k]!.push(sim);
+				await sim;
+				return undefined;
+			});
+		}
+		tasks.push(async () => finishChoice(run, choice, await Promise.all(simsOf[k]!)));
+	}
+	// Applied in task order, so the notes and the queued requests do not
+	// depend on which sim finished first.
+	for (const chosen of await promisePool(tasks, args.deps.concurrency ?? 1)) {
+		if (!chosen) continue;
+		gears.partnersOf.set(chosen.f, chosen.partners);
+		if ('skip' in chosen) {
+			skipOnSomeRows(args.bonusNotes, chosen.setName, chosen.f.threshold, chosen.skip);
+			continue;
+		}
+		gears.requests.set(chosen.key, chosen.request);
+		gears.pending.push({ future: chosen.f, key: chosen.key, setName: chosen.setName });
 	}
 	return gears;
 }
@@ -263,65 +309,76 @@ function partnerRowOf(args: BonusGearArgs, item: RankedItem): PartnerRow | undef
 	return { item, setContext, ownDelta, eligible, pool, rowSwap, brokenBy };
 }
 
-/**
- * One future bonus of a row: chooses its partners, writes its partner
- * fields, and queues its row-and-partners gear's request. A bonus whose
- * request cannot be built gets a line and no sim. With no choice, or an
- * unmeasured one (`partnerUnmeasured`), it gets no sim and no line:
- * `choosePartners` gives either only before any partner sim.
- */
-async function choosePartnersFor(run: PartnerChoiceRun, row: PartnerRow, f: FutureBonus): Promise<void> {
-	const { args, gears } = run;
-	const { item, setContext, ownDelta, pool, rowSwap, brokenBy } = row;
-	const setId = setContext.setId;
-	// A partner combination whose sim fails is skipped, and the chosen
-	// combination's gear is simmed below, so a failure counts for the row
-	// only when no combination is chosen.
-	let partnerSimFailure: SkipReason | undefined;
-	const choice = await choosePartners({
+/** The partner query of one row's future bonus. */
+function partnerQuery(args: BonusGearArgs, row: PartnerRow, f: FutureBonus): PartnerQuery {
+	const { ownDelta, setContext, pool, brokenBy } = row;
+	return {
 		row: {
-			itemId: item.itemId,
+			itemId: row.item.itemId,
 			slotIndex: ownDelta.slotIndex,
 			ownDeltaDps: ownDelta.deltaDps,
 		},
-		setId,
+		setId: setContext.setId,
 		threshold: f.threshold,
 		needed: f.threshold - setContext.piecesAfterSwap,
 		pool,
 		brokenBy,
 		breakDps: (s, c) => args.brokenBonusDpsByKey.get(`${s}:${c}`),
-		simGear: async partners => {
-			const request = await bonusGearRequest(args, run.builders, [rowSwap, ...partners]);
-			if (isSkipReason(request)) {
-				partnerSimFailure ??= request;
-				return undefined;
-			}
-			const delta = await runCounted(args, request, run.counter, BONUS_GEAR_FAILURE);
-			if (!isSimFailure(delta)) return delta;
-			partnerSimFailure ??= SET_BONUS_SKIP_REASONS.rowSimsFailed(delta.simError);
-			return undefined;
-		},
-	});
+	};
+}
+
+/**
+ * Sims current gear plus the row plus `partners`; the delta is against
+ * current gear. Undefined when its request cannot be built or its sim fails:
+ * that combination is skipped, and the chosen combination's gear is simmed
+ * again later, so a failure shows there.
+ */
+async function simCloseCall(run: PartnerChoiceRun, row: PartnerRow, partners: readonly PlacedItem[]): Promise<DeltaSample | undefined> {
+	const { args } = run;
+	const request = await bonusGearRequest(args, run.builders, [row.rowSwap, ...partners]);
+	if (isSkipReason(request)) return undefined;
+	const key = simCacheKey(request, args.simVersion, args.runOpts);
+	// A gear another row already simmed is read as the store would give it;
+	// one whose sim failed is simmed again, as it would be one at a time.
+	const earlier = run.simsByKey.get(key);
+	if (earlier) {
+		const delta = await earlier;
+		if (!isSimFailure(delta)) {
+			run.counter.fromStore += 1;
+			return delta;
+		}
+	}
+	const sim = runCounted(args, request, run.counter, BONUS_GEAR_FAILURE);
+	run.simsByKey.set(key, sim);
+	const delta = await sim;
+	return isSimFailure(delta) ? undefined : delta;
+}
+
+/**
+ * One future bonus of a row: picks its partners from its close calls' sims,
+ * writes its partner fields, and builds its row-and-partners gear's request.
+ * A bonus whose request cannot be built gets a skip and no sim. With no
+ * choice, or an unmeasured one (`partnerUnmeasured`), it gets no sim and no
+ * line: `closeCalls` gives either before any partner sim.
+ */
+async function finishChoice(run: PartnerChoiceRun, { row, f, calls }: BonusChoice, sims: readonly (DeltaSample | undefined)[]): Promise<ChosenGear> {
+	const { args } = run;
+	const { setContext, pool, rowSwap, brokenBy } = row;
+	const choice: PartnerChoice | undefined = 'close' in calls ? pickClosest(calls.close, sims) : calls.choice;
 	// Here a future bonus's `pieces` and `breaks` come from the partner
 	// choice, so the `pathToThreshold` ones are dropped first.
 	delete f.pieces;
 	delete f.breaks;
-	if (choice === undefined) {
-		if (partnerSimFailure !== undefined) {
-			skipOnSomeRows(args.bonusNotes, setContext.setName, f.threshold, partnerSimFailure);
-		}
-		return;
-	}
+	if (choice === undefined) return undefined;
 	if ('unmeasured' in choice) {
 		f.partnerUnmeasured = choice.unmeasured;
-		return;
+		return undefined;
 	}
 	const slotOf = new Map<number, number>();
 	for (const p of pool) {
 		slotOf.set(p.itemId, p.slotIndex);
 	}
 	const partners: PlacedItem[] = choice.itemIds.map(itemId => ({ itemId, slotIndex: slotOf.get(itemId)! })).sort((a, b) => a.slotIndex - b.slotIndex);
-	gears.partnersOf.set(f, partners);
 	f.partnerRule = PARTNER_RULE;
 	f.pieces = partners.map(p => ({
 		itemId: p.itemId,
@@ -334,12 +391,8 @@ async function choosePartnersFor(run: PartnerChoiceRun, row: PartnerRow, f: Futu
 	if (broken.length > 0) {
 		f.breaks = broken.map(brk => brokenBonusWithDps(brk, args.brokenBonusDpsByKey));
 	}
+	const setName = setContext.setName;
 	const request = await bonusGearRequest(args, run.builders, [rowSwap, ...partners]);
-	if (isSkipReason(request)) {
-		skipOnSomeRows(args.bonusNotes, setContext.setName, f.threshold, request);
-		return;
-	}
-	const key = simCacheKey(request, args.simVersion, args.runOpts);
-	gears.requests.set(key, request);
-	gears.pending.push({ future: f, key, setName: setContext.setName });
+	if (isSkipReason(request)) return { f, partners, setName, skip: request };
+	return { f, partners, setName, key: simCacheKey(request, args.simVersion, args.runOpts), request };
 }

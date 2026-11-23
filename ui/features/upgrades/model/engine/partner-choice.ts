@@ -1,7 +1,7 @@
 /**
  * Picks the other pieces of a set (the partners) that a set row is simmed with to reach
- * one bonus. `choosePartners` is the only place they are picked, so the rule can be
- * swapped here alone.
+ * one bonus. `closeCalls` and `pickClosest` are the only place they are picked, so the
+ * rule can be swapped here alone.
  *
  * The rule, 'close-calls', ranks every combination by the 'sum-of-singles' estimate, then
  * sims those within `CLOSE_CALL_MARGIN_DPS` of the best and keeps the highest delta.
@@ -69,8 +69,6 @@ export type PartnerQuery = {
 	brokenBy: (swaps: readonly PlacedItem[]) => readonly Pick<BrokenSetBonus, 'setId' | 'threshold'>[];
 	/** A worn bonus's measured value; undefined when unmeasured. */
 	breakDps: (setId: number, threshold: number) => number | undefined;
-	/** Sims current gear plus the row plus `partners`; the delta is against current gear. */
-	simGear?: (partners: readonly PlacedItem[]) => Promise<{ deltaDps: number; se: number } | undefined>;
 };
 
 /** Every combination of `needed` pool pieces, each in slot order. */
@@ -154,19 +152,30 @@ function compareIds(a: readonly { itemId: number }[], b: readonly { itemId: numb
 	return x.length - y.length;
 }
 
-/**
- * The partners for one row and bonus. Undefined when no combination of `needed` pieces
- * exists. "break-unmeasured" when any combination's estimate is undefined, so the row is
- * not valued on a combination chosen without that bonus.
- */
-export async function choosePartners(query: PartnerQuery): Promise<PartnerChoice | undefined> {
-	const combinations = partnerCombinations(query);
-	if (combinations.length === 0) return undefined;
+/** A combination 'close-calls' sims, and its 'sum-of-singles' estimate. */
+export type CloseCall = { combination: PartnerPiece[]; estimate: number };
 
-	const ranked: Array<{ combination: PartnerPiece[]; estimate: number }> = [];
+const estimated = (call: CloseCall): PartnerChoice => ({
+	itemIds: call.combination.map(p => p.itemId),
+	estimatedDeltaDps: call.estimate,
+});
+
+/**
+ * The partners for one row and bonus when no sim can change them, else the
+ * close calls to sim, best estimate first, for `pickClosest`. Undefined when
+ * no combination of `needed` pieces exists. "break-unmeasured" when any
+ * combination's estimate is undefined, so the row is not valued on a
+ * combination chosen without that bonus. The caller sims the close calls, so
+ * it can sim several rows' at once.
+ */
+export function closeCalls(query: PartnerQuery): { choice: PartnerChoice | undefined } | { close: CloseCall[] } {
+	const combinations = partnerCombinations(query);
+	if (combinations.length === 0) return { choice: undefined };
+
+	const ranked: CloseCall[] = [];
 	for (const combination of combinations) {
 		const estimate = estimateCombinedDelta(query, combination);
-		if (estimate === undefined) return { unmeasured: 'break-unmeasured' };
+		if (estimate === undefined) return { choice: { unmeasured: 'break-unmeasured' } };
 		ranked.push({ combination, estimate });
 	}
 	// Highest estimate first, ties to the lowest sorted ids.
@@ -175,27 +184,25 @@ export async function choosePartners(query: PartnerQuery): Promise<PartnerChoice
 
 	const close = ranked.filter(c => c.estimate >= top.estimate - CLOSE_CALL_MARGIN_DPS);
 	// One candidate needs no comparison; its gear is simmed later anyway.
-	if (close.length === 1 || !query.simGear) {
-		return {
-			itemIds: top.combination.map(p => p.itemId),
-			estimatedDeltaDps: top.estimate,
-		};
-	}
-	let best: { combination: PartnerPiece[]; estimate: number; deltaDps: number } | undefined;
-	for (const c of close) {
-		const sim = await query.simGear(c.combination);
+	if (close.length === 1) return { choice: estimated(top) };
+	return { close };
+}
+
+/**
+ * The close call with the highest simmed delta; `sims[i]` is `close[i]`'s
+ * sim, undefined when it was not simmed. With no sim, the best estimate.
+ */
+export function pickClosest(close: readonly CloseCall[], sims: readonly ({ deltaDps: number } | undefined)[]): PartnerChoice {
+	let best: (CloseCall & { deltaDps: number }) | undefined;
+	for (const [i, c] of close.entries()) {
+		const sim = sims[i];
 		if (!sim) continue;
 		// Strictly greater, so a tie keeps the combination with the higher estimate.
 		if (!best || sim.deltaDps > best.deltaDps) {
 			best = { ...c, deltaDps: sim.deltaDps };
 		}
 	}
-	if (!best) {
-		return {
-			itemIds: top.combination.map(p => p.itemId),
-			estimatedDeltaDps: top.estimate,
-		};
-	}
+	if (!best) return estimated(close[0]!);
 	return {
 		itemIds: best.combination.map(p => p.itemId),
 		estimatedDeltaDps: best.estimate,
