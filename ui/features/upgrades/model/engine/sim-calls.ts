@@ -67,7 +67,7 @@ export type CountedSims = {
 };
 
 /** A sim's DPS minus the baseline's, with the standard error of that difference. */
-type DeltaSample = { deltaDps: number; se: number };
+export type DeltaSample = { deltaDps: number; se: number };
 
 /**
  * One store-cached sim as a delta against the baseline, counted in `counter`.

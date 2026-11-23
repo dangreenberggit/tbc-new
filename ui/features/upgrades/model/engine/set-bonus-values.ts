@@ -8,6 +8,7 @@ import type { GemContext } from './candidate-gems';
 import { type ChainBuild, chainSwapsWithRepairs } from './gear-swap';
 import { type CopyLayout, isRepairFailure, type LayoutRequest, repairErrorOr, requestOf } from './hit-budget';
 import { type GemRecolor, MetaRepairError } from './meta-repair';
+import { promisePool } from './promise-pool';
 import type { SetBonusValue } from './rank-types';
 import { SET_BONUS_SKIP_REASONS, setBonusSkipNote, type SkipReason } from './run-notes';
 import { type BuildFailure, clearsSameGearNoise, errorText, isBuildFailure, isSimFailure, measureSameGearBonus } from './set-less-copies';
@@ -81,13 +82,10 @@ export async function measureSetBonusValues(
 ): Promise<{ results: SetBonusValue[]; setIdsNotValued: number[] }> {
 	const { measureSetBonuses } = ctx;
 	const { setIdsWithCandidates, wornCounts, reachableCounts } = reach;
-	const results: SetBonusValue[] = [];
 	const setIdsNotValued: number[] = [];
+	const measured: Array<{ setId: number; label: string; piecesWorn: number; thresholds: number[] }> = [];
 	for (const setId of setIdsWithCandidates) {
 		const piecesWorn = wornCounts.get(setId) ?? 0;
-		const label = nameOfSet(setId);
-		const twoPiece: TwoPieceCarry = { twoPcBonusDps: undefined, twoPieceUnmeasurableAtThisWornCount: false, twoPieceFailed: false };
-
 		const thresholds = measureSetBonuses ? reachableCounts(setId, piecesWorn) : SET_THRESHOLDS.filter(t => t > piecesWorn);
 		// No bonus in reach, or the set screen dropped the set: no bonus sims at
 		// all. The set goes in `setIdsNotValued`, so its rows keep their own losses
@@ -97,10 +95,30 @@ export async function measureSetBonusValues(
 			setIdsNotValued.push(setId);
 			continue;
 		}
+		measured.push({ setId, label: nameOfSet(setId), piecesWorn, thresholds });
+	}
 
-		for (const threshold of thresholds) {
-			results.push(await measureBonusAtCount(ctx, reach, tools, { setId, label, threshold, piecesWorn }, twoPiece));
-		}
+	// A set's counts run in order, as its 4pc reads what its 2pc wrote, but
+	// no set reads another's, so the sets run at the runner's concurrency.
+	// Each set writes its notes to its own list, added in set order after the
+	// pool, so they do not depend on the finish order.
+	const perSet = await promisePool(
+		measured.map(({ setId, label, piecesWorn, thresholds }) => async () => {
+			const setCtx: SetPhaseContext = { ...ctx, setBonusNotes: [], setCheckNotes: [] };
+			const twoPiece: TwoPieceCarry = { twoPcBonusDps: undefined, twoPieceUnmeasurableAtThisWornCount: false, twoPieceFailed: false };
+			const values: SetBonusValue[] = [];
+			for (const threshold of thresholds) {
+				values.push(await measureBonusAtCount(setCtx, reach, tools, { setId, label, threshold, piecesWorn }, twoPiece));
+			}
+			return { values, setCtx };
+		}),
+		ctx.deps.concurrency ?? 1,
+	);
+	const results: SetBonusValue[] = [];
+	for (const { values, setCtx } of perSet) {
+		results.push(...values);
+		ctx.setBonusNotes.push(...setCtx.setBonusNotes);
+		ctx.setCheckNotes.push(...setCtx.setCheckNotes);
 	}
 	return { results, setIdsNotValued };
 }

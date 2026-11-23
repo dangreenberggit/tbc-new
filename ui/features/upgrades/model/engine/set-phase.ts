@@ -232,6 +232,7 @@ function setScreenInputFor(ctx: SetPhaseContext, reach: SetReach, nameOfSet: (se
 				runSimAt: (request, opts) => simOrFailure(deps, request, simVersion, opts),
 				seed: runOpts.seed,
 				...(deps.signal ? { signal: deps.signal } : {}),
+				...(deps.concurrency !== undefined ? { concurrency: deps.concurrency } : {}),
 				onSimFailed: (setId, error) =>
 					setCheckNotes.push(
 						setScreenSkipNote({
