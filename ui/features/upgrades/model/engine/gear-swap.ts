@@ -163,6 +163,8 @@ function swapItemAt(equipment: readonly SimItemSpec[], slotIndex: number, itemId
 					fillOptsForSwap(equipment, slotIndex, gemCtx.spec),
 				);
 		const out: SimItemSpec = { id: itemId, gems };
+		// A pool entry has no suffix of its own, so only the worn copy carries one.
+		if (sameItem && spec.randomSuffix) out.randomSuffix = spec.randomSuffix;
 		if (spec.enchant && enchantAppliesToItem(spec.enchant, itemId)) {
 			out.enchant = spec.enchant;
 		}

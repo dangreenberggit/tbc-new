@@ -17,6 +17,7 @@ export type FightSummary = {
 export type LoggedItem = {
 	id: number;
 	slot: string;
+	randomSuffix?: number;
 	enchant?: number;
 	gems?: number[];
 };

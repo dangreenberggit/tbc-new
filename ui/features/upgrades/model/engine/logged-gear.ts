@@ -15,6 +15,7 @@ export function equipmentFromLoggedGear(gear: LoggedGear): SimItemSpec[] {
 			continue;
 		}
 		const spec: SimItemSpec = { id: item.id, gems: [...(item.gems ?? [])] };
+		if (item.randomSuffix) spec.randomSuffix = item.randomSuffix;
 		if (item.enchant) spec.enchant = item.enchant;
 		bySlot.set(item.slot, spec);
 	}

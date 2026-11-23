@@ -76,4 +76,20 @@ describe('orderCandidatesByEp', () => {
 		const ordered = orderCandidatesByEp([weapon(RIPPER), weapon(CATACLYSM)], equipment, itemEp, 'ret');
 		expect(order(ordered)).toEqual([CATACLYSM, RIPPER]);
 	});
+
+	it("scores the worn item with its random suffix, so a suffix's stats count against a candidate", () => {
+		const RAVAGERS_BRACERS = 30687;
+		const BLADESPIRE_WARBANDS = 28795;
+		const CRYSTALFORGE_HELM = 30131;
+		const OF_THE_BEAST = -41;
+		const others = scores({ [BLADESPIRE_WARBANDS]: { wrist: 50 }, [CRYSTALFORGE_HELM]: { head: 20 } });
+		const itemEp = (itemId: number, slot: SimSlotName, randomSuffix?: number) =>
+			itemId !== RAVAGERS_BRACERS ? others(itemId, slot) : randomSuffix === OF_THE_BEAST ? 60 : 10;
+		const equipment = wearing({});
+		equipment[SIM_ORDER.indexOf('wrist')] = { id: RAVAGERS_BRACERS, randomSuffix: OF_THE_BEAST, gems: [] };
+		const entry = (itemId: number, slot: PoolEntry['slot']): PoolEntry => ({ ...weapon(itemId), slot });
+		// Warbands: 50 - 60 = -10. The helm: 20 - 0 = +20. Without the suffix the warbands would be +40 and sort first.
+		const ordered = orderCandidatesByEp([entry(BLADESPIRE_WARBANDS, 'wrist'), entry(CRYSTALFORGE_HELM, 'head')], equipment, itemEp, 'ret');
+		expect(order(ordered)).toEqual([CRYSTALFORGE_HELM, BLADESPIRE_WARBANDS]);
+	});
 });
