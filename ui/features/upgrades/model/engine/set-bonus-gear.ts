@@ -100,9 +100,7 @@ type BonusChoice = {
 };
 
 /** What a bonus's partner choice adds to `PartnerGears`; undefined when it chose no partners. */
-type ChosenGear =
-	| undefined
-	| ({ f: FutureBonus; partners: PlacedItem[]; setName: string } & ({ skip: SkipReason } | { key: string; request: RaidSimRequest }));
+type ChosenGear = undefined | ({ f: FutureBonus; partners: PlacedItem[]; setName: string } & ({ skip: SkipReason } | { key: string; request: RaidSimRequest }));
 
 /** A set row with at least one future bonus to value, and what its partner choice reads. */
 type PartnerRow = {
