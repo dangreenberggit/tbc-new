@@ -31,11 +31,13 @@ export function withCandidateSuffixes(entries: readonly PoolEntry[], equipment: 
 
 /**
  * The option with the highest EP; the first one on a tie. The picker scales every
- * option by the item's random property points, which leaves the order alone.
+ * option by the item's random property points, which leaves the order alone. None
+ * when no option is worth more than 0 EP: the picker lists none of those
+ * (`getRandomSuffixes`, ui/sim/player/player.ts).
  */
 function bestSuffix(options: readonly number[], epWeights: EpWeights): number | undefined {
 	let best: number | undefined;
-	let bestEp = -Infinity;
+	let bestEp = 0;
 	for (const id of options) {
 		const suffix = Database.getSync().getRandomSuffixById(id);
 		if (!suffix) continue;
