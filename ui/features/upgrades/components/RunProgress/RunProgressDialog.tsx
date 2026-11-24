@@ -4,7 +4,11 @@ import { ProgressTrackerDialog, type ProgressTrackerHandle } from '@ui-kit/Progr
 import { useEffect, useRef, useState } from 'react';
 
 import { progressOf, subscribeProgress } from '../../model/progress_channel';
-import { progressBarOf, progressLabel, progressStageOf } from '../../utils/format';
+import { progressBarOf, progressStageOf } from '../../utils/format';
+import { RunProgressMessage } from './RunProgressMessage';
+
+/** One element, so the dialog's own state changes only when the stage does, as upstream's `BulkProgressDialog` keeps it. */
+const MESSAGE = <RunProgressMessage />;
 
 export interface RunProgressDialogProps {
 	onStop: () => void;
@@ -39,7 +43,7 @@ export const RunProgressDialog = ({ onStop, stopping }: RunProgressDialogProps) 
 			open
 			testId="upgrades-run-progress"
 			title={i18n.t('upgrades_tab.run_progress.title', { ns: 'upgrades' })}
-			state={{ stage, message: stopping ? i18n.t('upgrades_tab.status.stopping', { ns: 'upgrades' }) : progressLabel(stage) }}
+			state={{ stage, message: stopping ? i18n.t('upgrades_tab.status.stopping', { ns: 'upgrades' }) : MESSAGE }}
 			hasProgressBar
 			onCancel={onStop}
 			ref={barRef}

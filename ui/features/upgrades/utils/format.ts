@@ -3,7 +3,7 @@ import { DungeonDifficulty } from '@generated/proto/ui';
 import i18n from '@i18n/config';
 import { translateSlotName } from '@i18n/localization';
 import { difficultyNames } from '@sim/proto/names';
-import { formatToNumber } from '@sim/utils/format';
+import { formatDurationSeconds, formatToNumber } from '@sim/utils/format';
 import type { ProgressTrackerProgress } from '@ui-kit/ProgressTrackerDialog';
 
 import { noteFirstLine } from '../model/assumptions';
@@ -207,3 +207,7 @@ export const progressLabel = (stage: ProgressStage): string => {
  */
 export const progressBarOf = (view: RunProgressView): ProgressTrackerProgress =>
 	view.activity === 'set-bonuses' ? {} : { current: view.done, total: view.total };
+
+/** The Bulk dialog's time-left line (`BulkProgressMessage.tsx`), or nothing while the run has no estimate. */
+export const timeLeftText = (view: RunProgressView): string | undefined =>
+	view.remainingMs === undefined ? undefined : i18n.t('bulk_tab.progress.time_remaining', { time: formatDurationSeconds(view.remainingMs / 1000) });

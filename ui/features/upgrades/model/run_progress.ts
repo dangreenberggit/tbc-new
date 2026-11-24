@@ -16,18 +16,18 @@ export const TAB_REPLICATE_SEED_COUNT = DEFAULT_SEED_COUNT;
 
 export type RunActivity = 'preparing' | 'candidates' | 'set-bonuses' | 'replication' | 'ranking';
 
-export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; replicationSimCost: number; setBonusStageCandidates: number; slowdown: number };
+export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; replicationSimCost: number; setBonusStageCandidates: number };
 
 /**
- * `slowdown` was fitted on one recorded desktop feral run (364 candidates,
- * concurrency 4), where later candidates slowed, likely from rendering each new
- * row; refit it when that cost changes. Once the set phase and replication ran
- * their sims at the runner's concurrency, `setBonusStageCandidates` and
- * `replicationSimCost` were refitted on the web build's feral run, the slow
- * one; the same run on desktop measured 20.1 and 0.505, so desktop's time left
- * reads about 25 s high there.
+ * Once the set phase and replication ran their sims at the runner's
+ * concurrency, `setBonusStageCandidates` and `replicationSimCost` were refitted
+ * on the web build's feral run, the slow one; the same run on desktop measured
+ * 20.1 and 0.505, so desktop's time left reads about 25 s high there.
+ * Candidates now take the same time early and late in a run, so the estimate
+ * has no term for later candidates slowing; the one fitted in October read
+ * 55-79% high on the web feral runs of 2026-11-22 and 2026-11-23 (ticket 894).
  */
-export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', replicationSimCost: 0.75, setBonusStageCandidates: 45.34, slowdown: 0.003064 };
+export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', replicationSimCost: 0.75, setBonusStageCandidates: 45.34 };
 export const RUN_PROGRESS_SHOW_FROM_FRACTION = 0.35;
 export const RUN_PROGRESS_MIN_CANDIDATES_DONE = 10;
 
@@ -98,10 +98,10 @@ export function expectedFinalDone(run: RunTimeline): number {
 
 /**
  * The time left, in ms; undefined until the run has said enough. `linear` scales
- * the time per sim so far. `phased` assumes candidates run `concurrency` at a
- * time, each a little slower than the last (`slowdown`); the set-bonus stage takes
- * `setBonusStageCandidates` candidates' time; replication sims run `concurrency`
- * at a time too, each taking `replicationSimCost` candidates' time. The set-bonus
+ * the time per sim so far. `phased` assumes candidates go on at the pace so
+ * far; the set-bonus stage takes `setBonusStageCandidates` candidates' time;
+ * replication sims run at the runner's concurrency, as candidates do, each
+ * taking `replicationSimCost` candidates' time. The set-bonus
  * stage itself sends no count, so it gets no time left, as wowsims' Bulk sim
  * shows none in a stage without one (`features/bulk/model/progress.ts`,
  * `candidateGearProgress`): a figure held from the last candidate would stand
@@ -134,13 +134,8 @@ export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): 
 				const n = done - 1;
 				const c = doneAtLastCandidate - 1;
 				if (n >= 1) {
-					const tau = run.now - t1;
-					const beta = config.slowdown;
-					const triangular = (x: number) => (x * (x + 1)) / 2;
-					const a = tau / (n + beta * triangular(n));
-					const candidatesLeft = a * (c - n + beta * (triangular(c) - triangular(n)));
-					const meanPerCandidate = (tau + candidatesLeft) / c;
-					estimate = candidatesLeft + meanPerCandidate * (config.setBonusStageCandidates + k * left);
+					const msPerCandidate = (run.now - t1) / n;
+					estimate = msPerCandidate * (c - n + config.setBonusStageCandidates + k * left);
 				}
 			}
 		} else {
