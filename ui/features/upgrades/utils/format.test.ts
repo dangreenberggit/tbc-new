@@ -24,6 +24,7 @@ import {
 	sourceDetail,
 	sourceKeyLabel,
 	sourceLabel,
+	timeLeftText,
 	zoneWithMark,
 } from './format';
 
@@ -309,5 +310,16 @@ describe('progress', () => {
 
 	it('shows no count while set bonuses are measured, since that stage sends none', () => {
 		expect(progressBarOf(view({ activity: 'set-bonuses', stage: 'simming', done: 663, total: 699 }))).toEqual({});
+	});
+
+	it("says the time left in the Bulk dialog's words, and nothing without an estimate", () => {
+		expect(timeLeftText(view({ activity: 'candidates', stage: 'simming', done: 3, total: 12 }))).toBeUndefined();
+		expect(timeLeftText(view({ activity: 'candidates', stage: 'simming', done: 3, total: 12, remainingMs: 245_000 }))).toBe('4m 05s remaining');
+	});
+
+	it('says no time left outside the stages that count sims', () => {
+		expect(timeLeftText(view({ activity: 'set-bonuses', stage: 'simming', done: 663, total: 699, remainingMs: 245_000 }))).toBeUndefined();
+		expect(timeLeftText(view({ activity: 'ranking', stage: 'ranking', done: 699, total: 699, remainingMs: 0 }))).toBeUndefined();
+		expect(timeLeftText(view({ activity: 'replication', stage: 'simming', done: 667, total: 699, remainingMs: 120_000 }))).toBe('2m 00s remaining');
 	});
 });

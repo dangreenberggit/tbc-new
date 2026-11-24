@@ -19,41 +19,61 @@ const view = (overrides: Partial<RunProgressView>): RunProgressView => ({
 	...overrides,
 });
 
-const mount = () => {
+const mount = (stopping = false) => {
 	const host = fakeTabHost();
 	clearProgress(host.player);
-	render(
+	const ui = (isStopping: boolean) => (
 		<SimHostProvider host={host}>
-			<RunProgressDialog onStop={() => {}} stopping={false} />
-		</SimHostProvider>,
+			<RunProgressDialog onStop={() => {}} stopping={isStopping} />
+		</SimHostProvider>
 	);
-	return host.player;
+	const result = render(ui(stopping));
+	return { player: host.player, rerender: (isStopping: boolean) => result.rerender(ui(isStopping)) };
 };
 
 const counter = () => screen.queryByTestId('progress-tracker-modal-progress-text')?.textContent ?? null;
+const timeLeft = () => screen.queryByTestId('upgrades-run-time-left')?.textContent ?? null;
 const message = () => screen.getByTestId('progress-tracker-modal-message').textContent;
 
 describe('RunProgressDialog', () => {
-	it('shows the count while candidates are simmed', () => {
-		const player = mount();
-		act(() => emitProgress(player, view({ done: 300, total: 699 })));
+	it('shows the count and the time left while candidates are simmed', () => {
+		const { player } = mount();
+		act(() => emitProgress(player, view({ done: 300, total: 699, remainingMs: 245_000 })));
 		expect(counter()).toBe('300/699');
-		expect(message()).toBe('Simming candidates');
+		expect(message()).toBe('Simming candidates4m 05s remaining');
+		expect(timeLeft()).toBe('4m 05s remaining');
 	});
 
-	it('shows no count while set bonuses are measured, since that stage sends none', () => {
-		const player = mount();
-		act(() => emitProgress(player, view({ done: 662, total: 699 })));
-		act(() => emitProgress(player, view({ activity: 'set-bonuses', done: 663, total: 699 })));
+	it('shows no count and no time left while set bonuses are measured', () => {
+		const { player } = mount();
+		act(() => emitProgress(player, view({ done: 662, total: 699, remainingMs: 245_000 })));
+		act(() => emitProgress(player, view({ activity: 'set-bonuses', done: 663, total: 699, remainingMs: 245_000 })));
 		expect(counter()).toBeNull();
+		expect(timeLeft()).toBeNull();
 		expect(message()).toBe('Measuring set bonuses');
 	});
 
-	it('shows the count again once the top rows are re-simmed', () => {
-		const player = mount();
+	it('shows the count and the time left again once the top rows are re-simmed', () => {
+		const { player } = mount();
 		act(() => emitProgress(player, view({ activity: 'set-bonuses', done: 663, total: 699 })));
-		act(() => emitProgress(player, view({ activity: 'replication', done: 667, total: 699 })));
+		act(() => emitProgress(player, view({ activity: 'replication', done: 667, total: 699, remainingMs: 120_000 })));
 		expect(counter()).toBe('667/699');
-		expect(message()).toBe('Re-simming the top rows');
+		expect(message()).toBe('Re-simming the top rows2m 00s remaining');
+		expect(timeLeft()).toBe('2m 00s remaining');
+	});
+
+	it('shows no time left while the results are ranked, when nothing is left to sim', () => {
+		const { player } = mount();
+		act(() => emitProgress(player, view({ activity: 'ranking', stage: 'ranking', done: 699, total: 699, remainingMs: 0 })));
+		expect(timeLeft()).toBeNull();
+		expect(message()).toBe('Ranking results…');
+	});
+
+	it('says only that it is stopping after Stop', () => {
+		const { player, rerender } = mount();
+		act(() => emitProgress(player, view({ done: 300, total: 699, remainingMs: 245_000 })));
+		rerender(true);
+		expect(message()).toBe('Stopping — finishing the current step.');
+		expect(timeLeft()).toBeNull();
 	});
 });
