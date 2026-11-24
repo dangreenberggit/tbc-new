@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import { progressOf, subscribeProgress } from '../model/progress_channel';
 import type { RunProgressView } from '../model/run_progress';
 
-/** The run's latest progress, as upstream's `useBulkProgress` gives the Bulk run's. */
+/**
+ * The run's latest progress, as upstream's `useBulkProgress` (`useBulkProgress.ts:7-14`) gives the Bulk run's.
+ * New here: the effect reads the latest progress again before it subscribes, which upstream's does not.
+ */
 export const useRunProgress = (): RunProgressView | null => {
 	const player = usePlayer();
 	const [progress, setProgress] = useState<RunProgressView | null>(() => progressOf(player));

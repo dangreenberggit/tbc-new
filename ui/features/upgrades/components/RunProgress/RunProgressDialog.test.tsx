@@ -47,7 +47,7 @@ describe('RunProgressDialog', () => {
 	it('shows no count and no time left while set bonuses are measured', () => {
 		const { player } = mount();
 		act(() => emitProgress(player, view({ done: 662, total: 699, remainingMs: 245_000 })));
-		act(() => emitProgress(player, view({ activity: 'set-bonuses', done: 663, total: 699 })));
+		act(() => emitProgress(player, view({ activity: 'set-bonuses', done: 663, total: 699, remainingMs: 245_000 })));
 		expect(counter()).toBeNull();
 		expect(timeLeft()).toBeNull();
 		expect(message()).toBe('Measuring set bonuses');
@@ -58,7 +58,15 @@ describe('RunProgressDialog', () => {
 		act(() => emitProgress(player, view({ activity: 'set-bonuses', done: 663, total: 699 })));
 		act(() => emitProgress(player, view({ activity: 'replication', done: 667, total: 699, remainingMs: 120_000 })));
 		expect(counter()).toBe('667/699');
+		expect(message()).toBe('Re-simming the top rows2m 00s remaining');
 		expect(timeLeft()).toBe('2m 00s remaining');
+	});
+
+	it('shows no time left while the results are ranked, when nothing is left to sim', () => {
+		const { player } = mount();
+		act(() => emitProgress(player, view({ activity: 'ranking', stage: 'ranking', done: 699, total: 699, remainingMs: 0 })));
+		expect(timeLeft()).toBeNull();
+		expect(message()).toBe('Ranking results…');
 	});
 
 	it('says only that it is stopping after Stop', () => {

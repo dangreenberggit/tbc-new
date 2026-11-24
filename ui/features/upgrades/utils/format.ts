@@ -208,6 +208,12 @@ export const progressLabel = (stage: ProgressStage): string => {
 export const progressBarOf = (view: RunProgressView): ProgressTrackerProgress =>
 	view.activity === 'set-bonuses' ? {} : { current: view.done, total: view.total };
 
-/** The Bulk dialog's time-left line (`BulkProgressMessage.tsx`), or nothing while the run has no estimate. */
+/**
+ * The Bulk dialog's time-left line (`BulkProgressMessage.tsx:12-13`), or nothing while the run has no estimate.
+ * Only the stages that count sims show one: the set-bonus stage sends no count, and once the results are ranked
+ * nothing is left to sim, so the line would read "0s remaining" while the dialog is still open.
+ */
 export const timeLeftText = (view: RunProgressView): string | undefined =>
-	view.remainingMs === undefined ? undefined : i18n.t('bulk_tab.progress.time_remaining', { time: formatDurationSeconds(view.remainingMs / 1000) });
+	view.remainingMs === undefined || (view.activity !== 'candidates' && view.activity !== 'replication')
+		? undefined
+		: i18n.t('bulk_tab.progress.time_remaining', { time: formatDurationSeconds(view.remainingMs / 1000) });

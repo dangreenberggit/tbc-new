@@ -23,9 +23,10 @@ export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; replication
  * concurrency, `setBonusStageCandidates` and `replicationSimCost` were refitted
  * on the web build's feral run, the slow one; the same run on desktop measured
  * 20.1 and 0.505, so desktop's time left reads about 25 s high there.
- * Candidates now take the same time early and late in a run, so the estimate
- * has no term for later candidates slowing; the one fitted in October read
- * 55-79% high on the web feral runs of 2026-11-22 and 2026-11-23 (ticket 894).
+ * The estimate has no term for later candidates slowing: on the web feral runs
+ * of 2026-11-22 and 2026-11-23 and the desktop one of 2026-11-23, candidates
+ * took the same time early and late, and the term fitted in October made the
+ * figure read 54-60% high at half the run (ticket 894).
  */
 export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', replicationSimCost: 0.75, setBonusStageCandidates: 45.34 };
 export const RUN_PROGRESS_SHOW_FROM_FRACTION = 0.35;

@@ -3,7 +3,8 @@ import { progressLabel, progressStageOf, timeLeftText } from '../../utils/format
 
 /**
  * The stage and the time left. It subscribes to the run's own ticks, so a tick
- * renders this leaf and never the dialog, as upstream's `BulkProgressMessage` does.
+ * renders this leaf and never the dialog, as upstream's `BulkProgressMessage` does
+ * (`BulkProgressMessage.tsx:7-8`).
  */
 export const RunProgressMessage = () => {
 	const progress = useRunProgress();
