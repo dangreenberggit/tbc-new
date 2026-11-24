@@ -101,7 +101,11 @@ export function expectedFinalDone(run: RunTimeline): number {
  * the time per sim so far. `phased` assumes candidates run `concurrency` at a
  * time, each a little slower than the last (`slowdown`); the set-bonus stage takes
  * `setBonusStageCandidates` candidates' time; replication sims run `concurrency`
- * at a time too, each taking `replicationSimCost` candidates' time.
+ * at a time too, each taking `replicationSimCost` candidates' time. The set-bonus
+ * stage itself sends no count, so it gets no time left, as wowsims' Bulk sim
+ * shows none in a stage without one (`features/bulk/model/progress.ts`,
+ * `candidateGearProgress`): a figure held from the last candidate would stand
+ * still for the whole stage.
  */
 export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): number | undefined {
 	const first = run.sims[0];
@@ -125,22 +129,18 @@ export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): 
 		if (!atRanking) {
 			if (doneAtLastCandidate === null) {
 				estimate = linear();
-			} else {
+			} else if (done < doneAtLastCandidate) {
 				const left = finalDone - doneAtLastCandidate;
-				if (done < doneAtLastCandidate) {
-					const n = done - 1;
-					const c = doneAtLastCandidate - 1;
-					if (n >= 1) {
-						const tau = run.now - t1;
-						const beta = config.slowdown;
-						const triangular = (x: number) => (x * (x + 1)) / 2;
-						const a = tau / (n + beta * triangular(n));
-						const candidatesLeft = a * (c - n + beta * (triangular(c) - triangular(n)));
-						const meanPerCandidate = (tau + candidatesLeft) / c;
-						estimate = candidatesLeft + meanPerCandidate * (config.setBonusStageCandidates + k * left);
-					}
-				} else if (lastCandidateEvent && doneAtLastCandidate > 1) {
-					estimate = ((lastCandidateEvent.t - t1) / (doneAtLastCandidate - 1)) * (config.setBonusStageCandidates + k * left);
+				const n = done - 1;
+				const c = doneAtLastCandidate - 1;
+				if (n >= 1) {
+					const tau = run.now - t1;
+					const beta = config.slowdown;
+					const triangular = (x: number) => (x * (x + 1)) / 2;
+					const a = tau / (n + beta * triangular(n));
+					const candidatesLeft = a * (c - n + beta * (triangular(c) - triangular(n)));
+					const meanPerCandidate = (tau + candidatesLeft) / c;
+					estimate = candidatesLeft + meanPerCandidate * (config.setBonusStageCandidates + k * left);
 				}
 			}
 		} else {

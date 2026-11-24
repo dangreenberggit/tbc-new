@@ -306,4 +306,8 @@ describe('progress', () => {
 	it('fills the bar from the sims done', () => {
 		expect(progressBarOf(view({ activity: 'candidates', stage: 'simming', done: 3, total: 12 }))).toEqual({ current: 3, total: 12 });
 	});
+
+	it('shows no count while set bonuses are measured, since that stage sends none', () => {
+		expect(progressBarOf(view({ activity: 'set-bonuses', stage: 'simming', done: 663, total: 699 }))).toEqual({});
+	});
 });
