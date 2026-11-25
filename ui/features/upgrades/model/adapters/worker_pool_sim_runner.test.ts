@@ -117,4 +117,48 @@ describe('WorkerPoolSimRunner.run', () => {
 		const observation = await new WorkerPoolSimRunner(1).run(request, { seed: 1, iterations: 10 });
 		expect(observation.spellDamageBySchool).toEqual({ 32: 1000, 64: 100 });
 	});
+	describe('iterations done (tickets 897, 898)', () => {
+		const request = { raid: { parties: [] }, encounter: { duration: 180 } } as unknown as RaidSimRequest;
+		const result = { iterationsDone: 1000, raidMetrics: { dps: { avg: 1000, stdev: 5 }, parties: [] } };
+		// The pool reports a sim's iterations as wowsims' Bulk sim reads them (`features/bulk/model/progress.ts:46-67`).
+		const reporting = (answer: unknown) => async (_request: unknown, onProgress: (p: { completedIterations: number; totalIterations: number }) => void) => {
+			onProgress({ completedIterations: 400, totalIterations: 1000 });
+			onProgress({ completedIterations: 900, totalIterations: 1000 });
+			return answer;
+		};
+		const requestIdOf = (call: number) => (raidSimAsync.mock.calls[call]![0] as { requestId: string }).requestId;
+
+		it('tells a listener how far each sim has got, by its request id, and that it ended', async () => {
+			raidSimAsync.mockImplementation(reporting(result));
+			const runner = new WorkerPoolSimRunner(1);
+			const heard: Array<[string, number, number]> = [];
+			runner.onIterations((simId, completed, total) => heard.push([simId, completed, total]));
+			await runner.run(request, { seed: 1, iterations: 1000 });
+			const id = requestIdOf(0);
+			expect(heard).toEqual([
+				[id, 400, 1000],
+				[id, 900, 1000],
+				[id, 1000, 1000],
+			]);
+		});
+
+		it('says a failed sim ended too', async () => {
+			raidSimAsync.mockImplementation(reporting({ error: { type: 1, message: 'bad gear' } }));
+			const runner = new WorkerPoolSimRunner(1);
+			const heard: Array<[string, number, number]> = [];
+			runner.onIterations((simId, completed, total) => heard.push([simId, completed, total]));
+			await expect(runner.run(request, { seed: 1, iterations: 1000 })).rejects.toThrow('bad gear');
+			expect(heard.at(-1)).toEqual([requestIdOf(0), 1000, 1000]);
+		});
+
+		it('stops telling a listener once it unsubscribes', async () => {
+			raidSimAsync.mockImplementation(reporting(result));
+			const runner = new WorkerPoolSimRunner(1);
+			const heard: string[] = [];
+			const off = runner.onIterations(simId => heard.push(simId));
+			off();
+			await runner.run(request, { seed: 1, iterations: 1000 });
+			expect(heard).toEqual([]);
+		});
+	});
 });

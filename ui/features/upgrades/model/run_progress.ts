@@ -16,22 +16,6 @@ export const TAB_REPLICATE_SEED_COUNT = DEFAULT_SEED_COUNT;
 
 export type RunActivity = 'preparing' | 'candidates' | 'set-bonuses' | 'replication' | 'ranking';
 
-export type EstimatorConfig = { kind: 'linear' } | { kind: 'phased'; replicationSimCost: number; setBonusStageCandidates: number };
-
-/**
- * Once the set phase and replication ran their sims at the runner's
- * concurrency, `setBonusStageCandidates` and `replicationSimCost` were refitted
- * on the web build's feral run, the slow one; the same run on desktop measured
- * 20.1 and 0.505, so desktop's time left reads about 25 s high there.
- * The estimate has no term for later candidates slowing: on the web feral runs
- * of 2026-11-22 and 2026-11-23 and the desktop one of 2026-11-23, candidates
- * took the same time early and late, and the term fitted in October made the
- * figure read 54-60% high at half the run (ticket 894).
- */
-export const RUN_PROGRESS_ESTIMATOR: EstimatorConfig = { kind: 'phased', replicationSimCost: 0.75, setBonusStageCandidates: 45.34 };
-export const RUN_PROGRESS_SHOW_FROM_FRACTION = 0.35;
-export const RUN_PROGRESS_MIN_CANDIDATES_DONE = 10;
-
 /**
  * Solved from `totalSims` in `rank-candidates.ts`:
  * `total = 1 + candidates + (seedCount - 1) * (1 + min(topN, candidates))`.
@@ -72,6 +56,8 @@ export type RunTimeline = {
 	readonly topN: number;
 	/** The exact total from the first `simming` event after `ranking`; undefined before it. */
 	readonly finalTotal?: number;
+	/** The share of each counted sim under way that is done, summed; 0 when none is. */
+	readonly inFlight?: number;
 };
 
 /**
@@ -98,66 +84,41 @@ export function expectedFinalDone(run: RunTimeline): number {
 }
 
 /**
- * The time left, in ms; undefined until the run has said enough. `linear` scales
- * the time per sim so far. `phased` assumes candidates go on at the pace so
- * far; the set-bonus stage takes `setBonusStageCandidates` candidates' time;
- * replication sims run at the runner's concurrency, as candidates do, each
- * taking `replicationSimCost` candidates' time. The set-bonus
- * stage itself sends no count, so it gets no time left, as wowsims' Bulk sim
- * shows none in a stage without one (`features/bulk/model/progress.ts`,
- * `candidateGearProgress`): a figure held from the last candidate would stand
- * still for the whole stage.
+ * The time left of the stage under way, in ms, by wowsims' Bulk rule: the time
+ * since the stage started per step done, times the steps left in it
+ * (`features/bulk/model/progress.ts:34`, `:51`, `:67`), with the clock restarted
+ * at each stage (`features/bulk/model/core_sim.ts:48-51`). Later stages are not
+ * priced, so near a stage's end the figure is close to 0 while the stage name
+ * says what runs next; undefined until a step of the stage is done.
  */
-export function estimateRemainingMs(config: EstimatorConfig, run: RunTimeline): number | undefined {
+export function estimateRemainingMs(run: RunTimeline): number | undefined {
+	const stage = stageUnderWay(run);
+	if (!stage) return undefined;
+	// The sims under way count by their iterations done, as the Bulk sim counts its own
+	// (`features/bulk/model/progress.ts:60-65`), so the figure moves between landings.
+	const done = stage.done + (run.inFlight ?? 0);
+	if (done <= 0) return undefined;
+	return Math.max(0, ((run.now - stage.startedAt) / done) * (stage.size - done));
+}
+
+/**
+ * The stage that counts sims and is under way: the candidates from the first
+ * `simming` event, which carries the total, or the re-sims from `ranking`, once
+ * the engine has restated the total.
+ */
+function stageUnderWay(run: RunTimeline): { startedAt: number; size: number; done: number } | undefined {
 	const first = run.sims[0];
 	const last = run.sims[run.sims.length - 1];
 	if (!first || !last) return undefined;
-	const t1 = first.t;
-	const total = run.total;
-	const atRanking = run.rankingAt !== undefined;
-	const done = last.done;
-
-	const linear = (): number | undefined => (done > 1 ? ((run.now - t1) / (done - 1)) * (total - done) : undefined);
-
-	let estimate: number | undefined;
-	if (config.kind === 'linear') {
-		estimate = linear();
-	} else {
-		const k = config.replicationSimCost;
-		const doneAtLastCandidate = run.doneAtLastCandidate;
-		const finalDone = expectedFinalDone(run);
-		const lastCandidateEvent = doneAtLastCandidate === null ? undefined : run.sims.find(s => !s.afterRanking && s.done === doneAtLastCandidate);
-		if (!atRanking) {
-			if (doneAtLastCandidate === null) {
-				estimate = linear();
-			} else if (done < doneAtLastCandidate) {
-				const left = finalDone - doneAtLastCandidate;
-				const n = done - 1;
-				const c = doneAtLastCandidate - 1;
-				if (n >= 1) {
-					const msPerCandidate = (run.now - t1) / n;
-					estimate = msPerCandidate * (c - n + config.setBonusStageCandidates + k * left);
-				}
-			}
-		} else {
-			const beforeRanking = run.sims.filter(s => !s.afterRanking);
-			const lastBefore = beforeRanking[beforeRanking.length - 1];
-			const b = lastBefore?.done;
-			let msPerCandidate: number | undefined;
-			if (lastCandidateEvent && doneAtLastCandidate !== null && doneAtLastCandidate > 1) {
-				msPerCandidate = (lastCandidateEvent.t - t1) / (doneAtLastCandidate - 1);
-			} else if (lastBefore && b !== undefined && b > 1) {
-				msPerCandidate = (lastBefore.t - t1) / (b - 1);
-			}
-			const m = b === undefined ? 0 : done - b;
-			if (m >= 2) {
-				estimate = ((run.now - run.rankingAt!) / m) * (finalDone - done);
-			} else if (msPerCandidate !== undefined) {
-				estimate = msPerCandidate * k * (finalDone - done);
-			}
-		}
+	if (run.rankingAt === undefined) {
+		// At the last candidate the set-bonus stage begins, and it sends no count.
+		if (run.doneAtLastCandidate === null || last.done >= run.doneAtLastCandidate) return undefined;
+		return { startedAt: first.t, size: run.doneAtLastCandidate - 1, done: last.done - 1 };
 	}
-	return estimate === undefined ? undefined : Math.max(0, estimate);
+	const before = run.sims.filter(s => !s.afterRanking);
+	const lastBefore = before[before.length - 1];
+	if (run.finalTotal === undefined || !lastBefore) return undefined;
+	return { startedAt: run.rankingAt, size: run.finalTotal - lastBefore.done, done: last.done - lastBefore.done };
 }
 
 export type RunProgressView = {
@@ -173,16 +134,14 @@ export type RunProgressView = {
 };
 
 type TrackerOptions = {
-	estimator: EstimatorConfig;
-	showFromFraction: number;
-	minCandidatesDone: number;
 	seedCount?: number;
 	topN?: number;
 };
 
 /**
- * The estimate is recomputed at `simming` and `ranking` events and at a row that
- * replication can re-sim, and held in between, as the Bulk tab's is.
+ * The estimate is recomputed at `simming` and `ranking` events and at each
+ * counted sim's iteration progress, as the Bulk tab's is at its sims' progress
+ * (`features/bulk/model/core_sim.ts:42-59`), and held in between.
  */
 export class RunProgressTracker {
 	private readonly options: Required<TrackerOptions>;
@@ -196,10 +155,10 @@ export class RunProgressTracker {
 	private concurrency = 1;
 	private replicableRowCount = 0;
 	private stopped = false;
-	private shown = false;
 	private estimate: number | undefined;
+	private readonly inFlight = new Map<string, number>();
 
-	constructor(options: TrackerOptions) {
+	constructor(options: TrackerOptions = {}) {
 		this.options = { seedCount: TAB_REPLICATE_SEED_COUNT, topN: PAIRED_REPLICATE_TOP_N, ...options };
 	}
 
@@ -240,13 +199,28 @@ export class RunProgressTracker {
 		this.recompute(nowMs);
 	}
 
+	/**
+	 * One sim's iterations done, from the runner. Only the stages that count sims
+	 * count them. A sim that ends leaves the count without a recompute: the
+	 * `simming` event that counts it follows, so the figure does not jump between.
+	 */
+	observeIterations(simId: string, completed: number, total: number, nowMs: number): void {
+		if ((this.activity !== 'candidates' && this.activity !== 'replication') || total <= 0) return;
+		if (completed >= total) {
+			this.inFlight.delete(simId);
+			return;
+		}
+		this.inFlight.set(simId, completed / total);
+		this.recompute(nowMs);
+	}
+
 	view(): RunProgressView {
 		return {
 			activity: this.activity,
 			stage: this.stage,
 			...(this.total === undefined ? {} : { done: this.lastDone(), total: this.total }),
 			doneAtLastCandidate: this.doneAtLastCandidate,
-			...(this.shown && !this.stopped && this.estimate !== undefined ? { remainingMs: this.estimate } : {}),
+			...(!this.stopped && this.estimate !== undefined ? { remainingMs: this.estimate } : {}),
 			concurrency: this.concurrency,
 			replicableRowCount: this.replicableRowCount,
 		};
@@ -255,8 +229,6 @@ export class RunProgressTracker {
 	private observeRow(row: { readonly belowCutoff: boolean; readonly simmed?: false }): void {
 		if (this.rankingAt !== undefined || !isReplicable(row)) return;
 		this.replicableRowCount += 1;
-		const last = this.sims[this.sims.length - 1];
-		if (last) this.recompute(last.t);
 	}
 
 	private observeSimming(done: number, total: number, nowMs: number): void {
@@ -293,6 +265,7 @@ export class RunProgressTracker {
 			seedCount: this.options.seedCount,
 			topN: this.options.topN,
 			...(this.finalTotal === undefined ? {} : { finalTotal: this.finalTotal }),
+			inFlight: [...this.inFlight.values()].reduce((sum, share) => sum + share, 0),
 		};
 	}
 
@@ -300,9 +273,6 @@ export class RunProgressTracker {
 		const done = this.lastDone();
 		const timeline = this.timeline(nowMs);
 		if (done === undefined || timeline === undefined) return;
-		this.estimate = estimateRemainingMs(this.options.estimator, timeline);
-		if (!this.shown && done - 1 >= this.options.minCandidatesDone && done / timeline.total >= this.options.showFromFraction) {
-			this.shown = true;
-		}
+		this.estimate = estimateRemainingMs(timeline);
 	}
 }

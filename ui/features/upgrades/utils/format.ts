@@ -212,8 +212,10 @@ export const progressBarOf = (view: RunProgressView): ProgressTrackerProgress =>
  * The Bulk dialog's time-left line (`BulkProgressMessage.tsx:12-13`), or nothing while the run has no estimate.
  * Only the stages that count sims show one: the set-bonus stage sends no count, and once the results are ranked
  * nothing is left to sim, so the line would read "0s remaining" while the dialog is still open.
+ * New here: the seconds are rounded up, where `formatDurationSeconds` rounds to the nearest, so the line never
+ * reads "0s remaining" in the last half second of a stage while later stages are still to come.
  */
 export const timeLeftText = (view: RunProgressView): string | undefined =>
 	view.remainingMs === undefined || (view.activity !== 'candidates' && view.activity !== 'replication')
 		? undefined
-		: i18n.t('bulk_tab.progress.time_remaining', { time: formatDurationSeconds(view.remainingMs / 1000) });
+		: i18n.t('bulk_tab.progress.time_remaining', { time: formatDurationSeconds(Math.ceil(view.remainingMs / 1000)) });

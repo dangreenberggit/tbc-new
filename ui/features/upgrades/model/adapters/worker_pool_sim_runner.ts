@@ -103,9 +103,13 @@ export function resetWorkerPoolForTests(): void {
 	sharedPool = undefined;
 }
 
+/** A sim's iterations done, by its request id. A sim that ends, however it ends, reports `completed === total`. */
+export type IterationListener = (simId: string, completed: number, total: number) => void;
+
 export class WorkerPoolSimRunner implements SimRunner {
 	private readonly pool: WorkerPool;
 	private readonly signalManager = new SimSignalManager();
+	private readonly iterationListeners = new Set<IterationListener>();
 
 	/** Also capped by memory, so the sims in flight at once fit in RAM. */
 	readonly concurrency: number;
@@ -117,6 +121,15 @@ export class WorkerPoolSimRunner implements SimRunner {
 
 	async version(): Promise<string> {
 		return `api-v${CURRENT_API_VERSION}`;
+	}
+
+	/**
+	 * Hears each sim's iteration progress, as wowsims' Bulk sim reads its sims'
+	 * (`features/bulk/model/progress.ts:46-67`). Returns the unsubscribe.
+	 */
+	onIterations(listener: IterationListener): () => void {
+		this.iterationListeners.add(listener);
+		return () => this.iterationListeners.delete(listener);
 	}
 
 	async run(req: RaidSimRequest, opts: SimRunOpts): Promise<SimObservation> {
@@ -139,9 +152,11 @@ export class WorkerPoolSimRunner implements SimRunner {
 			ignoreUnknownFields: true,
 		});
 
+		const simId = withOptions.requestId;
+		const tell = (completed: number, total: number) => this.iterationListeners.forEach(listener => listener(simId, completed, total));
 		const signals = this.signalManager.registerRunning(RequestTypes.IndividualSim);
 		try {
-			const result = await this.pool.raidSimAsync(proto, () => {}, signals);
+			const result = await this.pool.raidSimAsync(proto, progress => tell(progress.completedIterations, progress.totalIterations), signals);
 			if (result.error) {
 				throw new Error(`sim error (${result.error.type}): ${result.error.message}`);
 			}
@@ -159,6 +174,7 @@ export class WorkerPoolSimRunner implements SimRunner {
 			};
 		} finally {
 			this.signalManager.unregisterRunning(signals);
+			tell(opts.iterations, opts.iterations);
 		}
 	}
 

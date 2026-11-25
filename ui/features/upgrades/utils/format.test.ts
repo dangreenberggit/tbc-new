@@ -329,6 +329,11 @@ describe('progress', () => {
 		expect(timeLeftText(view({ activity: 'candidates', stage: 'simming', done: 3, total: 12, remainingMs: 245_000 }))).toBe('4m 05s remaining');
 	});
 
+	it('rounds the time left up, so it never reads 0s while the stage has work left', () => {
+		expect(timeLeftText(view({ activity: 'candidates', stage: 'simming', done: 661, total: 699, remainingMs: 300 }))).toBe('1s remaining');
+		expect(timeLeftText(view({ activity: 'replication', stage: 'simming', done: 698, total: 699, remainingMs: 4_200 }))).toBe('5s remaining');
+	});
+
 	it('says no time left outside the stages that count sims', () => {
 		expect(timeLeftText(view({ activity: 'set-bonuses', stage: 'simming', done: 663, total: 699, remainingMs: 245_000 }))).toBeUndefined();
 		expect(timeLeftText(view({ activity: 'ranking', stage: 'ranking', done: 699, total: 699, remainingMs: 0 }))).toBeUndefined();

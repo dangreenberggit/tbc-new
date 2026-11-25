@@ -17,7 +17,7 @@ import { MemoryStore } from './engine/seams/store';
 import type { ContentPhase, SpecId } from './engine/types';
 import { itemEpFor } from './item_ep';
 import { emitProgress } from './progress_channel';
-import { RUN_PROGRESS_ESTIMATOR, RUN_PROGRESS_MIN_CANDIDATES_DONE, RUN_PROGRESS_SHOW_FROM_FRACTION, RunProgressTracker } from './run_progress';
+import { RunProgressTracker } from './run_progress';
 import type { RunOutcome, RunSettings } from './run_state';
 import { effectivePool } from './settings_pool';
 
@@ -79,11 +79,7 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 	const maxPhase = host.sim.getPhase() as ContentPhase;
 	const skeleton = currentPageSkeleton(host);
 
-	const tracker = new RunProgressTracker({
-		estimator: RUN_PROGRESS_ESTIMATOR,
-		showFromFraction: RUN_PROGRESS_SHOW_FROM_FRACTION,
-		minCandidatesDone: RUN_PROGRESS_MIN_CANDIDATES_DONE,
-	});
+	const tracker = new RunProgressTracker();
 	tracker.setConcurrency(simRunner.concurrency);
 	deps.signal.addEventListener('abort', () => tracker.noteStop(), { once: true });
 
@@ -106,30 +102,39 @@ export const rankForPlayer: RunFn = async (host, settings, deps) => {
 	// The run picks its EP-weights preset once: that preset drives the engine and is the one the run returns.
 	const epWeightsPreset = epWeightsPresetFor(specId, host.player.getTalentTreePoints());
 	const weights = epWeightsFileFor(epWeightsPreset);
-	const ranking = await rankUpgrades(
-		input,
-		{
-			gear: new PlayerGearSource(host),
-			sim: simRunner,
-			store,
-			clock: () => new Date(),
-			raidSimSkeleton: skeleton,
-			epWeights: weights.weights,
-			itemEp: itemEpFor(weights),
-			pool: effectivePool(poolFor(host, host.individualConfig.presets.gear, maxPhase), {
-				excludedSources: settings.excludedSources ?? [],
-				selectedGearSetItemIds: settings.selectedGearSetItemIds ?? [],
-				prune: settings.prune ?? false,
-			}),
-			simDatabaseFor: simDatabaseResolverFor(host.player, skeleton),
-			concurrency: simRunner.concurrency,
-			signal: deps.signal,
-			// The set screen (`setScreenMode` below) runs only when this is on.
-			measureSetBonuses: true,
-			setScreenMode: 'on',
-		},
-		onProgress,
-	);
-
-	return { ...ranking, durationMs: Date.now() - startedAt, runner: 'WorkerPoolSimRunner', epWeightsPreset };
+	// The runner outlives the run (`RunContext`), so the run stops listening when it ends; else this run's
+	// tracker would answer the next run's sims on the same channel.
+	const stopListening = simRunner.onIterations((simId, completed, total) => {
+		tracker.observeIterations(simId, completed, total, Date.now() - startedAt);
+		emitProgress(host.player, tracker.view());
+	});
+	try {
+		const ranking = await rankUpgrades(
+			input,
+			{
+				gear: new PlayerGearSource(host),
+				sim: simRunner,
+				store,
+				clock: () => new Date(),
+				raidSimSkeleton: skeleton,
+				epWeights: weights.weights,
+				itemEp: itemEpFor(weights),
+				pool: effectivePool(poolFor(host, host.individualConfig.presets.gear, maxPhase), {
+					excludedSources: settings.excludedSources ?? [],
+					selectedGearSetItemIds: settings.selectedGearSetItemIds ?? [],
+					prune: settings.prune ?? false,
+				}),
+				simDatabaseFor: simDatabaseResolverFor(host.player, skeleton),
+				concurrency: simRunner.concurrency,
+				signal: deps.signal,
+				// The set screen (`setScreenMode` below) runs only when this is on.
+				measureSetBonuses: true,
+				setScreenMode: 'on',
+			},
+			onProgress,
+		);
+		return { ...ranking, durationMs: Date.now() - startedAt, runner: 'WorkerPoolSimRunner', epWeightsPreset };
+	} finally {
+		stopListening();
+	}
 };

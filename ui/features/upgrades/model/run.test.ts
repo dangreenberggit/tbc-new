@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import { simDatabaseResolverFor } from './adapters/sim_database';
-import { resetWorkerPoolForTests, type WorkerPoolSimRunner } from './adapters/worker_pool_sim_runner';
+import { type IterationListener, resetWorkerPoolForTests, type WorkerPoolSimRunner } from './adapters/worker_pool_sim_runner';
 import { epWeightsFor, poolFor } from './data/data';
 import hunterBmWeights from './data/hunter-fallback.ep-weights.json';
 import hunterSvWeights from './data/hunter-sv-p1.ep-weights.json';
@@ -63,8 +63,18 @@ const fakeHost = (spec = Spec.SpecRetributionPaladin, phase = 3, talentsString =
 		individualConfig: { presets: { gear: [] } },
 	}) as unknown as IndividualSimHost<Spec>;
 
+/** Who listens to the fake runner's iteration reports; `reportIterations` plays one to them. */
+const iterationListeners = new Set<IterationListener>();
+const reportIterations = (simId: string, completed: number, total: number) => iterationListeners.forEach(listener => listener(simId, completed, total));
+
 const fakeContext = (): RunContext => ({
-	simRunner: { concurrency: 2 } as unknown as WorkerPoolSimRunner,
+	simRunner: {
+		concurrency: 2,
+		onIterations: (listener: IterationListener) => {
+			iterationListeners.add(listener);
+			return () => iterationListeners.delete(listener);
+		},
+	} as unknown as WorkerPoolSimRunner,
 	store: new MemoryStore(),
 });
 
@@ -175,6 +185,52 @@ describe('rankForPlayer', () => {
 		const host = fakeHost();
 		await rankForPlayer(host, SETTINGS, depsFor());
 		expect(progressOf(host.player)).toMatchObject({ done: RANKING_FIXTURE.items.length, total: RANKING_FIXTURE.items.length });
+	});
+
+	describe('the sims’ iterations (tickets 897, 898)', () => {
+		afterEach(() => vi.useRealTimers());
+
+		it('moves the time left as the candidates and re-sims under way run their iterations', async () => {
+			vi.useFakeTimers({ toFake: ['Date'] });
+			vi.setSystemTime(0);
+			const host = fakeHost();
+			const shown: Array<number | undefined> = [];
+			const at = (onProgress: RankCall['onProgress'], ms: number, progress: Progress) => {
+				vi.setSystemTime(ms);
+				onProgress?.(progress);
+			};
+			rankBehavior = async ({ onProgress }) => {
+				// 100 candidates: total 1 + 100 + 4 * (1 + 8) = 137, the last candidate at done 101.
+				at(onProgress, 0, { stage: 'simming', done: 1, total: 137 });
+				// Two candidates half done 1 s in: one candidate's worth, 99 left: 1000 / 1 * 99
+				vi.setSystemTime(1_000);
+				for (const id of ['a', 'b']) reportIterations(id, 250, 500);
+				shown.push(progressOf(host.player)?.remainingMs);
+				const aboveCutoff: RankedItem = { ...RANKING_FIXTURE.items[0]!, belowCutoff: false };
+				for (let i = 0; i < 8; i++) at(onProgress, 1_000, { kind: 'row', row: aboveCutoff });
+				for (const id of ['a', 'b']) reportIterations(id, 500, 500);
+				at(onProgress, 100_000, { stage: 'simming', done: 101, total: 137 });
+				at(onProgress, 150_000, { stage: 'ranking' });
+				at(onProgress, 150_000, { stage: 'simming', done: 101, total: 137 });
+				// Four re-sims half done 2 s in: two re-sims' worth of 36, 34 left: 2000 / 2 * 34
+				vi.setSystemTime(152_000);
+				for (const id of ['c', 'd', 'e', 'f']) reportIterations(id, 250, 500);
+				shown.push(progressOf(host.player)?.remainingMs);
+				return RANKING_FIXTURE;
+			};
+			await rankForPlayer(host, SETTINGS, depsFor());
+			expect(shown).toEqual([99_000, 34_000]);
+		});
+
+		it('stops listening to the runner the tab keeps when the run ends, or fails', async () => {
+			await rankForPlayer(fakeHost(), SETTINGS, depsFor());
+			expect(iterationListeners.size).toBe(0);
+			rankBehavior = async () => {
+				throw new Error('engine failed');
+			};
+			await expect(rankForPlayer(fakeHost(), SETTINGS, depsFor())).rejects.toThrow('engine failed');
+			expect(iterationListeners.size).toBe(0);
+		});
 	});
 
 	it('hands Stop to the engine as its signal, and resolves the partial ranking the engine returns with a duration', async () => {
