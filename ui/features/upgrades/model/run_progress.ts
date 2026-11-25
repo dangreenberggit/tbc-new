@@ -60,7 +60,8 @@ export type RunTimeline = {
 	readonly inFlight?: number;
 	/**
 	 * When the stage under way sent its first progress report: a sim's iterations or a
-	 * counted step. Undefined before one, or between stages.
+	 * counted step. Undefined before the candidates' first report, and from `ranking`
+	 * until the re-sims' first one.
 	 */
 	readonly stageStartedAt?: number;
 };
@@ -165,7 +166,7 @@ export class RunProgressTracker {
 	private stopped = false;
 	private estimate: number | undefined;
 	private readonly inFlight = new Map<string, number>();
-	/** `RunTimeline.stageStartedAt`: cleared when a stage is named, set by its first report. */
+	/** `RunTimeline.stageStartedAt`: set by a stage's first report, cleared at `ranking`. */
 	private stageStartedAt: number | undefined;
 
 	constructor(options: TrackerOptions = {}) {
