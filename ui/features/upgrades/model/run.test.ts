@@ -202,6 +202,8 @@ describe('rankForPlayer', () => {
 			rankBehavior = async ({ onProgress }) => {
 				// 100 candidates: total 1 + 100 + 4 * (1 + 8) = 137, the last candidate at done 101.
 				at(onProgress, 0, { stage: 'simming', done: 1, total: 137 });
+				// Their first reports start the stage's clock.
+				for (const id of ['a', 'b']) reportIterations(id, 0, 500);
 				// Two candidates half done 1 s in: one candidate's worth, 99 left: 1000 / 1 * 99
 				vi.setSystemTime(1_000);
 				for (const id of ['a', 'b']) reportIterations(id, 250, 500);
@@ -212,6 +214,7 @@ describe('rankForPlayer', () => {
 				at(onProgress, 100_000, { stage: 'simming', done: 101, total: 137 });
 				at(onProgress, 150_000, { stage: 'ranking' });
 				at(onProgress, 150_000, { stage: 'simming', done: 101, total: 137 });
+				for (const id of ['c', 'd', 'e', 'f']) reportIterations(id, 0, 500);
 				// Four re-sims half done 2 s in: two re-sims' worth of 36, 34 left: 2000 / 2 * 34
 				vi.setSystemTime(152_000);
 				for (const id of ['c', 'd', 'e', 'f']) reportIterations(id, 250, 500);
