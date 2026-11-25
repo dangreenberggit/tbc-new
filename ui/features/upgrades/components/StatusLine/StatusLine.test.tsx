@@ -27,7 +27,11 @@ describe('StatusLine', () => {
 	});
 
 	it('says a cancelled run with no finished row has none, in the word the Cancel button uses (ticket 899)', () => {
-		const run: RunState = { status: 'stopped', runId: 1, result: { ...RANKING_FIXTURE, items: [{ ...row, simmed: false }], complete: false } };
+		const run: RunState = {
+			status: 'stopped',
+			runId: 1,
+			result: { ...RANKING_FIXTURE, items: [{ ...row, simmed: false }], complete: false, durationMs: 900 },
+		};
 		expect(summaryOf(run)).toBe('Cancelled before any row finished. Your current gear: 2,084.2 DPS.');
 	});
 

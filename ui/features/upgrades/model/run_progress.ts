@@ -89,7 +89,7 @@ export function expectedFinalDone(run: RunTimeline): number {
  * (`features/bulk/model/progress.ts:34`, `:51`, `:67`), with the clock restarted
  * at each stage (`features/bulk/model/core_sim.ts:48-51`). Later stages are not
  * priced, so near a stage's end the figure is close to 0 while the stage name
- * says what runs next; undefined until a step of the stage is done.
+ * says what runs next; undefined until a step of the stage is done or under way.
  */
 export function estimateRemainingMs(run: RunTimeline): number | undefined {
 	const stage = stageUnderWay(run);
@@ -201,8 +201,13 @@ export class RunProgressTracker {
 
 	/**
 	 * One sim's iterations done, from the runner. Only the stages that count sims
-	 * count them. A sim that ends leaves the count without a recompute: the
-	 * `simming` event that counts it follows, so the figure does not jump between.
+	 * count them. A sim that ends leaves the count without a recompute: for a step
+	 * of one sim, the `simming` event that counts it follows, so the figure does not
+	 * jump between. A candidate with two slots (a ring, a trinket, a dual-wield
+	 * weapon) is one step of two sims run one after the other, and the runner's ids
+	 * do not say which sims share a step: such a step counts up to half a step high
+	 * in its first sim and up to half a step low in its second, and the figure rises
+	 * a little when its first sim ends.
 	 */
 	observeIterations(simId: string, completed: number, total: number, nowMs: number): void {
 		if ((this.activity !== 'candidates' && this.activity !== 'replication') || total <= 0) return;
