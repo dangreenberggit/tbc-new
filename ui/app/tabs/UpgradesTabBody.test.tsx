@@ -186,7 +186,7 @@ const tabSetKeys = () =>
 const tabIterations = () => (within(screen.getByTestId('upgrades-iterations-picker')).getByRole('textbox') as HTMLInputElement).value;
 
 describe('UpgradesTabBody', () => {
-	it('shows rows as they land, and keeps them when Stop ends the run', async () => {
+	it('shows rows as they land, and keeps them when Cancel ends the run', async () => {
 		mount();
 		const run = clickRun();
 		expect(screen.getByTestId('upgrades-run-progress')).not.toBeNull();
@@ -200,10 +200,10 @@ describe('UpgradesTabBody', () => {
 		fireEvent.click(screen.getByTestId('progress-tracker-modal-cancel-btn'));
 		expect(run.deps.signal.aborted).toBe(true);
 		// The dialog covers the status line for the whole wait, so the dialog itself says so.
-		expect(screen.getByTestId('progress-tracker-modal-message').textContent).toBe('Stopping — finishing the current step.');
+		expect(screen.getByTestId('progress-tracker-modal-message').textContent).toBe('Cancelling after the current step finishes.');
 		await act(async () => run.settle({ ...RANKING_FIXTURE, items: [rowA, rowB], complete: false, durationMs: 800 }));
 
-		expect(screen.getByTestId('upgrades-baseline-summary').textContent).toMatch(/^Stopped early\./);
+		expect(screen.getByTestId('upgrades-baseline-summary').textContent).toMatch(/^Cancelled: the rows below come from the sims that finished\./);
 		expect(tableRows()).toHaveLength(2);
 		expect(screen.queryByTestId('upgrades-run-progress')).toBeNull();
 	});

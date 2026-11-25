@@ -49,11 +49,11 @@
 			"done": "Your current gear: {{dps}} DPS.",
 			"stale": "settings changed since this ranking — results may be out of date",
 			"stale_hint": "Run again to rank with the current settings.",
-			"stopped": "Stopped early. Your current gear: {{dps}} DPS. No candidate rows to show — run again for a full ranking.",
+			"stopped": "Cancelled before any row finished. Your current gear: {{dps}} DPS.",
 			"done_took": "Your current gear: {{dps}} DPS. Took {{seconds}}s.",
 			"running": "Rows landed so far: {{count}}.",
-			"stopped_partial": "Stopped early. Your current gear: {{dps}} DPS. The rows below finished before Stop.",
-			"stopping": "Stopping — finishing the current step."
+			"stopped_partial": "Cancelled: the rows below come from the sims that finished. Your current gear: {{dps}} DPS.",
+			"stopping": "Cancelling after the current step finishes."
 		},
 		"view": {
 			"title": "View options",

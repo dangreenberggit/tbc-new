@@ -69,11 +69,11 @@ describe('RunProgressDialog', () => {
 		expect(message()).toBe('Ranking results…');
 	});
 
-	it('says only that it is stopping after Stop', () => {
+	it('says only that it is cancelling after Cancel', () => {
 		const { player, rerender } = mount();
 		act(() => emitProgress(player, view({ done: 300, total: 699, remainingMs: 245_000 })));
 		rerender(true);
-		expect(message()).toBe('Stopping — finishing the current step.');
+		expect(message()).toBe('Cancelling after the current step finishes.');
 		expect(timeLeft()).toBeNull();
 	});
 });

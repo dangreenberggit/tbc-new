@@ -23,7 +23,12 @@ describe('StatusLine', () => {
 
 	it('gives no time for a stopped run, whose duration is not the cost of a ranking', () => {
 		const run: RunState = { status: 'stopped', runId: 1, result: { ...RANKING_FIXTURE, items: [row], complete: false, durationMs: 900 } };
-		expect(summaryOf(run)).toBe('Stopped early. Your current gear: 2,084.2 DPS. The rows below finished before Stop.');
+		expect(summaryOf(run)).toBe('Cancelled: the rows below come from the sims that finished. Your current gear: 2,084.2 DPS.');
+	});
+
+	it('says a cancelled run with no finished row has none, in the word the Cancel button uses (ticket 899)', () => {
+		const run: RunState = { status: 'stopped', runId: 1, result: { ...RANKING_FIXTURE, items: [{ ...row, simmed: false }], complete: false } };
+		expect(summaryOf(run)).toBe('Cancelled before any row finished. Your current gear: 2,084.2 DPS.');
 	});
 
 	it('counts the rows landed while running, with no baseline yet', () => {
@@ -32,9 +37,9 @@ describe('StatusLine', () => {
 		expect(queryByTestId('upgrades-baseline-summary')).toBeNull();
 	});
 
-	it('says the run is stopping while the step in flight finishes', () => {
+	it('says the run is cancelling while the step in flight finishes (ticket 899)', () => {
 		const { getByTestId } = render(<StatusLine run={{ status: 'running', runId: 1, startedAt: 0, landedRows: [row], stopping: true }} />);
-		expect(getByTestId('upgrades-status-line').textContent).toBe('Stopping — finishing the current step.');
+		expect(getByTestId('upgrades-status-line').textContent).toBe('Cancelling after the current step finishes.');
 	});
 
 	it('says what the tab does before a run, in the polite region', () => {
