@@ -95,9 +95,11 @@ export type Progress =
 	 * total is an upper bound: it counts replicas for up to `PAIRED_REPLICATE_TOP_N`
 	 * rows before the run knows how many rows clear the cutoff. The first
 	 * `simming` after `ranking` repeats `done` with the exact total, and the run
-	 * ends on `done === total`.
+	 * ends on `done === total`. The candidates' events also carry
+	 * `candidateSims`, the sims the candidates run: one per legal slot, less each
+	 * slot that ran none (the store answered it, or its hit read or repair failed).
 	 */
-	| { stage: 'simming'; done: number; total: number }
+	| { stage: 'simming'; done: number; total: number; candidateSims?: number }
 	/**
 	 * One candidate's row finished, fired as each sim finishes so a caller can
 	 * fill rows before the "ranking" stage. No `stage` field, because it is

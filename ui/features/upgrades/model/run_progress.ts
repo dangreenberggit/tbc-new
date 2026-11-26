@@ -58,6 +58,10 @@ export type RunTimeline = {
 	readonly finalTotal?: number;
 	/** The share of each counted sim under way that is done, summed; 0 when none is. */
 	readonly inFlight?: number;
+	/** The sims the candidates run, from the engine's latest candidates event; undefined before it. */
+	readonly candidateSims?: number;
+	/** The candidates' sims that ended, each once; 0 when none has. */
+	readonly candidateSimsEnded?: number;
 	/**
 	 * When the stage under way sent its first progress report: a sim's iterations or a
 	 * counted step. Undefined before the candidates' first report, and from `ranking`
@@ -94,9 +98,10 @@ export function expectedFinalDone(run: RunTimeline): number {
  * since the stage started per step done, times the steps left in it
  * (`features/bulk/model/progress.ts:34`, `:51`, `:67`), with the clock restarted
  * at each stage's first progress report (`features/bulk/model/core_sim.ts:48-51`),
- * so the time spent sending the stage's sims out is not priced. Later stages are
- * not priced, so near a stage's end the figure is close to 0 while the stage name
- * says what runs next; undefined until a step of the stage is done or under way.
+ * so the time spent sending the stage's sims out is not priced. The candidates'
+ * steps are their sims, as in Bulk's sim stage (`progress.ts:60-66`). Later stages
+ * are not priced, so near a stage's end the figure is close to 0 while the stage
+ * name says what runs next; undefined until a step of the stage is done or under way.
  */
 export function estimateRemainingMs(run: RunTimeline): number | undefined {
 	const stage = stageUnderWay(run);
@@ -112,9 +117,9 @@ export function estimateRemainingMs(run: RunTimeline): number | undefined {
 }
 
 /**
- * The stage that counts sims and is under way: the candidates from the first
- * `simming` event, which carries the total, or the re-sims from `ranking`, once
- * the engine has restated the total.
+ * The stage that counts sims and is under way, in the steps it is priced by: the
+ * candidates' sims from the first `simming` event, which carries their number, or
+ * the re-sims from `ranking`, once the engine has restated the total.
  */
 function stageUnderWay(run: RunTimeline): { size: number; done: number } | undefined {
 	const last = run.sims[run.sims.length - 1];
@@ -122,7 +127,11 @@ function stageUnderWay(run: RunTimeline): { size: number; done: number } | undef
 	if (run.rankingAt === undefined) {
 		// At the last candidate the set-bonus stage begins, and it sends no count.
 		if (run.doneAtLastCandidate === null || last.done >= run.doneAtLastCandidate) return undefined;
-		return { size: run.doneAtLastCandidate - 1, done: last.done - 1 };
+		// A ring, trinket or dual-wield weapon is one candidate of two sims run one after
+		// the other. Counted in candidates, its first sim's credit would drop out when it
+		// ends until the second one ends, which doubled the figure early in a run (ticket 900).
+		if (run.candidateSims === undefined) return undefined;
+		return { size: run.candidateSims, done: run.candidateSimsEnded ?? 0 };
 	}
 	const before = run.sims.filter(s => !s.afterRanking);
 	const lastBefore = before[before.length - 1];
@@ -166,6 +175,10 @@ export class RunProgressTracker {
 	private stopped = false;
 	private estimate: number | undefined;
 	private readonly inFlight = new Map<string, number>();
+	/** Sims that ended: the runner may say so twice, and a sim ends once. */
+	private readonly endedSims = new Set<string>();
+	private candidateSims: number | undefined;
+	private candidateSimsEnded = 0;
 	/** `RunTimeline.stageStartedAt`: set by a stage's first report, cleared at `ranking`. */
 	private stageStartedAt: number | undefined;
 
@@ -196,7 +209,7 @@ export class RunProgressTracker {
 				this.activity = 'preparing';
 				return;
 			case 'simming':
-				this.observeSimming(p.done, p.total, nowMs);
+				this.observeSimming(p.done, p.total, p.candidateSims, nowMs);
 				break;
 			case 'ranking': {
 				this.rankingAt = nowMs;
@@ -213,19 +226,20 @@ export class RunProgressTracker {
 
 	/**
 	 * One sim's iterations done, from the runner. Only the stages that count sims
-	 * count them. A sim that ends leaves the count without a recompute: for a step
-	 * of one sim, the `simming` event that counts it follows, so the figure does not
-	 * jump between. A candidate with two slots (a ring, a trinket, a dual-wield
-	 * weapon) is one step of two sims run one after the other, and the runner's ids
-	 * do not say which sims share a step: such a step counts up to half a step high
-	 * in its first sim and up to half a step low in its second, and the figure rises
-	 * a little when its first sim ends.
+	 * count them. A candidate's sim that ends counts as one done, as Bulk's sim stage
+	 * counts a finished sim (`features/bulk/model/progress.ts:60-66`); a re-sim is a
+	 * step of its own, which the `simming` event after it counts. A sim that ends
+	 * leaves the count without a recompute, so the figure holds until the next report
+	 * or event; a recompute at a stage's last sim would read "0s" for a moment.
 	 */
 	observeIterations(simId: string, completed: number, total: number, nowMs: number): void {
 		if ((this.activity !== 'candidates' && this.activity !== 'replication') || total <= 0) return;
+		if (this.endedSims.has(simId)) return;
 		this.stageStartedAt ??= nowMs;
 		if (completed >= total) {
+			this.endedSims.add(simId);
 			this.inFlight.delete(simId);
+			if (this.activity === 'candidates') this.candidateSimsEnded += 1;
 			return;
 		}
 		this.inFlight.set(simId, completed / total);
@@ -249,8 +263,9 @@ export class RunProgressTracker {
 		this.replicableRowCount += 1;
 	}
 
-	private observeSimming(done: number, total: number, nowMs: number): void {
+	private observeSimming(done: number, total: number, candidateSims: number | undefined, nowMs: number): void {
 		const afterRanking = this.rankingAt !== undefined;
+		if (!afterRanking && candidateSims !== undefined) this.candidateSims = candidateSims;
 		// The first event names the candidates and the first after `ranking` restates the total: neither is a step.
 		const namesStage = this.total === undefined || (afterRanking && this.finalTotal === undefined);
 		if (!namesStage) this.stageStartedAt ??= nowMs;
@@ -287,6 +302,8 @@ export class RunProgressTracker {
 			topN: this.options.topN,
 			...(this.finalTotal === undefined ? {} : { finalTotal: this.finalTotal }),
 			inFlight: [...this.inFlight.values()].reduce((sum, share) => sum + share, 0),
+			...(this.candidateSims === undefined ? {} : { candidateSims: this.candidateSims }),
+			candidateSimsEnded: this.candidateSimsEnded,
 			...(this.stageStartedAt === undefined ? {} : { stageStartedAt: this.stageStartedAt }),
 		};
 	}

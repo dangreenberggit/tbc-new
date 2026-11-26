@@ -49,7 +49,7 @@ export type CandidateResults = {
 
 /**
  * What every candidate of one run reads: the run, its pool, the baseline it is priced
- * against, and the skips list a failed slot is added to.
+ * against, the skips list a failed slot is added to, and the candidates' sim count.
  */
 type CandidateLoop = {
 	ctx: RunContext;
@@ -57,12 +57,19 @@ type CandidateLoop = {
 	baselineHitBudget: BaselineHitBudget;
 	baselineDps: number;
 	candidateSkips: CandidateSkip[];
+	/**
+	 * The sims the candidates run, sent with each candidates' event so the tab can count
+	 * the stage in sims, as the Bulk sim counts its own (`features/bulk/model/progress.ts:60-66`):
+	 * one per legal slot (`legalSlotNames`), less each slot that ran none.
+	 */
+	candidateSims: { count: number };
 };
 
 /**
  * Every candidate after the cap, priced through a `promisePool` on `deps` (the candidate
- * loop runs without the Stop guard). It sends the progress total first and counts one sim
- * per candidate. After a Stop, the candidates that never ran get placeholder rows.
+ * loop runs without the Stop guard). It sends the progress total first and counts one step
+ * per candidate, however many slots it is simmed in. After a Stop, the candidates that never
+ * ran get placeholder rows.
  */
 export async function runCandidates(
 	ctx: RunContext,
@@ -79,7 +86,7 @@ export async function runCandidates(
 	const candidateSkips: CandidateSkip[] = [];
 	const ownDeltasByItemId = new Map<number, OwnDelta>();
 
-	const loop: CandidateLoop = { ctx, pool, baselineHitBudget, baselineDps, candidateSkips };
+	const loop: CandidateLoop = { ctx, pool, baselineHitBudget, baselineDps, candidateSkips, candidateSims: { count: 0 } };
 
 	/**
 	 * One candidate's slot-attempt loop, run as a `promisePool` task. Its
@@ -96,7 +103,7 @@ export async function runCandidates(
 		if (best === 'stopped') return;
 
 		simCounts.done += 1;
-		onProgress?.({ stage: 'simming', done: simCounts.done, total: totalSims });
+		onProgress?.({ stage: 'simming', done: simCounts.done, total: totalSims, candidateSims: loop.candidateSims.count });
 
 		if (!best) return;
 
@@ -126,7 +133,8 @@ export async function runCandidates(
 	const replicaSims = usesPairedReplication(seeds) ? (seeds.length - 1) * (1 + Math.min(PAIRED_REPLICATE_TOP_N, simCandidates.length)) : 0;
 	const totalSims = 1 + simCandidates.length + replicaSims;
 	simCounts.total = totalSims;
-	onProgress?.({ stage: 'simming', done: simCounts.done, total: totalSims });
+	loop.candidateSims.count = simCandidates.reduce((n, entry) => n + legalSlotNames(loop, entry).length, 0);
+	onProgress?.({ stage: 'simming', done: simCounts.done, total: totalSims, candidateSims: loop.candidateSims.count });
 
 	const signal = deps.signal;
 	let aborted = await dispatchUntilStop(deps, simCandidates, runCandidate);
@@ -211,6 +219,8 @@ async function bestSwapFor(loop: CandidateLoop, entry: PoolEntry): Promise<BestS
 			// Stop refused the read: the row is left to the Stop placeholder.
 			if (err instanceof StopRefusedSim) return 'stopped';
 			if (!(err instanceof CandidateHitReadFailed)) throw err;
+			// A slot that runs no sim leaves the candidates' sim count.
+			loop.candidateSims.count -= 1;
 			candidateSkips.push({
 				kind: 'sim',
 				itemId: entry.itemId,
@@ -227,6 +237,7 @@ async function bestSwapFor(loop: CandidateLoop, entry: PoolEntry): Promise<BestS
 			removed = outcome.removed;
 		} catch (err) {
 			if (!(err instanceof MetaRepairError)) throw err;
+			loop.candidateSims.count -= 1;
 			candidateSkips.push({
 				kind: 'repair',
 				itemId: entry.itemId,
@@ -238,6 +249,7 @@ async function bestSwapFor(loop: CandidateLoop, entry: PoolEntry): Promise<BestS
 		}
 		const candReq = composeFor(swapped);
 		const candOutcome = await simOrFailure(deps, candReq, simVersion, runOpts);
+		if (!('simError' in candOutcome) && candOutcome.fromStore) loop.candidateSims.count -= 1;
 		if ('simError' in candOutcome) {
 			const err = candOutcome.simError;
 			candidateSkips.push({
@@ -390,9 +402,16 @@ function attemptEligibility(
  * placements only the sim could choose, so it stays unset.
  */
 function placeholderSlotChoice(loop: CandidateLoop, entry: PoolEntry): SimSlotName | undefined {
-	const { input, equipment } = loop.ctx;
-	const slotNames = simSlotsForPoolSlot(entry.slot, input.spec, entry.itemId);
+	const slotNames = simSlotsForPoolSlot(entry.slot, loop.ctx.input.spec, entry.itemId);
 	if (slotNames.length < 2 && entry.slot !== 'weapon') return undefined;
-	const legal = slotNames.filter(slotName => attemptEligibility(entry, slotName, equipment, loop.pool.mainHandIsOneHanded).kind === 'ok');
+	const legal = legalSlotNames(loop, entry);
 	return legal.length === 1 ? legal[0] : undefined;
+}
+
+/** The slots `attemptEligibility` lets a candidate be priced in: `bestSwapFor` runs one sim in each. */
+function legalSlotNames(loop: CandidateLoop, entry: PoolEntry): SimSlotName[] {
+	const { input, equipment } = loop.ctx;
+	return simSlotsForPoolSlot(entry.slot, input.spec, entry.itemId).filter(
+		slotName => attemptEligibility(entry, slotName, equipment, loop.pool.mainHandIsOneHanded).kind === 'ok',
+	);
 }

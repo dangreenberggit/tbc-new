@@ -200,18 +200,19 @@ describe('rankForPlayer', () => {
 				onProgress?.(progress);
 			};
 			rankBehavior = async ({ onProgress }) => {
-				// 100 candidates: total 1 + 100 + 4 * (1 + 8) = 137, the last candidate at done 101.
-				at(onProgress, 0, { stage: 'simming', done: 1, total: 137 });
+				// 100 candidates of one sim each: total 1 + 100 + 4 * (1 + 8) = 137, the last
+				// candidate at done 101.
+				at(onProgress, 0, { stage: 'simming', done: 1, total: 137, candidateSims: 100 });
 				// Their first reports start the stage's clock.
 				for (const id of ['a', 'b']) reportIterations(id, 0, 500);
-				// Two candidates half done 1 s in: one candidate's worth, 99 left: 1000 / 1 * 99
+				// Two sims half done 1 s in: one sim's worth, 99 left: 1000 / 1 * 99
 				vi.setSystemTime(1_000);
 				for (const id of ['a', 'b']) reportIterations(id, 250, 500);
 				shown.push(progressOf(host.player)?.remainingMs);
 				const aboveCutoff: RankedItem = { ...RANKING_FIXTURE.items[0]!, belowCutoff: false };
 				for (let i = 0; i < 8; i++) at(onProgress, 1_000, { kind: 'row', row: aboveCutoff });
 				for (const id of ['a', 'b']) reportIterations(id, 500, 500);
-				at(onProgress, 100_000, { stage: 'simming', done: 101, total: 137 });
+				at(onProgress, 100_000, { stage: 'simming', done: 101, total: 137, candidateSims: 100 });
 				at(onProgress, 150_000, { stage: 'ranking' });
 				at(onProgress, 150_000, { stage: 'simming', done: 101, total: 137 });
 				for (const id of ['c', 'd', 'e', 'f']) reportIterations(id, 0, 500);
