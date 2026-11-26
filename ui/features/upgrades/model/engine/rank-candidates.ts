@@ -58,9 +58,11 @@ type CandidateLoop = {
 	baselineDps: number;
 	candidateSkips: CandidateSkip[];
 	/**
-	 * The sims the candidates run, sent with each candidates' event so the tab can count
-	 * the stage in sims, as the Bulk sim counts its own (`features/bulk/model/progress.ts:60-66`):
-	 * one per legal slot (`legalSlotNames`), less each slot that ran none.
+	 * The sims the candidates run, sent with each of the candidates' `simming` events so the
+	 * tab can count the stage in sims, as the Bulk sim counts its own
+	 * (`features/bulk/model/progress.ts:60-66`): one per legal slot (`legalSlotNames`), less
+	 * each slot the store answered or whose hit read or repair failed. After a Stop the slots
+	 * left unrun stay in it; the tab hides the time left from a Stop on.
 	 */
 	candidateSims: { count: number };
 };

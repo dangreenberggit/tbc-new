@@ -97,7 +97,8 @@ export type Progress =
 	 * `simming` after `ranking` repeats `done` with the exact total, and the run
 	 * ends on `done === total`. The candidates' events also carry
 	 * `candidateSims`, the sims the candidates run: one per legal slot, less each
-	 * slot that ran none (the store answered it, or its hit read or repair failed).
+	 * slot the store answered or whose hit read or repair failed. After a Stop the
+	 * slots left unrun stay in it; the tab hides the time left from a Stop on.
 	 */
 	| { stage: 'simming'; done: number; total: number; candidateSims?: number }
 	/**
