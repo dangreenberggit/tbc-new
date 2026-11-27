@@ -20,6 +20,9 @@ import {
 	type ScenarioRanking,
 	SET_KEPT_OFFSET,
 	setSkipLines,
+	simFailedLine,
+	TH_FOUR,
+	TH_FOUR_POOL,
 	thRow,
 	THUNDERHEART,
 	wornGear,
@@ -112,6 +115,59 @@ describe('unmeasured set values', () => {
 			expect(rankableSetPotential(row, FLOOR)).toBeCloseTo(credit, 9);
 			expect(setBonusSubLine(row.setContext, true)).toBe('hover_hint');
 		}
+	});
+
+	it('a failed count the bonus list names is a break with no value, so no bonus that loses it gets a net', async () => {
+		// The model's Malorne table has bonuses at 2 and 4, so the list counts
+		// the failed 4 and not the failed 3. Each Thunderheart piece alone
+		// gives 100 and drops Malorne from 4 to 3 (−70): 30. The 2pc package
+		// (head, hands) drops Malorne to 2: 200 + 50 − 70 = 180, bonus
+		// 180 − 2·30 = 120. The 4pc package drops it to 0:
+		// 400 + 50 + 80 − 40 − 70 = 420, bonus 420 − 4·30 − 120 = 180. Both lose
+		// the Malorne 4pc, whose value was not measured.
+		const { ranking: r } = await runScenario(rungThreeFails);
+		expect((r.wornSetLadder ?? []).filter(e => e.setId === 640).map(e => [e.count, e.counted])).toEqual([
+			[2, true],
+			[3, false],
+			[4, true],
+		]);
+		expect(bsvDps(r, 640, 4)).toBeUndefined();
+		const th2 = bonusOf(r, 676, 2)!;
+		expect(th2.bonusDps).toBeCloseTo(120, 9);
+		expect(th2.breaks?.map(b => [b.setId, b.threshold])).toEqual([[640, 4]]);
+		expect(th2.bonusDpsNet).toBeUndefined();
+		const th4 = bonusOf(r, 676, 4)!;
+		expect(th4.bonusDps).toBeCloseTo(180, 9);
+		expect(th4.bonusDpsNet).toBeUndefined();
+	});
+
+	it('a runner with no bonus list counts every failed count as a break', async () => {
+		const { ranking: r } = await runScenario({ ...rungThreeFails, reportsSetBonuses: false });
+		expect((r.wornSetLadder ?? []).filter(e => e.setId === 640).map(e => [e.count, e.counted])).toEqual([
+			[2, true],
+			[3, true],
+			[4, true],
+		]);
+		expect(malorneBreakCounts(r)).toEqual([2, 3, 4]);
+	});
+
+	it('a 4pc whose 2pc sim failed keeps its package value but gets no bonus value', async () => {
+		// No set worn; every request with exactly two real Thunderheart pieces
+		// fails, which takes out the 2pc. The 4pc package still runs: four
+		// pieces at 100, plus 50 and 80, is 530. Its bonus would subtract the
+		// 2pc's value, which is missing.
+		const { ranking: r } = await runScenario({
+			worn: wornGear({}),
+			pool: TH_FOUR_POOL,
+			measureSetBonuses: true,
+			failWhen: ids => ids.filter(id => TH_FOUR.includes(id)).length === 2,
+		});
+		expect(bonusOf(r, 676, 2)?.unmeasured).toBe('sim-failed');
+		expect(setSkipLines(r)).toContainEqual(simFailedLine(2));
+		const th4 = bonusOf(r, 676, 4)!;
+		expect(th4.packageDeltaDps).toBeCloseTo(530, 9);
+		expect(th4.bonusDps).toBeUndefined();
+		expect(th4.bonusDpsNet).toBeUndefined();
 	});
 
 	it('when the bonus list cannot be read either, no failed count is a break, and lines give both errors', async () => {
