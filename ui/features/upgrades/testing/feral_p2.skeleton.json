@@ -1,0 +1,154 @@
+{
+	"requestId": "raidSimAsync-af1b7eafcaa6fedf",
+	"raid": {
+		"parties": [
+			{
+				"players": [
+					{
+						"apiVersion": 13,
+						"name": "feral",
+						"race": "RaceNightElf",
+						"class": "ClassDruid",
+						"equipment": {
+							"items": [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}]
+						},
+						"consumables": {
+							"potId": 22832,
+							"battleElixirId": 22831,
+							"guardianElixirId": 32067,
+							"foodId": 27664,
+							"conjuredId": 12662,
+							"superSapper": true,
+							"goblinSapper": true,
+							"mhImbueId": 34340,
+							"scrollAgi": true,
+							"scrollStr": true,
+							"potions": [13442, 18253, 22828, 22832, 22837, 22838, 22850, 28101, 31677, 32948, 33935, 34440],
+							"conjuredItems": [22105, 12662, 22788],
+							"drumsId": "GreaterDrumsOfBattle"
+						},
+						"bonusStats": {
+							"apiVersion": 13,
+							"stats": [
+								0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+							],
+							"pseudoStats": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+						},
+						"itemSwap": {
+							"items": [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}],
+							"prepullBonusStats": {
+								"apiVersion": 13,
+								"stats": [
+									0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+								],
+								"pseudoStats": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+							}
+						},
+						"buffs": {
+							"blessingOfKings": true,
+							"blessingOfMight": "TristateEffectImproved",
+							"unleashedRage": true
+						},
+						"talentsString": "-503032132322105301251-05503301",
+						"profession1": "Engineering",
+						"profession2": "Enchanting",
+						"cooldowns": {},
+						"reactionTimeMs": 250,
+						"distanceFromTarget": 0,
+						"healingModel": {},
+						"feralCatDruid": {
+							"options": {
+								"classOptions": {}
+							}
+						}
+					},
+					{},
+					{},
+					{},
+					{}
+				],
+				"buffs": {
+					"drums": "LesserDrumsOfBattle",
+					"ferociousInspiration": 2,
+					"battleShout": "TristateEffectImproved",
+					"graceOfAirTotem": "TristateEffectImproved",
+					"windfuryTotem": "TristateEffectImproved",
+					"manaSpringTotem": "TristateEffectRegular",
+					"strengthOfEarthTotem": "TristateEffectImproved",
+					"totemTwisting": true
+				}
+			},
+			{
+				"players": [{}, {}, {}, {}, {}],
+				"buffs": {}
+			},
+			{
+				"players": [{}, {}, {}, {}, {}],
+				"buffs": {}
+			},
+			{
+				"players": [{}, {}, {}, {}, {}],
+				"buffs": {}
+			},
+			{
+				"players": [{}, {}, {}, {}, {}],
+				"buffs": {}
+			}
+		],
+		"numActiveParties": 5,
+		"buffs": {
+			"bloodlust": true,
+			"arcaneBrilliance": true,
+			"divineSpirit": "TristateEffectImproved",
+			"giftOfTheWild": "TristateEffectImproved",
+			"powerWordFortitude": "TristateEffectImproved",
+			"shadowProtection": true
+		},
+		"debuffs": {
+			"exposeWeaknessUptime": 0.9,
+			"exposeWeaknessHunterAgility": 1210,
+			"bloodFrenzy": true,
+			"exposeArmor": "TristateEffectImproved",
+			"huntersMark": "TristateEffectImproved",
+			"improvedSealOfTheCrusader": "TristateEffectImproved",
+			"judgementOfWisdom": true,
+			"misery": true,
+			"curseOfRecklessness": true,
+			"faerieFire": "TristateEffectImproved",
+			"sunderArmor": true,
+			"giftOfArthas": true
+		}
+	},
+	"encounter": {
+		"apiVersion": 13,
+		"duration": 180,
+		"durationVariation": 5,
+		"executeProportion20": 0.2,
+		"executeProportion25": 0.25,
+		"executeProportion35": 0.35,
+		"executeProportion45": 0.45,
+		"executeProportion90": 0.9,
+		"targets": [
+			{
+				"id": 31146,
+				"name": "Raid Target",
+				"level": 73,
+				"mobType": "MobTypeMechanical",
+				"stats": [
+					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 320, 0, 0, 0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 7685, 0, 6070400, 0, 0, 0, 0, 0, 0, 0, 0
+				],
+				"minBaseDamage": 15113,
+				"damageSpread": 0.5,
+				"swingSpeed": 2,
+				"parryHaste": true,
+				"canCrush": true
+			}
+		]
+	},
+	"simOptions": {
+		"iterations": 25000,
+		"randomSeed": "443754031",
+		"debugFirstIteration": true
+	},
+	"type": "SimTypeIndividual"
+}
