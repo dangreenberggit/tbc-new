@@ -61,29 +61,6 @@ export function zoneKeyOf(item: Pick<RankedItem, 'source' | 'sources'>): string 
 	return ZONELESS_SOURCE_KEYS[item.source.kind] ?? item.source.kind;
 }
 
-export type RaidFilterGroup = { key: string; options: string[] };
-
-/**
- * Zones and zoneless buckets, each under its own group key, in that order.
- * `groups.flatMap(g => g.options)` gives the same options as one flat list.
- */
-export function raidFilterGroups(items: readonly RankedItem[]): RaidFilterGroup[] {
-	const zoneless = new Set(Object.values(ZONELESS_SOURCE_KEYS));
-	const zones: string[] = [];
-	const buckets: string[] = [];
-	const seen = new Set<string>();
-	for (const item of items) {
-		const key = zoneKeyOf(item);
-		if (seen.has(key)) continue;
-		seen.add(key);
-		(zoneless.has(key) ? buckets : zones).push(key);
-	}
-	const groups: RaidFilterGroup[] = [];
-	if (zones.length > 0) groups.push({ key: 'zone', options: zones });
-	if (buckets.length > 0) groups.push({ key: 'other', options: buckets });
-	return groups;
-}
-
 function matchesRaidFilter(item: RankedItem, value: string): boolean {
 	if (matchesZone(item, value)) return true;
 	const key = zoneKeyOf(item);
