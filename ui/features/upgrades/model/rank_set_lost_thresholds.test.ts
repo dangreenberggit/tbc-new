@@ -7,6 +7,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+	B4_TH,
 	brk,
 	bsvDps,
 	FLOOR,
@@ -15,10 +16,14 @@ import {
 	MALORNE,
 	near,
 	NEUTRAL,
+	NEUTRAL_HANDS_LEGS,
 	runOffOn,
 	runScenario,
+	setPool,
+	TH_HANDS_LEGS,
 	thRow,
 	THUNDERHEART,
+	withSetValues,
 	wornGear,
 } from '../testing/set_bonus_scenario';
 import { rankableSetPotential } from './engine/set-potential';
@@ -123,5 +128,26 @@ describe('every lost set threshold', () => {
 		]);
 		// 80 + the chest's own 100.
 		expect(near(rankableSetPotential(head, FLOOR), 180, 0.5)).toBe(true);
+	});
+});
+
+describe('two-sim set values use the item bar', () => {
+	it('a worn-set ladder rung worth 3.5, se 0.5, is counted and charged', async () => {
+		// Scenario kind: the player wears a 2pc worth 3.5 DPS. The rung is one
+		// sim minus another; at 7200 iterations each sim's se is 30 / √7200, so
+		// the rung's se is exactly 0.5 and 2·se is 1.
+		const { ranking: r } = await runScenario({
+			worn: TH_HANDS_LEGS,
+			pool: [...setPool(MALORNE), ...NEUTRAL_HANDS_LEGS],
+			itemValue: withSetValues(Object.values(MALORNE)),
+			setBonuses: { 676: { b2: 3.5, b4: B4_TH }, 640: { b2: 40, b4: 30 } },
+			iterations: 7200,
+			measureSetBonuses: true,
+		});
+		const th2 = (r.wornSetLadder ?? []).find(e => e.setId === 676 && e.count === 2);
+		expect(th2?.dps).toBeCloseTo(3.5, 9);
+		expect(th2?.se).toBeCloseTo(0.5, 9);
+		expect(th2?.counted).toBe(true);
+		expect(bsvDps(r, 676, 2)).toBeCloseTo(3.5, 9);
 	});
 });
