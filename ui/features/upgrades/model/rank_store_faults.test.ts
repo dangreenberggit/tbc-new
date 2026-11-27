@@ -13,7 +13,7 @@ import { rankUpgrades } from './engine/rank';
 import { type Progress, RankError } from './engine/rank-types';
 import type { FightSummary } from './engine/seams/gear-source';
 import type { PlayerStatsObservation, RaidSimRequest, SimObservation, SimRunner, SimRunOpts } from './engine/seams/sim-runner';
-import { type Job, type JobCreateInput, type JobUpdateInput, MemoryStore, type Store } from './engine/seams/store';
+import { MemoryStore, type Store } from './engine/seams/store';
 import { SET_KEPT_ID_OFFSET, SET_LESS_ID_OFFSET } from './engine/set-less-copies';
 import { SIM_ORDER, type SimOrderName } from './engine/slots';
 import { itemEpFor } from './item_ep';
@@ -111,7 +111,7 @@ class SyntheticSimRunner implements SimRunner {
 }
 
 type StoreCall = {
-	method: 'get' | 'put' | 'job.create' | 'job.update' | 'job.read';
+	method: 'get' | 'put';
 	key?: string;
 	/** Candidate rows landed before this call, and whether the run had reached its ranking stage. */
 	rowsLanded: number;
@@ -123,7 +123,7 @@ class FaultingStore implements Store {
 	readonly calls: StoreCall[] = [];
 	rowsLanded = 0;
 	afterRanking = false;
-	private readonly inner = new MemoryStore(() => new Date('2026-11-22T00:00:00Z'));
+	private readonly inner = new MemoryStore();
 	constructor(private readonly faultAt: number | undefined) {}
 
 	private enter(method: StoreCall['method'], key?: string): void {
@@ -139,20 +139,6 @@ class FaultingStore implements Store {
 		this.enter('put', key);
 		return this.inner.put(key, value);
 	}
-	readonly job = {
-		create: async (input: JobCreateInput): Promise<Job> => {
-			this.enter('job.create');
-			return this.inner.job.create(input);
-		},
-		update: async (id: string, patch: JobUpdateInput): Promise<Job | undefined> => {
-			this.enter('job.update');
-			return this.inner.job.update(id, patch);
-		},
-		read: async (id: string): Promise<Job | undefined> => {
-			this.enter('job.read');
-			return this.inner.job.read(id);
-		},
-	};
 }
 
 /**
@@ -237,10 +223,10 @@ async function outcomesWithFaultAt(ns: readonly number[]): Promise<Array<{ n: nu
 const stoppedAsInternal = (n: number) => ({ n, ended: `RankError(internal): store fault at call ${n}` });
 
 describe('rankUpgrades: a store read or write that fails', () => {
-	it("in the run's own calls (the saved ranking, the job row) stops the run with an internal RankError", { timeout: 60_000 }, async () => {
-		const own = (await cleanRunCalls()).filter(call => call.method.startsWith('job.') || call.key?.startsWith('ranking:'));
-		// The saved-ranking read, the job's create and "running" update, the ranking write and the "done" update.
-		expect(own.map(call => call.method)).toEqual(['get', 'job.create', 'job.update', 'put', 'job.update']);
+	it("in the run's own calls (the saved ranking) stops the run with an internal RankError", { timeout: 60_000 }, async () => {
+		const own = (await cleanRunCalls()).filter(call => call.key?.startsWith('ranking:'));
+		// The saved-ranking read and the ranking write.
+		expect(own.map(call => call.method)).toEqual(['get', 'put']);
 		const ns = own.map(call => call.n);
 		expect(await outcomesWithFaultAt(ns)).toEqual(ns.map(stoppedAsInternal));
 	});
@@ -260,16 +246,14 @@ describe('rankUpgrades: a store read or write that fails', () => {
 		const ns = calls.map(call => call.n);
 		expect(await outcomesWithFaultAt(ns)).toEqual(ns.map(stoppedAsInternal));
 	});
+});
 
-	it('in the job row\'s "done" update after Stop stops the run with an internal RankError', async () => {
-		// Stop during the third sim: the run returns the rows so far, writing only the job row.
+describe('rankUpgrades: a run Stop cut short', () => {
+	it('writes no saved ranking', async () => {
+		// Stop during the third sim: the run returns the rows so far and saves no ranking.
 		const stopped = await runWithFault(undefined, 3);
 		if (!('ranking' in stopped.outcome)) throw new Error('the stopped run with no fault failed');
 		expect(stopped.outcome.ranking.complete).toBe(false);
-		const last = stopped.calls.length;
-		expect(stopped.calls[last - 1]?.method).toBe('job.update');
-		const { outcome } = await runWithFault(last, 3);
-		expect(outcome).toEqual({ error: new RankError('internal', `store fault at call ${last}`) });
-		expect('error' in outcome && outcome.error instanceof RankError && outcome.error.kind).toBe('internal');
+		expect(stopped.calls.filter(call => call.method === 'put' && call.key?.startsWith('ranking:'))).toEqual([]);
 	});
 });

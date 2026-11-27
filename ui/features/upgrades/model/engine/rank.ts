@@ -34,7 +34,6 @@ import {
 import { type Deps, type PartialRanking, type Progress, type RankedItem, RankError, type Ranking, type RankInput, type ResolvedFight } from './rank-types';
 import { candidateSkipNote, metaPreferenceNotes, offHandBlockedNotes, oneHandBlockedNotes, uniqueNotes } from './run-notes';
 import type { SimObservation } from './seams/sim-runner';
-import type { Job } from './seams/store';
 import { emptySetPhase, runSetPhase, type SetPhaseOutcome } from './set-phase';
 import { asInternal, rankingCacheKey, simOrFailure, stopGuardedDeps, StopRefusedSim } from './sim-calls';
 import type { SimItemSpec } from './slots';
@@ -65,7 +64,6 @@ export {
 type RunSetup = {
 	resolved: ResolvedFight;
 	contentHash: string;
-	job: Job;
 	/** The gem context before the baseline's stats read adds the hit budget. */
 	gems: GemContext;
 	metaAdjusted: boolean;
@@ -155,29 +153,12 @@ export async function rankUpgrades(input: RankInput, deps: Deps, onProgress?: (p
 		request,
 	};
 
-	const job = await asInternal(() => deps.store.job.create({ contentHash, input }));
-	await asInternal(() => deps.store.job.update(job.id, { status: 'running' }));
-
-	try {
-		return await runRanking(ctx, { resolved, contentHash, job, gems, metaAdjusted, metaRecolors, pool });
-	} catch (err) {
-		try {
-			await deps.store.job.update(job.id, {
-				status: 'error',
-				errorKind: err instanceof RankError ? err.kind : 'internal',
-				errorDetail: err instanceof Error ? err.message : String(err),
-			});
-		} catch {
-			// A failed status write must not replace the error being rethrown.
-		}
-		throw err;
-	}
+	return runRanking(ctx, { resolved, contentHash, gems, metaAdjusted, metaRecolors, pool });
 }
 
 /**
- * The run once its job row exists: baseline, hit budget, candidates, set
- * phase, replication, ranks, and the saved ranking. `rankUpgrades` marks the
- * job failed when this throws.
+ * The run past the ranking-cache miss: baseline, hit budget, candidates, set
+ * phase, replication, ranks, and the saved ranking.
  */
 async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | PartialRanking> {
 	const { deps, onProgress, simVersion, runOpts, request } = ctx;
@@ -344,32 +325,19 @@ function assembleRanking(
 }
 
 /**
- * Writes the finished run to its job row, and a complete ranking to the
- * ranking cache too, then returns it.
+ * Writes a complete ranking to the ranking cache, then returns it. A partial
+ * ranking is returned without a write.
  */
 async function saveRanking(deps: Deps, setup: RunSetup, rankingBase: Omit<Ranking, 'complete'>, aborted: boolean): Promise<Ranking | PartialRanking> {
-	const { contentHash, job } = setup;
 	if (aborted) {
 		// No ranking-cache row for a partial run; this branch is the only
 		// thing that enforces it (see `Ranking.complete`). Per-sim rows already
 		// landed via `cacheSimResult`, so a re-run still resumes cheaply.
 		const partial: PartialRanking = { ...rankingBase, complete: false };
-		await asInternal(() =>
-			deps.store.job.update(job.id, {
-				status: 'done',
-				result: partial,
-			}),
-		);
 		return partial;
 	}
 
 	const ranking: Ranking = { ...rankingBase, complete: true };
-	await asInternal(() => deps.store.put(rankingCacheKey(contentHash), ranking));
-	await asInternal(() =>
-		deps.store.job.update(job.id, {
-			status: 'done',
-			result: ranking,
-		}),
-	);
+	await asInternal(() => deps.store.put(rankingCacheKey(setup.contentHash), ranking));
 	return ranking;
 }
