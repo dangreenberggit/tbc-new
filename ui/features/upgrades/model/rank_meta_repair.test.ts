@@ -8,7 +8,17 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { BASELINE_HIT_PERCENT, BOLD, CHEST, holdsGem, INSCRIBED, pseudoStatsWithHit, RIGID } from '../testing/meta_repair_inputs';
+import {
+	BASELINE_HIT_PERCENT,
+	BOLD,
+	changesBetween,
+	CHEST,
+	holdsGem,
+	INSCRIBED,
+	pseudoStatsWithHit,
+	RAGESTEEL_SHOULDERS,
+	RIGID,
+} from '../testing/meta_repair_inputs';
 import {
 	baselineReadOnce,
 	chestRequestChanges,
@@ -253,23 +263,23 @@ describe("a candidate's repair reads its own hit", () => {
 
 	it('a melee candidate that completes a hit set repairs on its own read', async () => {
 		// Oracle: the Leggings row completes Justicar 2pc (+40, scripted),
-		// which the run's budget misses; the row's sim wears the layout repaired
-		// on that budget minus 40, not the one on the run's budget.
+		// which the run's budget misses. Justicar Greaves (23 hit, no socket)
+		// replace Crystalforge Greaves (21 hit, the Ornate Topaz), so the meta
+		// needs one yellow back. On the run's budget, 31.5 − 2 = 29.5 rating
+		// left, the Ragesteel Shoulders' Bold becomes Rigid. On the row's own
+		// read, 29.5 − 40 = −10.5, hit is worth nothing and it becomes Inscribed.
 		const s = await incrementScenario('V7');
+		expect(V_BONUS_HIT).toBe(40);
+		expect(s.gems.repairHitBudget!.baselineRemaining).toBeCloseTo(31.54, 2);
 		const legs = SIM_ORDER.indexOf('legs');
-		const hitBudget = s.gems.repairHitBudget!;
-		const own = candidateSwapWithRepairs(s.worn, legs, JUSTICAR.legs, {
-			...s.gems,
-			repairHitBudget: { ...hitBudget, baselineRemaining: hitBudget.baselineRemaining - V_BONUS_HIT },
-		}).equipment;
 		const runBudget = candidateSwapWithRepairs(s.worn, legs, JUSTICAR.legs, s.gems).equipment;
+		expect(changesBetween(s.worn, runBudget, legs)).toEqual([[RAGESTEEL_SHOULDERS, 1, BOLD, RIGID]]);
 		const rows = s.run.requests
 			.map(requestItems)
 			.filter(items => items.every((spec, i) => (i === legs ? spec.id === JUSTICAR.legs : (spec.id ?? 0) === (s.worn[i]!.id ?? 0))));
 		expect(rows.length).toBeGreaterThan(0);
 		for (const items of rows) {
-			expect(items.map(x => x.gems)).toEqual(own.map(x => x.gems));
-			expect(items.map(x => x.gems)).not.toEqual(runBudget.map(x => x.gems));
+			expect(changesBetween(s.worn, items, legs)).toEqual([[RAGESTEEL_SHOULDERS, 1, BOLD, INSCRIBED]]);
 		}
 	});
 
