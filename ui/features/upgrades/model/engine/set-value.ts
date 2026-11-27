@@ -56,9 +56,6 @@ const IMPLEMENTED_IN_SIM: Record<number, Partial<Record<SetThreshold, boolean>>>
 	676: { 2: true, 4: true }, // Thunderheart Harness
 };
 
-/** The set ids the table above covers, for tests that pin facts per set. */
-export const IMPLEMENTED_SET_IDS: readonly number[] = Object.keys(IMPLEMENTED_IN_SIM).map(Number);
-
 export function isBonusImplemented(setId: number, threshold: SetThreshold): boolean {
 	return IMPLEMENTED_IN_SIM[setId]?.[threshold] ?? false;
 }

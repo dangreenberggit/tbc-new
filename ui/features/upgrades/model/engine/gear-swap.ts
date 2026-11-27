@@ -15,10 +15,6 @@ import { migrateGemsToItem } from './migrate-gems';
 import { SIM_ORDER, type SimItemSpec } from './slots';
 import type { DetectedSpecId } from './types';
 
-export function equipmentForCandidateSwap(equipment: readonly SimItemSpec[], slotIndex: number, itemId: number, gems: GemContext): SimItemSpec[] {
-	return candidateSwapWithRepairs(equipment, slotIndex, itemId, gems).equipment;
-}
-
 /**
  * The first half of `candidateSwapWithRepairs`: the gear after the swap and
  * its gem fill, before any meta repair. Exported so a test can read each
