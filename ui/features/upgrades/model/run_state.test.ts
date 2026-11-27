@@ -1,7 +1,10 @@
+import { Raid } from '@generated/proto/api';
+import { Encounter } from '@generated/proto/common';
 import { describe, expect, it } from 'vitest';
 
 import { RANKING_FIXTURE } from '../testing/ranking_fixture';
 import type { PartialRanking } from './engine/rank';
+import { inputsSignature, pageInputsSignature } from './run_inputs';
 import {
 	finishedRanking,
 	fixtureLoaded,
@@ -17,6 +20,7 @@ import {
 	TAB_DEFAULT_ITERATIONS,
 	visibleRows,
 } from './run_state';
+import { createUpgradesStore, selectSettledSignature, type UpgradesState } from './upgrades_store';
 
 const [rowA, rowB] = RANKING_FIXTURE.items;
 const partial: PartialRanking = { ...RANKING_FIXTURE, items: [rowA!], complete: false };
@@ -198,5 +202,47 @@ describe('measuredOnOf', () => {
 		expect(measuredOnOf(done)).toEqual({ inputsSignature: 'page', runner: 'WorkerPoolSimRunner' });
 		expect(measuredOnOf(IDLE_RUN)).toBeUndefined();
 		expect(measuredOnOf(runFailed(started, 1, 'no'))).toBeUndefined();
+	});
+});
+
+describe('staleness of a result measured while the page changed', () => {
+	const SETTINGS = { iterations: 3000 };
+	// The page as a run reads it. Only the phase differs between calls, so "an input changed" here is the phase selector moving.
+	const signatureAtPhase = (phase: number) =>
+		inputsSignature({
+			liveKey: pageInputsSignature({
+				raid: { toProto: () => Raid.create() },
+				encounter: { toProto: () => Encounter.create({ duration: 180 }) },
+				getPhase: () => phase,
+			}),
+			settings: SETTINGS,
+		});
+	const settled = (run: RunState) => selectSettledSignature({ run } as UpgradesState);
+
+	it('marks a finished run stale when an input changed while it ran', () => {
+		const atStart = signatureAtPhase(3);
+		const running = runStarted(1, 0, { inputsSignature: atStart });
+		// The phase moves while the run is in flight. The run keeps the inputs it started on, so the finished result is measured on phase 3.
+		const now = signatureAtPhase(4);
+		const done = runSettled(running, 1, RANKING_FIXTURE);
+
+		expect(done.status).toBe('done');
+		expect(settled(done)).toBe(atStart);
+		expect(now).not.toBe(atStart);
+	});
+
+	it('does not carry a change during one run into the next run', () => {
+		// Run 1 starts at phase 3, the phase moves, and run 2 replaces run 1 at phase 4. Run 1's late result must not show as settled on run 2's inputs.
+		const store = createUpgradesStore(SETTINGS);
+		store.getState().startRun(1, 0, { inputsSignature: signatureAtPhase(3) });
+		store.getState().startRun(2, 0, { inputsSignature: signatureAtPhase(4) });
+
+		store.getState().settleRun(1, RANKING_FIXTURE);
+		expect(store.getState().run).toMatchObject({ status: 'running', runId: 2 });
+		expect(selectSettledSignature(store.getState())).toBeUndefined();
+
+		store.getState().settleRun(2, RANKING_FIXTURE);
+		expect(store.getState().run).toMatchObject({ status: 'done', runId: 2 });
+		expect(selectSettledSignature(store.getState())).toBe(signatureAtPhase(4));
 	});
 });
