@@ -1,5 +1,5 @@
 /**
- * SimRunner: runs the browser's own WASM sim, or replays recorded results.
+ * SimRunner: runs the browser's own WASM sim.
  *
  * `RaidSimRequest` is plain protojson, as `compose()` emits, not the typed proto of the
  * same name; `WorkerPoolSimRunner` (model/adapters/worker_pool_sim_runner.ts) converts
@@ -112,29 +112,4 @@ function sortKeys(value: unknown): unknown {
 		return out;
 	}
 	return value;
-}
-
-export class RecordedSimRunner implements SimRunner {
-	constructor(
-		private readonly simVersion: string,
-		private readonly recordings: ReadonlyMap<string, SimObservation>,
-	) {}
-
-	async version(): Promise<string> {
-		return this.simVersion;
-	}
-
-	async run(req: RaidSimRequest, opts: SimRunOpts): Promise<SimObservation> {
-		const key = simCacheKey(req, this.simVersion, opts);
-		const hit = this.recordings.get(key);
-		if (!hit) {
-			throw new Error(`no recording for sim key ${key}`);
-		}
-		return hit;
-	}
-
-	/** Recordings hold sim results only, so a spec with a hit budget fails here. */
-	async computeStats(): Promise<PlayerStatsObservation> {
-		throw new Error('RecordedSimRunner has no recorded stats reads');
-	}
 }

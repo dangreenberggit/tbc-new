@@ -5,12 +5,13 @@ import { fileURLToPath } from 'node:url';
 import type { UIDatabase } from '@generated/proto/ui';
 import { describe, expect, it, vi } from 'vitest';
 
+import { characterFightKey, fightGearKey, RecordedGearSource } from '../testing/recorded_gear_source';
 import { epWeightsFileFor } from './data/data';
 import { getItem } from './engine/items';
 import type { PoolEntry } from './engine/pool';
 import { rankUpgrades } from './engine/rank';
 import { type Progress, RankError } from './engine/rank-types';
-import { characterFightKey, fightGearKey, type FightSummary, RecordedGearSource } from './engine/seams/gear-source';
+import type { FightSummary } from './engine/seams/gear-source';
 import type { PlayerStatsObservation, RaidSimRequest, SimObservation, SimRunner, SimRunOpts } from './engine/seams/sim-runner';
 import { type Job, type JobCreateInput, type JobUpdateInput, MemoryStore, type Store } from './engine/seams/store';
 import { SET_KEPT_ID_OFFSET, SET_LESS_ID_OFFSET } from './engine/set-less-copies';

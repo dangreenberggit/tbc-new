@@ -5,11 +5,12 @@ import { fileURLToPath } from 'node:url';
 import type { UIDatabase } from '@generated/proto/ui';
 import { describe, expect, it, vi } from 'vitest';
 
+import { characterFightKey, fightGearKey, RecordedGearSource } from '../testing/recorded_gear_source';
 import { epWeightsFileFor, epWeightsFor } from './data/data';
 import type { PoolEntry } from './engine/pool';
 import { simSlotsForPoolSlot } from './engine/pool';
 import { rankUpgrades } from './engine/rank';
-import { characterFightKey, fightGearKey, type FightSummary, type LoggedGear, RecordedGearSource } from './engine/seams/gear-source';
+import type { FightSummary, LoggedGear } from './engine/seams/gear-source';
 import type { PlayerStatsObservation, RaidSimRequest, SimObservation, SimRunner } from './engine/seams/sim-runner';
 import { MemoryStore } from './engine/seams/store';
 import { SIM_ORDER } from './engine/slots';
