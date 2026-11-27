@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it } from 'vitest';
 
-import { isBonusImplemented, netInflation } from './set-value';
+import { isBonusImplemented, netInflation, SET_THRESHOLDS } from './set-value';
 
 const DB_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../../assets/database/db.json');
 
@@ -49,9 +49,7 @@ describe('isBonusImplemented', () => {
 		// Asked of the engine so a set added to its table is covered too; an
 		// empty set would make the check below pass vacuously.
 		const implemented = new Set(
-			db.items
-				.map(i => i.setId)
-				.filter((setId): setId is number => setId !== undefined && (isBonusImplemented(setId, 2) || isBonusImplemented(setId, 4))),
+			db.items.map(i => i.setId).filter((setId): setId is number => setId !== undefined && SET_THRESHOLDS.some(t => isBonusImplemented(setId, t))),
 		);
 		expect(implemented.size).toBeGreaterThan(0);
 		const twoSlot = db.items.filter(i => i.setId !== undefined && implemented.has(i.setId) && (i.type === 11 || i.type === 12));
