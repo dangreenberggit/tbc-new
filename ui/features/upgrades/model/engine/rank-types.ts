@@ -9,7 +9,6 @@ import type { Cutoff } from './cutoff';
 import type { Assumptions, RunNote } from './disclosure';
 import type { GemEntry } from './gems';
 import type { PartnerRule } from './partner-choice';
-import type { PlausibilityWarning } from './plausibility';
 import type { ItemSource, PoolEntry, SimSlotName } from './pool';
 import type { FightSummary, GearSource } from './seams/gear-source';
 import type { RaidSimRequest, SimRunner } from './seams/sim-runner';
@@ -453,7 +452,6 @@ export type Ranking = {
 	 * screen's own result.
 	 */
 	setScreen?: SetScreen;
-	plausibilityWarnings?: PlausibilityWarning[];
 	/**
 	 * `true` unless Stop cut this run short. The literal type keeps a
 	 * `PartialRanking` out of `applyView`, but not out of the ranking cache

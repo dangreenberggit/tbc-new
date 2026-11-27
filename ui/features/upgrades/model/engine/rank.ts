@@ -18,7 +18,6 @@ import { gemsForPhase } from './gems';
 import { type BaselineHitBudget, makeRequestsPerLayout, readBaselineHitBudget } from './hit-budget';
 import { equipmentFromLoggedGear } from './logged-gear';
 import type { GemRecolor } from './meta-repair';
-import { plausibilityWarnings } from './plausibility';
 import { type CandidateResults, runCandidates } from './rank-candidates';
 import { applyReplicatedDeltas, type ReplicatedRow, replicateTopItems, type SimCounts } from './rank-replication';
 import {
@@ -37,8 +36,6 @@ import { candidateSkipNote, metaPreferenceNotes, offHandBlockedNotes, oneHandBlo
 import type { SimObservation } from './seams/sim-runner';
 import type { Job } from './seams/store';
 import { emptySetPhase, runSetPhase, type SetPhaseOutcome } from './set-phase';
-import { setCounts } from './set-value';
-import { countsAsBreakFrom } from './set-worn-ladder';
 import { asInternal, rankingCacheKey, simOrFailure, stopGuardedDeps, StopRefusedSim } from './sim-calls';
 import type { SimItemSpec } from './slots';
 export {
@@ -228,7 +225,7 @@ async function runRanking(ctx: RunContext, setup: RunSetup): Promise<Ranking | P
 	}
 	if (signal?.aborted) aborted = true;
 	if (aborted) {
-		dropSetFigures(deps, ranked, setPhase);
+		dropSetFigures(ranked, setPhase);
 	} else {
 		applyReplicatedDeltas(replicated, observation.dps, ctx.cutoff);
 	}
@@ -259,9 +256,8 @@ function bySimmedThenDelta(a: RankedItem, b: RankedItem): number {
  * sim returns. Worn-set values cut short would charge losses at counts
  * never measured, so no partial set figure is kept.
  */
-function dropSetFigures(deps: Deps, ranked: RankedItem[], setPhase: SetPhaseOutcome): void {
+function dropSetFigures(ranked: RankedItem[], setPhase: SetPhaseOutcome): void {
 	setPhase.setBonusResult = emptySetPhase();
-	setPhase.countsAsBreak = deps.measureSetBonuses ? countsAsBreakFrom(setPhase.setBonusResult.wornSetLadder) : undefined;
 	setPhase.bonusGearResult = undefined;
 	setPhase.setBonusNotes.length = 0;
 	setPhase.setCheckNotes.length = 0;
@@ -302,27 +298,13 @@ function assembleRanking(
 	candidates: CandidateResults,
 	setPhase: SetPhaseOutcome,
 ): Omit<Ranking, 'complete'> {
-	const { input, cutoff, race, iterations, seeds, equipment } = ctx;
+	const { input, cutoff, race, iterations, seeds } = ctx;
 	const { resolved, contentHash, metaAdjusted, metaRecolors } = setup;
 	const { blockedOffHand, blockedOneHand } = setup.pool;
 	const { gems, hitCapNotes } = baselineHitBudget;
 	const { ranked, candidateSkips } = candidates;
-	const { setBonusResult, countsAsBreak, bonusGearResult, setBonusNotes, setCheckNotes } = setPhase;
+	const { setBonusResult, bonusGearResult, setBonusNotes, setCheckNotes } = setPhase;
 	const setBonuses = setBonusResult.bonuses;
-
-	const warnings = plausibilityWarnings({
-		baselineDps: observation.dps,
-		setBonuses,
-		rows: ranked.map(i => ({
-			itemId: i.itemId,
-			name: i.name,
-			slot: i.slot,
-			deltaDps: i.deltaDps,
-			...(i.owned === true ? { owned: true } : {}),
-		})),
-		wornSetCounts: setCounts(equipment),
-		...(countsAsBreak ? { countsAsBreak } : {}),
-	});
 
 	return {
 		contentHash,
@@ -358,7 +340,6 @@ function assembleRanking(
 		...(bonusGearResult ? { bonusGearSims: bonusGearResult.bonusGearSims } : {}),
 		...(bonusGearResult ? { setBonusOffSims: bonusGearResult.bonusOffSims } : {}),
 		...(setBonusResult.setScreen ? { setScreen: setBonusResult.setScreen } : {}),
-		...(warnings.length > 0 ? { plausibilityWarnings: warnings } : {}),
 	};
 }
 

@@ -321,7 +321,6 @@ export function emptySetPhase(): SetPhaseResult {
  */
 export type SetPhaseOutcome = {
 	setBonusResult: SetPhaseResult;
-	countsAsBreak: CountsAsBreak | undefined;
 	bonusGearResult: Awaited<ReturnType<typeof measureBonusGear>> | undefined;
 	/** The set phase pushes to both, and a Stop empties them in place. */
 	setBonusNotes: RunNote[];
@@ -423,5 +422,5 @@ export async function runSetPhase(
 					bonusNotes: setBonusNotes,
 				})
 			: undefined;
-	return { setBonusResult, countsAsBreak, bonusGearResult, setBonusNotes, setCheckNotes };
+	return { setBonusResult, bonusGearResult, setBonusNotes, setCheckNotes };
 }

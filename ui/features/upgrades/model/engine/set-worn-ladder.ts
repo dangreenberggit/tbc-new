@@ -157,8 +157,8 @@ export async function wornSetValues(
 	// The value of every bonus each worn set has, on the player's own gear,
 	// before any reachable bonus is simmed, so every loss below reads a
 	// measured value instead of a table. It runs even when no set piece is a
-	// candidate, because `classifyDeadSlots` (in `plausibilityWarnings`) reads
-	// it too.
+	// candidate, because a candidate from no set can still break a worn set,
+	// and the set-bonus popover prices that break from `brokenSetValues`.
 	const wornSetLadder = measureSetBonuses
 		? await measureWornSets(ctx, cachedSampleRun, deps.sim.activeSetBonuses ? request => deps.sim.activeSetBonuses!(request) : undefined)
 		: [];
