@@ -37,10 +37,6 @@ type OutcomeTerm = Extract<SetPotentialTerm, { kind: 'outcome' }>;
 // The engine reads items and gems through `Database.getSync()`; the real class over the test database stands in for the page's.
 vi.mock('@sim/proto/database', importOriginal => import('../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
 
-// Every feral run reads hit, so each meta repair searches with the hit term, and several
-// cases run 15-27 s alone, near the default timeout.
-vi.setConfig({ testTimeout: 120_000 });
-
 /** One worn set's counts as [count, rounded dps, counted]. */
 const wornSetCountsOf = (ranking: ScenarioRanking, setId: number) =>
 	(ranking.wornSetLadder ?? []).filter(e => e.setId === setId).map(e => [e.count, e.dps === undefined ? undefined : Math.round(e.dps), e.counted]);

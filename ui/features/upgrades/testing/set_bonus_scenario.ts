@@ -12,9 +12,6 @@
  * `database_mock.ts`, since `getItem` and the engine read items through `Database.getSync()`:
  *
  *     vi.mock('@sim/proto/database', importOriginal => import('../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
- *
- * A module that runs rankings also raises the test timeout: every feral run reads hit, so
- * each meta repair searches with the hit term, and several cases run 15-27 s alone.
  */
 
 import { expect } from 'vitest';

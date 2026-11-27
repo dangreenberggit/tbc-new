@@ -12,10 +12,6 @@ import { MALORNE, NORDRASSIL, runScenario, type Scenario, SR_SCENARIO, STOP_SCEN
 // The engine reads items and gems through `Database.getSync()`; the real class over the test database stands in for the page's.
 vi.mock('@sim/proto/database', importOriginal => import('../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
 
-// Every feral run reads hit, so each meta repair searches with the hit term, and several
-// cases run 15-27 s alone, near the default timeout.
-vi.setConfig({ testTimeout: 120_000 });
-
 describe("Sims at the runner's concurrency", () => {
 	const piecesOf = (set: Record<string, number>, ids: readonly number[]) => ids.filter(id => Object.values(set).includes(id)).length;
 	const REPLICATION_SCENARIO: Scenario = {

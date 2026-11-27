@@ -38,10 +38,6 @@ import { rankableSetPotential, setCreditUnmeasured, setPotentialIncrements } fro
 // The engine reads items and gems through `Database.getSync()`; the real class over the test database stands in for the page's.
 vi.mock('@sim/proto/database', importOriginal => import('../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
 
-// Every feral run reads hit, so each meta repair searches with the hit term, and several
-// cases run 15-27 s alone, near the default timeout.
-vi.setConfig({ testTimeout: 120_000 });
-
 const bonusOffOf = futureOf;
 
 const nineOrNull = (v: number | undefined) => (v === undefined ? null : Number(v.toFixed(9)));

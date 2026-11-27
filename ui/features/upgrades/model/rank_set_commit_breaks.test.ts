@@ -39,10 +39,6 @@ import { applyView } from './engine/view';
 // The engine reads items and gems through `Database.getSync()`; the real class over the test database stands in for the page's.
 vi.mock('@sim/proto/database', importOriginal => import('../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
 
-// Every feral run reads hit, so each meta repair searches with the hit term, and several
-// cases run 15-27 s alone, near the default timeout.
-vi.setConfig({ testTimeout: 120_000 });
-
 /** The worn Thunderheart 2pc, as a row that replaces one of its pieces breaks it. */
 const TH2_BREAK = { setId: 676, threshold: 2, dps: 50 };
 

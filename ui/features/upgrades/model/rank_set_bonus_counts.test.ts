@@ -11,10 +11,6 @@ import { bonusOf, MALORNE, runScenario, type Scenario, type ScenarioRanking, set
 // The engine reads items and gems through `Database.getSync()`; the real class over the test database stands in for the page's.
 vi.mock('@sim/proto/database', importOriginal => import('../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
 
-// Every feral run reads hit, so each meta repair searches with the hit term, and several
-// cases run 15-27 s alone, near the default timeout.
-vi.setConfig({ testTimeout: 120_000 });
-
 const countsOf = (ranking: ScenarioRanking, setId: number) => (ranking.setBonuses ?? []).filter(b => b.setId === setId).map(b => b.threshold);
 const crossingCountsOf = (ranking: ScenarioRanking, setId: number) => (ranking.crossingChecks ?? []).filter(g => g.setId === setId).map(g => g.count);
 const futureCountsOf = (ranking: ScenarioRanking, setId: number) =>

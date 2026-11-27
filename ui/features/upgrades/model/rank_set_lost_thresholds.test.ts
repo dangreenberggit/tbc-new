@@ -31,10 +31,6 @@ import { rankableSetPotential } from './engine/set-potential';
 // The engine reads items and gems through `Database.getSync()`; the real class over the test database stands in for the page's.
 vi.mock('@sim/proto/database', importOriginal => import('../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
 
-// Every feral run reads hit, so each meta repair searches with the hit term, and several
-// cases run 15-27 s alone, near the default timeout.
-vi.setConfig({ testTimeout: 120_000 });
-
 describe('every lost set threshold', () => {
 	it("the legs row's substituted package breaks Malorne 2pc — measured, net shown", async () => {
 		// Malorne chest, hands, legs worn (2pc active). Thunderheart wrist,
