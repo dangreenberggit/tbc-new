@@ -24,12 +24,14 @@ import {
 	UNCAPPED_CHESTS,
 	WRIST,
 } from '../../testing/meta_repair_inputs';
+import { bruteForceBestValue, repairValue } from '../../testing/meta_repair_oracle';
 import { epWeightsFor } from '../data/data';
 import { gemContext } from './candidate-gems';
 import { candidateSwapPreRepair, candidateSwapWithRepairs } from './gear-swap';
-import { gemsForPhase } from './gems';
+import { gemsForPhase, getGem } from './gems';
 import { getItem } from './items';
-import { bestMinimalRepair, REPAIR_SEARCH_WORK_LIMIT, repairMetaGems, type SocketedItem } from './meta-repair';
+import { gemColorCounts, isMetaConditionMet, socketBonusActive } from './meta';
+import { bestMinimalRepair, type MinimalRepair, REPAIR_SEARCH_WORK_LIMIT, repairMetaGems, type SocketedItem } from './meta-repair';
 import { Stat } from './stats';
 
 vi.mock('@sim/proto/database', importOriginal => import('../../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
@@ -137,7 +139,7 @@ describe('exact repair', () => {
 			maxChanges: 7,
 		});
 		expect(found).toBeDefined();
-		expect(found && 'overLimit' in found).toBe(false);
+		expect(found).not.toHaveProperty('overLimit');
 		expect(found!.work).toBeLessThanOrEqual(REPAIR_SEARCH_WORK_LIMIT);
 
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -163,15 +165,24 @@ describe('repair matches brute force', () => {
 		// meta does not need it, so a minimal set excludes it.
 		const { equipment, gems } = retInputs();
 		const pre = candidateSwapPreRepair(equipment, CHEST, 32365, gems);
+		const hitBudget = { stat: Stat.StatMeleeHitRating, remaining: 93 };
 		const found = bestMinimalRepair({
 			items: pre.socketed,
 			weights: gems.weights,
 			allowedGems: gems.fillGems,
-			hitBudget: { stat: Stat.StatMeleeHitRating, remaining: 93 },
+			hitBudget,
 			maxChanges: 3,
 		});
-		expect(found !== undefined && !('overLimit' in found)).toBe(true);
-		const changes = found !== undefined && !('overLimit' in found) ? found.recolors : [];
-		expect(changes.map(c => `${c.from}->${c.to}`).sort()).toEqual([`${BOLD}->${RIGID}`, `${BOLD}->${RIGID}`]);
+		expect(found).toBeDefined();
+		expect(found).not.toHaveProperty('overLimit');
+		const repair = found as MinimalRepair;
+		expect(repair.recolors.map(c => `${c.from}->${c.to}`).sort()).toEqual([`${BOLD}->${RIGID}`, `${BOLD}->${RIGID}`]);
+		// The oracle tries every layout of at most three changes and values each apart from the engine.
+		const oracleFork = { getItem, getGem, socketBonusActive, gemColorCounts, isMetaConditionMet };
+		const oracleOpts = { items: pre.socketed, weights: gems.weightRecord, allowedGems: gems.fillGems, hitBudget, maxChanges: 3 };
+		const best = bruteForceBestValue(oracleFork, oracleOpts, 'reduced');
+		expect(best).toBeDefined();
+		expect(repair.value).toBeCloseTo(best!, 9);
+		expect(repairValue(oracleFork, oracleOpts, repair.items)).toBeCloseTo(best!, 9);
 	});
 });
