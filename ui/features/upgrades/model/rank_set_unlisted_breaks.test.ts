@@ -12,10 +12,10 @@ import {
 	brk,
 	bsvDps,
 	CRYPTSTALKER,
+	expectNear,
 	FLOOR,
 	futB,
 	MALORNE,
-	near,
 	netOf,
 	NEUTRAL,
 	PRIMAL_INTENT,
@@ -66,14 +66,14 @@ describe('set breaks with no list', () => {
 			setBonuses: { ...SET_BONUSES, 659: { b2: 30, b4: 20 } },
 			measureSetBonuses: true,
 		});
-		expect(near(r.baseline.dps, 3050, 0.5)).toBe(true);
+		expectNear(r.baseline.dps, 3050, 0.5);
 		expect(wornSetCountsOf(r, 659)).toEqual([
 			[2, 30, true],
 			[3, 0, false],
 			[4, 20, true],
 		]);
-		expect(near(bsvDps(r, 659, 4)!, 20, 0.5)).toBe(true);
-		expect(near(bsvDps(r, 659, 2)!, 30, 0.5)).toBe(true);
+		expectNear(bsvDps(r, 659, 4)!, 20, 0.5);
+		expectNear(bsvDps(r, 659, 2)!, 30, 0.5);
 		expect(bsvDps(r, 659, 3)).toBeUndefined();
 		// The 2pc package takes Wastewalker 4 -> 2: the 4pc only. The 4pc
 		// package takes it to 0: both.
@@ -82,14 +82,14 @@ describe('set breaks with no list', () => {
 			[659, 4],
 			[659, 2],
 		]);
-		expect(near(netOf(r, 640, 2)!, 40, 0.5)).toBe(true);
-		expect(near(netOf(r, 640, 4)!, 70, 0.5)).toBe(true);
+		expectNear(netOf(r, 640, 2)!, 40, 0.5);
+		expectNear(netOf(r, 640, 4)!, 70, 0.5);
 		// The Mantle row breaks the 4pc alone (20, inside its deltaDps). Each
 		// eligible future names every worn bonus its bonus gear loses against the
 		// current gear, the row's own break included; count 3 has no model bonus
 		// and is within the noise.
 		const mantle = thRow(r, MALORNE.shoulder);
-		expect(near(mantle.deltaDps, 80, 0.5)).toBe(true);
+		expectNear(mantle.deltaDps, 80, 0.5);
 		expect((mantle.setContext?.singleBreaks ?? []).map(brk)).toEqual([{ setId: 659, threshold: 4, dps: 20 }]);
 		expect((mantle.setContext?.futureBonuses ?? []).map(futB)).toEqual([
 			{
@@ -141,17 +141,17 @@ describe('set breaks with no list', () => {
 			setBonuses: { ...SET_BONUSES, 619: { b2: 0, b3: 25, b4: 0 } },
 			measureSetBonuses: true,
 		});
-		expect(near(r.baseline.dps, 3025, 0.5)).toBe(true);
+		expectNear(r.baseline.dps, 3025, 0.5);
 		expect(wornSetCountsOf(r, 619)).toEqual([
 			[2, 0, false],
 			[3, 25, true],
 		]);
-		expect(near(bsvDps(r, 619, 3)!, 25, 0.5)).toBe(true);
+		expectNear(bsvDps(r, 619, 3)!, 25, 0.5);
 		const chest = thRow(r, THUNDERHEART.chest);
-		expect(near(chest.deltaDps, 75, 0.5)).toBe(true);
+		expectNear(chest.deltaDps, 75, 0.5);
 		expect((chest.setContext?.singleBreaks ?? []).map(brk)).toEqual([{ setId: 619, threshold: 3, dps: 25 }]);
 		// The neutral chest pays the same loss inside its own sim: 120 − 25.
-		expect(near(thRow(r, NEUTRAL.chest[0]).deltaDps, 95, 0.5)).toBe(true);
+		expectNear(thRow(r, NEUTRAL.chest[0]).deltaDps, 95, 0.5);
 	});
 
 	it('a set piece with its own id-keyed effect adds nothing to the charged break', async () => {
@@ -170,14 +170,14 @@ describe('set breaks with no list', () => {
 			idEffects: new Map([[PURSUIT.hands, 15]]),
 			measureSetBonuses: true,
 		});
-		expect(near(r.baseline.dps, 3055, 0.5)).toBe(true);
+		expectNear(r.baseline.dps, 3055, 0.5);
 		// The gloves are the second piece in slot order, so the ladder changes
 		// their set membership; they are a copy in both rungs, so the 15 is in
 		// neither. A rung with the real gloves would read 55.
 		expect(wornSetCountsOf(r, 586)).toEqual([[2, 40, true]]);
-		expect(near(bsvDps(r, 586, 2)!, 40, 0.5)).toBe(true);
+		expectNear(bsvDps(r, 586, 2)!, 40, 0.5);
 		const chest = thRow(r, THUNDERHEART.chest);
-		expect(near(chest.deltaDps, 60, 0.5)).toBe(true);
+		expectNear(chest.deltaDps, 60, 0.5);
 		expect((chest.setContext?.singleBreaks ?? []).map(brk)).toEqual([{ setId: 586, threshold: 2, dps: 40 }]);
 	});
 
@@ -202,7 +202,7 @@ describe('set breaks with no list', () => {
 			},
 			measureSetBonuses: true,
 		});
-		expect(near(r.baseline.dps, 3100, 0.5)).toBe(true);
+		expectNear(r.baseline.dps, 3100, 0.5);
 		expect(wornSetCountsOf(r, 530)).toEqual([
 			[2, 10, true],
 			[3, 0, false],
@@ -215,7 +215,7 @@ describe('set breaks with no list', () => {
 		// Each single takes the set 8 -> 7 and is charged the 8pc only.
 		for (const id of candidates) {
 			const row = thRow(r, id);
-			expect(near(row.deltaDps, 60, 0.5)).toBe(true);
+			expectNear(row.deltaDps, 60, 0.5);
 			expect((row.setContext?.singleBreaks ?? []).map(brk)).toEqual([{ setId: 530, threshold: 8, dps: 40 }]);
 		}
 		// The 2pc package takes it 8 -> 6 (the 8pc); the 4pc package 8 -> 4 (the
@@ -225,7 +225,7 @@ describe('set breaks with no list', () => {
 			[530, 8],
 			[530, 6],
 		]);
-		expect(near(netOf(r, 676, 2)!, 50, 0.5)).toBe(true);
-		expect(near(netOf(r, 676, 4)!, 80, 0.5)).toBe(true);
+		expectNear(netOf(r, 676, 2)!, 50, 0.5);
+		expectNear(netOf(r, 676, 4)!, 80, 0.5);
 	});
 });

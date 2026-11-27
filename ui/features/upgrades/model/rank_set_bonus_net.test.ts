@@ -10,7 +10,22 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { B2_MAL, B2_TH, B4_TH, brk, FLOOR, MALORNE, near, NEUTRAL, runScenario, TH_POOL, thRow, THUNDERHEART, wornGear } from '../testing/set_bonus_scenario';
+import {
+	B2_MAL,
+	B2_TH,
+	B4_TH,
+	brk,
+	expectNear,
+	FLOOR,
+	MALORNE,
+	near,
+	NEUTRAL,
+	runScenario,
+	TH_POOL,
+	thRow,
+	THUNDERHEART,
+	wornGear,
+} from '../testing/set_bonus_scenario';
 import { rankableSetPotential } from './engine/set-potential';
 
 // The engine reads items and gems through `Database.getSync()`; the real class over the test database stands in for the page's.
@@ -31,18 +46,18 @@ describe('set-bonus net value', () => {
 		const b2 = bonuses.find(b => b.setId === 676 && b.threshold === 2);
 		const b4 = bonuses.find(b => b.setId === 676 && b.threshold === 4);
 		expect(b2?.bonusDps).toBeDefined();
-		expect(near(b2!.bonusDps!, B2_TH)).toBe(true);
+		expectNear(b2!.bonusDps!, B2_TH);
 		// No worn set breaks, so bonusDpsNet == raw and no brokenSetValues sims ran.
-		expect(near(b2!.bonusDpsNet!, B2_TH)).toBe(true);
-		expect(near(b4!.bonusDpsNet!, B4_TH)).toBe(true);
+		expectNear(b2!.bonusDpsNet!, B2_TH);
+		expectNear(b4!.bonusDpsNet!, B4_TH);
 		expect(ranking.brokenSetValues ?? []).toHaveLength(0);
 		// Row credit: full = b2+b4; split = b2/2 + b4/4.
 		const row = thRow(ranking, THUNDERHEART.hands);
 		const fut = row.setContext?.futureBonuses ?? [];
 		const f2 = fut.find(f => f.threshold === 2);
 		const f4 = fut.find(f => f.threshold === 4);
-		expect(near(f2!.dps!, B2_TH)).toBe(true);
-		expect(near(f4!.dps!, B4_TH)).toBe(true);
+		expectNear(f2!.dps!, B2_TH);
+		expectNear(f4!.dps!, B4_TH);
 	});
 
 	it('Malorne 2pc worn in two Thunderheart slots — one B sim, nets exact', async () => {
@@ -62,13 +77,13 @@ describe('set-bonus net value', () => {
 		const mal = bsv.filter(b => b.setId === 640 && b.threshold === 2);
 		expect(mal).toHaveLength(1);
 		expect(mal[0]!.dps).toBeDefined();
-		expect(near(mal[0]!.dps!, B2_MAL, 0.5)).toBe(true);
+		expectNear(mal[0]!.dps!, B2_MAL, 0.5);
 		// 2pc net = b2 (k=2, c=1 -> raw - B); 4pc net = b4 (k=2, c=2 -> raw).
 		const bonuses = ranking.setBonuses ?? [];
 		const th2 = bonuses.find(b => b.setId === 676 && b.threshold === 2);
 		const th4 = bonuses.find(b => b.setId === 676 && b.threshold === 4);
-		expect(near(th2!.bonusDpsNet!, B2_TH, 0.5)).toBe(true);
-		expect(near(th4!.bonusDpsNet!, B4_TH, 0.5)).toBe(true);
+		expectNear(th2!.bonusDpsNet!, B2_TH, 0.5);
+		expectNear(th4!.bonusDpsNet!, B4_TH, 0.5);
 		// The loss is disclosed on every Thunderheart row: breaking rows carry it as
 		// a singleBreak (inside deltaDps), non-breaking rows as a commitBreak.
 		for (const row of ranking.items.filter(i => i.setContext?.setId === 676)) {
@@ -131,7 +146,7 @@ describe('set-bonus net value', () => {
 		const bsv = (ranking.brokenSetValues ?? []).filter(b => b.setId === 640 && b.threshold === 2);
 		expect(bsv).toHaveLength(1);
 		// B recovered via the worn>t branch (Σown − Δ), same value.
-		expect(near(bsv[0]!.dps!, B2_MAL, 0.5)).toBe(true);
+		expectNear(bsv[0]!.dps!, B2_MAL, 0.5);
 	});
 
 	it('no neutral replacement is needed — the ladder measures B on the worn gear', async () => {
@@ -145,15 +160,15 @@ describe('set-bonus net value', () => {
 		});
 		const bsv = (ranking.brokenSetValues ?? []).find(b => b.setId === 640 && b.threshold === 2);
 		expect(bsv?.unmeasured).toBeUndefined();
-		expect(near(bsv!.dps!, B2_MAL, 0.5)).toBe(true);
+		expectNear(bsv!.dps!, B2_MAL, 0.5);
 		const th4 = (ranking.setBonuses ?? []).find(b => b.setId === 676 && b.threshold === 4);
-		expect(near(th4!.bonusDpsNet!, B4_TH, 0.5)).toBe(true);
+		expectNear(th4!.bonusDpsNet!, B4_TH, 0.5);
 		// The hands row breaks the Malorne 2pc alone; its path adds head, chest
 		// and shoulder: 50 + 100, then + 80 + 200 = 430, and 60 + 430 = pkgΔ4.
 		const hands = thRow(ranking, THUNDERHEART.hands);
 		expect((hands.setContext?.singleBreaks ?? []).map(brk)).toEqual([{ setId: 640, threshold: 2, dps: 40 }]);
-		expect(near(hands.deltaDps, 60, 0.5)).toBe(true);
-		expect(near(rankableSetPotential(hands, FLOOR), 430, 0.5)).toBe(true);
+		expectNear(hands.deltaDps, 60, 0.5);
+		expectNear(rankableSetPotential(hands, FLOOR), 430, 0.5);
 	});
 
 	it('flag absent — no brokenSetValues; the flag adds only the ladder, check and bonus-gear sims', async () => {

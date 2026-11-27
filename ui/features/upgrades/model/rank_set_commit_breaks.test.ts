@@ -13,11 +13,11 @@ import {
 	brk,
 	bsvDps,
 	completeRanking,
+	expectNear,
 	FLOOR,
 	fut,
 	futB,
 	MALORNE,
-	near,
 	NEUTRAL_HANDS_LEGS,
 	NORDRASSIL,
 	runMalorneOverThunderheart2pc,
@@ -53,8 +53,8 @@ describe('commit breaks per future', () => {
 			640: { b2: 40, b4: 0 },
 		});
 		const r = on.ranking;
-		expect(near(r.baseline.dps, 3250, 0.5)).toBe(true);
-		expect(near(bsvDps(r, 676, 2)!, 50, 0.5)).toBe(true);
+		expectNear(r.baseline.dps, 3250, 0.5);
+		expectNear(bsvDps(r, 676, 2)!, 50, 0.5);
 		// Two ladder rungs (Thunderheart worn 2), two check sims for each of the
 		// Malorne counts 2 to 5 (8), eight bonus gears no package covers (the
 		// close calls' included), and one package sim fewer: the 4pc, worth
@@ -64,7 +64,7 @@ describe('commit breaks per future', () => {
 		expect(sortedIds(bonusOf(r, 640, 4)?.packageItemIds)).toEqual([29096, 29097, 29098, 29100]);
 		for (const id of [MALORNE.chest, MALORNE.head, MALORNE.shoulder]) {
 			const row = thRow(r, id);
-			expect(near(row.deltaDps, 100, 0.5)).toBe(true);
+			expectNear(row.deltaDps, 100, 0.5);
 			expect(row.setContext?.singleBreaks ?? []).toEqual([]);
 			// The Malorne 4pc is worth 0 here, so it is within the noise, has no
 			// package and no path, and the top measured package is the 2pc, which
@@ -77,11 +77,11 @@ describe('commit breaks per future', () => {
 			]);
 			expect(row.setContext?.commitBreaks ?? []).toEqual([]);
 			// 40 + the 2pc partner's own 100; the 4pc floors to 0.
-			expect(near(rankableSetPotential(row, FLOOR), 140, 0.5)).toBe(true);
+			expectNear(rankableSetPotential(row, FLOOR), 140, 0.5);
 		}
 		for (const id of [MALORNE.hands, MALORNE.legs]) {
 			const row = thRow(r, id);
-			expect(near(row.deltaDps, -50, 0.5)).toBe(true);
+			expectNear(row.deltaDps, -50, 0.5);
 			expect((row.setContext?.singleBreaks ?? []).map(brk)).toEqual([TH2_BREAK]);
 			// A bonus-gear future names every worn bonus its bonus gear loses, so the
 			// 2pc names the row's own Thunderheart 2pc break; the rest are below
@@ -93,7 +93,7 @@ describe('commit breaks per future', () => {
 				[5, []],
 			]);
 			// 40 + the chest's own 100.
-			expect(near(rankableSetPotential(row, FLOOR), 140, 0.5)).toBe(true);
+			expectNear(rankableSetPotential(row, FLOOR), 140, 0.5);
 		}
 		const top3 = applyView(completeRanking(r), { withSetPotential: true })
 			.rows.slice(0, 3)
@@ -116,8 +116,8 @@ describe('commit breaks per future', () => {
 		// The path pieces' own stats count: R_2 = 40 + 100,
 		// R_4 = 140 + 30 + 100 + 0 − 50 = 220, so the 4pc is credited.
 		const ctx = chest.setContext;
-		expect(near(setPotentialCredit(ctx, FLOOR), 220, 0.5)).toBe(true);
-		expect(near(rankableSetPotential(chest, FLOOR), 220, 0.5)).toBe(true);
+		expectNear(setPotentialCredit(ctx, FLOOR), 220, 0.5);
+		expectNear(rankableSetPotential(chest, FLOOR), 220, 0.5);
 	});
 
 	it('a Nordrassil row whose only bonus needs the Thunderheart 2pc break gets ON = OFF', async () => {
@@ -129,7 +129,7 @@ describe('commit breaks per future', () => {
 		});
 		for (const id of [NORDRASSIL.chest, NORDRASSIL.head, NORDRASSIL.shoulder]) {
 			const row = thRow(r, id);
-			expect(near(row.deltaDps, 100, 0.5)).toBe(true);
+			expectNear(row.deltaDps, 100, 0.5);
 			// The model gives Nordrassil no bonus, so every count it can reach
 			// is within the noise: no package, no path, no top package.
 			expect((row.setContext?.futureBonuses ?? []).map(futB)).toEqual([
@@ -165,19 +165,19 @@ describe('commit breaks per future', () => {
 			worn: wornGear({ hands: THUNDERHEART.hands }),
 			pool: TH_POOL.filter(p => p.slot !== 'hands'),
 		});
-		expect(near(r.baseline.dps, 3100, 0.5)).toBe(true);
+		expectNear(r.baseline.dps, 3100, 0.5);
 		const th4 = bonusOf(r, 676, 4);
 		// raw4 = B4 − (n−1)·B2 = 80 − 2·50 = −20; the pair sim recovers B2 = 50.
-		expect(near(th4!.bonusDps!, 80, 0.5)).toBe(true);
-		expect(near(th4!.bonusDpsNet!, 80, 0.5)).toBe(true);
+		expectNear(th4!.bonusDps!, 80, 0.5);
+		expectNear(th4!.bonusDpsNet!, 80, 0.5);
 		expect(th4!.selfConfound?.threshold).toBe(2);
-		expect(near(th4!.selfConfound?.dps ?? NaN, 50, 0.5)).toBe(true);
+		expectNear(th4!.selfConfound?.dps ?? NaN, 50, 0.5);
 		const head = thRow(r, THUNDERHEART.head);
-		expect(near(head.deltaDps, 150, 0.5)).toBe(true);
+		expectNear(head.deltaDps, 150, 0.5);
 		expect(head.setContext?.crossesThreshold).toBe(true);
 		expect((head.setContext?.futureBonuses ?? []).map(fut)).toEqual([{ threshold: 4, piecesNeeded: 3, dps: 80 }]);
 		// 80 + chest and legs, each 150 − 50 = 100 of own stats.
-		expect(near(rankableSetPotential(head, FLOOR), 280, 0.5)).toBe(true);
+		expectNear(rankableSetPotential(head, FLOOR), 280, 0.5);
 		expect(runCount).toBe(RUNS_WITHOUT_PAIR_SIM + 1);
 	});
 });

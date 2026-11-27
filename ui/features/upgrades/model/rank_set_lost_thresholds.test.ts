@@ -10,11 +10,11 @@ import {
 	B4_TH,
 	brk,
 	bsvDps,
+	expectNear,
 	FLOOR,
 	fut,
 	ITEM_VALUE,
 	MALORNE,
-	near,
 	NEUTRAL,
 	NEUTRAL_HANDS_LEGS,
 	runOffOn,
@@ -61,7 +61,7 @@ describe('every lost set threshold', () => {
 		});
 		const r = on.ranking;
 		const legs = thRow(r, THUNDERHEART.legs);
-		expect(near(legs.deltaDps, 100, 0.5)).toBe(true);
+		expectNear(legs.deltaDps, 100, 0.5);
 		expect(legs.setContext?.singleBreaks ?? []).toEqual([]);
 		expect((legs.setContext?.futureBonuses ?? []).map(fut)).toEqual([
 			{ threshold: 2, piecesNeeded: 2, dps: 50 },
@@ -74,12 +74,12 @@ describe('every lost set threshold', () => {
 		// (legs plus the best remaining package pieces) keeps Malorne chest and
 		// hands, so it breaks nothing. The path pieces' own stats count too:
 		// 50 + 150 (wrist), then + 80 + 150 + 150 = 580.
-		expect(near(bsvDps(r, 640, 2)!, 40, 0.5)).toBe(true);
+		expectNear(bsvDps(r, 640, 2)!, 40, 0.5);
 		expect((legs.setContext?.commitBreaks ?? []).map(brk)).toEqual([{ setId: 640, threshold: 2, dps: 40 }]);
 		for (const f of legs.setContext?.futureBonuses ?? []) {
 			expect(f.breaks ?? []).toEqual([]);
 		}
-		expect(near(rankableSetPotential(legs, FLOOR), 580, 0.5)).toBe(true);
+		expectNear(rankableSetPotential(legs, FLOOR), 580, 0.5);
 		// The ladder sims one rung per worn Malorne piece (3), however many rows
 		// share a break; (640,3) reads 0 and is not counted, so one B is kept.
 		// The others are the checks of counts 2 to 5 (8) and the nine bonus gears
@@ -97,7 +97,7 @@ describe('every lost set threshold', () => {
 		] as const) {
 			const row = thRow(r, id);
 			expect(row.setContext?.commitBreaks ?? []).toEqual([]);
-			expect(near(rankableSetPotential(row, FLOOR), credit, 0.5)).toBe(true);
+			expectNear(rankableSetPotential(row, FLOOR), credit, 0.5);
 		}
 	});
 
@@ -127,7 +127,7 @@ describe('every lost set threshold', () => {
 			{ threshold: 5, piecesNeeded: 3, dps: undefined },
 		]);
 		// 80 + the chest's own 100.
-		expect(near(rankableSetPotential(head, FLOOR), 180, 0.5)).toBe(true);
+		expectNear(rankableSetPotential(head, FLOOR), 180, 0.5);
 	});
 });
 

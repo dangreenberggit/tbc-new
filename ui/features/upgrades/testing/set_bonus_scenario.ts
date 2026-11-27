@@ -529,6 +529,11 @@ export const TH_POOL: PoolSpec[] = [
 
 export const near = (a: number, b: number, tol = 0.01): boolean => Math.abs(a - b) <= tol;
 
+/** Asserts `actual` is within `tol` of `expected`; a failure prints both numbers. */
+export function expectNear(actual: number, expected: number, tol = 0.01): void {
+	expect(Math.abs(actual - expected), `expected ${actual} to be within ${tol} of ${expected}`).toBeLessThanOrEqual(tol);
+}
+
 export function thRow(ranking: ScenarioRanking, itemId: number): ScenarioRow {
 	const row = ranking.items.find(i => i.itemId === itemId);
 	if (!row) throw new Error(`row ${itemId} not found`);

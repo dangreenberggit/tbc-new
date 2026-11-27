@@ -10,10 +10,10 @@ import {
 	bonusOf,
 	bsvDps,
 	COPY_OFFSET,
+	expectNear,
 	FLOOR,
 	MALORNE,
 	MALORNE_4,
-	near,
 	NEUTRAL,
 	runScenario,
 	type Scenario,
@@ -85,13 +85,13 @@ describe('unmeasured set values', () => {
 			],
 			measureSetBonuses: true,
 		});
-		expect(near(r.baseline.dps, 3140, 0.5)).toBe(true);
+		expectNear(r.baseline.dps, 3140, 0.5);
 		const th4 = bonusOf(r, 676, 4);
 		// Head and chest each break Malorne 2pc alone, so only legs is
 		// break-free and no pair sim runs. The raw value keeps its confound.
 		expect(th4!.selfConfound).toEqual({ threshold: 2 });
-		expect(near(th4!.bonusDps!, 20, 0.5)).toBe(true);
-		expect(near(bsvDps(r, 640, 2)!, 40, 0.5)).toBe(true);
+		expectNear(th4!.bonusDps!, 20, 0.5);
+		expectNear(bsvDps(r, 640, 2)!, 40, 0.5);
 		// The confounded net would be 20 − (2 − 0 − 1 + 0)·40 = −20; true is 80.
 		expect(th4!.bonusDpsNet).toBeUndefined();
 		// A bonus-gear ranking reads no `bonusDpsNet`. The 4pc's check cleared, so
