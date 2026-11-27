@@ -1,0 +1,221 @@
+{
+	"requestId": "raidSimAsync-af1b7eafcaa6fedf",
+	"raid": {
+		"parties": [
+			{
+				"players": [
+					{
+						"apiVersion": 13,
+						"name": "Player",
+						"race": "RaceBloodElf",
+						"class": "ClassPaladin",
+						"equipment": {
+							"items": [
+								{
+									"id": 29073,
+									"enchant": 3003,
+									"gems": [24027, 32409]
+								},
+								{
+									"id": 28745
+								},
+								{
+									"id": 29075,
+									"enchant": 2986,
+									"gems": [24058, 24027]
+								},
+								{
+									"id": 24259,
+									"enchant": 368,
+									"gems": [24027]
+								},
+								{
+									"id": 29071,
+									"enchant": 2661,
+									"gems": [24027, 24027, 24027]
+								},
+								{
+									"id": 28795,
+									"enchant": 2647,
+									"gems": [24054, 24027]
+								},
+								{
+									"id": 30644,
+									"enchant": 684
+								},
+								{
+									"id": 28779,
+									"gems": [24027, 24054]
+								},
+								{
+									"id": 30257,
+									"enchant": 3012
+								},
+								{
+									"id": 28608,
+									"enchant": 2657,
+									"gems": [24027, 24058]
+								},
+								{
+									"id": 28757
+								},
+								{
+									"id": 30834
+								},
+								{
+									"id": 29383
+								},
+								{
+									"id": 28830
+								},
+								{
+									"id": 28429,
+									"enchant": 2673
+								},
+								{},
+								{
+									"id": 27484
+								}
+							]
+						},
+						"consumables": {
+							"potId": 22838,
+							"flaskId": 22854,
+							"foodId": 27658,
+							"conjuredId": 12662,
+							"explosiveId": 30217,
+							"superSapper": true,
+							"goblinSapper": true,
+							"scrollAgi": true,
+							"scrollStr": true,
+							"potions": [13442, 18253, 22828, 22832, 22837, 22838, 22839, 22850, 28101, 31677, 32948, 33935, 34440],
+							"conjuredItems": [22105, 12662, 22788, 23334, 23381]
+						},
+						"bonusStats": {
+							"apiVersion": 13,
+							"stats": [
+								0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+							],
+							"pseudoStats": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+						},
+						"itemSwap": {
+							"items": [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}],
+							"prepullBonusStats": {
+								"apiVersion": 13,
+								"stats": [
+									0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+								],
+								"pseudoStats": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+							}
+						},
+						"buffs": {
+							"blessingOfKings": true,
+							"blessingOfWisdom": "TristateEffectImproved",
+							"blessingOfMight": "TristateEffectImproved",
+							"unleashedRage": true
+						},
+						"retributionPaladin": {
+							"options": {
+								"classOptions": {}
+							}
+						},
+						"talentsString": "5-053201-0523005120033125331051",
+						"profession1": "Engineering",
+						"profession2": "Blacksmithing",
+						"cooldowns": {},
+						"reactionTimeMs": 100,
+						"distanceFromTarget": 5,
+						"healingModel": {}
+					},
+					{},
+					{},
+					{},
+					{}
+				],
+				"buffs": {
+					"leaderOfThePack": "TristateEffectImproved",
+					"drums": "LesserDrumsOfBattle",
+					"manaSpringTotem": "TristateEffectRegular",
+					"graceOfAirTotem": "TristateEffectImproved",
+					"strengthOfEarthTotem": "TristateEffectImproved",
+					"windfuryTotem": "TristateEffectImproved",
+					"totemTwisting": true,
+					"battleShout": "TristateEffectImproved"
+				}
+			},
+			{
+				"players": [{}, {}, {}, {}, {}],
+				"buffs": {}
+			},
+			{
+				"players": [{}, {}, {}, {}, {}],
+				"buffs": {}
+			},
+			{
+				"players": [{}, {}, {}, {}, {}],
+				"buffs": {}
+			},
+			{
+				"players": [{}, {}, {}, {}, {}],
+				"buffs": {}
+			}
+		],
+		"numActiveParties": 5,
+		"buffs": {
+			"arcaneBrilliance": true,
+			"powerWordFortitude": "TristateEffectImproved",
+			"shadowProtection": true,
+			"divineSpirit": "TristateEffectImproved",
+			"giftOfTheWild": "TristateEffectImproved",
+			"thorns": "TristateEffectImproved",
+			"bloodlust": true
+		},
+		"debuffs": {
+			"judgementOfWisdom": true,
+			"improvedSealOfTheCrusader": "TristateEffectImproved",
+			"jocRetribution2pt4": true,
+			"misery": true,
+			"curseOfElements": "TristateEffectImproved",
+			"bloodFrenzy": true,
+			"exposeArmor": "TristateEffectImproved",
+			"faerieFire": "TristateEffectImproved",
+			"sunderArmor": true,
+			"curseOfRecklessness": true,
+			"huntersMark": "TristateEffectImproved",
+			"exposeWeaknessUptime": 0.9,
+			"exposeWeaknessHunterAgility": 1150
+		}
+	},
+	"encounter": {
+		"apiVersion": 13,
+		"duration": 180,
+		"durationVariation": 5,
+		"executeProportion20": 0.2,
+		"executeProportion25": 0.25,
+		"executeProportion35": 0.35,
+		"executeProportion45": 0.45,
+		"executeProportion90": 0.9,
+		"targets": [
+			{
+				"id": 31146,
+				"name": "Raid Target",
+				"level": 73,
+				"mobType": "MobTypeMechanical",
+				"stats": [
+					0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 320, 0, 0, 0, 0, 0, 0, 0, 0, 0, 54, 0, 0, 0, 7685, 0, 6070400, 0, 0, 0, 0, 0, 0, 0, 0
+				],
+				"minBaseDamage": 15113,
+				"damageSpread": 0.5,
+				"swingSpeed": 2,
+				"parryHaste": true,
+				"canCrush": true
+			}
+		]
+	},
+	"simOptions": {
+		"iterations": 25000,
+		"randomSeed": "443754031",
+		"debugFirstIteration": true
+	},
+	"type": "SimTypeIndividual"
+}
