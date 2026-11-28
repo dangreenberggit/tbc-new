@@ -13,7 +13,7 @@
 							"items": [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}]
 						},
 						"consumables": {
-							"potId": 22832,
+							"potId": 22838,
 							"battleElixirId": 22831,
 							"guardianElixirId": 32067,
 							"foodId": 27664,
@@ -24,8 +24,7 @@
 							"scrollAgi": true,
 							"scrollStr": true,
 							"potions": [13442, 18253, 22828, 22832, 22837, 22838, 22850, 28101, 31677, 32948, 33935, 34440],
-							"conjuredItems": [22105, 12662, 22788],
-							"drumsId": "GreaterDrumsOfBattle"
+							"conjuredItems": [22105, 12662, 22788]
 						},
 						"bonusStats": {
 							"apiVersion": 13,
