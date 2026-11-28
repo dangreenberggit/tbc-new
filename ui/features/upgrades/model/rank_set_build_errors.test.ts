@@ -12,8 +12,8 @@ import {
 	HANDS_SLOT,
 	LEGS_SLOT,
 	MALORNE,
+	MALORNE_SHOULDER_CHEST_SCENARIO,
 	MODEL_COMPOSE_ERROR,
-	PS_SCENARIO,
 	runScenario,
 	type Scenario,
 	setSkipLines,
@@ -122,12 +122,12 @@ describe('more set requests that cannot be built', () => {
 	});
 
 	it('a bonus-off request that cannot be built gives the break-split line with the error', async () => {
-		// PS_SCENARIO's bonus-off request, the Malorne shoulder's set-less copy with
+		// MALORNE_SHOULDER_CHEST_SCENARIO's bonus-off request, the Malorne shoulder's set-less copy with
 		// the Gauntlets and the Leggings, with no row to copy the shoulder from.
 		const warn = quiet();
 		try {
 			const { ranking } = await runScenario({
-				...PS_SCENARIO,
+				...MALORNE_SHOULDER_CHEST_SCENARIO,
 				databaseOmits: ids =>
 					ids.includes(MALORNE.shoulder) && ids.includes(THUNDERHEART.hands) && ids.includes(THUNDERHEART.legs) ? [MALORNE.shoulder] : [],
 			});

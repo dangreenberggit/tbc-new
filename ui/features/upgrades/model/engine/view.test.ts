@@ -108,9 +108,9 @@ describe('two-sim set values use the item bar', () => {
 	});
 
 	it('the flag-off four-sim bonus keeps the √2 floor', () => {
-		// Scenario kind: a ranking made without the broken-set flag (the parity
-		// harness and core). Its prospective bonus folds four sims, so 3.5 is
-		// still within √2 × 3 and earns nothing.
+		// Scenario kind: a ranking made without the broken-set flag. Its
+		// prospective bonus folds four sims, so 3.5 is still within √2 × 3 and
+		// earns nothing.
 		const ranking = rankingWith({
 			setId: 676,
 			setName: 'Thunderheart Harness',

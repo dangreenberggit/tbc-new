@@ -6,7 +6,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { COPY_OFFSET, runScenario, type Scenario, SR_SCENARIO, STOP_SCENARIOS } from '../testing/set_bonus_scenario';
+import { COPY_OFFSET, runScenario, type Scenario, SCREEN_RUN_SCENARIO, STOP_SCENARIOS } from '../testing/set_bonus_scenario';
 
 // The engine reads items and gems through `Database.getSync()`; the real class over the test database stands in for the page's.
 vi.mock('@sim/proto/database', importOriginal => import('../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
@@ -77,7 +77,7 @@ describe('Stop after the candidate loop', () => {
 
 	it('a Stop during any replication sim sends no further sim and returns the last-candidate Stop result', async () => {
 		const scenario: Scenario = {
-			...SR_SCENARIO,
+			...SCREEN_RUN_SCENARIO,
 			setScreenMode: 'on',
 			// At least ITERATIONS apart, or the seed guard refuses them.
 			seeds: [11, 5011, 10011],

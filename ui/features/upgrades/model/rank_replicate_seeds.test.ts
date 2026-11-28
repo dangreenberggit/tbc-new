@@ -5,7 +5,7 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { runScenario, SR_SCENARIO } from '../testing/set_bonus_scenario';
+import { runScenario, SCREEN_RUN_SCENARIO } from '../testing/set_bonus_scenario';
 
 // The engine reads items and gems through `Database.getSync()`; the real class over the test database stands in for the page's.
 vi.mock('@sim/proto/database', importOriginal => import('../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
@@ -13,7 +13,7 @@ vi.mock('@sim/proto/database', importOriginal => import('../testing/database_moc
 describe('Replicate seeds', () => {
 	it('with no seeds, the five replicates run at 11 + k × iterations', async () => {
 		const run = await runScenario({
-			...SR_SCENARIO,
+			...SCREEN_RUN_SCENARIO,
 			setScreenMode: 'on',
 			seeds: 'engine-default',
 			iterations: 3000,
@@ -26,7 +26,7 @@ describe('Replicate seeds', () => {
 
 	it('seeds closer than the iteration count are refused', async () => {
 		const err: unknown = await runScenario({
-			...SR_SCENARIO,
+			...SCREEN_RUN_SCENARIO,
 			seeds: [11, 22],
 			iterations: 3000,
 		}).then(
@@ -36,7 +36,7 @@ describe('Replicate seeds', () => {
 		expect(err).toMatchObject({ name: 'RankError', kind: 'internal' });
 		expect((err as Error).message).toMatch(/at least 3000 apart/);
 		const boundary = await runScenario({
-			...SR_SCENARIO,
+			...SCREEN_RUN_SCENARIO,
 			seeds: [11, 3011],
 			iterations: 3000,
 		});

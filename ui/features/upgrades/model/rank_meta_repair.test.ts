@@ -268,7 +268,7 @@ describe("a candidate's repair reads its own hit", () => {
 		// needs one yellow back. On the run's budget, 31.5 − 2 = 29.5 rating
 		// left, the Ragesteel Shoulders' Bold becomes Rigid. On the row's own
 		// read, 29.5 − 40 = −10.5, hit is worth nothing and it becomes Inscribed.
-		const s = await incrementScenario('V7');
+		const s = await incrementScenario('gauntlets-worn');
 		expect(V_BONUS_HIT).toBe(40);
 		expect(s.gems.repairHitBudget!.baselineRemaining).toBeCloseTo(31.54, 2);
 		const legs = SIM_ORDER.indexOf('legs');

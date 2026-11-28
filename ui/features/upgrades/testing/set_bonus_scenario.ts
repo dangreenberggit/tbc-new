@@ -734,7 +734,7 @@ export const JUSTICAR = {
 export const CRYSTALFORGE = { chest: 30129, hands: 30130, legs: 30132 } as const;
 
 /** Thunderheart 2pc 50 and 4pc 80, with four pieces worn together worth −40. */
-export const R_SCENARIO: Scenario = {
+export const TH_FOUR_INTERACTION_SCENARIO: Scenario = {
 	worn: wornGear({}),
 	pool: TH_FOUR_POOL,
 	interactions: [{ ids: TH_FOUR, dps: -40 }],
@@ -744,7 +744,7 @@ export const R_SCENARIO: Scenario = {
 // Worn Malorne shoulder and chest, model 2pc 90. Own values chosen so the singles are the
 // feral P2 BiS figures: Gauntlets +6, Leggings −12, Pauldrons 8 − 90 = −82,
 // Chestguard 12 − 90 = −78.
-export const PS_SCENARIO: Scenario = {
+export const MALORNE_SHOULDER_CHEST_SCENARIO: Scenario = {
 	worn: wornGear({ shoulder: MALORNE.shoulder, chest: MALORNE.chest }),
 	pool: TH_FOUR_POOL,
 	setBonuses: { ...SET_BONUSES, 640: { b2: 90, b4: 0 } },
@@ -761,7 +761,7 @@ export const PS_SCENARIO: Scenario = {
 // 2pc, so the worn-set ladder runs). Pool: the Thunderheart Pauldrons, Chestguard and
 // Leggings, so Thunderheart reaches 4 and has a crossing check (the Leggings fill a slot
 // Thunderheart does not).
-export const SR_SCENARIO: Scenario = {
+export const SCREEN_RUN_SCENARIO: Scenario = {
 	worn: wornGear({
 		hands: THUNDERHEART.hands,
 		shoulder: MALORNE.shoulder,
@@ -779,7 +779,7 @@ export const SR_SCENARIO: Scenario = {
 
 /** Gear for the Stop tests, by name. */
 export const STOP_SCENARIOS: ReadonlyArray<readonly [string, Scenario]> = [
-	['the screen-run gear, screen on', { ...SR_SCENARIO, setScreenMode: 'on' }],
+	['the screen-run gear, screen on', { ...SCREEN_RUN_SCENARIO, setScreenMode: 'on' }],
 	[
 		'one worn Thunderheart piece, flag and screen on',
 		{
@@ -803,8 +803,8 @@ export const STOP_SCENARIOS: ReadonlyArray<readonly [string, Scenario]> = [
 
 export type SweepSlot = 'head' | 'shoulder' | 'chest' | 'hands' | 'legs';
 
-// Thunderheart is added in the order of the live sweep's gear (hands, legs, chest,
-// shoulders); every other slot of the five wears a neutral piece.
+// Thunderheart is added in this order (hands, legs, chest, shoulders); every other slot
+// of the five wears a neutral piece.
 export const SWEEP_TH_ORDER: readonly SweepSlot[] = ['hands', 'legs', 'chest', 'shoulder'];
 
 // The Malorne and Nordrassil 4pc are worth far more than any 2pc (40) or any break (at most

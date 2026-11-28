@@ -28,10 +28,10 @@ import { rankableSetPotential, setCreditUnmeasured } from './engine/set-potentia
 vi.mock('@sim/proto/database', importOriginal => import('../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
 
 // Nothing worn; Thunderheart Chestguard 110, Gauntlets 100, Leggings 100;
-// +20 when the Gauntlets and Leggings are worn together. Z's estimate for the
-// Gauntlets row's 2pc prefers the Chestguard (210 against 200), but the
+// +20 when the Gauntlets and Leggings are worn together. The sum-of-singles
+// estimate for the Gauntlets row's 2pc prefers the Chestguard (210 against 200), but the
 // Leggings gear sims higher (270 against 260).
-const PC_SCENARIO: Scenario = {
+const PARTNER_CHOICE_SCENARIO: Scenario = {
 	worn: wornGear({}),
 	pool: [
 		{ itemId: THUNDERHEART.chest, slot: 'chest' },
@@ -47,8 +47,8 @@ describe('the close-calls partner rule', () => {
 	it('two partner sets within the margin are both simmed, and the better sim wins', async () => {
 		// Scenario kind: a row whose partner sets' estimates are close, while
 		// their pieces' stats interact so that the estimate's order is wrong.
-		// Example: PC_SCENARIO, the Thunderheart Gauntlets row's 2pc.
-		const { ranking: r } = await runScenario(PC_SCENARIO);
+		// Example: PARTNER_CHOICE_SCENARIO, the Thunderheart Gauntlets row's 2pc.
+		const { ranking: r } = await runScenario(PARTNER_CHOICE_SCENARIO);
 		const hands = thRow(r, THUNDERHEART.hands);
 		expect(futureOf(hands, 2)?.partnerRule).toBe('close-calls');
 		expect(futureOf(hands, 2)?.pieces?.map(p => p.itemId)).toEqual([THUNDERHEART.legs]);
@@ -56,7 +56,7 @@ describe('the close-calls partner rule', () => {
 		expect(futureOf(hands, 2)?.bonusGearDps).toBeCloseTo(270, 9);
 		expect(rankableSetPotential(hands, FLOOR)).toBeCloseTo(170, 9);
 		// The Chestguard row's two sets tie on estimate and on sim (260 each):
-		// Z's order, the lower id.
+		// the estimate's tie-break, the lower id.
 		expect(futureOf(thRow(r, THUNDERHEART.chest), 2)?.pieces?.map(p => p.itemId)).toEqual([THUNDERHEART.hands]);
 		// Choices sim chest + hands (the 2pc package, from the store), chest +
 		// legs and hands + legs once each, then the two chosen gears come from
@@ -75,7 +75,7 @@ describe('the close-calls partner rule', () => {
 		// Leggings gear sims 269 or 268 against the Chestguard's 260.
 		const handsPieces = async (legs: number) => {
 			const { ranking } = await runScenario({
-				...PC_SCENARIO,
+				...PARTNER_CHOICE_SCENARIO,
 				itemValue: withValues([
 					[THUNDERHEART.chest, 110],
 					[THUNDERHEART.legs, legs],
@@ -89,13 +89,13 @@ describe('the close-calls partner rule', () => {
 		expect(await handsPieces(78)).toEqual([[THUNDERHEART.chest], 260]);
 	});
 
-	it("a candidate whose sim fails is skipped; when every one fails, Z's choice stands", async () => {
+	it('a candidate whose sim fails is skipped; when every one fails, the sum-of-singles choice stands', async () => {
 		// Real (not copied) Thunderheart pieces worn, in slot order.
 		const realTh = (ids: readonly number[]) => [CHEST_SLOT, HANDS_SLOT, LEGS_SLOT].map(slot => ids[slot]!).filter(id => id !== 0 && id < COPY_OFFSET);
 		const isGear = (ids: readonly number[], want: readonly number[]) => JSON.stringify(realTh(ids)) === JSON.stringify(want);
 		// Only the Gauntlets + Leggings gear fails: the Chestguard wins.
 		const one = await runScenario({
-			...PC_SCENARIO,
+			...PARTNER_CHOICE_SCENARIO,
 			failWhen: ids => isGear(ids, [THUNDERHEART.hands, THUNDERHEART.legs]),
 		});
 		const oneHands = thRow(one.ranking, THUNDERHEART.hands);
@@ -106,10 +106,11 @@ describe('the close-calls partner rule', () => {
 		// the failing Gauntlets and Leggings with a copied Chestguard, so the 3pc
 		// line is true.
 		expect(setSkipLines(one.ranking)).toEqual([simFailedLine(3)]);
-		// Both of the Gauntlets row's gears fail: the row keeps Z's choice, the
+		// Both of the Gauntlets row's gears fail: the row keeps the
+		// sum-of-singles estimate's choice, the
 		// Chestguard, whose bonus-gear sim fails again, so the row is unmeasured.
 		const both = await runScenario({
-			...PC_SCENARIO,
+			...PARTNER_CHOICE_SCENARIO,
 			failWhen: ids => isGear(ids, [THUNDERHEART.hands, THUNDERHEART.legs]) || isGear(ids, [THUNDERHEART.chest, THUNDERHEART.hands]),
 		});
 		const bothHands = thRow(both.ranking, THUNDERHEART.hands);

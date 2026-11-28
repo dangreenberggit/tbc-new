@@ -527,7 +527,7 @@ describe('run progress event order', () => {
 		expect(samples.at(-1)!.size).toBe(14);
 		const startedAt = runnerSims[0]!.startedAt;
 		// wowsims' rule on the runner's own sims: a sim that ended counts as
-		// one, one under way by its share (`progress.ts:60-67`).
+		// one, one under way by its share (`ui/features/bulk/model/progress.ts:60-67`).
 		const rule = (at: number, size: number) => {
 			const done = runnerSims.reduce(
 				(sum, s) => sum + (s.endedAt !== undefined && s.endedAt <= at ? 1 : Math.max(0, Math.min(1, (at - s.startedAt) / SIM_MS))),

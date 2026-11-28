@@ -385,17 +385,17 @@ function incrementScenarioDps() {
 /**
  * ret's worn P3 gear with Burning Rage 2pc worn (Ragesteel Shoulders holding
  * the Fire Opal, the Breastplate) and Crystalforge Greaves holding the Ornate
- * Topaz, so the meta's two yellows sit in the shoulder and legs. V6 ranks all
- * four Justicar pieces; V7 also wears the Justicar Gauntlets, so the Greaves
+ * Topaz, so the meta's two yellows sit in the shoulder and legs. 'gauntlets-in-pool'
+ * ranks all four Justicar pieces; 'gauntlets-worn' wears the Justicar Gauntlets, so the Greaves
  * row completes Justicar 2pc. The baseline reads 31.5 rating under the cap,
  * so a default repair places Rigid where the Justicar 2pc rebuild does not.
  */
-export async function incrementScenario(kind: 'V6' | 'V7') {
+export async function incrementScenario(kind: 'gauntlets-in-pool' | 'gauntlets-worn') {
 	const worn = retP3Worn();
 	worn[SHOULDER] = { id: RAGESTEEL_SHOULDERS, gems: [ENSCRIBED_FIRE_OPAL, BOLD] };
 	worn[CHEST] = { id: RAGESTEEL_BREASTPLATE, gems: [] };
 	worn[SIM_ORDER.indexOf('legs')] = { id: CRYSTALFORGE_GREAVES, gems: [INSCRIBED_ORNATE_TOPAZ] };
-	if (kind === 'V7') worn[HANDS] = { id: JUSTICAR.hands, gems: [] };
+	if (kind === 'gauntlets-worn') worn[HANDS] = { id: JUSTICAR.hands, gems: [] };
 	expect(metaOf(socketedOf(worn)).status.kind).toBe('active');
 
 	const baselineGearHit = gearHitRating(worn, Stat.StatMeleeHitRating);
@@ -417,7 +417,7 @@ export async function incrementScenario(kind: 'V6' | 'V7') {
 	const pool: Array<{ itemId: number; slot: ItemSlot }> = [
 		{ itemId: JUSTICAR.shoulder, slot: 'shoulder' },
 		{ itemId: JUSTICAR.chest, slot: 'chest' },
-		...(kind === 'V6' ? [{ itemId: JUSTICAR.hands, slot: 'hands' as const }] : []),
+		...(kind === 'gauntlets-in-pool' ? [{ itemId: JUSTICAR.hands, slot: 'hands' as const }] : []),
 		{ itemId: JUSTICAR.legs, slot: 'legs' },
 	];
 	const run = await runSpec({

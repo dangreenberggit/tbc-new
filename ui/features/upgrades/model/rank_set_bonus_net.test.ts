@@ -127,7 +127,7 @@ describe('set-bonus net value', () => {
 		expect(row3?.setContext?.crossesThreshold).toBe(true);
 	});
 
-	it('worn Malorne 3 pieces broken to below 2pc — Σown − Δ branch', async () => {
+	it('a worn Malorne 2pc that a package takes from three pieces to one is valued at its model bonus', async () => {
 		// Malorne 3 worn (hands, legs, chest); Thunderheart pool includes hands+legs
 		// so a 4pc Thunderheart package vacates 2 Malorne (3 -> 1, breaks 2pc).
 		const { ranking } = await runScenario({
@@ -141,7 +141,7 @@ describe('set-bonus net value', () => {
 		});
 		const bsv = (ranking.brokenSetValues ?? []).filter(b => b.setId === 640 && b.threshold === 2);
 		expect(bsv).toHaveLength(1);
-		// B recovered via the worn>t branch (Σown − Δ), same value.
+		// The worn-set ladder values the lost 2pc at its model 40.
 		expectNear(bsv[0]!.dps!, B2_MAL, 0.5);
 	});
 

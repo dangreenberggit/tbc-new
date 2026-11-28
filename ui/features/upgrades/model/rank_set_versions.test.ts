@@ -314,7 +314,7 @@ describe('set versions get their own repair', () => {
 	it('the increment after a rebuilt increment keeps its break split', async () => {
 		// Oracle: the increment's break split keeps its pairing: `plain` is the
 		// request the first increment simmed, so the store holds it.
-		const s = await incrementScenario('V6');
+		const s = await incrementScenario('gauntlets-in-pool');
 		const hands = SIM_ORDER.indexOf('hands');
 		const legs = SIM_ORDER.indexOf('legs');
 		// Check 1: the first increment's gear (the Gauntlets row plus the Greaves)
@@ -356,7 +356,7 @@ describe('set versions get their own repair', () => {
 		// run's budget. Here the row's single swap completes Justicar 2pc, whose
 		// hit that budget misses, so `requestsPerLayout`' entry 0 is a rebuild that
 		// differs from it, and the split is skipped.
-		const s = await incrementScenario('V7');
+		const s = await incrementScenario('gauntlets-worn');
 		const legs = SIM_ORDER.indexOf('legs');
 		const hands = SIM_ORDER.indexOf('hands');
 		// The row's single swap needs a repair, and its rebuild for the set's

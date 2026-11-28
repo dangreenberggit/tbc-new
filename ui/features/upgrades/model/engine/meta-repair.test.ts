@@ -40,9 +40,9 @@ const BOOTS = 30104;
 const BELT = 30106;
 const SHOULDER_30055 = 30055;
 
-const FORK_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../..');
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../..');
 // Read from disk because ui/features may not import ui/specs (`.oxlintrc.json`).
-const rogueP2 = JSON.parse(readFileSync(path.join(FORK_ROOT, 'ui/specs/rogue/dps/gear_sets/p2.gear.json'), 'utf8')) as {
+const rogueP2 = JSON.parse(readFileSync(path.join(REPO_ROOT, 'ui/specs/rogue/dps/gear_sets/p2.gear.json'), 'utf8')) as {
 	items: ReadonlyArray<{ id?: number; gems?: readonly number[] }>;
 };
 
@@ -178,11 +178,11 @@ describe('repair matches brute force', () => {
 		const repair = found as MinimalRepair;
 		expect(repair.recolors.map(c => `${c.from}->${c.to}`).sort()).toEqual([`${BOLD}->${RIGID}`, `${BOLD}->${RIGID}`]);
 		// The oracle tries every layout of at most three changes and values each apart from the engine.
-		const oracleFork = { getItem, getGem, socketBonusActive, gemColorCounts, isMetaConditionMet };
+		const oracleEngine = { getItem, getGem, socketBonusActive, gemColorCounts, isMetaConditionMet };
 		const oracleOpts = { items: pre.socketed, weights: gems.weightRecord, allowedGems: gems.fillGems, hitBudget, maxChanges: 3 };
-		const best = bruteForceBestValue(oracleFork, oracleOpts, 'reduced');
+		const best = bruteForceBestValue(oracleEngine, oracleOpts, 'reduced');
 		expect(best).toBeDefined();
 		expect(repair.value).toBeCloseTo(best!, 9);
-		expect(repairValue(oracleFork, oracleOpts, repair.items)).toBeCloseTo(best!, 9);
+		expect(repairValue(oracleEngine, oracleOpts, repair.items)).toBeCloseTo(best!, 9);
 	});
 });

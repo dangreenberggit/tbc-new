@@ -20,7 +20,7 @@ import { Stat } from '../model/engine/stats';
 type EpWeightRecord = Readonly<Record<string, number>>;
 
 /** The engine functions the oracle calls, passed in by the test. */
-export interface OracleFork {
+export interface OracleEngine {
 	getItem: typeof getItem;
 	getGem: typeof getGem;
 	socketBonusActive: typeof socketBonusActive;
@@ -50,20 +50,20 @@ function weighted(stats: readonly number[], weights: EpWeightRecord, skip: numbe
 	return sum;
 }
 
-function itemMatched(fork: OracleFork, itemId: number, gems: readonly number[]): boolean {
-	const item = fork.getItem(itemId);
+function itemMatched(engine: OracleEngine, itemId: number, gems: readonly number[]): boolean {
+	const item = engine.getItem(itemId);
 	if (!item) return true;
-	return fork.socketBonusActive(item.sockets, gems);
+	return engine.socketBonusActive(item.sockets, gems);
 }
 
 /** Every gem's hit plus every active socket bonus's hit. */
-function layoutHit(fork: OracleFork, layout: readonly SocketedItem[], stat: number): number {
+function layoutHit(engine: OracleEngine, layout: readonly SocketedItem[], stat: number): number {
 	let hit = 0;
 	for (const it of layout) {
-		const item = fork.getItem(it.itemId);
+		const item = engine.getItem(it.itemId);
 		if (!item) continue;
-		for (const g of it.gems) hit += fork.getGem(g)?.stats[stat] ?? 0;
-		if (itemMatched(fork, it.itemId, it.gems)) {
+		for (const g of it.gems) hit += engine.getGem(g)?.stats[stat] ?? 0;
+		if (itemMatched(engine, it.itemId, it.gems)) {
 			hit += item.socketBonus[stat] ?? 0;
 		}
 	}
@@ -76,28 +76,28 @@ function layoutHit(fork: OracleFork, layout: readonly SocketedItem[], stat: numb
  * on, plus the hit term `w × (min(ΔH, r) − min(0, r))` with a budget or
  * `w × ΔH` without one.
  */
-export function repairValue(fork: OracleFork, opts: OracleOpts, layout: readonly SocketedItem[]): number {
+export function repairValue(engine: OracleEngine, opts: OracleOpts, layout: readonly SocketedItem[]): number {
 	const stat = opts.hitBudget?.stat ?? MELEE_HIT_RATING;
 	const nonHit = (stats: readonly number[]) => weighted(stats, opts.weights, stat);
 	let v = 0;
 	for (let i = 0; i < opts.items.length; i++) {
 		const before = opts.items[i]!;
 		const after = layout[i]!;
-		const item = fork.getItem(before.itemId);
+		const item = engine.getItem(before.itemId);
 		if (!item) continue;
 		for (let s = 0; s < item.sockets.length; s++) {
 			const o = before.gems[s] ?? 0;
 			const n = after.gems[s] ?? 0;
 			if (o === n) continue;
-			v += nonHit(fork.getGem(n)?.stats ?? []) - nonHit(fork.getGem(o)?.stats ?? []);
+			v += nonHit(engine.getGem(n)?.stats ?? []) - nonHit(engine.getGem(o)?.stats ?? []);
 		}
-		const was = itemMatched(fork, before.itemId, before.gems);
-		const is = itemMatched(fork, after.itemId, after.gems);
+		const was = itemMatched(engine, before.itemId, before.gems);
+		const is = itemMatched(engine, after.itemId, after.gems);
 		if (was && !is) v -= nonHit(item.socketBonus);
 		if (!was && is) v += nonHit(item.socketBonus);
 	}
 	const w = opts.weights[String(stat)] ?? 0;
-	const dH = layoutHit(fork, layout, stat) - layoutHit(fork, opts.items, stat);
+	const dH = layoutHit(engine, layout, stat) - layoutHit(engine, opts.items, stat);
 	if (opts.hitBudget) {
 		const r = opts.hitBudget.remaining;
 		v += w * (Math.min(dH, r) - Math.min(0, r));
@@ -112,9 +112,9 @@ function allGemIds(layout: readonly SocketedItem[]): number[] {
 }
 
 /** The meta gem in the head's meta socket, or undefined. */
-function metaIdOf(fork: OracleFork, items: readonly SocketedItem[]) {
+function metaIdOf(engine: OracleEngine, items: readonly SocketedItem[]) {
 	const head = items[0];
-	const item = head ? fork.getItem(head.itemId) : undefined;
+	const item = head ? engine.getItem(head.itemId) : undefined;
 	if (!head || !item) return undefined;
 	const socket = item.sockets.indexOf(GemColor.GemColorMeta);
 	if (socket < 0) return undefined;
@@ -162,26 +162,26 @@ type Socket = { item: number; socket: number };
  * when none does. `visit`, when given, sees every qualifying layout and its V.
  */
 export function bruteForceBestValue(
-	fork: OracleFork,
+	engine: OracleEngine,
 	opts: OracleOpts,
 	pool: 'reduced' | 'full',
 	visit?: (layout: SocketedItem[], value: number) => void,
 ): number | undefined {
-	const metaId = metaIdOf(fork, opts.items);
+	const metaId = metaIdOf(engine, opts.items);
 	if (metaId === undefined) return undefined;
 	const gems = candidatePool(opts, pool);
 	const sockets: Socket[] = [];
 	for (let i = 0; i < opts.items.length; i++) {
-		const item = fork.getItem(opts.items[i]!.itemId);
+		const item = engine.getItem(opts.items[i]!.itemId);
 		if (!item) continue;
 		item.sockets.forEach((color, s) => {
 			if (color !== GemColor.GemColorMeta) sockets.push({ item: i, socket: s });
 		});
 	}
 	const held = new Set(allGemIds(opts.items));
-	const counts = (ids: readonly number[]) => fork.gemColorCounts(ids);
+	const counts = (ids: readonly number[]) => engine.gemColorCounts(ids);
 	const colorOf = (gemId: number) => counts(gemId > 0 ? [gemId] : []);
-	const active = (layout: readonly SocketedItem[]) => fork.isMetaConditionMet(metaId, counts(allGemIds(layout)));
+	const active = (layout: readonly SocketedItem[]) => engine.isMetaConditionMet(metaId, counts(allGemIds(layout)));
 
 	const qualifies = (layout: SocketedItem[], changed: readonly Socket[]) => {
 		const placed = new Set<number>();
@@ -195,7 +195,7 @@ export function bruteForceBestValue(
 				return false;
 			}
 			// Condition 5: no unique gem the gear holds, and each placed once.
-			if (fork.getGem(to)?.unique) {
+			if (engine.getGem(to)?.unique) {
 				if (held.has(to) || placed.has(to)) return false;
 				placed.add(to);
 			}
@@ -214,7 +214,7 @@ export function bruteForceBestValue(
 	let best: number | undefined;
 	const chosen: Socket[] = [];
 	const layout = opts.items.map(it => {
-		const item = fork.getItem(it.itemId);
+		const item = engine.getItem(it.itemId);
 		const padded = [...it.gems];
 		while (item && padded.length < item.sockets.length) padded.push(0);
 		return { itemId: it.itemId, gems: padded };
@@ -223,7 +223,7 @@ export function bruteForceBestValue(
 	const assign = (k: number) => {
 		if (k === chosen.length) {
 			if (chosen.length === 0 || !qualifies(layout, chosen)) return;
-			const v = repairValue(fork, opts, layout);
+			const v = repairValue(engine, opts, layout);
 			visit?.(
 				layout.map(it => ({ itemId: it.itemId, gems: [...it.gems] })),
 				v,

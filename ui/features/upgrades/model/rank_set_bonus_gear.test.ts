@@ -22,9 +22,8 @@ import {
 	JUSTICAR,
 	LEGS_SLOT,
 	MALORNE,
+	MALORNE_SHOULDER_CHEST_SCENARIO,
 	PRIMAL_INTENT,
-	PS_SCENARIO,
-	R_SCENARIO,
 	runScenario,
 	type Scenario,
 	type ScenarioRow,
@@ -36,6 +35,7 @@ import {
 	simFailedLine,
 	sortedIds,
 	TH_FOUR,
+	TH_FOUR_INTERACTION_SCENARIO,
 	TH_FOUR_POOL,
 	thRow,
 	THUNDERHEART,
@@ -127,7 +127,7 @@ describe('set rows valued by simmed gear', () => {
 		// Scenario kind: a tier set whose pieces' stats interact (here they lose
 		// 40 worn together), with a count that has no bonus between the two
 		// that do. Example: Thunderheart 676, model 2pc 50 and 4pc 80.
-		const { ranking: r } = await runScenario(R_SCENARIO);
+		const { ranking: r } = await runScenario(TH_FOUR_INTERACTION_SCENARIO);
 		expect(bonusOf(r, 676, 2)?.sameGearDps).toBeCloseTo(50, 9);
 		expect(bonusOf(r, 676, 4)?.sameGearDps).toBeCloseTo(80, 9);
 		expect(bonusOf(r, 676, 3)?.belowNoise).toBe(true);
@@ -177,10 +177,10 @@ describe('set rows valued by simmed gear', () => {
 
 	it('a row whose 4pc does not pay is credited at the 2pc', async () => {
 		// Scenario kind: a 4pc worth less than what its extra pieces cost. As
-		// R_SCENARIO with model 4pc 10, and own value −40 for the two pieces only the
+		// TH_FOUR_INTERACTION_SCENARIO with model 4pc 10, and own value −40 for the two pieces only the
 		// 4-piece set adds (Pauldrons and Leggings).
 		const { ranking: r } = await runScenario({
-			...R_SCENARIO,
+			...TH_FOUR_INTERACTION_SCENARIO,
 			setBonuses: { ...SET_BONUSES, 676: { b2: 50, b4: 10 } },
 			itemValue: withValues([
 				[THUNDERHEART.shoulder, -40],
@@ -220,11 +220,11 @@ describe('set rows valued by simmed gear', () => {
 	});
 
 	it('a row outside the groups moves one for one with its own value', async () => {
-		// Scenario kind: a set piece weaker than every package piece. As R_SCENARIO
+		// Scenario kind: a set piece weaker than every package piece. As TH_FOUR_INTERACTION_SCENARIO
 		// plus the Thunderheart Wristguards at own value v, run at v = 10 and 35.
 		const on = async (v: number) => {
 			const { ranking } = await runScenario({
-				...R_SCENARIO,
+				...TH_FOUR_INTERACTION_SCENARIO,
 				pool: [...TH_FOUR_POOL, { itemId: THUNDERHEART.wrist, slot: 'wrist' }],
 				itemValue: withValues([[THUNDERHEART.wrist, v]]),
 			});
@@ -239,7 +239,7 @@ describe('set rows valued by simmed gear', () => {
 	});
 
 	it("a failed check sim makes the set's rows unmeasured; a failed bonus-gear sim, only its row", async () => {
-		// Scenario kind: a sim that fails mid-run. Example: R_SCENARIO's pool, model
+		// Scenario kind: a sim that fails mid-run. Example: TH_FOUR_INTERACTION_SCENARIO's pool, model
 		// with no interaction.
 		const base: Scenario = {
 			worn: wornGear({}),
@@ -265,7 +265,8 @@ describe('set rows valued by simmed gear', () => {
 		// Every 2pc gear of the Pauldrons row (the Pauldrons and one
 		// other real Thunderheart piece) fails. Its three partner sets are close
 		// calls, so one failure alone would only skip that set; with all
-		// three failed the row keeps Z's choice, whose bonus-gear sim fails too.
+		// three failed the row keeps the sum-of-singles estimate's choice, whose
+		// bonus-gear sim fails too.
 		const thSlots = [SHOULDER_SLOT, CHEST_SLOT, HANDS_SLOT, LEGS_SLOT];
 		const bonusGearFail = await runScenario({
 			...base,
@@ -443,9 +444,9 @@ describe('set rows valued by simmed gear', () => {
 	it('two partners that share a worn-bonus loss pair best with each other', async () => {
 		// Scenario kind: two set pieces that each break the same worn bonus
 		// alone, so together they lose it once. Example: feral P2 BiS, worn
-		// Malorne 2pc in the shoulder and chest slots (PS_SCENARIO).
-		const { ranking: z } = await runScenario(PS_SCENARIO);
-		const pauldrons = thRow(z, THUNDERHEART.shoulder);
+		// Malorne 2pc in the shoulder and chest slots (MALORNE_SHOULDER_CHEST_SCENARIO).
+		const { ranking } = await runScenario(MALORNE_SHOULDER_CHEST_SCENARIO);
+		const pauldrons = thRow(ranking, THUNDERHEART.shoulder);
 		expect(pauldrons.deltaDps).toBeCloseTo(-82, 9);
 		expect(futureOf(pauldrons, 2)?.pieces?.map(p => p.itemId)).toEqual([THUNDERHEART.chest]);
 		// model(G + Pauldrons + Chestguard) − model(G) = 3070 − 3090.
@@ -454,7 +455,7 @@ describe('set rows valued by simmed gear', () => {
 		// Leggings: 6 − 12 + 50 = 44, an increment of 38. 4pc with the Pauldrons and
 		// Chestguard: 6 + 8 + 12 − 12 + 50 + 80 − 90 = 54, an increment of 10 that
 		// breaks Malorne 2pc. The Gauntlets alone break nothing.
-		expect(incrementsOf(thRow(z, THUNDERHEART.hands))).toEqual([
+		expect(incrementsOf(thRow(ranking, THUNDERHEART.hands))).toEqual([
 			[2, [THUNDERHEART.legs], 38, false, []],
 			[4, [THUNDERHEART.shoulder, THUNDERHEART.chest], 10, true, [[640, 2]]],
 		]);
@@ -487,22 +488,23 @@ describe('set rows valued by simmed gear', () => {
 			]),
 			measureSetBonuses: true,
 		};
-		const z = thRow((await runScenario(scenario)).ranking, THUNDERHEART.legs);
-		// Z keeps the Wastewalker 2pc (one replacer): 100 + 310 + 130 = 540.
-		expect(futureOf(z, 4)?.pieces?.map(p => p.itemId)).toEqual([THUNDERHEART.chest, THUNDERHEART.wrist, THUNDERHEART.waist]);
-		expect(futureOf(z, 4)?.breaks ?? []).toEqual([]);
-		expect(futureOf(z, 4)?.bonusGearDps).toBeCloseTo(540, 9);
+		const legs = thRow((await runScenario(scenario)).ranking, THUNDERHEART.legs);
+		// The sum-of-singles estimate, charged for the loss, keeps the Wastewalker 2pc (one
+		// replacer): 100 + 310 + 130 = 540.
+		expect(futureOf(legs, 4)?.pieces?.map(p => p.itemId)).toEqual([THUNDERHEART.chest, THUNDERHEART.wrist, THUNDERHEART.waist]);
+		expect(futureOf(legs, 4)?.breaks ?? []).toEqual([]);
+		expect(futureOf(legs, 4)?.bonusGearDps).toBeCloseTo(540, 9);
 	});
 
 	it('the partner rule is close-calls, has no cache key, and sims each close partner set once', async () => {
 		// Scenario kind: the tab's run on one character, run twice on one
-		// shared store. Example: PS_SCENARIO.
+		// shared store. Example: MALORNE_SHOULDER_CHEST_SCENARIO.
 		const store = new MemoryStore();
-		const first = await runScenario({ ...PS_SCENARIO, store });
+		const first = await runScenario({ ...MALORNE_SHOULDER_CHEST_SCENARIO, store });
 		expect(first.ranking.bonusGearSims?.partnerRule).toBe('close-calls');
 		// The hashed object has no partnerRule key, as before.
 		expect(first.ranking.contentHash).not.toContain('"partnerRule"');
-		const again = await runScenario({ ...PS_SCENARIO, store });
+		const again = await runScenario({ ...MALORNE_SHOULDER_CHEST_SCENARIO, store });
 		expect(again.runCount).toBe(0);
 		expect(again.ranking.contentHash).toBe(first.ranking.contentHash);
 		// The Pauldrons row's three 2pc partner sets are estimated at −70
@@ -559,7 +561,7 @@ describe('set rows valued by simmed gear', () => {
 		expect(setPotentialIncrements(legs.setContext, FLOOR)).toBeNull();
 	});
 
-	it('two set rings key to one slot, so their 2pc is out of reach (known limit d)', async () => {
+	it('two set rings key to one slot, so their 2pc is out of reach', async () => {
 		// Scenario kind: a set with two pieces of a two-slot item type (rings,
 		// trinkets, one-hand weapons). `selectAddedPieces` keys each candidate to
 		// its first sim slot, so both rings fight over finger1 and the

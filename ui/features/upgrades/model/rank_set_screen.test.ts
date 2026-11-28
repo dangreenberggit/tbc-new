@@ -22,6 +22,7 @@ import {
 	runScenario,
 	type Scenario,
 	type ScenarioRanking,
+	SCREEN_RUN_SCENARIO,
 	screenFailedLine,
 	SET_BONUSES,
 	SET_KEPT_OFFSET,
@@ -29,7 +30,6 @@ import {
 	setSkipLines,
 	SHOULDER_SLOT,
 	SIM_VERSION,
-	SR_SCENARIO,
 	thRow,
 	THUNDERHEART,
 	V_TH,
@@ -101,18 +101,18 @@ function expectOnModeSims(run: Awaited<ReturnType<typeof runScenario>>, screened
 
 const SIGMA_FAKE = (Math.SQRT2 * 30) / Math.sqrt(300);
 
-// The no-bonus case: SR_SCENARIO's gear and pool plus Justicar 626 (own value −30 each,
+// The no-bonus case: SCREEN_RUN_SCENARIO's gear and pool plus Justicar 626 (own value −30 each,
 // model bonuses 0, nothing worn, R = 4).
-const SN_SCENARIO: Scenario = {
-	...SR_SCENARIO,
-	pool: [...SR_SCENARIO.pool, ...setPool(JUSTICAR)],
+const NO_BONUS_SCENARIO: Scenario = {
+	...SCREEN_RUN_SCENARIO,
+	pool: [...SCREEN_RUN_SCENARIO.pool, ...setPool(JUSTICAR)],
 	itemValue: withValues(Object.values(JUSTICAR).map(id => [id, -30] as const)),
 	setBonuses: { ...SET_BONUSES, 626: { b2: 0, b4: 0 } },
 };
 
 // The band case: nothing worn; four sets of two pool pieces each, M2 = d_a + d_b +
 // b2: Thunderheart 150, Malorne 100, Justicar 97, Crystalforge 96.
-const SB_SCENARIO: Scenario = {
+const BAND_SCENARIO: Scenario = {
 	worn: wornGear({}),
 	pool: [
 		{ itemId: THUNDERHEART.shoulder, slot: 'shoulder' },
@@ -150,7 +150,7 @@ const SB_SCENARIO: Scenario = {
 // −155 + 110 = −45; its crossing check still clears (2pc 40). Thunderheart wrist, waist and feet
 // (−15, −15, −100) measure −30 + 50 = 20; Gladiator's Pursuit chest and
 // hands (−12.375 each, 2pc 20) measure −4.75.
-const SD_SCENARIO: Scenario = {
+const BELOW_ZERO_SCENARIO: Scenario = {
 	worn: wornGear({ hands: MALORNE.hands }),
 	pool: [
 		{ itemId: MALORNE.shoulder, slot: 'shoulder' },
@@ -181,8 +181,8 @@ describe("the set screen's sims", () => {
 	it("only the screen's sims ask for per-iteration values, under their own store key", async () => {
 		// Scenario kind: the tab's run with the screen on and off, on gear that
 		// has a worn-set ladder, a crossing check and a set to collect.
-		const off = await runScenario(SR_SCENARIO);
-		const on = await runScenario({ ...SR_SCENARIO, setScreenMode: 'on' });
+		const off = await runScenario(SCREEN_RUN_SCENARIO);
+		const on = await runScenario({ ...SCREEN_RUN_SCENARIO, setScreenMode: 'on' });
 		expect(off.callOpts.some(o => 'saveAllValues' in o)).toBe(false);
 		expect(on.callOpts.some(o => o.saveAllValues === true)).toBe(true);
 		// Store keys: only a run that asks for per-iteration values gets
@@ -210,10 +210,10 @@ describe("the set screen's sims", () => {
 describe("the set screen's on mode", () => {
 	it('a set with no bonus in reach is dropped and costs only its two screen sims', async () => {
 		// Scenario kind: a set whose bonuses do nothing for this spec, beside a
-		// set worth collecting. Example: Justicar 626 next to SR_SCENARIO's
+		// set worth collecting. Example: Justicar 626 next to SCREEN_RUN_SCENARIO's
 		// Thunderheart (w = 1, R = 4, 2pc 50, 4pc 80).
-		const off = await runScenario(SN_SCENARIO);
-		const on = await runScenario({ ...SN_SCENARIO, setScreenMode: 'on' });
+		const off = await runScenario(NO_BONUS_SCENARIO);
+		const on = await runScenario({ ...NO_BONUS_SCENARIO, setScreenMode: 'on' });
 		const screen = on.ranking.setScreen!;
 		expectOnModeSims(on, 2);
 		expect(screen.sigma).toBeCloseTo(SIGMA_FAKE, 9);
@@ -261,8 +261,8 @@ describe("the set screen's on mode", () => {
 
 	it('a close third set survives in the band; the fourth does not', async () => {
 		// Scenario kind: three sets with real bonuses whose best cases are
-		// close (like C5's 617). Example: SB_SCENARIO; band 3.464102.
-		const on = await runScenario({ ...SB_SCENARIO, setScreenMode: 'on' });
+		// close. Example: BAND_SCENARIO; band 3.464102.
+		const on = await runScenario({ ...BAND_SCENARIO, setScreenMode: 'on' });
 		const screen = on.ranking.setScreen!;
 		expectOnModeSims(on, 4);
 		expect(screen.sigma).toBeCloseTo(2.44949, 6);
@@ -287,11 +287,11 @@ describe("the set screen's on mode", () => {
 
 	it('a set whose best case loses to current gear is dropped, even below K', async () => {
 		// Scenario kind: a worn set's other pieces are much worse than the
-		// player's gear (a level-60 or off-spec set). Example: SD_SCENARIO;
+		// player's gear (a level-60 or off-spec set). Example: BELOW_ZERO_SCENARIO;
 		// 2σ = 4.898979. The dropped set is worn at 1 and its crossing check
 		// clears, so its rows keep a crossing line.
-		const off = await runScenario(SD_SCENARIO);
-		const on = await runScenario({ ...SD_SCENARIO, setScreenMode: 'on' });
+		const off = await runScenario(BELOW_ZERO_SCENARIO);
+		const on = await runScenario({ ...BELOW_ZERO_SCENARIO, setScreenMode: 'on' });
 		const screen = on.ranking.setScreen!;
 		expectOnModeSims(on, 3);
 		expect(screen.sets.map(s => [s.setId, s.worn, s.reach, s.pair.dps, s.measure])).toEqual([
@@ -325,11 +325,11 @@ describe("the set screen's on mode", () => {
 
 	it('a set whose screen readings failed is kept and measured as with the screen off', async () => {
 		// Scenario kind: off-class Cryptstalker 530, whose sims
-		// fail. Example: SR_SCENARIO's gear; the screen's high rung (Thunderheart
+		// fail. Example: SCREEN_RUN_SCENARIO's gear; the screen's high rung (Thunderheart
 		// set-kept) fails at N = 300.
-		const off = await runScenario(SR_SCENARIO);
+		const off = await runScenario(SCREEN_RUN_SCENARIO);
 		const on = await runScenario({
-			...SR_SCENARIO,
+			...SCREEN_RUN_SCENARIO,
 			setScreenMode: 'on',
 			failWhen: (ids, opts) =>
 				opts.saveAllValues === true &&
@@ -349,11 +349,11 @@ describe("the set screen's on mode", () => {
 	});
 
 	it('the screen on changes only the gain-side set list', async () => {
-		// Scenario kind: the screen's invariant. (a) SN_SCENARIO's gear, which wears Malorne
+		// Scenario kind: the screen's invariant. (a) NO_BONUS_SCENARIO's gear, which wears Malorne
 		// 2pc (so the ladder runs) and gives Thunderheart a crossing check;
-		// (b) SR_SCENARIO's gear, where every set survives.
-		const offA = await runScenario(SN_SCENARIO);
-		const onA = await runScenario({ ...SN_SCENARIO, setScreenMode: 'on' });
+		// (b) SCREEN_RUN_SCENARIO's gear, where every set survives.
+		const offA = await runScenario(NO_BONUS_SCENARIO);
+		const onA = await runScenario({ ...NO_BONUS_SCENARIO, setScreenMode: 'on' });
 		expect(offA.ranking.wornSetLadder?.length).toBeGreaterThan(0);
 		expect(offA.ranking.crossingChecks?.length).toBeGreaterThan(0);
 		expect(onA.ranking.wornSetLadder).toEqual(offA.ranking.wornSetLadder);
@@ -367,8 +367,8 @@ describe("the set screen's on mode", () => {
 		expect(onRest).toEqual(offRest);
 		expectOnModeSims(onA, 2);
 
-		const offB = await runScenario(SR_SCENARIO);
-		const onB = await runScenario({ ...SR_SCENARIO, setScreenMode: 'on' });
+		const offB = await runScenario(SCREEN_RUN_SCENARIO);
+		const onB = await runScenario({ ...SCREEN_RUN_SCENARIO, setScreenMode: 'on' });
 		expect(verdictsOf(onB.ranking.setScreen)).toEqual([[676, true, 'top-k']]);
 		expect(await screenFreeParts(onB.ranking)).toEqual(await screenFreeParts(offB.ranking));
 		expectOnModeSims(onB, 1);
@@ -486,14 +486,14 @@ describe("the set screen's on mode", () => {
 
 	it('"on" has its own content hash, and unset hashes as before', async () => {
 		const store = new MemoryStore();
-		const unset = await runScenario({ ...SR_SCENARIO, store });
+		const unset = await runScenario({ ...SCREEN_RUN_SCENARIO, store });
 		// Unset, the hashed object has no setScreen key, as before.
 		expect(unset.ranking.contentHash).not.toContain('"setScreen"');
 		expect(unset.ranking.setScreen).toBeUndefined();
 		// "on" on the same store is not served the cached ranking: it sends only
 		// its two screen sims and answers everything else from the store.
 		const on = await runScenario({
-			...SR_SCENARIO,
+			...SCREEN_RUN_SCENARIO,
 			store,
 			setScreenMode: 'on',
 		});
@@ -501,7 +501,7 @@ describe("the set screen's on mode", () => {
 		expect(on.ranking.setScreen?.mode).toBe('on');
 		expect(on.runCount).toBe(2);
 		const explicitOff = await runScenario({
-			...SR_SCENARIO,
+			...SCREEN_RUN_SCENARIO,
 			setScreenMode: 'off',
 		});
 		const hashes = new Set([on.ranking.contentHash, explicitOff.ranking.contentHash, unset.ranking.contentHash]);

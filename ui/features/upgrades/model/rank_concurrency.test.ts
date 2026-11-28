@@ -7,7 +7,17 @@
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { MALORNE, NORDRASSIL, runScenario, type Scenario, SR_SCENARIO, STOP_SCENARIOS, TH_POOL, THUNDERHEART, wornGear } from '../testing/set_bonus_scenario';
+import {
+	MALORNE,
+	NORDRASSIL,
+	runScenario,
+	type Scenario,
+	SCREEN_RUN_SCENARIO,
+	STOP_SCENARIOS,
+	TH_POOL,
+	THUNDERHEART,
+	wornGear,
+} from '../testing/set_bonus_scenario';
 
 // The engine reads items and gems through `Database.getSync()`; the real class over the test database stands in for the page's.
 vi.mock('@sim/proto/database', importOriginal => import('../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
@@ -15,7 +25,7 @@ vi.mock('@sim/proto/database', importOriginal => import('../testing/database_moc
 describe("Sims at the runner's concurrency", () => {
 	const piecesOf = (set: Record<string, number>, ids: readonly number[]) => ids.filter(id => Object.values(set).includes(id)).length;
 	const REPLICATION_SCENARIO: Scenario = {
-		...SR_SCENARIO,
+		...SCREEN_RUN_SCENARIO,
 		setScreenMode: 'on',
 		seeds: 'engine-default',
 		iterations: 3000,

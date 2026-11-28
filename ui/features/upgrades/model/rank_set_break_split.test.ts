@@ -14,9 +14,8 @@ import {
 	futureOf,
 	idsOf,
 	MALORNE,
+	MALORNE_SHOULDER_CHEST_SCENARIO,
 	NEUTRAL,
-	PS_SCENARIO,
-	R_SCENARIO,
 	runScenario,
 	type Scenario,
 	type ScenarioRanking,
@@ -27,6 +26,7 @@ import {
 	SWEEP_BONUSES,
 	SWEEP_TH_ORDER,
 	type SweepSlot,
+	TH_FOUR_INTERACTION_SCENARIO,
 	thRow,
 	THUNDERHEART,
 	V_TH,
@@ -66,7 +66,7 @@ const ZERO_BONUS_OFF = {
 	beforeInStore: 0,
 };
 
-// PS_SCENARIO's worn Malorne shoulder and chest, two Thunderheart pool pieces, and a
+// MALORNE_SHOULDER_CHEST_SCENARIO's worn Malorne shoulder and chest, two Thunderheart pool pieces, and a
 // Thunderheart 2pc large enough to pay for the break.
 const LR_SCENARIO: Scenario = {
 	worn: wornGear({ shoulder: MALORNE.shoulder, chest: MALORNE.chest }),
@@ -88,9 +88,8 @@ const LR_SCENARIO: Scenario = {
 
 describe("the popover's split break lines", () => {
 	it('an increment that newly loses a worn bonus is split into its Breaks line and its pieces line', async () => {
-		// Scenario kind: the owner's demo row, a 4pc increment that replaces both
-		// worn Malorne pieces. Example: PS_SCENARIO (feral P2 BiS shape).
-		const run = await runScenario(PS_SCENARIO);
+		// Scenario kind: a 4pc increment that replaces both worn Malorne pieces. Example: MALORNE_SHOULDER_CHEST_SCENARIO (feral P2 BiS shape).
+		const run = await runScenario(MALORNE_SHOULDER_CHEST_SCENARIO);
 		const r = run.ranking;
 		const hands = thRow(r, THUNDERHEART.hands);
 		const legs = thRow(r, THUNDERHEART.legs);
@@ -140,8 +139,8 @@ describe("the popover's split break lines", () => {
 
 	it('increments that break nothing are not split and add no sim', async () => {
 		// Scenario kind: nothing worn, so no increment can lose a worn bonus.
-		// Example: R_SCENARIO.
-		const { ranking: r } = await runScenario(R_SCENARIO);
+		// Example: TH_FOUR_INTERACTION_SCENARIO.
+		const { ranking: r } = await runScenario(TH_FOUR_INTERACTION_SCENARIO);
 		expect(splitIncrementsOf(thRow(r, THUNDERHEART.hands))).toEqual([
 			[2, [THUNDERHEART.chest], 150, null, null, []],
 			[4, [THUNDERHEART.shoulder, THUNDERHEART.legs], 240, null, null, []],
@@ -220,12 +219,12 @@ describe("the popover's split break lines", () => {
 	});
 
 	it('a failed bonus-off sim leaves the increment unsplit', async () => {
-		// Scenario kind: the bonus-off sim fails. Example: PS_SCENARIO with
+		// Scenario kind: the bonus-off sim fails. Example: MALORNE_SHOULDER_CHEST_SCENARIO with
 		// the fake sim failing the one request that wears the Malorne
 		// shoulder's set-less copy with the Gauntlets and the Leggings.
 		const failId = COPY_OFFSET + MALORNE.shoulder;
 		const { ranking: r } = await runScenario({
-			...PS_SCENARIO,
+			...MALORNE_SHOULDER_CHEST_SCENARIO,
 			failWhen: ids => ids.includes(failId) && ids.includes(THUNDERHEART.hands) && ids.includes(THUNDERHEART.legs),
 		});
 		const hands = thRow(r, THUNDERHEART.hands);
@@ -251,13 +250,13 @@ describe("the popover's split break lines", () => {
 		// The bonus-off sim's error names the lost Malorne 2pc, whose cost the
 		// increment does not show apart from its pieces.
 		expect(setSkipLines(r)).toEqual([breakSplitFailedLine(2)]);
-		// The credits are PS_SCENARIO's: 54 − 6 and 54 + 12.
+		// The credits are MALORNE_SHOULDER_CHEST_SCENARIO's: 54 − 6 and 54 + 12.
 		expect(rankableSetPotential(hands, FLOOR)).toBeCloseTo(48, 9);
 		expect(rankableSetPotential(legs, FLOOR)).toBeCloseTo(66, 9);
 	});
 });
 
-/** Five sweep slots, with Thunderheart in the first `k` of the live sweep's order and a neutral piece in the rest. */
+/** Five sweep slots, with Thunderheart in the first `k` slots of `SWEEP_TH_ORDER` and a neutral piece in the rest. */
 function sweepWorn(k: number): Record<SweepSlot, number> {
 	const worn: Record<SweepSlot, number> = {
 		head: NEUTRAL.head[0],
