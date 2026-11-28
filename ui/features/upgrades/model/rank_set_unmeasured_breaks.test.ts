@@ -159,7 +159,7 @@ describe('unmeasured set values', () => {
 			worn: wornGear({}),
 			pool: TH_FOUR_POOL,
 			measureSetBonuses: true,
-			failWhen: ids => ids.filter(id => TH_FOUR.includes(id)).length === 2,
+			failWhen: ids => ids.filter(id => (TH_FOUR as readonly number[]).includes(id)).length === 2,
 		});
 		expect(bonusOf(r, 676, 2)?.unmeasured).toBe('sim-failed');
 		expect(setSkipLines(r)).toContainEqual(simFailedLine(2));
