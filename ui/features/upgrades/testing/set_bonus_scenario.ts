@@ -650,25 +650,13 @@ export const LEGS_SLOT = SIM_ORDER.indexOf('legs');
 export const SHOULDER_SLOT = SIM_ORDER.indexOf('shoulder');
 export const CHEST_SLOT = SIM_ORDER.indexOf('chest');
 
-// Worn Malorne head, shoulder, chest, hands; Thunderheart and neutral candidates in exactly
-// those four slots.
+// Worn Malorne head, shoulder, chest and hands.
 export const MALORNE_4 = {
 	head: MALORNE.head,
 	shoulder: MALORNE.shoulder,
 	chest: MALORNE.chest,
 	hands: MALORNE.hands,
 } as const;
-export const TH_OVER_MALORNE_POOL: PoolSpec[] = [
-	{ itemId: THUNDERHEART.head, slot: 'head' },
-	{ itemId: THUNDERHEART.shoulder, slot: 'shoulder' },
-	{ itemId: THUNDERHEART.chest, slot: 'chest' },
-	{ itemId: THUNDERHEART.hands, slot: 'hands' },
-	{ itemId: NEUTRAL.head[0], slot: 'head' },
-	{ itemId: NEUTRAL.shoulder[0], slot: 'shoulder' },
-	{ itemId: NEUTRAL.chest[0], slot: 'chest' },
-	{ itemId: NEUTRAL.hands[0], slot: 'hands' },
-];
-export const TH_FOUR_IDS = [THUNDERHEART.head, THUNDERHEART.shoulder, THUNDERHEART.chest, THUNDERHEART.hands];
 
 // Thunderheart hands + legs worn (676 at 2); neutral hands and legs so B(676,2) can be measured.
 export const TH_HANDS_LEGS = wornGear({
