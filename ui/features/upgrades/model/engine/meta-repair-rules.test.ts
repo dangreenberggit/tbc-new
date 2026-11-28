@@ -18,6 +18,8 @@ const SOLID = 24033; // blue, sta 12
 const INSCRIBED = 24058; // orange, str 4 crit 4
 const SOVEREIGN = 24054; // purple, str 4 sta 6
 const JAGGED = 24067; // green, sta 6 crit 4
+// An epic gem only a jewelcrafter can use, above the rare cap on the gems the tab fills
+// (`FILL_MAX_QUALITY`); the test passes it in by hand.
 const STONE_OF_BLADES = 33143; // yellow, crit 12, unique
 
 // Metas.
@@ -38,7 +40,7 @@ const DESTROYER_GREAVES = 30121; // [red], crit 2
 const ONSLAUGHT_GAUNTLETS = 30969; // [red], crit 2
 const SHATTRATH_WRAPS = 28174; // [red], sta 3
 const DESTROYER_LEGGUARDS = 30116; // [red], sta 3
-const AUCHENAI_BRACERS = 28170; // [red], stat 35
+const AUCHENAI_BRACERS = 28170; // [red], mp5 1
 
 const STR = '0';
 const STA = '2';
@@ -98,7 +100,7 @@ describe('meta repair past the work limit', () => {
 		// Greedy's first move is the cheapest that lowers the deficit: Bold to
 		// Sovereign on the first red item, cost 8 − 10 = −2. Its second is Bold to
 		// Jagged on the second, cost 8 − 6 = 2, which turns the meta on at red 2,
-		// yellow 2, blue 2. Undoing the first then still leaves red 2, yellow 2,
+		// yellow 2, blue 3. Undoing the first then still leaves red 2, yellow 2,
 		// blue 2, so it is dropped; undoing the second does not, so it stays.
 		const warn = warnOnce();
 		const items: SocketedItem[] = [

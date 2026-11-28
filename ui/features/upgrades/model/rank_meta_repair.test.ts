@@ -262,7 +262,7 @@ describe("a candidate's repair reads its own hit", () => {
 	});
 
 	it('a melee candidate that completes a hit set repairs on its own read', async () => {
-		// Oracle: the Leggings row completes Justicar 2pc (+40, scripted),
+		// Oracle: the Greaves row completes Justicar 2pc (+40, scripted),
 		// which the run's budget misses. Justicar Greaves (23 hit, no socket)
 		// replace Crystalforge Greaves (21 hit, the Ornate Topaz), so the meta
 		// needs one yellow back. On the run's budget, 31.5 − 2 = 29.5 rating
