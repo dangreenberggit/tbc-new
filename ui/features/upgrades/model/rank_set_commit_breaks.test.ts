@@ -22,6 +22,7 @@ import {
 	NORDRASSIL,
 	runMalorneOverThunderheart2pc,
 	runScenario,
+	SET_BONUSES,
 	setPool,
 	setSkipLines,
 	simFailedLine,
@@ -175,5 +176,18 @@ describe('commit breaks per future', () => {
 		// 80 + chest and legs, each 150 − 50 = 100 of own stats.
 		expectNear(rankableSetPotential(head, FLOOR), 280, 0.5);
 		expect(runCount).toBe(RUNS_WITHOUT_PAIR_SIM + 1);
+	});
+
+	it('at worn 1 the pair sim recovers the 4pc value whichever piece is worn and whatever the 2pc is worth', async () => {
+		const { ranking: r } = await runScenario({
+			worn: wornGear({ legs: THUNDERHEART.legs }),
+			pool: TH_POOL.filter(p => p.slot !== 'legs'),
+			setBonuses: { ...SET_BONUSES, 676: { b2: 30, b4: 90 } },
+		});
+		const th4 = bonusOf(r, 676, 4);
+		// raw4 = B4 − (n−1)·B2 = 90 − 2·30 = 30; adding the pair's 2pc back for each of the
+		// two pieces after the first gives 90.
+		expectNear(th4!.bonusDps!, 90, 0.5);
+		expectNear(th4!.selfConfound?.dps ?? NaN, 30, 0.5);
 	});
 });

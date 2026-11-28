@@ -2,9 +2,15 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-import { isBonusImplemented, netInflation, SET_THRESHOLDS } from './set-value';
+import { HANDS_SLOT, LEGS_SLOT, THUNDERHEART } from '../../testing/set_bonus_scenario';
+import type { PoolEntry } from './pool';
+import { isBonusImplemented, netInflation, selectAddedPieces, SET_THRESHOLDS } from './set-value';
+import { SIM_ORDER } from './slots';
+
+// `selectAddedPieces` reads set ids through `Database.getSync()`; the real class over the test database stands in for the page's.
+vi.mock('@sim/proto/database', importOriginal => import('../../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
 
 const DB_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../../../assets/database/db.json');
 
@@ -35,6 +41,90 @@ describe('netInflation', () => {
 		]);
 		expect(raw).toBe(100);
 		expect(raw - inflation).toBe(bonus4);
+	});
+
+	// The models below are a 2pc package of two pieces worth 250 each with a 2pc bonus of 30,
+	// or a 4pc package of four pieces worth 125 each (the 2pc package is its first two) with
+	// a 4pc bonus of 60. The worn bonus they may break, of another set, is worth 40.
+	// `computeBonusDps` gives pkgΔ − Σsingles for the 2pc and pkgΔ − Σsingles − raw2pc for
+	// the 4pc.
+	const broken = 40;
+
+	it('takes back a break the whole package has but no single piece has', () => {
+		// Three worn pieces of another set: each piece alone leaves two (its 2pc holds),
+		// both together leave one (its 2pc breaks).
+		const pkgDelta = 500 + 30 - broken;
+		const singles = 500;
+		const raw = pkgDelta - singles;
+		const inflation = netInflation([
+			{ piecesBreakingAlone: 0, twoPcPiecesBreakingAlone: 0, allPiecesBreak: 1, allTwoPcPiecesBreak: 0, brokenBonusDps: broken },
+		]);
+		expect(raw).toBe(-10);
+		expect(raw - inflation).toBe(30);
+	});
+
+	it('adds back the break each piece has alone', () => {
+		// Two worn pieces of another set, one in each piece's slot: each piece alone breaks
+		// its 2pc, and so do both together.
+		const pkgDelta = 500 + 30 - broken;
+		const singles = 500 - 2 * broken;
+		const raw = pkgDelta - singles;
+		const inflation = netInflation([
+			{ piecesBreakingAlone: 2, twoPcPiecesBreakingAlone: 0, allPiecesBreak: 1, allTwoPcPiecesBreak: 0, brokenBonusDps: broken },
+		]);
+		expect(raw).toBe(70);
+		expect(raw - inflation).toBe(30);
+	});
+
+	it("takes back the break a 2pc piece has alone, which the 4pc's raw 2pc already paid", () => {
+		// Two worn pieces of another set, in the slots of the 4pc package's first and third
+		// pieces: those two each break its 2pc alone, and the 2pc package (first and second)
+		// and the 4pc package break it too.
+		const pkgDelta4 = 500 + 30 + 60 - broken;
+		const singles4 = 500 - 2 * broken;
+		const raw2pc = 250 + 30 - broken - (250 - broken);
+		const raw = pkgDelta4 - singles4 - raw2pc;
+		const inflation = netInflation([
+			{ piecesBreakingAlone: 2, twoPcPiecesBreakingAlone: 1, allPiecesBreak: 1, allTwoPcPiecesBreak: 1, brokenBonusDps: broken },
+		]);
+		expect(raw).toBe(100);
+		expect(raw - inflation).toBe(60);
+	});
+});
+
+describe('selectAddedPieces', () => {
+	const entry = ([itemId, slot]: readonly [number, PoolEntry['slot']]): PoolEntry => ({
+		itemId,
+		name: String(itemId),
+		slot,
+		phase: 1,
+		source: { kind: 'unknown' },
+	});
+	const slotOf = new Map<number, number>([
+		[THUNDERHEART.hands, HANDS_SLOT],
+		[THUNDERHEART.legs, LEGS_SLOT],
+		[THUNDERHEART.chest, SIM_ORDER.indexOf('chest')],
+	]);
+
+	it('adds no piece to a slot that already holds a worn piece of the set, even its best gain', () => {
+		const equipment = SIM_ORDER.map((_, i) => ({ id: i === HANDS_SLOT ? THUNDERHEART.hands : 0, gems: [] }));
+		const ownDeltas = [THUNDERHEART.hands, THUNDERHEART.legs, THUNDERHEART.chest].map((itemId, i) => ({
+			itemId,
+			slotIndex: slotOf.get(itemId)!,
+			deltaDps: [30, 20, 10][i]!,
+			se: 0,
+		}));
+		const pool = (
+			[
+				[THUNDERHEART.hands, 'hands'],
+				[THUNDERHEART.legs, 'legs'],
+				[THUNDERHEART.chest, 'chest'],
+			] as const
+		).map(entry);
+		const result = selectAddedPieces(676, 2, equipment, pool, ownDeltas, e => slotOf.get(e.itemId));
+		expect(result).toEqual({ ok: true, piecesWorn: 1, addedPieces: [{ itemId: THUNDERHEART.legs, slotIndex: LEGS_SLOT }] });
+		// Three more for the 4pc while two other slots are open: not enough.
+		expect(selectAddedPieces(676, 4, equipment, pool, ownDeltas, e => slotOf.get(e.itemId))).toEqual({ ok: false, reason: 'insufficient-pieces' });
 	});
 });
 

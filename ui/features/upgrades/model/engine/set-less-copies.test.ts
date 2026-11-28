@@ -17,10 +17,24 @@ import {
 } from '../../testing/set_bonus_scenario';
 import { getItem } from './items';
 import { type RaidSimRequest, simCacheKey } from './seams/sim-runner';
-import { applyCopies, applySetLessCopies, measureSameGearBonus, SET_KEPT_ID_OFFSET, SET_LESS_ID_OFFSET } from './set-less-copies';
+import { applyCopies, applySetLessCopies, clearsSameGearNoise, measureSameGearBonus, SET_KEPT_ID_OFFSET, SET_LESS_ID_OFFSET } from './set-less-copies';
 
 // The engine reads items and gems through `Database.getSync()`; the real class over the test database stands in for the page's.
 vi.mock('@sim/proto/database', importOriginal => import('../../testing/database_mock').then(m => m.withTestDatabase(importOriginal)));
+
+describe('clearsSameGearNoise', () => {
+	const cutoff = { absDps: 3 };
+
+	it('needs a value above both the cutoff and twice its standard error', () => {
+		// With an SE of 2, twice the SE (4) is the higher bar.
+		expect(clearsSameGearNoise(3.5, 2, cutoff)).toBe(false);
+		expect(clearsSameGearNoise(4, 2, cutoff)).toBe(false);
+		expect(clearsSameGearNoise(4.5, 2, cutoff)).toBe(true);
+		// With an SE of 1, the cutoff is the higher bar.
+		expect(clearsSameGearNoise(2.5, 1, cutoff)).toBe(false);
+		expect(clearsSameGearNoise(3.5, 1, cutoff)).toBe(true);
+	});
+});
 
 describe('measureSameGearBonus', () => {
 	it('returns the error of a request it cannot build', async () => {
